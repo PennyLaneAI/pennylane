@@ -15,10 +15,11 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
-from collections import namedtuple
+from collections import namedtuple, Counter
 import networkx as nx
 
 from .utils import _flatten
+import pennylane as qml
 
 
 def _by_idx(x):
@@ -300,6 +301,38 @@ class CircuitGraph:
             post_queue = self.descendants_in_order(ops)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
+    @staticmethod
+    def list_at_index_or_none(list, idx):
+        if len(list) > idx:
+            return list[idx]
+        else:
+            return None
+
+    def greedy_layers(self):
+        l = 0
+        greedy_grid = self._grid.copy()
+
+        while True:
+            layer_ops = {wire: CircuitGraph.list_at_index_or_none(greedy_grid[wire], l) for wire in greedy_grid}
+            num_ops = Counter(layer_ops.values())
+
+            if None in num_ops and num_ops[None] == len(greedy_grid):
+                break
+
+            for (wire, op) in layer_ops.items():
+                if op is None:
+                    greedy_grid[wire].append(None)
+                    continue
+
+                # push back to next layer if not all args wires are there yet
+                if op.num_wires > num_ops[op]:
+                    greedy_grid[wire].insert(l, None)
+
+            l += 1
+
+        return greedy_grid
+
+
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
 
@@ -316,17 +349,23 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
+    def operator_string(self, op):
+        if op.num_params == 0:
+            return op.name
+        
+        return "{}({})".format(op.name, ",".join([str(par) if not isinstance(par, qml.variable.Variable) else par.render() for par in op.params]))
+
     def render(self):
         print("render")
-        print("self._graph = ", self._graph)
-        print("self._grid = ", self._grid)
-        for ops, param_inds in self.layers:
-            print("LAYER")
-            for op in ops:
-                print(op)
 
-        print("----")
-        for layer in self.iterate_layers():
-            print("LAYER")
-            for op in layer.ops:
-                print(op)
+        grid = self.greedy_layers()
+        for wire in grid:
+            print("{}: --".format(wire), end="")
+
+            for op in grid[wire]:
+                if op:
+                    print("--{}--".format(self.operator_string(op)), end="")
+                else:
+                    print("--()--", end="")
+
+            print()

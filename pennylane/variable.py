@@ -142,7 +142,7 @@ class Variable:
 
     def render(self):
         if self.name is None:
-            if len(Variable.free_param_values) >= self.idx:
+            if Variable.free_param_values and len(Variable.free_param_values) >= self.idx:
                 return str(self.val)
             else:
                 if self.mult != 1:
@@ -150,7 +150,7 @@ class Variable:
                 else:
                     return "#{}".format(self.idx)
         else:
-            if self.name in Variable.kwarg_values:
+            if Variable.kwarg_values and self.name in Variable.kwarg_values:
                 return str(self.val)
             else:
                 if self.mult != 1:
