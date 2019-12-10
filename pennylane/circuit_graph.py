@@ -504,3 +504,30 @@ class CircuitGraph:
                 print("{}".format(repr), end="")
 
             print()
+
+class Grid:
+    def __init__(self, raw_grid):
+        self.raw_grid = raw_grid
+        self.raw_grid_transpose = list(map(list, zip(*raw_grid)))
+
+    def insert_layer(self, idx, layer):
+        self.raw_grid_transpose.insert(idx, layer)
+        self.raw_grid = list(map(list, zip(*self.raw_grid_transpose)))
+
+    def insert_wire(self, idx, wire):
+        self.raw_grid.insert(idx, wire)
+        self.raw_grid_transpose = list(map(list, zip(*self.raw_grid)))
+
+    @property
+    def num_layers(self):
+        return len(self.raw_grid_transpose)
+
+    def layer(self, idx):
+        return self.raw_grid_transpose[idx]
+
+    @property
+    def num_wires(self):
+        return len(self.raw_grid)
+
+    def wire(self, idx):
+        return self.raw_grid[idx]
