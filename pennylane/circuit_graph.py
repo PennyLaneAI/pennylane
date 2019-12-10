@@ -364,10 +364,7 @@ class CircuitGraph:
             for wire in self._grid
         }
 
-        print(observables)
-        print(np.array([observables[wire] for wire in observables], dtype=object))
-
-        return np.array([greedy_grid[wire] for wire in greedy_grid], dtype=object), np.array([observables[wire] for wire in observables], dtype=object)
+        return [greedy_grid[wire] for wire in greedy_grid], [observables[wire] for wire in observables]
 
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
@@ -394,9 +391,6 @@ class CircuitGraph:
     }
 
     def operator_string(self, op):
-        if op is None:
-            return ""
-
         name = op.name
         if name in self.op_dict:
             name = self.op_dict[name]
@@ -423,7 +417,9 @@ class CircuitGraph:
             return "Sample[{}]".format(self.operator_string(obs))
 
     def string_representation(self, op):
-        if isinstance(op, qml.operation.Observable) and op.return_type is not None:
+        if op is None:
+            return "─"
+        elif isinstance(op, qml.operation.Observable) and op.return_type is not None:
             return self.observable_string(op)
         elif isinstance(op, str):
             return op
@@ -434,15 +430,20 @@ class CircuitGraph:
         grid_copy = grid.copy()
         j = 0
 
-        for i in range(grid.shape[1]):
-            layer_ops = set(grid[:, i])
-            print("i = {}, layer_ops = {}".format(i, layer_ops))
+        # Transpose to work in layers
+        grid = list(map(list, zip(*grid)))
+        grid_copy = list(map(list, zip(*grid_copy)))
+
+        # Iterate over all layers
+        for i in range(len(grid)):
+            layer_ops = set(grid[i])
+            
             for op in layer_ops:
                 if op is None:
                     continue
 
                 if op.num_wires > 1:
-                    additional = np.array([None] * grid.shape[0], dtype=object)
+                    additional = [None] * len(grid[0])
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
                     additional[sorted_wires[0]] = "╗"
@@ -453,29 +454,43 @@ class CircuitGraph:
                         else:
                             additional[k] = "║"
 
-                    print("additional = ", additional)
-                    print("insert location = ", i + j)
-                    #print("grid_copy before insert = \n", grid_copy)
-                    grid_copy = np.insert(grid_copy, i + j + 1, additional, axis=1)
+                    grid_copy.insert(i + j + 1, additional)
+
                     j += 1
-                    #print("grid_copy after insert before ", i + j, " = \n", grid_copy)
 
-        return np.vectorize(self.string_representation)(grid_copy)
+        grid = list(map(list, zip(*grid)))
+        grid_copy = list(map(list, zip(*grid_copy)))
 
+        return list(map(lambda l: list(map(self.string_representation, l)), grid_copy))
 
+    def is_box(self, str):
+        return str in ["╗", "╝", "╣", "║"]
+
+    def justify_all(self, arr, width, fill_char, prepend=""):
+        for i in range(len(arr)):
+            arr[i] = prepend + str.ljust(arr[i], width, fill_char)
+
+        return arr
 
     def render(self):
         grid, obs = self.greedy_layers()
 
         repr_grid = self.build_string_representations(grid)
-        obs_repr = np.vectorize(self.string_representation)(obs)
-        len_grid = np.vectorize(lambda x: len(x))(repr_grid)
-        obs_len = np.vectorize(lambda x: len(x))(obs_repr)
+        obs_repr = list(map(lambda l: list(map(self.string_representation, l)), obs))
+        len_grid = list(map(lambda l: list(map(len, l)), repr_grid))
+        obs_len = list(map(lambda l: list(map(len, l)), obs_repr))
 
         widths = np.max(len_grid, axis=0)
 
+        repr_grid = list(map(list, zip(*repr_grid)))
         for i in range(len(widths)):
-            repr_grid[:, i] = np.vectorize(lambda x: x.ljust(widths[i], "─"))(repr_grid[:, i])
+            if not any([self.is_box(repr) for repr in repr_grid[i]]):
+                repr_grid[i] = self.justify_all(repr_grid[i], widths[i], "─", "──")
+            else:
+                repr_grid[i] = self.justify_all(repr_grid[i], widths[i], "─")
+
+        repr_grid = list(map(list, zip(*repr_grid)))
+        print(repr_grid)
 
         obs_width = np.max(obs_len)
         obs_repr = np.vectorize(lambda x: "┤" + x.ljust(obs_width, " "))(obs_repr)
@@ -486,6 +501,6 @@ class CircuitGraph:
             print("{}: ──".format(wire), end="")
 
             for repr in all_repr[wire]:
-                print("──{}".format(repr), end="")
+                print("{}".format(repr), end="")
 
             print()
