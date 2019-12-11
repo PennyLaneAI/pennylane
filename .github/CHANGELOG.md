@@ -4,6 +4,7 @@
 
 * Added `QAOAEmbedding` and its parameter initialization 
   as a new trainable template.
+  [#442](https://github.com/XanaduAI/pennylane/pull/442)
 
 ### Breaking changes
 
