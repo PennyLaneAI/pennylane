@@ -331,7 +331,7 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
         :target: javascript:void(0);
 
     |
-    
+
     .. note::
         ``QAOAEmbedding`` supports gradient computations with respect to both the ``features`` and the ``weights``
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
