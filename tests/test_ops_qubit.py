@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.ops.qubit`.
 
 import pytest
 
-import pennylane
 from pennylane import numpy as np
 
 from pennylane.ops import qubit
