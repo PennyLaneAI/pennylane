@@ -335,7 +335,6 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
 
     Args:
-
         features (array): array of features to encode
         weights (array): array of weights
         wires (Sequence[int] or int): `n` qubit indices that the template acts on
