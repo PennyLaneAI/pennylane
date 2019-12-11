@@ -375,7 +375,6 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
         .. code-block:: python
 
             from pennylane.init import qaoa_embedding_normal
-
             weights = qaoa_embedding_normal(n_layers=2, n_wires=2, mean=0, std=0.2)
 
 
