@@ -323,12 +323,14 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     |
 
     The argument ``weights`` contains an array of the :math:`\alpha, \beta` parameters for each layer.
-    The number of layers :math:`L` is derived from the first dimension of ``weights``.  If the embedding
-    acts on a single wire, ``weights`` has shape :math:`(L, )`, if the embedding acts on two wires, it has
-    shape :math:`(L, 3)`, and else it has shape :math:`(L, 2n)`
+    The number of layers :math:`L` is derived from the first dimension of ``weights``, which has the following
+    shape:
 
-    After the :math:`L`th layer,
-    another set of feature encoding :class:`RX` gates is applied.
+    * if the embedding acts on a single wire, the shape is :math:`(L, )`,
+    * if the embedding acts on two wires, the shape is :math:`(L, 3)`,
+    * else the shape is :math:`(L, 2n)`.
+
+    After the :math:`L` th layer, another set of feature encoding :class:`RX` gates is applied.
 
     .. note::
         ``QAOAEmbedding`` supports gradient computations with respect to both the ``features`` and the ``weights``
