@@ -79,6 +79,32 @@ class PauliY(Observable, Operation):
     num_wires = 1
     par_domain = None
 
+    @staticmethod
+    def matrix():
+        r"""Matrix representation of PauliY
+
+        Returns:
+            array[float]: matrix representation of PauliY
+        """
+        return np.array([[0, -1j], [1j, 0]])
+
+    @staticmethod
+    def diagonalizing_gates():
+        r"""Diagonalize PauliY.
+
+        Calculate the eigenvalues and eigenvectors of PauliY.
+
+        Returns:
+            list(array[float]): A list of the form [eigenvalues, eigenvectors].
+            The eigenvalues are stored as the diagonal entries of a matrix, and
+            the eigenvectors are the columns of the second matrix in the same ordering.
+        """
+        eigensystem = np.linalg.eigh(PauliY.matrix())
+        eigenvalues = np.diag(eigensystem[0])
+        eigenvectors = eigensystem[1]
+
+        return [eigenvalues, eigenvectors]
+
 
 class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
@@ -425,11 +451,7 @@ class Rot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [
-            RZ(phi, wires=wires),
-            RY(theta, wires=wires),
-            RZ(omega, wires=wires)
-        ]
+        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
         return decomp_ops
 
 
@@ -546,7 +568,7 @@ class CRY(Operation):
             U3(theta / 2, 0, 0, wires=wires[1]),
             CNOT(wires=wires),
             U3(-theta / 2, 0, 0, wires=wires[1]),
-            CNOT(wires=wires)
+            CNOT(wires=wires),
         ]
         return decomp_ops
 
@@ -603,7 +625,7 @@ class CRZ(Operation):
             PhaseShift(lam / 2, wires=wires[1]),
             CNOT(wires=wires),
             PhaseShift(-lam / 2, wires=wires[1]),
-            CNOT(wires=wires)
+            CNOT(wires=wires),
         ]
         return decomp_ops
 
