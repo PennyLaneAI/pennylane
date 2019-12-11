@@ -83,6 +83,7 @@ def _get_shape(inpt):
     try:
         inpt = np.array(inpt)
     except:
+        # TODO: this line is not tested because I don't know a case where the conversion could fail
         raise ValueError("Fails to convert {} to array.". format(inpt))
 
     return inpt.shape

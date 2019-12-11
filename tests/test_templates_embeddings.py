@@ -333,9 +333,7 @@ class TestBasisEmbedding:
 class TestQAOAEmbedding:
     """ Tests the QAOAEmbedding method."""
 
-    # TODO: Do we need to test all possible local fields?
-
-    def test_qaoa_embedding_state_zero_weights(self, qubit_device, n_subsystems):
+    def test_qaoa_embedding_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
 
         features = [pi, pi/2, pi/4, 0]
@@ -360,7 +358,7 @@ class TestQAOAEmbedding:
     @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [0]),
                                                                (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
                                                                (3, [[0, 0, 0, pi, pi/2, pi/4]], [-1, 0, 1/np.sqrt(2)])])
-    def test_qaoa_embedding_state_zero_features_local_field_ry(self, n_subsystems, weights, target):
+    def test_qaoa_embedding_state_zero_features_local_field_ry(self, n_subsystems, weights, target, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RY local fields."""
 
         features = np.zeros(shape=(n_subsystems,))
@@ -368,16 +366,50 @@ class TestQAOAEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems))
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='Y')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
         res = circuit(x=features[:n_subsystems])
-        assert np.allclose(res, target)
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [0]),
+                                                               (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
+                                                               (3, [[0, 0, 0, pi, pi/2, pi/4]], [-1, 0, 1/np.sqrt(2)])])
+    def test_qaoa_embedding_state_zero_features_local_field_rx(self, n_subsystems, weights, target, tol):
+        """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RX local fields."""
+
+        features = np.zeros(shape=(n_subsystems,))
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='X')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [1]),
+                                                               (2, [[1, pi/2, pi/4]], [1, 1]),
+                                                               (3, [[0, 0, 0, pi, pi/2, pi/4]], [1, 1, 1])])
+    def test_qaoa_embedding_state_zero_features_local_field_rz(self, n_subsystems, weights, target, tol):
+        """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RZ local fields."""
+
+        features = np.zeros(shape=(n_subsystems,))
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_subsystems), local_field='Z')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
+
+        res = circuit(x=features[:n_subsystems])
+        assert np.allclose(res, target, atol=tol, rtol=0)
 
     @pytest.mark.parametrize('features, weights, target', [([np.pi/2, 0], [[np.pi, 0, 0]], [-1, 1]),
                                                            ([0, np.pi/2], [[np.pi, 0, 0]], [1, -1]),
                                                            ([np.pi/2, np.pi/2], [[np.pi, 0, 0]], [-1, -1])])
-    def test_qaoa_embedding_state_features_and_zz(self, features, weights, target):
+    def test_qaoa_embedding_state_features_and_zz(self, features, weights, target, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
         Uses RY local fields."""
 
@@ -385,11 +417,27 @@ class TestQAOAEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            QAOAEmbedding(features=x, weights=weights, wires=range(2), local_field='Y')
             return [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
         res = circuit(x=features)
-        assert np.allclose(res, target)
+        assert np.allclose(res, target, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi/2]], [1, 0]),
+                                                                    (3, [0, 0], [[0, 0, 0, 0, 0, np.pi/2]], [1, 1, 0])])
+    def test_qaoa_embedding_state_more_qubit_than_features(self, n_wires, features, weights, target, tol):
+        """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
+        Uses RY local fields."""
+
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='Z')
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        res = circuit(x=features)
+        assert np.allclose(res, target, atol=tol, rtol=0)
 
     def test_qaoa_embedding_exception_fewer_wires_than_features(self, ):
         """Verifies that QAOAEmbedding() raises an exception if there are fewer
@@ -421,7 +469,7 @@ class TestQAOAEmbedding:
             QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="Gate for local field not known"):
+        with pytest.raises(ValueError, match="Option for local field not known"):
             circuit(x=[1])
 
     def test_qaoa_embedding_exception_wires_not_valid(self):
