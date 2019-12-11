@@ -297,7 +297,7 @@ def BasisEmbedding(features, wires):
 
 def QAOAEmbedding(features, weights, wires, local_field='Y'):
     r"""
-    Encodes :math:`N` features into :math:`n` qubits, using a layered, trainable quantum
+    Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
     circuit that is inspired by the QAOA ansatz.
 
     A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
@@ -306,10 +306,20 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     :math:`e^{-i \alpha \sigma_z \otimes \sigma_z}`,
     and trainable local fields :math:`e^{-i \frac{\beta}{2} \sigma_{\mu}}`, where :math:`\sigma_{\mu}`
     can be chosen to be :math:`\sigma_{x}`, :math:`\sigma_{y}` or :math:`\sigma_{z}`
-    (default choice is :math:`\sigma_{y}` or the ``RY`` gate). :math:`\alpha, \beta` are adjustable gate parameters.
+    (default choice is :math:`\sigma_{y}` or the ``RY`` gate), and :math:`\alpha, \beta` are adjustable gate parameters.
 
     The number of features has to be smaller or equal to the number of qubits. If there are fewer features than
     qubits, the feature-encoding rotation is replaced by a Hadamard gate.
+
+    The argument ``weights`` contains an array of the :math:`\alpha, \beta` parameters for each layer.
+    The number of layers :math:`L` is derived from the first dimension of ``weights``, which has the following
+    shape:
+
+    * :math:`(L, )`, if the embedding acts on a single wire,
+    * :math:`(L, 3)`, if the embedding acts on two wires,
+    * :math:`(L, 2n)` else.
+
+    After the :math:`L` th layer, another set of feature-encoding :class:`RX` gates is applied.
 
     This is an example for the full embedding circuit using 2 layers, 3 features, 4 wires, and ``RY`` local fields:
 
@@ -321,17 +331,7 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
         :target: javascript:void(0);
 
     |
-
-    The argument ``weights`` contains an array of the :math:`\alpha, \beta` parameters for each layer.
-    The number of layers :math:`L` is derived from the first dimension of ``weights``, which has the following
-    shape:
-
-    * if the embedding acts on a single wire, the shape is :math:`(L, )`,
-    * if the embedding acts on two wires, the shape is :math:`(L, 3)`,
-    * else the shape is :math:`(L, 2n)`.
-
-    After the :math:`L` th layer, another set of feature encoding :class:`RX` gates is applied.
-
+    
     .. note::
         ``QAOAEmbedding`` supports gradient computations with respect to both the ``features`` and the ``weights``
         arguments. Note that trainable parameters need to be passed to the quantum node as positional arguments.
