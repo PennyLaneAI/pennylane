@@ -25,7 +25,7 @@ def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     distribution.
 
     Each parameter is drawn uniformly at random
-    from between ``low`` and ``high``. The parameters define the the trainable angles of 'ZZ interactions' and
+    from between ``low`` and ``high``. The parameters define the trainable angles of 'ZZ interactions' and
     the 'local fields'.
 
     Args:
