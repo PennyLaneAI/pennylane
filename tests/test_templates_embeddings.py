@@ -355,7 +355,7 @@ class TestQAOAEmbedding:
 
         res = circuit(x=features[:n_subsystems])
         target = [1, -1, 0, 1, 1]
-        assert np.allclose(res, target[:n_subsystems])
+        assert np.allclose(res, target[:n_subsystems], atol=tol, rtol=0)
 
     @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [0]),
                                                                (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
