@@ -24,7 +24,7 @@ def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.QAOAEmbedding`, drawn from a uniform
     distribution.
 
-    Each parameter is drawn uniformly at random \
+    Each parameter is drawn uniformly at random
     from between ``low`` and ``high``. The parameters define the the trainable angles of 'ZZ interactions' and
     the 'local fields'.
 
