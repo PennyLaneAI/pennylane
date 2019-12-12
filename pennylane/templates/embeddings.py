@@ -28,6 +28,62 @@ from pennylane.variable import Variable
 TOLERANCE = 1e-3
 
 
+def _qaoa_feature_encoding_hamiltonian(features, n_features, wires):
+    """Implements the encoding Hamiltonian of the QAOA embedding.
+
+    Args:
+        features (array): array of features to encode
+        n_features (int): number of features to encode
+    """
+    for idx, w in enumerate(wires):
+        # Either feed in feature
+        if idx < n_features:
+            RX(features[idx], wires=w)
+        # or a Hadamard
+        else:
+            Hadamard(wires=w)
+
+
+def _qaoa_ising_hamiltonian(weights, wires, local_fields, l):
+    """Implements the Ising-like Hamiltonian of the QAOA embedding.
+
+    Args:
+        weights (array): array of weights
+        wires (Sequence[int] or int): `n` qubit indices that the template acts on
+        local_fields (str): gate implementing the local field
+        l (int): layer index
+    """
+    # trainable "Ising" ansatz
+    if len(wires) == 1:
+        local_fields(weights[l, 0], wires=wires[0])
+
+    elif len(wires) == 2:
+        # ZZ coupling
+        CNOT(wires=[wires[0], wires[1]])
+        RZ(2 * weights[l, 0], wires=wires[0])
+        CNOT(wires=[wires[0], wires[1]])
+
+        # local fields
+        for i, _ in enumerate(wires):
+            local_fields(weights[l, i + 1], wires=wires[i])
+
+    else:
+        for i, _ in enumerate(wires):
+            if i < len(wires) - 1:
+                # ZZ coupling
+                CNOT(wires=[wires[i], wires[i + 1]])
+                RZ(2 * weights[l, i], wires=wires[i])
+                CNOT(wires=[wires[i], wires[i + 1]])
+            else:
+                # ZZ coupling to enforce periodic boundary condition
+                CNOT(wires=[wires[i], wires[0]])
+                RZ(2 * weights[l, i], wires=wires[i])
+                CNOT(wires=[wires[i], wires[0]])
+        # local fields
+        for i, _ in enumerate(wires):
+            local_fields(weights[l, len(wires) + i], wires=wires[i])
+
+
 def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
@@ -446,11 +502,11 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     msg = "Option for local field not known. Has to be one of ``'X'``, ``'Y'``, or ``'Z'``."
     _check_hyperp_is_in_options(local_field, ['X', 'Y', 'Z'], msg=msg)
     if local_field == 'Z':
-        local_field = RZ
+        local_fields = RZ
     elif local_field == 'X':
-        local_field = RX
+        local_fields = RX
     else:
-        local_field = RY
+        local_fields = RY
 
     repeat = _check_number_of_layers([weights])
 
@@ -471,50 +527,12 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     #####################
 
     for l in range(repeat):
+        # apply alternating Hamiltonians
+        _qaoa_feature_encoding_hamiltonian(features, n_features, wires)
+        _qaoa_ising_hamiltonian(weights, wires, local_fields, l)
 
-        # encode inputs into RX gates
-        for i in range(n_wires):
-            # Either feed in feature
-            if i < n_features:
-                RX(features[i], wires=wires[i])
-            # or a Hadamard
-            else:
-                Hadamard(wires=wires[i])
-
-        # trainable "Ising" ansatz
-        if n_wires == 1:
-            local_field(weights[l, 0], wires=wires[0])
-        elif n_wires == 2:
-            CNOT(wires=[wires[0], wires[1]])
-            RZ(2 * weights[l, 0], wires=wires[0])
-            CNOT(wires=[wires[0], wires[1]])
-
-            # local fields
-            for i in range(n_wires):
-                local_field(weights[l, i+1], wires=wires[i])
-        else:
-            for i in range(n_wires):
-                if i < n_wires - 1:
-                    CNOT(wires=[wires[i], wires[i + 1]])
-                    RZ(2 * weights[l, i], wires=wires[i])
-                    CNOT(wires=[wires[i], wires[i + 1]])
-                else:
-                    # enforce periodic boundary condition
-                    CNOT(wires=[wires[i], wires[0]])
-                    RZ(2 * weights[l, i], wires=wires[i])
-                    CNOT(wires=[wires[i], wires[0]])
-            # local fields
-            for i in range(n_wires):
-                local_field(weights[l, n_wires + i], wires=wires[i])
-
-    # repeat feature encoding once more at the end
-    for i in range(n_wires):
-        # Either feed in feature
-        if i < n_features:
-            RX(features[i], wires=wires[i])
-        # or a Hadamard
-        else:
-            Hadamard(wires=wires[i])
+    # repeat the feature encoding once more at the end
+    _qaoa_feature_encoding_hamiltonian(features, n_features, wires)
 
 
 def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
