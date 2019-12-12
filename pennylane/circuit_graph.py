@@ -356,8 +356,9 @@ class CircuitGraph:
 
             l += 1
 
-        observables = {
-            wire: CircuitGraph.empty_list_to_none(
+        observables = OrderedDict()
+        for wire in sorted(self._grid):
+            observables[wire] = CircuitGraph.empty_list_to_none(
                 list(
                     filter(
                         lambda op: isinstance(op, qml.operation.Observable)
@@ -366,8 +367,6 @@ class CircuitGraph:
                     )
                 )
             )
-            for wire in self._grid
-        }
 
         return (
             [greedy_grid[wire] for wire in greedy_grid],
@@ -547,6 +546,11 @@ class CircuitDrawer:
             representation_grid.append_layer(representation_layer)
 
     def resolve_decorations(self, grid, representation_grid, decoration_indices):
+        print("Resolving decorations: ")
+        print("grid = ", grid)
+        print("representation_grid = ", representation_grid)
+        print("decoration_indices = ", decoration_indices)
+
         j = 0
         for i in range(grid.num_layers):
             layer_operators = set(grid.layer(i))
@@ -554,8 +558,10 @@ class CircuitDrawer:
             for op in layer_operators:
                 if op is None:
                     continue
-
-                if op.num_wires > 1:
+                
+                print("op = ", op)
+                print("op.num_wires = ", op.num_wires)
+                if len(op.wires) > 1:
                     decoration_layer = [""] * grid.num_wires
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
@@ -577,14 +583,14 @@ class CircuitDrawer:
     def justify_and_prepend(self, x, prepend_str, suffix_str, max_width, pad_str):
         return prepend_str + str.ljust(x, max_width, pad_str) + suffix_str
 
-    def resolve_padding(self, representation_grid, pad_str, prepend_str, suffix_str, skip_prepend_idx):
+    def resolve_padding(self, representation_grid, pad_str, skip_prepend_pad_str, prepend_str, suffix_str, skip_prepend_idx):
         for i in range(representation_grid.num_layers):
             layer = representation_grid.layer(i)
             max_width = max(map(len, layer))
 
             if i in skip_prepend_idx:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: self.justify_and_prepend(x, "", "", max_width, pad_str), layer))
+                    i, list(map(lambda x: self.justify_and_prepend(x, "", "", max_width, skip_prepend_pad_str), layer))
                 )
             else:
                 representation_grid.replace_layer(
@@ -600,6 +606,20 @@ class CircuitDrawer:
         self.observable_representation_grid = Grid()
         self.operator_decoration_indices = []
         self.observable_decoration_indices = []
+
+        # Move intertwined multi-wire gates
+        # for i in range(self.operator_grid.num_layers):
+        #     layer_ops = set(self.operator_grid.layer(i))
+
+        #     for op in layer_ops:
+        #         if op is None:
+        #             continue
+        #
+        #         if op.num_wires > 1:
+        #             sorted_wires = layer[i].wires.copy()
+        #             sorted_wires.sort()
+
+        #             candidate_wires = range(sorted_wires[0] + 1, sorted_wires[-1])
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
@@ -618,6 +638,7 @@ class CircuitDrawer:
         self.resolve_padding(
             self.operator_representation_grid,
             charset.WIRE,
+            charset.WIRE,
             "",
             2 * charset.WIRE,
             self.operator_decoration_indices,
@@ -625,7 +646,8 @@ class CircuitDrawer:
         self.resolve_padding(
             self.observable_representation_grid,
             " ",
-            charset.WIRE + charset.MEASUREMENT + " ",
+            charset.WIRE,
+            charset.MEASUREMENT + " ",
             " ",
             self.observable_decoration_indices,
         )
@@ -637,7 +659,7 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            print("{:2d}: ".format(i), end="")
+            print("{:2d}: {}".format(i, 2*self.charset.WIRE), end="")
 
             for s in wire:
                 print(s, end="")
@@ -649,7 +671,6 @@ class CircuitDrawer:
 
 
 # TODO:
-# * QubitUnitary, Hermitian support -> move matrices to end of circuit and replace with U1, U2, ... H1, H2, ...
 # * Move crossing multi-wire gates to different layers
 # * Support multi-wire measurements
 # * Move to QNode, enable printing of unevaluated QNodes
