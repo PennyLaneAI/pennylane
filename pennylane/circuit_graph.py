@@ -318,7 +318,7 @@ class CircuitGraph:
 
     def greedy_layers(self):
         l = 0
-        
+
         greedy_grid = OrderedDict()
         for key in sorted(self._grid):
             greedy_grid[key] = self._grid[key]
@@ -456,11 +456,11 @@ class Grid:
 class UnicodeCharSet:
     WIRE = "─"
     MEASUREMENT = "┤"
-    TOP_MULTI_LINE_GATE_CONNECTOR = "╗"
-    MIDDLE_MULTI_LINE_GATE_CONNECTOR = "╣"
-    BOTTOM_MULTI_LINE_GATE_CONNECTOR = "╝"
+    TOP_MULTI_LINE_GATE_CONNECTOR = "╔"
+    MIDDLE_MULTI_LINE_GATE_CONNECTOR = "╠"
+    BOTTOM_MULTI_LINE_GATE_CONNECTOR = "╚"
     EMPTY_MULTI_LINE_GATE_CONNECTOR = "║"
-    CONTROL = "●"
+    CONTROL = "C"
     LANGLE = "⟨"
     RANGLE = "⟩"
 
@@ -478,10 +478,24 @@ class RepresentationResolver:
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
+        "QubitUnitary" : "U"
     }
 
     def __init__(self, charset=UnicodeCharSet):
         self.charset = charset
+        self._matrix_cache = []
+
+    def render_parameter(self, par):
+        if isinstance(par, qml.variable.Variable):
+            return par.render()
+
+        if isinstance(par, np.ndarray):
+            if not par in self._matrix_cache:
+                self._matrix_cache.append(par)
+
+            return "M{}".format(self._matrix_cache.index(par))
+
+        return str(par)
 
     def operation_representation(self, op, wire):
         name = op.name
@@ -495,15 +509,7 @@ class RepresentationResolver:
         if op.num_params == 0:
             return name
 
-        return "{}({})".format(
-            name,
-            ",".join(
-                [
-                    str(par) if not isinstance(par, qml.variable.Variable) else par.render()
-                    for par in op.params
-                ]
-            ),
-        )
+        return "{}({})".format(name, ",".join([self.render_parameter(par) for par in op.params]))
 
     def observable_representation(self, obs, wire):
         if obs.return_type == qml.operation.Expectation:
@@ -564,22 +570,25 @@ class CircuitDrawer:
                         else:
                             decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
 
-                    representation_grid.insert_layer(i + j + 1, decoration_layer)
-                    decoration_indices.append(i + j + 1)
+                    representation_grid.insert_layer(i + j, decoration_layer)
+                    decoration_indices.append(i + j)
                     j += 1
 
-    def resolve_padding(self, representation_grid, pad_str, prepend_str, skip_prepend_idx):
+    def justify_and_prepend(self, x, prepend_str, suffix_str, max_width, pad_str):
+        return prepend_str + str.ljust(x, max_width, pad_str) + suffix_str
+
+    def resolve_padding(self, representation_grid, pad_str, prepend_str, suffix_str, skip_prepend_idx):
         for i in range(representation_grid.num_layers):
             layer = representation_grid.layer(i)
             max_width = max(map(len, layer))
 
             if i in skip_prepend_idx:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: str.ljust(x, max_width, pad_str), layer))
+                    i, list(map(lambda x: self.justify_and_prepend(x, "", "", max_width, pad_str), layer))
                 )
             else:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: prepend_str + str.ljust(x, max_width, pad_str), layer))
+                    i, list(map(lambda x: self.justify_and_prepend(x, prepend_str, suffix_str, max_width, pad_str), layer))
                 )
 
     def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
@@ -609,6 +618,7 @@ class CircuitDrawer:
         self.resolve_padding(
             self.operator_representation_grid,
             charset.WIRE,
+            "",
             2 * charset.WIRE,
             self.operator_decoration_indices,
         )
@@ -616,6 +626,7 @@ class CircuitDrawer:
             self.observable_representation_grid,
             " ",
             charset.WIRE + charset.MEASUREMENT + " ",
+            " ",
             self.observable_decoration_indices,
         )
 
@@ -623,6 +634,8 @@ class CircuitDrawer:
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def render(self):
+        self._matrix_cache = []
+
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
@@ -631,7 +644,11 @@ class CircuitDrawer:
             for s in wire:
                 print(s, end="")
 
+            for idx, matrix in enumerate(self._matrix_cache):
+                print("M{} =\n{}\n".format(idx, matrix))
+
             print()
+
 
 # TODO:
 # * QubitUnitary, Hermitian support -> move matrices to end of circuit and replace with U1, U2, ... H1, H2, ...

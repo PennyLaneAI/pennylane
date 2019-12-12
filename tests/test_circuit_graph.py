@@ -91,7 +91,7 @@ def parameterized_qubit_circuit():
         qml.RY(c, wires=2)
         qml.RZ(b, wires=3)
         qml.RX(f, wires=2)
-        # qml.QubitUnitary(np.eye(2), wires=[2])
+        qml.QubitUnitary(np.eye(2), wires=[2])
         qml.Toffoli(wires=[0,2,1])
         qml.CZ(wires=[0, 1])
         qml.CZ(wires=[0, 2])
@@ -104,7 +104,7 @@ def parameterized_qubit_circuit():
             qml.expval(qml.PauliY(0)),
             qml.var(qml.Hadamard(wires=1)),
             qml.sample(qml.PauliX(2)),
-            # qml.expval(qml.Hermitian(np.eye(4), wires=[3, 4])),
+            qml.expval(qml.Hermitian(np.eye(4), wires=[3, 4])),
         ]
 
     return qfunc
