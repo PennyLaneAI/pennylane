@@ -634,8 +634,6 @@ class CircuitDrawer:
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def render(self):
-        self._matrix_cache = []
-
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
@@ -644,10 +642,10 @@ class CircuitDrawer:
             for s in wire:
                 print(s, end="")
 
-            for idx, matrix in enumerate(self._matrix_cache):
-                print("M{} =\n{}\n".format(idx, matrix))
-
             print()
+
+        for idx, matrix in enumerate(self.representation_resolver._matrix_cache):
+            print("M{} =\n{}\n".format(idx, matrix))
 
 
 # TODO:
