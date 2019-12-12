@@ -612,25 +612,15 @@ class CircuitDrawer:
                     i, list(map(lambda x: self.justify_and_prepend(x, prepend_str, suffix_str, max_width, pad_str), layer))
                 )
 
-    def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
-        self.charset = charset
-        self.representation_resolver = RepresentationResolver(charset)
-        self.operator_grid = Grid(raw_operator_grid)
-        self.observable_grid = Grid(raw_observable_grid)
-        self.operator_representation_grid = Grid()
-        self.observable_representation_grid = Grid()
-        self.operator_decoration_indices = []
-        self.observable_decoration_indices = []
-
-        # Move intertwined multi-wire gates
-        n = self.operator_grid.num_layers
+    def move_multi_wire_gates(self, operator_grid):# Move intertwined multi-wire gates
+        n = operator_grid.num_layers
         i = -1
         while i < n - 1:
             i += 1
 
-            this_layer = self.operator_grid.layer(i)
+            this_layer = operator_grid.layer(i)
             layer_ops = list(set(this_layer))
-            other_layer = [None] * self.operator_grid.num_wires
+            other_layer = [None] * operator_grid.num_wires
 
             for j in range(len(layer_ops)):
                 op = layer_ops[j]
@@ -660,12 +650,21 @@ class CircuitDrawer:
                             break
             
             if not all([item is None for item in other_layer]):
-                self.operator_grid.replace_layer(i, this_layer)
-                self.operator_grid.insert_layer(i, other_layer)
+                operator_grid.replace_layer(i, this_layer)
+                operator_grid.insert_layer(i, other_layer)
                 n += 1
 
-            if n > 20 or i > 20:
-                break
+    def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
+        self.charset = charset
+        self.representation_resolver = RepresentationResolver(charset)
+        self.operator_grid = Grid(raw_operator_grid)
+        self.observable_grid = Grid(raw_observable_grid)
+        self.operator_representation_grid = Grid()
+        self.observable_representation_grid = Grid()
+        self.operator_decoration_indices = []
+        self.observable_decoration_indices = []
+
+        self.move_multi_wire_gates(self.operator_grid)
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
