@@ -465,6 +465,7 @@ class UnicodeCharSet:
 
 
 class RepresentationResolver:
+    # Symbol for uncontrolled wires
     resolution_dict = {
         "PauliX": "X",
         "CNOT": "X",
@@ -477,22 +478,29 @@ class RepresentationResolver:
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
-        "QubitUnitary" : "U"
+        "CRot" : "Rot",
+    }
+
+    # Indices of control wires
+    control_dict = {
+        "CNOT" : [0],
+        "Toffoli" : [0, 1],
+        "CSWAP" : [0],
+        "CRX" : [0],
+        "CRY" : [0],
+        "CRZ" : [0],
+        "CRot" : [0],
+        "CZ" : [0],
     }
 
     def __init__(self, charset=UnicodeCharSet):
         self.charset = charset
-        self._matrix_cache = []
+        self._unitary_matrix_cache = []
+        self._hermitian_matrix_cache = []
 
     def render_parameter(self, par):
         if isinstance(par, qml.variable.Variable):
             return par.render()
-
-        if isinstance(par, np.ndarray):
-            if not par in self._matrix_cache:
-                self._matrix_cache.append(par)
-
-            return "M{}".format(self._matrix_cache.index(par))
 
         return str(par)
 
@@ -502,11 +510,25 @@ class RepresentationResolver:
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
-        if op.num_wires > 1 and wire != op.wires[-1]:
+        if op.name in self.control_dict and wire in [op.wires[control_idx] for control_idx in self.control_dict[op.name]]:
             return self.charset.CONTROL
 
         if op.num_params == 0:
             return name
+
+        if op.name == "QubitUnitary":
+            mat = op.params[0]
+            if not mat in self._unitary_matrix_cache:
+                self._unitary_matrix_cache.append(mat)
+
+            return "U{}".format(self._unitary_matrix_cache.index(mat))
+
+        if op.name == "Hermitian":
+            mat = op.params[0]
+            if not mat in self._hermitian_matrix_cache:
+                self._hermitian_matrix_cache.append(mat)
+
+            return "H{}".format(self._hermitian_matrix_cache.index(mat))
 
         return "{}({})".format(name, ",".join([self.render_parameter(par) for par in op.params]))
 
@@ -546,11 +568,6 @@ class CircuitDrawer:
             representation_grid.append_layer(representation_layer)
 
     def resolve_decorations(self, grid, representation_grid, decoration_indices):
-        print("Resolving decorations: ")
-        print("grid = ", grid)
-        print("representation_grid = ", representation_grid)
-        print("decoration_indices = ", decoration_indices)
-
         j = 0
         for i in range(grid.num_layers):
             layer_operators = set(grid.layer(i))
@@ -559,8 +576,6 @@ class CircuitDrawer:
                 if op is None:
                     continue
                 
-                print("op = ", op)
-                print("op.num_wires = ", op.num_wires)
                 if len(op.wires) > 1:
                     decoration_layer = [""] * grid.num_wires
                     sorted_wires = op.wires.copy()
@@ -608,23 +623,49 @@ class CircuitDrawer:
         self.observable_decoration_indices = []
 
         # Move intertwined multi-wire gates
-        # for i in range(self.operator_grid.num_layers):
-        #     layer_ops = set(self.operator_grid.layer(i))
+        n = self.operator_grid.num_layers
+        i = -1
+        while i < n - 1:
+            i += 1
 
-        #     for j in range(len(layer_ops)):
-        #         op = layer_ops[j]
+            this_layer = self.operator_grid.layer(i)
+            layer_ops = list(set(this_layer))
+            other_layer = [None] * self.operator_grid.num_wires
 
-        #         if op is None:
-        #             continue
+            for j in range(len(layer_ops)):
+                op = layer_ops[j]
+
+                if op is None:
+                    continue
         
-        #         if len(op.wires) > 1:
-        #             sorted_wires = op.wires.copy()
-        #             sorted_wires.sort()
+                if len(op.wires) > 1:
+                    sorted_wires = op.wires.copy()
+                    sorted_wires.sort()
 
-        #             candidate_wires = range(sorted_wires[0] + 1, sorted_wires[-1])
+                    blocked_wires = range(sorted_wires[0] + 1, sorted_wires[-1])
 
-        #             for wire in candidate_wires:
+                    for k in range(j+1, len(layer_ops)):
+                        other_op = layer_ops[k]
 
+                        if other_op is None:
+                            continue
+
+                        if not set(other_op.wires).isdisjoint(set(blocked_wires)):
+                            op_indices = [idx for idx, layer_op in enumerate(this_layer) if layer_op == op]
+
+                            for l in op_indices:
+                                other_layer[l] = op
+                                this_layer[l] = None
+
+                            break
+            
+            if not all([item is None for item in other_layer]):
+                self.operator_grid.replace_layer(i, this_layer)
+                self.operator_grid.insert_layer(i, other_layer)
+                n += 1
+
+            if n > 20 or i > 20:
+                break
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
@@ -671,8 +712,11 @@ class CircuitDrawer:
 
             print()
 
-        for idx, matrix in enumerate(self.representation_resolver._matrix_cache):
-            print("M{} =\n{}\n".format(idx, matrix))
+        for idx, matrix in enumerate(self.representation_resolver._unitary_matrix_cache):
+            print("U{} =\n{}\n".format(idx, matrix))
+
+        for idx, matrix in enumerate(self.representation_resolver._hermitian_matrix_cache):
+            print("H{} =\n{}\n".format(idx, matrix))
 
 
 # TODO:
