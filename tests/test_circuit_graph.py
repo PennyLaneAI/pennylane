@@ -97,8 +97,10 @@ def parameterized_qubit_circuit():
         qml.CZ(wires=[0, 2])
         qml.CNOT(wires=[2, 1])
         qml.CNOT(wires=[0, 2])
+        qml.SWAP(wires=[0, 2])
         qml.CNOT(wires=[1, 3])
         qml.RZ(b, wires=3)
+        qml.CSWAP(wires=[4, 0, 1])
 
         return [
             qml.expval(qml.PauliY(0)),
