@@ -455,10 +455,10 @@ class Grid:
 class UnicodeCharSet:
     WIRE = "─"
     MEASUREMENT = "┤"
-    TOP_MULTI_LINE_GATE_CONNECTOR = "╔"
-    MIDDLE_MULTI_LINE_GATE_CONNECTOR = "╠"
-    BOTTOM_MULTI_LINE_GATE_CONNECTOR = "╚"
-    EMPTY_MULTI_LINE_GATE_CONNECTOR = "║"
+    TOP_MULTI_LINE_GATE_CONNECTOR = "╭"
+    MIDDLE_MULTI_LINE_GATE_CONNECTOR = "├"
+    BOTTOM_MULTI_LINE_GATE_CONNECTOR = "╰"
+    EMPTY_MULTI_LINE_GATE_CONNECTOR = "│"
     CONTROL = "C"
     LANGLE = "⟨"
     RANGLE = "⟩"
@@ -611,15 +611,20 @@ class CircuitDrawer:
         # for i in range(self.operator_grid.num_layers):
         #     layer_ops = set(self.operator_grid.layer(i))
 
-        #     for op in layer_ops:
+        #     for j in range(len(layer_ops)):
+        #         op = layer_ops[j]
+
         #         if op is None:
         #             continue
-        #
-        #         if op.num_wires > 1:
-        #             sorted_wires = layer[i].wires.copy()
+        
+        #         if len(op.wires) > 1:
+        #             sorted_wires = op.wires.copy()
         #             sorted_wires.sort()
 
         #             candidate_wires = range(sorted_wires[0] + 1, sorted_wires[-1])
+
+        #             for wire in candidate_wires:
+
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
