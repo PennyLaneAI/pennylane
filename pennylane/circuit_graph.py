@@ -479,6 +479,12 @@ class RepresentationResolver:
         "CRY": "RY",
         "CRZ": "RZ",
         "CRot" : "Rot",
+        "Beamsplitter" : "BS",
+        "Squeezing" : "S",
+        "TwoModeSqueezing" : "S",
+        "Displacement" : "D", 
+        "NumberOperator" : "n",
+        "Rotation" : "R",
     }
 
     # Indices of control wires
@@ -530,7 +536,7 @@ class RepresentationResolver:
 
             return "H{}".format(self._hermitian_matrix_cache.index(mat))
 
-        return "{}({})".format(name, ",".join([self.render_parameter(par) for par in op.params]))
+        return "{}({})".format(name, ", ".join([self.render_parameter(par) for par in op.params]))
 
     def observable_representation(self, obs, wire):
         if obs.return_type == qml.operation.Expectation:
