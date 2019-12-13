@@ -489,6 +489,7 @@ class RepresentationResolver:
         "ControlledPhase" : "R",
         "ThermalState" : "Thermal",
         "GaussianState" : "Gaussian",
+        "QuadraticPhase" : "QuadPhase",
     }
 
     # Indices of control wires
@@ -771,3 +772,4 @@ class CircuitDrawer:
 # TODO:
 # * Test crossing multi-wire gates to different layers
 # * Move to QNode, enable printing of unevaluated QNodes
+# * Fix multi wire gate moving
