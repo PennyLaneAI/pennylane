@@ -111,6 +111,35 @@ def parameterized_qubit_circuit():
 
     return qfunc
 
+@pytest.fixture
+def parameterized_cv_circuit():
+    def qfunc(a, b, c, d, e, f):
+        qml.Rotation(a, wires=0)
+        qml.Rotation(b, wires=1)
+        qml.Beamsplitter(d, 1, wires=[0, 1])
+        qml.Beamsplitter(e, 1, wires=[1, 2])
+        qml.Displacement(f, 0, wires=[3])
+        qml.Displacement(f, 0, wires=[2])
+        qml.Displacement(f, 0, wires=[1])
+        qml.Rotation(a, wires=1)
+        qml.Rotation(b, wires=2)
+        qml.Beamsplitter(d, 1, wires=[1, 2])
+        qml.Beamsplitter(e, 1, wires=[2, 3])
+        qml.Squeezing(2.3, 0, wires=[0])
+        qml.Squeezing(2.3, 0, wires=[2])
+        qml.Beamsplitter(d, 1, wires=[1, 2])
+        qml.Beamsplitter(e, 1, wires=[2, 3])
+        qml.TwoModeSqueezing(2, 2, wires=[3, 1])
+
+        return [
+            qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
+            qml.expval(qml.ops.X(wires=1)),
+            qml.var(qml.ops.NumberOperator(wires=2)),
+            qml.expval(qml.ops.NumberOperator(wires=3)),
+        ]
+
+    return qfunc
+
 
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
@@ -250,6 +279,18 @@ class TestCircuitGraphDrawing:
 
         dev = qml.device("default.qubit", wires=5)
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
+        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        qnode.circuit.render()
+        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.circuit.render()
+
+        raise Exception()
+
+    def test_simple_cv_circuit(self, parameterized_cv_circuit):
+        """A test of the different layers, their successors and ancestors using a simple circuit"""
+
+        dev = qml.device("default.gaussian", wires=4)
+        qnode = qml.QNode(parameterized_cv_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
         qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
