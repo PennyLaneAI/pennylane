@@ -323,8 +323,8 @@ class CircuitGraph:
         for key in sorted(self._grid):
             greedy_grid[key] = self._grid[key]
 
-        greedy_grid = {
-            wire: list(
+        for wire in greedy_grid:
+            greedy_grid[wire] = list(
                 filter(
                     lambda op: not (
                         isinstance(op, qml.operation.Observable) and op.return_type is not None
@@ -332,8 +332,6 @@ class CircuitGraph:
                     greedy_grid[wire],
                 )
             )
-            for wire in greedy_grid
-        }
 
         while True:
             layer_ops = {
@@ -351,7 +349,7 @@ class CircuitGraph:
                     continue
 
                 # push back to next layer if not all args wires are there yet
-                if op.num_wires > num_ops[op]:
+                if len(op.wires) > num_ops[op]:
                     greedy_grid[wire].insert(l, None)
 
             l += 1
@@ -705,7 +703,15 @@ class CircuitDrawer:
         self.operator_decoration_indices = []
         self.observable_decoration_indices = []
 
+        # print("Before")
+        # for i in range(self.operator_grid.num_layers):
+        #     print("Layer ", i, " = ", self.operator_grid.layer(i))
+
         self.move_multi_wire_gates(self.operator_grid)
+
+        # print("After")
+        # for i in range(self.operator_grid.num_layers):
+        #     print("Layer ", i, " = ", self.operator_grid.layer(i))
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
