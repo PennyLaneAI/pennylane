@@ -462,6 +462,8 @@ class UnicodeCharSet:
     CONTROL = "C"
     LANGLE = "⟨"
     RANGLE = "⟩"
+    VERTICAL_LINE = "│"
+    CROSSED_LINES = "╳"
 
 
 class RepresentationResolver:
@@ -535,6 +537,11 @@ class RepresentationResolver:
                 self._hermitian_matrix_cache.append(mat)
 
             return "H{}".format(self._hermitian_matrix_cache.index(mat))
+
+        if op.name == "FockStateProjector":
+            n_str = ",".join([str(n) for n in op.params[0]])
+
+            return self.charset.VERTICAL_LINE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.VERTICAL_LINE
 
         return "{}({})".format(name, ", ".join([self.render_parameter(par) for par in op.params]))
 

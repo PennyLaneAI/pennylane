@@ -134,8 +134,7 @@ def parameterized_cv_circuit():
         return [
             qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
             qml.expval(qml.ops.X(wires=1)),
-            qml.var(qml.ops.NumberOperator(wires=2)),
-            qml.expval(qml.ops.NumberOperator(wires=3)),
+            qml.expval(qml.ops.FockStateProjector(np.array([1, 5]), wires=[2,3])),
         ]
 
     return qfunc
