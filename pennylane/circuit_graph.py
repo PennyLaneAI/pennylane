@@ -487,6 +487,10 @@ class RepresentationResolver:
         "Displacement" : "D", 
         "NumberOperator" : "n",
         "Rotation" : "R",
+        "ControlledAddition" : "Add",
+        "ControlledPhase" : "R",
+        "ThermalState" : "Thermal",
+        "GaussianState" : "Gaussian",
     }
 
     # Indices of control wires
@@ -499,10 +503,13 @@ class RepresentationResolver:
         "CRZ" : [0],
         "CRot" : [0],
         "CZ" : [0],
+        "ControlledAddition" : [0],
+        "ControlledPhase" : [0],
     }
 
     def __init__(self, charset=UnicodeCharSet):
         self.charset = charset
+        self._matrix_cache = []
         self._unitary_matrix_cache = []
         self._hermitian_matrix_cache = []
 
@@ -511,6 +518,16 @@ class RepresentationResolver:
             return par.render()
 
         return str(par)
+
+    @staticmethod
+    def append_array_if_not_in_list(element, target_list):
+        for idx, target in enumerate(target_list):
+            if np.array_equal(target, element):
+                return idx
+
+        target_list.append(element)
+
+        return len(target_list) - 1
 
     def operation_representation(self, op, wire):
         name = op.name
@@ -524,19 +541,30 @@ class RepresentationResolver:
         if op.num_params == 0:
             return name
 
+        if op.name in ["GaussianState"]:
+            param_strings = []
+            for param in op.params:
+                if isinstance(param, np.ndarray):
+                    idx = RepresentationResolver.append_array_if_not_in_list(param, self._matrix_cache)
+                    
+                    param_strings.append("M{}".format(idx))
+                else:
+                    param_strings.append(self.render_parameter(param))
+
+            return "{}({})".format(name, ", ".join(param_strings))
+
+
         if op.name == "QubitUnitary":
             mat = op.params[0]
-            if not mat in self._unitary_matrix_cache:
-                self._unitary_matrix_cache.append(mat)
+            idx = RepresentationResolver.append_array_if_not_in_list(mat, self._unitary_matrix_cache)
 
-            return "U{}".format(self._unitary_matrix_cache.index(mat))
+            return "U{}".format(idx)
 
         if op.name == "Hermitian":
             mat = op.params[0]
-            if not mat in self._hermitian_matrix_cache:
-                self._hermitian_matrix_cache.append(mat)
+            idx = RepresentationResolver.append_array_if_not_in_list(mat, self._hermitian_matrix_cache)
 
-            return "H{}".format(self._hermitian_matrix_cache.index(mat))
+            return "H{}".format(idx)
 
         if op.name == "FockStateProjector":
             n_str = ",".join([str(n) for n in op.params[0]])
@@ -730,8 +758,10 @@ class CircuitDrawer:
         for idx, matrix in enumerate(self.representation_resolver._hermitian_matrix_cache):
             print("H{} =\n{}\n".format(idx, matrix))
 
+        for idx, matrix in enumerate(self.representation_resolver._matrix_cache):
+            print("M{} =\n{}\n".format(idx, matrix))
+
 
 # TODO:
-# * Move crossing multi-wire gates to different layers
-# * Support multi-wire measurements
+# * Test crossing multi-wire gates to different layers
 # * Move to QNode, enable printing of unevaluated QNodes

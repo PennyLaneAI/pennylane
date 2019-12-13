@@ -114,26 +114,28 @@ def parameterized_qubit_circuit():
 @pytest.fixture
 def parameterized_cv_circuit():
     def qfunc(a, b, c, d, e, f):
+        qml.ThermalState(3, wires=[1])
+        qml.GaussianState(np.array([1, 1, 1, 2, 2, 3, 3, 3]), 2 * np.eye(8), wires=[0, 1, 2, 3])
         qml.Rotation(a, wires=0)
         qml.Rotation(b, wires=1)
         qml.Beamsplitter(d, 1, wires=[0, 1])
         qml.Beamsplitter(e, 1, wires=[1, 2])
         qml.Displacement(f, 0, wires=[3])
-        qml.Displacement(f, 0, wires=[2])
-        qml.Displacement(f, 0, wires=[1])
-        qml.Rotation(a, wires=1)
-        qml.Rotation(b, wires=2)
-        qml.Beamsplitter(d, 1, wires=[1, 2])
-        qml.Beamsplitter(e, 1, wires=[2, 3])
         qml.Squeezing(2.3, 0, wires=[0])
         qml.Squeezing(2.3, 0, wires=[2])
         qml.Beamsplitter(d, 1, wires=[1, 2])
         qml.Beamsplitter(e, 1, wires=[2, 3])
         qml.TwoModeSqueezing(2, 2, wires=[3, 1])
+        qml.ControlledPhase(2.3, wires=[2, 1])
+        qml.ControlledAddition(2, wires=[0, 3])
+        qml.QuadraticPhase(4, wires=[0])
+        #qml.Kerr(2, wires=[1])
+        #qml.CubicPhase(2, wires=[2])
+        #qml.CrossKerr(2, wires=[3, 1])
 
         return [
             qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
-            qml.expval(qml.ops.X(wires=1)),
+            qml.expval(qml.ops.QuadOperator(4, wires=1)),
             qml.expval(qml.ops.FockStateProjector(np.array([1, 5]), wires=[2,3])),
         ]
 
