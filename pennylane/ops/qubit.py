@@ -94,9 +94,9 @@ class PauliY(Observable, Operation):
     @staticmethod
     def diagonalizing_gates():
         r"""Diagonalize PauliY.
-        
+
         Returns:
-            list(qml.Operation): A list of gates that diagonalize PauliY in the 
+            list(qml.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
         return [Rot(0, np.pi / 2, 3 * np.pi / 2, wires=0)]
