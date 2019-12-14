@@ -19,7 +19,10 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import Any, Observable, Operation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import OperationRecorder
 
 
@@ -91,19 +94,12 @@ class PauliY(Observable, Operation):
     @staticmethod
     def diagonalizing_gates():
         r"""Diagonalize PauliY.
-
-        Calculate the eigenvalues and eigenvectors of PauliY.
-
+        
         Returns:
-            list(array[float]): A list of the form [eigenvalues, eigenvectors].
-            The eigenvalues are stored as the diagonal entries of a matrix, and
-            the eigenvectors are the columns of the second matrix in the same ordering.
+            list(qml.Operation): A list of gates that diagonalize PauliY in the 
+                computational basis.
         """
-        eigensystem = np.linalg.eigh(PauliY.matrix())
-        eigenvalues = np.diag(eigensystem[0])
-        eigenvectors = eigensystem[1]
-
-        return [eigenvalues, eigenvectors]
+        return [Rot(0, np.pi / 2, 3 * np.pi / 2, wires=0)]
 
 
 class PauliZ(Observable, Operation):
@@ -451,7 +447,11 @@ class Rot(Operation):
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
-        decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
+        decomp_ops = [
+            RZ(phi, wires=wires),
+            RY(theta, wires=wires),
+            RZ(omega, wires=wires),
+        ]
         return decomp_ops
 
 
@@ -501,7 +501,10 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(theta, wires):
@@ -560,7 +563,10 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(theta, wires):
@@ -617,7 +623,10 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(lam, wires):
