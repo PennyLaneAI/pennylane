@@ -27,7 +27,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import Device, DeviceError
+from pennylane import QubitDevice, DeviceError
 from pennylane.operation import Operation
 
 
@@ -253,7 +253,7 @@ def identity(*_):
 #========================================================
 
 
-class DefaultQubit(Device):
+class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
     Args:

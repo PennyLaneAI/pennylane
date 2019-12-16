@@ -564,6 +564,7 @@ class BaseQNode:
             self._construct(args, kwargs)
 
         self.device.reset()
+        print(self.device.pre_measure())
         ret = self.device.execute(
             self.circuit.operations, self.circuit.observables, self.variable_deps
         )
