@@ -736,15 +736,7 @@ class CircuitDrawer:
         self.operator_decoration_indices = []
         self.observable_decoration_indices = []
 
-        print("Before")
-        for i in range(self.operator_grid.num_layers):
-            print("Layer ", i, " = ", self.operator_grid.layer(i))
-
         self.move_multi_wire_gates(self.operator_grid)
-
-        print("After")
-        for i in range(self.operator_grid.num_layers):
-            print("Layer ", i, " = ", self.operator_grid.layer(i))
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
