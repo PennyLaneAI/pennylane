@@ -20,7 +20,7 @@ import numpy as np
 
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder
+from pennylane.utils import OperationRecorder, pauli_eigs
 
 
 class Hadamard(Observable, Operation):
@@ -40,6 +40,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class PauliX(Observable, Operation):
@@ -59,6 +60,7 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class PauliY(Observable, Operation):
@@ -78,6 +80,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class PauliZ(Observable, Operation):
@@ -97,6 +100,7 @@ class PauliZ(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class S(Operation):
@@ -907,35 +911,30 @@ class Hermitian(Observable):
     num_params = 1
     par_domain = "A"
     grad_method = "F"
+    _eigs = {}
 
-    def __init__(self, *params, wires=None, do_queue=True)
-        super().__init__(*params, wires, do_queue)
+    @classmethod
+    def eigvals(cls, Hmat):
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in cls._eigs:
+            # store the eigenvalues and eigenvectors corresponding to H in a
+            # dictionary, so that they do not need to be calculated later
+            w, U = np.linalg.eigh(Hmat)
+            cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
 
-        self._eigvals = None
-        self._eigvecs = None
+        # retrieve eigenvalues
+        return cls._eigs[Hkey]["eigval"]
 
-    @property
-    def eigvals(self):
-
-        # Compute both eigenvalues and eigenvectors for possible future convenience
-        if not self._eigvals:
-            eigvals, eigvecs = np.linalg.eigh(self.params[0])
-            self._eigvecs = eigvecs
-            self._eigvals = eigvals
-
-        return self._eigvals
-
-    @property
-    def diagonalizing_gates(self):
-
-        # Compute both eigenvalues and eigenvectors for possible future convenience
-        if not self._eigvecs:
-            eigvals, eigvecs = np.linalg.eigh(self.params[0])
-            self._eigvecs = eigvecs
-            self._eigvals = eigvals
-
+    @classmethod
+    def diagonalizing_gates(cls, Hmat):
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in cls._eigs:
+            # store the eigenvalues and eigenvectors corresponding to H in a
+            # dictionary, so that they do not need to be calculated later
+            w, U = np.linalg.eigh(Hmat)
+            cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
         return [
-            QubitUnitary([self._eigvecs.conj().t]), self.wires)
+            QubitUnitary([cls._eigs[Hkey]["eigvec"].conj().t], self.wires)
         ]
 
 
