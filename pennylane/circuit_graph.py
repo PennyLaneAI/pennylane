@@ -392,7 +392,7 @@ class CircuitGraph:
 
         drawer = CircuitDrawer(grid, obs)
 
-        drawer.render()
+        return drawer.render()
 
 
 class Grid:
@@ -812,25 +812,32 @@ class CircuitDrawer:
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def render(self):
+        rendered_string = ""
+
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            print("{:2d}: {}".format(i, 2 * self.charset.WIRE), end="")
+            rendered_string += "{:2d}: {}".format(i, 2 * self.charset.WIRE)
 
             for s in wire:
-                print(s, end="")
+                rendered_string += s
 
-            print()
+            rendered_string += "\n"
 
-        for idx, matrix in enumerate(self.representation_resolver._unitary_matrix_cache):
-            print("U{} =\n{}\n".format(idx, matrix))
+        for symbol, cache in {
+            "U" : self.representation_resolver._unitary_matrix_cache,
+            "H" : self.representation_resolver._hermitian_matrix_cache,
+            "M" : self.representation_resolver._matrix_cache
+        }.items():
+            for idx, matrix in enumerate(cache):
+                rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
 
-        for idx, matrix in enumerate(self.representation_resolver._hermitian_matrix_cache):
-            print("H{} =\n{}\n".format(idx, matrix))
-
-        for idx, matrix in enumerate(self.representation_resolver._matrix_cache):
-            print("M{} =\n{}\n".format(idx, matrix))
+        return rendered_string
 
 
 # TODO:
 # * Move to QNode, enable printing of unevaluated QNodes
+# * Rename layers and greedy_layers to something more appropriate
+# * Write tests
+# * Add changelog entry
+# * Add doc

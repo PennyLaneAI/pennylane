@@ -305,9 +305,9 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.qubit", wires=5)
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
 
         raise Exception()
 
@@ -317,9 +317,9 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.qubit", wires=8)
         qnode = qml.QNode(parameterized_wide_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
 
         raise Exception()
 
@@ -329,9 +329,9 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.gaussian", wires=4)
         qnode = qml.QNode(parameterized_cv_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
 
         raise Exception()
 
@@ -341,9 +341,9 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.gaussian", wires=8)
         qnode = qml.QNode(parameterized_wide_cv_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        qnode.circuit.render()
+        print(qnode.circuit.render())
 
         raise Exception()
 
@@ -353,15 +353,24 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.qubit", wires=8)
 
         @qml.qnode(dev)
-        def circuit(weights):
+        def circuit(a, b, weights, c, d, other_weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=range(8))
+            qml.RX(a, wires=[0])
+            qml.RX(b, wires=[1])
+            qml.RX(c, wires=[2])
+            qml.RX(d, wires=[3])
+            [qml.RX(other_weights[i], wires=[i]) for i, weight in enumerate(other_weights)]
 
             return [qml.var(qml.PauliX(i)) for i in range(8)]
 
-        weights = qml.init.strong_ent_layers_uniform(5, 8)
+        weights = qml.init.strong_ent_layers_uniform(3, 8)
 
-        circuit(weights)
+        circuit._construct((2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4])), {})
 
-        circuit.circuit.render()
+        print(circuit.circuit.render())
+
+        circuit(2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4]))
+
+        # print(circuit.circuit.render())
 
         raise Exception()

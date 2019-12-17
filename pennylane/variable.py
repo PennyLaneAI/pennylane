@@ -92,10 +92,11 @@ class Variable:
     )
     kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
 
-    def __init__(self, idx, name=None):
+    def __init__(self, idx, name=None, is_kwarg=False):
         self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter name
         self.mult = 1  #: int, float: parameter scalar multiplier
+        self.is_kwarg = is_kwarg
 
     def __str__(self):
         temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
@@ -132,7 +133,7 @@ class Variable:
             float: current value of the Variable
         """
         # pylint: disable=unsubscriptable-object
-        if self.name is None:
+        if not self.is_kwarg:
             # The variable is a placeholder for a positional argument
             return Variable.free_param_values[self.idx] * self.mult
 
@@ -141,21 +142,21 @@ class Variable:
         return values[self.idx] * self.mult
 
     def render(self):
+        if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
+            return str(round(self.val, 3))
+
+        if not self.is_kwarg and Variable.free_param_values is not None and len(Variable.free_param_values) > self.idx:
+            return str(round(self.val, 3))
+
         if self.name is None:
-            if Variable.free_param_values is not None and len(Variable.free_param_values) > self.idx:
-                return str(round(self.val, 2))
+            if self.mult != 1:
+                return "{}*#{}".format(self.mult, self.idx)
             else:
-                if self.mult != 1:
-                    return "{}*#{}".format(self.mult, self.idx)
-                else:
-                    return "#{}".format(self.idx)
+                return "#{}".format(self.idx)
         else:
-            if Variable.kwarg_values and self.name in Variable.kwarg_values:
-                return str(self.val)
+            if self.mult != 1:
+                return "{}*{}".format(self.mult, self.name)
             else:
-                if self.mult != 1:
-                    return "{}*{}".format(self.mult, self.name)
-                else:
-                    return self.name
+                return self.name
 
 

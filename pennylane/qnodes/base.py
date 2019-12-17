@@ -330,8 +330,22 @@ class BaseQNode:
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches
 
-        # flatten the args, replace each argument with a Variable instance carrying a unique index
-        arg_vars = [Variable(idx) for idx, _ in enumerate(_flatten(args))]
+        # flatten the args, replace each argument with a Variable instance carrying a unique index and name
+        full_argspec = inspect.getfullargspec(self.func)
+        variable_name_strings = []
+
+        for variable_name, variable_value in zip(full_argspec.args, args):
+            if isinstance(variable_value, np.ndarray):
+                variable_name_string = np.empty_like(variable_value, dtype=object)
+
+                for index in np.ndindex(*variable_name_string.shape):
+                    variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
+            else:
+                variable_name_string = variable_name
+
+            variable_name_strings.append(variable_name_string)
+
+        arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
         # arrange the newly created Variables in the nested structure of args
         arg_vars = unflatten(arg_vars, args)
@@ -357,7 +371,7 @@ class BaseQNode:
                 # must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
                 kwarg_vars = {}
                 for key, val in kwargs.items():
-                    temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
+                    temp = [Variable(idx, name=key, is_kwarg=True) for idx, _ in enumerate(_flatten(val))]
                     kwarg_vars[key] = unflatten(temp, val)
 
                 res = self.func(*arg_vars, **kwarg_vars)
