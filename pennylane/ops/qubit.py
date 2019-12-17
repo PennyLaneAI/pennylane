@@ -908,6 +908,36 @@ class Hermitian(Observable):
     par_domain = "A"
     grad_method = "F"
 
+    def __init__(self, *params, wires=None, do_queue=True)
+        super().__init__(*params, wires, do_queue)
+
+        self._eigvals = None
+        self._eigvecs = None
+
+    @property
+    def eigvals(self):
+
+        # Compute both eigenvalues and eigenvectors for possible future convenience
+        if not self._eigvals:
+            eigvals, eigvecs = np.linalg.eigh(self.params[0])
+            self._eigvecs = eigvecs
+            self._eigvals = eigvals
+
+        return self._eigvals
+
+    @property
+    def diagonalizing_gates(self):
+
+        # Compute both eigenvalues and eigenvectors for possible future convenience
+        if not self._eigvecs:
+            eigvals, eigvecs = np.linalg.eigh(self.params[0])
+            self._eigvecs = eigvecs
+            self._eigvals = eigvals
+
+        return [
+            QubitUnitary([self._eigvecs.conj().t]), self.wires)
+        ]
+
 
 ops = {
     "Hadamard",

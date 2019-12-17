@@ -335,3 +335,14 @@ class OperationRecorder:
                 output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
 
         return output
+
+    @functools.lru_cache()
+    def pauli_eigs(n):
+        r"""Returns the eigenvalues for :math:`A^{\otimes n}`,
+        where :math:`A` is any operator that shares eigenvalues
+        with the Pauli matrices ("standard observables").
+        """
+        if n == 1:
+            return np.array([1, -1])
+        return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
+

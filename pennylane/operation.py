@@ -108,7 +108,7 @@ import numpy as np
 
 import pennylane as qml
 
-from .utils import _flatten, _unflatten
+from .utils import _flatten, _unflatten, pauli_eigs
 from .variable import Variable
 
 
@@ -712,6 +712,32 @@ class Tensor(Observable):
         raise ValueError("Can only perform tensor products between observables.")
 
     __imatmul__ = __matmul__
+
+    @property
+    def eigvals(self):
+        standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
+
+        # observable should be Z^{\otimes n}
+        self._eigvals = pauli_eigs(len(wires))
+
+        # check if there are any non-standard observables (such as Identity)
+        if set(self.obs) - standard_observables:
+            # Tensor product of observables contains a mixture
+            # of standard and non-standard observables
+            self._eigvals = np.array([1])
+
+            # group the observables into subgroups, depending on whether
+            # they are in the standard observables or not.
+            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
+                if k:
+                    # Subgroup g contains only standard observables.
+                    self._eigvals = np.kron(self._eigvals, pauli_eigs(len(g)))
+                else:
+                    # Subgroup g contains only non-standard observables.
+                    for ns_obs in g:
+                        self._eigvals = np.kron(self._eigvals, ns_obs.eigvals)
+
+        return self._eigvals
 
 #=============================================================================
 # CV Operations and observables
