@@ -953,13 +953,55 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        node._construct([], {})
+        node._construct([], {"b" : 3})
 
         expected_kwarg_vars = {
             "a" : [Variable(0, "a", is_kwarg=True)],
             "b" : [Variable(0, "b", is_kwarg=True)],
             "c" : [Variable(0, "c", is_kwarg=True)],
             "d" : [Variable(0, "d", is_kwarg=True)],
+        }
+
+        assert not node.arg_vars
+
+        print(node.kwarg_vars)
+
+        for expected_key in expected_kwarg_vars:
+            print("expected_key = ", expected_key)
+            for var, expected in zip(qml.utils._flatten(node.kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
+                print("var = ", var)
+                print("expected = ", expected)
+                assert var == expected
+
+    def test_array_keyword_arguments(self, mock_device):
+        """Test that array keyword arguments are properly converted to Variable instances."""
+        def circuit(*, a=np.array([[1, 0], [0, 1]]), b=np.array([1,2,3])):
+            qml.RX(a[0, 0], wires=[0])
+            qml.RX(a[0, 1], wires=[0])
+            qml.RX(a[1, 0], wires=[0])
+            qml.RX(a[1, 1], wires=[0])
+            qml.RY(b[0], wires=[0])
+            qml.RY(b[1], wires=[0])
+            qml.RY(b[2], wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node._construct([], {"b" : np.array([6,7,8,9])})
+
+        expected_kwarg_vars = {
+            "a" : [
+                Variable(0, "a[0,0]", is_kwarg=True),
+                Variable(1, "a[0,1]", is_kwarg=True),
+                Variable(2, "a[1,0]", is_kwarg=True),
+                Variable(3, "a[1,1]", is_kwarg=True),
+            ],
+            "b" : [
+                Variable(0, "b[0]", is_kwarg=True),
+                Variable(1, "b[1]", is_kwarg=True),
+                Variable(2, "b[2]", is_kwarg=True),
+                Variable(3, "b[3]", is_kwarg=True),
+            ],
         }
 
         assert not node.arg_vars
