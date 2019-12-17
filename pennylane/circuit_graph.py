@@ -470,6 +470,7 @@ class RepresentationResolver:
         "PauliX": "X",
         "CNOT": "X",
         "Toffoli": "X",
+        "CSWAP" : "SWAP",
         "PauliY": "Y",
         "PauliZ": "Z",
         "CZ": "Z",
@@ -612,6 +613,35 @@ class CircuitDrawer:
         for i in range(grid.num_layers):
             layer_operators = set(grid.layer(i))
 
+            decoration_layer = [""] * grid.num_wires
+
+            for op in layer_operators:
+                if op is None:
+                    continue
+                
+                if len(op.wires) > 1:
+                    sorted_wires = op.wires.copy()
+                    sorted_wires.sort()
+
+                    decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
+                    decoration_layer[
+                        sorted_wires[-1]
+                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
+                    for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
+                        if k in sorted_wires:
+                            decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
+                        else:
+                            decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
+
+            representation_grid.insert_layer(i + j, decoration_layer)
+            decoration_indices.append(i + j)
+            j += 1
+
+    def resolve_decorations_separate(self, grid, representation_grid, decoration_indices):
+        j = 0
+        for i in range(grid.num_layers):
+            layer_operators = set(grid.layer(i))
+
             for op in layer_operators:
                 if op is None:
                     continue
@@ -722,7 +752,7 @@ class CircuitDrawer:
         self.resolve_decorations(
             self.operator_grid, self.operator_representation_grid, self.operator_decoration_indices
         )
-        self.resolve_decorations(
+        self.resolve_decorations_separate(
             self.observable_grid,
             self.observable_representation_grid,
             self.observable_decoration_indices,

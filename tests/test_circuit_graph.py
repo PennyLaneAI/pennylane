@@ -112,6 +112,24 @@ def parameterized_qubit_circuit():
     return qfunc
 
 @pytest.fixture
+def parameterized_wide_qubit_circuit():
+    def qfunc(a, b, c, d, e, f):
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=1)
+        [qml.CNOT(wires=[2*i, 2*i+1]) for i in range(4)]
+        [qml.CNOT(wires=[i, i+4]) for i in range(4)]
+        [qml.CSWAP(wires=[i+2, i, i+4]) for i in range(4)]
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=1)
+
+        return [
+            qml.expval(qml.Hermitian(np.eye(4), wires=[i, i+4]))
+            for i in range(4)
+        ]
+
+    return qfunc
+
+@pytest.fixture
 def parameterized_cv_circuit():
     def qfunc(a, b, c, d, e, f):
         qml.ThermalState(3, wires=[1])
@@ -280,6 +298,18 @@ class TestCircuitGraphDrawing:
 
         dev = qml.device("default.qubit", wires=5)
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
+        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+        qnode.circuit.render()
+        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.circuit.render()
+
+        raise Exception()
+
+    def test_wide_circuit(self, parameterized_wide_qubit_circuit):
+        """A test of the different layers, their successors and ancestors using a simple circuit"""
+
+        dev = qml.device("default.qubit", wires=8)
+        qnode = qml.QNode(parameterized_wide_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
         qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
