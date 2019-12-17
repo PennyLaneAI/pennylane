@@ -12,6 +12,8 @@
 
 ### Documentation
 
+* Improved documentation of ``AmplitudeEmbedding`` and ``BasisEmbedding`` templates.
+
 ### Bug fixes
 
 * Fixed a bug in `CVQNode._pd_analytic`, where non-descendant observables were not
@@ -23,7 +25,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Antal Száva
+Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva
 
 ---
 
