@@ -912,7 +912,7 @@ class TestQNodeVariableMap:
         for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
             assert var == expected
 
-        assert node.kwarg_vars is None
+        assert not node.kwarg_vars
 
     def test_array_arguments(self, mock_device):
         """Test that array arguments are properly converted to Variable instances."""
@@ -1014,6 +1014,34 @@ class TestQNodeVariableMap:
                 print("var = ", var)
                 print("expected = ", expected)
                 assert var == expected
+
+    def test_variadic_arguments(self, mock_device):
+        """Test that variadic arguments are properly converted to Variable instances."""
+        def circuit(a, *b):
+            qml.RX(a, wires=[0])
+            qml.RX(b[0], wires=[0])
+            qml.RX(b[1][1], wires=[0])
+            qml.RX(b[2], wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node._construct([0.1, 0.2, np.array([0, 1, 2, 3]), 0.5], {})
+
+        expected_arg_vars = [
+            Variable(0, "a"),
+            Variable(1, "b[0]"),
+            Variable(2, "b[1][0]"),
+            Variable(3, "b[1][1]"),
+            Variable(4, "b[1][2]"),
+            Variable(5, "b[1][3]"),
+            Variable(6, "b[2]"),
+        ]
+
+        assert not node.kwarg_vars
+
+        for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
+            assert var == expected
 
         
 

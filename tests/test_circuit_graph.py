@@ -309,8 +309,6 @@ class TestCircuitGraphDrawing:
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.render())
 
-        raise Exception()
-
     def test_wide_circuit(self, parameterized_wide_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
@@ -320,8 +318,6 @@ class TestCircuitGraphDrawing:
         print(qnode.circuit.render())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.render())
-
-        raise Exception()
 
     def test_simple_cv_circuit(self, parameterized_cv_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
@@ -333,8 +329,6 @@ class TestCircuitGraphDrawing:
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.render())
 
-        raise Exception()
-
     def test_wide_cv_circuit(self, parameterized_wide_cv_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
@@ -344,8 +338,6 @@ class TestCircuitGraphDrawing:
         print(qnode.circuit.render())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.render())
-
-        raise Exception()
 
     def test_template(self, parameterized_wide_cv_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
@@ -372,5 +364,3 @@ class TestCircuitGraphDrawing:
         circuit(2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4]))
 
         # print(circuit.circuit.render())
-
-        raise Exception()

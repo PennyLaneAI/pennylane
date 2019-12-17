@@ -338,6 +338,7 @@ class BaseQNode:
         print("_construct/kwargs = ", kwargs)
         print("_construct/full_argspec = ", full_argspec)
         print("_construct/self.mutable = ", self.mutable)
+        print("_construct/zip(full_argspec.args, args) = ", list(zip(full_argspec.args, args)))
 
         # args
         variable_name_strings = []
@@ -352,11 +353,29 @@ class BaseQNode:
 
             variable_name_strings.append(variable_name_string)
 
+        # varargs
+        len_diff = len(args) - len(full_argspec.args)
+        if len_diff > 0:
+            for idx, variable_value in enumerate(args[-len_diff:]):
+                variable_name = "{}[{}]".format(full_argspec.varargs, idx)
+
+                if isinstance(variable_value, np.ndarray):
+                    variable_name_string = np.empty_like(variable_value, dtype=object)
+
+                    for index in np.ndindex(*variable_name_string.shape):
+                        variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
+                else:
+                    variable_name_string = variable_name
+
+                variable_name_strings.append(variable_name_string)
+
+        print("_construct/variable_name_strings = ", variable_name_strings)
         self.arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(self.arg_vars)
         # arrange the newly created Variables in the nested structure of args
         self.arg_vars = unflatten(self.arg_vars, args)
 
+        print("_construct/arg_vars = ", self.arg_vars)
         # kwargs
         variable_name_strings = {}
         self.kwarg_vars = {}
