@@ -27,7 +27,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import QubitDevice, DeviceError
+from pennylane import StateVectorQubitDevice, DeviceError
 from pennylane.operation import Operation
 
 
@@ -253,7 +253,7 @@ def identity(*_):
 #========================================================
 
 
-class DefaultQubit(QubitDevice):
+class DefaultQubit(StateVectorQubitDevice):
     """Default qubit device for PennyLane.
 
     Args:
@@ -312,7 +312,7 @@ class DefaultQubit(QubitDevice):
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots)
+        super().__init__(wires, shots, analytic)
         self.eng = None
         self.analytic = analytic
 
@@ -420,19 +420,27 @@ class DefaultQubit(QubitDevice):
 
         return self._get_operator_matrix(observable, par)
 
-    def expval(self, observable, wires, par):
+    def expval(self, observable):
+        name = observable.name
+        wires = observable.wires
+        par = observable.parameters
+
         if self.analytic:
             # exact expectation value
-            A = self.get_operator_matrix_for_measurement(observable, par)
+            A = self.get_operator_matrix_for_measurement(name, par)
 
             ev = self.ev(A, wires)
         else:
             # estimate the ev
-            ev = np.mean(self.sample(observable, wires, par))
+            ev = np.mean(self.sample(name, wires, par))
 
         return ev
 
-    def var(self, observable, wires, par):
+    def var(self, observable):
+        name = observable.name
+        wires = observable.wires
+        par = observable.parameters
+
         if self.analytic:
             # exact variance value
             A = self.get_operator_matrix_for_measurement(observable, par)
@@ -444,7 +452,10 @@ class DefaultQubit(QubitDevice):
 
         return var
 
-    def sample(self, observable, wires, par):
+    def sample(self, observable):
+        wires = observable.wires
+        par = observable.parameters
+
         A = self.get_operator_matrix_for_measurement(observable, par)
 
         a, P = spectral_decomposition(A)
