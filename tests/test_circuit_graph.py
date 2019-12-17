@@ -352,3 +352,21 @@ class TestCircuitGraphDrawing:
         qnode.circuit.render()
 
         raise Exception()
+
+    def test_template(self, parameterized_wide_cv_circuit):
+        """A test of the different layers, their successors and ancestors using a simple circuit"""
+
+        dev = qml.device("default.qubit", wires=8)
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(8))
+
+            return [qml.var(qml.PauliX(i)) for i in range(8)]
+            
+        weights = qml.init.strong_ent_layers_uniform(5, 8)
+
+        circuit(weights)
+
+        circuit.circuit.render()
+
+        raise Exception()
