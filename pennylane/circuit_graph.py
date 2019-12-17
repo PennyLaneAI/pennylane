@@ -702,7 +702,10 @@ class CircuitDrawer:
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
 
-                    blocked_wires = range(sorted_wires[0] + 1, sorted_wires[-1])
+                    blocked_wires = list(range(sorted_wires[0] + 1, sorted_wires[-1]))
+                    
+                    if not blocked_wires:
+                        continue
 
                     for k in range(j+1, len(layer_ops)):
                         other_op = layer_ops[k]
@@ -720,8 +723,7 @@ class CircuitDrawer:
                             break
             
             if not all([item is None for item in other_layer]):
-                operator_grid.replace_layer(i, this_layer)
-                operator_grid.insert_layer(i, other_layer)
+                operator_grid.insert_layer(i+1, other_layer)
                 n += 1
 
     def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
@@ -734,15 +736,15 @@ class CircuitDrawer:
         self.operator_decoration_indices = []
         self.observable_decoration_indices = []
 
-        # print("Before")
-        # for i in range(self.operator_grid.num_layers):
-        #     print("Layer ", i, " = ", self.operator_grid.layer(i))
+        print("Before")
+        for i in range(self.operator_grid.num_layers):
+            print("Layer ", i, " = ", self.operator_grid.layer(i))
 
         self.move_multi_wire_gates(self.operator_grid)
 
-        # print("After")
-        # for i in range(self.operator_grid.num_layers):
-        #     print("Layer ", i, " = ", self.operator_grid.layer(i))
+        print("After")
+        for i in range(self.operator_grid.num_layers):
+            print("Layer ", i, " = ", self.operator_grid.layer(i))
 
         # Resolve operator names
         self.resolve_representation(self.operator_grid, self.operator_representation_grid)
