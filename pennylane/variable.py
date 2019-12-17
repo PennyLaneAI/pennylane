@@ -103,6 +103,9 @@ class Variable:
         return "Variable {}: name = {}, {}".format(self.idx, self.name, temp)
 
     def __eq__(self, other):
+        if not isinstance(other, Variable):
+            return False
+            
         return (
             self.name == other.name
             and self.idx == other.idx

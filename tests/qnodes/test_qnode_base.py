@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
+from pennylane.variable import Variable
 
 
 @pytest.fixture(scope="function")
@@ -883,3 +884,95 @@ class TestDecomposition:
 
         with pytest.raises(qml.DeviceError, match="DummyOp not supported on device"):
             decompose_queue(queue, operable_mock_device_2_wires)
+
+
+class TestQNodeVariableMap:
+    """Test the conversion of arguments to Variable instances."""
+
+    def test_regular_arguments(self, mock_device):
+        """Test that regular arguments are properly converted to Variable instances."""
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node._construct([1.0, 2.0, 3.0, 4.0], {})
+
+        expected_arg_vars = [
+            Variable(0, "a"),
+            Variable(1, "b"),
+            Variable(2, "c"),
+            Variable(3, "d"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
+            assert var == expected
+
+        assert node.kwarg_vars is None
+
+    def test_array_arguments(self, mock_device):
+        """Test that array arguments are properly converted to Variable instances."""
+        def circuit(weights):
+            qml.RX(weights[0, 0], wires=[0])
+            qml.RY(weights[0, 1], wires=[0])
+            qml.RZ(weights[1, 0], wires=[0])
+            qml.RZ(weights[1, 1], wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        weights = np.array([[1, 2], [3, 4]])
+
+        node._construct([weights], {})
+
+        expected_arg_vars = [
+            Variable(0, "weights[0,0]"),
+            Variable(1, "weights[0,1]"),
+            Variable(2, "weights[1,0]"),
+            Variable(3, "weights[1,1]"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
+            assert var == expected
+
+        assert node.kwarg_vars is None
+
+    def test_regular_keyword_arguments(self, mock_device):
+        """Test that regular keyword arguments are properly converted to Variable instances."""
+        def circuit(*, a=1, b=2, c=3, d=4):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node._construct([], {})
+
+        expected_kwarg_vars = {
+            "a" : [Variable(0, "a", is_kwarg=True)],
+            "b" : [Variable(0, "b", is_kwarg=True)],
+            "c" : [Variable(0, "c", is_kwarg=True)],
+            "d" : [Variable(0, "d", is_kwarg=True)],
+        }
+
+        assert not node.arg_vars
+
+        print(node.kwarg_vars)
+
+        for expected_key in expected_kwarg_vars:
+            print("expected_key = ", expected_key)
+            for var, expected in zip(qml.utils._flatten(node.kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
+                print("var = ", var)
+                print("expected = ", expected)
+                assert var == expected
+
+        
+
+        

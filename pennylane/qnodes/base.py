@@ -170,6 +170,8 @@ class BaseQNode:
         self.num_variables = (
             None  #: int: number of flattened differentiable parameters in the circuit
         )
+        self.arg_vars = None
+        self.kwarg_vars = None
         self.ops = (
             []
         )  #: List[Operator]: quantum circuit, in the order the quantum function defines it
@@ -332,8 +334,13 @@ class BaseQNode:
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index and name
         full_argspec = inspect.getfullargspec(self.func)
-        variable_name_strings = []
+        print("_construct/args = ", args)
+        print("_construct/kwargs = ", kwargs)
+        print("_construct/full_argspec = ", full_argspec)
+        print("_construct/self.mutable = ", self.mutable)
 
+        # args
+        variable_name_strings = []
         for variable_name, variable_value in zip(full_argspec.args, args):
             if isinstance(variable_value, np.ndarray):
                 variable_name_string = np.empty_like(variable_value, dtype=object)
@@ -345,10 +352,31 @@ class BaseQNode:
 
             variable_name_strings.append(variable_name_string)
 
-        arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
-        self.num_variables = len(arg_vars)
+        self.arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
+        self.num_variables = len(self.arg_vars)
         # arrange the newly created Variables in the nested structure of args
-        arg_vars = unflatten(arg_vars, args)
+        self.arg_vars = unflatten(self.arg_vars, args)
+
+        # kwargs
+        variable_name_strings = {}
+        self.kwarg_vars = {}
+        for variable_name in full_argspec.kwonlyargs:
+            if variable_name in kwargs:
+                variable_value = kwargs[variable_name]
+            else:
+                variable_value = full_argspec.kwonlydefaults[variable_name]
+
+            if isinstance(variable_value, np.ndarray):
+                variable_name_string = np.empty_like(variable_value, dtype=object)
+
+                for index in np.ndindex(*variable_name_string.shape):
+                    variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
+
+                kwarg_variable = [Variable(idx, name=name, is_kwarg=True) for idx, name in enumerate(_flatten(variable_name_string))]
+            else:
+                kwarg_variable = Variable(0, name=variable_name, is_kwarg=True)
+
+            self.kwarg_vars[variable_name] = kwarg_variable
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -366,15 +394,10 @@ class BaseQNode:
             if self.mutable:
                 # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
                 # (positional args must be replaced because parameter-shift differentiation requires Variables)
-                res = self.func(*arg_vars, **kwargs)
+                res = self.func(*self.arg_vars, **kwargs)
             else:
-                # must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
-                kwarg_vars = {}
-                for key, val in kwargs.items():
-                    temp = [Variable(idx, name=key, is_kwarg=True) for idx, _ in enumerate(_flatten(val))]
-                    kwarg_vars[key] = unflatten(temp, val)
-
-                res = self.func(*arg_vars, **kwarg_vars)
+                # TODO: Maybe we should only convert the kwarg_vars that were actually given
+                res = self.func(*self.arg_vars, **self.kwarg_vars)
         finally:
             qml._current_context = None
 
@@ -386,7 +409,7 @@ class BaseQNode:
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    if p.name is None:  # ignore auxiliary arguments
+                    if not p.is_kwarg:  # ignore auxiliary arguments
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
