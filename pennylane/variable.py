@@ -102,6 +102,14 @@ class Variable:
         temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
         return "Variable {}: name = {}, {}".format(self.idx, self.name, temp)
 
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.idx == other.idx
+            and self.is_kwarg == other.is_kwarg
+            and self.mult == other.mult
+        )
+
     def __neg__(self):
         """Unary negation."""
         temp = copy.copy(self)
@@ -145,7 +153,11 @@ class Variable:
         if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
             return str(round(self.val, 3))
 
-        if not self.is_kwarg and Variable.free_param_values is not None and len(Variable.free_param_values) > self.idx:
+        if (
+            not self.is_kwarg
+            and Variable.free_param_values is not None
+            and len(Variable.free_param_values) > self.idx
+        ):
             return str(round(self.val, 3))
 
         if self.name is None:
@@ -158,5 +170,3 @@ class Variable:
                 return "{}*{}".format(self.mult, self.name)
             else:
                 return self.name
-
-
