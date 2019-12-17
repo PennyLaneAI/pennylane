@@ -470,7 +470,7 @@ class RepresentationResolver:
         "PauliX": "X",
         "CNOT": "X",
         "Toffoli": "X",
-        "CSWAP" : "SWAP",
+        "CSWAP": "SWAP",
         "PauliY": "Y",
         "PauliZ": "Z",
         "CZ": "Z",
@@ -479,32 +479,32 @@ class RepresentationResolver:
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
-        "CRot" : "Rot",
-        "Beamsplitter" : "BS",
-        "Squeezing" : "S",
-        "TwoModeSqueezing" : "S",
-        "Displacement" : "D", 
-        "NumberOperator" : "n",
-        "Rotation" : "R",
-        "ControlledAddition" : "Add",
-        "ControlledPhase" : "R",
-        "ThermalState" : "Thermal",
-        "GaussianState" : "Gaussian",
-        "QuadraticPhase" : "QuadPhase",
+        "CRot": "Rot",
+        "Beamsplitter": "BS",
+        "Squeezing": "S",
+        "TwoModeSqueezing": "S",
+        "Displacement": "D",
+        "NumberOperator": "n",
+        "Rotation": "R",
+        "ControlledAddition": "Add",
+        "ControlledPhase": "R",
+        "ThermalState": "Thermal",
+        "GaussianState": "Gaussian",
+        "QuadraticPhase": "QuadPhase",
     }
 
     # Indices of control wires
     control_dict = {
-        "CNOT" : [0],
-        "Toffoli" : [0, 1],
-        "CSWAP" : [0],
-        "CRX" : [0],
-        "CRY" : [0],
-        "CRZ" : [0],
-        "CRot" : [0],
-        "CZ" : [0],
-        "ControlledAddition" : [0],
-        "ControlledPhase" : [0],
+        "CNOT": [0],
+        "Toffoli": [0, 1],
+        "CSWAP": [0],
+        "CRX": [0],
+        "CRY": [0],
+        "CRZ": [0],
+        "CRot": [0],
+        "CZ": [0],
+        "ControlledAddition": [0],
+        "ControlledPhase": [0],
     }
 
     def __init__(self, charset=UnicodeCharSet):
@@ -535,7 +535,9 @@ class RepresentationResolver:
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
-        if op.name in self.control_dict and wire in [op.wires[control_idx] for control_idx in self.control_dict[op.name]]:
+        if op.name in self.control_dict and wire in [
+            op.wires[control_idx] for control_idx in self.control_dict[op.name]
+        ]:
             return self.charset.CONTROL
 
         if op.num_params == 0:
@@ -545,31 +547,42 @@ class RepresentationResolver:
             param_strings = []
             for param in op.params:
                 if isinstance(param, np.ndarray):
-                    idx = RepresentationResolver.append_array_if_not_in_list(param, self._matrix_cache)
-                    
+                    idx = RepresentationResolver.append_array_if_not_in_list(
+                        param, self._matrix_cache
+                    )
+
                     param_strings.append("M{}".format(idx))
                 else:
                     param_strings.append(self.render_parameter(param))
 
             return "{}({})".format(name, ", ".join(param_strings))
 
-
         if op.name == "QubitUnitary":
             mat = op.params[0]
-            idx = RepresentationResolver.append_array_if_not_in_list(mat, self._unitary_matrix_cache)
+            idx = RepresentationResolver.append_array_if_not_in_list(
+                mat, self._unitary_matrix_cache
+            )
 
             return "U{}".format(idx)
 
         if op.name == "Hermitian":
             mat = op.params[0]
-            idx = RepresentationResolver.append_array_if_not_in_list(mat, self._hermitian_matrix_cache)
+            idx = RepresentationResolver.append_array_if_not_in_list(
+                mat, self._hermitian_matrix_cache
+            )
 
             return "H{}".format(idx)
 
         if op.name == "FockStateProjector":
             n_str = ",".join([str(n) for n in op.params[0]])
 
-            return self.charset.VERTICAL_LINE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.VERTICAL_LINE
+            return (
+                self.charset.VERTICAL_LINE
+                + n_str
+                + self.charset.CROSSED_LINES
+                + n_str
+                + self.charset.VERTICAL_LINE
+            )
 
         return "{}({})".format(name, ", ".join([self.render_parameter(par) for par in op.params]))
 
@@ -618,7 +631,7 @@ class CircuitDrawer:
             for op in layer_operators:
                 if op is None:
                     continue
-                
+
                 if len(op.wires) > 1:
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
@@ -645,7 +658,7 @@ class CircuitDrawer:
             for op in layer_operators:
                 if op is None:
                     continue
-                
+
                 if len(op.wires) > 1:
                     decoration_layer = [""] * grid.num_wires
                     sorted_wires = op.wires.copy()
@@ -668,21 +681,45 @@ class CircuitDrawer:
     def justify_and_prepend(self, x, prepend_str, suffix_str, max_width, pad_str):
         return prepend_str + str.ljust(x, max_width, pad_str) + suffix_str
 
-    def resolve_padding(self, representation_grid, pad_str, skip_prepend_pad_str, prepend_str, suffix_str, skip_prepend_idx):
+    def resolve_padding(
+        self,
+        representation_grid,
+        pad_str,
+        skip_prepend_pad_str,
+        prepend_str,
+        suffix_str,
+        skip_prepend_idx,
+    ):
         for i in range(representation_grid.num_layers):
             layer = representation_grid.layer(i)
             max_width = max(map(len, layer))
 
             if i in skip_prepend_idx:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: self.justify_and_prepend(x, "", "", max_width, skip_prepend_pad_str), layer))
+                    i,
+                    list(
+                        map(
+                            lambda x: self.justify_and_prepend(
+                                x, "", "", max_width, skip_prepend_pad_str
+                            ),
+                            layer,
+                        )
+                    ),
                 )
             else:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: self.justify_and_prepend(x, prepend_str, suffix_str, max_width, pad_str), layer))
+                    i,
+                    list(
+                        map(
+                            lambda x: self.justify_and_prepend(
+                                x, prepend_str, suffix_str, max_width, pad_str
+                            ),
+                            layer,
+                        )
+                    ),
                 )
 
-    def move_multi_wire_gates(self, operator_grid):# Move intertwined multi-wire gates
+    def move_multi_wire_gates(self, operator_grid):  # Move intertwined multi-wire gates
         n = operator_grid.num_layers
         i = -1
         while i < n - 1:
@@ -697,33 +734,35 @@ class CircuitDrawer:
 
                 if op is None:
                     continue
-        
+
                 if len(op.wires) > 1:
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
 
                     blocked_wires = list(range(sorted_wires[0] + 1, sorted_wires[-1]))
-                    
+
                     if not blocked_wires:
                         continue
 
-                    for k in range(j+1, len(layer_ops)):
+                    for k in range(j + 1, len(layer_ops)):
                         other_op = layer_ops[k]
 
                         if other_op is None:
                             continue
 
                         if not set(other_op.wires).isdisjoint(set(blocked_wires)):
-                            op_indices = [idx for idx, layer_op in enumerate(this_layer) if layer_op == op]
+                            op_indices = [
+                                idx for idx, layer_op in enumerate(this_layer) if layer_op == op
+                            ]
 
                             for l in op_indices:
                                 other_layer[l] = op
                                 this_layer[l] = None
 
                             break
-            
+
             if not all([item is None for item in other_layer]):
-                operator_grid.insert_layer(i+1, other_layer)
+                operator_grid.insert_layer(i + 1, other_layer)
                 n += 1
 
     def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
@@ -776,7 +815,7 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            print("{:2d}: {}".format(i, 2*self.charset.WIRE), end="")
+            print("{:2d}: {}".format(i, 2 * self.charset.WIRE), end="")
 
             for s in wire:
                 print(s, end="")
@@ -794,6 +833,4 @@ class CircuitDrawer:
 
 
 # TODO:
-# * Test crossing multi-wire gates to different layers
 # * Move to QNode, enable printing of unevaluated QNodes
-# * Fix multi wire gate moving

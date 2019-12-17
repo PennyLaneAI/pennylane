@@ -24,7 +24,6 @@ from pennylane.operation import Expectation
 from pennylane.circuit_graph import CircuitGraph
 
 
-
 @pytest.fixture
 def queue():
     """A fixture of a complex example of operations that depend on previous operations."""
@@ -47,10 +46,12 @@ def obs():
         qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2])),
     ]
 
+
 @pytest.fixture
 def ops(queue, obs):
     """Queue of Operations followed by Observables."""
     return queue + obs
+
 
 @pytest.fixture
 def circuit(ops):
@@ -78,6 +79,7 @@ def parameterized_circuit():
 
     return qfunc
 
+
 @pytest.fixture
 def parameterized_qubit_circuit():
     def qfunc(a, b, c, d, e, f):
@@ -92,7 +94,7 @@ def parameterized_qubit_circuit():
         qml.RZ(b, wires=3)
         qml.RX(f, wires=2)
         qml.QubitUnitary(np.eye(2), wires=[2])
-        qml.Toffoli(wires=[0,2,1])
+        qml.Toffoli(wires=[0, 2, 1])
         qml.CZ(wires=[0, 1])
         qml.CZ(wires=[0, 2])
         qml.CNOT(wires=[2, 1])
@@ -111,35 +113,38 @@ def parameterized_qubit_circuit():
 
     return qfunc
 
+
 @pytest.fixture
 def parameterized_wide_qubit_circuit():
     def qfunc(a, b, c, d, e, f):
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
-        [qml.CNOT(wires=[2*i, 2*i+1]) for i in range(4)]
-        [qml.CNOT(wires=[i, i+4]) for i in range(4)]
-        [qml.CSWAP(wires=[i+2, i, i+4]) for i in range(4)]
+        [qml.CNOT(wires=[2 * i, 2 * i + 1]) for i in range(4)]
+        [qml.CNOT(wires=[i, i + 4]) for i in range(4)]
+        [qml.CSWAP(wires=[i + 2, i, i + 4]) for i in range(4)]
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
 
-        return [
-            qml.expval(qml.Hermitian(np.eye(4), wires=[i, i+4]))
-            for i in range(4)
-        ]
+        return [qml.expval(qml.Hermitian(np.eye(4), wires=[i, i + 4])) for i in range(4)]
 
     return qfunc
+
 
 @pytest.fixture
 def parameterized_wide_cv_circuit():
     def qfunc(a, b, c, d, e, f):
-        qml.GaussianState(np.array([(2 * i + 2) // 2 for i in range(16)]), 2 * np.eye(16), wires=list(range(8)))
-        [qml.Beamsplitter(.4, 0, wires=[2*i, 2*i+1]) for i in range(4)]
-        [qml.Beamsplitter(.25475, 0.2312344, wires=[i, i+4]) for i in range(4)]
+        qml.GaussianState(
+            np.array([(2 * i + 2) // 2 for i in range(16)]), 2 * np.eye(16), wires=list(range(8))
+        )
+        [qml.Beamsplitter(0.4, 0, wires=[2 * i, 2 * i + 1]) for i in range(4)]
+        [qml.Beamsplitter(0.25475, 0.2312344, wires=[i, i + 4]) for i in range(4)]
 
-        return [qml.expval(qml.FockStateProjector(np.array([1, 1]), wires=[i, i+4])) for i in range(4)]
-        
+        return [
+            qml.expval(qml.FockStateProjector(np.array([1, 1]), wires=[i, i + 4])) for i in range(4)
+        ]
 
     return qfunc
+
 
 @pytest.fixture
 def parameterized_cv_circuit():
@@ -159,14 +164,14 @@ def parameterized_cv_circuit():
         qml.ControlledPhase(2.3, wires=[2, 1])
         qml.ControlledAddition(2, wires=[0, 3])
         qml.QuadraticPhase(4, wires=[0])
-        #qml.Kerr(2, wires=[1])
-        #qml.CubicPhase(2, wires=[2])
-        #qml.CrossKerr(2, wires=[3, 1])
+        # qml.Kerr(2, wires=[1])
+        # qml.CubicPhase(2, wires=[2])
+        # qml.CrossKerr(2, wires=[3, 1])
 
         return [
             qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
             qml.expval(qml.ops.QuadOperator(4, wires=1)),
-            qml.expval(qml.ops.FockStateProjector(np.array([1, 5]), wires=[2,3])),
+            qml.expval(qml.ops.FockStateProjector(np.array([1, 5]), wires=[2, 3])),
         ]
 
     return qfunc
@@ -203,17 +208,10 @@ class TestCircuitGraph:
             assert k is ops[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
-        assert set(graph.edges()) == set((ops[a], ops[b]) for a, b in [
-            (0, 3),
-            (1, 3),
-            (2, 4),
-            (3, 5),
-            (3, 6),
-            (4, 5),
-            (5, 7),
-            (5, 8),
-            (6, 8),
-        ])
+        assert set(graph.edges()) == set(
+            (ops[a], ops[b])
+            for a, b in [(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8),]
+        )
 
     def test_ancestors_and_descendants_example(self, ops):
         """
@@ -287,24 +285,20 @@ class TestCircuitGraph:
         assert set(result[0][0]) == set([])
         assert set(result[0][1]) == set(circuit.operations[:3])
         assert result[0][2] == (0, 1, 2)
-        assert set(result[0][3]) == set(
-            circuit.operations[3:] + circuit.observables
-        )
+        assert set(result[0][3]) == set(circuit.operations[3:] + circuit.observables)
 
         assert set(result[1][0]) == set(circuit.operations[:2])
         assert set(result[1][1]) == set([circuit.operations[3]])
         assert result[1][2] == (3,)
-        assert set(result[1][3]) == set(
-            circuit.operations[4:6] + circuit.observables[:2]
-        )
+        assert set(result[1][3]) == set(circuit.operations[4:6] + circuit.observables[:2])
 
         assert set(result[2][0]) == set(circuit.operations[:4])
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (4, 5)
         assert set(result[2][3]) == set(circuit.observables[1:])
 
-class TestCircuitGraphDrawing:
 
+class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
@@ -312,7 +306,7 @@ class TestCircuitGraphDrawing:
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
-        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         qnode.circuit.render()
 
         raise Exception()
@@ -324,7 +318,7 @@ class TestCircuitGraphDrawing:
         qnode = qml.QNode(parameterized_wide_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
-        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         qnode.circuit.render()
 
         raise Exception()
@@ -336,7 +330,7 @@ class TestCircuitGraphDrawing:
         qnode = qml.QNode(parameterized_cv_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
-        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         qnode.circuit.render()
 
         raise Exception()
@@ -348,7 +342,7 @@ class TestCircuitGraphDrawing:
         qnode = qml.QNode(parameterized_wide_cv_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         qnode.circuit.render()
-        qnode.evaluate((0.1, 0.2, 0.3, 47/17, 0.5, 0.6), {})
+        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         qnode.circuit.render()
 
         raise Exception()
@@ -357,12 +351,13 @@ class TestCircuitGraphDrawing:
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
         dev = qml.device("default.qubit", wires=8)
+
         @qml.qnode(dev)
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=range(8))
 
             return [qml.var(qml.PauliX(i)) for i in range(8)]
-            
+
         weights = qml.init.strong_ent_layers_uniform(5, 8)
 
         circuit(weights)
