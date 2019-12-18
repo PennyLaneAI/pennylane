@@ -22,6 +22,18 @@ from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder, pauli_eigs
 
+def cached(func):
+    " Used on methods to convert them to methods that replace themselves\
+        with their return value once they are called. "
+
+    def cache(*args):
+        self = args[0] # Reference to the class who owns the method
+        funcname = func.__name__
+        ret_value = func(*args)
+        setattr(self, funcname, ret_value) # Replace the function with its value
+        return ret_value # Return the result of the function
+
+    return cache
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
@@ -913,8 +925,12 @@ class Hermitian(Observable):
     grad_method = "F"
     _eigs = {}
 
+    import functools
+
     @classmethod
+    @cached
     def eigvals(cls, Hmat):
+        Hmat = np.array(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             # store the eigenvalues and eigenvectors corresponding to H in a

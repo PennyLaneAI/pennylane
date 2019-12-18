@@ -27,7 +27,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import Device, DeviceError
+from pennylane import Device, DeviceError, Hermitian
 from pennylane.operation import Operation
 
 
@@ -488,6 +488,8 @@ class DefaultQubit(Device):
             array: matrix representation.
         """
         ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
+        for o, p in zip(obs, par):
+            print(Hermitian.eigvals(p))
         return functools.reduce(np.kron, ops)
 
     def ev(self, A, wires):
