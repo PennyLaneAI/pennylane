@@ -79,7 +79,7 @@ Embedding templates
 
 Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. Embeddings can also depend on
-trainable parameters and consist of repeated layers.
+trainable parameters, and they may consist of repeated layers.
 
 The following embedding templates are available:
 
