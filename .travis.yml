@@ -18,13 +18,12 @@ env:
   - LOGGING=info
 install:
 - pip install -r requirements.txt
-- pip install wheel pytest pytest-cov absl-py==0.8.1 --upgrade
+- pip install wheel pytest pytest-cov absl-py --upgrade
 - if [ "$TF" = "2" ]; then pip install tensorflow==2.0; fi
 - if [ "$TF" = "1" ]; then pip install tensorflow==1.13.2; fi
 - pip install torch==1.3.0+cpu torchvision==0.4.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
 - python3 setup.py bdist_wheel
 - pip install dist/PennyLane*.whl
-- pip freeze
 script:
 - make coverage
 after_success:
