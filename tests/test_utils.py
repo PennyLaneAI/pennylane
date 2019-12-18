@@ -100,6 +100,9 @@ class TestFlatten:
         with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
             pu.unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
+class TestPauliEigs:
+    """Tests for the auxiliary function to return the eigenvalues for Paulis"""
+
 
 class TestArgumentHelpers:
     """Tests for auxiliary functions to help with parsing
