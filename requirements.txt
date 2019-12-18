@@ -1,3 +1,4 @@
+absl-py==0.8.1
 numpy
 scipy
 networkx
