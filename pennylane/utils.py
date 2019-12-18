@@ -192,8 +192,8 @@ def pauli_eigs(n):
     with the Pauli matrices ("standard observables").
     """
     if n == 1:
-        return np.array([1, -1])
-    return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
+        return np.array([-1, 1])
+    return np.concatenate(-pauli_eigs(n - 1), pauli_eigs(n - 1))
 
 class Recorder:
     """Recorder class used by the :class:`~.OperationRecorder`.

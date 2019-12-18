@@ -163,3 +163,4 @@ def mock_device(monkeypatch):
         m.setattr(dev, 'short_name', 'mock_device')
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
         yield qml.Device(wires=2)
+

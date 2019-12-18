@@ -22,6 +22,8 @@ import numpy as np
 
 import pennylane as qml
 import pennylane.utils as pu
+import functools
+import itertools
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -102,6 +104,28 @@ class TestFlatten:
 
 class TestPauliEigs:
     """Tests for the auxiliary function to return the eigenvalues for Paulis"""
+
+    paulix = np.array([[0, 1], [1, 0]])
+    pauliy = np.array([[0, -1j], [1j, 0]])
+    pauliz = np.array([[1, 0], [0, -1]])
+
+    pauli_matrices = [paulix, pauliy, pauliz]
+
+    @pytest.mark.parametrize("pauli", pauli_matrices)
+    def test_correct_eigenvalues_paulis(self, pauli):
+        assert np.array_equal(pu.pauli_eigs(1), np.linalg.eigvalsh(pauli))
+
+    @pytest.mark.parametrize("pauli_product", [np.kron(x, y) for x, y in list(itertools.product(pauli_matrices, pauli_matrices))])
+    def test_correct_eigenvalues_pauli_kronecker_products(self, pauli_product):
+        assert np.array_equal(pu.pauli_eigs(2), np.linalg.eigvalsh(pauli_product))
+
+    @pytest.mark.parametrize("depth", list(range(1, 6)))
+    def test_cache_usage(self, depth):
+        """Test that the right number of cachings have been executed"""
+        pu.pauli_eigs.cache_clear()
+        pu.pauli_eigs(depth)
+        total_runs = sum([2**x for x in range(depth)])
+        assert functools._CacheInfo(2*(depth + 1), depth, 128, depth)== pu.pauli_eigs.cache_info()
 
 
 class TestArgumentHelpers:
