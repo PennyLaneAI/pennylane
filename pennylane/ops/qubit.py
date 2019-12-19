@@ -946,7 +946,7 @@ class Hermitian(Observable):
             w, U = np.linalg.eigh(Hmat)
             cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
         return [
-            QubitUnitary(cls._eigs[Hkey]["eigvec"].conj().T, wires=wires)
+            QubitUnitary(cls._eigs[Hkey]["eigvec"].conj().T, wires=wires),
         ]
 
 

@@ -18,9 +18,19 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 
 import pytest
 
-import pennylane
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops import qubit
+from pennylane.templates.layers import StronglyEntanglingLayers
+
+EIGVALS_TEST_DATA = [
+        (np.array([[1, 0], [0, 1]]), np.array([1., 1.]), np.array([[1., 0.],[0., 1.]])),
+        (np.array([[0, 1], [1, 0]]), np.array([-1, 1]), np.array([[-0.70710678,  0.70710678],[ 0.70710678,  0.70710678]])),
+        (np.array([[0, -1j], [1j, 0]]), np.array([-1, 1]), np.array([[-0.70710678+0.j        , -0.70710678+0.j        ], [ 0.        +0.70710678j,  0.        -0.70710678j]])),
+        (np.array([[1, 0], [0, -1]]), np.array([-1, 1]), np.array([[0., 1.], [1., 0.]])),
+        (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1, 1]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
+    ]
+
 
 class TestQubit:
     """Tests the qubit based operations."""
@@ -34,13 +44,7 @@ class TestQubit:
     observables = [identity, paulix, pauliy, pauliz, hadamard]
 
 
-    @pytest.mark.parametrize("observable, eigvals, eigvecs", [
-        (np.array([[1, 0], [0, 1]]), np.array([1., 1.]), np.array([[1., 0.],[0., 1.]])),
-        (np.array([[0, 1], [1, 0]]), np.array([-1, 1]), np.array([[-0.70710678,  0.70710678],[ 0.70710678,  0.70710678]])),
-        (np.array([[0, -1j], [1j, 0]]), np.array([-1, 1]), np.array([[-0.70710678+0.j        , -0.70710678+0.j        ], [ 0.        +0.70710678j,  0.        -0.70710678j]])),
-        (np.array([[1, 0], [0, -1]]), np.array([-1, 1]), np.array([[0., 1.], [1., 0.]])),
-        (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1, 1]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
-    ])
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigvals_eigvecs(self, observable, eigvals, eigvecs, tol):
         """Tests that the eigvals method of the Hermitian class returns the correct results."""
         key = tuple(observable.flatten().tolist())
@@ -49,14 +53,31 @@ class TestQubit:
         assert np.allclose(qubit.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qubit.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("observable, eigvals, eigvecs", [
-        (np.array([[1, 0], [0, 1]]), np.array([1., 1.]), np.array([[1., 0.],[0., 1.]])),
-        (np.array([[0, 1], [1, 0]]), np.array([-1, 1]), np.array([[-0.70710678,  0.70710678],[ 0.70710678,  0.70710678]])),
-        (np.array([[0, -1j], [1j, 0]]), np.array([-1, 1]), np.array([[-0.70710678+0.j        , -0.70710678+0.j        ], [ 0.        +0.70710678j,  0.        -0.70710678j]])),
-        (np.array([[1, 0], [0, -1]]), np.array([-1, 1]), np.array([[0., 1.], [1., 0.]])),
-        (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1, 1]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
-    ])
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol):
         qubit_unitary = qubit.Hermitian.diagonalizing_gates(observable, wires = [0])
         assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
+
+class TestQubitIntegration:
+    """Integration for the qubit based operations."""
+
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
+    def test_hermitian_diagonalizing_gates_integration(self, observable, eigvals, eigvecs, tol):
+
+        num_wires = 2
+
+        obs = np.kron(observable, observable) 
+
+        dev = qml.device('default.qubit', wires=num_wires)
+
+        diag_gates = qml.Hermitian.diagonalizing_gates(obs, wires=list(range(num_wires)))
+
+        assert len(diag_gates) == 1
+
+        U = diag_gates[0].parameters[0]
+        x = U @ obs @ U.conj().T
+        print(x)
+        off_diagonal_indices = np.where(~np.eye(x.shape[0],dtype=bool))
+
+        assert np.all([np.isclose(elem, 0, atol=tol, rtol=0) for elem in x[off_diagonal_indices]])
 
