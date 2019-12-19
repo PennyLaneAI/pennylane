@@ -109,23 +109,23 @@ class TestPauliEigs:
     pauliy = np.array([[0, -1j], [1j, 0]])
     pauliz = np.array([[1, 0], [0, -1]])
 
-    pauli_matrices = [paulix, pauliy, pauliz]
+    standard_matrices = [paulix, pauliy, pauliz]
 
-    @pytest.mark.parametrize("pauli", pauli_matrices)
+    @pytest.mark.parametrize("pauli", standard_matrices)
     def test_correct_eigenvalues_paulis(self, pauli):
-        assert np.array_equal(pu.pauli_eigs(1), np.linalg.eigvalsh(pauli))
+        assert np.array_equal(pu.pauli_eigs(1), np.diag(self.pauliz))
 
-    @pytest.mark.parametrize("pauli_product", [np.kron(x, y) for x, y in list(itertools.product(pauli_matrices, pauli_matrices))])
+    @pytest.mark.parametrize("pauli_product", [np.kron(x, y) for x, y in list(itertools.product(standard_matrices, standard_matrices))])
     def test_correct_eigenvalues_pauli_kronecker_products(self, pauli_product):
-        assert np.array_equal(pu.pauli_eigs(2), np.linalg.eigvalsh(pauli_product))
+        assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
 
     @pytest.mark.parametrize("depth", list(range(1, 6)))
     def test_cache_usage(self, depth):
-        """Test that the right number of cachings have been executed"""
+        """Test that the right number of cachings have been executed after clearing the cache"""
         pu.pauli_eigs.cache_clear()
         pu.pauli_eigs(depth)
         total_runs = sum([2**x for x in range(depth)])
-        assert functools._CacheInfo(2*(depth + 1), depth, 128, depth)== pu.pauli_eigs.cache_info()
+        assert functools._CacheInfo(depth - 1, depth, 128, depth)== pu.pauli_eigs.cache_info()
 
 
 class TestArgumentHelpers:
