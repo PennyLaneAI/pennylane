@@ -717,12 +717,18 @@ class Tensor(Observable):
 
     @property
     def eigvals(self):
-        """Return the eigenvalues of the specified tensor product observable by
-        using pre-stored eigenvalues for standard observables where possible.
+        """Return the eigenvalues of the specified tensor product observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible.
 
         Returns:
-            array: array containing the eigenvalues of the tensor product observable
+            array: array containing the eigenvalues of the tensor product
+                observable
         """
+        if self._eigvals is not None:
+            return self._eigvals
+
         standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
 
         # observable should be Z^{\otimes n}
