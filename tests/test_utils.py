@@ -112,9 +112,9 @@ class TestPauliEigs:
 
     standard_observables = [paulix, pauliy, pauliz, hadamard]
 
-    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_observables,standard_observables))]
+    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_observables, standard_observables))]
 
-    @pytest.mark.parametrize("pauli", standard_matrices)
+    @pytest.mark.parametrize("pauli", standard_observables)
     def test_correct_eigenvalues_paulis(self, pauli):
         """Test the paulieigs function for one qubit"""
         assert np.array_equal(pu.pauli_eigs(1), np.diag(self.pauliz))
