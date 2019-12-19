@@ -5,7 +5,7 @@ autograd
 numpy
 pygments-github-lexers
 semantic_version==2.6
-scipy==1.3.2
+scipy
 sphinx==2.2.2
 sphinx-automodapi
 sphinx-copybutton
