@@ -27,7 +27,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import Device, DeviceError, Hermitian
+from pennylane import Device, DeviceError
 from pennylane.operation import Operation
 
 
