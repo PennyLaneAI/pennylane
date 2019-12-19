@@ -110,9 +110,9 @@ class TestPauliEigs:
     pauliz = np.array([[1, 0], [0, -1]])
     hadamard = 1/np.sqrt(2)*np.array([[1, 1],[1, -1]])
 
-    standard_matrices = [paulix, pauliy, pauliz, hadamard]
+    standard_observables = [paulix, pauliy, pauliz, hadamard]
 
-    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_matrices, standard_matrices))]
+    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_observables,standard_observables))]
 
     @pytest.mark.parametrize("pauli", standard_matrices)
     def test_correct_eigenvalues_paulis(self, pauli):
