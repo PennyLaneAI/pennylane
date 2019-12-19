@@ -112,15 +112,22 @@ class TestPauliEigs:
 
     standard_matrices = [paulix, pauliy, pauliz, hadamard]
 
+    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_matrices, standard_matrices))]
+
     @pytest.mark.parametrize("pauli", standard_matrices)
     def test_correct_eigenvalues_paulis(self, pauli):
-        """Test that empty dict is returned if function has
-        no default arguments"""
+        """Test the paulieigs function for one qubit"""
         assert np.array_equal(pu.pauli_eigs(1), np.diag(self.pauliz))
 
-    @pytest.mark.parametrize("pauli_product", [np.kron(x, y) for x, y in list(itertools.product(standard_matrices, standard_matrices))])
-    def test_correct_eigenvalues_pauli_kronecker_products(self, pauli_product):
-        assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
+    @pytest.mark.parametrize("pauli_product", matrix_pairs)
+    def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(self, pauli_product):
+       """Test the paulieigs function for two qubits"""
+       assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
+
+    @pytest.mark.parametrize("pauli_product", matrix_pairs)
+    def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
+       """Test the paulieigs function for three qubits"""
+       assert np.array_equal(pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))))
 
     @pytest.mark.parametrize("depth", list(range(1, 6)))
     def test_cache_usage(self, depth):
