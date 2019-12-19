@@ -31,16 +31,40 @@ mags = np.linspace(0.0, 1.0, 7)
 class TestQubit:
     """Tests the qubit based operations."""
 
-    def test_hermitian_eigvals(self):
-        """ops: Tests the Heisenberg representation of the Squeezing gate."""
-        assert qubit.Hermitian._eigs == {}
+    identity = np.array([[1, 0], [0, 1]])
+    paulix = np.array([[0, 1], [1, 0]])
+    pauliy = np.array([[0, -1j], [1j, 0]])
+    pauliz = np.array([[1, 0], [0, -1]])
+    hadamard = 1/np.sqrt(2)*np.array([[1, 1],[1, -1]])
 
-        observable = np.array([[1, 0], [0, 1]])
+    observables = [identity, paulix, pauliy, pauliz, hadamard]
+
+
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", [
+        (np.array([[1, 0], [0, 1]]), np.array([1., 1.]), np.array([[1., 0.],[0., 1.]])),
+        (np.array([[0, 1], [1, 0]]), np.array([-1, 1]), np.array([[-0.70710678,  0.70710678],[ 0.70710678,  0.70710678]])),
+        (np.array([[0, -1j], [1j, 0]]), np.array([-1, 1]), np.array([[-0.70710678+0.j        , -0.70710678+0.j        ], [ 0.        +0.70710678j,  0.        -0.70710678j]])),
+        (np.array([[1, 0], [0, -1]]), np.array([-1, 1]), np.array([[0., 1.], [1., 0.]])),
+        (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1, 1]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
+    ])
+    def test_hermitian_eigvals_eigvecs(self, observable, eigvals, eigvecs, tol):
+        """Tests that the eigvals method of the Hermitian class returns the correct results."""
         key = tuple(observable.flatten().tolist())
 
         qubit.Hermitian.eigvals(observable)
-        assert np.all(qubit.Hermitian._eigs[key]["eigval"] == np.array([1., 1.]))
-        assert np.all(qubit.Hermitian._eigs[key]["eigvec"] == np.array([[1, 0], [0, 1]]))
+        assert np.allclose(qubit.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qubit.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", [
+        (np.array([[1, 0], [0, 1]]), np.array([1., 1.]), np.array([[1., 0.],[0., 1.]])),
+        (np.array([[0, 1], [1, 0]]), np.array([-1, 1]), np.array([[-0.70710678,  0.70710678],[ 0.70710678,  0.70710678]])),
+        (np.array([[0, -1j], [1j, 0]]), np.array([-1, 1]), np.array([[-0.70710678+0.j        , -0.70710678+0.j        ], [ 0.        +0.70710678j,  0.        -0.70710678j]])),
+        (np.array([[1, 0], [0, -1]]), np.array([-1, 1]), np.array([[0., 1.], [1., 0.]])),
+        (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1, 1]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
+    ])
+    def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol):
+        qubit_unitary = qubit.Hermitian.diagonalizing_gates(observable, wires = [0])
+        assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
 
 class TestCV:
     """Tests the continuous variable based operations."""

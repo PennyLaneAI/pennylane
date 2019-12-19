@@ -925,7 +925,7 @@ class Hermitian(Observable):
         return cls._eigs[Hkey]["eigval"]
 
     @classmethod
-    def diagonalizing_gates(cls, Hmat):
+    def diagonalizing_gates(cls, Hmat, wires):
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             # store the eigenvalues and eigenvectors corresponding to H in a
@@ -933,7 +933,7 @@ class Hermitian(Observable):
             w, U = np.linalg.eigh(Hmat)
             cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
         return [
-            QubitUnitary([cls._eigs[Hkey]["eigvec"].conj().t], self.wires)
+            QubitUnitary(cls._eigs[Hkey]["eigvec"].conj().T, wires=wires)
         ]
 
 
