@@ -904,7 +904,7 @@ class Hermitian(Observable):
 
     Args:
         A (array): square hermitian matrix
-        s (Sequence[int] or int): the wire(s) the operation acts on
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = Any
     num_params = 1
