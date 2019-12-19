@@ -108,11 +108,14 @@ class TestPauliEigs:
     paulix = np.array([[0, 1], [1, 0]])
     pauliy = np.array([[0, -1j], [1j, 0]])
     pauliz = np.array([[1, 0], [0, -1]])
+    hadamard = 1/np.sqrt(2)*np.array([[1, 1],[1, -1]])
 
-    standard_matrices = [paulix, pauliy, pauliz]
+    standard_matrices = [paulix, pauliy, pauliz, hadamard]
 
     @pytest.mark.parametrize("pauli", standard_matrices)
     def test_correct_eigenvalues_paulis(self, pauli):
+        """Test that empty dict is returned if function has
+        no default arguments"""
         assert np.array_equal(pu.pauli_eigs(1), np.diag(self.pauliz))
 
     @pytest.mark.parametrize("pauli_product", [np.kron(x, y) for x, y in list(itertools.product(standard_matrices, standard_matrices))])
