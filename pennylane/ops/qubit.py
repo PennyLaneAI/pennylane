@@ -904,7 +904,7 @@ class Hermitian(Observable):
 
     Args:
         A (array): square hermitian matrix
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        s (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = Any
     num_params = 1
@@ -914,7 +914,6 @@ class Hermitian(Observable):
 
     @classmethod
     def eigvals(cls, Hmat):
-        Hmat = np.array(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             # store the eigenvalues and eigenvectors corresponding to H in a

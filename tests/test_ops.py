@@ -21,155 +21,171 @@ import pytest
 
 import pennylane
 from pennylane import numpy as np
-from pennylane.ops import cv
+from pennylane.ops import cv, qubit
 
 
 s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
 mags = np.linspace(0.0, 1.0, 7)
 
+class TestQubit:
+    """Tests the qubit based operations."""
 
-@pytest.mark.parametrize("phi", phis)
-def test_rotation_heisenberg(phi):
-    """ops: Tests the Heisenberg representation of the Rotation gate."""
-    matrix = cv.Rotation._heisenberg_rep([phi])
-    true_matrix = np.array(
-        [[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]]
-    )
-    assert np.allclose(matrix, true_matrix)
+    def test_hermitian_eigvals(self):
+        """ops: Tests the Heisenberg representation of the Squeezing gate."""
+        assert qubit.Hermitian._eigs == {}
 
+        observable = np.array([[1, 0], [0, 1]])
+        key = tuple(observable.flatten().tolist())
 
-@pytest.mark.parametrize("phi", phis)
-@pytest.mark.parametrize("mag", mags)
-def test_squeezing_heisenberg(phi, mag):
-    """ops: Tests the Heisenberg representation of the Squeezing gate."""
-    r = mag
-    matrix = cv.Squeezing._heisenberg_rep([r, phi])
-    true_matrix = np.array(
-        [
-            [1, 0, 0],
-            [0, np.cosh(r) - np.cos(phi) * np.sinh(r), -np.sin(phi) * np.sinh(r)],
-            [0, -np.sin(phi) * np.sinh(r), np.cosh(r) + np.cos(phi) * np.sinh(r)],
-        ]
-    )
-    assert np.allclose(matrix, true_matrix)
+        qubit.Hermitian.eigvals(observable)
+        assert np.all(qubit.Hermitian._eigs[key]["eigval"] == np.array([1., 1.]))
+        assert np.all(qubit.Hermitian._eigs[key]["eigvec"] == np.array([[1, 0], [0, 1]]))
 
+class TestCV:
+    """Tests the continuous variable based operations."""
 
-@pytest.mark.parametrize("phi", phis)
-@pytest.mark.parametrize("mag", mags)
-def test_displacement_heisenberg(phi, mag):
-    """ops: Tests the Heisenberg representation of the Displacement gate."""
-    r = mag
-    hbar = 2
-    matrix = cv.Displacement._heisenberg_rep([r, phi])
-    true_matrix = np.array(
-        [
-            [1, 0, 0],
-            [np.sqrt(2 * hbar) * r * np.cos(phi), 1, 0],
-            [np.sqrt(2 * hbar) * r * np.sin(phi), 0, 1],
-        ]
-    )
-    assert np.allclose(matrix, true_matrix)
+    @pytest.mark.parametrize("phi", phis)
+    def test_rotation_heisenberg(self, phi):
+        """ops: Tests the Heisenberg representation of the Rotation gate."""
+        matrix = cv.Rotation._heisenberg_rep([phi])
+        true_matrix = np.array(
+            [[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]]
+        )
+        assert np.allclose(matrix, true_matrix)
 
 
-@pytest.mark.parametrize("phi", phis)
-@pytest.mark.parametrize("theta", phis)
-def test_beamsplitter_heisenberg(phi, theta):
-    """ops: Tests the Heisenberg representation of the Beamsplitter gate."""
-    matrix = cv.Beamsplitter._heisenberg_rep([theta, phi])
-    true_matrix = np.array(
-        [
-            [1, 0, 0, 0, 0],
+    @pytest.mark.parametrize("phi", phis)
+    @pytest.mark.parametrize("mag", mags)
+    def test_squeezing_heisenberg(self, phi, mag):
+        """ops: Tests the Heisenberg representation of the Squeezing gate."""
+        r = mag
+        matrix = cv.Squeezing._heisenberg_rep([r, phi])
+        true_matrix = np.array(
             [
-                0,
-                np.cos(theta),
-                0,
-                -np.cos(phi) * np.sin(theta),
-                -np.sin(phi) * np.sin(theta),
-            ],
+                [1, 0, 0],
+                [0, np.cosh(r) - np.cos(phi) * np.sinh(r), -np.sin(phi) * np.sinh(r)],
+                [0, -np.sin(phi) * np.sinh(r), np.cosh(r) + np.cos(phi) * np.sinh(r)],
+            ]
+        )
+        assert np.allclose(matrix, true_matrix)
+
+
+    @pytest.mark.parametrize("phi", phis)
+    @pytest.mark.parametrize("mag", mags)
+    def test_displacement_heisenberg(self, phi, mag):
+        """ops: Tests the Heisenberg representation of the Displacement gate."""
+        r = mag
+        hbar = 2
+        matrix = cv.Displacement._heisenberg_rep([r, phi])
+        true_matrix = np.array(
             [
-                0,
-                0,
-                np.cos(theta),
-                np.sin(phi) * np.sin(theta),
-                -np.cos(phi) * np.sin(theta),
-            ],
+                [1, 0, 0],
+                [np.sqrt(2 * hbar) * r * np.cos(phi), 1, 0],
+                [np.sqrt(2 * hbar) * r * np.sin(phi), 0, 1],
+            ]
+        )
+        assert np.allclose(matrix, true_matrix)
+
+
+    @pytest.mark.parametrize("phi", phis)
+    @pytest.mark.parametrize("theta", phis)
+    def test_beamsplitter_heisenberg(self, phi, theta):
+        """ops: Tests the Heisenberg representation of the Beamsplitter gate."""
+        matrix = cv.Beamsplitter._heisenberg_rep([theta, phi])
+        true_matrix = np.array(
             [
-                0,
-                np.cos(phi) * np.sin(theta),
-                -np.sin(phi) * np.sin(theta),
-                np.cos(theta),
-                0,
-            ],
+                [1, 0, 0, 0, 0],
+                [
+                    0,
+                    np.cos(theta),
+                    0,
+                    -np.cos(phi) * np.sin(theta),
+                    -np.sin(phi) * np.sin(theta),
+                ],
+                [
+                    0,
+                    0,
+                    np.cos(theta),
+                    np.sin(phi) * np.sin(theta),
+                    -np.cos(phi) * np.sin(theta),
+                ],
+                [
+                    0,
+                    np.cos(phi) * np.sin(theta),
+                    -np.sin(phi) * np.sin(theta),
+                    np.cos(theta),
+                    0,
+                ],
+                [
+                    0,
+                    np.sin(phi) * np.sin(theta),
+                    np.cos(phi) * np.sin(theta),
+                    0,
+                    np.cos(theta),
+                ],
+            ]
+        )
+        assert np.allclose(matrix, true_matrix)
+
+
+    @pytest.mark.parametrize("phi", phis)
+    @pytest.mark.parametrize("mag", mags)
+    def test_two_mode_squeezing_heisenberg(self, phi, mag):
+        """ops: Tests the Heisenberg representation of the Beamsplitter gate."""
+        r = mag
+        matrix = cv.TwoModeSqueezing._heisenberg_rep([r, phi])
+        true_matrix = np.array(
             [
-                0,
-                np.sin(phi) * np.sin(theta),
-                np.cos(phi) * np.sin(theta),
-                0,
-                np.cos(theta),
-            ],
-        ]
-    )
-    assert np.allclose(matrix, true_matrix)
+                [1, 0, 0, 0, 0],
+                [0, np.cosh(r), 0, np.cos(phi) * np.sinh(r), np.sin(phi) * np.sinh(r)],
+                [0, 0, np.cosh(r), np.sin(phi) * np.sinh(r), -np.cos(phi) * np.sinh(r)],
+                [0, np.cos(phi) * np.sinh(r), np.sin(phi) * np.sinh(r), np.cosh(r), 0],
+                [0, np.sin(phi) * np.sinh(r), -np.cos(phi) * np.sinh(r), 0, np.cosh(r)],
+            ]
+        )
+        assert np.allclose(matrix, true_matrix)
 
 
-@pytest.mark.parametrize("phi", phis)
-@pytest.mark.parametrize("mag", mags)
-def test_two_mode_squeezing_heisenberg(phi, mag):
-    """ops: Tests the Heisenberg representation of the Beamsplitter gate."""
-    r = mag
-    matrix = cv.TwoModeSqueezing._heisenberg_rep([r, phi])
-    true_matrix = np.array(
-        [
-            [1, 0, 0, 0, 0],
-            [0, np.cosh(r), 0, np.cos(phi) * np.sinh(r), np.sin(phi) * np.sinh(r)],
-            [0, 0, np.cosh(r), np.sin(phi) * np.sinh(r), -np.cos(phi) * np.sinh(r)],
-            [0, np.cos(phi) * np.sinh(r), np.sin(phi) * np.sinh(r), np.cosh(r), 0],
-            [0, np.sin(phi) * np.sinh(r), -np.cos(phi) * np.sinh(r), 0, np.cosh(r)],
-        ]
-    )
-    assert np.allclose(matrix, true_matrix)
+    @pytest.mark.parametrize("s", s_vals)
+    def test_quadratic_phase_heisenberg(self, s):
+        """ops: Tests the Heisenberg representation of the QuadraticPhase gate."""
+        matrix = cv.QuadraticPhase._heisenberg_rep([s])
+        true_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, s, 1]])
+        assert np.allclose(matrix, true_matrix)
 
 
-@pytest.mark.parametrize("s", s_vals)
-def test_quadratic_phase_heisenberg(s):
-    """ops: Tests the Heisenberg representation of the QuadraticPhase gate."""
-    matrix = cv.QuadraticPhase._heisenberg_rep([s])
-    true_matrix = np.array([[1, 0, 0], [0, 1, 0], [0, s, 1]])
-    assert np.allclose(matrix, true_matrix)
+    @pytest.mark.parametrize("s", s_vals)
+    def test_controlled_addition_heisenberg(self, s):
+        """ops: Tests the Heisenberg representation of ControlledAddition gate.
+        """
+        matrix = cv.ControlledAddition._heisenberg_rep([s])
+        true_matrix = np.array(
+            [
+                [1, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 0, 1, 0, -s],
+                [0, s, 0, 1, 0],
+                [0, 0, 0, 0, 1],
+            ]
+        )
+        assert np.allclose(matrix, true_matrix)
 
 
-@pytest.mark.parametrize("s", s_vals)
-def test_controlled_addition_heisenberg(s):
-    """ops: Tests the Heisenberg representation of ControlledAddition gate.
-    """
-    matrix = cv.ControlledAddition._heisenberg_rep([s])
-    true_matrix = np.array(
-        [
-            [1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0],
-            [0, 0, 1, 0, -s],
-            [0, s, 0, 1, 0],
-            [0, 0, 0, 0, 1],
-        ]
-    )
-    assert np.allclose(matrix, true_matrix)
-
-
-@pytest.mark.parametrize("s", s_vals)
-def test_controlled_phase_heisenberg(s):
-    """Tests the Heisenberg representation of the ControlledPhase gate."""
-    matrix = cv.ControlledPhase._heisenberg_rep([s])
-    true_matrix = np.array(
-        [
-            [1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0],
-            [0, 0, 1, s, 0],
-            [0, 0, 0, 1, 0],
-            [0, s, 0, 0, 1],
-        ]
-    )
-    assert np.allclose(matrix, true_matrix)
+    @pytest.mark.parametrize("s", s_vals)
+    def test_controlled_phase_heisenberg(self, s):
+        """Tests the Heisenberg representation of the ControlledPhase gate."""
+        matrix = cv.ControlledPhase._heisenberg_rep([s])
+        true_matrix = np.array(
+            [
+                [1, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
+                [0, 0, 1, s, 0],
+                [0, 0, 0, 1, 0],
+                [0, s, 0, 0, 1],
+            ]
+        )
+        assert np.allclose(matrix, true_matrix)
 
 
 class TestNonGaussian:
