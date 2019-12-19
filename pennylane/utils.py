@@ -345,4 +345,3 @@ class OperationRecorder:
                 output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
 
         return output
-

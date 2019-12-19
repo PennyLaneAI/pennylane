@@ -914,6 +914,12 @@ class Hermitian(Observable):
 
     @classmethod
     def eigvals(cls, Hmat):
+        """Return the eigenvalues of the specified Hermitian observable while
+        also storing the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the tensor product observable
+        """
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             # store the eigenvalues and eigenvectors corresponding to H in a
@@ -926,6 +932,13 @@ class Hermitian(Observable):
 
     @classmethod
     def diagonalizing_gates(cls, Hmat, wires):
+        """Return the unitaries that diagonalize the Hermitian observable
+        while also storing the eigenvalues and eigenvectors from the
+        eigendecomposition.
+
+        Returns:
+            list: a list of unitaries diagonalizing the Hermitian observable
+        """
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             # store the eigenvalues and eigenvectors corresponding to H in a
