@@ -44,13 +44,17 @@ class TestQubit:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    @pytest.mark.parametrize("observable_pair", [(EIGVALS_TEST_DATA[idx_1], EIGVALS_TEST_DATA[idx_2]) for idx_1 in range(len(EIGVALS_TEST_DATA)) for idx_2 in range(len(EIGVALS_TEST_DATA)) if idx_1 != idx_2])
-    def test_hermitian_eigvals_eigvecs_two_different_observables(self, observable_pair, tol):
+    @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
+    @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
+    def test_hermitian_eigvals_eigvecs_two_different_observables(self, obs1, obs2, tol):
         """Tests that the eigvals method of the Hermitian class returns the correct results
-           for two observables."""
-        observable_1 = observable_pair[0][0]
-        observable_1_eigvals = observable_pair[0][1]
-        observable_1_eigvecs = observable_pair[0][2]
+        for two observables."""
+        if np.all(obs1[0] == obs2[0]):
+            pytest.skip("Test only runs for pairs of differing observable")
+
+        observable_1 = obs1[0]
+        observable_1_eigvals = obs1[1]
+        observable_1_eigvecs = obs1[2]
 
         key = tuple(observable_1.flatten().tolist())
 
@@ -59,9 +63,9 @@ class TestQubit:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], observable_1_eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-        observable_2 = observable_pair[1][0]
-        observable_2_eigvals = observable_pair[1][1]
-        observable_2_eigvecs = observable_pair[1][2]
+        observable_2 = obs2[0]
+        observable_2_eigvals = obs2[1]
+        observable_2_eigvecs = obs2[2]
 
         key_2 = tuple(observable_2.flatten().tolist())
 
@@ -97,14 +101,17 @@ class TestQubit:
         assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    @pytest.mark.parametrize("observable_pair", [(EIGVALS_TEST_DATA[idx_1], EIGVALS_TEST_DATA[idx_2]) for idx_1 in range(len(EIGVALS_TEST_DATA)) for idx_2 in range(len(EIGVALS_TEST_DATA)) if idx_1 != idx_2])
-    def test_hermitian_diagonalizing_gates_two_different_observables(self, observable_pair, tol):
+    @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
+    @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
+    def test_hermitian_diagonalizing_gates_two_different_observables(self, obs1, obs2, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results
            for two observables."""
+        if np.all(obs1[0] == obs2[0]):
+            pytest.skip("Test only runs for pairs of differing observable")
 
-        observable_1 = observable_pair[0][0]
-        observable_1_eigvals = observable_pair[0][1]
-        observable_1_eigvecs = observable_pair[0][2]
+        observable_1 = obs1[0]
+        observable_1_eigvals = obs1[1]
+        observable_1_eigvecs = obs1[2]
 
         qubit_unitary = qml.Hermitian.diagonalizing_gates(observable_1, wires = [0])
 
@@ -115,9 +122,9 @@ class TestQubit:
         assert np.allclose(qubit_unitary[0].params, observable_1_eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-        observable_2 = observable_pair[1][0]
-        observable_2_eigvals = observable_pair[1][1]
-        observable_2_eigvecs = observable_pair[1][2]
+        observable_2 = obs2[0]
+        observable_2_eigvals = obs2[1]
+        observable_2_eigvecs = obs2[2]
 
         qubit_unitary_2 = qml.Hermitian.diagonalizing_gates(observable_2, wires = [0])
 
@@ -160,19 +167,16 @@ class TestQubitIntegration:
         given observable."""
         num_wires = 2
 
-        obs = np.kron(observable, observable) 
+        tensor_obs = np.kron(observable, observable)
         eigvals = np.kron(eigvals, eigvals)
 
         dev = qml.device('default.qubit', wires=num_wires)
 
-        diag_gates = qml.Hermitian.diagonalizing_gates(obs, wires=list(range(num_wires)))
+        diag_gates = qml.Hermitian.diagonalizing_gates(tensor_obs, wires=list(range(num_wires)))
 
         assert len(diag_gates) == 1
 
         U = diag_gates[0].parameters[0]
-        x = U @ obs @ U.conj().T
-        off_diagonal_indices = np.where(~np.eye(x.shape[0], dtype=bool))
-
-        assert np.all([np.isclose(elem, 0, atol=tol, rtol=0) for elem in x[off_diagonal_indices]])
-        assert np.allclose(np.sort(eigvals), np.sort(np.diag(x)), atol=tol, rtol=0)
+        x = U @ tensor_obs @ U.conj().T
+        assert np.allclose(np.diag(np.sort(eigvals)), x, atol=tol, rtol=0)
 
