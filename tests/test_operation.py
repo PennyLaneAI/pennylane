@@ -709,6 +709,24 @@ class TestTensor:
             T = X @ Z
             Y @ T
 
+    def test_eigvals(self):
+        """Test that the correct eigenvalues are returned for the Tensor"""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        t = Tensor(X, Y)
+        assert np.array_equal(t.eigvals, np.kron(qml.PauliX.eigvals, qml.PauliY.eigvals))
+
+    @pytest.mark.usefixtures("tear_down_hermitian")
+    def test_eigvals_hermitian(self, tol):
+        """Test that the correct eigenvalues are returned for the Tensor"""
+        X = qml.PauliX(0)
+        hamiltonian = np.array([[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]])
+        Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
+        t = Tensor(X, Herm)
+        d = np.kron(np.array([1., -1.]), np.array([-1.,  1.,  1.,  1.]))
+        t = t.eigvals
+        assert np.allclose(t, d, atol=tol, rtol = 0)
+
 
 class TestDecomposition:
     """Test for operation decomposition"""

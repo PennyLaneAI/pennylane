@@ -22,6 +22,8 @@ import numpy as np
 
 import pennylane as qml
 import pennylane.utils as pu
+import functools
+import itertools
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -99,6 +101,41 @@ class TestFlatten:
 
         with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
             pu.unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
+
+class TestPauliEigs:
+    """Tests for the auxiliary function to return the eigenvalues for Paulis"""
+
+    paulix = np.array([[0, 1], [1, 0]])
+    pauliy = np.array([[0, -1j], [1j, 0]])
+    pauliz = np.array([[1, 0], [0, -1]])
+    hadamard = 1/np.sqrt(2)*np.array([[1, 1],[1, -1]])
+
+    standard_observables = [paulix, pauliy, pauliz, hadamard]
+
+    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_observables, standard_observables))]
+
+    @pytest.mark.parametrize("pauli", standard_observables)
+    def test_correct_eigenvalues_paulis(self, pauli):
+        """Test the paulieigs function for one qubit"""
+        assert np.array_equal(pu.pauli_eigs(1), np.diag(self.pauliz))
+
+    @pytest.mark.parametrize("pauli_product", matrix_pairs)
+    def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(self, pauli_product):
+       """Test the paulieigs function for two qubits"""
+       assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
+
+    @pytest.mark.parametrize("pauli_product", matrix_pairs)
+    def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
+       """Test the paulieigs function for three qubits"""
+       assert np.array_equal(pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))))
+
+    @pytest.mark.parametrize("depth", list(range(1, 6)))
+    def test_cache_usage(self, depth):
+        """Test that the right number of cachings have been executed after clearing the cache"""
+        pu.pauli_eigs.cache_clear()
+        pu.pauli_eigs(depth)
+        total_runs = sum([2**x for x in range(depth)])
+        assert functools._CacheInfo(depth - 1, depth, 128, depth)== pu.pauli_eigs.cache_info()
 
 
 class TestArgumentHelpers:
