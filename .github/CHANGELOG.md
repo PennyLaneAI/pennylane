@@ -14,6 +14,9 @@
 
 ### Improvements
 
+* Added the ``eigvals`` attribute for subclasses of the ``Observable`` class
+  that returns the eigenvalues of an Hermitian operator.
+
 ### Documentation
 
 * Improved documentation of ``AmplitudeEmbedding`` and ``BasisEmbedding`` templates.
