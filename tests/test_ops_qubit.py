@@ -25,11 +25,12 @@ from pennylane.plugins.default_qubit import Rot3
 
 class TestHadamard:
     """Test functions for Hadamard class."""
+
     def test_hadamard_matrix(self, tol):
         """Test the Hadamard matrix representation"""
         hadamard = qubit.Hadamard(0)
         matrix = hadamard.matrix()
-        true_matrix = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+        true_matrix = np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
 
         assert np.allclose(matrix, true_matrix, atol=tol, rtol=0)
 
@@ -40,7 +41,7 @@ class TestHadamard:
         Only for testing diagonalization based on Rot().
         """
         hadamard = qubit.Hadamard(0)
-        zgate = np.array([[1, 0], [0, -1]], dtype=complex)
+        zgate = np.array([[1, 0], [0, -1]], dtype=np.complex128)
 
         gate_list = []
         for op in hadamard.diagonalizing_gates():

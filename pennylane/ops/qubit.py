@@ -43,15 +43,17 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def matrix():
-        r"""Matrix representation of the Hadamard operator
+        r"""Matrix representation of the Hadamard operator.
+
         Returns:
             array[complex]: matrix representation of the Hadamard operator
         """
-        return np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+        return np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
 
     @staticmethod
     def diagonalizing_gates():
         r"""Diagonalize Hadamard.
+
         Returns:
             list(qml.Operation): A list of gates that diagonalize Hadamard in
             the computational basis.
