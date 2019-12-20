@@ -917,27 +917,33 @@ class Hermitian(Observable):
 
     @classmethod
     def eigvals(cls, Hmat):
-        """Return the eigenvalues of the specified Hermitian observable while
-        also storing the corresponding eigenvectors from the eigendecomposition.
+        """Return the eigenvalues of the specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the Hermitian observable
+        """
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in cls._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
+        return cls._eigs[Hkey]["eigval"]
+
+    @classmethod
+    def diagonalizing_gates(cls, Hmat, wires):
+         """Return the gate set that diagonalizes a circuit according to the
+        specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
         Returns:
             array: array containing the eigenvalues of the tensor product observable
         """
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
-            # store the eigenvalues and eigenvectors corresponding to H in a
-            # dictionary, so that they do not need to be calculated later
-            w, U = np.linalg.eigh(Hmat)
-            cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
-
-        # retrieve eigenvalues
-        return cls._eigs[Hkey]["eigval"]
-
-    @classmethod
-    def diagonalizing_gates(cls, Hmat, wires):
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in cls._eigs:
-            # store the eigenvalues and eigenvectors corresponding to H in a
-            # dictionary, so that they do not need to be calculated later
             w, U = np.linalg.eigh(Hmat)
             cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
         return [
