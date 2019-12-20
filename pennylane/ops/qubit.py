@@ -41,6 +41,23 @@ class Hadamard(Observable, Operation):
     num_wires = 1
     par_domain = None
 
+    @staticmethod
+    def matrix():
+        r"""Matrix representation of the Hadamard operator
+        Returns:
+            array[complex]: matrix representation of the Hadamard operator
+        """
+        return np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
+
+    @staticmethod
+    def diagonalizing_gates():
+        r"""Diagonalize Hadamard.
+        Returns:
+            list(qml.Operation): A list of gates that diagonalize Hadamard in
+            the computational basis.
+        """
+        return [Rot(np.pi, -np.pi / 4, np.pi, wires=0)]
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
