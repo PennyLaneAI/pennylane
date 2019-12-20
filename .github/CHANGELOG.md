@@ -16,7 +16,6 @@
 
 * Added the ``Observable.eigvals`` attribute to return the eigenvalues of observables.
   [#449](https://github.com/XanaduAI/pennylane/pull/449)
-  operator for subclasses of the ``Observable`` class.
 
 ### Documentation
 
