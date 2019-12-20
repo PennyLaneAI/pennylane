@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
+Unit tests for the :mod:`pennylane.ops.qubit` operations.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import itertools
@@ -35,6 +35,7 @@ class TestQubit:
     """Tests the qubit based operations."""
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_eigvals_eigvecs(self, observable, eigvals, eigvecs, tol):
         """Tests that the eigvals method of the Hermitian class returns the correct results."""
 
@@ -46,6 +47,7 @@ class TestQubit:
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable_pair", [(EIGVALS_TEST_DATA[idx_1], EIGVALS_TEST_DATA[idx_2]) for idx_1 in range(len(EIGVALS_TEST_DATA)) for idx_2 in range(len(EIGVALS_TEST_DATA)) if idx_1 != idx_2])
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_eigvals_eigvecs_two_different_observables(self, observable_pair, tol):
         """Tests that the eigvals method of the Hermitian class returns the correct results
            for two observables."""
@@ -72,6 +74,7 @@ class TestQubit:
         assert len(qml.Hermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_eigvals_eigvecs_same_observable_twice(self, observable, eigvals, eigvecs, tol):
         """Tests that the eigvals method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
@@ -87,6 +90,7 @@ class TestQubit:
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
         qubit_unitary = qml.Hermitian.diagonalizing_gates(observable, wires = [0])
@@ -99,6 +103,7 @@ class TestQubit:
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable_pair", [(EIGVALS_TEST_DATA[idx_1], EIGVALS_TEST_DATA[idx_2]) for idx_1 in range(len(EIGVALS_TEST_DATA)) for idx_2 in range(len(EIGVALS_TEST_DATA)) if idx_1 != idx_2])
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_diagonalizing_gates_two_different_observables(self, observable_pair, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results
            for two observables."""
@@ -130,6 +135,7 @@ class TestQubit:
         assert len(qml.Hermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_diagonalizing_gatesi_same_observable_twice(self, observable, eigvals, eigvecs, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         qubit_unitary = qml.Hermitian.diagonalizing_gates(observable, wires = [0])
@@ -156,6 +162,7 @@ class TestQubitIntegration:
     """Integration for the qubit based operations."""
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_diagonalizing_gates_integration(self, observable, eigvals, eigvecs, tol):
         """Tests that the diagonalizing_gates method of the Hermitian class contains contains a gate that diagonalizes the
         given observable."""
