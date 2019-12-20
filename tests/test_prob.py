@@ -67,6 +67,24 @@ def test_marginal_prob(init_state, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+def test_integration(tol):
+    """Test the probability is correct for a known state preparation."""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.probs(wires=[0, 1])
+
+    # expected probability, using [00, 01, 10, 11]
+    # ordering, is [0.5, 0.5, 0, 0]
+
+    res = circuit()
+    expected = np.array([0.5, 0.5, 0, 0])
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
 def test_numerical_analytic_diff_agree(init_state, tol):
     """Test that the finite difference and parameter shift rule
     provide the same Jacobian."""
