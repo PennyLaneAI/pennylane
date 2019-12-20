@@ -18,7 +18,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples.
 """
 import pennylane as qml
-from .operation import Observable, Sample, Variance, Expectation, Tensor
+from .operation import Observable, Sample, Variance, Expectation, Probability, Tensor
 from .qnodes import QuantumFunctionError
 
 
@@ -117,6 +117,27 @@ def sample(op):
 
     # set return type to be a sample
     op.return_type = Sample
+
+    if qml._current_context is not None:
+        # add observable to QNode observable queue
+        qml._current_context._append_op(op)
+
+    return op
+
+
+def probs(wires):
+    r"""Probability of each computational basis state.
+
+    This measurement function accepts no observables, and instead
+    instructs the QNode to return a flat array containing the
+    probabilities of each quantum state.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    # pylint: disable=protected-access
+    op = qml.Identity(wires=wires, do_queue=False)
+    op.return_type = Probability
 
     if qml._current_context is not None:
         # add observable to QNode observable queue

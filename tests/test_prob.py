@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the PennyLane prob() measurement function.
+Unit tests for the PennyLane qml.probs() measurement function.
 """
 import pytest
 
 import numpy as np
 import pennylane as qml
-from pennylane.beta import prob
 
 
 # make the test deterministic
@@ -45,7 +44,7 @@ def test_full_prob(init_state, tol):
     @qml.qnode(dev)
     def circuit():
         qml.QubitStateVector(state, wires=list(range(4)))
-        return prob(wires=range(4))
+        return qml.probs(wires=range(4))
 
     res = circuit()
     expected = np.abs(state)**2
@@ -60,7 +59,7 @@ def test_marginal_prob(init_state, tol):
     @qml.qnode(dev)
     def circuit():
         qml.QubitStateVector(state, wires=list(range(4)))
-        return prob(wires=[1, 3])
+        return qml.probs(wires=[1, 3])
 
     res = circuit()
     expected = np.reshape(np.abs(state)**2, [2]*4)
@@ -85,7 +84,7 @@ def test_numerical_analytic_diff_agree(init_state, tol):
         qml.CNOT(wires=[1, 2])
         qml.CNOT(wires=[2, 3])
 
-        return prob(wires=[1, 3])
+        return qml.probs(wires=[1, 3])
 
     circuit = qml.QNode(circuit, dev)
 
