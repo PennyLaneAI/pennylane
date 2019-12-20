@@ -187,7 +187,8 @@ def probs(wires):
     probabilities of each quantum state.
 
     Marginal probabilities may also be requested by restricting
-    the wires to a subset of the full system.
+    the wires to a subset of the full system; the size of the
+    returned array will be ``[2**len(wires)]``.
 
     **Example:**
 
