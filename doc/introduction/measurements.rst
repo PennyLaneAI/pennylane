@@ -116,8 +116,8 @@ For example:
 array([0.99750208, 0.00249792, 0.        , 0.        ])
 
 The returned probability array uses lexicographical ordering,
-so corresponds to a :math:`99.75%` probability of measuring
-state :math:`|00\rangle`, and a :math:`0.25%` probability of
+so corresponds to a :math:`99.75\%` probability of measuring
+state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
 
 Changing the number of shots

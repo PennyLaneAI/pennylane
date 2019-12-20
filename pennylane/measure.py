@@ -207,7 +207,7 @@ def probs(wires):
     array([0.5, 0.5, 0. , 0. ])
 
     The returned array is in lexicographic order, so corresponds
-    to a :math:`50%` chance of measuring either :math:`|00\rangle`
+    to a :math:`50\%` chance of measuring either :math:`|00\rangle`
     or :math:`|01\rangle`.
 
     Args:
