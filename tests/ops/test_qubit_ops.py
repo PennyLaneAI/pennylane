@@ -156,7 +156,6 @@ class TestQubit:
         assert len(qml.Hermitian._eigs) == 1
 
 
-
 class TestQubitIntegration:
     """Integration for the qubit based operations."""
 
