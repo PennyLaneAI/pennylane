@@ -14,8 +14,8 @@
 
 ### Improvements
 
-* Added the ``eigvals`` attribute for subclasses of the ``Observable`` class
-  that returns the eigenvalues of an Hermitian operator.
+* Added the ``eigvals`` attribute returning the eigenvalues of an Hermitian
+  operator for subclasses of the ``Observable`` class.
 
 ### Documentation
 
