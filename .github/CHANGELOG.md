@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+* Added `QAOAEmbedding` and its parameter initialization 
+  as a new trainable template.
+  [#442](https://github.com/XanaduAI/pennylane/pull/442)
+
 ### Breaking changes
 
 * Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
