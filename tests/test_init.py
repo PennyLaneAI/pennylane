@@ -70,7 +70,13 @@ INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal, rnd_rpt_nrml1, (repeat, n_
                       (qml.init.cvqnn_layers_kappa_uniform, rpt_uni, (repeat, n_wires)),
                       (qml.init.interferometer_theta_uniform, base_uni, (n_if,)),
                       (qml.init.interferometer_phi_uniform, base_uni, (n_if,)),
-                      (qml.init.interferometer_varphi_uniform, base_uni, (n_wires,))
+                      (qml.init.interferometer_varphi_uniform, base_uni, (n_wires,)),
+                      (qml.init.qaoa_embedding_normal, rpt_nrml, (repeat, 2*n_wires)),
+                      (qml.init.qaoa_embedding_uniform, rpt_uni, (repeat, 2*n_wires)),
+                      (qml.init.qaoa_embedding_uniform, {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1}, (2, 1)),
+                      (qml.init.qaoa_embedding_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1}, (2, 3)),
+                      (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1}, (2, 1)),
+                      (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1}, (2, 3)),
                       ]
 # Functions returning a list of parameter arrays
 INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, rpt,
@@ -86,7 +92,7 @@ INITALL_KWARGS = [i[0:2] for i in INITALL_KWARGS_SHAPES]
 #################
 
 
-class TestInitRepeated:
+class TestInit:
     """Tests the initialization functions from the ``init`` module."""
 
     @pytest.mark.parametrize("init, sgntr, shp", INIT_KWARGS_SHAPES)

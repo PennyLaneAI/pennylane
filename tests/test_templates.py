@@ -14,14 +14,16 @@
 """
 Integration tests for templates, including integration with initialization functions
 in :mod:`pennylane.init`, running templates in larger circuits,
-combining templates, using positional and keyword arguments, and using different interfaces.
+combining templates, feeding positional and keyword arguments of qnodes into templates,
+and using different interfaces.
 
 New tests are added as follows:
 
 * When adding a new interface, try to import it and extend the fixture ``interfaces``. Also add the interface
   gradient computation to the TestGradientIntegration tests.
 
-* When adding a new template, extend the fixtures ``QUBIT_CONSTANT_INPUT`` or ``CV_CONSTANT_INPUT`` by a *list* of arguments to the
+* When adding a new template, extend the fixtures ``QUBIT_CONSTANT_INPUT`` or ``CV_CONSTANT_INPUT``
+  by a *list* of arguments to the
   template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
 
 * When adding a new parameter initialization function, extend the fixtures ``qubit_func`` or
@@ -42,13 +44,16 @@ from pennylane.templates import (Interferometer,
                                  SqueezingEmbedding,
                                  DisplacementEmbedding,
                                  BasisStatePreparation,
-                                 MottonenStatePreparation)
+                                 MottonenStatePreparation,
+                                 QAOAEmbedding)
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
                             random_layers_normal,
                             cvqnn_layers_all,
-                            interferometer_all)
+                            interferometer_all,
+                            qaoa_embedding_uniform,
+                            qaoa_embedding_normal)
 
 #######################################
 # Interfaces
@@ -58,6 +63,7 @@ INTERFACES = [('numpy', np.array)]
 try:
     import torch
     from torch.autograd import Variable as TorchVariable
+
     INTERFACES.append(('torch', torch.tensor))
 except ImportError as e:
     pass
@@ -67,6 +73,7 @@ try:
 
     if tf.__version__[0] == "1":
         import tensorflow.contrib.eager as tfe
+
         tf.enable_eager_execution()
         TFVariable = tfe.Variable
     else:
@@ -79,30 +86,32 @@ except ImportError as e:
 #########################################
 # Parameters shared between test classes
 
-# qubit templates, constant inputs and kwargs
+# qubit templates, constant args and kwargs for 2 wires
 QUBIT_CONSTANT_INPUT = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                                      [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {}),
                         (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {}),
-                        (AngleEmbedding, [[1., 2.]], {})
+                        (AngleEmbedding, [[1., 2.]], {}),
+                        (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {})
                         ]
 
-# cv templates, constant inputs and keyword argument
+# cv templates, constant args and kwargs for 2 wires
 CV_CONSTANT_INPUT = [(DisplacementEmbedding, [[1., 2.]], {}),
                      (SqueezingEmbedding, [[1., 2.]], {}),
                      (CVNeuralNetLayers, [[[2.31], [1.22]],
-                                         [[3.47], [2.01]],
-                                         [[0.93, 1.58], [5.07, 4.82]],
-                                         [[0.21,  0.12], [-0.09, 0.04]],
-                                         [[4.76, 6.08], [6.09, 6.22]],
-                                         [[4.83], [1.70]],
-                                         [[4.74], [5.39]],
-                                         [[0.88, 0.62], [1.09, 3.02]],
-                                         [[-0.01, -0.05], [0.08, -0.19]],
-                                         [[1.89, 3.59], [1.49, 3.71]],
-                                         [[0.09,  0.03], [-0.14,  0.04]]
-                                         ], {}),
+                                          [[3.47], [2.01]],
+                                          [[0.93, 1.58], [5.07, 4.82]],
+                                          [[0.21, 0.12], [-0.09, 0.04]],
+                                          [[4.76, 6.08], [6.09, 6.22]],
+                                          [[4.83], [1.70]],
+                                          [[4.74], [5.39]],
+                                          [[0.88, 0.62], [1.09, 3.02]],
+                                          [[-0.01, -0.05], [0.08, -0.19]],
+                                          [[1.89, 3.59], [1.49, 3.71]],
+                                          [[0.09, 0.03], [-0.14, 0.04]]
+                                          ], {}),
                      (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {})
                      ]
+
 
 #########################################
 # Circuits shared by test classes
@@ -124,6 +133,7 @@ def qnode_qubit_args(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
         templ2(*inp2, **hyperp2)
         qml.PauliX(wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
     return circuit
 
 
@@ -191,6 +201,7 @@ def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
     return circuit
+
 
 ######################
 
@@ -309,7 +320,7 @@ class TestIntegrationCircuitSpecialCases:
     @pytest.mark.parametrize("template, inpts, hyperparams", QUBIT_CONSTANT_INPUT)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
     def test_integration_first_template_args(self, first_tmpl, first_inpts, first_hyperparams,
-                                               template, inpts, hyperparams, intrfc, to_var):
+                                             template, inpts, hyperparams, intrfc, to_var):
         """Checks integration of templates that must be the first operation in the circuit while
         using positional arguments."""
         inpts = first_inpts + inpts  # Combine inputs to allow passing with *
@@ -338,58 +349,66 @@ class TestIntegrationCircuitSpecialCases:
 
 class TestInitializationIntegration:
     """Tests integration with the parameter initialization functions from pennylane.init"""
+    #TODO: Combine CV and Qubit tests, since the only difference is the device
 
-    # qubit templates & their kwargs + intialization functions & their kwargs
-    qubit_func = [(StronglyEntanglingLayers, {}, strong_ent_layers_uniform, {'n_layers': None}),
-                  (StronglyEntanglingLayers, {}, strong_ent_layers_normal, {'n_layers': None}),
-                  (RandomLayers, {}, random_layers_uniform, {'n_layers': None, 'n_rots': 2}),
-                  (RandomLayers, {}, random_layers_normal, {'n_layers': None, 'n_rots': 2})]
+    def make_n_features(self, n):
+        """Helper to prepare dummy feature inputs for templates that have
+        as many features as number of wires."""
+        return [i for i in range(n)]
 
-    # cv templates & their kwargs + intialization functions & their kwargs
-    cv_func = [(CVNeuralNetLayers, {}, cvqnn_layers_all, {'n_layers': None}),
-               (Interferometer, {}, interferometer_all, {})]
+    # qubit templates, template args, template kwargs, intialization functions, init kwargs
+    qubit_func = [(StronglyEntanglingLayers, [], {'wires': range(2)}, strong_ent_layers_uniform, {'n_layers': 3}),
+                  (StronglyEntanglingLayers, [], {'wires': range(2)}, strong_ent_layers_normal, {'n_layers': 3}),
+                  (RandomLayers, [], {'wires': range(2)}, random_layers_uniform, {'n_layers': 3, 'n_rots': 2}),
+                  (RandomLayers, [], {'wires': range(2)}, random_layers_normal, {'n_layers': 3, 'n_rots': 2}),
+                  (QAOAEmbedding, [[1., 2.]], {'wires': range(2)}, qaoa_embedding_uniform, {'n_layers': 3}),
+                  (QAOAEmbedding, [[1., 2.]], {'wires': range(2)}, qaoa_embedding_normal, {'n_layers': 3})]
 
-    @pytest.mark.parametrize("template, hyperp, inpts, hyperp_f", qubit_func)
-    def test_integration_qubit_init(self, template, inpts, qubit_device, n_subsystems,
-                                    n_layers, hyperp, hyperp_f):
+    # cv templates, template args, template kwargs, intialization functions, init kwargs
+    cv_func = [(CVNeuralNetLayers, [], {'wires': range(2)}, cvqnn_layers_all, {'n_layers': 3}),
+               (Interferometer, [], {'wires': range(2)}, interferometer_all, {})]
+
+    @pytest.mark.parametrize("template, args, kwargs, init, kwargs_init", qubit_func)
+    def test_integration_qubit_init(self, template, args, kwargs, init, kwargs_init):
         """Checks parameter initialization compatible with qubit templates."""
-        hyperp['wires'] = range(n_subsystems)
-        hyperp_f['n_wires'] = n_subsystems
-        if 'n_layers' in hyperp_f:
-            hyperp_f['n_layers'] = n_layers
-        inp = inpts(**hyperp_f)
-
+        wires = kwargs['wires']
+        # choose n_wires for init function same as in template
+        kwargs_init['n_wires'] = len(wires)
+        inp = init(**kwargs_init)
         if not isinstance(inp, list):
-            inp = [inp]  # wrap argument for consistent unpacking
-
-        @qml.qnode(qubit_device)
-        def circuit(inp_):
-            template(*inp_, **hyperp)
+            # Wrap single outputs for consistent unpacking
+            inp = [inp]
+        # set init function's output as weights
+        for i in inp:
+            args.append(i) #TODO: This strategy only works when the init function produces the last of the args
+        dev = qml.device('default.qubit', wires=len(wires))
+        @qml.qnode(dev)
+        def circuit():
+            template(*args, **kwargs)
             return qml.expval(qml.Identity(0))
-
         # Check that execution does not throw error
-        circuit(inp)
+        circuit()
 
-    @pytest.mark.parametrize("template, hyperp, inpts, hyperp_f", cv_func)
-    def test_integration_cv_init(self, template, inpts, gaussian_device, n_subsystems,
-                                 n_layers, hyperp, hyperp_f):
+    @pytest.mark.parametrize("template, args, kwargs, init, kwargs_init", cv_func)
+    def test_integration_cv_init(self, gaussian_dummy, template, args, kwargs, init, kwargs_init):
         """Checks parameter initialization compatible with continuous-variable templates."""
-        hyperp['wires'] = range(n_subsystems)
-        hyperp_f['n_wires'] = n_subsystems
-        if 'n_layers' in hyperp_f:
-            hyperp_f['n_layers'] = n_layers
-        inp = inpts(**hyperp_f)
-
+        wires = kwargs['wires']
+        # choose n_wires for init function same as in template
+        kwargs_init['n_wires'] = len(wires)
+        inp = init(**kwargs_init)
         if not isinstance(inp, list):
-            inp = [inp]  # wrap argument for consistent unpacking
-
-        @qml.qnode(gaussian_device)
-        def circuit(inp_):
-            template(*inp_, **hyperp)
+            # Wrap single outputs for consistent unpacking
+            inp = [inp]
+        # set init function's output as weights
+        for i in inp:
+            args.append(i) #TODO: This strategy only works when the init function produces the last of the args
+        dev = gaussian_dummy(len(wires))
+        @qml.qnode(dev)
+        def circuit():
+            template(*args, **kwargs)
             return qml.expval(qml.Identity(0))
-
         # Check that execution does not throw error
-        circuit(inp)
+        circuit()
 
 
 class TestGradientIntegration:
@@ -401,6 +420,8 @@ class TestGradientIntegration:
                              {'wires': range(2)}, [0]),
                             (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'wires': range(2)}, [0]),
                             (AngleEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
+                            (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {'wires': range(2)}, [0]),
+                            (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {'wires': range(2)}, [1])
                             ]
 
     # cv templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
@@ -426,7 +447,8 @@ class TestGradientIntegration:
     def test_integration_qubit_grad(self, template, inpts, hyperp, argnm, intrfc, to_var):
         """Checks that gradient calculations of qubit templates execute without error."""
         inpts = [to_var(i) for i in inpts]
-        dev = qml.device('default.qubit', wires=2)
+        n_wires = len(hyperp['wires'])
+        dev = qml.device('default.qubit', wires=n_wires)
         @qml.qnode(dev, interface=intrfc)
         def circuit(*inp):
             template(*inp, **hyperp)
@@ -455,10 +477,12 @@ class TestGradientIntegration:
 
     @pytest.mark.parametrize("template, inpts, hyperp, argnm", CV_GRADIENT_INPUT)
     @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_cv_grad(self, gaussian_device_2_wires, template, inpts, hyperp, argnm, intrfc, to_var):
+    def test_integration_cv_grad(self, gaussian_dummy, template, inpts, hyperp, argnm, intrfc, to_var):
         """Checks that gradient calculations of cv templates execute without error."""
         inpts = [to_var(i) for i in inpts]
-        @qml.qnode(gaussian_device_2_wires, interface=intrfc)
+        n_wires = len(hyperp['wires'])
+        dev = gaussian_dummy(n_wires)
+        @qml.qnode(dev, interface=intrfc)
         def circuit(*inp):
             template(*inp, **hyperp)
             return qml.expval(qml.Identity(0))

@@ -338,6 +338,7 @@ def MottonenStatePreparation(state_vector, wires):
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)
 
+
 state_preparations = {"BasisStatePreparation", "MottonenStatePreparation"}
 
 __all__ = list(state_preparations)
