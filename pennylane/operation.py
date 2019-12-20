@@ -723,7 +723,7 @@ class Tensor(Observable):
         possible.
 
         Returns:
-            array: array containing the eigenvalues of the tensor product
+            array[float]: array containing the eigenvalues of the tensor product
                 observable
         """
         if self._eigvals is not None:

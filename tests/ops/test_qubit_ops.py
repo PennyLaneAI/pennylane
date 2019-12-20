@@ -23,6 +23,7 @@ from pennylane import numpy as np
 from pennylane.ops import qubit
 from pennylane.templates.layers import StronglyEntanglingLayers
 
+# EIGVALS_TEST_DATA is a list of tuples of Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 EIGVALS_TEST_DATA = [
         (np.array([[1, 0], [0, 1]]), np.array([1., 1.]), np.array([[1., 0.],[0., 1.]])),
         (np.array([[0, 1], [1, 0]]), np.array([-1., 1.]), np.array([[-0.70710678,  0.70710678],[ 0.70710678,  0.70710678]])),
@@ -30,6 +31,7 @@ EIGVALS_TEST_DATA = [
         (np.array([[1, 0], [0, -1]]), np.array([-1., 1.]), np.array([[0., 1.], [1., 0.]])),
         (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1., 1.]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
     ]
+
 
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestQubit:
@@ -156,8 +158,6 @@ class TestQubit:
         assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-
-@pytest.mark.usefixtures("tear_down_hermitian")
 class TestQubitIntegration:
     """Integration for the qubit based operations."""
 
