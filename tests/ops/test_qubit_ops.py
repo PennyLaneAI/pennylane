@@ -38,9 +38,7 @@ class TestQubit:
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_hermitian_eigvals_eigvecs(self, observable, eigvals, eigvecs, tol):
         """Tests that the eigvals method of the Hermitian class returns the correct results."""
-
         key = tuple(observable.flatten().tolist())
-
         qml.Hermitian.eigvals(observable)
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)

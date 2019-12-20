@@ -933,7 +933,7 @@ class Hermitian(Observable):
 
     @classmethod
     def diagonalizing_gates(cls, Hmat, wires):
-         """Return the gate set that diagonalizes a circuit according to the
+        """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where

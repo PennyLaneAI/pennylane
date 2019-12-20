@@ -168,3 +168,8 @@ def mock_device(monkeypatch):
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
         yield qml.Device(wires=2)
 
+@pytest.fixture
+def tear_down_hermitian():
+    yield None
+    qml.Hermitian._eigs = {}
+

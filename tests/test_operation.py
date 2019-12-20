@@ -716,6 +716,7 @@ class TestTensor:
         t = Tensor(X, Y)
         assert np.array_equal(t.eigvals, np.kron(qml.PauliX.eigvals, qml.PauliY.eigvals))
 
+    @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
         """Test that the correct eigenvalues are returned for the Tensor"""
         X = qml.PauliX(0)
