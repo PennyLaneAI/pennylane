@@ -20,8 +20,8 @@ import numpy as np
 import pennylane as qml
 from pennylane._device import Device
 from pennylane.operation import CVObservable
-from pennylane.beta.qnodes.base import QuantumFunctionError
-from pennylane.beta.qnodes.qubit import QubitQNode
+from pennylane.qnodes.base import QuantumFunctionError
+from pennylane.qnodes.qubit import QubitQNode
 
 
 thetas = np.linspace(-2*np.pi, 2*np.pi, 8)

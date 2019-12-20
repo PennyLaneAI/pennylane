@@ -18,7 +18,7 @@ Unit tests for the :mod:`pennylane` :class:`Device` class.
 import pytest
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.qnode import QuantumFunctionError
+from pennylane.qnodes import QuantumFunctionError
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 

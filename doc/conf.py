@@ -48,7 +48,7 @@ extensions = [
 ]
 
 autosummary_generate = True
-autosummary_imported_members = True
+autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 
@@ -375,3 +375,9 @@ autodoc_member_order = 'bysource'
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
+
+from directives import UsageDetails
+
+
+def setup(app):
+    app.add_directive("usagedetails", UsageDetails)

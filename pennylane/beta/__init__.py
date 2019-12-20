@@ -14,12 +14,10 @@
 """
 This module contains experimental, contributed, and beta code.
 """
+import pennylane as qml
 from pennylane.operation import All, Observable, Operation, Probability
 from pennylane.ops import Identity
-from pennylane.qnode import QNode
 
-import pennylane.beta.interfaces
-import pennylane.beta.qnodes
 import pennylane.beta.vqe
 
 
@@ -37,8 +35,8 @@ def prob(wires):
     op = Identity(wires=wires, do_queue=False)
     op.return_type = Probability
 
-    if QNode._current_context is not None:
+    if qml._current_context is not None:
         # add observable to QNode observable queue
-        QNode._current_context._append_op(op)
+        qml._current_context._append_op(op)
 
     return op

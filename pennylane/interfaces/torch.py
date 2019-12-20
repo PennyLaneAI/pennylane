@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :func:`TorchQNode` function to convert Numpy-interfacing quantum nodes to PyTorch
+This module contains the :func:`to_torch` function to convert Numpy-interfacing quantum nodes to PyTorch
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name,arguments-differ
@@ -95,7 +95,7 @@ def kwargs_to_numpy(kwargs):
     return res
 
 
-def TorchQNode(qnode):
+def to_torch(qnode):
     """Function that accepts a :class:`~.QNode`, and returns a PyTorch-compatible QNode.
 
     Args:
@@ -140,11 +140,7 @@ def TorchQNode(qnode):
             # the way in which the backward class is created on the fly
 
             # evaluate the Jacobian matrix of the QNode
-            if hasattr(qnode, "to_autograd"):
-                # new style QNode.jacobian has a different signature
-                jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
-            else:
-                jacobian = qnode.jacobian(ctx.args, **ctx.kwargs)
+            jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
 
             if grad_output.is_cuda: # pragma: no cover
                 grad_output_np = grad_output.cpu().detach().numpy()

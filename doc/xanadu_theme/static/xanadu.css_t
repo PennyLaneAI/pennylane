@@ -2181,7 +2181,7 @@ dl.class > dd > table.docutils {
 }
 
 dd > .collapse-header:first-of-type > h2 {
-  margin-top: 70px;
+  /*margin-top: 70px;*/
 }
 
 
@@ -2200,6 +2200,18 @@ dd > .collapse-header {
     transform:rotate(180deg);
 }
 
+.o-tooltip--left::after {
+  top: -2px;
+  left: -10px;
+  font-size: 12px;
+}
+
+a.copybtn {
+  top: 20px;
+  right: 14px;
+  opacity: 0.5;
+  padding: 0;
+}
 /* Syntax highlighting
 -------------------------------------------------- */
 

@@ -36,12 +36,11 @@ from ._device import Device, DeviceError
 from .measure import expval, var, sample
 from .ops import *
 from .optimize import *
-from .qnode import QNode, QuantumFunctionError
+from .qnodes import qnode, QNode, QuantumFunctionError
 from ._version import __version__
 
-# NOTE: this has to be imported last,
-# otherwise it will clash with the .qnode import.
-from .decorator import qnode
+
+_current_context = None
 
 
 # overwrite module docstrings

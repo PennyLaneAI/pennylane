@@ -2,11 +2,21 @@
 
 ### New features since last release
 
+* Added `QAOAEmbedding` and its parameter initialization 
+  as a new trainable template.
+  [#442](https://github.com/XanaduAI/pennylane/pull/442)
+
 ### Breaking changes
+
+* Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
+  moved all related files from the `pennylane/beta` folder to `pennylane`.
+  [#440](https://github.com/XanaduAI/pennylane/pull/440)
 
 ### Improvements
 
 ### Documentation
+
+* Improved documentation of ``AmplitudeEmbedding`` and ``BasisEmbedding`` templates.
 
 ### Bug fixes
 
@@ -19,7 +29,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm
+Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva
 
 ---
 

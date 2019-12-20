@@ -839,56 +839,6 @@ class TestDefaultQubitIntegration:
         ):
             qml.device("default.qubit")
 
-
-    @pytest.mark.parametrize("gate", set(qml.ops.cv.ops))
-    def test_unsupported_gate_error(self, qubit_device_3_wires, gate):
-        """Tests that an error is raised if an unsupported gate is applied"""
-        op = getattr(qml.ops, gate)
-
-        if op.num_wires is qml.operation.Wires.Any or qml.operation.Wires.All:
-            wires = [0]
-        else:
-            wires = list(range(op.num_wires))
-
-        @qml.qnode(qubit_device_3_wires)
-        def circuit(*x):
-            """Test quantum function"""
-            x = prep_par(x, op)
-            op(*x, wires=wires)
-
-            return qml.expval(qml.X(0))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match="Gate {} not supported on device default.qubit".format(gate),
-        ):
-            x = np.random.random([op.num_params])
-            circuit(*x)
-
-    @pytest.mark.parametrize("observable", set(qml.ops.cv.obs))
-    def test_unsupported_observable_error(self, qubit_device_3_wires, observable):
-        """Test error is raised with unsupported observables"""
-
-        op = getattr(qml.ops, observable)
-
-        if op.num_wires is qml.operation.Wires.Any or qml.operation.Wires.All:
-            wires = [0]
-        else:
-            wires = list(range(op.num_wires))
-
-        @qml.qnode(qubit_device_3_wires)
-        def circuit(*x):
-            """Test quantum function"""
-            x = prep_par(x, op)
-            return qml.expval(op(*x, wires=wires))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match="Observable {} not supported on device default.qubit".format(observable),
-        ):
-            x = np.random.random([op.num_params])
-            circuit(*x)
-
     def test_qubit_circuit(self, qubit_device_1_wire, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
 

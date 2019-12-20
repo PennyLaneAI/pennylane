@@ -80,10 +80,8 @@ def _get_shape(inpt):
     Raises:
         ValueError: if ``inpt`` fails to convert to a NumPy array
     """
-    try:
-        inpt = np.array(inpt)
-    except:
-        raise ValueError("Fails to convert {} to array.". format(inpt))
+    # Todo: Wrap this into a "try" statement
+    inpt = np.array(inpt)
 
     return inpt.shape
 
