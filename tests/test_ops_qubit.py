@@ -25,15 +25,15 @@ from pennylane.plugins.default_qubit import Rot3
 
 class TestHadamard:
     """Test functions for Hadamard class."""
-    def test_hadamard_matrix(self):
+    def test_hadamard_matrix(self, tol):
         """Test the Hadamard matrix representation"""
         hadamard = qubit.Hadamard(0)
         matrix = hadamard.matrix()
         true_matrix = np.array([[1, 1], [1, -1]], dtype=complex) / np.sqrt(2)
 
-        assert np.allclose(matrix, true_matrix)
+        assert np.allclose(matrix, true_matrix, atol=tol, rtol=0)
 
-    def test_hadamard_diagonalization(self):
+    def test_hadamard_diagonalization(self, tol):
         """Test the Hadamard diagonalizing_gates function; returned operations
         should transform the Hadamard gate into the Z-gate.
 
@@ -44,11 +44,11 @@ class TestHadamard:
 
         gate_list = []
         for op in hadamard.diagonalizing_gates():
-            params = op.__dict__["params"]
+            params = op.params
             gate_list.append(Rot3(*params))
 
         operation = reduce(np.dot, gate_list)
 
         diag_mat = np.conj(operation).T @ hadamard.matrix() @ operation
 
-        assert np.allclose(zgate, diag_mat)
+        assert np.allclose(zgate, diag_mat, atol=tol, rtol=0)
