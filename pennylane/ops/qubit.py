@@ -912,9 +912,6 @@ class Hermitian(Observable):
     grad_method = "F"
     _eigs = {}
 
-    def some_method(self):
-        return
-
     @classmethod
     def eigvals(cls, Hmat):
         """Return the eigenvalues of the specified Hermitian observable.
