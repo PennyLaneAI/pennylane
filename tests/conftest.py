@@ -95,6 +95,10 @@ def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=n_subsystems)
 
+@pytest.fixture(scope="session")
+def gaussian_dummy():
+    """Number of qubits or modes."""
+    return DummyDevice
 
 @pytest.fixture(scope="session")
 def gaussian_device_2_wires():
