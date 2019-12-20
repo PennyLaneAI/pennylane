@@ -30,6 +30,7 @@ EIGVALS_TEST_DATA = [
         (np.array([[1, 0], [0, -1]]), np.array([-1., 1.]), np.array([[0., 1.], [1., 0.]])),
         (1/np.sqrt(2)*np.array([[1, 1],[1, -1]]), np.array([-1., 1.]), np.array([[ 0.38268343, -0.92387953],[-0.92387953, -0.38268343]])),
     ]
+# EIGVALS_TEST_DATA is a list of tuples of Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 
 class TestQubit:
     """Tests the qubit based operations."""
@@ -181,4 +182,3 @@ class TestQubitIntegration:
 
         assert np.all([np.isclose(elem, 0, atol=tol, rtol=0) for elem in x[off_diagonal_indices]])
         assert np.allclose(np.sort(eigvals), np.sort(np.diag(x)), atol=tol, rtol=0)
-
