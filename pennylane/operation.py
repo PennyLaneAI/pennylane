@@ -100,17 +100,17 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     the finite-difference method of gradient computation.
 """
 import abc
-from enum import Enum, IntEnum
+import itertools
 import numbers
 from collections.abc import Sequence
+from enum import Enum, IntEnum
 
 import numpy as np
 
 import pennylane as qml
 
-from .utils import _flatten, _unflatten
+from .utils import _flatten, _unflatten, pauli_eigs
 from .variable import Variable
-
 
 #=============================================================================
 # Wire types
@@ -623,6 +623,8 @@ class Tensor(Observable):
     par_domain = None
 
     def __init__(self, *args): #pylint: disable=super-init-not-called
+
+        self._eigvals = None
         self.obs = []
 
         for o in args:
@@ -712,6 +714,50 @@ class Tensor(Observable):
         raise ValueError("Can only perform tensor products between observables.")
 
     __imatmul__ = __matmul__
+
+    @property
+    def eigvals(self):
+        """Return the eigenvalues of the specified tensor product observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible.
+
+        Returns:
+            array[float]: array containing the eigenvalues of the tensor product
+                observable
+        """
+        if self._eigvals is not None:
+            return self._eigvals
+
+        standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
+
+        # observable should be Z^{\otimes n}
+        self._eigvals = pauli_eigs(len(self.wires))
+
+        # check if there are any non-standard observables (such as Identity)
+        if set(self.obs) - standard_observables:
+            # Tensor product of observables contains a mixture
+            # of standard and non-standard observables
+            self._eigvals = np.array([1])
+            for k, g in itertools.groupby(zip(self.obs, self.wires,\
+                self.parameters), lambda x: x[0].name in standard_observables):
+                if k:
+                    # Subgroup g contains only standard observables.
+                    # Determine the size of the subgroup, by transposing
+                    # the list, flattening it, and determining the length.
+                    n = len([w for sublist in list(zip(*g))[1] for w in sublist])
+                    self._eigvals = np.kron(self._eigvals, pauli_eigs(n))
+                else:
+                    # Subgroup g contains only non-standard observables.
+                    for ns_obs in g:
+                        # loop through all non-standard observables
+                        if ns_obs[0].name == "Hermitian":
+                            # Hermitian observable has pre-computed eigenvalues
+                            operator = ns_obs[2]
+                            herm_eigs = qml.Hermitian.eigvals(np.array(operator))
+                            self._eigvals = np.kron(self._eigvals, herm_eigs)
+
+        return self._eigvals
 
 #=============================================================================
 # CV Operations and observables
