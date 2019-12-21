@@ -34,10 +34,6 @@ class QubitDevice(Device):
             expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
-    _capabilities = {} #: dict[str->*]: plugin capabilities
-    _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
-    _asarray = staticmethod(np.asarray)
-
     def __init__(self, wires=1, shots=1000):
         super().__init__(wires=wires, shots=shots)
 
