@@ -19,6 +19,7 @@ across the PennyLane submodules.
 from collections.abc import Iterable
 from collections import OrderedDict
 import numbers
+import functools
 import inspect
 import itertools
 
@@ -184,6 +185,23 @@ def expand(U, wires, num_wires):
     # permute U to take into account rearranged wires
     return U[:, perm][perm]
 
+@functools.lru_cache()
+def pauli_eigs(n):
+    """Returns the eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
+    any operator that shares eigenvalues with the Pauli matrices ("standard
+    observables").
+
+    As an example if n==2, then the eigenvalues of a tensor product consisting
+    of two matrices sharing the eigenvalues with Pauli matrices is returned.
+
+    Args:
+        n (int): the number of qubits the matrix acts on
+    Returns:
+        list: the eigenvalues of the specified observable
+    """
+    if n == 1:
+        return np.array([1, -1])
+    return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 class Recorder:
     """Recorder class used by the :class:`~.OperationRecorder`.

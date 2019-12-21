@@ -14,6 +14,9 @@
 
 ### Improvements
 
+* Added the ``Observable.eigvals`` attribute to return the eigenvalues of observables.
+  [#449](https://github.com/XanaduAI/pennylane/pull/449)
+
 ### Documentation
 
 * Improved documentation of ``AmplitudeEmbedding`` and ``BasisEmbedding`` templates.
