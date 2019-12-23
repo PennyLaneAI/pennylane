@@ -209,7 +209,6 @@ def unitary(*args):
     """
     U = np.asarray(args[0])
 
-    print(U)
     if U.shape[0] != U.shape[1]:
         raise ValueError("Operator must be a square matrix.")
 

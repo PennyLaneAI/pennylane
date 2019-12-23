@@ -156,7 +156,7 @@ class QubitDevice(Device):
             # exact expectation value
 
             if isinstance(observable, qml.Hermitian):
-                eigvals = observable.eigvals(par)
+                eigvals = observable.eigvals(np.array(par))
             else:
                 eigvals = observable.eigvals
 

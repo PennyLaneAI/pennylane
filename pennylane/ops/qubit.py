@@ -943,8 +943,13 @@ class Hermitian(Observable):
         if Hkey not in cls._eigs:
             w, U = np.linalg.eigh(Hmat)
             cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
+
+        # Shape might be e.g. (1,4,4), reshape such that further checks can be done
+        U = cls._eigs[Hkey]["eigvec"]
+        U_dim = int(np.sqrt(np.prod(U.shape)))
+
         return [
-            QubitUnitary(cls._eigs[Hkey]["eigvec"].conj().T, wires=wires),
+            QubitUnitary(cls._eigs[Hkey]["eigvec"].reshape(U_dim, U_dim).conj().T, wires=wires),
         ]
 
 

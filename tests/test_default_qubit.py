@@ -707,19 +707,19 @@ class TestExpval:
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [[[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]]]),
-        ("Hermitian", [0, 0, 0, 1], 0, [[[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]]),
-        ("Hermitian", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], 1, [[[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]]]),
-        ("Hermitian", [1/math.sqrt(3), -1/math.sqrt(3), 1/math.sqrt(6), 1/math.sqrt(6)], 1, [[[1, 1j, 0, .5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-.5j, 0, 1j, 1]]]),
-        ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [[[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]]),
-        ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [[[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]]),
+    @pytest.mark.parametrize("operation,input,expected_output,par", [
+        (qml.Hermitian, [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]]),
+        (qml.Hermitian, [0, 0, 0, 1], 0, [[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        (qml.Hermitian, [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], 1, [[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]]),
+        (qml.Hermitian, [1/math.sqrt(3), -1/math.sqrt(3), 1/math.sqrt(6), 1/math.sqrt(6)], 1, [[1, 1j, 0, .5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-.5j, 0, 1j, 1]]),
+        (qml.Hermitian, [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
+        (qml.Hermitian, [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
     ])
-    def test_expval_two_wires_with_parameters(self, qubit_device_2_wires, tol, name, input, expected_output, par):
+    def test_expval_two_wires_with_parameters(self, qubit_device_2_wires, tol, operation, input, expected_output, par):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
         qubit_device_2_wires._state = np.array(input)
-        res = qubit_device_2_wires.expval(name, wires=[0, 1], par=par)
+        res = qubit_device_2_wires.expval(operation(np.array(par), wires=[0, 1]))
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
