@@ -763,6 +763,26 @@ class Tensor(Observable):
 
         return self._eigvals
 
+    @classmethod
+    def diagonalizing_gates(cls, hmat, wires):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified tensor observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            list: list containing the gates diagonalizing the tensor observable
+        """
+        diag_gates = []
+        for observable in self.obs:
+            if isinstance(observable, qml.Hermitian):
+                diag_gates.extend(qml.Hermitian.diagonalizing_gates(observable.params[0], observable.wires))
+            else:
+                diag_gates.extend(observable.diagonalizing_gates)
+
+        return diag_gates
+
 #=============================================================================
 # CV Operations and observables
 #=============================================================================

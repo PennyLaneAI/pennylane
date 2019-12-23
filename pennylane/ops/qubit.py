@@ -937,7 +937,7 @@ class Hermitian(Observable):
         possible and stores the corresponding eigenvectors from the eigendecomposition.
 
         Returns:
-            array: array containing the eigenvalues of the tensor product observable
+            list: list containing the gates diagonalizing the Hermitian observable
         """
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:

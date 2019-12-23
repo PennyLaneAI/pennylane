@@ -718,7 +718,7 @@ class TestTensor:
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor"""
+        """Test that the correct eigenvalues are returned for the Tensor containing an Hermitian observable"""
         X = qml.PauliX(0)
         hamiltonian = np.array([[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]])
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
@@ -728,13 +728,17 @@ class TestTensor:
         assert np.allclose(t, d, atol=tol, rtol = 0)
 
     def test_eigvals_identity(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor"""
+        """Test that the correct eigenvalues are returned for the Tensor containing an Identity"""
         X = qml.PauliX(0)
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
         d = np.kron(np.array([1., -1.]), np.array([1.,  1.]))
         t = t.eigvals
         assert np.allclose(t, d, atol=tol, rtol = 0)
+
+    def test_diagonalizing_gates(self, tol):
+        """Test that the correct gate set is returned for the Tensor"""
+
 
 
 class TestDecomposition:
