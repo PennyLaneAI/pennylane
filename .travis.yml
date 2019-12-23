@@ -16,7 +16,10 @@ matrix:
     dist: xenial
     name: Qchem
     install: qchem/install-dependencies.sh
-    script: make -C qchem coverage
+    script:
+    - which pytest
+    - which python
+    - make -C qchem coverage
 env:
   global:
   - COVERALLS_PARALLEL=true

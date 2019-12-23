@@ -1,6 +1,6 @@
 PYTHON := python
 COVERAGE := --cov=pennylane_qchem --cov-report term-missing --cov-report=html:coverage_html_report
-TESTRUNNER := pytest tests --tb=native
+TESTRUNNER := -m pytest tests --tb=native
 
 .PHONY: help
 help:
@@ -39,8 +39,8 @@ clean:
 	rm -rf timer.dat
 
 test:
-	$(TESTRUNNER)
+	$(PYTHON) $(TESTRUNNER)
 
 coverage:
 	@echo "Generating coverage report..."
-	$(TESTRUNNER) $(COVERAGE)
+	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
