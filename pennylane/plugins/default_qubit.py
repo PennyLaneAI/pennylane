@@ -209,6 +209,7 @@ def unitary(*args):
     """
     U = np.asarray(args[0])
 
+    print(U)
     if U.shape[0] != U.shape[1]:
         raise ValueError("Operator must be a square matrix.")
 
@@ -231,7 +232,6 @@ def hermitian(*args):
         array: square hermitian matrix
     """
     A = np.asarray(args[0])
-
     if A.shape[0] != A.shape[1]:
         raise ValueError("Expectation must be a square matrix.")
 

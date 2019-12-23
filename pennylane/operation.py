@@ -335,6 +335,8 @@ class Operator(abc.ABC):
                     raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
         elif self.par_domain in ('R', 'N'):
             if not isinstance(p, numbers.Real):
+                print(p)
+                print(type(p))
                 raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
 
             if self.par_domain == 'N':

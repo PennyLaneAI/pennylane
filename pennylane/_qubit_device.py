@@ -136,9 +136,9 @@ class QubitDevice(Device):
 
         elif isinstance(observable, qml.PauliY):
             # Y = (HS^)^.Z.(HS^) and S^=SZ
-            self.apply(qml.PauliY(wires))
-            self.apply(qml.S(wires))
-            self.apply(qml.Hadamard(wires))
+            self.apply(qml.PauliZ(wires=wires))
+            self.apply(qml.S(wires=wires))
+            self.apply(qml.Hadamard(wires=wires))
 
         elif isinstance(observable, qml.Hadamard):
             # H = Ry(-pi/4)^.Z.Ry(-pi/4)
@@ -146,7 +146,7 @@ class QubitDevice(Device):
 
         elif isinstance(observable, qml.Hermitian):
             # Perform a change of basis before measuring by applying U^ to the circuit
-            self.apply(qml.Hermitian.diagonalizing_gates(par, wires))
+            self.apply(qml.Hermitian.diagonalizing_gates(np.array(par), wires)[0])
 
     def expval(self, observable):
         wires = observable.wires
