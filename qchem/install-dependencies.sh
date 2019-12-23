@@ -13,6 +13,7 @@ conda activate test-environment
 # Install psi4 and openbabel
 conda install -c conda-forge openbabel
 conda install psi4 psi4-rt python=$TRAVIS_PYTHON_VERSION -c psi4
+ln -s $HOME/miniconda/envs/test-environment/bin/obabel $HOME/miniconda/envs/test-environment/bin/babel
 # install PennyLane and Qchem
 pip install -r requirements.txt
 python setup.py bdist_wheel
