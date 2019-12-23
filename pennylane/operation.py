@@ -757,6 +757,8 @@ class Tensor(Observable):
                             # Hermitian observable has pre-computed eigenvalues
                             operator = ns_obs[2]
                             herm_eigs = qml.Hermitian.eigvals(np.array(operator))
+                            print('Tensor Herm eigenvalues:')
+                            print(herm_eigs)
                             self._eigvals = np.kron(self._eigvals, herm_eigs)
 
                         elif ns_obs[0].name == "Identity":

@@ -130,6 +130,14 @@ class QubitDevice(Device):
         wires = observable.wires
         par = observable.parameters
 
+        # TODO: once the diagaonalizing_gates() method is defined for all
+        # observable, simplify the logis to the following (or similar)
+        #
+        # if isinstance(observable, qml.Hermitian):
+        #     self.apply(qml.Hermitian.diagonalizing_gates(np.array(par), wires)[0])
+        # else:
+        #     self.apply(observable.diagonalizing_gates())
+        #
         if isinstance(observable, qml.PauliX):
             # X = H.Z.H
             self.apply(qml.Hadamard(wires))
@@ -147,6 +155,11 @@ class QubitDevice(Device):
         elif isinstance(observable, qml.Hermitian):
             # Perform a change of basis before measuring by applying U^ to the circuit
             self.apply(qml.Hermitian.diagonalizing_gates(np.array(par), wires)[0])
+        elif isinstance(observable, Tensor):
+            # If a tensor observable was defined, rotate for
+            # each observable through recursive calls
+            for obs in observable.obs:
+                self.rotate_basis(obs)
 
     def expval(self, observable):
         wires = observable.wires
@@ -160,7 +173,9 @@ class QubitDevice(Device):
             else:
                 eigvals = observable.eigvals
 
+            print(eigvals)
             prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
+            print(prob)
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -174,7 +189,7 @@ class QubitDevice(Device):
             # exact variance value
 
             if isinstance(observable, qml.Hermitian):
-                eigvals = observable.eigvals(par)
+                eigvals = observable.eigvals(np.array(par))
             else:
                 eigvals = observable.eigvals
 
@@ -184,42 +199,21 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        if observable == "Identity":
+        if isinstance(observable, qml.Identity):
             return np.ones([self.shots])
 
-        # branch out depending on the type of backend
-        if self.backend_name in self._state_backends:
-            # software simulator. Need to sample from probabilities.
-            eigvals = self.eigvals(observable, wires, par)
-            prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
-            return np.random.choice(eigvals, self.shots, p=prob)
-
-        # a hardware simulator
-        if self.memory:
-            # get the samples
-            samples = self._current_job.result().get_memory()
-
-            # reverse qubit order to match PennyLane convention
-            samples = np.vstack([np.array([int(i) for i in s[::-1]]) for s in samples])
-
+        self.rotate_basis(observable)
+        # Sampling is supported on software simulators
+        # HW devices will have to provide there own sample() method
+        if isinstance(observable, qml.Hermitian):
+            eigvals = observable.eigvals(np.array(par))
+            print('Herm eigvals:')
+            print(eigvals)
         else:
-            # Need to convert counts into samples
-            samples = np.vstack(
-                [np.vstack([s] * int(self.shots * p)) for s, p in self.probabilities().items()]
-            )
+            eigvals = observable.eigvals
 
-        if isinstance(observable, str) and observable in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            return 1 - 2 * samples[:, wires[0]]
-
-        eigvals = self.eigvals(observable, wires, par)
-        wires = np.hstack(wires)
-        res = samples[:, np.array(wires)]
-        samples = np.zeros([self.shots])
-
-        for w, b in zip(eigvals, itertools.product([0, 1], repeat=len(wires))):
-            samples = np.where(np.all(res == b, axis=1), w, samples)
-
-        return samples
+        prob = np.fromiter(self.probabilities(wires=observable.wires).values(), dtype=np.float64)
+        return np.random.choice(eigvals, self.shots, p=prob)
 
     def probabilities(self, wires=None):
         """Return the (marginal) probability of each computational basis

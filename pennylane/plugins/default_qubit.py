@@ -28,7 +28,7 @@ import numpy as np
 from scipy.linalg import eigh
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Tensor
 
 
 # tolerance for numerical errors
@@ -430,12 +430,12 @@ class DefaultQubit(QubitDevice):
 
         if self.analytic:
             # exact expectation value
-            A = self.get_operator_matrix_for_measurement(name, par)
             self.rotate_basis(observable)
+
             return super().expval(observable)
         else:
             # estimate the ev
-            ev = np.mean(self.sample(name, wires, par))
+            ev = np.mean(self.sample(observable))
 
         return ev
 
@@ -446,28 +446,13 @@ class DefaultQubit(QubitDevice):
 
         if self.analytic:
             # exact variance value
-            A = self.get_operator_matrix_for_measurement(observable, par)
-
-            var = self.ev(A@A, wires) - self.ev(A, wires)**2
+            self.rotate_basis(observable)
+            return super().var(observable)
         else:
             # estimate the ev
-            var = np.var(self.sample(observable, wires, par))
+            var = np.var(self.sample(observable))
 
         return var
-
-    def sample(self, observable):
-        wires = observable.wires
-        par = observable.parameters
-
-        A = self.get_operator_matrix_for_measurement(observable, par)
-
-        a, P = spectral_decomposition(A)
-
-        p = np.zeros(a.shape)
-        for idx, Pi in enumerate(P):
-            p[idx] = self.ev(Pi, wires)
-
-        return np.random.choice(a, self.shots, p=p)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.

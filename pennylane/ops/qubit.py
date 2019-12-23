@@ -922,6 +922,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
+        Hmat = np.array(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             w, U = np.linalg.eigh(Hmat)
