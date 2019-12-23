@@ -1,26 +1,49 @@
+# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import subprocess
 from shutil import copyfile
 
 import numpy as np
-import pennylane as qml
+
 from openfermion.hamiltonians import MolecularData
 from openfermion.ops._qubit_operator import QubitOperator
 from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
+
 from openfermionpsi4 import run_psi4
-from openfermionpyscf import run_pyscf
+
+try:
+    from openfermionpyscf import run_pyscf
+except:
+    def run_pyscf(*args, **kwargs):
+        """Raise an exception if PySCF is not installed."""
+        raise ImportError("PySCF not found. For pyscf support, "
+                          "please install pyscf.")
+
+import pennylane as qml
 from pennylane.beta.vqe import Hamiltonian
 
 
 def _exec_exists(prog):
-    r"""Checks whether the executable program `prog` exists in any of the directories
-    set in the PATH environment variable
+    r"""Checks whether the executable program ``prog`` exists in any of the directories
+    set in the ``PATH`` environment variable.
 
     Args:
-        prog (str): String with the name of the executable program
+        prog (str): name of the executable program
 
     Returns:
-        boolean: `True` if the executable `prog` is found; `False` otherwise
+        boolean: ``True`` if the executable ``prog`` is found; ``False`` otherwise
     """
     for dir_in_path in os.environ["PATH"].split(os.pathsep):
         path_to_prog = os.path.join(dir_in_path, prog)
@@ -34,13 +57,13 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-
     r"""Reads the molecular structure file and creates a list containing the symbol and Cartesian
     coordinates of the atomic species. If the file is provided in a format other than 'xyz',
-    Open Babel is used to convert it to an xyz-formatted file. The new file, called `structure.xyz`,
+    Open Babel is used to convert it to an xyz-formatted file. The new file, called ``structure.xyz``,
     contains the geometry of the molecule. It is created in a directory with path given by 'outpath'.
 
     **Example usage:**
+
     >>> read_structure('h2_ref.xyz')
     [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
 
@@ -89,12 +112,14 @@ def read_structure(filepath, outpath="."):
 def gen_meanfield_data(
     mol_name, geometry, charge, multiplicity, basis, qc_package="psi4", outpath="."
 ):
+    r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
 
-    r"""Launches the meanfield (Hartree-Fock) electronic structure calculation. Also builds the path
+    Also builds the path
     to the directory containing the input data file for quantum simulations. The path to the
     hdf5-formatted file is ``os.path.join(outpath, qc_package, basis)``.
 
     **Example usage:**
+
     >>> geometry = read_structure('h2_ref.xyz')
     >>> gen_meanfield_data('h2', geometry, 0, 1, 'sto-3g', 'psi4')
     ./psi4/sto-3g
@@ -104,18 +129,17 @@ def gen_meanfield_data(
         geometry (list): list containing the symbol and Cartesian coordinates for each atom
         charge (int): net charge of the molecule
         multiplicity (int): spin multiplicity based on the number of unpaired electrons
-                in the Hartree-Fock state
+            in the Hartree-Fock state
         basis (str): atomic basis set. Basis set availability per element can be found
-                ` here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx
-                -basiselement_>`_
+            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx
+            -basiselement>`_
         qc_package (str): quantum chemistry package used to solve Hartree-Fock equations.
-                Either 'psi4' or 'pyscf' can be used
-
+            Either ``'psi4'`` or ``'pyscf'`` can be used
         outpath (str): path to ouput directory
 
     Returns:
         str: path to the directory containing the file with the Hartree-Fock
-         electronic structure
+        electronic structure
     """
 
     qc_package = qc_package.strip().lower()
@@ -154,10 +178,10 @@ def gen_meanfield_data(
 
 
 def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
-
-    r"""Builds the active space for generating the Hamiltonian of the molecule
+    r"""Builds the active space for generating the Hamiltonian of the molecule.
 
     **Example usage:**
+
     >>> gen_active_space('lih', './psi4/sto-3g', n_active_electrons=2, n_active_orbitals=2)
     ([0], [1, 2])
 
@@ -255,11 +279,11 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
 def gen_hamiltonian_pauli_basis(
     mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
 ):
-
     r"""Decomposes the electronic Hamiltonian into a linear combination of Pauli operators using
     OpenFermion tools.
 
     **Example usage:**
+
     >>> gen_hamiltonian_pauli_basis('h2', './psi4/sto-3g/', mapping='bravyi_kitaev')
     (-0.04207897696293986+0j) [] + (0.04475014401986122+0j) [X0 Z1 X2] +
     (0.04475014401986122+0j) [X0 Z1 X2 Z3] +(0.04475014401986122+0j) [Y0 Z1 Y2] +
@@ -281,8 +305,8 @@ def gen_hamiltonian_pauli_basis(
             build the correlated many-body wave function
 
     Returns:
-         transformed_operator: instance of the QubitOperator class representing the electronic
-             Hamiltonian
+        transformed_operator: instance of the QubitOperator class representing the electronic
+        Hamiltonian
     """
 
     # loading HF data from a hdf5 file
@@ -313,10 +337,9 @@ def gen_hamiltonian_pauli_basis(
 
 
 def _qubit_operator_to_terms(qubit_operator):
-
     r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of complex coefficients and
     PennyLane Pauli observables.
-    
+
     Args:
         qubit_operator (QubitOperator): fermionic-to-qubit transformed operator in terms of
             Pauli matrices
@@ -347,17 +370,16 @@ def _qubit_operator_to_terms(qubit_operator):
 
 
 def _terms_to_qubit_operator(coeffs, ops):
-
     r"""Converts a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
     This function is the inverse of ``_qubit_operator_to_terms``.
-    
+
     Args:
         coeffs (array[complex]):
             coefficients for each observable, same length as ops
         ops (Iterable[pennylane.operation.Observable]): List of PennyLane observables as
-            Tensor product of Pauli matrix `Observable`s
+            Tensor products of Pauli observables
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
@@ -393,10 +415,10 @@ def _terms_to_qubit_operator(coeffs, ops):
 
 def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator):
     r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
-    `Hamiltonian` (Tensor product of Pauli matrices)
+    ``Hamiltonian`` (Tensor product of Pauli matrices).
 
     Equality is based on OpenFermion :class:`~.QubitOperator`'s equality.
-    
+
     Args:
         openfermion_qubit_operator (QubitOperator): OpenFermion qubit operator represented as
             a Pauli summation
@@ -411,10 +433,10 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
 
 
 def load_hamiltonian(qubit_hamiltonian):
-
     r"""Converts OpenFermion `QubitOperator` Hamiltonian to Pennylane VQE Hamiltonian
 
     **Example usage**
+
     >>> h_of = gen_hamiltonian_pauli_basis('h2', './psi4/sto-3g/')
     >>> h_pl = load_hamiltonian(h_of)
     >>> h_pl.coeffs
@@ -448,12 +470,13 @@ def generate_mol_hamiltonian(
     mapping="jordan_wigner",
     outpath=".",
 ):
-
     r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
+
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
     Hartree-Fock (HF) molecular orbitals.
 
     **Example usage:**
+
     >>> generate_mol_hamiltonian('h2', 'h2_ref.xyz', 0, 1, 'sto-3g')
     (-0.04207897696293986+0j) [] +(-0.04475014401986122+0j) [X0 X1 Y2 Y3] +
     (0.04475014401986122+0j) [X0 Y1 Y2 X3] +(0.04475014401986122+0j) [Y0 X1 X2 Y3] +
@@ -500,3 +523,16 @@ def generate_mol_hamiltonian(
         gen_hamiltonian_pauli_basis(mol_name, hf_data, mapping, docc_indices, active_indices),
         2 * len(active_indices),
     )
+
+
+__all__ = [
+    "read_structure",
+    "gen_meanfield_data",
+    "gen_active_space",
+    "gen_hamiltonian_pauli_basis",
+    "_qubit_operator_to_terms",
+    "_terms_to_qubit_operator",
+    "_qubit_operators_equivalent",
+    "load_hamiltonian",
+    "generate_mol_hamiltonian",
+]

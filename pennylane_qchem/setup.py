@@ -1,11 +1,16 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
-r"""
-Setup
-=====
+# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
 
-Setup file for package.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 
-"""
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from setuptools import setup
 
 with open("pennylane_qchem/_version.py") as f:
@@ -17,18 +22,14 @@ info = {
     "name": "PennyLane-Qchem",
     "version": version,
     "maintainer": "Xanadu Inc.",
-    "maintainer_email": "alaindelgado@xanadu.ai",
+    "maintainer_email": "software@xanadu.ai",
     "url": "http://xanadu.ai",
     "packages": ["pennylane_qchem"],
     "description": "Package for quantum chemistry applications",
     "long_description": open("README.rst").read(),
     "provides": ["pennylane_qchem"],
     "install_requires": requirements,
-    # 'extras_require': extra_requirements,
-    # 'command_options': {
-    #     'build_sphinx': {
-    #         'version': ('setup.py', version),
-    #         'release': ('setup.py', version)}}
+    "entry_points": {"pennylane.qchem": ["OpenFermion = pennylane_qchem.qchem"]},
 }
 
 classifiers = [
