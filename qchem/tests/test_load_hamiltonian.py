@@ -5,7 +5,7 @@ import pennylane as qml
 import pytest
 from openfermion.ops._qubit_operator import QubitOperator
 
-from pennylane_qchem import qchem
+from pennylane import qchem
 
 
 @pytest.mark.parametrize(

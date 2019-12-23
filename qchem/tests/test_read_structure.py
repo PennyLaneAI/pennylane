@@ -1,5 +1,5 @@
 import pytest
-from pennylane_qchem import qchem
+from pennylane import qchem
 import os
 import subprocess
 

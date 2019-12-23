@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from openfermion.hamiltonians import MolecularData
 
-from pennylane_qchem import qchem
+from pennylane import qchem
 
 mol_name = "h2"
 geometry = [("H", [0.0, 0.0, -0.35]), ("H", [0.0, 0.0, 0.35])]

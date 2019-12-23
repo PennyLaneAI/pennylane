@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from pennylane_qchem import qchem
+from pennylane import qchem
 
 from openfermion.ops._qubit_operator import QubitOperator
 

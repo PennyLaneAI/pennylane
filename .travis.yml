@@ -17,6 +17,7 @@ matrix:
     name: Qchem
     install: qchem/install-dependencies.sh
     script:
+    - source "$HOME/miniconda/etc/profile.d/conda.sh"
     - conda activate test-environment
     - make -C qchem coverage
 env:

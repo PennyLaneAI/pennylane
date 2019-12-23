@@ -4,7 +4,7 @@ import numpy as np
 
 import pytest
 
-from pennylane_qchem import qchem
+from pennylane import qchem
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
