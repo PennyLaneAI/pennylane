@@ -33,7 +33,7 @@ from pennylane.about import about
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
-from ._qubit_device import QubitDevice, HardwareQubitDevice, StateVectorQubitDevice
+from ._qubit_device import QubitDevice
 from .measure import expval, var, sample
 from .ops import *
 from .optimize import *

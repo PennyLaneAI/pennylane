@@ -20,6 +20,7 @@ import math
 
 import pytest
 import pennylane as qml
+import pennylane.ops as ops
 from pennylane import numpy as np, DeviceError
 from pennylane.operation import Operation
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
@@ -635,19 +636,20 @@ class TestExpval:
         ("Hadamard", [1, 0], 1/math.sqrt(2)),
         ("Hadamard", [0, 1], -1/math.sqrt(2)),
         ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/math.sqrt(2)),
+        ("Identity", [1, 0], 1),
+        ("Identity", [0, 1], 1),
+        ("Identity", [1/math.sqrt(2), -1/math.sqrt(2)], 1),
     ])
     def test_expval_single_wire_no_parameters(self, qubit_device_1_wire, tol, name, input, expected_output):
         """Tests that expectation values are properly calculated for single-wire observables without parameters."""
 
+        operation = getattr(ops, name)
         qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.expval(name, wires=[0], par=[])
+        res = qubit_device_1_wire.expval(operation(wires=[0]))
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("name,input,expected_output,par", [
-        ("Identity", [1, 0], 1, []),
-        ("Identity", [0, 1], 1, []),
-        ("Identity", [1/math.sqrt(2), -1/math.sqrt(2)], 1, []),
         ("Hermitian", [1, 0], 1, [[[1, 1j], [-1j, 1]]]),
         ("Hermitian", [0, 1], 1, [[[1, 1j], [-1j, 1]]]),
         ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [[[1, 1j], [-1j, 1]]]),
@@ -655,8 +657,9 @@ class TestExpval:
     def test_expval_single_wire_with_parameters(self, qubit_device_1_wire, tol, name, input, expected_output, par):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
+        operation = getattr(ops, name)
         qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.expval(name, wires=[0], par=par)
+        res = qubit_device_1_wire.expval(operation(np.array(par), wires=[0]))
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 

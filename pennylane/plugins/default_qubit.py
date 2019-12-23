@@ -27,7 +27,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import StateVectorQubitDevice, DeviceError
+from pennylane import QubitDevice, DeviceError
 from pennylane.operation import Operation
 
 
@@ -253,7 +253,7 @@ def identity(*_):
 #========================================================
 
 
-class DefaultQubit(StateVectorQubitDevice):
+class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
     Args:
@@ -532,11 +532,3 @@ class DefaultQubit(StateVectorQubitDevice):
     def observables(self):
         return set(self._observable_map.keys())
 
-    def probability(self):
-        if self._state is None:
-            return None
-
-        states = itertools.product(range(2), repeat=self.num_wires)
-        probs = np.abs(self._state)**2
-
-        return OrderedDict(zip(states, probs))

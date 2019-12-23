@@ -19,13 +19,14 @@ import abc
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device, DeviceError
 
 
 class QubitDevice(Device):
-    """Abstract base class for PennyLane devices.
+    """Abstract base class for PennyLane qubit devices.
 
     Args:
         wires (int): number of subsystems in the quantum state represented by the device.
@@ -34,10 +35,17 @@ class QubitDevice(Device):
             expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
-    def __init__(self, wires=1, shots=1000):
+    def __init__(self, wires=1, shots=1000, analytic=False):
         super().__init__(wires=wires, shots=shots)
+        self.analytic = analytic
 
-    def pre_measure(self, observables):
+        self._state = None
+
+    def apply(self, operation):
+        """Called during :meth:`execute` before the individual observables are measured."""
+
+
+    def pre_measure(self):
         """Called during :meth:`execute` before the individual observables are measured."""
 
 
@@ -109,38 +117,71 @@ class QubitDevice(Device):
 
             return self._asarray(results)
 
-    def expval(self, observable, wires, par):
-        if self.backend_name in self._state_backends and self.analytic:
+    def rotate_basis(self, observable):
+        """Rotates the specified wires such that they
+        are in the eigenbasis of the provided observable.
+
+        Args:
+            observable (Observable): the observable that is to be
+                measured
+        """
+        wires = observable.wires
+        par = observable.parameters
+
+        if isinstance(observable, qml.PauliX):
+            # X = H.Z.H
+            self.apply(qml.Hadamard(wires))
+
+        elif isinstance(observable, qml.PauliY):
+            # Y = (HS^)^.Z.(HS^) and S^=SZ
+            self.apply(qml.PauliY(wires))
+            self.apply(qml.S(wires))
+            self.apply(qml.Hadamard(wires))
+
+        elif isinstance(observable, qml.Hadamard):
+            # H = Ry(-pi/4)^.Z.Ry(-pi/4)
+            self.apply(qml.RY(-np.pi / 4, wires=wires))
+
+        elif isinstance(observable, qml.Hermitian):
+            # Perform a change of basis before measuring by applying U^ to the circuit
+            self.apply(qml.Hermitian.diagonalizing_gates(par, wires))
+
+    def expval(self, observable):
+        wires = observable.wires
+        par = observable.parameters
+
+        if self.analytic:
             # exact expectation value
-            eigvals = self.eigvals(observable, wires, par)
+
+            if isinstance(observable, qml.Hermitian):
+                eigvals = observable.eigvals(par)
+            else:
+                eigvals = observable.eigvals
+
             prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
             return (eigvals @ prob).real
 
-        if self.analytic:
-            # Raise a warning if backend is a hardware simulator
-            warnings.warn(self.hw_analytic_warning_message.
-                          format(self.backend),
-                          UserWarning)
-
         # estimate the ev
-        return np.mean(self.sample(observable, wires, par))
+        return np.mean(self.sample(observable))
 
-    def var(self, observable, wires, par):
-        if self.backend_name in self._state_backends and self.analytic:
+    def var(self, observable):
+        wires = observable.wires
+        par = observable.parameters
+
+        if self.analytic:
             # exact variance value
-            eigvals = self.eigvals(observable, wires, par)
+
+            if isinstance(observable, qml.Hermitian):
+                eigvals = observable.eigvals(par)
+            else:
+                eigvals = observable.eigvals
+
             prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
-        if self.analytic:
-            # Raise a warning if backend is a hardware simulator
-            warnings.warn(self.hw_analytic_warning_message.
-                          format(self.backend),
-                          UserWarning)
+        return np.var(self.sample(observable))
 
-        return np.var(self.sample(observable, wires, par))
-
-    def sample(self, observable, wires, par):
+    def sample(self, observable):
         if observable == "Identity":
             return np.ones([self.shots])
 
@@ -178,17 +219,6 @@ class QubitDevice(Device):
 
         return samples
 
-class HardwareQubitDevice(QubitDevice):
-    def __init__(self, wires=1, shots=1000):
-        super().__init__(wires=wires, shots=shots)
-
-    def expval(self, observable, wires, par):
-        # estimate the ev
-        return np.mean(self.sample(observable, wires, par))
-
-    def var(self, observable, wires, par):
-        return np.var(self.sample(observable, wires, par))
-
     def probabilities(self, wires=None):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
@@ -203,103 +233,9 @@ class HardwareQubitDevice(QubitDevice):
             to the resulting probability. The dictionary should be sorted such that the
             state tuples are in lexicographical order.
         """
-        # hardware simulator
-        result = self._current_job.result()
+        if self._state is None:
+            return None
 
-        # sort the counts and reverse qubit order to match PennyLane convention
-        nonzero_prob = {
-            tuple(int(i) for i in s[::-1]): c / self.shots
-            for s, c in result.get_counts().items()
-        }
-
-        if wires is None:
-            # marginal probabilities not required
-            return OrderedDict(tuple(sorted(nonzero_prob.items())))
-
-        prob = np.zeros([2] * self.num_wires)
-
-        for s, p in tuple(sorted(nonzero_prob.items())):
-            prob[s] = p
-
-        wires = wires or range(self.num_wires)
-        wires = np.hstack(wires)
-
-        basis_states = itertools.product(range(2), repeat=len(wires))
-        inactive_wires = list(set(range(self.num_wires)) - set(wires))
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
-        return OrderedDict(zip(basis_states, prob))
-
-    @abc.abstractmethod
-    def obtain_samples(self):
-        """
-        The specific device can implement obtaining samples
-        """
-
-    def sample(self, observable, wires, par):
-        samples = self.obtain_samples()
-
-        if isinstance(observable, str) and observable in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            return 1 - 2 * samples[:, wires[0]]
-
-        eigvals = self.eigvals(observable, wires, par)
-        wires = np.hstack(wires)
-        res = samples[:, np.array(wires)]
-        samples = np.zeros([self.shots])
-
-        for w, b in zip(eigvals, itertools.product([0, 1], repeat=len(wires))):
-            samples = np.where(np.all(res == b, axis=1), w, samples)
-
-        return samples
-
-
-class StateVectorQubitDevice(QubitDevice):
-    def __init__(self, wires=1, shots=1000, analytic=True):
-        super().__init__(wires=wires, shots=shots)
-        self.analytic = analytic
-
-    def expval(self, observable, wires, par):
-        if self.analytic:
-            # exact expectation value
-            eigvals = self.eigvals(observable, wires, par)
-            prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
-            return (eigvals @ prob).real
-
-        # estimate the ev
-        return np.mean(self.sample(observable, wires, par))
-
-    def var(self, observable, wires, par):
-        if self.analytic:
-            # exact variance value
-            eigvals = self.eigvals(observable, wires, par)
-            prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
-            return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
-
-        # estimate the ev
-        return np.mean(self.sample(observable, wires, par))
-
-    def sample(self, observable, wires, par):
-        if observable == "Identity":
-            return np.ones([self.shots])
-
-        # software simulator. Need to sample from probabilities.
-        eigvals = self.eigvals(observable, wires, par)
-        prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
-        return np.random.choice(eigvals, self.shots, p=prob)
-
-    def probabilities(self, wires=None):
-        """Return the (marginal) probability of each computational basis
-        state from the last run of the device.
-
-        Args:
-            wires (Sequence[int]): Sequence of wires to return
-                marginal probabilities for. Wires not provided
-                are traced out of the system.
-
-        Returns:
-            OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
-            to the resulting probability. The dictionary should be sorted such that the
-            state tuples are in lexicographical order.
-        """
         prob = np.abs(self.state.reshape([2] * self.num_wires)) ** 2
         wires = wires or range(self.num_wires)
         wires = np.hstack(wires)
