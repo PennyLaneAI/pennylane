@@ -17,8 +17,7 @@ matrix:
     name: Qchem
     install: qchem/install-dependencies.sh
     script:
-    - which pytest
-    - which python
+    - conda activate test-environment
     - make -C qchem coverage
 env:
   global:
