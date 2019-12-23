@@ -1,7 +1,7 @@
 PYTHON3 := $(shell which python3 2>/dev/null)
 
 PYTHON := python3
-COVERAGE := --cov=pennylane --cov-report term-missing --cov-report=html:coverage_html_report
+COVERAGE := --cov=pennylane_qchem --cov-report term-missing --cov-report=html:coverage_html_report
 TESTRUNNER := -m pytest tests --tb=native
 
 .PHONY: help
@@ -34,8 +34,11 @@ dist:
 clean:
 	rm -rf qchem/__pycache__
 	rm -rf tests/__pycache__
+	rm -rf .coverage coverage_html_report/
 	rm -rf dist
 	rm -rf build
+	rm -rf tmp
+	rm -rf timer.dat
 
 test:
 	$(PYTHON) $(TESTRUNNER)

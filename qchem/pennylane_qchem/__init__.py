@@ -12,3 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pennylane_qchem.qchem
+from pennylane_qchem._version import __version__
