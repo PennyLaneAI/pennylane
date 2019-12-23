@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""The PennyLane quantum chemistry package. Supports OpenFermion, Psi4,
+and PySCF for quantum chemistry calculations using PennyLane."""
 import os
 import subprocess
 from shutil import copyfile
@@ -22,14 +24,7 @@ from openfermion.ops._qubit_operator import QubitOperator
 from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
 
 from openfermionpsi4 import run_psi4
-
-try:
-    from openfermionpyscf import run_pyscf
-except:
-    def run_pyscf(*args, **kwargs):
-        """Raise an exception if PySCF is not installed."""
-        raise ImportError("PySCF not found. For pyscf support, "
-                          "please install pyscf.")
+from openfermionpyscf import run_pyscf
 
 import pennylane as qml
 from pennylane.beta.vqe import Hamiltonian
@@ -111,7 +106,7 @@ def read_structure(filepath, outpath="."):
 
 def gen_meanfield_data(
     mol_name, geometry, charge, multiplicity, basis, qc_package="psi4", outpath="."
-):
+):  # pylint: disable=too-many-arguments
     r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
 
     Also builds the path
@@ -197,7 +192,7 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
     Returns:
         tuple: lists of indices for doubly-occupied and active orbitals
     """
-
+    # pylint: disable=too-many-branches
     molecule = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
 
     if n_active_electrons is None:
@@ -329,11 +324,10 @@ def gen_hamiltonian_pauli_basis(
         )
 
     # fermionic-to-qubit transformation of the Hamiltonian
-    if mapping == "jordan_wigner":
-        return jordan_wigner(fermionic_hamiltonian)
-
     if mapping == "bravyi_kitaev":
         return bravyi_kitaev(fermionic_hamiltonian)
+
+    return jordan_wigner(fermionic_hamiltonian)
 
 
 def _qubit_operator_to_terms(qubit_operator):
@@ -469,7 +463,7 @@ def generate_mol_hamiltonian(
     n_active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
-):
+):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
 
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of

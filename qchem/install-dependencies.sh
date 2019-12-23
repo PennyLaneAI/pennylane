@@ -7,7 +7,7 @@ conda config --set always_yes yes --set changeps1 no
 conda update -q conda
 # Useful for debugging any issues with conda
 conda info -a
-create a virtual env
+# create a virtual env
 conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pytest pytest-cov
 conda activate test-environment
 # Install psi4 and openbabel

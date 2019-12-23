@@ -15,7 +15,7 @@ def tol():
     return {"rtol": 0, "atol": 1e-8}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def psi4_support():
     """Boolean fixture for Psi4 support"""
     if not cmd_exists("psi4"):
@@ -27,6 +27,7 @@ def psi4_support():
 
     try:
         import psi4
+
         support = True
     except ImportError as e:
         support = False
@@ -34,7 +35,7 @@ def psi4_support():
     return support
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def babel_support():
     """Boolean fixture for Babel support"""
     if cmd_exists("babel"):
