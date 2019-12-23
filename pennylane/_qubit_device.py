@@ -18,6 +18,8 @@ This module contains the :class:`QubitDevice` abstract base class.
 import abc
 
 import numpy as np
+import itertools
+from collections import OrderedDict
 
 import pennylane as qml
 from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
@@ -236,7 +238,7 @@ class QubitDevice(Device):
         if self._state is None:
             return None
 
-        prob = np.abs(self.state.reshape([2] * self.num_wires)) ** 2
+        prob = np.abs(self._state.reshape([2] * self.num_wires)) ** 2
         wires = wires or range(self.num_wires)
         wires = np.hstack(wires)
 

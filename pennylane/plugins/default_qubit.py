@@ -27,7 +27,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import QubitDevice, DeviceError
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import Operation
 
 
@@ -322,11 +322,14 @@ class DefaultQubit(QubitDevice):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, operation, wires, par):
+    def apply(self, operation):
         # number of wires on device
+        wires = operation.wires
+        par = operation.parameters
+
         n = self.num_wires
 
-        if operation == 'QubitStateVector':
+        if isinstance(operation, QubitStateVector):
             input_state = np.asarray(par[0], dtype=np.complex128)
 
             if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
@@ -334,7 +337,7 @@ class DefaultQubit(QubitDevice):
             n_state_vector = input_state.shape[0]
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation, self.short_name))
+                                  "on a {} device.".format(operation.name, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
 
                 # generate basis states on subset of qubits via the cartesian product
@@ -352,7 +355,8 @@ class DefaultQubit(QubitDevice):
                 raise ValueError("State vector must be of length 2**wires.")
             self._first_operation = False
             return
-        if operation == 'BasisState':
+
+        if isinstance(operation, BasisState):
             # length of basis state parameter
             n_basis_state = len(par[0])
 
@@ -362,7 +366,7 @@ class DefaultQubit(QubitDevice):
                 raise ValueError("BasisState parameter and wires must be of equal length.")
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation, self.short_name))
+                                  "on a {} device.".format(operation.name, self.short_name))
 
 
             # get computational basis state number
@@ -373,7 +377,7 @@ class DefaultQubit(QubitDevice):
             self._first_operation = False
             return
 
-        A = self._get_operator_matrix(operation, par)
+        A = self._get_operator_matrix(operation.name, par)
 
         self._state = self.mat_vec_product(A, self._state, wires)
         self._first_operation = False
@@ -428,8 +432,8 @@ class DefaultQubit(QubitDevice):
         if self.analytic:
             # exact expectation value
             A = self.get_operator_matrix_for_measurement(name, par)
-
-            ev = self.ev(A, wires)
+            self.rotate_basis(observable)
+            return super().expval(observable)
         else:
             # estimate the ev
             ev = np.mean(self.sample(name, wires, par))
