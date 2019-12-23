@@ -1,0 +1,11 @@
+numpy
+scipy
+pennylane==0.7.0
+openfermion==0.10.0
+openfermionpsi4==0.4
+openfermionpyscf==0.4
+pre-commit==1.17.0
+pylint==2.3.1
+pytest==4.5.0
+pytest-cov==2.7.1
+pytest-datafiles==2.0
