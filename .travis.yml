@@ -14,7 +14,7 @@ matrix:
     env: TF=1
   - python: 3.7
     dist: xenial
-    env: QCHEM=1
+    name: Qchem
     install: qchem/install-dependencies.sh
     script: make -C qchem coverage
 env:
