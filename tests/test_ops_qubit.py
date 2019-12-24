@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,3 +53,30 @@ class TestHadamard:
         diag_mat = np.conj(operation).T @ hadamard.matrix() @ operation
 
         assert np.allclose(zgate, diag_mat, atol=tol, rtol=0)
+
+
+def test_pauli_y_matrix():
+    r""" Test that PauliY class has the correct matrix representation.
+    """
+    expected_matrix = np.array([[0, -1j], [1j, 0]])
+    assert np.allclose(qubit.PauliY.matrix(), expected_matrix)
+
+
+def test_pauli_y_diagonalization():
+    r""" Test that the gates diagonalize the PauliY.
+    """
+    dev = qml.device("default.qubit", wires=1)
+
+    diagonalizing_gates = qubit.PauliY.diagonalizing_gates()
+    is_diagonalizing = []
+
+    with qml.utils.OperationRecorder() as rec:
+        for gate in diagonalizing_gates:
+            matrix_rep = dev._get_operator_matrix(gate.base_name, par=gate.parameters)
+            # U^\dag PauliY U should be diagonal; subtract off the diagonal and compare to all 0s
+            diagonal = np.conj(matrix_rep.T) @ qubit.PauliY.matrix() @ matrix_rep
+            is_diagonalizing.append(
+                np.allclose(diagonal - np.diag(np.diag(diagonal)), np.zeros((2, 2)))
+            )
+
+    assert np.all(is_diagonalizing)

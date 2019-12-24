@@ -19,8 +19,12 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 
 from pennylane.operation import Any, Observable, Operation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 from pennylane.utils import OperationRecorder, pauli_eigs
+
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
@@ -99,6 +103,25 @@ class PauliY(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+
+    @staticmethod
+    def matrix():
+        r"""Matrix representation of PauliY
+
+        Returns:
+            array[float]: matrix representation of PauliY
+        """
+        return np.array([[0, -1j], [1j, 0]])
+
+    @staticmethod
+    def diagonalizing_gates():
+        r"""Diagonalize PauliY.
+
+        Returns:
+            list(qml.Operation): A list of gates that diagonalize PauliY in the
+                computational basis.
+        """
+        return [Rot(0, np.pi / 2, 3 * np.pi / 2, wires=0)]
 
 
 class PauliZ(Observable, Operation):
@@ -450,7 +473,7 @@ class Rot(Operation):
         decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
-            RZ(omega, wires=wires)
+            RZ(omega, wires=wires),
         ]
         return decomp_ops
 
@@ -501,7 +524,10 @@ class CRX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(theta, wires):
@@ -560,7 +586,10 @@ class CRY(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(theta, wires):
@@ -568,7 +597,7 @@ class CRY(Operation):
             U3(theta / 2, 0, 0, wires=wires[1]),
             CNOT(wires=wires),
             U3(-theta / 2, 0, 0, wires=wires[1]),
-            CNOT(wires=wires)
+            CNOT(wires=wires),
         ]
         return decomp_ops
 
@@ -617,7 +646,10 @@ class CRZ(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
+    generator = [
+        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
+        -1 / 2,
+    ]
 
     @staticmethod
     def decomposition(lam, wires):
@@ -625,7 +657,7 @@ class CRZ(Operation):
             PhaseShift(lam / 2, wires=wires[1]),
             CNOT(wires=wires),
             PhaseShift(-lam / 2, wires=wires[1]),
-            CNOT(wires=wires)
+            CNOT(wires=wires),
         ]
         return decomp_ops
 
