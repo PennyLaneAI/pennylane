@@ -30,7 +30,7 @@ class TestHadamard:
     def test_hadamard_matrix(self, tol):
         """Test the Hadamard matrix representation"""
         expected = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        assert np.allclose(qubit.Hadamard(0).matrix(), true_matrix, atol=tol, rtol=0)
+        assert np.allclose(qubit.Hadamard(0).matrix(), expected, atol=tol, rtol=0)
 
     def test_hadamard_diagonalization(self, tol):
         """Test the Hadamard diagonalizing_gates function; returned operations
