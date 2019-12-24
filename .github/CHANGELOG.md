@@ -10,7 +10,7 @@
 
   - Generate the qubit Hamiltonians directly starting with the atomic structure of the molecule.
   - Calculate the mean-field (Hartree-Fock) electronic structure of molecules.
-  - Define an active space based on the number of active electrons and active orbitals.
+  - Allow to define an active space based on the number of active electrons and active orbitals.
   - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
     using different functions implemented in OpenFermion.
   - Convert OpenFermion's QubitOperator to Pennylane's Hamiltonian class.
@@ -57,7 +57,7 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
-Zeyue Niu, Maria Schuld, Antal Száva
+Soran Jahangiri, Zeyue Niu, Maria Schuld, Antal Száva
 
 ---
 

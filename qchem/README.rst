@@ -38,4 +38,5 @@ Authors
 -------
 
 `Alain Delgado Gran <https://github.com/agran2018>`__, `Josh Izaac <https://github.com/josh146>`__,
-`Zeyue Niu <https://github.com/zeyueN>`__, and `Nathan Killoran <https://github.com/co9olguy>`__.
+`Zeyue Niu <https://github.com/zeyueN>`__, `Soran Jahangiri <https://github.com/soranjh>`__,
+`Juan Miguel Arrazola <https://github.com/ixfoduap>`__ and `Nathan Killoran <https://github.com/co9olguy>`__.
