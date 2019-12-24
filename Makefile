@@ -43,7 +43,7 @@ clean:
 	rm -rf build
 	rm -rf .coverage coverage_html_report/
 	rm -rf tmp
-	rm -rf timer.dat
+	rm -rf *.dat
 	make -C qchem clean
 
 docs:
