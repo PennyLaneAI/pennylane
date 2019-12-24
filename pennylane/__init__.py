@@ -33,7 +33,7 @@ from pennylane.about import about
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
-from .measure import expval, var, sample
+from .measure import expval, var, sample, probs
 from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
