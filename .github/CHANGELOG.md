@@ -19,6 +19,11 @@
   as a new trainable template.
   [#442](https://github.com/XanaduAI/pennylane/pull/442)
 
+* Added `qml.prob()` measurement function, allowing QNodes
+  to differentiate variational circuit probabilities
+  on simulators and hardware.
+  [#432](https://github.com/XanaduAI/pennylane/pull/432)
+
 ### Breaking changes
 
 * Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
@@ -32,7 +37,13 @@
 
 ### Documentation
 
-* Improved documentation of ``AmplitudeEmbedding`` and ``BasisEmbedding`` templates.
+* Improved documentation of `AmplitudeEmbedding` and `BasisEmbedding` templates.
+  [#441](https://github.com/XanaduAI/pennylane/pull/441)
+  [#439](https://github.com/XanaduAI/pennylane/pull/439)
+
+* Codeblocks in the documentation now have a 'copy' button for easily
+  copying examples.
+  [#437](https://github.com/XanaduAI/pennylane/pull/437)
 
 ### Bug fixes
 
