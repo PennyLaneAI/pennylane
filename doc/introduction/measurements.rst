@@ -9,8 +9,8 @@ Measurements
 .. currentmodule:: pennylane.measure
 
 PennyLane can extract different types of measurement results from quantum
-devices: the expectation of an observable, its variance, or
-samples of a single measurement.
+devices: the expectation of an observable, its variance,
+samples of a single measurement, or computational basis state probabilities.
 
 For example, the following circuit returns the expectation value of the
 :class:`~pennylane.PauliZ` observable on wire 1:
@@ -28,19 +28,19 @@ The available measurement functions are
 :html:`<div class="summary-table">`
 
 .. autosummary::
-    :nosignatures:
 
     ~pennylane.expval
     ~pennylane.sample
     ~pennylane.var
+    ~pennylane.probs
 
 :html:`</div>`
 
 .. note::
 
-    Both :func:`~.pennylane.expval` and :func:`~.pennylane.var` support analytic
-    differentiation. :func:`~.pennylane.sample`, however, returns *stochastic*
-    results, and does not support differentiation.
+    All measurement functions support analytic differentiation, with the
+    exception of :func:`~.pennylane.sample`, as it returns *stochastic*
+    results.
 
 Multiple measurements
 ---------------------
@@ -85,9 +85,40 @@ the ``@`` notation. For example, to measure the expectation value of
 Note that we don't need to declare the identity observable on wire 1; this is
 implicitly assumed.
 
-The tensor observable notation can be used inside all measurement functions,
+The tensor observable notation can be used inside all measurement functions that
+accept observables as arguments,
 including :func:`~.pennylane.expval`, :func:`~.pennylane.var`,
 and :func:`~.pennylane.sample`.
+
+Probability
+-----------
+
+You can also train QNodes on computational basis probabilities, by using
+the :func:`~.pennylane.probs` measurement function. Unlike other
+measurement functions, **this does not accept observables**.
+Instead, it will return a flat array or tensor containing the (marginal)
+probabilities of each quantum state.
+
+.. code-block:: python3
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        return qml.probs(wires=[0, 1])
+
+For example:
+
+>>> dev = qml.device("default.qubit", wires=3)
+>>> qnode = qml.QNode(my_quantum_function, dev)
+>>> qnode(0.56, 0.1)
+array([0.99750208, 0.00249792, 0.        , 0.        ])
+
+The returned probability array uses lexicographical ordering,
+so corresponds to a :math:`99.75\%` probability of measuring
+state :math:`|00\rangle`, and a :math:`0.25\%` probability of
+measuring state :math:`|01\rangle`.
 
 Changing the number of shots
 ----------------------------
