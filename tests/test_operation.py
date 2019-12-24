@@ -727,6 +727,15 @@ class TestTensor:
         t = t.eigvals
         assert np.allclose(t, d, atol=tol, rtol = 0)
 
+    def test_eigvals_identity(self, tol):
+        """Test that the correct eigenvalues are returned for the Tensor"""
+        X = qml.PauliX(0)
+        Iden = qml.Identity(1)
+        t = Tensor(X, Iden)
+        d = np.kron(np.array([1., -1.]), np.array([1.,  1.]))
+        t = t.eigvals
+        assert np.allclose(t, d, atol=tol, rtol = 0)
+
 
 class TestDecomposition:
     """Test for operation decomposition"""
