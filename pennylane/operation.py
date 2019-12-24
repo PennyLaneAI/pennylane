@@ -225,6 +225,13 @@ class Operator(abc.ABC):
             applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
+    @staticmethod
+    def _matrix(*params):
+        """Matrix representation of the operator
+        in the computational basis.
+        """
+        raise NotImplementedError
+
     @property
     @abc.abstractmethod
     def num_params(self):
@@ -245,11 +252,21 @@ class Operator(abc.ABC):
         * ``'A'``: arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
+
     @property
     def name(self):
         """String for the name of the operator.
         """
         return self._name
+
+    def matrix(self):
+        r"""Matrix representation of the operator
+        in the computational basis.
+
+        Returns:
+            array: matrix representation
+        """
+        return self._matrix(*self.parameters)
 
     @name.setter
     def name(self, value):
@@ -606,6 +623,19 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
+    def eigvals(self):
+        r"""Returns the eigenvalues of the observable"""
+        raise NotImplementedError
+
+    def diagonalizing_gates(self):
+        r"""Returns the list of operations such that they
+        diagonalize the observable in the computational basis.
+
+        Returns:
+            list(qml.Operation): A list of gates that diagonalize
+            the observable in the computational basis.
+        """
+        raise NotImplementedError
 
 class Tensor(Observable):
     """Container class representing tensor products of observables.
@@ -719,7 +749,6 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    @property
     def eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
@@ -728,7 +757,7 @@ class Tensor(Observable):
 
         Returns:
             array[float]: array containing the eigenvalues of the tensor product
-                observable
+            observable
         """
         if self._eigvals is not None:
             return self._eigvals
@@ -767,8 +796,7 @@ class Tensor(Observable):
 
         return self._eigvals
 
-    @classmethod
-    def diagonalizing_gates(cls, hmat, wires):
+    def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
         specified tensor observable.
 
@@ -779,11 +807,8 @@ class Tensor(Observable):
             list: list containing the gates diagonalizing the tensor observable
         """
         diag_gates = []
-        for observable in self.obs:
-            if isinstance(observable, qml.Hermitian):
-                diag_gates.extend(qml.Hermitian.diagonalizing_gates(observable.params[0], observable.wires))
-            else:
-                diag_gates.extend(observable.diagonalizing_gates)
+        for o in self.obs:
+            diag_gates.extend(o.diagonalizing_gates())
 
         return diag_gates
 
