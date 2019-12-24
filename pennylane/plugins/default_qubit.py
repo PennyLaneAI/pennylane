@@ -521,11 +521,16 @@ class DefaultQubit(Device):
     def observables(self):
         return set(self._observable_map.keys())
 
-    def probability(self):
+    def probability(self, wires=None):
         if self._state is None:
             return None
 
-        states = itertools.product(range(2), repeat=self.num_wires)
-        probs = np.abs(self._state)**2
+        prob = np.abs(self._state.reshape([2] * self.num_wires)) ** 2
 
-        return OrderedDict(zip(states, probs))
+        wires = wires or range(self.num_wires)
+        wires = np.hstack(wires)
+
+        basis_states = itertools.product(range(2), repeat=len(wires))
+        inactive_wires = list(set(range(self.num_wires)) - set(wires))
+        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+        return OrderedDict(zip(basis_states, prob))

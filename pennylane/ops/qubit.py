@@ -23,7 +23,7 @@ from pennylane.templates.state_preparations import (
     BasisStatePreparation,
     MottonenStatePreparation,
 )
-from pennylane.utils import OperationRecorder
+from pennylane.utils import OperationRecorder, pauli_eigs
 
 
 class Hadamard(Observable, Operation):
@@ -43,6 +43,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class PauliX(Observable, Operation):
@@ -62,6 +63,7 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class PauliY(Observable, Operation):
@@ -81,6 +83,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
     @staticmethod
     def matrix():
@@ -119,6 +122,7 @@ class PauliZ(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
+    eigvals = pauli_eigs(1)
 
 
 class S(Operation):
@@ -938,6 +942,42 @@ class Hermitian(Observable):
     num_params = 1
     par_domain = "A"
     grad_method = "F"
+    _eigs = {}
+
+    @classmethod
+    def eigvals(cls, Hmat):
+        """Return the eigenvalues of the specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the Hermitian observable
+        """
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in cls._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
+        return cls._eigs[Hkey]["eigval"]
+
+    @classmethod
+    def diagonalizing_gates(cls, Hmat, wires):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the tensor product observable
+        """
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in cls._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
+        return [
+            QubitUnitary(cls._eigs[Hkey]["eigvec"].conj().T, wires=wires),
+        ]
 
 
 ops = {
