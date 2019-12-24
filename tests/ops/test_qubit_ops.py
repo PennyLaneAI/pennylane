@@ -262,6 +262,31 @@ class TestObservables:
         x = U @ tensor_obs @ U.conj().T
         assert np.allclose(np.diag(np.sort(eigvals)), x, atol=tol, rtol=0)
 
+    def test_hermitian_matrix(self, tol):
+        """Test that the hermitian matrix method produces the correct output."""
+        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        out = qml.Hermitian(H, wires=0).matrix()
+
+        # verify output type
+        assert isinstance(out, np.ndarray)
+
+        # verify equivalent to input state
+        assert np.allclose(out, H, atol=tol, rtol=0)
+
+    def test_hermitian_exceptions(self):
+        """Tests that the hermitian matrix method raises the proper errors."""
+        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be a square matrix"):
+            qml.Hermitian(H[1:], wires=0).matrix()
+
+        # test non-Hermitian matrix
+        H2 = H.copy()
+        H2[0, 1] = 2
+        with pytest.raises(ValueError, match="must be Hermitian"):
+            qml.Hermitian(H2, wires=0).matrix()
+
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
@@ -424,3 +449,28 @@ class TestOperations:
 
         a, b, c = 0.432, -0.152, 0.9234
         assert np.allclose(qml.CRot._matrix(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0)
+
+    def test_qubit_unitary(self, tol):
+        """Test that the unitary operator produces the correct output."""
+        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        out = qml.QubitUnitary(U, wires=0).matrix()
+
+        # verify output type
+        assert isinstance(out, np.ndarray)
+
+        # verify equivalent to input state
+        assert np.allclose(out, U, atol=tol, rtol=0)
+
+    def test_qubit_unitary_exceptions(self):
+        """Tests that the unitary operator raises the proper errors."""
+        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be a square matrix"):
+            qml.QubitUnitary(U[1:], wires=0).matrix()
+
+        # test non-unitary matrix
+        U3 = U.copy()
+        U3[0, 0] += 0.5
+        with pytest.raises(ValueError, match="must be unitary"):
+            qml.QubitUnitary(U3, wires=0).matrix()
