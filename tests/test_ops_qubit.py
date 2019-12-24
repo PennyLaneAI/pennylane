@@ -19,6 +19,7 @@ from functools import reduce
 import pytest
 import numpy as np
 
+import pennylane as qml
 from pennylane.ops import qubit
 from pennylane.plugins.default_qubit import Rot3
 
@@ -28,11 +29,8 @@ class TestHadamard:
 
     def test_hadamard_matrix(self, tol):
         """Test the Hadamard matrix representation"""
-        hadamard = qubit.Hadamard(0)
-        matrix = hadamard.matrix()
-        true_matrix = np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
-
-        assert np.allclose(matrix, true_matrix, atol=tol, rtol=0)
+        expected = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        assert np.allclose(qubit.Hadamard(0).matrix(), true_matrix, atol=tol, rtol=0)
 
     def test_hadamard_diagonalization(self, tol):
         """Test the Hadamard diagonalizing_gates function; returned operations
@@ -55,28 +53,29 @@ class TestHadamard:
         assert np.allclose(zgate, diag_mat, atol=tol, rtol=0)
 
 
-def test_pauli_y_matrix():
-    r""" Test that PauliY class has the correct matrix representation.
-    """
-    expected_matrix = np.array([[0, -1j], [1j, 0]])
-    assert np.allclose(qubit.PauliY.matrix(), expected_matrix)
+class TestPauliY:
+    """Test functions for Hadamard class."""
+
+    def test_pauli_y_matrix(self):
+        r""" Test that PauliY class has the correct matrix representation."""
+        expected_matrix = np.array([[0, -1j], [1j, 0]])
+        assert np.allclose(qubit.PauliY.matrix(), expected_matrix)
 
 
-def test_pauli_y_diagonalization():
-    r""" Test that the gates diagonalize the PauliY.
-    """
-    dev = qml.device("default.qubit", wires=1)
+    def test_pauli_y_diagonalization(self):
+        r""" Test that the gates diagonalize the PauliY."""
+        dev = qml.device("default.qubit", wires=1)
 
-    diagonalizing_gates = qubit.PauliY.diagonalizing_gates()
-    is_diagonalizing = []
+        diagonalizing_gates = qubit.PauliY.diagonalizing_gates()
+        is_diagonalizing = []
 
-    with qml.utils.OperationRecorder() as rec:
-        for gate in diagonalizing_gates:
-            matrix_rep = dev._get_operator_matrix(gate.base_name, par=gate.parameters)
-            # U^\dag PauliY U should be diagonal; subtract off the diagonal and compare to all 0s
-            diagonal = np.conj(matrix_rep.T) @ qubit.PauliY.matrix() @ matrix_rep
-            is_diagonalizing.append(
-                np.allclose(diagonal - np.diag(np.diag(diagonal)), np.zeros((2, 2)))
-            )
+        with qml.utils.OperationRecorder() as rec:
+            for gate in diagonalizing_gates:
+                matrix_rep = dev._get_operator_matrix(gate.base_name, par=gate.parameters)
+                # U^\dag PauliY U should be diagonal; subtract off the diagonal and compare to all 0s
+                diagonal = np.conj(matrix_rep.T) @ qubit.PauliY.matrix() @ matrix_rep
+                is_diagonalizing.append(
+                    np.allclose(diagonal - np.diag(np.diag(diagonal)), np.zeros((2, 2)))
+                )
 
-    assert np.all(is_diagonalizing)
+        assert np.all(is_diagonalizing)
