@@ -173,9 +173,7 @@ class QubitDevice(Device):
             else:
                 eigvals = observable.eigvals
 
-            print(eigvals)
             prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
-            print(prob)
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -201,17 +199,15 @@ class QubitDevice(Device):
     def sample(self, observable):
         if isinstance(observable, qml.Identity):
             return np.ones([self.shots])
-
         self.rotate_basis(observable)
         # Sampling is supported on software simulators
         # HW devices will have to provide there own sample() method
         if isinstance(observable, qml.Hermitian):
-            eigvals = observable.eigvals(np.array(par))
-            print('Herm eigvals:')
-            print(eigvals)
+            eigvals = observable.eigvals(np.array(observable.parameters))
         else:
             eigvals = observable.eigvals
 
+        eigvals = np.fromiter(eigvals, dtype=np.float64)
         prob = np.fromiter(self.probabilities(wires=observable.wires).values(), dtype=np.float64)
         return np.random.choice(eigvals, self.shots, p=prob)
 

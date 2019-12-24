@@ -335,8 +335,6 @@ class Operator(abc.ABC):
                     raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
         elif self.par_domain in ('R', 'N'):
             if not isinstance(p, numbers.Real):
-                print(p)
-                print(type(p))
                 raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
 
             if self.par_domain == 'N':
@@ -754,11 +752,8 @@ class Tensor(Observable):
                     for ns_obs in g:
                         # loop through all non-standard observables
                         if ns_obs[0].name == "Hermitian":
-                            # Hermitian observable has pre-computed eigenvalues
-                            operator = ns_obs[2]
+                            operator = ns_obs[0].params[0]
                             herm_eigs = qml.Hermitian.eigvals(np.array(operator))
-                            print('Tensor Herm eigenvalues:')
-                            print(herm_eigs)
                             self._eigvals = np.kron(self._eigvals, herm_eigs)
 
                         elif ns_obs[0].name == "Identity":

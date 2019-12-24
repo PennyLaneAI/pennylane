@@ -100,7 +100,6 @@ def prep_par(par, op):
 def include_inverses_with_test_data(test_data):
     return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
-
 class TestAuxillaryFunctions:
     """Test auxillary functions."""
 
@@ -304,7 +303,6 @@ class TestStateFunctions:
         with pytest.raises(ValueError, match="must be Hermitian"):
             hermitian(H2)
 
-
 class TestOperatorMatrices:
     """Tests that get_operator_matrix returns the correct matrix."""
 
@@ -363,7 +361,6 @@ class TestOperatorMatrices:
         res = qubit_device_2_wires._get_operator_matrix(name, ())
 
         assert res is None
-
 
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
@@ -865,7 +862,6 @@ class TestSample:
         # they square to 1
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
-
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
@@ -1286,7 +1282,6 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
-
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
@@ -1306,8 +1301,6 @@ class TestTensorExpval:
 
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
 
-        print(res)
-        print(expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_pauliz_identity(self, theta, phi, varphi, tol):
@@ -1325,8 +1318,6 @@ class TestTensorExpval:
 
         expected = np.cos(varphi)*np.cos(phi)
 
-        print(res)
-        print(expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
@@ -1435,7 +1426,6 @@ class TestTensorExpval:
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorVar:
@@ -1562,8 +1552,6 @@ class TestTensorSample:
 
         mean = s1 @ p
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        print(mean)
-        print(expected)
         assert np.allclose(mean, expected, atol=tol, rtol=0)
 
         var = (s1 ** 2) @ p - (s1 @ p).real ** 2
@@ -1630,7 +1618,6 @@ class TestTensorSample:
             m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
             s1, p = dev.sample(qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2]))
 
-        print(np.round(s1, 8))
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])

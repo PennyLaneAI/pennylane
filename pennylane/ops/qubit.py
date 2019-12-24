@@ -20,7 +20,7 @@ import numpy as np
 
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder, pauli_eigs
+from pennylane.utils import OperationRecorder, pauli_eigs, reshape_square_operator
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
@@ -922,7 +922,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        Hmat = np.array(Hmat)
+        Hmat = reshape_square_operator(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             w, U = np.linalg.eigh(Hmat)
@@ -940,12 +940,11 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the tensor product observable
         """
+        Hmat = reshape_square_operator(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in cls._eigs:
             w, U = np.linalg.eigh(Hmat)
             cls._eigs[Hkey] = {"eigval": w, "eigvec": U}
-
-        # Shape might be e.g. (1,4,4), reshape such that further checks can be done
         U = cls._eigs[Hkey]["eigvec"]
         U_dim = int(np.sqrt(np.prod(U.shape)))
 
