@@ -419,7 +419,7 @@ class RX(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta/2) * np.eye(2) + 1j * np.sin(-theta/2) * PauliX._matrix
+        return np.cos(theta/2) * np.eye(2) + 1j * np.sin(-theta/2) * PauliX._matrix()
 
 
 class RY(Operation):

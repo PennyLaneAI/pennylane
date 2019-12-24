@@ -283,3 +283,144 @@ class TestOperations:
         op = ops(wires=range(ops.num_wires))
         res = op.matrix()
         assert np.allclose(res, mat, atol=tol, rtol=0)
+
+    def test_phase_shift(self, tol):
+        """Test phase shift is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.PhaseShift._matrix(0), np.identity(2), atol=tol, rtol=0)
+
+        # test arbitrary phase shift
+        phi = 0.5432
+        expected = np.array([[1, 0], [0, np.exp(1j * phi)]])
+        assert np.allclose(qml.PhaseShift._matrix(phi), expected, atol=tol, rtol=0)
+
+    def test_x_rotation(self, tol):
+        """Test x rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.RX._matrix(0), np.identity(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, -1j], [-1j, 1]]) / np.sqrt(2)
+        assert np.allclose(qml.RX._matrix(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = -1j * np.array([[0, 1], [1, 0]])
+        assert np.allclose(qml.RX._matrix(np.pi), expected, atol=tol, rtol=0)
+
+    def test_y_rotation(self, tol):
+        """Test y rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.RY._matrix(0), np.identity(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, -1], [1, 1]]) / np.sqrt(2)
+        assert np.allclose(qml.RY._matrix(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[0, -1], [1, 0]])
+        assert np.allclose(qml.RY._matrix(np.pi), expected, atol=tol, rtol=0)
+
+    def test_z_rotation(self, tol):
+        """Test z rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.RZ._matrix(0), np.identity(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4]))
+        assert np.allclose(qml.RZ._matrix(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        assert np.allclose(qml.RZ._matrix(np.pi), -1j * Z, atol=tol, rtol=0)
+
+    def test_arbitrary_rotation(self, tol):
+        """Test arbitrary single qubit rotation is correct"""
+
+        # test identity for phi,theta,omega=0
+        assert np.allclose(qml.Rot._matrix(0, 0, 0), np.identity(2), atol=tol, rtol=0)
+
+        # expected result
+        def arbitrary_rotation(x, y, z):
+            """arbitrary single qubit rotation"""
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c],
+                ]
+            )
+
+        a, b, c = 0.432, -0.152, 0.9234
+        assert np.allclose(qml.Rot._matrix(a, b, c), arbitrary_rotation(a, b, c), atol=tol, rtol=0)
+
+    def test_C_x_rotation(self, tol):
+        """Test controlled x rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.CRX._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]])
+        assert np.allclose(qml.CRX._matrix(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])
+        assert np.allclose(qml.CRX._matrix(np.pi), expected, atol=tol, rtol=0)
+
+    def test_C_y_rotation(self, tol):
+        """Test controlled y rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.CRY._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]])
+        assert np.allclose(qml.CRY._matrix(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        assert np.allclose(qml.CRY._matrix(np.pi), expected, atol=tol, rtol=0)
+
+    def test_C_z_rotation(self, tol):
+        """Test controlled z rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.CRZ._matrix(0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]])
+        assert np.allclose(qml.CRZ._matrix(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
+        assert np.allclose(qml.CRZ._matrix(np.pi), expected, atol=tol, rtol=0)
+
+    def test_controlled_arbitrary_rotation(self, tol):
+        """Test controlled arbitrary rotation is correct"""
+
+        # test identity for phi,theta,omega=0
+        assert np.allclose(qml.CRot._matrix(0, 0, 0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for phi,theta,omega=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        assert np.allclose(qml.CRot._matrix(np.pi, np.pi, np.pi), expected, atol=tol, rtol=0)
+
+        def arbitrary_Crotation(x, y, z):
+            """controlled arbitrary single qubit rotation"""
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c]
+                ]
+            )
+
+        a, b, c = 0.432, -0.152, 0.9234
+        assert np.allclose(qml.CRot._matrix(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0)
