@@ -2,10 +2,6 @@
 
 ### New features since last release
 
-* Added `QAOAEmbedding` and its parameter initialization
-  as a new trainable template.
-  [#442](https://github.com/XanaduAI/pennylane/pull/442)
-
 * Adds a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [#453](https://github.com/XanaduAI/pennylane/pull/453)
@@ -18,6 +14,10 @@
   - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
     using different functions implemented in OpenFermion.
   - Convert OpenFermion's QubitOperator to Pennylane's Hamiltonian class.
+
+* Added `QAOAEmbedding` and its parameter initialization
+  as a new trainable template.
+  [#442](https://github.com/XanaduAI/pennylane/pull/442)
 
 ### Breaking changes
 
@@ -45,7 +45,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva
+Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
+Zeyue Niu, Maria Schuld, Antal Száva
 
 ---
 
