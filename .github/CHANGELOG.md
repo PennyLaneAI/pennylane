@@ -9,7 +9,7 @@
   Features include:
 
   - Generate the qubit Hamiltonians directly starting with the atomic structure of the molecule.
-  - Calculate the mean-field (Hartree-Fock) electronic structure calculation of molecules.
+  - Calculate the mean-field (Hartree-Fock) electronic structure of molecules.
   - Build the active space used to expand the second-quantized electronic Hamiltonian.
   - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
     using different functions implemented in OpenFermion.
