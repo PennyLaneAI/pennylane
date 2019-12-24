@@ -2,9 +2,22 @@
 
 ### New features since last release
 
-* Added `QAOAEmbedding` and its parameter initialization 
+* Added `QAOAEmbedding` and its parameter initialization
   as a new trainable template.
   [#442](https://github.com/XanaduAI/pennylane/pull/442)
+
+* Adds a quantum chemistry package, `pennylane.qchem`, which supports
+  integration with OpenFermion, Psi4, PySCF, and OpenBabel.
+  [#453](https://github.com/XanaduAI/pennylane/pull/453)
+
+  Features include:
+
+  - Generate the qubit Hamiltonians directly starting with the atomic structure of the molecule.
+  - Calculate the mean-field (Hartree-Fock) electronic structure calculation of molecules.
+  - Build the active space used to expand the second-quantized electronic Hamiltonian.
+  - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
+    using different functions implemented in OpenFermion.
+  - Convert OpenFermion's QubitOperator to Pennylane's Hamiltonian class.
 
 ### Breaking changes
 
