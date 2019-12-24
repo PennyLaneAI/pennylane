@@ -1,4 +1,4 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,38 +12,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.ops.qubit`.
+Unit tests for the available built-in discrete-variable quantum operations.
 """
-# pylint: disable=protected-access,cell-var-from-loop
+from functools import reduce
 
 import pytest
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.ops import qubit
+from pennylane.plugins.default_qubit import Rot3
 
 
-def test_pauli_y_matrix():
-    r""" Test that PauliY class has the correct matrix representation.
-    """
-    expected_matrix = np.array([[0, -1j], [1j, 0]])
-    assert np.allclose(qubit.PauliY.matrix(), expected_matrix)
+class TestHadamard:
+    """Test functions for Hadamard class."""
+
+    def test_hadamard_matrix(self, tol):
+        """Test the Hadamard matrix representation"""
+        expected = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        assert np.allclose(qubit.Hadamard(0).matrix(), expected, atol=tol, rtol=0)
+
+    def test_hadamard_diagonalization(self, tol):
+        """Test the Hadamard diagonalizing_gates function; returned operations
+        should transform the Hadamard gate into the Z-gate.
+
+        Only for testing diagonalization based on Rot().
+        """
+        hadamard = qubit.Hadamard(0)
+        zgate = np.array([[1, 0], [0, -1]], dtype=np.complex128)
+
+        gate_list = []
+        for op in hadamard.diagonalizing_gates():
+            params = op.params
+            gate_list.append(Rot3(*params))
+
+        operation = reduce(np.dot, gate_list)
+
+        diag_mat = np.conj(operation).T @ hadamard.matrix() @ operation
+
+        assert np.allclose(zgate, diag_mat, atol=tol, rtol=0)
 
 
-def test_pauli_y_diagonalization():
-    r""" Test that the gates diagonalize the PauliY.
-    """
-    dev = qml.device("default.qubit", wires=1)
+class TestPauliY:
+    """Test functions for Hadamard class."""
 
-    diagonalizing_gates = qubit.PauliY.diagonalizing_gates()
-    is_diagonalizing = []
+    def test_pauli_y_matrix(self):
+        r""" Test that PauliY class has the correct matrix representation."""
+        expected_matrix = np.array([[0, -1j], [1j, 0]])
+        assert np.allclose(qubit.PauliY.matrix(), expected_matrix)
 
-    with qml.utils.OperationRecorder() as rec:
-        for gate in diagonalizing_gates:
-            matrix_rep = dev._get_operator_matrix(gate.base_name, par=gate.parameters)
-            # U^\dag PauliY U should be diagonal; subtract off the diagonal and compare to all 0s
-            diagonal = np.conj(matrix_rep.T) @ qubit.PauliY.matrix() @ matrix_rep
-            is_diagonalizing.append(
-                np.allclose(diagonal - np.diag(np.diag(diagonal)), np.zeros((2, 2)))
-            )
 
-    assert np.all(is_diagonalizing)
+    def test_pauli_y_diagonalization(self):
+        r""" Test that the gates diagonalize the PauliY."""
+        dev = qml.device("default.qubit", wires=1)
+
+        diagonalizing_gates = qubit.PauliY.diagonalizing_gates()
+        is_diagonalizing = []
+
+        with qml.utils.OperationRecorder() as rec:
+            for gate in diagonalizing_gates:
+                matrix_rep = dev._get_operator_matrix(gate.base_name, par=gate.parameters)
+                # U^\dag PauliY U should be diagonal; subtract off the diagonal and compare to all 0s
+                diagonal = np.conj(matrix_rep.T) @ qubit.PauliY.matrix() @ matrix_rep
+                is_diagonalizing.append(
+                    np.allclose(diagonal - np.diag(np.diag(diagonal)), np.zeros((2, 2)))
+                )
+
+        assert np.all(is_diagonalizing)
