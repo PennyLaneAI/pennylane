@@ -720,6 +720,9 @@ class TestTensor:
         t = Tensor(X, Y)
         assert np.array_equal(t.eigvals(), np.kron([1, -1], [1, -1]))
 
+        # test that the eigvals are now cached and not recalculated
+        assert np.array_equal(t._eigvals, t.eigvals())
+
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
         """Test that the correct eigenvalues are returned for the Tensor containing an Hermitian observable"""

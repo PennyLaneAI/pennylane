@@ -32,8 +32,16 @@
 
 ### Improvements
 
-* Added the ``Observable.eigvals`` attribute to return the eigenvalues of observables.
+* Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
   [#449](https://github.com/XanaduAI/pennylane/pull/449)
+
+* Added the ``Observable.diagonalizing_gates`` method to return the gates
+  that diagonalize an observable in the computational basis.
+  [#454](https://github.com/XanaduAI/pennylane/pull/454)
+
+* Added the ``Operator.matrix`` method to return the matrix representation
+  of an operator in the computational basis.
+  [#454](https://github.com/XanaduAI/pennylane/pull/454)
 
 ### Documentation
 
