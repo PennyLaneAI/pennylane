@@ -101,11 +101,13 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 """
 import abc
 import itertools
+import functools
 import numbers
 from collections.abc import Sequence
 from enum import Enum, IntEnum
 
 import numpy as np
+from numpy.linalg import multi_dot
 
 import pennylane as qml
 
@@ -229,6 +231,25 @@ class Operator(abc.ABC):
     def _matrix(*params):
         """Matrix representation of the operator
         in the computational basis.
+
+        This is a *static method* that should be defined for all
+        new operations and observables, that returns the matrix representing
+        the operator in the computational basis.
+
+        This private method allows matrices to be computed
+        directly without instantiating the operators first.
+
+        To return the matrices of *instantiated* operators,
+        please use :meth:`~.Operator.matrix` instead.
+
+        **Example:**
+
+        >>> qml.RY._matrix(0.5)
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
         """
         raise NotImplementedError
 
@@ -260,8 +281,15 @@ class Operator(abc.ABC):
         return self._name
 
     def matrix(self):
-        r"""Matrix representation of the operator
+        r"""Matrix representation of an instantiated operator
         in the computational basis.
+
+        **Example:**
+
+        >>> U = qml.RY(0.5, wires=1)
+        >>> U.matrix()
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
 
         Returns:
             array: matrix representation
@@ -637,6 +665,7 @@ class Observable(Operator):
         """
         raise NotImplementedError
 
+
 class Tensor(Observable):
     """Container class representing tensor products of observables.
 
@@ -799,6 +828,59 @@ class Tensor(Observable):
             diag_gates.extend(o.diagonalizing_gates())
 
         return diag_gates
+
+    def matrix(self):
+        r"""Matrix representation of the tensor operator
+        in the computational basis.
+
+        **Example:**
+
+        Note that the returned matrix *only includes explicitly
+        declared observables* making up the tensor product;
+        that is, it only returns the matrix for the specified
+        subsystem it is defined for.
+
+        >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
+        >>> O.matrix()
+        array([[ 1,  0,  0,  0],
+               [ 0, -1,  0,  0],
+               [ 0,  0, -1,  0],
+               [ 0,  0,  0,  1]])
+
+        To get the full :math:`2^3\times 2^3` Hermitian matrix
+        acting on the 3-qubit system, the identity on wire 1
+        must be explicitly included:
+
+        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+        >>> O.matrix()
+        array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
+               [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
+               [ 0., -0.,  0., -1.,  0., -0.,  0., -0.],
+               [ 0.,  0.,  0.,  0., -1., -0., -0., -0.],
+               [ 0., -0.,  0., -0., -0.,  1., -0.,  0.],
+               [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
+               [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
+
+        Returns:
+            array: matrix representation
+        """
+        # group the observables based on what wires they act on
+        U_list = []
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
+            # extract the matrices of each diagonalizing gate
+            mats = [i.matrix() for i in g]
+
+            if len(mats) > 1:
+                # multiply all unitaries together before appending
+                mats = [multi_dot(mats)]
+
+            # append diagonalizing unitary for specific wire to U_list
+            U_list.append(mats[0])
+
+        # Return the Hermitian matrix representing the observable
+        # over the defined wires.
+        return functools.reduce(np.kron, U_list)
 
 #=============================================================================
 # CV Operations and observables

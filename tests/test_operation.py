@@ -820,6 +820,28 @@ class TestTensor:
         # matrix of the eigenvalues.
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_tensor_matrix(self, tol):
+        """Test that the tensor product matrix method returns
+        the correct result"""
+        H = np.diag([1, 2, 3, 4])
+        O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
+
+        res = O.matrix()
+        expected = np.kron(qml.PauliY._matrix(), H)
+        expected = np.kron(qml.PauliX._matrix(), expected)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiplication_matrix(self, tol):
+        """If using the ``@`` operator on two observables acting on the
+        same wire, the tensor class should treat this as matrix multiplication."""
+        O = qml.PauliX(0) @ qml.PauliX(0)
+
+        res = O.matrix()
+        expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestDecomposition:
     """Test for operation decomposition"""
