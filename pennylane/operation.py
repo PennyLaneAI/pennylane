@@ -681,6 +681,7 @@ class Tensor(Observable):
 
     >>> T = qml.PauliX(0) @ qml.Hadamard(2)
     """
+    # pylint: disable=abstract-method
     return_type = None
     tensor = True
     par_domain = None
