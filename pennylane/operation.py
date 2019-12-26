@@ -768,31 +768,19 @@ class Tensor(Observable):
         self._eigvals = pauli_eigs(len(self.wires))
 
         # check if there are any non-standard observables (such as Identity)
-        if set(self.obs) - standard_observables:
+        if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals = np.array([1])
-            for k, g in itertools.groupby(zip(self.obs, self.wires,\
-                self.parameters), lambda x: x[0].name in standard_observables):
+            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    # Determine the size of the subgroup, by transposing
-                    # the list, flattening it, and determining the length.
-                    n = len([w for sublist in list(zip(*g))[1] for w in sublist])
-                    self._eigvals = np.kron(self._eigvals, pauli_eigs(n))
+                    self._eigvals = np.kron(self._eigvals, pauli_eigs(len(list(g))))
                 else:
                     # Subgroup g contains only non-standard observables.
-                    for ns_obs in g:
+                    for ns_ob in g:
                         # loop through all non-standard observables
-                        if ns_obs[0].name == "Hermitian":
-                            # Hermitian observable has pre-computed eigenvalues
-                            operator = ns_obs[2]
-                            herm_eigs = qml.Hermitian.eigvals(np.array(operator))
-                            self._eigvals = np.kron(self._eigvals, herm_eigs)
-
-                        elif ns_obs[0].name == "Identity":
-                            # Identity observable has eigenvalues (1, 1)
-                            self._eigvals = np.kron(self._eigvals, np.array([1, 1]))
+                        self._eigvals = np.kron(self._eigvals, ns_ob.eigvals())
 
         return self._eigvals
 

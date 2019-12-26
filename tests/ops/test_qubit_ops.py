@@ -288,21 +288,21 @@ class TestObservables:
             qml.Hermitian(H2, wires=0).matrix()
 
 
-# Non-parametrized operations and their matrix representation
-NON_PARAMETRIZED_OPERATIONS = [
-    (qml.CNOT, CNOT),
-    (qml.SWAP, SWAP),
-    (qml.CZ, CZ),
-    (qml.S, S),
-    (qml.T, T),
-    (qml.CSWAP, CSWAP),
-    (qml.Toffoli, Toffoli)
-]
-
 class TestOperations:
     """Tests for the operations"""
 
-    @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
+    # Non-parametrized operations and their matrix representation
+    NON_PARAMETRIZED_OPERATIONS = [
+        (qml.CNOT, CNOT),
+        (qml.SWAP, SWAP),
+        (qml.CZ, CZ),
+        (qml.S, S),
+        (qml.T, T),
+        (qml.CSWAP, CSWAP),
+        (qml.Toffoli, Toffoli)
+    ]
+
+    @pytest.mark.parametrize("ops, mat", self.NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
         op = ops(wires=range(ops.num_wires))
