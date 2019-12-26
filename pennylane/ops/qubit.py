@@ -61,7 +61,7 @@ class Hadamard(Observable, Operation):
         where :math:`U = R_y(-\pi/4)`.
 
         Returns:
-            list(qml.Operation): A list of gates that diagonalize PauliY in the
+            list(qml.Operation): A list of gates that diagonalize Hadamard in the
             computational basis.
         """
         return [RY(-np.pi/4, wires=self.wires)]
