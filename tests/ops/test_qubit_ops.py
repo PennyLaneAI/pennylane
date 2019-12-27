@@ -315,11 +315,13 @@ class TestOperations:
 
         # test identity for theta=0
         assert np.allclose(qml.PhaseShift._matrix(0), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qml.U1._matrix(0), np.identity(2), atol=tol, rtol=0)
 
         # test arbitrary phase shift
         phi = 0.5432
         expected = np.array([[1, 0], [0, np.exp(1j * phi)]])
         assert np.allclose(qml.PhaseShift._matrix(phi), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.U1._matrix(phi), expected, atol=tol, rtol=0)
 
     def test_x_rotation(self, tol):
         """Test x rotation is correct"""
@@ -450,6 +452,28 @@ class TestOperations:
 
         a, b, c = 0.432, -0.152, 0.9234
         assert np.allclose(qml.CRot._matrix(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0)
+
+    def test_U2_gate(self, tol):
+        """Test U2 gate matrix matches the documentation"""
+        phi = 0.432
+        lam = -0.12
+        res = qml.U2._matrix(phi, lam)
+        expected = np.array([[1, -np.exp(1j*lam)], [np.exp(1j*phi), np.exp(1j*(phi+lam))]])/np.sqrt(2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_U3_gate(self, tol):
+        """Test U3 gate matrix matches the documentation"""
+        theta = 0.65
+        phi = 0.432
+        lam = -0.12
+
+        res = qml.U3._matrix(theta, phi, lam)
+        expected = np.array([
+            [np.cos(theta/2), -np.exp(1j*lam)*np.sin(theta/2)],
+            [np.exp(1j*phi)*np.sin(theta/2), np.exp(1j*(phi+lam))*np.cos(theta/2)]]
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_qubit_unitary(self, tol):
         """Test that the unitary operator produces the correct output."""
