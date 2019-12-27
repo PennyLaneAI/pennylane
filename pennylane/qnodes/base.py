@@ -305,6 +305,23 @@ class BaseQNode:
                 )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
+    def _determine_variable_name(self, variable_value, prefix):
+        if isinstance(variable_value, np.ndarray):
+            variable_name_string = np.empty_like(variable_value, dtype=object)
+
+            for index in np.ndindex(*variable_name_string.shape):
+                variable_name_string[index] = "{}[{}]".format(prefix, ",".join([str(i) for i in index]))
+        elif isinstance(variable_value, Sequence):
+            variable_name_string = []
+
+            for idx, val in enumerate(variable_value):
+                variable_name_string.append(self._determine_variable_name(val, "{}[{}]".format(prefix, idx)))
+        else:
+            variable_name_string = prefix
+
+        return variable_name_string
+
+
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
 
@@ -343,31 +360,15 @@ class BaseQNode:
         # args
         variable_name_strings = []
         for variable_name, variable_value in zip(full_argspec.args, args):
-            if isinstance(variable_value, np.ndarray):
-                variable_name_string = np.empty_like(variable_value, dtype=object)
-
-                for index in np.ndindex(*variable_name_string.shape):
-                    variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
-            else:
-                variable_name_string = variable_name
-
-            variable_name_strings.append(variable_name_string)
+            variable_name_strings.append(self._determine_variable_name(variable_value, variable_name))
 
         # varargs
         len_diff = len(args) - len(full_argspec.args)
         if len_diff > 0:
             for idx, variable_value in enumerate(args[-len_diff:]):
                 variable_name = "{}[{}]".format(full_argspec.varargs, idx)
-
-                if isinstance(variable_value, np.ndarray):
-                    variable_name_string = np.empty_like(variable_value, dtype=object)
-
-                    for index in np.ndindex(*variable_name_string.shape):
-                        variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
-                else:
-                    variable_name_string = variable_name
-
-                variable_name_strings.append(variable_name_string)
+                
+                variable_name_strings.append(self._determine_variable_name(variable_value, variable_name))
 
         print("_construct/variable_name_strings = ", variable_name_strings)
         self.arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]

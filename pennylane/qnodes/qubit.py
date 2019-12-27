@@ -122,7 +122,6 @@ class QubitQNode(JacobianQNode):
             # which we can modify without affecting other Operators depending on the original.
             orig = op.params[p_idx]
             assert orig.idx == idx
-            assert orig.name is None
 
             # reference to a new, temporary parameter with index n, otherwise identical with orig
             temp_var = copy.copy(orig)
