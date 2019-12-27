@@ -1,5 +1,5 @@
 numpy
-scipy
+scipy==1.3.2
 networkx
 tensornetwork
 autograd
