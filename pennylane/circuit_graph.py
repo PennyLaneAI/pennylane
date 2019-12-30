@@ -318,40 +318,47 @@ class CircuitGraph:
             return [None]
 
     def greedy_layers(self):
+        """Greedily collected layers of the circuit. Empty slots are filled with `None`.
+        
+        Returns:
+            Tuple[list[list[pennylane.operation.Operation]], list[list[pennylane.operation.Observable]]]: 
+                Tuple of the circuits operations and the circuits observables, both indexed
+                by wires.
+        """
         l = 0
 
-        greedy_grid = OrderedDict()
+        operations = OrderedDict()
         for key in sorted(self._grid):
-            greedy_grid[key] = self._grid[key]
+            operations[key] = self._grid[key]
 
-        for wire in greedy_grid:
-            greedy_grid[wire] = list(
+        for wire in operations:
+            operations[wire] = list(
                 filter(
                     lambda op: not (
                         isinstance(op, qml.operation.Observable) and op.return_type is not None
                     ),
-                    greedy_grid[wire],
+                    operations[wire],
                 )
             )
 
         while True:
             layer_ops = {
-                wire: CircuitGraph.list_at_index_or_none(greedy_grid[wire], l)
-                for wire in greedy_grid
+                wire: CircuitGraph.list_at_index_or_none(operations[wire], l)
+                for wire in operations
             }
             num_ops = Counter(layer_ops.values())
 
-            if None in num_ops and num_ops[None] == len(greedy_grid):
+            if None in num_ops and num_ops[None] == len(operations):
                 break
 
             for (wire, op) in layer_ops.items():
                 if op is None:
-                    greedy_grid[wire].append(None)
+                    operations[wire].append(None)
                     continue
 
                 # push back to next layer if not all args wires are there yet
                 if len(op.wires) > num_ops[op]:
-                    greedy_grid[wire].insert(l, None)
+                    operations[wire].insert(l, None)
 
             l += 1
 
@@ -368,7 +375,7 @@ class CircuitGraph:
             )
 
         return (
-            [greedy_grid[wire] for wire in greedy_grid],
+            [operations[wire] for wire in operations],
             [observables[wire] for wire in observables],
         )
 
