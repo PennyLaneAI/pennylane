@@ -154,8 +154,42 @@ class TestFunctions:
 class TestGrid:
     """Test the Grid helper class."""
 
-    def test_transpose_on_init(self):
-        pass
+    def test_init(self):
+        """Test that the Grid class is initialized correctly."""
+
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        assert grid.raw_grid == raw_grid
+        assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5]]
+
+    @pytest.mark.parametrize("idx,expected_transposed_grid", [
+        (0, [[6, 7, 8], [0, 1, 2], [3, 4, 5]]),
+        (1, [[0, 1, 2], [6, 7, 8], [3, 4, 5]]),
+        (2, [[0, 1, 2], [3, 4, 5], [6, 7, 8]]),
+    ])
+    def test_insert_layer(self, idx, expected_transposed_grid):
+        """Test that layer insertion works properly."""
+
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        grid.insert_layer(idx, [6, 7, 8])
+
+        assert grid.raw_grid_transpose == expected_transposed_grid
+        assert grid.raw_grid == _transpose(expected_transposed_grid)
+
+    def test_append_layer(self):
+        """Test that layer appending works properly."""
+
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        grid.append_layer([6, 7, 8])
+
+        assert grid.raw_grid == [[0, 3, 6], [1, 4, 7], [2, 5, 8]]
+        assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+
 
 
 class TestCircuitGraphDrawing:
