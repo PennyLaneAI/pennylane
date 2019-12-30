@@ -560,9 +560,7 @@ class RepresentationResolver:
 
         if op.name == "QubitUnitary":
             mat = op.params[0]
-            idx = RepresentationResolver.append_array_if_not_in_list(
-                mat, self.unitary_matrix_cache
-            )
+            idx = RepresentationResolver.append_array_if_not_in_list(mat, self.unitary_matrix_cache)
 
             return "U{}".format(idx)
 
@@ -753,7 +751,9 @@ class CircuitDrawer:
 
                         other_sorted_wires = other_op.wires.copy()
                         other_sorted_wires.sort()
-                        other_blocked_wires = list(range(other_sorted_wires[0] + 1, other_sorted_wires[-1]))
+                        other_blocked_wires = list(
+                            range(other_sorted_wires[0] + 1, other_sorted_wires[-1])
+                        )
 
                         if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):
                             op_indices = [
@@ -770,7 +770,13 @@ class CircuitDrawer:
                 operator_grid.insert_layer(i + 1, other_layer)
                 n += 1
 
-    def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet, show_variable_names=False):
+    def __init__(
+        self,
+        raw_operator_grid,
+        raw_observable_grid,
+        charset=UnicodeCharSet,
+        show_variable_names=False,
+    ):
         self.charset = charset
         self.show_variable_names = show_variable_names
         self.representation_resolver = RepresentationResolver(charset, show_variable_names)
@@ -831,9 +837,9 @@ class CircuitDrawer:
             rendered_string += "\n"
 
         for symbol, cache in {
-            "U" : self.representation_resolver.unitary_matrix_cache,
-            "H" : self.representation_resolver.hermitian_matrix_cache,
-            "M" : self.representation_resolver.matrix_cache,
+            "U": self.representation_resolver.unitary_matrix_cache,
+            "H": self.representation_resolver.hermitian_matrix_cache,
+            "M": self.representation_resolver.matrix_cache,
         }.items():
             for idx, matrix in enumerate(cache):
                 rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)

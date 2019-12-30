@@ -89,10 +89,11 @@ def parameterized_qubit_circuit():
         qml.CNOT(wires=[0, 1])
         qml.CRY(b, wires=[3, 1])
         qml.RX(d, wires=0)
-        qml.RX(e, wires=1)
-        qml.RY(c, wires=2)
+        qml.RX(4 * e, wires=1)
+        qml.RY(17 / 9 * c, wires=2)
         qml.RZ(b, wires=3)
         qml.RX(f, wires=2)
+        qml.CRY(0.3589, wires=[3, 1])
         qml.QubitUnitary(np.eye(2), wires=[2])
         qml.Toffoli(wires=[0, 2, 1])
         qml.CZ(wires=[0, 1])
@@ -305,7 +306,7 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.qubit", wires=5)
         qnode = qml.QNode(parameterized_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        print(qnode.circuit.render())
+        print(qnode.circuit.render(show_variable_names=True))
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.render())
 
@@ -315,7 +316,7 @@ class TestCircuitGraphDrawing:
         dev = qml.device("default.qubit", wires=8)
         qnode = qml.QNode(parameterized_wide_qubit_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        print(qnode.circuit.render())
+        print(qnode.circuit.render(show_variable_names=True))
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.render())
 
@@ -359,8 +360,11 @@ class TestCircuitGraphDrawing:
 
         circuit._construct((2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4])), {})
 
-        print(circuit.circuit.render())
+        print(circuit.circuit.render(show_variable_names=True))
 
         circuit(2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4]))
 
-        # print(circuit.circuit.render())
+        print(circuit.circuit.render())
+        circuit.print_applied()
+
+        raise Exception()
