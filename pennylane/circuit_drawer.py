@@ -314,7 +314,9 @@ class RepresentationResolver:
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
-        if op.name in self.control_wire_dict and wire in [op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]]:
+        if op.name in self.control_wire_dict and wire in [
+            op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]
+        ]:
             return self.charset.CONTROL
 
         if op.num_params == 0:
@@ -335,7 +337,13 @@ class RepresentationResolver:
         if op.name == "FockStateProjector":
             n_str = ",".join([str(n) for n in op.params[0]])
 
-            return self.charset.VERTICAL_LINE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.VERTICAL_LINE
+            return (
+                self.charset.VERTICAL_LINE
+                + n_str
+                + self.charset.CROSSED_LINES
+                + n_str
+                + self.charset.VERTICAL_LINE
+            )
 
         # Operations that only have matrix arguments
         if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector"]:
@@ -350,7 +358,9 @@ class RepresentationResolver:
 
             return "{}({})".format(name, ", ".join(param_strings))
 
-        return "{}({})".format(name, ", ".join([self.single_parameter_representation(par) for par in op.params]))
+        return "{}({})".format(
+            name, ", ".join([self.single_parameter_representation(par) for par in op.params])
+        )
 
     def output_representation(self, obs, wire):
         """Resolve the representation of a circuit's output.
@@ -363,7 +373,11 @@ class RepresentationResolver:
             str: String representation of the Observable
         """
         if obs.return_type == qml.operation.Expectation:
-            return self.charset.LANGLE + "{}".format(self.operator_representation(obs, wire)) + self.charset.RANGLE
+            return (
+                self.charset.LANGLE
+                + "{}".format(self.operator_representation(obs, wire))
+                + self.charset.RANGLE
+            )
         elif obs.return_type == qml.operation.Variance:
             return "Var[{}]".format(self.operator_representation(obs, wire))
         elif obs.return_type == qml.operation.Sample:
@@ -410,7 +424,9 @@ class CircuitDrawer:
             representation_layer = [""] * grid.num_wires
 
             for wire, operator in enumerate(grid.layer(i)):
-                representation_layer[wire] = self.representation_resolver.element_representation(operator, wire)
+                representation_layer[wire] = self.representation_resolver.element_representation(
+                    operator, wire
+                )
 
             representation_grid.append_layer(representation_layer)
 
@@ -443,7 +459,9 @@ class CircuitDrawer:
                     sorted_wires.sort()
 
                     decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
-                    decoration_layer[sorted_wires[-1]] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
+                    decoration_layer[
+                        sorted_wires[-1]
+                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
                     for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
                         if k in sorted_wires:
                             decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
@@ -476,7 +494,13 @@ class CircuitDrawer:
         return prepend_str + str.ljust(target, max_width, pad_str) + suffix_str
 
     def pad_representation(
-        self, representation_grid, pad_str, skip_prepend_pad_str, prepend_str, suffix_str, skip_prepend_idx,
+        self,
+        representation_grid,
+        pad_str,
+        skip_prepend_pad_str,
+        prepend_str,
+        suffix_str,
+        skip_prepend_idx,
     ):
         """Pads the given representation so that all layers have equal width.
         
@@ -494,11 +518,27 @@ class CircuitDrawer:
 
             if i in skip_prepend_idx:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: self.justify_and_prepend(x, "", "", max_width, skip_prepend_pad_str), layer,)),
+                    i,
+                    list(
+                        map(
+                            lambda x: self.justify_and_prepend(
+                                x, "", "", max_width, skip_prepend_pad_str
+                            ),
+                            layer,
+                        )
+                    ),
                 )
             else:
                 representation_grid.replace_layer(
-                    i, list(map(lambda x: self.justify_and_prepend(x, prepend_str, suffix_str, max_width, pad_str), layer,)),
+                    i,
+                    list(
+                        map(
+                            lambda x: self.justify_and_prepend(
+                                x, prepend_str, suffix_str, max_width, pad_str
+                            ),
+                            layer,
+                        )
+                    ),
                 )
 
     def move_multi_wire_gates(self, operator_grid):
@@ -539,10 +579,14 @@ class CircuitDrawer:
 
                         other_sorted_wires = other_op.wires.copy()
                         other_sorted_wires.sort()
-                        other_blocked_wires = list(range(other_sorted_wires[0] + 1, other_sorted_wires[-1]))
+                        other_blocked_wires = list(
+                            range(other_sorted_wires[0] + 1, other_sorted_wires[-1])
+                        )
 
                         if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):
-                            op_indices = [idx for idx, layer_op in enumerate(this_layer) if layer_op == op]
+                            op_indices = [
+                                idx for idx, layer_op in enumerate(this_layer) if layer_op == op
+                            ]
 
                             for l in op_indices:
                                 other_layer[l] = op
@@ -555,7 +599,11 @@ class CircuitDrawer:
                 n += 1
 
     def __init__(
-        self, raw_operation_grid, raw_observable_grid, charset=UnicodeCharSet, show_variable_names=False,
+        self,
+        raw_operation_grid,
+        raw_observable_grid,
+        charset=UnicodeCharSet,
+        show_variable_names=False,
     ):
         self.charset = charset
         self.show_variable_names = show_variable_names
@@ -575,17 +623,33 @@ class CircuitDrawer:
 
         # Add multi-wire gate lines
         self.resolve_decorations(
-            self.operation_grid, self.operation_representation_grid, self.operation_decoration_indices, False,
+            self.operation_grid,
+            self.operation_representation_grid,
+            self.operation_decoration_indices,
+            False,
         )
         self.resolve_decorations(
-            self.observable_grid, self.observable_representation_grid, self.observable_decoration_indices, True,
+            self.observable_grid,
+            self.observable_representation_grid,
+            self.observable_decoration_indices,
+            True,
         )
 
         self.pad_representation(
-            self.operation_representation_grid, charset.WIRE, charset.WIRE, "", 2 * charset.WIRE, self.operation_decoration_indices,
+            self.operation_representation_grid,
+            charset.WIRE,
+            charset.WIRE,
+            "",
+            2 * charset.WIRE,
+            self.operation_decoration_indices,
         )
         self.pad_representation(
-            self.observable_representation_grid, " ", charset.WIRE, charset.MEASUREMENT + " ", " ", self.observable_decoration_indices,
+            self.observable_representation_grid,
+            " ",
+            charset.WIRE,
+            charset.MEASUREMENT + " ",
+            " ",
+            self.observable_decoration_indices,
         )
 
         self.full_representation_grid = self.operation_representation_grid.copy()
