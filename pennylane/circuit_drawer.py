@@ -14,14 +14,22 @@
 """
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
+import abc
 import numpy as np
 import pennylane as qml
 
 class Grid:
     """Helper class to manage Gates aligned in a grid.
 
-        Args:
-            raw_grid (list, optional): Raw grid from which the Grid instance is built. Defaults to [].
+    The rows of the Grid are referred to as "wires", 
+    whereas the columns of the Grid are reffered to as "layers".
+
+    Simultaneous access to both layers and wires via indexing is provided
+    by keeping both the raw grid (wires are indexed) and the transposed raw grid
+    (layers are indexed).
+
+    Args:
+        raw_grid (list, optional): Raw grid from which the Grid instance is built. Defaults to [].
     """
     def __init__(self, raw_grid=[]):
         self.raw_grid = raw_grid
@@ -141,9 +149,24 @@ class Grid:
 
         return ret
 
+class CharSet(abc.ABC):
+    """Charset base class."""
 
-class UnicodeCharSet:
+    WIRE = None
+    MEASUREMENT = None
+    TOP_MULTI_LINE_GATE_CONNECTOR = None
+    MIDDLE_MULTI_LINE_GATE_CONNECTOR = None
+    BOTTOM_MULTI_LINE_GATE_CONNECTOR = None
+    EMPTY_MULTI_LINE_GATE_CONNECTOR = None
+    CONTROL = None
+    LANGLE = None
+    RANGLE = None
+    VERTICAL_LINE = None
+    CROSSED_LINES = None
+
+class UnicodeCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
+
     WIRE = "─"
     MEASUREMENT = "┤"
     TOP_MULTI_LINE_GATE_CONNECTOR = "╭"
@@ -156,8 +179,29 @@ class UnicodeCharSet:
     VERTICAL_LINE = "│"
     CROSSED_LINES = "╳"
 
+class AsciiCharSet(CharSet):
+    """Charset for CircuitDrawing made of Unicode characters."""
+
+    WIRE = "-"
+    MEASUREMENT = "-|"
+    TOP_MULTI_LINE_GATE_CONNECTOR = "+"
+    MIDDLE_MULTI_LINE_GATE_CONNECTOR = "+"
+    BOTTOM_MULTI_LINE_GATE_CONNECTOR = "+"
+    EMPTY_MULTI_LINE_GATE_CONNECTOR = "|"
+    CONTROL = "C"
+    LANGLE = "<"
+    RANGLE = ">"
+    VERTICAL_LINE = "|"
+    CROSSED_LINES = "X"
 
 class RepresentationResolver:
+    """Resolves the string representation of PennyLane objects.
+    
+    Args:
+        charset (CharSet, optional): The CharSet to be used for representation resolution. Defaults to UnicodeCharSet.
+        show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
+    """
+
     # Symbol for uncontrolled wires
     resolution_dict = {
         "PauliX": "X",
