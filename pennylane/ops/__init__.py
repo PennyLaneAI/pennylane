@@ -52,7 +52,7 @@ class Identity(CVObservable):
     grad_method = None
 
     ev_order = 1
-    eigvals = lambda self: np.array([1, 1])
+    eigvals = np.array([1, 1])
 
     @staticmethod
     def _matrix(*params):

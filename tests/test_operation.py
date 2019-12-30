@@ -718,10 +718,10 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert np.array_equal(t.eigvals(), np.kron([1, -1], [1, -1]))
+        assert np.array_equal(t.eigvals, np.kron([1, -1], [1, -1]))
 
         # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals, t.eigvals())
+        assert np.array_equal(t._eigvals, t.eigvals)
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
@@ -731,7 +731,7 @@ class TestTensor:
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
         t = Tensor(X, Herm)
         d = np.kron(np.array([1., -1.]), np.array([-1.,  1.,  1.,  1.]))
-        t = t.eigvals()
+        t = t.eigvals
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity(self, tol):
@@ -740,7 +740,7 @@ class TestTensor:
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
         d = np.kron(np.array([1., -1.]), np.array([1.,  1.]))
-        t = t.eigvals()
+        t = t.eigvals
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity_and_hermitian(self, tol):
@@ -749,7 +749,7 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, 5)
 
-        res = O.eigvals()
+        res = O.eigvals
         expected = np.kron(np.array([1., -1.]), np.kron(np.array([1.,  1.]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -794,7 +794,7 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        O_mat = functools.reduce(np.kron, [i.matrix() for i in O.obs])
+        O_mat = functools.reduce(np.kron, [i.matrix for i in O.obs])
 
         diag_gates = O.diagonalizing_gates()
 
@@ -802,7 +802,7 @@ class TestTensor:
         U_list = []
         for _, g in itertools.groupby(diag_gates, lambda x: x.wires):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix() for i in g]
+            mats = [i.matrix for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -817,7 +817,7 @@ class TestTensor:
         U = functools.reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
-        expected = np.diag(O.eigvals())
+        expected = np.diag(O.eigvals)
 
         # once diagonalized by U, the result should be a diagonal
         # matrix of the eigenvalues.
@@ -829,7 +829,7 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        res = O.matrix()
+        res = O.matrix
         expected = np.kron(qml.PauliY._matrix(), H)
         expected = np.kron(qml.PauliX._matrix(), expected)
 
@@ -840,7 +840,7 @@ class TestTensor:
         same wire, the tensor class should treat this as matrix multiplication."""
         O = qml.PauliX(0) @ qml.PauliX(0)
 
-        res = O.matrix()
+        res = O.matrix
         expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)

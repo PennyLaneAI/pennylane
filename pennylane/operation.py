@@ -240,7 +240,7 @@ class Operator(abc.ABC):
         directly without instantiating the operators first.
 
         To return the matrices of *instantiated* operators,
-        please use :meth:`~.Operator.matrix` instead.
+        please use the :attr:`~.Operator.matrix` property instead.
 
         **Example:**
 
@@ -280,6 +280,7 @@ class Operator(abc.ABC):
         """
         return self._name
 
+    @property
     def matrix(self):
         r"""Matrix representation of an instantiated operator
         in the computational basis.
@@ -287,7 +288,7 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> U = qml.RY(0.5, wires=1)
-        >>> U.matrix()
+        >>> U.matrix
         >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
                    [ 0.24740396+0.j,  0.96891242+0.j]])
 
@@ -651,6 +652,7 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
+    @property
     def eigvals(self):
         r"""Returns the eigenvalues of the observable"""
         raise NotImplementedError
@@ -779,6 +781,7 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
+    @property
     def eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
@@ -810,7 +813,7 @@ class Tensor(Observable):
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals = np.kron(self._eigvals, ns_ob.eigvals())
+                        self._eigvals = np.kron(self._eigvals, ns_ob.eigvals)
 
         return self._eigvals
 
@@ -830,6 +833,7 @@ class Tensor(Observable):
 
         return diag_gates
 
+    @property
     def matrix(self):
         r"""Matrix representation of the tensor operator
         in the computational basis.
@@ -842,7 +846,7 @@ class Tensor(Observable):
         subsystem it is defined for.
 
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix()
+        >>> O.matrix
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
                [ 0,  0, -1,  0],
@@ -853,7 +857,7 @@ class Tensor(Observable):
         must be explicitly included:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix()
+        >>> O.matrix
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
                [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
@@ -870,7 +874,7 @@ class Tensor(Observable):
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix() for i in g]
+            mats = [i.matrix for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending

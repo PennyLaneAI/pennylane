@@ -44,7 +44,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    eigvals = lambda self: pauli_eigs(1)
+    eigvals = pauli_eigs(1)
 
     @staticmethod
     def _matrix(*params):
@@ -84,7 +84,7 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    eigvals = lambda self: pauli_eigs(1)
+    eigvals = pauli_eigs(1)
 
     @staticmethod
     def _matrix(*params):
@@ -122,7 +122,7 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    eigvals = lambda self: pauli_eigs(1)
+    eigvals = pauli_eigs(1)
 
     @staticmethod
     def _matrix(*params):
@@ -162,7 +162,7 @@ class PauliZ(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    eigvals = lambda self: pauli_eigs(1)
+    eigvals = pauli_eigs(1)
 
     @staticmethod
     def _matrix(*params):
@@ -1109,6 +1109,7 @@ class Hermitian(Observable):
 
         return A
 
+    @property
     def eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
@@ -1118,7 +1119,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        Hmat = self.matrix()
+        Hmat = self.matrix
         Hkey = tuple(self.parameters[0].flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
@@ -1135,7 +1136,7 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        Hmat = self.matrix()
+        Hmat = self.matrix
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
