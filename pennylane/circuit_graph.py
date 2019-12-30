@@ -257,7 +257,7 @@ class CircuitGraph:
         return A & B
 
     @property
-    def layers(self):
+    def parametrized_layers(self):
         """Identify the parametrized layer structure of the circuit.
 
         Returns:
@@ -291,14 +291,14 @@ class CircuitGraph:
 
         return layers
 
-    def iterate_layers(self):
+    def iterate_parametrized_layers(self):
         """Parametrized layers of the circuit.
 
         Returns:
             Iterable[LayerData]: layers with extra metadata
         """
         # iterate through each layer
-        for ops, param_inds in self.layers:
+        for ops, param_inds in self.parametrized_layers:
             pre_queue = self.ancestors_in_order(ops)
             post_queue = self.descendants_in_order(ops)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)

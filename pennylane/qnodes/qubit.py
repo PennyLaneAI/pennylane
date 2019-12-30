@@ -230,7 +230,7 @@ class QubitQNode(JacobianQNode):
         # pylint: disable=too-many-statements, too-many-branches
 
         self._metric_tensor_subcircuits = {}
-        for queue, curr_ops, param_idx, _ in self.circuit.iterate_layers():
+        for queue, curr_ops, param_idx, _ in self.circuit.iterate_parametrized_layers():
             obs = []
             scale = []
 
