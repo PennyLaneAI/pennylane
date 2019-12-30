@@ -198,6 +198,7 @@ Charsets = {
     "unicode" : UnicodeCharSet,
     "ascii" : AsciiCharSet,
 }
+"""Dictionary with all available CharSets."""
 
 class RepresentationResolver:
     """Resolves the string representation of PennyLane objects.
@@ -234,9 +235,9 @@ class RepresentationResolver:
         "GaussianState": "Gaussian",
         "QuadraticPhase": "QuadPhase",
     }
+    """Symbol used for uncontrolled wires."""
 
-    # Indices of control wires
-    control_dict = {
+    control_wire_dict = {
         "CNOT": [0],
         "Toffoli": [0, 1],
         "CSWAP": [0],
@@ -248,6 +249,7 @@ class RepresentationResolver:
         "ControlledAddition": [0],
         "ControlledPhase": [0],
     }
+    """Indices of control wires."""
 
     def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
         self.charset = charset
@@ -256,19 +258,37 @@ class RepresentationResolver:
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
 
-    def render_parameter(self, par):
+    def single_parameter_representation(self, par):
+        """Resolve the representation of an Operator's parameter.
+        
+        Args:
+            par (Union[qml.variable.Variable, int, float]): The parameter to be rendered
+        
+        Returns:
+            str: String representation of the parameter
+        """
         if isinstance(par, qml.variable.Variable):
             return par.render(self.show_variable_names)
 
         return str(par)
 
     @staticmethod
-    def append_array_if_not_in_list(element, target_list):
+    def index_of_array_or_append(target_element, target_list):
+        """Returns the first index of an appearance of the target element in the target list.
+        If the target element is not in the list it will be added to the list.
+        
+        Args:
+            target_element (np.ndarray): The object whos index is to be returned
+            target_list (list[np.ndarray]): The list which shall be searched
+        
+        Returns:
+            int: Index of the target element in the list.
+        """
         for idx, target in enumerate(target_list):
-            if np.array_equal(target, element):
+            if np.array_equal(target, target_element):
                 return idx
 
-        target_list.append(element)
+        target_list.append(target_element)
 
         return len(target_list) - 1
 
@@ -278,8 +298,8 @@ class RepresentationResolver:
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
-        if op.name in self.control_dict and wire in [
-            op.wires[control_idx] for control_idx in self.control_dict[op.name]
+        if op.name in self.control_wire_dict and wire in [
+            op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]
         ]:
             return self.charset.CONTROL
 
@@ -290,25 +310,25 @@ class RepresentationResolver:
             param_strings = []
             for param in op.params:
                 if isinstance(param, np.ndarray):
-                    idx = RepresentationResolver.append_array_if_not_in_list(
+                    idx = RepresentationResolver.index_of_array_or_append(
                         param, self.matrix_cache
                     )
 
                     param_strings.append("M{}".format(idx))
                 else:
-                    param_strings.append(self.render_parameter(param))
+                    param_strings.append(self.single_parameter_representation(param))
 
             return "{}({})".format(name, ", ".join(param_strings))
 
         if op.name == "QubitUnitary":
             mat = op.params[0]
-            idx = RepresentationResolver.append_array_if_not_in_list(mat, self.unitary_matrix_cache)
+            idx = RepresentationResolver.index_of_array_or_append(mat, self.unitary_matrix_cache)
 
             return "U{}".format(idx)
 
         if op.name == "Hermitian":
             mat = op.params[0]
-            idx = RepresentationResolver.append_array_if_not_in_list(
+            idx = RepresentationResolver.index_of_array_or_append(
                 mat, self.hermitian_matrix_cache
             )
 
@@ -325,7 +345,7 @@ class RepresentationResolver:
                 + self.charset.VERTICAL_LINE
             )
 
-        return "{}({})".format(name, ", ".join([self.render_parameter(par) for par in op.params]))
+        return "{}({})".format(name, ", ".join([self.single_parameter_representation(par) for par in op.params]))
 
     def observable_representation(self, obs, wire):
         if obs.return_type == qml.operation.Expectation:
