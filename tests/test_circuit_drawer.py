@@ -190,6 +190,124 @@ class TestGrid:
         assert grid.raw_grid == [[0, 3, 6], [1, 4, 7], [2, 5, 8]]
         assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
 
+    @pytest.mark.parametrize("idx,expected_transposed_grid", [
+        (0, [[6, 7, 8], [3, 4, 5]]),
+        (1, [[0, 1, 2], [6, 7, 8]]),
+    ])
+    def test_replace_layer(self, idx, expected_transposed_grid):
+        """Test that layer replacement works properly."""
+
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        grid.replace_layer(idx, [6, 7, 8])
+
+        assert grid.raw_grid_transpose == expected_transposed_grid
+        assert grid.raw_grid == _transpose(expected_transposed_grid)
+
+    @pytest.mark.parametrize("idx,expected_grid", [
+        (0, [[6, 7], [0, 3], [1, 4], [2, 5]]),
+        (1, [[0, 3], [6, 7], [1, 4], [2, 5]]),
+        (2, [[0, 3], [1, 4], [6, 7], [2, 5]]),
+        (3, [[0, 3], [1, 4], [2, 5], [6, 7]]),
+    ])
+    def test_insert_wire(self, idx, expected_grid):
+        """Test that wire insertion works properly."""
+
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        grid.insert_wire(idx, [6, 7])
+
+        assert grid.raw_grid == expected_grid
+        assert grid.raw_grid_transpose == _transpose(expected_grid)
+
+    def test_append_wire(self):
+        """Test that wire appending works properly."""
+
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        grid.append_wire([6, 7])
+
+        assert grid.raw_grid == [[0, 3], [1, 4], [2, 5], [6, 7]]
+        assert grid.raw_grid_transpose == [[0, 1, 2, 6], [3, 4, 5, 7]]
+
+    @pytest.mark.parametrize("raw_grid,expected_num_layers", [
+        ([[6, 7], [0, 3], [1, 4], [2, 5]], 2),
+        ([[0, 1, 2, 6], [3, 4, 5, 7]], 4),
+        ([[0, 2, 6], [3,5, 7]], 3),
+    ])
+    def test_num_layers(self, raw_grid, expected_num_layers):
+        """Test that num_layers returns the correct number of layers."""
+        grid = Grid(raw_grid)
+
+        assert grid.num_layers == expected_num_layers
+
+    @pytest.mark.parametrize("raw_grid,expected_num_wires", [
+        ([[6, 7], [0, 3], [1, 4], [2, 5]], 4),
+        ([[0, 1, 2, 6], [3, 4, 5, 7]], 2),
+        ([[0, 2, 6], [3, 5, 7]], 2),
+    ])
+    def test_num_wires(self, raw_grid, expected_num_wires):
+        """Test that num_layers returns the correct number of wires."""
+        grid = Grid(raw_grid)
+
+        assert grid.num_wires == expected_num_wires
+
+    @pytest.mark.parametrize("raw_transposed_grid", [
+        ([[6, 7], [0, 3], [1, 4], [2, 5]]),
+        ([[0, 1, 2, 6], [3, 4, 5, 7]]),
+        ([[0, 2, 6], [3, 5, 7]]),
+    ])
+    def test_layer(self, raw_transposed_grid):
+        """Test that layer returns the correct layer."""
+        grid = Grid(_transpose(raw_transposed_grid))
+        
+        for idx, layer in enumerate(raw_transposed_grid):
+            assert grid.layer(idx) == layer
+
+    @pytest.mark.parametrize("raw_grid", [
+        ([[6, 7], [0, 3], [1, 4], [2, 5]]),
+        ([[0, 1, 2, 6], [3, 4, 5, 7]]),
+        ([[0, 2, 6], [3, 5, 7]]),
+    ])
+    def test_wire(self, raw_grid):
+        """Test that wire returns the correct wire."""
+        grid = Grid(raw_grid)
+        
+        for idx, wire in enumerate(raw_grid):
+            assert grid.wire(idx) == wire
+
+    def test_copy(self):
+        """Test that copy copies the grid."""
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        other_grid = grid.copy()
+
+        # Assert that everything is indeed copied
+        assert other_grid is not grid
+        assert other_grid.raw_grid is not grid.raw_grid
+        assert other_grid.raw_grid_transpose is not grid.raw_grid_transpose
+
+        # Assert the copy is correct
+        assert other_grid.raw_grid == grid.raw_grid
+        assert other_grid.raw_grid_transpose == grid.raw_grid_transpose
+
+    def test_append_grid_by_layers(self):
+        """Test appending a grid to another by layers."""
+        raw_grid_transpose1 = [[0, 3], [1, 4], [2, 5]]
+        raw_grid_transpose2 = [[6, 7], [8, 9]]
+
+        grid1 = Grid(_transpose(raw_grid_transpose1))
+        grid2 = Grid(_transpose(raw_grid_transpose2))
+
+        grid1.append_grid_by_layers(grid2)
+
+        assert grid1.raw_grid_transpose == [[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]]
+        assert grid1.raw_grid == _transpose([[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]])
+
 
 
 class TestCircuitGraphDrawing:
