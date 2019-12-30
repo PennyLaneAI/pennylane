@@ -685,7 +685,5 @@ class CircuitDrawer:
 
 
 # TODO:
-# * Rename layers and greedy_layers to something more appropriate
 # * Write tests
 # * Add changelog entry
-# * Add doc
