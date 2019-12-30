@@ -366,7 +366,7 @@ class BaseQNode:
                 inside of this method, the quantum function returns incorrect values or if
                 both continuous and discrete operations are specified in the same quantum circuit
         """
-        # pylint: disable=attribute-defined-outside-init, too-many-branches
+        # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index and name
         full_argspec = inspect.getfullargspec(self.func)
