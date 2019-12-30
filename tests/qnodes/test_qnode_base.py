@@ -940,7 +940,7 @@ class TestQNodeVariableMap:
         for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
             assert var == expected
 
-        assert node.kwarg_vars is None
+        assert not node.kwarg_vars
 
     def test_regular_keyword_arguments(self, mock_device):
         """Test that regular keyword arguments are properly converted to Variable instances."""
