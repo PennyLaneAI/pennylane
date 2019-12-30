@@ -18,6 +18,7 @@ import abc
 import numpy as np
 import pennylane as qml
 
+
 def _transpose(target_list):
     """Transpose the given list of lists.
     
