@@ -351,11 +351,6 @@ class BaseQNode:
 
         # flatten the args, replace each argument with a Variable instance carrying a unique index and name
         full_argspec = inspect.getfullargspec(self.func)
-        print("_construct/args = ", args)
-        print("_construct/kwargs = ", kwargs)
-        print("_construct/full_argspec = ", full_argspec)
-        print("_construct/self.mutable = ", self.mutable)
-        print("_construct/zip(full_argspec.args, args) = ", list(zip(full_argspec.args, args)))
 
         # args
         variable_name_strings = []
@@ -370,13 +365,11 @@ class BaseQNode:
                 
                 variable_name_strings.append(self._determine_variable_name(variable_value, variable_name))
 
-        print("_construct/variable_name_strings = ", variable_name_strings)
         self.arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(self.arg_vars)
         # arrange the newly created Variables in the nested structure of args
         self.arg_vars = unflatten(self.arg_vars, args)
 
-        print("_construct/arg_vars = ", self.arg_vars)
         # kwargs
         variable_name_strings = {}
         self.kwarg_vars = {}
