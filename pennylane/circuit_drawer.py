@@ -292,7 +292,16 @@ class RepresentationResolver:
 
         return len(target_list) - 1
 
-    def operation_representation(self, op, wire):
+    def operator_representation(self, op, wire):
+        """Resolve the representation of an Operator.
+        
+        Args:
+            op (qml.operation.Operator): The Operator instance whos representation shall be resolved
+            wire (int): The Operator's wire which is currently resolved
+        
+        Returns:
+            str: String representation of the Operator
+        """
         name = op.name
 
         if name in RepresentationResolver.resolution_dict:
@@ -305,20 +314,6 @@ class RepresentationResolver:
 
         if op.num_params == 0:
             return name
-
-        if op.name in ["GaussianState"]:
-            param_strings = []
-            for param in op.params:
-                if isinstance(param, np.ndarray):
-                    idx = RepresentationResolver.index_of_array_or_append(
-                        param, self.matrix_cache
-                    )
-
-                    param_strings.append("M{}".format(idx))
-                else:
-                    param_strings.append(self.single_parameter_representation(param))
-
-            return "{}({})".format(name, ", ".join(param_strings))
 
         if op.name == "QubitUnitary":
             mat = op.params[0]
@@ -345,29 +340,62 @@ class RepresentationResolver:
                 + self.charset.VERTICAL_LINE
             )
 
+        # Operations that only have matrix arguments
+        if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector"]:
+            param_strings = []
+            for param in op.params:
+                if isinstance(param, np.ndarray):
+                    idx = RepresentationResolver.index_of_array_or_append(
+                        param, self.matrix_cache
+                    )
+
+                    param_strings.append("M{}".format(idx))
+                else:
+                    param_strings.append(self.single_parameter_representation(param))
+
+            return "{}({})".format(name, ", ".join(param_strings))
+
         return "{}({})".format(name, ", ".join([self.single_parameter_representation(par) for par in op.params]))
 
-    def observable_representation(self, obs, wire):
+    def output_representation(self, obs, wire):
+        """Resolve the representation of a circuit's output.
+        
+        Args:
+            obs (qml.ops.Observable): The Observable instance whos representation shall be resolved
+            wire (int): The Observable's wire which is currently resolved
+        
+        Returns:
+            str: String representation of the Observable
+        """
         if obs.return_type == qml.operation.Expectation:
             return (
                 self.charset.LANGLE
-                + "{}".format(self.operation_representation(obs, wire))
+                + "{}".format(self.operator_representation(obs, wire))
                 + self.charset.RANGLE
             )
         elif obs.return_type == qml.operation.Variance:
-            return "Var[{}]".format(self.operation_representation(obs, wire))
+            return "Var[{}]".format(self.operator_representation(obs, wire))
         elif obs.return_type == qml.operation.Sample:
-            return "Sample[{}]".format(self.operation_representation(obs, wire))
+            return "Sample[{}]".format(self.operator_representation(obs, wire))
 
-    def operator_representation(self, op, wire):
-        if op is None:
+    def element_representation(self, element, wire):
+        """Resolve the representation of an element in the circuit's Grid.
+        
+        Args:
+            element (Union[NoneType,str,qml.operation.Operator]): The circuit element whos representation shall be resolved
+            wire (int): The element's wire which is currently resolved
+        
+        Returns:
+            str: String representation of the element
+        """
+        if element is None:
             return ""
-        elif isinstance(op, str):
-            return op
-        elif isinstance(op, qml.operation.Observable) and op.return_type is not None:
-            return self.observable_representation(op, wire)
+        elif isinstance(element, str):
+            return element
+        elif isinstance(element, qml.operation.Observable) and element.return_type is not None:
+            return self.output_representation(element, wire)
         else:
-            return self.operation_representation(op, wire)
+            return self.operator_representation(element, wire)
 
 
 class CircuitDrawer:
@@ -376,7 +404,7 @@ class CircuitDrawer:
             representation_layer = [""] * grid.num_wires
 
             for wire, operator in enumerate(grid.layer(i)):
-                representation_layer[wire] = self.representation_resolver.operator_representation(
+                representation_layer[wire] = self.representation_resolver.element_representation(
                     operator, wire
                 )
 
