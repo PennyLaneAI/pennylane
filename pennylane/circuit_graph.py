@@ -319,9 +319,9 @@ class CircuitGraph:
 
     def greedy_layers(self):
         """Greedily collected layers of the circuit. Empty slots are filled with `None`.
-        
+
         Returns:
-            Tuple[list[list[pennylane.operation.Operation]], list[list[pennylane.operation.Observable]]]: 
+            Tuple[list[list[pennylane.operation.Operation]], list[list[pennylane.operation.Observable]]]:
                 Tuple of the circuits operations and the circuits observables, both indexed
                 by wires.
         """
@@ -397,14 +397,14 @@ class CircuitGraph:
 
     def draw(self, charset="unicode", show_variable_names=False):
         """Draw the CircuitGraph as a circuit diagram.
-        
+
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported. Defaults to "unicode".
             show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
-        
+
         Raises:
             ValueError: If the given charset is not supported
-        
+
         Returns:
             str: The circuit diagram representation of the CircuitGraph
         """

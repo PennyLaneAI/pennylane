@@ -235,14 +235,14 @@ class BaseQNode:
                 print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
             else:
                 print("{}({}(wires={}))".format(return_type, op.name, op.wires))
-                
+
     def draw(self, charset="unicode", show_variable_names=False):
         """Draw the QNode as a circuit diagram.
 
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported. Defaults to "unicode".
             show_variable_names (bool, optional): Show variable names instead of values. Defaults to False.
-        
+
         Raises:
             ValueError: If the given charset is not supported
             pennylane.QuantumFunctionError: Drawing is impossible because the underlying CircuitGraph has not yet been constructed
@@ -252,8 +252,8 @@ class BaseQNode:
         """
         if self.circuit:
             return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
-        else:
-            raise QuantumFunctionError("The QNode can only be drawn after its CircuitGraph has been constructed.")
+
+        raise QuantumFunctionError("The QNode can only be drawn after its CircuitGraph has been constructed.")
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
@@ -381,7 +381,7 @@ class BaseQNode:
         if len_diff > 0:
             for idx, variable_value in enumerate(args[-len_diff:]):
                 variable_name = "{}[{}]".format(full_argspec.varargs, idx)
-                
+
                 variable_name_strings.append(self._determine_variable_name(variable_value, variable_name))
 
         self.arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
