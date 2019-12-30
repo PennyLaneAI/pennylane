@@ -105,7 +105,7 @@ class Variable:
     def __eq__(self, other):
         if not isinstance(other, Variable):
             return False
-            
+
         return (
             self.name == other.name
             and self.idx == other.idx
@@ -153,6 +153,14 @@ class Variable:
         return values[self.idx] * self.mult
 
     def render(self, show_name_only=False):
+        """Returns a string representation of the Variable.
+
+        Args:
+            show_name_only (bool, optional): Render the name instead of the value. Defaults to False.
+
+        Returns:
+            str: A string representation of the Variable
+        """
         if not show_name_only:
             if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
                 return str(round(self.val, 3))
@@ -167,10 +175,10 @@ class Variable:
         if self.name is None:
             if self.mult != 1:
                 return "{}*#{}".format(str(round(self.mult, 3)), self.idx)
-            else:
-                return "#{}".format(self.idx)
+
+            return "#{}".format(self.idx)
         else:
             if self.mult != 1:
                 return "{}*{}".format(str(round(self.mult, 3)), self.name)
-            else:
-                return self.name
+
+            return self.name
