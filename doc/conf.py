@@ -106,6 +106,7 @@ add_module_names = False
 # built documents.
 
 import pennylane
+import pennylane_qchem
 # The full version, including alpha/beta/rc tags.
 release = pennylane.__version__
 

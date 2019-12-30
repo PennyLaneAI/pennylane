@@ -42,6 +42,9 @@ clean:
 	rm -rf dist
 	rm -rf build
 	rm -rf .coverage coverage_html_report/
+	rm -rf tmp
+	rm -rf *.dat
+	make -C qchem clean
 
 docs:
 	make -C doc html
@@ -50,7 +53,6 @@ docs:
 clean-docs:
 	rm -rf doc/code/api
 	make -C doc clean
-
 
 test:
 	$(PYTHON) $(TESTRUNNER)

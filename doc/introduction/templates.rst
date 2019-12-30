@@ -78,8 +78,8 @@ Embedding templates
 -------------------
 
 Embeddings encode input features into the quantum state of the circuit.
-Hence, they take a feature vector as an argument. These embeddings can also depend on
-trainable parameters and be repeated.
+Hence, they take a feature vector as an argument. Embeddings can also depend on
+trainable parameters, and they may consist of repeated layers.
 
 The following embedding templates are available:
 
@@ -89,10 +89,12 @@ The following embedding templates are available:
     :nosignatures:
 
     ~pennylane.templates.embeddings.AmplitudeEmbedding
-    ~pennylane.templates.embeddings.BasisEmbedding
     ~pennylane.templates.embeddings.AngleEmbedding
-    ~pennylane.templates.embeddings.SqueezingEmbedding
+    ~pennylane.templates.embeddings.BasisEmbedding
     ~pennylane.templates.embeddings.DisplacementEmbedding
+    ~pennylane.templates.embeddings.QAOAEmbedding
+    ~pennylane.templates.embeddings.SqueezingEmbedding
+
 
 :html:`</div>`
 
@@ -197,30 +199,6 @@ respective interfaces.
 
 The following initialization functions are available:
 
-.. rubric:: Strongly entangling circuit
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.strong_ent_layers_uniform
-    ~pennylane.init.strong_ent_layers_normal
-
-:html:`</div>`
-
-.. rubric:: Random circuit
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.random_layers_uniform
-    ~pennylane.init.random_layers_normal
-
-:html:`</div>`
-
 .. rubric:: Continuous-variable quantum neural network
 
 :html:`<div class="summary-table">`
@@ -265,3 +243,40 @@ The following initialization functions are available:
     ~pennylane.init.interferometer_varphi_normal
 
 :html:`</div>`
+
+.. rubric:: QAOA embedding
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.qaoa_embedding_uniform
+    ~pennylane.init.qaoa_embedding_normal
+
+:html:`</div>`
+
+.. rubric:: Random layers
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.random_layers_uniform
+    ~pennylane.init.random_layers_normal
+
+:html:`</div>`
+
+.. rubric:: Strongly entangling layers
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.strong_ent_layers_uniform
+    ~pennylane.init.strong_ent_layers_normal
+
+:html:`</div>`
+

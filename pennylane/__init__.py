@@ -33,7 +33,7 @@ from pennylane.about import about
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
-from .measure import expval, var, sample
+from .measure import expval, var, sample, probs
 from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
@@ -56,6 +56,11 @@ plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.pl
 
 # get list of installed plugin converters
 plugin_converters = {entry.name: entry for entry in iter_entry_points("pennylane.io")}
+
+# get chemistry plugin
+for entry in iter_entry_points("pennylane.qchem"):
+    if entry.name == "OpenFermion":
+        qchem = entry.load()
 
 
 def device(name, *args, **kwargs):

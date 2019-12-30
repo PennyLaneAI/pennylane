@@ -12,6 +12,14 @@ matrix:
   - python: 3.5
     dist: xenial
     env: TF=1
+  - python: 3.7
+    dist: xenial
+    name: Qchem
+    install: qchem/install-dependencies.sh
+    script:
+    - source "$HOME/miniconda/etc/profile.d/conda.sh"
+    - conda activate test-environment
+    - make -C qchem coverage
 env:
   global:
   - COVERALLS_PARALLEL=true
