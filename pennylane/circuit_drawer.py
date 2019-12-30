@@ -143,6 +143,7 @@ class Grid:
 
 
 class UnicodeCharSet:
+    """Charset for CircuitDrawing made of Unicode characters."""
     WIRE = "─"
     MEASUREMENT = "┤"
     TOP_MULTI_LINE_GATE_CONNECTOR = "╭"
