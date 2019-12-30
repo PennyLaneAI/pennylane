@@ -236,6 +236,17 @@ class BaseQNode:
             else:
                 print("{}({}(wires={}))".format(return_type, op.name, op.wires))
 
+    def draw(self, show_variable_names=False):
+        """Draw the QNode as a circuit diagram.
+        
+        Args:
+            show_variable_names (bool, optional): Show variable names instead of values. Defaults to False.
+        
+        Returns:
+            str: The circuit representation of the QNode
+        """
+        return self.circuit.draw(show_variable_names=show_variable_names)
+
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
         so the Operators may access them.
