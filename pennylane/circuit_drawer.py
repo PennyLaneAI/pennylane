@@ -21,10 +21,10 @@ import pennylane as qml
 
 def _transpose(target_list):
     """Transpose the given list of lists.
-    
+
     Args:
         target_list (list[list[object]]): List of list that will be transposed
-    
+
     Returns:
         list[list[object]]: Transposed list of lists
     """
@@ -51,7 +51,7 @@ class Grid:
 
     def insert_layer(self, idx, layer):
         """Insert a layer into the Grid at the specified index.
-        
+
         Args:
             idx (int): Index at which to insert the new layer
             layer (list): Layer that will be inserted
@@ -61,7 +61,7 @@ class Grid:
 
     def append_layer(self, layer):
         """Append a layer to the Grid.
-        
+
         Args:
             layer (list): Layer that will be appended
         """
@@ -70,7 +70,7 @@ class Grid:
 
     def replace_layer(self, idx, layer):
         """Replace a layer in the Grid at the specified index.
-        
+
         Args:
             idx (int): Index of the layer to be replaced
             layer (list): Layer that replaces the old layer
@@ -80,7 +80,7 @@ class Grid:
 
     def insert_wire(self, idx, wire):
         """Insert a wire into the Grid at the specified index.
-        
+
         Args:
             idx (int): Index at which to insert the new wire
             wire (list): Wire that will be inserted
@@ -90,7 +90,7 @@ class Grid:
 
     def append_wire(self, wire):
         """Append a wire to the Grid.
-        
+
         Args:
             wire (list): Wire that will be appended
         """
@@ -100,7 +100,7 @@ class Grid:
     @property
     def num_layers(self):
         """Number of layers in the Grid.
-        
+
         Returns:
             int: Number of layers in the Grid
         """
@@ -108,10 +108,10 @@ class Grid:
 
     def layer(self, idx):
         """Return the layer at the specified index.
-        
+
         Args:
             idx (int): Index of the layer to be retrieved
-        
+
         Returns:
             list: The layer at the specified index
         """
@@ -120,7 +120,7 @@ class Grid:
     @property
     def num_wires(self):
         """Number of wires in the Grid.
-        
+
         Returns:
             int: Number of wires in the Grid
         """
@@ -128,10 +128,10 @@ class Grid:
 
     def wire(self, idx):
         """Return the wire at the specified index.
-        
+
         Args:
             idx (int): Index of the wire to be retrieved
-        
+
         Returns:
             list: The wire at the specified index
         """
@@ -139,7 +139,7 @@ class Grid:
 
     def copy(self):
         """Create a copy of the Grid.
-        
+
         Returns:
             Grid: A copy of the Grid
         """
@@ -147,7 +147,7 @@ class Grid:
 
     def append_grid_by_layers(self, other_grid):
         """Append the layers of another Grid to this Grid.
-        
+
         Args:
             other_grid (pennylane.circuit_drawer.Grid): Grid whos layers will be appended
         """
@@ -221,7 +221,7 @@ Charsets = {
 
 class RepresentationResolver:
     """Resolves the string representation of PennyLane objects.
-    
+
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution. Defaults to UnicodeCharSet.
         show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
@@ -279,10 +279,10 @@ class RepresentationResolver:
 
     def single_parameter_representation(self, par):
         """Resolve the representation of an Operator's parameter.
-        
+
         Args:
             par (Union[qml.variable.Variable, int, float]): The parameter to be rendered
-        
+
         Returns:
             str: String representation of the parameter
         """
@@ -295,11 +295,11 @@ class RepresentationResolver:
     def index_of_array_or_append(target_element, target_list):
         """Returns the first index of an appearance of the target element in the target list.
         If the target element is not in the list it will be added to the list.
-        
+
         Args:
             target_element (np.ndarray): The object whos index is to be returned
             target_list (list[np.ndarray]): The list which shall be searched
-        
+
         Returns:
             int: Index of the target element in the list.
         """
@@ -313,11 +313,11 @@ class RepresentationResolver:
 
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
-        
+
         Args:
             op (pennylane.operation.Operator): The Operator instance whos representation shall be resolved
             wire (int): The Operator's wire which is currently resolved
-        
+
         Returns:
             str: String representation of the Operator
         """
@@ -376,11 +376,11 @@ class RepresentationResolver:
 
     def output_representation(self, obs, wire):
         """Resolve the representation of a circuit's output.
-        
+
         Args:
             obs (pennylane.ops.Observable): The Observable instance whos representation shall be resolved
             wire (int): The Observable's wire which is currently resolved
-        
+
         Returns:
             str: String representation of the Observable
         """
@@ -397,11 +397,11 @@ class RepresentationResolver:
 
     def element_representation(self, element, wire):
         """Resolve the representation of an element in the circuit's Grid.
-        
+
         Args:
             element (Union[NoneType,str,qml.operation.Operator]): The circuit element whos representation shall be resolved
             wire (int): The element's wire which is currently resolved
-        
+
         Returns:
             str: String representation of the element
         """
@@ -417,7 +417,7 @@ class RepresentationResolver:
 
 class CircuitDrawer:
     """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
-    
+
     Args:
         raw_operation_grid (list[list[qml.operation.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
@@ -427,7 +427,7 @@ class CircuitDrawer:
 
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
-        
+
         Args:
             grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
             representation_grid (pennylane.circuit_drawer.Grid): Grid that is used to store the string representations
@@ -444,7 +444,7 @@ class CircuitDrawer:
 
     def resolve_decorations(self, grid, representation_grid, inserted_indices, separate):
         """Resolve the decorations of the given Grid.
-        
+
         Args:
             grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
             representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations and into
@@ -492,14 +492,14 @@ class CircuitDrawer:
 
     def justify_and_prepend(self, target, prepend_str, suffix_str, max_width, pad_str):
         """Left justify the given string and prepend.
-        
+
         Args:
             target (str): String that shall be justified and prepended
             prepend_str (str): String that shall be prepended to the target string
             suffix_str (str): String that shall be appended to the target string
             max_width (int): Maximum width of the justified target string
             pad_str (str): String that shall be used for padding
-        
+
         Returns:
             str: The prepended and justified string
         """
@@ -555,7 +555,7 @@ class CircuitDrawer:
 
     def move_multi_wire_gates(self, operator_grid):
         """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
-        
+
         Args:
             operator_grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information and that will be edited.
         """
@@ -669,7 +669,7 @@ class CircuitDrawer:
 
     def draw(self):
         """Draw the circuit diagram.
-        
+
         Returns:
             str: The circuit diagram
         """
