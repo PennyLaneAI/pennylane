@@ -245,7 +245,7 @@ class BaseQNode:
         
         Raises:
             ValueError: If the given charset is not supported
-            pennylane.QuantumFunctionError: 
+            pennylane.QuantumFunctionError: Drawing is impossible because the underlying CircuitGraph has not yet been constructed
 
         Returns:
             str: The circuit representation of the QNode
