@@ -59,7 +59,7 @@ class Hadamard(Observable, Operation):
         r"""Diagonalize Hadamard.
 
         Returns:
-            list(qml.Operation): A list of gates that diagonalize Hadamard in
+            list(pennylane.Operation): A list of gates that diagonalize Hadamard in
             the computational basis.
         """
         return [Rot(np.pi, -np.pi / 4, np.pi, wires=0)]
@@ -118,7 +118,7 @@ class PauliY(Observable, Operation):
         r"""Diagonalize PauliY.
 
         Returns:
-            list(qml.Operation): A list of gates that diagonalize PauliY in the
+            list(pennylane.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
         return [Rot(0, np.pi / 2, 3 * np.pi / 2, wires=0)]

@@ -137,7 +137,7 @@ class Grid:
         """Append the layers of another Grid to this Grid.
         
         Args:
-            other_grid (qml.circuit_drawer.Grid): Grid whos layers will be appended
+            other_grid (pennylane.circuit_drawer.Grid): Grid whos layers will be appended
         """
         for i in range(other_grid.num_layers):
             self.append_layer(other_grid.layer(i))
@@ -303,7 +303,7 @@ class RepresentationResolver:
         """Resolve the representation of an Operator.
         
         Args:
-            op (qml.operation.Operator): The Operator instance whos representation shall be resolved
+            op (pennylane.operation.Operator): The Operator instance whos representation shall be resolved
             wire (int): The Operator's wire which is currently resolved
         
         Returns:
@@ -366,7 +366,7 @@ class RepresentationResolver:
         """Resolve the representation of a circuit's output.
         
         Args:
-            obs (qml.ops.Observable): The Observable instance whos representation shall be resolved
+            obs (pennylane.ops.Observable): The Observable instance whos representation shall be resolved
             wire (int): The Observable's wire which is currently resolved
         
         Returns:
@@ -409,7 +409,7 @@ class CircuitDrawer:
     Args:
         raw_operation_grid (list[list[qml.operation.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
-        charset (qml.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing. Defaults to UnicodeCharSet.
+        charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing. Defaults to UnicodeCharSet.
         show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
     """
 
@@ -417,8 +417,8 @@ class CircuitDrawer:
         """Resolve the string representation of the given Grid.
         
         Args:
-            grid (qml.circuit_drawer.Grid): Grid that holds the circuit information
-            representation_grid (qml.circuit_drawer.Grid): Grid that is used to store the string representations
+            grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
+            representation_grid (pennylane.circuit_drawer.Grid): Grid that is used to store the string representations
         """
         for i in range(grid.num_layers):
             representation_layer = [""] * grid.num_wires
@@ -434,8 +434,8 @@ class CircuitDrawer:
         """Resolve the decorations of the given Grid.
         
         Args:
-            grid (qml.circuit_drawer.Grid): Grid that holds the circuit information
-            representation_grid (qml.circuit_drawer.Grid): Grid that holds the string representations and into
+            grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
+            representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations and into
                 which the decorations will be inserted
             inserted_indices (list[int]): List to which the inserted indices will be appended
             separate (bool): Insert decorations into separate layers
@@ -505,7 +505,7 @@ class CircuitDrawer:
         """Pads the given representation so that all layers have equal width.
         
         Args:
-            representation_grid (qml.circuit_drawer.Grid): Grid that holds the string representations that will be padded
+            representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
             pad_str (str): String that shall be used for padding
             skip_prepend_pad_str (str): String that will used for padding if prepending is skipped
             prepend_str (str): String that is prepended to all representations that are not skipped
@@ -545,7 +545,7 @@ class CircuitDrawer:
         """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
         
         Args:
-            operator_grid (qml.circuit_drawer.Grid): Grid that holds the circuit information and that will be edited.
+            operator_grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information and that will be edited.
         """
         n = operator_grid.num_layers
         i = -1

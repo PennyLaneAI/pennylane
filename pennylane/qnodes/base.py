@@ -245,11 +245,15 @@ class BaseQNode:
         
         Raises:
             ValueError: If the given charset is not supported
+            pennylane.QuantumFunctionError: 
 
         Returns:
             str: The circuit representation of the QNode
         """
-        return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
+        if self.circuit:
+            return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
+        else:
+            raise QuantumFunctionError("The QNode can only be drawn after its CircuitGraph has been constructed.")
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
