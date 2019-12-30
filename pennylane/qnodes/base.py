@@ -238,10 +238,10 @@ class BaseQNode:
 
     def draw(self, show_variable_names=False):
         """Draw the QNode as a circuit diagram.
-        
+
         Args:
             show_variable_names (bool, optional): Show variable names instead of values. Defaults to False.
-        
+
         Returns:
             str: The circuit representation of the QNode
         """
