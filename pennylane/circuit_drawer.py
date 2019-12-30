@@ -566,7 +566,7 @@ class CircuitDrawer:
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
 
-                    blocked_wires = list(range(sorted_wires[0] + 1, sorted_wires[-1]))
+                    blocked_wires = list(range(sorted_wires[0], sorted_wires[-1] + 1))
 
                     if not blocked_wires:
                         continue
@@ -580,7 +580,7 @@ class CircuitDrawer:
                         other_sorted_wires = other_op.wires.copy()
                         other_sorted_wires.sort()
                         other_blocked_wires = list(
-                            range(other_sorted_wires[0] + 1, other_sorted_wires[-1])
+                            range(other_sorted_wires[0], other_sorted_wires[-1] + 1)
                         )
 
                         if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):
@@ -685,7 +685,6 @@ class CircuitDrawer:
 
 
 # TODO:
-# * Move to QNode, enable printing of unevaluated QNodes
 # * Rename layers and greedy_layers to something more appropriate
 # * Write tests
 # * Add changelog entry
