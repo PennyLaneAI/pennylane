@@ -18,6 +18,7 @@ import abc
 import numpy as np
 import pennylane as qml
 
+
 class Grid:
     """Helper class to manage Gates aligned in a grid.
 
@@ -31,6 +32,7 @@ class Grid:
     Args:
         raw_grid (list, optional): Raw grid from which the Grid instance is built. Defaults to [].
     """
+
     def __init__(self, raw_grid=[]):
         self.raw_grid = raw_grid
         self.raw_grid_transpose = list(map(list, zip(*raw_grid)))
@@ -135,7 +137,7 @@ class Grid:
         """Append the layers of another Grid to this Grid.
         
         Args:
-            other_grid (Grid): Grid whos layers will be appended
+            other_grid (qml.circuit_drawer.Grid): Grid whos layers will be appended
         """
         for i in range(other_grid.num_layers):
             self.append_layer(other_grid.layer(i))
@@ -148,6 +150,7 @@ class Grid:
             ret += "\n"
 
         return ret
+
 
 class CharSet(abc.ABC):
     """Charset base class."""
@@ -164,6 +167,7 @@ class CharSet(abc.ABC):
     VERTICAL_LINE = None
     CROSSED_LINES = None
 
+
 class UnicodeCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
 
@@ -178,6 +182,7 @@ class UnicodeCharSet(CharSet):
     RANGLE = "⟩"
     VERTICAL_LINE = "│"
     CROSSED_LINES = "╳"
+
 
 class AsciiCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
@@ -194,11 +199,13 @@ class AsciiCharSet(CharSet):
     VERTICAL_LINE = "|"
     CROSSED_LINES = "X"
 
+
 Charsets = {
-    "unicode" : UnicodeCharSet,
-    "ascii" : AsciiCharSet,
+    "unicode": UnicodeCharSet,
+    "ascii": AsciiCharSet,
 }
 """Dictionary with all available CharSets."""
+
 
 class RepresentationResolver:
     """Resolves the string representation of PennyLane objects.
@@ -307,9 +314,7 @@ class RepresentationResolver:
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
-        if op.name in self.control_wire_dict and wire in [
-            op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]
-        ]:
+        if op.name in self.control_wire_dict and wire in [op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]]:
             return self.charset.CONTROL
 
         if op.num_params == 0:
@@ -323,31 +328,21 @@ class RepresentationResolver:
 
         if op.name == "Hermitian":
             mat = op.params[0]
-            idx = RepresentationResolver.index_of_array_or_append(
-                mat, self.hermitian_matrix_cache
-            )
+            idx = RepresentationResolver.index_of_array_or_append(mat, self.hermitian_matrix_cache)
 
             return "H{}".format(idx)
 
         if op.name == "FockStateProjector":
             n_str = ",".join([str(n) for n in op.params[0]])
 
-            return (
-                self.charset.VERTICAL_LINE
-                + n_str
-                + self.charset.CROSSED_LINES
-                + n_str
-                + self.charset.VERTICAL_LINE
-            )
+            return self.charset.VERTICAL_LINE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.VERTICAL_LINE
 
         # Operations that only have matrix arguments
         if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector"]:
             param_strings = []
             for param in op.params:
                 if isinstance(param, np.ndarray):
-                    idx = RepresentationResolver.index_of_array_or_append(
-                        param, self.matrix_cache
-                    )
+                    idx = RepresentationResolver.index_of_array_or_append(param, self.matrix_cache)
 
                     param_strings.append("M{}".format(idx))
                 else:
@@ -368,11 +363,7 @@ class RepresentationResolver:
             str: String representation of the Observable
         """
         if obs.return_type == qml.operation.Expectation:
-            return (
-                self.charset.LANGLE
-                + "{}".format(self.operator_representation(obs, wire))
-                + self.charset.RANGLE
-            )
+            return self.charset.LANGLE + "{}".format(self.operator_representation(obs, wire)) + self.charset.RANGLE
         elif obs.return_type == qml.operation.Variance:
             return "Var[{}]".format(self.operator_representation(obs, wire))
         elif obs.return_type == qml.operation.Sample:
@@ -399,116 +390,123 @@ class RepresentationResolver:
 
 
 class CircuitDrawer:
+    """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
+    
+    Args:
+        raw_operation_grid (list[list[qml.operation.Operation]]): The CircuitGraph's operations
+        raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
+        charset (qml.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing. Defaults to UnicodeCharSet.
+        show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
+    """
+
     def resolve_representation(self, grid, representation_grid):
+        """Resolve the string representation of the given Grid.
+        
+        Args:
+            grid (qml.circuit_drawer.Grid): Grid that holds the circuit information
+            representation_grid (qml.circuit_drawer.Grid): Grid that is used to store the string representations
+        """
         for i in range(grid.num_layers):
             representation_layer = [""] * grid.num_wires
 
             for wire, operator in enumerate(grid.layer(i)):
-                representation_layer[wire] = self.representation_resolver.element_representation(
-                    operator, wire
-                )
+                representation_layer[wire] = self.representation_resolver.element_representation(operator, wire)
 
             representation_grid.append_layer(representation_layer)
 
-    def resolve_decorations(self, grid, representation_grid, decoration_indices):
+    def resolve_decorations(self, grid, representation_grid, inserted_indices, separate):
+        """Resolve the decorations of the given Grid.
+        
+        Args:
+            grid (qml.circuit_drawer.Grid): Grid that holds the circuit information
+            representation_grid (qml.circuit_drawer.Grid): Grid that holds the string representations and into
+                which the decorations will be inserted
+            inserted_indices (list[int]): List to which the inserted indices will be appended
+            separate (bool): Insert decorations into separate layers
+        """
         j = 0
         for i in range(grid.num_layers):
             layer_operators = set(grid.layer(i))
 
-            decoration_layer = [""] * grid.num_wires
+            if not separate:
+                decoration_layer = [""] * grid.num_wires
 
             for op in layer_operators:
                 if op is None:
                     continue
 
                 if len(op.wires) > 1:
+                    if separate:
+                        decoration_layer = [""] * grid.num_wires
+
                     sorted_wires = op.wires.copy()
                     sorted_wires.sort()
 
                     decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
-                    decoration_layer[
-                        sorted_wires[-1]
-                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
+                    decoration_layer[sorted_wires[-1]] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
                     for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
                         if k in sorted_wires:
                             decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
                         else:
                             decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
 
-            representation_grid.insert_layer(i + j, decoration_layer)
-            decoration_indices.append(i + j)
-            j += 1
+                    if separate:
+                        representation_grid.insert_layer(i + j, decoration_layer)
+                        inserted_indices.append(i + j)
+                        j += 1
 
-    def resolve_decorations_separate(self, grid, representation_grid, decoration_indices):
-        j = 0
-        for i in range(grid.num_layers):
-            layer_operators = set(grid.layer(i))
+            if not separate:
+                representation_grid.insert_layer(i + j, decoration_layer)
+                inserted_indices.append(i + j)
+                j += 1
 
-            for op in layer_operators:
-                if op is None:
-                    continue
+    def justify_and_prepend(self, target, prepend_str, suffix_str, max_width, pad_str):
+        """Left justify the given string and prepend.
+        
+        Args:
+            target (str): String that shall be justified and prepended
+            prepend_str (str): String that shall be prepended to the target string
+            suffix_str (str): String that shall be appended to the target string
+            max_width (int): Maximum width of the justified target string
+            pad_str (str): String that shall be used for padding
+        
+        Returns:
+            str: The prepended and justified string
+        """
+        return prepend_str + str.ljust(target, max_width, pad_str) + suffix_str
 
-                if len(op.wires) > 1:
-                    decoration_layer = [""] * grid.num_wires
-                    sorted_wires = op.wires.copy()
-                    sorted_wires.sort()
-
-                    decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
-                    decoration_layer[
-                        sorted_wires[-1]
-                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
-                    for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
-                        if k in sorted_wires:
-                            decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
-                        else:
-                            decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
-
-                    representation_grid.insert_layer(i + j, decoration_layer)
-                    decoration_indices.append(i + j)
-                    j += 1
-
-    def justify_and_prepend(self, x, prepend_str, suffix_str, max_width, pad_str):
-        return prepend_str + str.ljust(x, max_width, pad_str) + suffix_str
-
-    def resolve_padding(
-        self,
-        representation_grid,
-        pad_str,
-        skip_prepend_pad_str,
-        prepend_str,
-        suffix_str,
-        skip_prepend_idx,
+    def pad_representation(
+        self, representation_grid, pad_str, skip_prepend_pad_str, prepend_str, suffix_str, skip_prepend_idx,
     ):
+        """Pads the given representation so that all layers have equal width.
+        
+        Args:
+            representation_grid (qml.circuit_drawer.Grid): Grid that holds the string representations that will be padded
+            pad_str (str): String that shall be used for padding
+            skip_prepend_pad_str (str): String that will used for padding if prepending is skipped
+            prepend_str (str): String that is prepended to all representations that are not skipped
+            suffix_str (str): String that is appended to all representations
+            skip_prepend_idx (list[int]): List of layer indices for which prepending is skipped
+        """
         for i in range(representation_grid.num_layers):
             layer = representation_grid.layer(i)
             max_width = max(map(len, layer))
 
             if i in skip_prepend_idx:
                 representation_grid.replace_layer(
-                    i,
-                    list(
-                        map(
-                            lambda x: self.justify_and_prepend(
-                                x, "", "", max_width, skip_prepend_pad_str
-                            ),
-                            layer,
-                        )
-                    ),
+                    i, list(map(lambda x: self.justify_and_prepend(x, "", "", max_width, skip_prepend_pad_str), layer,)),
                 )
             else:
                 representation_grid.replace_layer(
-                    i,
-                    list(
-                        map(
-                            lambda x: self.justify_and_prepend(
-                                x, prepend_str, suffix_str, max_width, pad_str
-                            ),
-                            layer,
-                        )
-                    ),
+                    i, list(map(lambda x: self.justify_and_prepend(x, prepend_str, suffix_str, max_width, pad_str), layer,)),
                 )
 
-    def move_multi_wire_gates(self, operator_grid):  # Move intertwined multi-wire gates
+    def move_multi_wire_gates(self, operator_grid):
+        """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
+        
+        Args:
+            operator_grid (qml.circuit_drawer.Grid): Grid that holds the circuit information and that will be edited.
+        """
         n = operator_grid.num_layers
         i = -1
         while i < n - 1:
@@ -541,14 +539,10 @@ class CircuitDrawer:
 
                         other_sorted_wires = other_op.wires.copy()
                         other_sorted_wires.sort()
-                        other_blocked_wires = list(
-                            range(other_sorted_wires[0] + 1, other_sorted_wires[-1])
-                        )
+                        other_blocked_wires = list(range(other_sorted_wires[0] + 1, other_sorted_wires[-1]))
 
                         if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):
-                            op_indices = [
-                                idx for idx, layer_op in enumerate(this_layer) if layer_op == op
-                            ]
+                            op_indices = [idx for idx, layer_op in enumerate(this_layer) if layer_op == op]
 
                             for l in op_indices:
                                 other_layer[l] = op
@@ -561,59 +555,48 @@ class CircuitDrawer:
                 n += 1
 
     def __init__(
-        self,
-        raw_operator_grid,
-        raw_observable_grid,
-        charset=UnicodeCharSet,
-        show_variable_names=False,
+        self, raw_operation_grid, raw_observable_grid, charset=UnicodeCharSet, show_variable_names=False,
     ):
         self.charset = charset
         self.show_variable_names = show_variable_names
         self.representation_resolver = RepresentationResolver(charset, show_variable_names)
-        self.operator_grid = Grid(raw_operator_grid)
+        self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
-        self.operator_representation_grid = Grid()
+        self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
-        self.operator_decoration_indices = []
+        self.operation_decoration_indices = []
         self.observable_decoration_indices = []
 
-        self.move_multi_wire_gates(self.operator_grid)
+        self.move_multi_wire_gates(self.operation_grid)
 
         # Resolve operator names
-        self.resolve_representation(self.operator_grid, self.operator_representation_grid)
+        self.resolve_representation(self.operation_grid, self.operation_representation_grid)
         self.resolve_representation(self.observable_grid, self.observable_representation_grid)
 
         # Add multi-wire gate lines
         self.resolve_decorations(
-            self.operator_grid, self.operator_representation_grid, self.operator_decoration_indices
+            self.operation_grid, self.operation_representation_grid, self.operation_decoration_indices, False,
         )
-        self.resolve_decorations_separate(
-            self.observable_grid,
-            self.observable_representation_grid,
-            self.observable_decoration_indices,
+        self.resolve_decorations(
+            self.observable_grid, self.observable_representation_grid, self.observable_decoration_indices, True,
         )
 
-        self.resolve_padding(
-            self.operator_representation_grid,
-            charset.WIRE,
-            charset.WIRE,
-            "",
-            2 * charset.WIRE,
-            self.operator_decoration_indices,
+        self.pad_representation(
+            self.operation_representation_grid, charset.WIRE, charset.WIRE, "", 2 * charset.WIRE, self.operation_decoration_indices,
         )
-        self.resolve_padding(
-            self.observable_representation_grid,
-            " ",
-            charset.WIRE,
-            charset.MEASUREMENT + " ",
-            " ",
-            self.observable_decoration_indices,
+        self.pad_representation(
+            self.observable_representation_grid, " ", charset.WIRE, charset.MEASUREMENT + " ", " ", self.observable_decoration_indices,
         )
 
-        self.full_representation_grid = self.operator_representation_grid.copy()
+        self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def draw(self):
+        """Draw the circuit diagram.
+        
+        Returns:
+            str: The circuit diagram
+        """
         rendered_string = ""
 
         for i in range(self.full_representation_grid.num_wires):
