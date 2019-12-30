@@ -15,13 +15,14 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
-from collections import namedtuple, Counter, OrderedDict
+from collections import Counter, OrderedDict, namedtuple
+
 import networkx as nx
 
-import numpy as np
-from .utils import _flatten
-from .circuit_drawer import CircuitDrawer, Charsets
 import pennylane as qml
+
+from .circuit_drawer import Charsets, CircuitDrawer
+from .utils import _flatten
 
 
 def _by_idx(x):
@@ -305,17 +306,34 @@ class CircuitGraph:
 
     @staticmethod
     def list_at_index_or_none(list, idx):
+        """Return the element of a list at the given index if it exists, return None otherwise.
+
+        Args:
+            list (list[object]): The target list
+            idx (int): The target index
+
+        Returns:
+            Union[object,NoneType]: The element at the target index or None
+        """
         if len(list) > idx:
             return list[idx]
-        else:
-            return None
+
+        return None
 
     @staticmethod
     def empty_list_to_none(list):
+        """Returns the list if it isn't empty, otherwise return a list that contains None.
+
+        Args:
+            list (list[object]): The target list
+
+        Returns:
+            list[object]: The target list or [None] if the target list was empty
+        """
         if list:
             return list
-        else:
-            return [None]
+
+        return [None]
 
     def greedy_layers(self):
         """Greedily collected layers of the circuit. Empty slots are filled with `None`.
@@ -343,8 +361,7 @@ class CircuitGraph:
 
         while True:
             layer_ops = {
-                wire: CircuitGraph.list_at_index_or_none(operations[wire], l)
-                for wire in operations
+                wire: CircuitGraph.list_at_index_or_none(operations[wire], l) for wire in operations
             }
             num_ops = Counter(layer_ops.values())
 
@@ -411,8 +428,14 @@ class CircuitGraph:
         grid, obs = self.greedy_layers()
 
         if charset not in Charsets:
-            raise ValueError("Charset {} is not supported. Supported charsets: {}.".format(charset, ", ".join(Charsets.keys())))
+            raise ValueError(
+                "Charset {} is not supported. Supported charsets: {}.".format(
+                    charset, ", ".join(Charsets.keys())
+                )
+            )
 
-        drawer = CircuitDrawer(grid, obs, charset=Charsets[charset], show_variable_names=show_variable_names)
+        drawer = CircuitDrawer(
+            grid, obs, charset=Charsets[charset], show_variable_names=show_variable_names
+        )
 
         return drawer.draw()
