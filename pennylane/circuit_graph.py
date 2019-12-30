@@ -751,7 +751,11 @@ class CircuitDrawer:
                         if other_op is None:
                             continue
 
-                        if not set(other_op.wires).isdisjoint(set(blocked_wires)):
+                        other_sorted_wires = other_op.wires.copy()
+                        other_sorted_wires.sort()
+                        other_blocked_wires = list(range(other_sorted_wires[0] + 1, other_sorted_wires[-1]))
+
+                        if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):
                             op_indices = [
                                 idx for idx, layer_op in enumerate(this_layer) if layer_op == op
                             ]
