@@ -177,8 +177,8 @@ class Variable:
                 return "{}*#{}".format(str(round(self.mult, 3)), self.idx)
 
             return "#{}".format(self.idx)
-        else:
-            if self.mult != 1:
-                return "{}*{}".format(str(round(self.mult, 3)), self.name)
 
-            return self.name
+        if self.mult != 1:
+            return "{}*{}".format(str(round(self.mult, 3)), self.name)
+
+        return self.name

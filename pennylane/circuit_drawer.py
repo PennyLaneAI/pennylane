@@ -34,7 +34,7 @@ def _transpose(target_list):
 class Grid:
     """Helper class to manage Gates aligned in a grid.
 
-    The rows of the Grid are referred to as "wires", 
+    The rows of the Grid are referred to as "wires",
     whereas the columns of the Grid are reffered to as "layers".
 
     Simultaneous access to both layers and wires via indexing is provided
@@ -167,6 +167,8 @@ class Grid:
 class CharSet(abc.ABC):
     """Charset base class."""
 
+    # pylint: disable=too-few-public-methods
+
     WIRE = None
     MEASUREMENT = None
     TOP_MULTI_LINE_GATE_CONNECTOR = None
@@ -183,6 +185,8 @@ class CharSet(abc.ABC):
 class UnicodeCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
 
+    # pylint: disable=too-few-public-methods
+
     WIRE = "─"
     MEASUREMENT = "┤"
     TOP_MULTI_LINE_GATE_CONNECTOR = "╭"
@@ -198,6 +202,8 @@ class UnicodeCharSet(CharSet):
 
 class AsciiCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
+
+    # pylint: disable=too-few-public-methods
 
     WIRE = "-"
     MEASUREMENT = "-|"
@@ -384,15 +390,18 @@ class RepresentationResolver:
         Returns:
             str: String representation of the Observable
         """
+        # pylint: disable=inconsistent-return-statements
         if obs.return_type == qml.operation.Expectation:
             return (
                 self.charset.LANGLE
                 + "{}".format(self.operator_representation(obs, wire))
                 + self.charset.RANGLE
             )
-        elif obs.return_type == qml.operation.Variance:
+
+        if obs.return_type == qml.operation.Variance:
             return "Var[{}]".format(self.operator_representation(obs, wire))
-        elif obs.return_type == qml.operation.Sample:
+
+        if obs.return_type == qml.operation.Sample:
             return "Sample[{}]".format(self.operator_representation(obs, wire))
 
     def element_representation(self, element, wire):
