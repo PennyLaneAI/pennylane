@@ -18,6 +18,17 @@ import abc
 import numpy as np
 import pennylane as qml
 
+def _transpose(target_list):
+    """Transpose the given list of lists.
+    
+    Args:
+        target_list (list[list[object]]): List of list that will be transposed
+    
+    Returns:
+        list[list[object]]: Transposed list of lists
+    """
+    return list(map(list, zip(*target_list)))
+
 
 class Grid:
     """Helper class to manage Gates aligned in a grid.
@@ -35,7 +46,7 @@ class Grid:
 
     def __init__(self, raw_grid=[]):
         self.raw_grid = raw_grid
-        self.raw_grid_transpose = list(map(list, zip(*raw_grid)))
+        self.raw_grid_transpose = _transpose(raw_grid)
 
     def insert_layer(self, idx, layer):
         """Insert a layer into the Grid at the specified index.
@@ -45,7 +56,7 @@ class Grid:
             layer (list): Layer that will be inserted
         """
         self.raw_grid_transpose.insert(idx, layer)
-        self.raw_grid = list(map(list, zip(*self.raw_grid_transpose)))
+        self.raw_grid = _transpose(self.raw_grid_transpose)
 
     def append_layer(self, layer):
         """Append a layer to the Grid.
@@ -54,7 +65,7 @@ class Grid:
             layer (list): Layer that will be appended
         """
         self.raw_grid_transpose.append(layer)
-        self.raw_grid = list(map(list, zip(*self.raw_grid_transpose)))
+        self.raw_grid = _transpose(self.raw_grid_transpose)
 
     def replace_layer(self, idx, layer):
         """Replace a layer in the Grid at the specified index.
@@ -64,7 +75,7 @@ class Grid:
             layer (list): Layer that replaces the old layer
         """
         self.raw_grid_transpose[idx] = layer
-        self.raw_grid = list(map(list, zip(*self.raw_grid_transpose)))
+        self.raw_grid = _transpose(self.raw_grid_transpose)
 
     def insert_wire(self, idx, wire):
         """Insert a wire into the Grid at the specified index.
@@ -74,7 +85,7 @@ class Grid:
             wire (list): Wire that will be inserted
         """
         self.raw_grid.insert(idx, wire)
-        self.raw_grid_transpose = list(map(list, zip(*self.raw_grid)))
+        self.raw_grid_transpose = _transpose(self.raw_grid)
 
     def append_wire(self, wire):
         """Append a wire to the Grid.
@@ -83,7 +94,7 @@ class Grid:
             wire (list): Wire that will be appended
         """
         self.raw_grid.append(wire)
-        self.raw_grid_transpose = list(map(list, zip(*self.raw_grid)))
+        self.raw_grid_transpose = _transpose(self.raw_grid)
 
     @property
     def num_layers(self):

@@ -19,6 +19,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane.circuit_drawer import _transpose, Grid, RepresentationResolver, CircuitDrawer
+
 
 @pytest.fixture
 def parameterized_qubit_circuit():
@@ -117,8 +119,46 @@ def parameterized_cv_circuit():
 
     return qfunc
 
-class TestCircuitGraphDrawing:
 
+class TestFunctions:
+    """Test the helper functions."""
+
+    @pytest.mark.parametrize(
+        "input,expected_output",
+        [
+            ([[0, 1], [2, 3]], [[0, 2], [1, 3]]),
+            ([[0, 1, 2], [3, 4, 5]], [[0, 3], [1, 4], [2, 5]]),
+            ([[0], [1], [2]], [[0, 1, 2]]),
+        ],
+    )
+    def test_transpose(self, input, expected_output):
+        """Test that transpose transposes a list of list."""
+        assert _transpose(input) == expected_output
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            [[0, 1], [2, 3]],
+            [[0, 2], [1, 3]],
+            [[0, 1, 2], [3, 4, 5]],
+            [[0, 3], [1, 4], [2, 5]],
+            [[0], [1], [2]],
+            [[0, 1, 2]],
+        ],
+    )
+    def test_transpose_squared(self, input):
+        """Test that transpose transposes a list of list."""
+        assert _transpose(_transpose(input)) == input
+
+
+class TestGrid:
+    """Test the Grid helper class."""
+
+    def test_transpose_on_init(self):
+        pass
+
+
+class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
