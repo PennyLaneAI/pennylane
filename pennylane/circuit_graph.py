@@ -387,10 +387,10 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
-    def render(self):
+    def render(self, show_variable_names=False):
         grid, obs = self.greedy_layers()
 
-        drawer = CircuitDrawer(grid, obs)
+        drawer = CircuitDrawer(grid, obs, show_variable_names=show_variable_names)
 
         return drawer.render()
 
@@ -507,15 +507,16 @@ class RepresentationResolver:
         "ControlledPhase": [0],
     }
 
-    def __init__(self, charset=UnicodeCharSet):
+    def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
         self.charset = charset
+        self.show_variable_names = show_variable_names
         self.matrix_cache = []
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
 
     def render_parameter(self, par):
         if isinstance(par, qml.variable.Variable):
-            return par.render()
+            return par.render(self.show_variable_names)
 
         return str(par)
 
@@ -765,9 +766,10 @@ class CircuitDrawer:
                 operator_grid.insert_layer(i + 1, other_layer)
                 n += 1
 
-    def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet):
+    def __init__(self, raw_operator_grid, raw_observable_grid, charset=UnicodeCharSet, show_variable_names=False):
         self.charset = charset
-        self.representation_resolver = RepresentationResolver(charset)
+        self.show_variable_names = show_variable_names
+        self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operator_grid = Grid(raw_operator_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.operator_representation_grid = Grid()

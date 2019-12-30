@@ -152,24 +152,25 @@ class Variable:
         values = Variable.kwarg_values[self.name]
         return values[self.idx] * self.mult
 
-    def render(self):
-        if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
-            return str(round(self.val, 3))
+    def render(self, show_name_only=False):
+        if not show_name_only:
+            if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
+                return str(round(self.val, 3))
 
-        if (
-            not self.is_kwarg
-            and Variable.free_param_values is not None
-            and len(Variable.free_param_values) > self.idx
-        ):
-            return str(round(self.val, 3))
+            if (
+                not self.is_kwarg
+                and Variable.free_param_values is not None
+                and len(Variable.free_param_values) > self.idx
+            ):
+                return str(round(self.val, 3))
 
         if self.name is None:
             if self.mult != 1:
-                return "{}*#{}".format(self.mult, self.idx)
+                return "{}*#{}".format(str(round(self.mult, 3)), self.idx)
             else:
                 return "#{}".format(self.idx)
         else:
             if self.mult != 1:
-                return "{}*{}".format(self.mult, self.name)
+                return "{}*{}".format(str(round(self.mult, 3)), self.name)
             else:
                 return self.name
