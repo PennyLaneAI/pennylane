@@ -15,6 +15,10 @@
 Unit tests for the :mod:`pennylane.circuit_drawer` module.
 """
 
+import pytest
+import numpy as np
+
+import pennylane as qml
 
 @pytest.fixture
 def parameterized_qubit_circuit():
@@ -112,7 +116,7 @@ def parameterized_cv_circuit():
         ]
 
     return qfunc
-    
+
 class TestCircuitGraphDrawing:
 
     def test_simple_circuit(self, parameterized_qubit_circuit):
