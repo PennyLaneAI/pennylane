@@ -20,7 +20,7 @@ import networkx as nx
 
 import numpy as np
 from .utils import _flatten
-from .circuit_drawer import CircuitDrawer
+from .circuit_drawer import CircuitDrawer, Charsets
 import pennylane as qml
 
 
@@ -388,9 +388,24 @@ class CircuitGraph:
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
 
-    def draw(self, show_variable_names=False):
+    def draw(self, charset="unicode", show_variable_names=False):
+        """Draw the CircuitGraph as a circuit diagram.
+        
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported. Defaults to "unicode".
+            show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
+        
+        Raises:
+            ValueError: If the given charset is not supported
+        
+        Returns:
+            str: The circuit diagram representation of the CircuitGraph
+        """
         grid, obs = self.greedy_layers()
 
-        drawer = CircuitDrawer(grid, obs, show_variable_names=show_variable_names)
+        if charset not in Charsets:
+            raise ValueError("Charset {} is not supported. Supported charsets: {}.".format(charset, ", ".join(Charsets.keys())))
+
+        drawer = CircuitDrawer(grid, obs, charset=Charsets[charset], show_variable_names=show_variable_names)
 
         return drawer.draw()

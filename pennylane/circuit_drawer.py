@@ -194,6 +194,11 @@ class AsciiCharSet(CharSet):
     VERTICAL_LINE = "|"
     CROSSED_LINES = "X"
 
+Charsets = {
+    "unicode" : UnicodeCharSet,
+    "ascii" : AsciiCharSet,
+}
+
 class RepresentationResolver:
     """Resolves the string representation of PennyLane objects.
     
