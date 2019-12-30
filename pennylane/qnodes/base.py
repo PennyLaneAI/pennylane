@@ -235,17 +235,21 @@ class BaseQNode:
                 print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
             else:
                 print("{}({}(wires={}))".format(return_type, op.name, op.wires))
-
-    def draw(self, show_variable_names=False):
+                
+    def draw(self, charset="unicode", show_variable_names=False):
         """Draw the QNode as a circuit diagram.
 
         Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported. Defaults to "unicode".
             show_variable_names (bool, optional): Show variable names instead of values. Defaults to False.
+        
+        Raises:
+            ValueError: If the given charset is not supported
 
         Returns:
             str: The circuit representation of the QNode
         """
-        return self.circuit.draw(show_variable_names=show_variable_names)
+        return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
