@@ -47,30 +47,6 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     * ``kwargs`` are any additional keyword arguments that need to be passed
       to the template.
 
-    **Example:**
-
-    Let's define a custom two-wire template:
-
-    .. code-block:: python
-
-        def my_template(params, wires, **kwargs):
-            for i in range(2):
-                qml.RX(params[i], wires=wires[i])
-
-            qml.CNOT(wires=wires)
-
-    We want to compute the expectation values over the following list
-    of two-qubit observables:
-
-    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
-
-    This can be easily done with the ``map`` function:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
-    >>> qnodes([0.54, 0.12])
-    array([-0.06154835  0.99280864])
-
     Args:
         template (callable): the ansatz for the circuit before the final measurement step
         observables (Iterable[:class:`~.Observable`]): observables to measure during the
@@ -79,7 +55,8 @@ def map(template, observables, device, measure="expval", interface="autograd", d
             QNodeCluster should be executed. This can either be a single device, or a list
             of devices of length ``len(observables)``.
         measure (str, List[str]): Measurement(s) to perform. Options include
-            :func:`'expval' <~.expval>`, :func:`'var' <~.var>`, and :func`'sample' <~.sample>`.
+            :func:`'expval' <pennylane.expval>`, :func:`'var' <pennylane.var>`,
+            and :func:`'sample' <pennylane.sample>`.
             This can either be a single measurement type, in which case it is applied
             to all observables, or a list of measurements of length ``len(observables)``.
         interface (str, None): which interface to use for the returned QNode cluster.
@@ -118,6 +95,30 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     Returns:
         QNodeCluster: a cluster of QNodes executing the circuit template with
         the specified measurements
+
+    **Example:**
+
+    Let's define a custom two-wire template:
+
+    .. code-block:: python
+
+        def my_template(params, wires, **kwargs):
+            for i in range(2):
+                qml.RX(params[i], wires=wires[i])
+
+            qml.CNOT(wires=wires)
+
+    We want to compute the expectation values over the following list
+    of two-qubit observables:
+
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
+
+    This can be easily done with the ``map`` function:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
+    >>> qnodes([0.54, 0.12])
+    array([-0.06154835  0.99280864])
     """
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")
@@ -171,6 +172,13 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 def apply(func, qnode_cluster):
     """Lazily apply a function to the constituent QNodes of a :class:`QNodeCluster`.
 
+    Args:
+        func (callable): A function to be applied to the QNodeCluster results.
+            This function must be supported by the corresponding QNodeCluster
+            interface; i.e., a ``torch`` QNodeCluster can only be acted on functions
+            that accept ``torch.tensor`` objects.
+        qnode_cluster (QNodeCluster): a QNode cluster.
+
     **Example:**
 
     We can create a QNodeCluster using :func:`~.map`:
@@ -190,19 +198,17 @@ def apply(func, qnode_cluster):
     >>> x = qml.init.strong_ent_layers_normal(3, 2)
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
-
-    Args:
-        func (callable): A function to be applied to the QNodeCluster results.
-            This function must be supported by the corresponding QNodeCluster
-            interface; i.e., a ``torch`` QNodeCluster can only be acted on functions
-            that accept ``torch.tensor`` objects.
-        qnode_cluster (QNodeCluster): a QNode cluster.
     """
     return lambda params, **kwargs: func(qnode_cluster(params, **kwargs))
 
 
 def sum(x):
     """Lazily sum the constituent QNodes of a :class:`QNodeCluster`.
+
+    Args:
+        x (QNodeCluster): a QNode cluster of independent QNodes.
+
+    .. seealso:: :func:`~.apply`, :func:`~.dot`
 
     **Example:**
 
@@ -222,11 +228,6 @@ def sum(x):
     >>> x = qml.init.strong_ent_layers_normal(3, 2)
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
-
-    Args:
-        qnode_cluster (QNodeCluster): a QNode cluster of independent QNodes.
-
-    .. see-also:: :func:`~.apply`, :func:`~.dot`
     """
     if x.interface == "tf":
         import tensorflow as tf
@@ -275,6 +276,14 @@ def dot(x, y):
     objects, or a :class:`QNodeCluster` object and an array/tensor object. In the latter
     case, only one-dimensional arrays/tensors are supported.
 
+    Args:
+        x (array or tensor or QNodeCluster): A QNode cluster of independent QNodes,
+            or an array/tensor object.
+        y (array or tensor or QNodeCluster): A QNode cluster of independent QNodes,
+            or an array/tensor object.
+
+    .. seealso:: :func:`~.apply`, :func:`~.sum`
+
     **Example:**
 
     We can create a QNodeCluster using :func:`~.map`:
@@ -307,11 +316,6 @@ def dot(x, y):
     >>> x = qml.init.strong_ent_layers_normal(3, 2)
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
-
-    Args:
-        qnode_cluster (QNodeCluster): a QNode cluster of independent QNodes.
-
-    .. see-also:: :func:`~.apply`, :func:`~.sum`
     """
     if isinstance(x, QNodeCluster) and isinstance(y, QNodeCluster):
 
@@ -339,6 +343,12 @@ class QNodeCluster(Sequence):
     All QNodes within a QNodeCluster **must** use the same interface.
 
     .. note:: the recommended method of creating a QNodeCluster is via :func:`~.map`.
+
+    Args:
+        qnodes (None or List[QNode]): A list of QNodes sharing the same signature.
+            If not provided, an empty QNode cluster is instantiated.
+
+    .. seealso:: :func:`~.map`
 
     **Example:**
 
@@ -379,6 +389,7 @@ class QNodeCluster(Sequence):
     following two QNodes with the same signature:
 
     .. code-block:: python3
+
         dev1 = qml.device("default.qubit", wires=1)
         dev2 = qml.device("default.qubit", wires=2)
 
@@ -407,12 +418,6 @@ class QNodeCluster(Sequence):
 
     where the results from each QNode have been flattened and concatenated
     into a single one-dimensional list.
-
-    Args:
-        qnodes (None or List[QNode]): A list of QNodes sharing the same signature.
-            If not provided, an empty QNode cluster is instantiated.
-
-    .. see-also:: :func:`~.map`
     """
 
     def __init__(self, qnodes=None):
