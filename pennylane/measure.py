@@ -114,9 +114,9 @@ def var(op):
         # delete operations from QNode queue
         if isinstance(op, Tensor):
             for o in op.obs:
-                qml._current_context.queue.remove(o)
+                _remove_if_in_queue(o)
         else:
-            qml._current_context.queue.remove(op)
+            _remove_if_in_queue(op)
 
     # set return type to be a variance
     op.return_type = Variance
@@ -165,9 +165,9 @@ def sample(op):
         # delete operations from QNode queue
         if isinstance(op, Tensor):
             for o in op.obs:
-                qml._current_context.queue.remove(o)
+                _remove_if_in_queue(o)
         else:
-            qml._current_context.queue.remove(op)
+            _remove_if_in_queue(op)
 
     # set return type to be a sample
     op.return_type = Sample
