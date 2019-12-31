@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the high-level QNode processing.
+Contains high-level QNode processing functions and classes.
 """
+# pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
 
 from pennylane.qnodes import QNode
-from pennylane.measure import expval, var, sample
+from pennylane.measure import expval, var, sample, probs
 from pennylane.operation import Observable
 
 
@@ -37,9 +38,14 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
     .. code-block:: python
 
-        template(*params, wires)
+        template(params, wires, **kwargs)
 
-    The template must also act on all wires of the provided device.
+    where
+
+    * ``params`` are the trainable weights of the variational circuit,
+    * ``wires`` is a list of integers representing the wires of the device, and
+    * ``kwargs`` are any additional keyword arguments that need to be passed
+      to the template.
 
     **Example:**
 
@@ -47,7 +53,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
     .. code-block:: python
 
-        def my_template(*params, wires):
+        def my_template(params, wires, **kwargs):
             for i in range(2):
                 qml.RX(params[i], wires=wires[i])
 
@@ -62,7 +68,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
-    >>> qnodes(0.54, 0.12)
+    >>> qnodes([0.54, 0.12])
     array([-0.06154835  0.99280864])
 
     Args:
@@ -76,27 +82,27 @@ def map(template, observables, device, measure="expval", interface="autograd", d
             :func:`'expval' <~.expval>`, :func:`'var' <~.var>`, and :func`'sample' <~.sample>`.
             This can either be a single measurement type, in which case it is applied
             to all observables, or a list of measurements of length ``len(observables)``.
-        interface (str, None): which interface to use for the QNodeCluster.
+        interface (str, None): which interface to use for the returned QNode cluster.
             This affects the types of objects that can be passed to/returned from the QNode:
 
             * ``interface='autograd'``: Allows autograd to backpropogate
-              through the QNode. The QNode accepts default Python types
+              through the QNodeCluster. The QNodeCluster accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
             * ``interface='torch'``: Allows PyTorch to backpropogate
-              through the QNode.The QNode accepts and returns Torch tensors.
+              through the QNodeCluster.The QNodeCluster accepts and returns Torch tensors.
 
-            * ``interface='tfe'``: Allows TensorFlow in eager mode to backpropogate
-              through the QNode.The QNode accepts and returns
+            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+              through the QNodeCluster. The QNodeCluster accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
-            * ``None``: The QNode accepts default Python types
+            * ``None``: The QNodeCluster accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str, None): the method of differentiation to use in the created QNodeCluster.
 
             * ``"best"``: Best available method. Uses the device directly to compute
               the gradient if supported, otherwise will use the analytic parameter-shift
@@ -107,32 +113,54 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
             * ``"finite-diff"``: Uses numerical finite-differences.
 
-            * ``None``: a non-differentiable QNode is returned.
+            * ``None``: a non-differentiable QNodeCluster is returned.
 
     Returns:
         QNodeCluster: a cluster of QNodes executing the circuit template with
         the specified measurements
     """
     if not callable(template):
-        raise ValueError(
-            "Could not create QNodes. The template is not a callable function."
-        )
-
-    if not isinstance(measure, (list, tuple)):
-        measure = [measure]*len(observables)
-
-    if not isinstance(device, Sequence):
-        device = [device]*len(observables)
+        raise ValueError("Could not create QNodes. The template is not a callable function.")
 
     qnodes = QNodeCluster()
 
+    if not isinstance(device, Sequence):
+        # broadcast the single device over all observables
+        device = [device] * len(observables)
+
+    if measure == "probs":
+        # Since the probs measurement function does not accept
+        # observables and instead acts in the computational basis,
+        # here we branch out.
+        for dev in device:
+
+            wires = list(range(dev.num_wires))
+
+            def circuit(params, _wires=wires, **kwargs):  # pylint: disable=dangerous-default-value
+                template(params, wires=_wires, **kwargs)
+                return probs(wires=_wires)
+
+            qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method)
+            qnodes.append(qnode)
+
+        return qnodes
+
+    if not isinstance(measure, (list, tuple)):
+        # broadcast the single measurement over all observables
+        measure = [measure] * len(observables)
+
     for obs, m, dev in zip(observables, measure, device):
+        # Generate QNodes from all pairs of observables, measurements, and devices.
         if not isinstance(obs, Observable):
             raise ValueError("Could not create QNodes. Some or all observables are not valid.")
 
-        def circuit(*params, obs=obs, m=m):
-            template(*params, wires=list(range(dev.num_wires)))
-            return MEASURE_MAP[m](obs)
+        wires = list(range(dev.num_wires))
+
+        def circuit(
+            params, _obs=obs, _m=m, _wires=wires, **kwargs
+        ):  # pylint: disable=dangerous-default-value, function-redefined
+            template(params, wires=_wires, **kwargs)
+            return MEASURE_MAP[_m](_obs)
 
         qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method)
         qnodes.append(qnode)
@@ -141,72 +169,282 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
 
 def apply(func, qnode_cluster):
-    return lambda *params: func(qnode_cluster(*params))
+    """Lazily apply a function to the constituent QNodes of a :class:`QNodeCluster`.
+
+    **Example:**
+
+    We can create a QNodeCluster using :func:`~.map`:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+    >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+
+    As we are using the ``'torch'`` interface, we now apply ``torch.sum``
+    to the QNodeCluster:
+
+    >>> cost = qml.apply(torch.sum, qnodes)
+
+    This is a lazy composition --- no QNode evaluation has yet occured. Evaluation
+    only occurs when the returned function ``cost`` is evaluated:
+
+    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> cost(x)
+    tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
+
+    Args:
+        func (callable): A function to be applied to the QNodeCluster results.
+            This function must be supported by the corresponding QNodeCluster
+            interface; i.e., a ``torch`` QNodeCluster can only be acted on functions
+            that accept ``torch.tensor`` objects.
+        qnode_cluster (QNodeCluster): a QNode cluster.
+    """
+    return lambda params, **kwargs: func(qnode_cluster(params, **kwargs))
 
 
 def sum(x):
+    """Lazily sum the constituent QNodes of a :class:`QNodeCluster`.
+
+    **Example:**
+
+    We can create a QNodeCluster using :func:`~.map`:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+    >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+
+    For the cost function, we now sum the results of all QNodes in the cluster:
+
+    >>> cost = qml.sum(qnodes)
+
+    This is a lazy summation --- no QNode evaluation has yet occured. Evaluation
+    only occurs when the returned function ``cost`` is evaluated:
+
+    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> cost(x)
+    tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
+
+    Args:
+        qnode_cluster (QNodeCluster): a QNode cluster of independent QNodes.
+
+    .. see-also:: :func:`~.apply`, :func:`~.dot`
+    """
     if x.interface == "tf":
         import tensorflow as tf
-        return lambda *params: tf.sum(x(*params))
 
-    elif x.interface == "torch":
+        return lambda params, **kwargs: tf.sum(x(params, **kwargs))
+
+    if x.interface == "torch":
         import torch
-        return lambda *params: torch.sum(x(*params))
 
-    elif x.interface in ("autograd", "numpy"):
+        return lambda params, **kwargs: torch.sum(x(params, **kwargs))
+
+    if x.interface in ("autograd", "numpy"):
         from autograd import numpy as np
-        return lambda *params: np.sum(x(*params))
+
+        return lambda params, **kwargs: np.sum(x(params, **kwargs))
+
+    raise ValueError("Unknown interface {}".format(x.interface))
 
 
 def _get_dot_func(interface):
+    """Helper function for :func:`~.dot` to determine
+    the correct dot product function depending on the QNodeCluster
+    interface"""
     if interface == "tf":
         import tensorflow as tf
-        func = lambda a, b: tf.tensordot(a, b, 1)
 
-    elif interface == "torch":
+        return lambda a, b: tf.tensordot(a, b, 1)
+
+    if interface == "torch":
         import torch
-        func = torch.dot
 
-    elif interface in ("autograd", "numpy"):
+        return torch.dot
+
+    if interface in ("autograd", "numpy"):
         from autograd import numpy as np
-        func = np.dot
 
-    return func
+        return np.dot
+
+    raise ValueError("Unknown interface {}".format(interface))
 
 
 def dot(x, y):
+    r"""Lazily perform the dot product between arrays, tensors, and :class:`QNodeCluster`.
+
+    Using this function, lazy dot products can be computed between two :class:`QNodeCluster`
+    objects, or a :class:`QNodeCluster` object and an array/tensor object. In the latter
+    case, only one-dimensional arrays/tensors are supported.
+
+    **Example:**
+
+    We can create a QNodeCluster using :func:`~.map`:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+    >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+
+    The returned QNodeCluster contains 2 QNodes, as we mapped the :func:`~.StronglyEntanglingLayers`
+    over a list of two observables:
+
+    >>> len(qnodes)
+    2
+
+    For the cost function, we now perform the dot product between a vector of coefficients
+    and the QNodeCluster:
+
+    >>> coeffs = torch.tensor([0.32, -0.2], dtype=torch.double)
+    >>> cost = qml.dot(coeffs, qnodes)
+
+    Note that ``cost`` is equivalent to computing :math:`\langle 0 | U(\theta)^\dagger H U(\theta) | 0\rangle`
+    where
+
+    * :math:`U(\theta)` is the unitary applied by the strongly entangling layers, and
+    * :math:`H = 0.32 X\otimes Z - 0.2 Z \otimes Z`.
+
+    This is a lazy dot product --- no QNode evaluation has yet occured. Evaluation
+    only occurs when the returned function ``cost`` is evaluated:
+
+    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> cost(x)
+    tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
+
+    Args:
+        qnode_cluster (QNodeCluster): a QNode cluster of independent QNodes.
+
+    .. see-also:: :func:`~.apply`, :func:`~.sum`
+    """
     if isinstance(x, QNodeCluster) and isinstance(y, QNodeCluster):
 
         if x.interface != y.interface:
             raise ValueError("QNodeClusters have non-matching interfaces")
 
-        return lambda *params: _get_dot_func(x.interface)(x(*params), y(*params))
+        return lambda params, **kwargs: _get_dot_func(x.interface)(
+            x(params, **kwargs), y(params, **kwargs)
+        )
 
     if isinstance(x, QNodeCluster):
-        return lambda *params: _get_dot_func(x.interface)(x(*params), y)
+        return lambda params, **kwargs: _get_dot_func(x.interface)(x(params, **kwargs), y)
 
     if isinstance(y, QNodeCluster):
-        return lambda *params: _get_dot_func(y.interface)(x, y(*params))
+        return lambda params, **kwargs: _get_dot_func(y.interface)(x, y(params, **kwargs))
+
+    raise ValueError("At least one argument must be a QNodeCluster")
 
 
 class QNodeCluster(Sequence):
+    """Represents a sequence of independent QNodes that all share the same signature.
+    When the cluster is evaluated, all QNodes are simultaneously evaluated
+    with the same parameters.
+
+    All QNodes within a QNodeCluster **must** use the same interface.
+
+    .. note:: the recommended method of creating a QNodeCluster is via :func:`~.map`.
+
+    **Example:**
+
+    A QNodeCluster can be created using a list of existing QNodes:
+
+    >>> qnode = qml.QNodeCluster([qnode1, qnode2])
+
+    Instantiating a QNode cluster with no arguments creates an empty cluster:
+
+    >>> qnodes = qml.QNodeCluster()
+    >>> len(qnodes)
+    0
+
+    QNodes can be appended:
+
+    >>> qnodes.append(qnode1)
+    >>> len(qnodes)
+    1
+
+    or extended:
+
+    >>> qnodes.extend([qnode2, qnode3])
+    >>> len(qnodes)
+    3
+
+    They can also be indexed:
+
+    >>> qnodes[0]
+    <QNode: device='default.qubit', func=circuit, wires=2, interface=torch>
+
+    or looped over:
+
+    >>> [i.num_wires for i in qnodes]
+    [2, 2, 2]
+
+    To evaluate a QNodeCluster, simply call the cluster, passing the parameters
+    as required by the constituent QNode. For example, consider the
+    following two QNodes with the same signature:
+
+    .. code-block:: python3
+        dev1 = qml.device("default.qubit", wires=1)
+        dev2 = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev1)
+        def qnode1(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev2)
+        def qnode2(x, y):
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+
+    Creating a QNodeCluster,
+
+    >>> qnodes = qml.QNodeCluster([qnode1, qnode2])
+
+    We can evaluate this QNode cluster directly:
+
+    >>> qnodes(0.5643, -0.45)
+    [ 7.60844651e-01 -5.55111512e-17  1.00000000e+00]
+
+    where the results from each QNode have been flattened and concatenated
+    into a single one-dimensional list.
+
+    Args:
+        qnodes (None or List[QNode]): A list of QNodes sharing the same signature.
+            If not provided, an empty QNode cluster is instantiated.
+
+    .. see-also:: :func:`~.map`
+    """
 
     def __init__(self, qnodes=None):
-        self.qnodes = qnodes or []
+        self.qnodes = []
+        self.extend(qnodes or [])
 
     @property
     def interface(self):
+        """str, None: automatic differentiation interface used by the cluster, if any"""
         if not self.qnodes:
             return None
 
         return self.qnodes[0].interface
 
     def append(self, qnode):
-        if self.qnodes and (qnode.interface != self.interface):
-            raise ValueError("Could not append QNode. QNode uses the {} interface, "
-                             "QNode cluster uses the {} interface".format(qnode.interface, self.interface))
+        """Appends a QNode to the cluster. The appended QNode *must* have the same
+        interface as the QNode cluster."""
+        self.extend([qnode])
 
-        self.qnodes.append(qnode)
+    def extend(self, qnodes):
+        """Extends the cluster by a list of QNodes. The appended QNodes *must* have the same
+        interface as the QNode cluster."""
+        if not all(i.interface == qnodes[0].interface for i in qnodes):
+            raise ValueError("Provided QNodes do not all use the same interface")
+
+        if self.qnodes and (qnodes[0].interface != self.interface):
+            raise ValueError(
+                "Interface mismatch. Provided QNodes use the {} interface, "
+                "QNode cluster uses the {} interface".format(qnodes[0].interface, self.interface)
+            )
+
+        self.qnodes.extend(qnodes)
 
     def __call__(self, *args, **kwargs):
         results = []
@@ -217,13 +455,18 @@ class QNodeCluster(Sequence):
 
         if self.interface == "tf":
             import tensorflow as tf
+
             return tf.stack(results)
-        elif self.interface == "torch":
+
+        if self.interface == "torch":
             import torch
+
             return torch.stack(results, dim=0)
-        elif self.interface in ("autograd", "numpy"):
+
+        if self.interface in ("autograd", "numpy"):
             from autograd import numpy as np
-            return np.stack(results)
+
+            return np.hstack(results)
 
         return results
 
