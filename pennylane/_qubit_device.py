@@ -22,7 +22,7 @@ import itertools
 from collections import OrderedDict
 
 import pennylane as qml
-from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Tensor
+from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Probability, Tensor
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device, DeviceError
 
@@ -101,6 +101,9 @@ class QubitDevice(Device):
                 elif obs.return_type is Sample:
                     results.append(np.array(self.sample(obs)))
 
+                elif obs.return_type is Probability:
+                    results.append(list(self.probability(wires=obs.wires).values()))
+
                 elif obs.return_type is not None:
                     raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
 
@@ -154,7 +157,7 @@ class QubitDevice(Device):
 
         elif isinstance(observable, qml.Hermitian):
             # Perform a change of basis before measuring by applying U^ to the circuit
-            self.apply(qml.Hermitian.diagonalizing_gates(np.array(par), wires)[0])
+            self.apply(observable.diagonalizing_gates()[0])
         elif isinstance(observable, Tensor):
             # If a tensor observable was defined, rotate for
             # each observable through recursive calls
@@ -167,13 +170,9 @@ class QubitDevice(Device):
 
         if self.analytic:
             # exact expectation value
+            eigvals = observable.eigvals
 
-            if isinstance(observable, qml.Hermitian):
-                eigvals = observable.eigvals(np.array(par))
-            else:
-                eigvals = observable.eigvals
-
-            prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
+            prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -185,13 +184,9 @@ class QubitDevice(Device):
 
         if self.analytic:
             # exact variance value
+            eigvals = observable.eigvals
 
-            if isinstance(observable, qml.Hermitian):
-                eigvals = observable.eigvals(np.array(par))
-            else:
-                eigvals = observable.eigvals
-
-            prob = np.fromiter(self.probabilities(wires=wires).values(), dtype=np.float64)
+            prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
         return np.var(self.sample(observable))
@@ -208,16 +203,16 @@ class QubitDevice(Device):
             eigvals = observable.eigvals
 
         eigvals = np.fromiter(eigvals, dtype=np.float64)
-        prob = np.fromiter(self.probabilities(wires=observable.wires).values(), dtype=np.float64)
+        prob = np.fromiter(self.probability(wires=observable.wires).values(), dtype=np.float64)
         return np.random.choice(eigvals, self.shots, p=prob)
 
-    def probabilities(self, wires=None):
+    def probability(self, wires=None):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
 
         Args:
             wires (Sequence[int]): Sequence of wires to return
-                marginal probabilities for. Wires not provided
+                marginal probability for. Wires not provided
                 are traced out of the system.
 
         Returns:

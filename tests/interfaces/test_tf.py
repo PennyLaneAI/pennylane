@@ -666,7 +666,11 @@ class TestTFGradients:
             grad = tape.gradient(y, [a, b])
 
         assert grad[0].numpy() == 1 / b.numpy()
-        assert np.allclose(grad[1].numpy(), -a.numpy() / b.numpy() ** 2, atol=tol, rtol=0)
+        res = grad[1].numpy()
+        print(res)
+        exp = -a.numpy() / b.numpy() ** 2
+        print(exp)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
     def test_composition_qnodes_gradient(self, qnodes, x, y):
