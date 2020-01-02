@@ -175,8 +175,16 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
 
     **Example usage:**
 
-    >>> gen_active_space('lih', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
-    ([0], [1, 2])
+    >>> d_occ_orbitals, active_orbitals = gen_active_space('lih', './pyscf/sto-3g',
+    n_active_electrons=2, n_active_orbitals=2)
+    >>> print("List of doubly-occupied molecular orbitals: {:}".format(d_occ_indices))
+    >>> print("List of active molecular orbitals: {:}".format(active_indices))
+    >>> print("Number of qubits required to perform quantum simulations: {:}".format(2*len(
+    active_indices)))
+
+    List of doubly-occupied molecular orbitals: [0]
+    List of active molecular orbitals: [1, 2]
+    Number of qubits required to perform quantum simulations: 4
 
     .. note::
         The number of active *spin*-orbitals ``2*n_active_orbitals`` determines the number of
