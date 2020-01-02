@@ -18,11 +18,10 @@ import subprocess
 from shutil import copyfile
 
 import numpy as np
-
 from openfermion.hamiltonians import MolecularData
 from openfermion.ops._qubit_operator import QubitOperator
-from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
-
+from openfermion.transforms import (bravyi_kitaev, get_fermion_operator,
+                                    jordan_wigner)
 from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf
 
@@ -54,8 +53,9 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the molecular structure file and creates a list containing the symbol and Cartesian
     coordinates of the atomic species. If the file is provided in a format other than 'xyz',
-    Open Babel is used to convert it to an xyz-formatted file. The new file, called ``structure.xyz``,
-    contains the geometry of the molecule. It is created in a directory with path given by 'outpath'.
+    Open Babel is used to convert it to an xyz-formatted file. The new file, called
+    ``structure.xyz``, contains the geometry of the molecule. It is created in a directory with
+    path given by 'outpath'.
 
     **Example usage:**
 
@@ -105,8 +105,8 @@ def read_structure(filepath, outpath="."):
 
 
 def gen_meanfield_data(
-    mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
-):  # pylint: disable=too-many-arguments
+        mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
+        ):  # pylint: disable=too-many-arguments
     r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
 
     Also builds the path to the directory containing the input data file for quantum simulations.
@@ -179,7 +179,7 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
     ([0], [1, 2])
 
     .. note::
-        The number of active *spin*-orbitals (``2*n_active_orbitals``) determines the number of
+        The number of active *spin*-orbitals ``2*n_active_orbitals`` determines the number of
         qubits to perform quantum simulations of the electronic structure of the molecule.
 
     Args:
@@ -274,8 +274,8 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
 
 
 def gen_hamiltonian_pauli_basis(
-    mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
-):
+        mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
+        ):
     r"""Decomposes the electronic Hamiltonian into a linear combination of Pauli operators using
     OpenFermion tools.
 
@@ -293,7 +293,8 @@ def gen_hamiltonian_pauli_basis(
 
     Args:
         mol_name (str): name of the molecule
-        hf_data (str): path to the directory containing the file with the Hartree-Fock electronic structure
+        hf_data (str): path to the directory containing the file with the Hartree-Fock
+            electronic structure
         mapping (str): optional argument to specify the fermion-to-qubit mapping
             Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``
         docc_mo_indices (list): indices of doubly-occupied molecular orbitals, i.e.,
@@ -455,17 +456,17 @@ def load_hamiltonian(qubit_hamiltonian):
 
 
 def generate_mol_hamiltonian(
-    mol_name,
-    mol_geo_file,
-    mol_charge,
-    multiplicity,
-    basis_set,
-    qc_package="pyscf",
-    n_active_electrons=None,
-    n_active_orbitals=None,
-    mapping="jordan_wigner",
-    outpath=".",
-):  # pylint:disable=too-many-arguments
+        mol_name,
+        mol_geo_file,
+        mol_charge,
+        multiplicity,
+        basis_set,
+        qc_package="pyscf",
+        n_active_electrons=None,
+        n_active_orbitals=None,
+        mapping="jordan_wigner",
+        outpath=".",
+        ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
 
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
