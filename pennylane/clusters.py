@@ -471,7 +471,7 @@ class QNodeCluster(Sequence):
         if self.interface in ("autograd", "numpy"):
             from autograd import numpy as np
 
-            return np.hstack(results)
+            return np.vstack(results)
 
         return results
 
