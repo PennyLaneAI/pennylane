@@ -2,9 +2,27 @@
 
 ### New features since last release
 
-* Added `QAOAEmbedding` and its parameter initialization 
+* Adds a quantum chemistry package, `pennylane.qchem`, which supports
+  integration with OpenFermion, Psi4, PySCF, and OpenBabel.
+  [#453](https://github.com/XanaduAI/pennylane/pull/453)
+
+  Features include:
+
+  - Generate the qubit Hamiltonians directly starting with the atomic structure of the molecule.
+  - Calculate the mean-field (Hartree-Fock) electronic structure of molecules.
+  - Allow to define an active space based on the number of active electrons and active orbitals.
+  - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
+    using different functions implemented in OpenFermion.
+  - Convert OpenFermion's QubitOperator to Pennylane's Hamiltonian class.
+
+* Added `QAOAEmbedding` and its parameter initialization
   as a new trainable template.
   [#442](https://github.com/XanaduAI/pennylane/pull/442)
+
+* Added `qml.prob()` measurement function, allowing QNodes
+  to differentiate variational circuit probabilities
+  on simulators and hardware.
+  [#432](https://github.com/XanaduAI/pennylane/pull/432)
 
 ### Breaking changes
 
@@ -14,12 +32,26 @@
 
 ### Improvements
 
-* Added the ``Observable.eigvals`` attribute to return the eigenvalues of observables.
+* Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
   [#449](https://github.com/XanaduAI/pennylane/pull/449)
+
+* Added the ``Observable.diagonalizing_gates`` method to return the gates
+  that diagonalize an observable in the computational basis.
+  [#454](https://github.com/XanaduAI/pennylane/pull/454)
+
+* Added the ``Operator.matrix`` method to return the matrix representation
+  of an operator in the computational basis.
+  [#454](https://github.com/XanaduAI/pennylane/pull/454)
 
 ### Documentation
 
-* Improved documentation of ``AmplitudeEmbedding`` and ``BasisEmbedding`` templates.
+* Improved documentation of `AmplitudeEmbedding` and `BasisEmbedding` templates.
+  [#441](https://github.com/XanaduAI/pennylane/pull/441)
+  [#439](https://github.com/XanaduAI/pennylane/pull/439)
+
+* Codeblocks in the documentation now have a 'copy' button for easily
+  copying examples.
+  [#437](https://github.com/XanaduAI/pennylane/pull/437)
 
 ### Bug fixes
 
@@ -32,7 +64,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva
+Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
+Soran Jahangiri, Zeyue Niu, Maria Schuld, Antal Száva
 
 ---
 

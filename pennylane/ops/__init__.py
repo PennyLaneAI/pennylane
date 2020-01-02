@@ -53,10 +53,18 @@ class Identity(CVObservable):
     eigvals = np.array([1, 1])
 
     ev_order = 1
+    eigvals = np.array([1, 1])
+
+    @staticmethod
+    def _matrix(*params):
+        return np.eye(2)
 
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([1, 0, 0])
+
+    def diagonalizing_gates(self):
+        return []
 
 
 __all__ = _cv__all__ + _qubit__all__ + ["Identity"]
