@@ -403,11 +403,17 @@ class TestMetricTensor:
 
         # calculate the off-diagonal terms
         exK0, exK1 = layer3_off_diag_first_order(x, y, z, h, g, f)
+        print(exK0)
+        print(exK1)
+
         exK01 = layer3_off_diag_second_order(x, y, z, h, g, f)
+        print(exK01)
 
         G3[0, 1] = (exK01 - exK0 * exK1) / 4
         G3[1, 0] = (exK01 - exK0 * exK1) / 4
 
+        print(G3)
+        print(G[4:6, 4:6])
         assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
 
         # ============================================

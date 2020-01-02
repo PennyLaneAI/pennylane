@@ -42,6 +42,7 @@ class QubitDevice(Device):
         self.analytic = analytic
 
         self._state = None
+        self._probability = None
 
     def apply(self, operation):
         """Called during :meth:`execute` before the individual observables are measured."""
@@ -172,7 +173,10 @@ class QubitDevice(Device):
             # exact expectation value
             eigvals = observable.eigvals
 
-            prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
+            #prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
+            prob = np.abs(self._state ** 2)
+            print(wires)
+            prob = self.marginal_prob(prob, wires=wires)
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -206,15 +210,13 @@ class QubitDevice(Device):
         prob = np.fromiter(self.probability(wires=observable.wires).values(), dtype=np.float64)
         return np.random.choice(eigvals, self.shots, p=prob)
 
-    def probability(self, wires=None):
+    def probability(self, wires=None, values_only=False):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
-
         Args:
             wires (Sequence[int]): Sequence of wires to return
-                marginal probability for. Wires not provided
+                marginal probabilities for. Wires not provided
                 are traced out of the system.
-
         Returns:
             OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
             to the resulting probability. The dictionary should be sorted such that the
@@ -223,12 +225,16 @@ class QubitDevice(Device):
         if self._state is None:
             return None
 
-        prob = np.abs(self._state.reshape([2] * self.num_wires)) ** 2
         wires = wires or range(self.num_wires)
-        wires = np.hstack(wires)
 
+        self._probability = np.abs(self._state)**2
+        prob = self.marginal_prob(self._probability, wires)
         basis_states = itertools.product(range(2), repeat=len(wires))
-        inactive_wires = list(set(range(self.num_wires)) - set(wires))
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
         return OrderedDict(zip(basis_states, prob))
 
+    def marginal_prob(self, prob, wires=None):
+        wires = wires or range(self.num_wires)
+        wires = np.hstack(wires)
+        inactive_wires = list(set(range(self.num_wires)) - set(wires))
+        prob = prob.reshape([2] * self.num_wires)
+        return np.apply_over_axes(np.sum, prob, inactive_wires).flatten()

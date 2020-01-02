@@ -365,7 +365,7 @@ class QubitQNode(JacobianQNode):
                 # block diagonal approximation
 
                 unitary_op = qml.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
-                self.device.execute(circuit["queue"] + [unitary_op], circuit["observable"])
+                self.device.execute(circuit["queue"] + [unitary_op], [qml.expval(qml.PauliZ(wire)) for wire in list(range(self.device.num_wires))])
                 probs = list(self.device.probability().values())
 
                 first_order_ev = np.zeros([len(params)])
