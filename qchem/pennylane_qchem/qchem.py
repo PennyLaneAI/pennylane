@@ -87,7 +87,8 @@ def read_structure(filepath, outpath="."):
         if not _exec_exists("obabel"):
             raise TypeError(obabel_error_message)
         try:
-            subprocess.run(["obabel", "-i" + extension, file_in, "-oxyz -O", file_out], check=True)
+            subprocess.run(["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out],
+                           check=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
                 "Open Babel error. See the following Open Babel "

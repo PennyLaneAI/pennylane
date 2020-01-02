@@ -61,6 +61,6 @@ def test_subprocess_run(monkeypatch, requires_babel):
         m.setattr(subprocess, "run", fake_run)
 
         with pytest.raises(
-            RuntimeError, match="Open Babel error. See the following Babel output for details"
+            RuntimeError, match="Open Babel error. See the following Open Babel output for details"
         ):
             qchem.read_structure("fake_mol_geo.SDF")
