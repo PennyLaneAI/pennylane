@@ -51,11 +51,11 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-    r"""Reads the molecular structure file and creates a list containing the symbol and Cartesian
-    coordinates of the atomic species. If the file is provided in a format other than 'xyz',
-    Open Babel is used to convert it to an xyz-formatted file. The new file, called
-    ``structure.xyz``, contains the geometry of the molecule. It is created in a directory with
-    path given by 'outpath'.
+    r"""Reads the molecular structure from a file and creates a list containing the
+    symbol and Cartesian coordinates of the atomic species. The xyz format is supported out of
+    the box. Additionally, if Open Babel is installed, any format recognized by Open Babel is
+    also supported. The new file, called ``structure.xyz``, contains the geometry of the
+    molecule. It is created in a directory with path given by 'outpath'.
 
     **Example usage:**
 
@@ -71,9 +71,9 @@ def read_structure(filepath, outpath="."):
         list: for each atomic species, a list containing the symbol and the Cartesian coordinates
     """
 
-    babel_error_message = (
+    obabel_error_message = (
         "Open Babel converter not found:\n"
-        "Try: 'sudo apt install babel' "
+        "Try: 'sudo apt install openbabel' "
         "or download it from http://openbabel.org/wiki/Main_Page \n"
         "and make sure you add it to the PATH environment variable."
     )
@@ -84,13 +84,13 @@ def read_structure(filepath, outpath="."):
     file_out = os.path.join(outpath, "structure.xyz")
 
     if extension != "xyz":
-        if not _exec_exists("babel"):
-            raise TypeError(babel_error_message)
+        if not _exec_exists("obabel"):
+            raise TypeError(obabel_error_message)
         try:
-            subprocess.run(["babel", "-i" + extension, file_in, "-oxyz", file_out], check=True)
+            subprocess.run(["obabel", "-i" + extension, file_in, "-oxyz -O", file_out], check=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                "Babel error. See the following Babel "
+                "Open Babel error. See the following Open Babel "
                 "output for details:\n\n {}\n{}".format(e.stdout, e.stderr)
             )
     else:
