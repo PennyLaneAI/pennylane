@@ -20,7 +20,7 @@ import numpy as np
 
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder, pauli_eigs, reshape_square_operator
+from pennylane.utils import OperationRecorder, pauli_eigs
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
