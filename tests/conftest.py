@@ -24,7 +24,7 @@ from pennylane.plugins import DefaultGaussian
 
 # defaults
 TOL = 1e-3
-
+TF_TOL = 2e-2
 
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
@@ -37,6 +37,10 @@ def tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TOL", TOL))
 
+@pytest.fixture(scope="session")
+def tf_tol():
+    """Numerical tolerance for equality tests."""
+    return float(os.environ.get("TF_TOL", TF_TOL))
 
 @pytest.fixture(scope="session", params=[1, 2])
 def n_layers(request):

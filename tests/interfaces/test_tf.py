@@ -647,7 +647,7 @@ class TestTFGradients:
         assert grad[1].numpy() == a.numpy()
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
-    def test_division_qnodes_gradient(self, qnodes, x, y, tol):
+    def test_division_qnodes_gradient(self, qnodes, x, y, tf_tol):
         """Test the gradient of division of two QNode circuits"""
         f, g = qnodes
 
@@ -667,10 +667,8 @@ class TestTFGradients:
 
         assert grad[0].numpy() == 1 / b.numpy()
         res = grad[1].numpy()
-        print(res)
         exp = -a.numpy() / b.numpy() ** 2
-        print(exp)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
+        assert np.allclose(res, exp, atol=tf_tol, rtol=0)
 
     @pytest.mark.parametrize("x, y", gradient_test_data)
     def test_composition_qnodes_gradient(self, qnodes, x, y):
