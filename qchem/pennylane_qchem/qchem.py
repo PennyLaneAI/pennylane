@@ -53,7 +53,7 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the molecular structure from a file and creates a list containing the
     symbol and Cartesian coordinates of the atomic species.
-    
+
     The xyz format is supported out of the box. If Open Babel is installed, any format
     recognized by Open Babel is also supported. Additionally, the new file ``structure.xyz``,
     containing the geometry of the molecule, is created in a directory with path given by
