@@ -52,7 +52,7 @@ class TestOptimize:
         """Test qubit rotation has the correct QNG value
         every step, the correct parameter updates,
         and correct cost after 200 steps"""
-        dev = qml.device("default.qubit", wires=1, analytic=True)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(params):
@@ -80,8 +80,6 @@ class TestOptimize:
             # check metric tensor
             res = opt.metric_tensor
             exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
-            print(res)
-            print(exp)
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
             # check parameter update
