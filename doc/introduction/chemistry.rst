@@ -38,7 +38,7 @@ where:
 * ``h`` is the qubit Hamiltonian of the molecule represented as an
   `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ ``QubitOperator``, and
 
-* ``nr_qubits`` is the number of qubits  needed to represent it.
+* ``nr_qubits`` is the number of qubits operators needed to represent it.
 
 Internally, :func:`~.generate_mol_hamiltonian` calls the following functions in order
 to generate the qubit Hamiltonian:
@@ -107,8 +107,8 @@ functions <https://www.basissetexchange.org/>`_.
         qc_package='pyscf'
     )
 
-The output variable ``hf_data`` stores the path to the directory containing the file ``'water
-.hdf5'`` with the Hartree-Fock electronic structure of the water molecule.
+The output variable ``hf_data`` stores the path to the directory containing the file ``'water.hd5'``
+with the Hartree-Fock electronic structure of the water molecule.
 
 Mapping the Hamiltonian to the Pauli basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
