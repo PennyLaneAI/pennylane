@@ -1120,10 +1120,8 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        num_wires = len(self.wires)
-        tuples = np.array(list(itertools.product([0, 1], repeat=num_wires)))
-        print(self.wires)
-        perm = np.ravel_multi_index(tuples[:, self.wires].T, [2] * num_wires)
+        tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
+        perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
         Hmat = self.matrix[:, perm][perm]
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
