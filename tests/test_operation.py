@@ -747,7 +747,7 @@ class TestTensor:
         """Test that the correct eigenvalues are returned for the Tensor containing
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, 5)
+        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4,5])
 
         res = O.eigvals
         expected = np.kron(np.array([1., -1.]), np.kron(np.array([1.,  1.]), np.arange(1, 5)))

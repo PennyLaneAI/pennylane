@@ -175,12 +175,7 @@ class QubitDevice(Device):
 
             #prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             prob = np.abs(self._state ** 2)
-            print('prob before marginal')
-            print(prob)
-            print(wires)
             prob = self.marginal_prob(prob, wires=wires)
-            print('prob after marginal')
-            print(prob)
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -193,8 +188,9 @@ class QubitDevice(Device):
         if self.analytic:
             # exact variance value
             eigvals = observable.eigvals
-
-            prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
+            prob = np.abs(self._state ** 2)
+            prob = self.marginal_prob(prob, wires=wires)
+            #prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
         return np.var(self.sample(observable))
@@ -211,7 +207,9 @@ class QubitDevice(Device):
             eigvals = observable.eigvals
 
         eigvals = np.fromiter(eigvals, dtype=np.float64)
-        prob = np.fromiter(self.probability(wires=observable.wires).values(), dtype=np.float64)
+        prob = np.abs(self._state ** 2)
+        prob = self.marginal_prob(prob, wires=observable.wires)
+       # prob = np.fromiter(self.probability(wires=observable.wires).values(), dtype=np.float64)
         return np.random.choice(eigvals, self.shots, p=prob)
 
     def probability(self, wires=None, values_only=False):
