@@ -17,6 +17,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
+import itertools
 from scipy.linalg import block_diag
 
 from pennylane.operation import Any, Observable, Operation
@@ -1119,8 +1120,12 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        Hmat = self.matrix
-        Hkey = tuple(self.parameters[0].flatten().tolist())
+        num_wires = len(self.wires)
+        tuples = np.array(list(itertools.product([0, 1], repeat=num_wires)))
+        print(self.wires)
+        perm = np.ravel_multi_index(tuples[:, self.wires].T, [2] * num_wires)
+        Hmat = self.matrix[:, perm][perm]
+        Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
             Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}

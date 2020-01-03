@@ -175,8 +175,12 @@ class QubitDevice(Device):
 
             #prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             prob = np.abs(self._state ** 2)
+            print('prob before marginal')
+            print(prob)
             print(wires)
             prob = self.marginal_prob(prob, wires=wires)
+            print('prob after marginal')
+            print(prob)
             return (eigvals @ prob).real
 
         # estimate the ev
