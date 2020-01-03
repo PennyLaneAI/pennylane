@@ -1111,6 +1111,28 @@ class Hermitian(Observable):
         return A
 
     @property
+    def eigendecomposition(self):
+        """Return the eigendecomposition of the specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+        """
+
+        tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
+        perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
+        Hmat = self.matrix[:, perm][perm]
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in Hermitian._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}
+        return Hermitian._eigs[Hkey]
+
+    @property
     def eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
@@ -1120,14 +1142,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
-        perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
-        Hmat = self.matrix[:, perm][perm]
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}
-        return Hermitian._eigs[Hkey]["eigval"]
+        return self.eigendecomposition["eigval"]
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -1139,13 +1154,8 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        Hmat = self.matrix
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}
         return [
-            QubitUnitary(Hermitian._eigs[Hkey]["eigvec"].conj().T, wires=self.wires),
+            QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=self.wires),
         ]
 
 

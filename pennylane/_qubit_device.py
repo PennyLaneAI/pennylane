@@ -131,39 +131,8 @@ class QubitDevice(Device):
             observable (Observable): the observable that is to be
                 measured
         """
-        wires = observable.wires
-        par = observable.parameters
-
-        # TODO: once the diagaonalizing_gates() method is defined for all
-        # observable, simplify the logis to the following (or similar)
-        #
-        # if isinstance(observable, qml.Hermitian):
-        #     self.apply(qml.Hermitian.diagonalizing_gates(np.array(par), wires)[0])
-        # else:
-        #     self.apply(observable.diagonalizing_gates())
-        #
-        if isinstance(observable, qml.PauliX):
-            # X = H.Z.H
-            self.apply(qml.Hadamard(wires))
-
-        elif isinstance(observable, qml.PauliY):
-            # Y = (HS^)^.Z.(HS^) and S^=SZ
-            self.apply(qml.PauliZ(wires=wires))
-            self.apply(qml.S(wires=wires))
-            self.apply(qml.Hadamard(wires=wires))
-
-        elif isinstance(observable, qml.Hadamard):
-            # H = Ry(-pi/4)^.Z.Ry(-pi/4)
-            self.apply(qml.RY(-np.pi / 4, wires=wires))
-
-        elif isinstance(observable, qml.Hermitian):
-            # Perform a change of basis before measuring by applying U^ to the circuit
-            self.apply(observable.diagonalizing_gates()[0])
-        elif isinstance(observable, Tensor):
-            # If a tensor observable was defined, rotate for
-            # each observable through recursive calls
-            for obs in observable.obs:
-                self.rotate_basis(obs)
+        for diag_gate in observable.diagonalizing_gates()[::-1]:
+            self.apply(diag_gate)
 
     def expval(self, observable):
         wires = observable.wires
@@ -172,8 +141,6 @@ class QubitDevice(Device):
         if self.analytic:
             # exact expectation value
             eigvals = observable.eigvals
-
-            #prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             prob = np.abs(self._state ** 2)
             prob = self.marginal_prob(prob, wires=wires)
             return (eigvals @ prob).real
@@ -190,7 +157,6 @@ class QubitDevice(Device):
             eigvals = observable.eigvals
             prob = np.abs(self._state ** 2)
             prob = self.marginal_prob(prob, wires=wires)
-            #prob = np.fromiter(self.probability(wires=wires).values(), dtype=np.float64)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
         return np.var(self.sample(observable))
@@ -200,7 +166,7 @@ class QubitDevice(Device):
             return np.ones([self.shots])
         self.rotate_basis(observable)
         # Sampling is supported on software simulators
-        # HW devices will have to provide there own sample() method
+        # HW devices will have to provide their own sample() method
         if isinstance(observable, qml.Hermitian):
             eigvals = observable.eigvals(np.array(observable.parameters))
         else:
@@ -209,7 +175,6 @@ class QubitDevice(Device):
         eigvals = np.fromiter(eigvals, dtype=np.float64)
         prob = np.abs(self._state ** 2)
         prob = self.marginal_prob(prob, wires=observable.wires)
-       # prob = np.fromiter(self.probability(wires=observable.wires).values(), dtype=np.float64)
         return np.random.choice(eigvals, self.shots, p=prob)
 
     def probability(self, wires=None, values_only=False):
