@@ -54,10 +54,27 @@ def read_structure(filepath, outpath="."):
     r"""Reads the molecular structure from a file and creates a list containing the
     symbol and Cartesian coordinates of the atomic species.
 
-    The xyz format is supported out of the box. If Open Babel is installed, any format
-    recognized by Open Babel is also supported. Additionally, the new file ``structure.xyz``,
+    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
+    If `Open Babel <https://openbabel.org/>`_ is installed,
+    `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
+    is also supported. Additionally, the new file ``structure.xyz``,
     containing the geometry of the molecule, is created in a directory with path given by
     ``outpath``.
+    
+    
+    Open Babel can be installed using ``apt`` if on Ubuntu:
+
+    .. code-block:: bash
+
+        sudo apt install openbabel
+
+    or using Anaconda:
+
+    .. code-block:: bash
+
+        conda install -c conda-forge openbabel
+
+    See the Open Babel documentation for more details on installation.
 
     **Example usage:**
 
