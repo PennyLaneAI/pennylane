@@ -748,7 +748,6 @@ class TestTensor:
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4,5])
-
         res = O.eigvals
         expected = np.kron(np.array([1., -1.]), np.kron(np.array([1.,  1.]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
