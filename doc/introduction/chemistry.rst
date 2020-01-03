@@ -163,7 +163,6 @@ Hamiltonian using the :func:`~.load_hamiltonian` function:
 
     hamiltonian = qml.qchem.load_hamiltonian(h)
 
-where ``hamiltonian`` is 2-tuple of coefficients and PennyLane Pauli observables.
 We can then use :func:`~.vqe.cost` to automatically create our QNodes
 and define our cost function:
 
