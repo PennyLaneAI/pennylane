@@ -54,10 +54,10 @@ def read_structure(filepath, outpath="."):
     r"""Reads the molecular structure from a file and creates a list containing the
     symbol and Cartesian coordinates of the atomic species.
     
-    The xyz format is supported out of
-    the box. If Open Babel is installed, any format recognized by Open Babel is
-    also supported. Additionally, the new file ``structure.xyz``, containing the
-    geometry of the molecule, is created in a directory with path given by ``outpath``.
+    The xyz format is supported out of the box. If Open Babel is installed, any format
+    recognized by Open Babel is also supported. Additionally, the new file ``structure.xyz``,
+    containing the geometry of the molecule, is created in a directory with path given by
+    ``outpath``.
 
     **Example usage:**
 
@@ -75,9 +75,12 @@ def read_structure(filepath, outpath="."):
 
     obabel_error_message = (
         "Open Babel converter not found:\n"
-        "Try: 'sudo apt install openbabel' "
-        "or download it from http://openbabel.org/wiki/Main_Page \n"
-        "and make sure you add it to the PATH environment variable."
+        "If using Ubuntu or Debian, try: 'sudo apt install openbabel' \n"
+        "If using openSUSE, try: 'sudo zypper install openbabel' \n"
+        "If using CentOS or Fedora, try: 'sudo snap install openbabel' "
+        "Open Babel can also be downloaded from http://openbabel.org/wiki/Main_Page, \n"
+        "make sure you add it to the PATH environment variable. \n"
+        "If Anaconda is installed, try: 'conda install -c conda-forge openbabel'"
     )
 
     extension = filepath.split(".")[-1].strip().lower()
