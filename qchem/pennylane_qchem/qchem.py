@@ -11,18 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The PennyLane quantum chemistry package. Supports OpenFermion, Psi4,
-and PySCF for quantum chemistry calculations using PennyLane."""
+"""The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
+and Psi4 for quantum chemistry calculations using PennyLane."""
 import os
 import subprocess
 from shutil import copyfile
 
 import numpy as np
-
 from openfermion.hamiltonians import MolecularData
 from openfermion.ops._qubit_operator import QubitOperator
-from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
-
+from openfermion.transforms import (bravyi_kitaev, get_fermion_operator,
+                                    jordan_wigner)
 from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf
 
@@ -54,8 +53,9 @@ def _exec_exists(prog):
 def read_structure(filepath, outpath="."):
     r"""Reads the molecular structure file and creates a list containing the symbol and Cartesian
     coordinates of the atomic species. If the file is provided in a format other than 'xyz',
-    Open Babel is used to convert it to an xyz-formatted file. The new file, called ``structure.xyz``,
-    contains the geometry of the molecule. It is created in a directory with path given by 'outpath'.
+    Open Babel is used to convert it to an xyz-formatted file. The new file, called
+    ``structure.xyz``, contains the geometry of the molecule. It is created in a directory with
+    path given by 'outpath'.
 
     **Example usage:**
 
@@ -105,19 +105,18 @@ def read_structure(filepath, outpath="."):
 
 
 def gen_meanfield_data(
-    mol_name, geometry, charge, multiplicity, basis, qc_package="psi4", outpath="."
-):  # pylint: disable=too-many-arguments
+        mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
+        ):  # pylint: disable=too-many-arguments
     r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
 
-    Also builds the path
-    to the directory containing the input data file for quantum simulations. The path to the
-    hdf5-formatted file is ``os.path.join(outpath, qc_package, basis)``.
+    Also builds the path to the directory containing the input data file for quantum simulations.
+    The path to the hdf5-formatted file is ``os.path.join(outpath, qc_package, basis)``.
 
     **Example usage:**
 
     >>> geometry = read_structure('h2_ref.xyz')
-    >>> gen_meanfield_data('h2', geometry, 0, 1, 'sto-3g', 'psi4')
-    ./psi4/sto-3g
+    >>> gen_meanfield_data('h2', geometry, 0, 1, 'sto-3g', qc_package='pyscf')
+    ./pyscf/sto-3g
 
     Args:
         mol_name (str): name of the molecule
@@ -129,12 +128,11 @@ def gen_meanfield_data(
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx
             -basiselement>`_
         qc_package (str): quantum chemistry package used to solve Hartree-Fock equations.
-            Either ``'psi4'`` or ``'pyscf'`` can be used
+            Either ``'pyscf'`` or ``'psi4'`` can be used
         outpath (str): path to ouput directory
 
     Returns:
-        str: path to the directory containing the file with the Hartree-Fock
-        electronic structure
+        str: path to the directory containing the file with the Hartree-Fock electronic structure
     """
 
     qc_package = qc_package.strip().lower()
@@ -142,7 +140,7 @@ def gen_meanfield_data(
     if qc_package not in ("psi4", "pyscf"):
         qc_package_error_message = (
             "Integration with quantum chemistry package '{}' is not available. \n Please set"
-            " 'qc_package' to 'psi4' or 'pyscf'.".format(qc_package)
+            " 'qc_package' to 'pyscf' or 'psi4'.".format(qc_package)
         )
         raise TypeError(qc_package_error_message)
 
@@ -173,12 +171,22 @@ def gen_meanfield_data(
 
 
 def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
-    r"""Builds the active space for generating the Hamiltonian of the molecule.
+    r"""Builds the active space by partitioning the set of Hartree-Fock molecular orbitals.
 
     **Example usage:**
 
-    >>> gen_active_space('lih', './psi4/sto-3g', n_active_electrons=2, n_active_orbitals=2)
-    ([0], [1, 2])
+    >>> d_occ_orbitals, active_orbitals = gen_active_space('lih', './pyscf/sto-3g',
+    n_active_electrons=2, n_active_orbitals=2)
+    >>> d_occ_indices  # doubly-occupied molecular orbitals
+    [0]
+    >>> active_indices # active molecular orbitals
+    [1, 2]
+    >>> 2*len(active_indices) # number of qubits required for simulation
+    4
+
+    .. note::
+        The number of active *spin*-orbitals ``2*n_active_orbitals`` determines the number of
+        qubits to perform quantum simulations of the electronic structure of the molecule.
 
     Args:
         mol_name (str): name of the molecule
@@ -272,14 +280,14 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
 
 
 def gen_hamiltonian_pauli_basis(
-    mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
-):
+        mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
+        ):
     r"""Decomposes the electronic Hamiltonian into a linear combination of Pauli operators using
     OpenFermion tools.
 
     **Example usage:**
 
-    >>> gen_hamiltonian_pauli_basis('h2', './psi4/sto-3g/', mapping='bravyi_kitaev')
+    >>> gen_hamiltonian_pauli_basis('h2', './pyscf/sto-3g/', mapping='bravyi_kitaev')
     (-0.04207897696293986+0j) [] + (0.04475014401986122+0j) [X0 Z1 X2] +
     (0.04475014401986122+0j) [X0 Z1 X2 Z3] +(0.04475014401986122+0j) [Y0 Z1 Y2] +
     (0.04475014401986122+0j) [Y0 Z1 Y2 Z3] +(0.17771287459806262+0j) [Z0] +
@@ -291,7 +299,8 @@ def gen_hamiltonian_pauli_basis(
 
     Args:
         mol_name (str): name of the molecule
-        hf_data (str): path to the directory containing the file with the Hartree-Fock electronic structure
+        hf_data (str): path to the directory containing the file with the Hartree-Fock
+            electronic structure
         mapping (str): optional argument to specify the fermion-to-qubit mapping
             Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``
         docc_mo_indices (list): indices of doubly-occupied molecular orbitals, i.e.,
@@ -431,7 +440,7 @@ def load_hamiltonian(qubit_hamiltonian):
 
     **Example usage**
 
-    >>> h_of = gen_hamiltonian_pauli_basis('h2', './psi4/sto-3g/')
+    >>> h_of = gen_hamiltonian_pauli_basis('h2', './pyscf/sto-3g/')
     >>> h_pl = load_hamiltonian(h_of)
     >>> h_pl.coeffs
     [-0.04207898+0.j  0.17771287+0.j  0.17771287+0.j -0.2427428 +0.j -0.2427428 +0.j  0.17059738+0.j
@@ -453,17 +462,17 @@ def load_hamiltonian(qubit_hamiltonian):
 
 
 def generate_mol_hamiltonian(
-    mol_name,
-    mol_geo_file,
-    mol_charge,
-    multiplicity,
-    basis_set,
-    qc_package="psi4",
-    n_active_electrons=None,
-    n_active_orbitals=None,
-    mapping="jordan_wigner",
-    outpath=".",
-):  # pylint:disable=too-many-arguments
+        mol_name,
+        mol_geo_file,
+        mol_charge,
+        multiplicity,
+        basis_set,
+        qc_package="pyscf",
+        n_active_electrons=None,
+        n_active_orbitals=None,
+        mapping="jordan_wigner",
+        outpath=".",
+        ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
 
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
@@ -489,7 +498,7 @@ def generate_mol_hamiltonian(
         basis_set (str): atomic Gaussian-type orbitals basis set. Basis set availability per
                 element can be found `here
                 <www.psicode.org/psi4manual/master/basissets_byelement.html>`_
-        qc_package (str): quantum chemistry package (psi4 or pyscf) used to solve the
+        qc_package (str): quantum chemistry package (pyscf or psi4) used to solve the
                 mean field electronic structure problem
         n_active_electrons (int): number of active electrons. If not specified, all electrons
                 are considered to be active

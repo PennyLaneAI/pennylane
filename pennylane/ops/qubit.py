@@ -16,8 +16,8 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import numpy as np
 import itertools
+import numpy as np
 from scipy.linalg import block_diag
 
 from pennylane.operation import Any, Observable, Operation
@@ -1122,7 +1122,6 @@ class Hermitian(Observable):
         Returns:
             dict: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
-
         tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
         perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
         Hmat = self.matrix[:, perm][perm]
