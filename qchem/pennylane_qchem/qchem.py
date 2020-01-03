@@ -60,8 +60,8 @@ def read_structure(filepath, outpath="."):
     is also supported. Additionally, the new file ``structure.xyz``,
     containing the geometry of the molecule, is created in a directory with path given by
     ``outpath``.
-    
-    
+
+
     Open Babel can be installed using ``apt`` if on Ubuntu:
 
     .. code-block:: bash
