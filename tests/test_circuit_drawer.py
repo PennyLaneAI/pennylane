@@ -325,6 +325,13 @@ class TestGrid:
         assert grid1.raw_grid_transpose == [[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]]
         assert grid1.raw_grid == _transpose([[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]])
 
+    def test_str(self):
+        """Test string rendering of Grid."""
+        raw_grid = [[0, 3], [1, 4], [2, 5]]
+        grid = Grid(raw_grid)
+
+        assert str(grid) == "[0, 3]\n[1, 4]\n[2, 5]\n"
+
 
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
