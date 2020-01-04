@@ -295,7 +295,7 @@ class RepresentationResolver:
         if isinstance(par, qml.variable.Variable):
             return par.render(self.show_variable_names)
 
-        return str(par)
+        return str(round(par, 3))
 
     @staticmethod
     def index_of_array_or_append(target_element, target_list):

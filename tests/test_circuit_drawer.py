@@ -332,6 +332,21 @@ class TestGrid:
 
         assert str(grid) == "[0, 3]\n[1, 4]\n[2, 5]\n"
 
+@pytest.fixture
+def unicode_representation_resolver():
+    return RepresentationResolver()
+
+class TestRepresentationResolver:
+    """Test the RepresentationResolver class."""
+
+    @pytest.mark.parametrize("par,expected", [
+        (3, "3"),
+        (5.236422, "5.236"),
+    ])
+    def test_single_parameter_representation(self, unicode_representation_resolver, par, expected):
+        """Test that single parameters are properly resolved."""
+        assert unicode_representation_resolver.single_parameter_representation(par) == expected
+
 
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
