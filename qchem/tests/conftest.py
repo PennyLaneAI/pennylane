@@ -21,7 +21,7 @@ def psi4_support():
     if not cmd_exists("psi4"):
         return False
 
-    res = subprocess.call(["psi4", "-t"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    res = subprocess.call(["psi4", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if res == 1:
         return False
 
@@ -38,7 +38,7 @@ def psi4_support():
 @pytest.fixture(scope="module")
 def babel_support():
     """Boolean fixture for Babel support"""
-    if cmd_exists("babel"):
+    if cmd_exists("obabel"):
         return True
 
     return False
