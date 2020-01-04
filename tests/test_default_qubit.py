@@ -24,7 +24,7 @@ from pennylane import numpy as np, DeviceError
 from pennylane.operation import Operation
 from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
                                              Rot3, Rotx, Roty, Rotz,
-                                             Rphi, Z, hermitian,
+                                             Rphi, Y, Z, hermitian,
                                              spectral_decomposition, unitary)
 
 U = np.array(
@@ -1425,7 +1425,31 @@ class TestTensorExpval:
         d = A[1, 1]
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
 
+        print(res)
+        print(expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
+        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+        dev = qml.device("default.qubit", wires=2)
+        dev.reset()
+        dev.apply(qml.RY(theta, wires=[0]))
+        dev.apply(qml.RY(phi, wires=[1]))
+        dev.apply(qml.CNOT(wires=[0, 1]))
+
+        A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+        Identity = np.array([[1, 0],[0, 1]])
+        obs = np.kron(Identity, A)
+ 
+        res = dev.expval(qml.Hermitian(obs, wires=[0, 1]))
+
+        a = A[0, 0]
+        re_b = A[0, 1].real
+        d = A[1, 1]
+        expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorVar:

@@ -14,17 +14,15 @@
 """
 This module contains the :class:`QubitDevice` abstract base class.
 """
-# pylint: disable=too-many-format-args
-import abc
-
-import numpy as np
+# pylint: disable=too-many-format-args, arguments-differ, abstract-method
 import itertools
 from collections import OrderedDict
+import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Probability, Tensor
+from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
-from pennylane import Device, DeviceError
+from pennylane import Device
 
 
 class QubitDevice(Device):
@@ -37,7 +35,7 @@ class QubitDevice(Device):
             expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
-    def __init__(self, wires=1, shots=1000, analytic=False):
+    def __init__(self, wires=1, shots=1000, analytic=True):
         super().__init__(wires=wires, shots=shots)
         self.analytic = analytic
 
@@ -52,7 +50,7 @@ class QubitDevice(Device):
         """Called during :meth:`execute` before the individual observables are measured."""
 
 
-    def execute(self, queue, observables, parameters={}):
+    def execute(self, queue, observables, parameters=None):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -71,6 +69,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if parameters is None:
+            parameters = {}
+
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables
@@ -136,7 +137,6 @@ class QubitDevice(Device):
 
     def expval(self, observable):
         wires = observable.wires
-        par = observable.parameters
 
         if self.analytic:
             # exact expectation value
@@ -150,7 +150,6 @@ class QubitDevice(Device):
 
     def var(self, observable):
         wires = observable.wires
-        par = observable.parameters
 
         if self.analytic:
             # exact variance value
@@ -161,23 +160,63 @@ class QubitDevice(Device):
 
         return np.var(self.sample(observable))
 
+    def generate_samples(self):
+        for e in self.obs_queue:
+            if hasattr(e, "return_type") and e.return_type == Sample:
+                self._memory = True  # make sure to return samples
+
+        # generate computational basis samples
+        if self._memory:
+            # sample from the computational basis states based on the state probability
+            basis_states = np.arange(2**self.num_wires)
+            samples = np.random.choice(basis_states, self.shots, p=self.rotated_probability)
+
+            # convert the basis states from base 10 to binary representation
+            self._samples = (((samples[:,None] & (1 << np.arange(2**self.num_wires)))) > 0).astype(int)
+
     def sample(self, observable):
+        """Return a sample of an observable for software simulators.
+
+        The number of samples is determined by the value of ``Device.shots``,
+        which can be directly modified.
+
+        Note: all arguments support _lists_, which indicate a tensor
+        product of observables.
+
+        Args:
+            observable (str or list[str]): name of the observable(s)
+            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
+
+        Raises:
+            NotImplementedError: if the device does not support sampling
+
+        Returns:
+            array[float]: samples in an array of dimension ``(n, num_wires)``
+        """
         if isinstance(observable, qml.Identity):
             return np.ones([self.shots])
+
+
         self.rotate_basis(observable)
-        # Sampling is supported on software simulators
-        # HW devices will have to provide their own sample() method
-        if isinstance(observable, qml.Hermitian):
-            eigvals = observable.eigvals(np.array(observable.parameters))
-        else:
-            eigvals = observable.eigvals
+        self.rotated_probability = list(self.probability().values())
+        self.generate_samples()
 
-        eigvals = np.fromiter(eigvals, dtype=np.float64)
-        prob = np.abs(self._state ** 2)
-        prob = self.marginal_prob(prob, wires=observable.wires)
-        return np.random.choice(eigvals, self.shots, p=prob)
+        if observable.name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+            # observables all have eigenvalues {1, -1}, so post-processing step is known
+            return 1 - 2 * self._samples[:, wires[0]]
 
-    def probability(self, wires=None, values_only=False):
+        # Need to post-process the samples using the observables.
+        # Extract only the columns of the basis samples required based on `wires`.
+        wires = np.hstack(wires)
+        samples = self._samples[:, np.array(wires)]
+       
+        # replace the basis state in the computational basis with the correct eigenvalue
+        indices = np.ravel_multi_index(samples.T, [2] * len(wires))
+        converted_measurements = observable.eigvals[indices]
+        return converted_measurements
+
+    def probability(self, wires=None):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
         Args:
@@ -200,6 +239,17 @@ class QubitDevice(Device):
         return OrderedDict(zip(basis_states, prob))
 
     def marginal_prob(self, prob, wires=None):
+        """Return the marginal probability of each computational basis
+        state from the last run of the device.
+        Args:
+            prob: The probabilities to return the marginal probabilities
+                for
+            wires (Sequence[int]): Sequence of wires to return
+                marginal probabilities for. Wires not provided
+                are traced out of the system.
+        Returns:
+            list[float]: List of the resulting marginal probabilities.
+        """
         wires = wires or range(self.num_wires)
         wires = np.hstack(wires)
         inactive_wires = list(set(range(self.num_wires)) - set(wires))

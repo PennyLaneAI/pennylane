@@ -19,7 +19,6 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
-from collections import OrderedDict
 import itertools
 import functools
 import warnings
@@ -28,7 +27,7 @@ import numpy as np
 from scipy.linalg import eigh
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import Operation, Tensor
+from pennylane.operation import Operation
 
 
 # tolerance for numerical errors
@@ -424,35 +423,25 @@ class DefaultQubit(QubitDevice):
         return self._get_operator_matrix(observable, par)
 
     def expval(self, observable):
-        name = observable.name
-        wires = observable.wires
-        par = observable.parameters
 
         if self.analytic:
             # exact expectation value
             self.rotate_basis(observable)
 
             return super().expval(observable)
-        else:
-            # estimate the ev
-            ev = np.mean(self.sample(observable))
 
-        return ev
+        # estimate the ev
+        return np.mean(self.sample(observable))
 
     def var(self, observable):
-        name = observable.name
-        wires = observable.wires
-        par = observable.parameters
 
         if self.analytic:
             # exact variance value
             self.rotate_basis(observable)
             return super().var(observable)
-        else:
-            # estimate the ev
-            var = np.var(self.sample(observable))
 
-        return var
+        # estimate the ev
+        return np.var(self.sample(observable))
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.

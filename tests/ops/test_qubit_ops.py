@@ -15,6 +15,7 @@
 Unit tests for the available built-in discrete-variable quantum operations.
 """
 import pytest
+import functools
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.linalg import block_diag
@@ -69,6 +70,46 @@ EIGVALS_TEST_DATA = [
     ),
 ]
 
+EIGVALS_TEST_DATA_MULTI_WIRES = [
+    (
+        functools.reduce(np.kron, [Y, I, Z]),
+        np.array(
+                [-1., -1., -1., -1.,  1.,  1.,  1.,  1.]
+        ),
+        (     [[-0.70710678+0.j, -0.+0.j,
+              0. +0.j ,  0. +0.j ,
+              0. +0.j ,  0. +0.j ,
+              0. +0.j , -0.70710678+0.j ],
+                   [ 0. +0.j , -0. +0.j ,
+              0. -0.70710678j,  0. +0.j ,
+              0. +0.70710678j,  0. +0.j ,
+              0. +0.j ,  0. +0.j ],
+                   [ 0. +0.j , -0.70710678+0.j ,
+              0. +0.j ,  0. +0.j ,
+              0. +0.j , -0.70710678+0.j ,
+              0. +0.j ,  0. +0.j ],
+                   [ 0. +0.j ,  0. +0.j ,
+              0. +0.j ,  0. -0.70710678j,
+              0. +0.j ,  0. +0.j ,
+              0. +0.70710678j,  0. +0.j ],
+                   [ 0. +0.70710678j,  0. +0.j ,
+              0. +0.j ,  0. +0.j ,
+              0. +0.j ,  0. +0.j ,
+              0. +0.j ,  0. -0.70710678j],
+                   [-0. +0.j ,  0. +0.j ,
+              0.70710678+0.j ,  0. +0.j ,
+              0.70710678+0.j ,  0. +0.j ,
+              0. +0.j ,  0. +0.j ],
+                   [-0. +0.j ,  0. +0.70710678j,
+              0. +0.j ,  0. +0.j ,
+              0. +0.j ,  0. -0.70710678j,
+              0. +0.j ,  0. +0.j ],
+                   [-0. +0.j , -0. +0.j ,
+              0. +0.j ,  0.70710678+0.j ,
+              0. +0.j ,  0. +0.j ,
+              0.70710678+0.j ,  0. +0.j ]])
+    ),
+]
 
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestObservables:
@@ -105,10 +146,36 @@ class TestObservables:
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
-    def test_hermitian_eigvals_eigvecs(self, observable, eigvals, eigvecs, tol):
-        """Tests that the eigvals method of the Hermitian class returns the correct results."""
+    def test_hermitian_eigegendecomposition_single_wire(
+        self, observable, eigvals, eigvecs, tol
+    ):
+        """Tests that the eigendecomposition property of the Hermitian class returns the correct results
+        for a single wire."""
+
+        eigendecomp = qml.Hermitian(observable, wires=0).eigendecomposition
+        assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
+
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.Hermitian(observable, 0).eigvals, eigvals, atol=tol, rtol=0)
+        assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert len(qml.Hermitian._eigs) == 1
+
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA_MULTI_WIRES)
+    def test_hermitian_eigegendecomposition_multiple_wires(
+        self, observable, eigvals, eigvecs, tol
+    ):
+        """Tests that the eigendecomposition property of the Hermitian class returns the correct results
+        for multiple wires."""
+
+        num_wires = int(np.log2(len(observable)))
+        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition
+        print(eigendecomp["eigval"])
+        print(eigvals) 
+        assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
+
+        key = tuple(observable.flatten().tolist())
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1

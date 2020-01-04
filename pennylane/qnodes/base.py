@@ -570,6 +570,7 @@ class BaseQNode:
             self._construct(args, kwargs)
 
         self.device.reset()
+        print(self.variable_deps)
         ret = self.device.execute(
             self.circuit.operations, self.circuit.observables, self.variable_deps
         )
