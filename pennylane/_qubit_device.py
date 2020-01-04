@@ -50,17 +50,6 @@ class QubitDevice(Device):
 
     def pre_measure(self):
         """Called during :meth:`execute` before the individual observables are measured."""
-        for e in self.obs_queue:
-            if hasattr(e, "return_type") and e.return_type == Sample:
-                self._memory = True  # make sure to return samples
-
-            self.rotate_basis(e)
-
-        self.rotated_probability =  np.abs(self._state)**2 #list(self.probability().values())
-        if self._memory:
-            #self.generate_samples()
-            basis_states = np.arange(2**self.num_wires)
-            sampled_basis_states = np.random.choice(basis_states, self.shots, p=self.rotated_probability)
 
     def execute(self, queue, observables, parameters=None):
         """Execute a queue of quantum operations on the device and then measure the given observables.
@@ -212,8 +201,12 @@ class QubitDevice(Device):
         if isinstance(observable, qml.Identity):
             return np.ones([self.shots])
 
-        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
+        self.rotate_basis(observable)
+        self.rotated_probability =  np.abs(self._state)**2 #list(self.probability().values())
 
+        basis_states = np.arange(2**self.num_wires)
+        sampled_basis_states = np.random.choice(basis_states, self.shots, p=self.rotated_probability)
+        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
 
         if isinstance(observable.name, str) and observable.name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # observables all have eigenvalues {1, -1}, so post-processing step is known
