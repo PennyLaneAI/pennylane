@@ -355,6 +355,17 @@ def kwarg_variable(monkeypatch):
 class TestRepresentationResolver:
     """Test the RepresentationResolver class."""
 
+    @pytest.mark.parametrize("list,element,index,list_after", [
+        ([1, 2, 3], 2, 1, [1, 2, 3]),
+        ([1, 2, 2, 3], 2, 1, [1, 2, 2, 3]),
+        ([1, 2, 3], 4, 3, [1, 2, 3, 4]),
+    ])
+    def test_index_of_array_or_append(self, list, element, index, list_after):
+        """Test the method index_of_array_or_append."""
+
+        assert RepresentationResolver.index_of_array_or_append(element, list) == index
+        assert list == list_after
+
     @pytest.mark.parametrize("par,expected", [
         (3, "3"),
         (5.236422, "5.236"),

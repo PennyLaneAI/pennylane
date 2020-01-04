@@ -283,20 +283,6 @@ class RepresentationResolver:
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
 
-    def single_parameter_representation(self, par):
-        """Resolve the representation of an Operator's parameter.
-
-        Args:
-            par (Union[qml.variable.Variable, int, float]): The parameter to be rendered
-
-        Returns:
-            str: String representation of the parameter
-        """
-        if isinstance(par, qml.variable.Variable):
-            return par.render(self.show_variable_names)
-
-        return str(round(par, 3))
-
     @staticmethod
     def index_of_array_or_append(target_element, target_list):
         """Returns the first index of an appearance of the target element in the target list.
@@ -316,6 +302,20 @@ class RepresentationResolver:
         target_list.append(target_element)
 
         return len(target_list) - 1
+
+    def single_parameter_representation(self, par):
+        """Resolve the representation of an Operator's parameter.
+
+        Args:
+            par (Union[qml.variable.Variable, int, float]): The parameter to be rendered
+
+        Returns:
+            str: String representation of the parameter
+        """
+        if isinstance(par, qml.variable.Variable):
+            return par.render(self.show_variable_names)
+
+        return str(round(par, 3))
 
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
