@@ -40,6 +40,8 @@ class QubitDevice(Device):
         self.analytic = analytic
 
         self._state = None
+        self._memory = None
+        self._samples = None
         self._probability = None
 
     def apply(self, operation):
@@ -48,7 +50,17 @@ class QubitDevice(Device):
 
     def pre_measure(self):
         """Called during :meth:`execute` before the individual observables are measured."""
+        for e in self.obs_queue:
+            if hasattr(e, "return_type") and e.return_type == Sample:
+                self._memory = True  # make sure to return samples
 
+            self.rotate_basis(e)
+
+        self.rotated_probability =  np.abs(self._state)**2 #list(self.probability().values())
+        if self._memory:
+            #self.generate_samples()
+            basis_states = np.arange(2**self.num_wires)
+            sampled_basis_states = np.random.choice(basis_states, self.shots, p=self.rotated_probability)
 
     def execute(self, queue, observables, parameters=None):
         """Execute a queue of quantum operations on the device and then measure the given observables.
@@ -160,19 +172,22 @@ class QubitDevice(Device):
 
         return np.var(self.sample(observable))
 
-    def generate_samples(self):
-        for e in self.obs_queue:
-            if hasattr(e, "return_type") and e.return_type == Sample:
-                self._memory = True  # make sure to return samples
+    @staticmethod
+    def convert_basis_states_to_binary(basis_states, num_wires):
+        """Convert the basis states from base 10 to binary representation.
 
+        Args:
+            basis_states (list[int]): the list containing the basis states in base 10
+            num_wires (int): the number of wires for which we have the basis states
+
+        Returns:
+            array[float]: samples in an array of dimension ``(n, num_wires)``
+        """
+        return (((basis_states[:,None] & (1 << np.arange(2**num_wires)))) > 0).astype(int)
+
+#    def generate_samples(self):
         # generate computational basis samples
-        if self._memory:
-            # sample from the computational basis states based on the state probability
-            basis_states = np.arange(2**self.num_wires)
-            samples = np.random.choice(basis_states, self.shots, p=self.rotated_probability)
-
-            # convert the basis states from base 10 to binary representation
-            self._samples = (((samples[:,None] & (1 << np.arange(2**self.num_wires)))) > 0).astype(int)
+        # sample from the computational basis states based on the state probability
 
     def sample(self, observable):
         """Return a sample of an observable for software simulators.
@@ -197,18 +212,16 @@ class QubitDevice(Device):
         if isinstance(observable, qml.Identity):
             return np.ones([self.shots])
 
+        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
 
-        self.rotate_basis(observable)
-        self.rotated_probability = list(self.probability().values())
-        self.generate_samples()
 
-        if observable.name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        if isinstance(observable.name, str) and observable.name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # observables all have eigenvalues {1, -1}, so post-processing step is known
-            return 1 - 2 * self._samples[:, wires[0]]
+            return 1 - 2 * self._samples[:, observable.wires[0]]
 
         # Need to post-process the samples using the observables.
         # Extract only the columns of the basis samples required based on `wires`.
-        wires = np.hstack(wires)
+        wires = np.hstack(observable.wires)
         samples = self._samples[:, np.array(wires)]
        
         # replace the basis state in the computational basis with the correct eigenvalue
