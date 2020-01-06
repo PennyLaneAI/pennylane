@@ -139,23 +139,11 @@ class QubitDevice(Device):
     def expval(self, observable):
         wires = observable.wires
 
-        print(observable.matrix)
         if self.analytic:
             # exact expectation value
             eigvals = observable.eigvals
-            print('eigvals')
-            print(eigvals)
-            print('state:')
-            print(self._state)
-
             prob = np.abs(self._state ** 2)
-            print('prob1')
-            print(prob)
-
             prob = self.marginal_prob(prob, wires=wires)
-            print('prob')
-            print(prob)
-
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -184,7 +172,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
-        return (((basis_states[:,None] & (1 << np.arange(2**num_wires)))) > 0).astype(int)
+        return (((basis_states[:, None] & (1 << np.arange(2**num_wires)))) > 0).astype(int)
 
 #    def generate_samples(self):
         # generate computational basis samples
@@ -228,7 +216,7 @@ class QubitDevice(Device):
         # Extract only the columns of the basis samples required based on `wires`.
         wires = np.hstack(observable.wires)
         samples = self._samples[:, np.array(wires)]
-       
+
         # replace the basis state in the computational basis with the correct eigenvalue
         indices = np.ravel_multi_index(samples.T, [2] * len(wires))
         converted_measurements = observable.eigvals[indices]

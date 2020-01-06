@@ -1124,12 +1124,14 @@ class Hermitian(Observable):
         """
         tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
         perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
-        Hmat = self.matrix[:, perm][perm]
-        print(Hmat)
+
+        Hmat = self.matrix
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}
+            w, U = np.linalg.eigh(Hmat[:, perm][perm])
+            Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+        Hmat = self.matrix
         return Hermitian._eigs[Hkey]
 
     @property
@@ -1142,15 +1144,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-
-        unpermuted_eigvals = self.eigendecomposition["eigval"]
-        tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
-        perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
-        print(unpermuted_eigvals)
-        print(perm)
-        permuted_eigvals = unpermuted_eigvals[perm]
-        print(permuted_eigvals)
-        return unpermuted_eigvals
+        return self.eigendecomposition["eigval"]
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -1162,12 +1156,8 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        print('eigvecs')
-        print(self.eigendecomposition["eigvec"].conj().T)
-        print('---------')
-
         return [
-            QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=self.wires),
+            QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(sorted(self.wires))),
         ]
 
 
