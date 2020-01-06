@@ -427,8 +427,8 @@ class DefaultQubit(QubitDevice):
         if self.analytic:
             # exact expectation value
             self.rotate_basis(observable)
-
             return super().expval(observable)
+
 
         # estimate the ev
         return np.mean(self.sample(observable))

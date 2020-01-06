@@ -143,7 +143,7 @@ class PauliY(Observable, Operation):
             list(qml.Operation): A list of gates that diagonalize PauliY in the
             computational basis.
         """
-        return [Hadamard(wires=self.wires), S(wires=self.wires), PauliZ(wires=self.wires)]
+        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
 
 class PauliZ(Observable, Operation):
@@ -1142,7 +1142,15 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        return self.eigendecomposition["eigval"]
+
+        unpermuted_eigvals = self.eigendecomposition["eigval"]
+        tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
+        perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
+        print(unpermuted_eigvals)
+        print(perm)
+        permuted_eigvals = unpermuted_eigvals[perm]
+        print(permuted_eigvals)
+        return unpermuted_eigvals
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -1154,6 +1162,10 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
+        print('eigvecs')
+        print(self.eigendecomposition["eigvec"].conj().T)
+        print('---------')
+
         return [
             QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=self.wires),
         ]

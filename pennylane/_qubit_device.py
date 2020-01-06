@@ -133,17 +133,29 @@ class QubitDevice(Device):
             observable (Observable): the observable that is to be
                 measured
         """
-        for diag_gate in observable.diagonalizing_gates()[::-1]:
+        for diag_gate in observable.diagonalizing_gates():
             self.apply(diag_gate)
 
     def expval(self, observable):
         wires = observable.wires
 
+        print(observable.matrix)
         if self.analytic:
             # exact expectation value
             eigvals = observable.eigvals
+            print('eigvals')
+            print(eigvals)
+            print('state:')
+            print(self._state)
+
             prob = np.abs(self._state ** 2)
+            print('prob1')
+            print(prob)
+
             prob = self.marginal_prob(prob, wires=wires)
+            print('prob')
+            print(prob)
+
             return (eigvals @ prob).real
 
         # estimate the ev
