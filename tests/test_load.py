@@ -19,6 +19,7 @@ from unittest.mock import Mock
 
 import pennylane as qml
 
+
 class MockPluginConverter:
     """Mocks a real plugin converter entry point."""
 
@@ -38,16 +39,20 @@ class MockPluginConverter:
     @property
     def last_args(self):
         """The last call arguments of the mocked loader."""
-        return self.mock_loader.call_args[0]  
+        return self.mock_loader.call_args[0]
+
 
 load_entry_points = ["qiskit", "qasm", "qasm_file", "pyquil_program", "quil", "quil_file"]
 
+
 @pytest.fixture
 def mock_plugin_converters(monkeypatch):
-    mock_plugin_converters = {entry_point : MockPluginConverter(entry_point) for entry_point in load_entry_points}
-    monkeypatch.setattr(qml, "plugin_converters", mock_plugin_converters)
+    mock_plugin_converter_list = {
+        entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
+    }
+    monkeypatch.setattr(qml, "plugin_converters", mock_plugin_converter_list)
 
-    yield mock_plugin_converters
+    yield mock_plugin_converter_list
 
 
 class TestLoad:
@@ -55,17 +60,22 @@ class TestLoad:
 
     def test_converter_does_not_exist(self):
         """Test that the proper error is raised if the converter does not exist."""
-        with pytest.raises(ValueError, match="Converter does not exist. Make sure the required plugin is installed"):
+        with pytest.raises(
+            ValueError, match="Converter does not exist. Make sure the required plugin is installed"
+        ):
             qml.load("Test", format="harakiri")
 
-    @pytest.mark.parametrize("method,entry_point_name", [
-        (qml.from_qiskit, "qiskit"),
-        (qml.from_qasm, "qasm"),
-        (qml.from_qasm_file, "qasm_file"),
-        (qml.from_pyquil, "pyquil_program"),
-        (qml.from_quil, "quil"),
-        (qml.from_quil_file, "quil_file"),
-    ])
+    @pytest.mark.parametrize(
+        "method,entry_point_name",
+        [
+            (qml.from_qiskit, "qiskit"),
+            (qml.from_qasm, "qasm"),
+            (qml.from_qasm_file, "qasm_file"),
+            (qml.from_pyquil, "pyquil_program"),
+            (qml.from_quil, "quil"),
+            (qml.from_quil_file, "quil_file"),
+        ],
+    )
     def test_convenience_functions(self, method, entry_point_name, mock_plugin_converters):
         """Test that the convenience load functions access the correct entrypoint."""
 
@@ -79,4 +89,6 @@ class TestLoad:
                 continue
 
             if mock_plugin_converters[plugin_converter].called:
-                raise Exception("The other plugin converter {} was called.".format(plugin_converter))
+                raise Exception(
+                    "The other plugin converter {} was called.".format(plugin_converter)
+                )
