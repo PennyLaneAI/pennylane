@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions to load circuits from other frameworks as 
+This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
-import pennylane as qml
+from pkg_resources import iter_entry_points
+
+# get list of installed plugin converters
+plugin_converters = {entry.name: entry for entry in iter_entry_points("pennylane.io")}
 
 def load(quantum_circuit_object, format: str):
     """Load external quantum assembly and quantum circuits from supported frameworks
@@ -53,10 +56,10 @@ def load(quantum_circuit_object, format: str):
         object
     """
 
-    if format in qml.plugin_converters:
+    if format in plugin_converters:
 
         # loads the plugin load function
-        plugin_converter = qml.plugin_converters[format].load()
+        plugin_converter = plugin_converters[format].load()
 
         # calls the load function of the converter on the quantum circuit object
         return plugin_converter(quantum_circuit_object)

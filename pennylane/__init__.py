@@ -55,9 +55,6 @@ default_config = Configuration("config.toml")
 # get list of installed plugin devices
 plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.plugins")}
 
-# get list of installed plugin converters
-plugin_converters = {entry.name: entry for entry in iter_entry_points("pennylane.io")}
-
 # get chemistry plugin
 for entry in iter_entry_points("pennylane.qchem"):
     if entry.name == "OpenFermion":
