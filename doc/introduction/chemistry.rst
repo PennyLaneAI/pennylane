@@ -54,8 +54,7 @@ to generate the qubit Hamiltonian:
 
 
 For more fine-grained control, these functions may be
-called independently as required to obtain the
-electronic Hamiltonian of the molecule represented in the basis of Pauli matrices.
+called independently as required.
 
 
 Importing molecular structure data
