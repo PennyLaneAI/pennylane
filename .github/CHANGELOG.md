@@ -15,6 +15,10 @@
     using different functions implemented in OpenFermion.
   - Convert OpenFermion's QubitOperator to Pennylane's Hamiltonian class.
 
+* Added a `QubitDevice` class which implements common functionalities of plugin devices such that
+  plugin devices can rely on these implementations.
+  [#452](https://github.com/XanaduAI/pennylane/pull/452)
+
 * Added `QAOAEmbedding` and its parameter initialization
   as a new trainable template.
   [#442](https://github.com/XanaduAI/pennylane/pull/442)
