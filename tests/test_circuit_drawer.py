@@ -480,8 +480,8 @@ class TestRepresentationResolver:
         (qml.X(wires=[1]), 1, "X"),
         (qml.P(wires=[1]), 1, "P"),
         (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4, 5, 7╳4, 5, 7│"),
-        (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 y₁"),
-        (qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]), 1, "1.2 + 1.1 x₀ + 3.2 y₀ + 1.2 x₀² + 2.3 y₀² + 3.0 x₀y₀"),
+        (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁"),
+        (qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]), 1, "1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀"),
         (qml.QuadOperator(3.14, wires=[1]), 1, "QuadOperator(3.14)"),
     ])
     def test_operator_representation(self, unicode_representation_resolver, op, wire, target):
@@ -499,8 +499,8 @@ class TestRepresentationResolver:
         (qml.expval(qml.X(wires=[1])), 1, "⟨X⟩"),
         (qml.expval(qml.P(wires=[1])), 1, "⟨P⟩"),
         (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "⟨│4, 5, 7╳4, 5, 7│⟩"),
-        (qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 y₁⟩"),
-        (qml.expval(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "⟨1.2 + 1.1 x₀ + 3.2 y₀ + 1.2 x₀² + 2.3 y₀² + 3.0 x₀y₀⟩"),
+        (qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁⟩"),
+        (qml.expval(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "⟨1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀⟩"),
         (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨QuadOperator(3.14)⟩"),
     ])
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
