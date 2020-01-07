@@ -196,6 +196,7 @@ class QubitDevice(Device):
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
+
         Returns:
             list[float]: List of the resulting marginal probabilities.
         """
