@@ -799,6 +799,11 @@ class Tensor(Observable):
 
         # observable should be Z^{\otimes n}
         self._eigvals = pauli_eigs(len(self.wires))
+
+        # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
+        # Hermitian(obs, wires=[1, 3, 4])
+        # Sorting the observables based on wires, so that the order of
+        # the eigenvalues is correct
         obs_sorted = sorted(self.obs, key=lambda x: x.wires)
 
         # check if there are any non-standard observables (such as Identity)
