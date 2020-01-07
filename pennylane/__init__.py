@@ -38,7 +38,7 @@ from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
 from ._version import __version__
-from .load import *
+from .io import *
 
 
 _current_context = None

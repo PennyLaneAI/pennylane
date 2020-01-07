@@ -47,12 +47,12 @@ load_entry_points = ["qiskit", "qasm", "qasm_file", "pyquil_program", "quil", "q
 
 @pytest.fixture
 def mock_plugin_converters(monkeypatch):
-    mock_plugin_converter_list = {
+    mock_plugin_converter_dict = {
         entry_point: MockPluginConverter(entry_point) for entry_point in load_entry_points
     }
-    monkeypatch.setattr(qml, "plugin_converters", mock_plugin_converter_list)
+    monkeypatch.setattr(qml.io, "plugin_converters", mock_plugin_converter_dict)
 
-    yield mock_plugin_converter_list
+    yield mock_plugin_converter_dict
 
 
 class TestLoad:
