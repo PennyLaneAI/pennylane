@@ -171,7 +171,7 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
 
-    def probability(self, wires=None):
+    def probability(self, wires=None, values_only=False):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
         Args:
@@ -189,6 +189,10 @@ class QubitDevice(Device):
         wires = wires or range(self.num_wires)
 
         prob = self.marginal_prob(self._probability, wires)
+
+        if values_only:
+            return prob
+
         basis_states = itertools.product(range(2), repeat=len(wires))
         return OrderedDict(zip(basis_states, prob))
 

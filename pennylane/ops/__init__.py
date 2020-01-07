@@ -53,7 +53,6 @@ class Identity(CVObservable):
     eigvals = np.array([1, 1])
 
     ev_order = 1
-    eigvals = np.array([1, 1])
 
     @staticmethod
     def _matrix(*params):
