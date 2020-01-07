@@ -2,7 +2,7 @@
 
 ### New features since last release
 
-* Adds a quantum chemistry package, `pennylane.qchem`, which supports
+* Added a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [#453](https://github.com/XanaduAI/pennylane/pull/453)
 
