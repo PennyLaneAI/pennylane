@@ -1112,7 +1112,7 @@ class Hermitian(Observable):
 
     @property
     def eigendecomposition_of_permuted(self):
-        """Return the eigendecomposition of the permuted matrix specified to the Hermitian observable.
+        """Return the eigendecomposition of the (permuted) matrix specified by the Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
