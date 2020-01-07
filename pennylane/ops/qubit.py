@@ -1122,13 +1122,13 @@ class Hermitian(Observable):
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
-        tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
-        perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
+        perm = np.ravel_multi_index(basis_states[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
 
-        Hmat = self.matrix
+        Hmat = self.matrix[:, perm][perm]
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat[:, perm][perm])
+            w, U = np.linalg.eigh(Hmat)
             Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
         Hmat = self.matrix

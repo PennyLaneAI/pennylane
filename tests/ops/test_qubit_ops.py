@@ -177,8 +177,6 @@ class TestObservables:
 
         num_wires = int(np.log2(len(observable)))
         eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition
-        print(eigendecomp["eigval"])
-        print(eigvals) 
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
@@ -186,6 +184,29 @@ class TestObservables:
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
+
+    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA_MULTI_WIRES)
+    def test_hermitian_eigegendecomposition_multiple_wires_repeat_with_different_wires_new_entry(
+        self, observable, eigvals, eigvecs, tol
+    ):
+        """Tests that the eigendecomposition property of the Hermitian class returns the correct results
+        for multiple wires when the same operator is specified twice, but with different wires."""
+
+        num_wires = int(np.log2(len(observable)))
+        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition
+
+        assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
+
+        key = tuple(observable.flatten().tolist())
+        assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert len(qml.Hermitian._eigs) == 1
+
+        # Reverse the order of the wires to check if a new entry was added
+        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))[::-1]).eigendecomposition
+
+        assert len(qml.Hermitian._eigs) == 2
 
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)

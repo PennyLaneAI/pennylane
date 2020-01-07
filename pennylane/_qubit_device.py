@@ -1,4 +1,4 @@
-# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
 """
 This module contains the :class:`QubitDevice` abstract base class.
 """
-# pylint: disable=too-many-format-args, arguments-differ, abstract-method
+
+# For now, arguments may be different from the signatures provided in Device
+# e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter
+
 import itertools
 from collections import OrderedDict
 import numpy as np
 
-import pennylane as qml
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device

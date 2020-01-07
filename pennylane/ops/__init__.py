@@ -50,9 +50,9 @@ class Identity(CVObservable):
     num_params = 0
     par_domain = None
     grad_method = None
-    eigvals = np.array([1, 1])
 
     ev_order = 1
+    eigvals = np.array([1, 1])
 
     @staticmethod
     def _matrix(*params):
