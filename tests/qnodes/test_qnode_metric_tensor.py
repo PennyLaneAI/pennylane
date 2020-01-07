@@ -392,7 +392,7 @@ class TestMetricTensor:
             qml.RY(y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
-            return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]) @ qml.Identity(0))
+            return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
 
         layer3_off_diag_second_order = QubitQNode(layer3_off_diag_second_order, dev)
 
@@ -403,11 +403,11 @@ class TestMetricTensor:
 
         # calculate the off-diagonal terms
         exK0, exK1 = layer3_off_diag_first_order(x, y, z, h, g, f)
-
         exK01 = layer3_off_diag_second_order(x, y, z, h, g, f)
 
         G3[0, 1] = (exK01 - exK0 * exK1) / 4
         G3[1, 0] = (exK01 - exK0 * exK1) / 4
+
         assert np.allclose(G[4:6, 4:6], G3, atol=tol, rtol=0)
 
         # ============================================
