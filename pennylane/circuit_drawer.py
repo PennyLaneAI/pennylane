@@ -315,6 +315,8 @@ class RepresentationResolver:
         "ThermalState": "Thermal",
         "GaussianState": "Gaussian",
         "QuadraticPhase": "QuadPhase",
+        "X": "x",
+        "P": "p",
     }
     """Symbol used for uncontrolled wires."""
 
