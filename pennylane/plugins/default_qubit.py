@@ -488,3 +488,30 @@ class DefaultQubit(QubitDevice):
     def observables(self):
         return set(self._observable_map.keys())
 
+    def sample(self, observable):
+        wires = observable.wires
+
+        A = self.get_operator_matrix_for_measurement(observable.name, observable.parameters)
+
+        a, P = spectral_decomposition(A)
+
+        p = np.zeros(a.shape)
+        for idx, Pi in enumerate(P):
+            p[idx] = self.ev(Pi, wires)
+
+        return np.random.choice(a, self.shots, p=p)
+
+    def ev(self, A, wires):
+        r"""Expectation value of observable on specified wires.
+         Args:
+            A (array[float]): the observable matrix as array
+            wires (Sequence[int]): target subsystems
+         Returns:
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
+        As = self.mat_vec_product(A, self._state, np.hstack(wires).tolist())
+        expectation = np.vdot(self._state, As)
+
+        if np.abs(expectation.imag) > tolerance:
+            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
+        return expectation.real

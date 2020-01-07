@@ -147,9 +147,6 @@ class QubitDevice(Device):
         wires = observable.wires
         self.rotate_basis(observable)
 
-        sampled_basis_states = self.sample_basis_states()
-        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
-
         if self.analytic:
             # exact expectation value
             eigvals = observable.eigvals
@@ -164,9 +161,6 @@ class QubitDevice(Device):
         wires = observable.wires
         self.rotate_basis(observable)
 
-        sampled_basis_states = self.sample_basis_states()
-        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
-
         if self.analytic:
             # exact variance value
             eigvals = observable.eigvals
@@ -176,71 +170,6 @@ class QubitDevice(Device):
 
         return np.var(self.sample(observable))
 
-    @staticmethod
-    def convert_basis_states_to_binary(basis_states, num_wires):
-        """Convert the basis states from base 10 to binary representation.
-
-        Args:
-            basis_states (list[int]): the list containing the basis states in base 10
-            num_wires (int): the number of wires for which we have the basis states
-
-        Returns:
-            array[float]: samples in an array of dimension ``(n, num_wires)``
-        """
-        return (((basis_states[:, None] & (1 << np.arange(2**num_wires)))) > 0).astype(int)
-
-#    def generate_samples(self):
-        # generate computational basis samples
-        # sample from the computational basis states based on the state probability
-
-
-    def sample_basis_states(self):
-        """Sample from the computational basis states based on the current state probability.
-
-        """
-        return np.random.choice(self._basis_states, self.shots, p=self._probability)
-
-    def sample(self, observable):
-        """Return a sample of an observable for software simulators.
-
-        The number of samples is determined by the value of ``Device.shots``,
-        which can be directly modified.
-
-        Note: all arguments support _lists_, which indicate a tensor
-        product of observables.
-
-        Args:
-            observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
-            par (tuple or list[tuple]]): parameters for the observable(s)
-
-        Raises:
-            NotImplementedError: if the device does not support sampling
-
-        Returns:
-            array[float]: samples in an array of dimension ``(n, num_wires)``
-        """
-        if isinstance(observable, qml.Identity):
-            return np.ones([self.shots])
-
-        self.rotate_basis(observable)
-
-        sampled_basis_states = self.sample_basis_states()
-        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
-
-        if isinstance(observable.name, str) and observable.name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            # observables all have eigenvalues {1, -1}, so post-processing step is known
-            return 1 - 2 * self._samples[:, observable.wires[0]]
-
-        # Need to post-process the samples using the observables.
-        # Extract only the columns of the basis samples required based on `wires`.
-        wires = np.hstack(observable.wires)
-        samples = self._samples[:, np.array(wires)]
-
-        # replace the basis state in the computational basis with the correct eigenvalue
-        indices = np.ravel_multi_index(samples.T, [2] * len(wires))
-        converted_measurements = observable.eigvals[indices]
-        return converted_measurements
 
     def probability(self, wires=None):
         """Return the (marginal) probability of each computational basis
