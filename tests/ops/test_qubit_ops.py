@@ -71,44 +71,7 @@ EIGVALS_TEST_DATA = [
 ]
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [
-    (
-        functools.reduce(np.kron, [Y, I, Z]),
-        np.array(
-                [-1., -1., -1., -1.,  1.,  1.,  1.,  1.]
-        ),
-        (     [[-0.70710678+0.j, -0.+0.j,
-              0. +0.j ,  0. +0.j ,
-              0. +0.j ,  0. +0.j ,
-              0. +0.j , -0.70710678+0.j ],
-                   [ 0. +0.j , -0. +0.j ,
-              0. -0.70710678j,  0. +0.j ,
-              0. +0.70710678j,  0. +0.j ,
-              0. +0.j ,  0. +0.j ],
-                   [ 0. +0.j , -0.70710678+0.j ,
-              0. +0.j ,  0. +0.j ,
-              0. +0.j , -0.70710678+0.j ,
-              0. +0.j ,  0. +0.j ],
-                   [ 0. +0.j ,  0. +0.j ,
-              0. +0.j ,  0. -0.70710678j,
-              0. +0.j ,  0. +0.j ,
-              0. +0.70710678j,  0. +0.j ],
-                   [ 0. +0.70710678j,  0. +0.j ,
-              0. +0.j ,  0. +0.j ,
-              0. +0.j ,  0. +0.j ,
-              0. +0.j ,  0. -0.70710678j],
-                   [-0. +0.j ,  0. +0.j ,
-              0.70710678+0.j ,  0. +0.j ,
-              0.70710678+0.j ,  0. +0.j ,
-              0. +0.j ,  0. +0.j ],
-                   [-0. +0.j ,  0. +0.70710678j,
-              0. +0.j ,  0. +0.j ,
-              0. +0.j ,  0. -0.70710678j,
-              0. +0.j ,  0. +0.j ],
-                   [-0. +0.j , -0. +0.j ,
-              0. +0.j ,  0.70710678+0.j ,
-              0. +0.j ,  0. +0.j ,
-              0.70710678+0.j ,  0. +0.j ]])
-    ),
+        functools.reduce(np.kron, [Y, I, Z])
 ]
 
 @pytest.mark.usefixtures("tear_down_hermitian")
@@ -168,15 +131,18 @@ class TestObservables:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA_MULTI_WIRES)
+    @pytest.mark.parametrize("observable", EIGVALS_TEST_DATA_MULTI_WIRES)
     def test_hermitian_eigegendecomposition_multiple_wires(
-        self, observable, eigvals, eigvecs, tol
+        self, observable, tol
     ):
         """Tests that the eigendecomposition_of_permuted property of the Hermitian class returns the correct results
         for multiple wires."""
 
         num_wires = int(np.log2(len(observable)))
         eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition_of_permuted
+
+        eigvals, eigvecs = np.linalg.eigh(observable)
+
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
@@ -185,15 +151,17 @@ class TestObservables:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA_MULTI_WIRES)
+    @pytest.mark.parametrize("observable", EIGVALS_TEST_DATA_MULTI_WIRES)
     def test_hermitian_eigegendecomposition_multiple_wires_repeat_with_different_wires_new_entry(
-        self, observable, eigvals, eigvecs, tol
+        self, observable, tol
     ):
         """Tests that the eigendecomposition_of_permuted property of the Hermitian class returns the correct results
         for multiple wires when the same operator is specified twice, but with different wires."""
 
         num_wires = int(np.log2(len(observable)))
         eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition_of_permuted
+
+        eigvals, eigvecs = np.linalg.eigh(observable)
 
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
