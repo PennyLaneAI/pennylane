@@ -482,6 +482,7 @@ class TestRepresentationResolver:
         (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4, 5, 7╳4, 5, 7│"),
         (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 y₁"),
         (qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]), 1, "1.2 + 1.1 x₀ + 3.2 y₀ + 1.2 x₀² + 2.3 y₀² + 3.0 x₀y₀"),
+        (qml.QuadOperator(3.14, wires=[1]), 1, "QuadOperator(3.14)"),
     ])
     def test_operator_representation(self, unicode_representation_resolver, op, wire, target):
         """Test that an Operator instance is properly resolved."""

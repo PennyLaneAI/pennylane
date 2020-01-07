@@ -482,7 +482,6 @@ class RepresentationResolver:
                                 coefficients[y1, x2] + coefficients[x2, y1], 
                                 "x{}y{}".format(self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)))
 
-                print(poly_str)
                 return poly_str
 
 
