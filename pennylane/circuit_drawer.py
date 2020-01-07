@@ -368,9 +368,7 @@ class RepresentationResolver:
             return self.charset.VERTICAL_LINE + str(op.params[0]) + self.charset.RANGLE
 
         if op.name in {"BasisState", "FockStateVector"}:
-            n_str = ", ".join([str(n) for n in op.params[0]])
-
-            return self.charset.VERTICAL_LINE + n_str + self.charset.RANGLE
+            return self.charset.VERTICAL_LINE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
 
         # Operations that only have matrix arguments
         if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector", "Interferometer"]:
