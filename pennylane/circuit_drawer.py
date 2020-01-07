@@ -417,6 +417,11 @@ class RepresentationResolver:
 
             return "H{}".format(idx)
 
+        if op.name == "QuadOperator":
+            par_rep = self.single_parameter_representation(op.params[0])
+
+            return "cos({0})x + sin({0})p".format(par_rep)
+
         if op.name == "FockStateProjector":
             n_str = ", ".join([str(n) for n in op.params[0]])
 

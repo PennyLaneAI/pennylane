@@ -482,7 +482,7 @@ class TestRepresentationResolver:
         (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4, 5, 7╳4, 5, 7│"),
         (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁"),
         (qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]), 1, "1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀"),
-        (qml.QuadOperator(3.14, wires=[1]), 1, "QuadOperator(3.14)"),
+        (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
     ])
     def test_operator_representation(self, unicode_representation_resolver, op, wire, target):
         """Test that an Operator instance is properly resolved."""
@@ -501,7 +501,7 @@ class TestRepresentationResolver:
         (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "⟨│4, 5, 7╳4, 5, 7│⟩"),
         (qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁⟩"),
         (qml.expval(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "⟨1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀⟩"),
-        (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨QuadOperator(3.14)⟩"),        
+        (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x + sin(3.14)p⟩"),        
         (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
         (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
         (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
@@ -514,7 +514,7 @@ class TestRepresentationResolver:
         (qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "Var[│4, 5, 7╳4, 5, 7│]"),
         (qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "Var[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]"),
         (qml.var(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "Var[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]"),
-        (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[QuadOperator(3.14)]"),
+        (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
         (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
         (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
         (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
@@ -527,7 +527,7 @@ class TestRepresentationResolver:
         (qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "Sample[│4, 5, 7╳4, 5, 7│]"),
         (qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "Sample[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]"),
         (qml.sample(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "Sample[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]"),
-        (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[QuadOperator(3.14)]"),
+        (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
     ])
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
         """Test that an Observable instance with return type is properly resolved."""
