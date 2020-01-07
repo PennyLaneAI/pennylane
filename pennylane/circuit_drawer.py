@@ -248,6 +248,7 @@ class RepresentationResolver:
         "CRY": "RY",
         "CRZ": "RZ",
         "CRot": "Rot",
+        "PhaseShift": "P",
         "Beamsplitter": "BS",
         "Squeezing": "S",
         "TwoModeSqueezing": "S",
@@ -353,7 +354,7 @@ class RepresentationResolver:
             return "H{}".format(idx)
 
         if op.name == "FockStateProjector":
-            n_str = ",".join([str(n) for n in op.params[0]])
+            n_str = ", ".join([str(n) for n in op.params[0]])
 
             return (
                 self.charset.VERTICAL_LINE
@@ -363,8 +364,16 @@ class RepresentationResolver:
                 + self.charset.VERTICAL_LINE
             )
 
+        if op.name == "FockState":
+            return self.charset.VERTICAL_LINE + str(op.params[0]) + self.charset.RANGLE
+
+        if op.name in {"BasisState", "FockStateVector"}:
+            n_str = ", ".join([str(n) for n in op.params[0]])
+
+            return self.charset.VERTICAL_LINE + n_str + self.charset.RANGLE
+
         # Operations that only have matrix arguments
-        if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector"]:
+        if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector", "Interferometer"]:
             param_strings = []
             for param in op.params:
                 if isinstance(param, np.ndarray):

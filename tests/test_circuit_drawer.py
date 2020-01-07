@@ -389,20 +389,96 @@ class TestRepresentationResolver:
         (5.236422, "5.236"),
     ])
     def test_single_parameter_representation_varnames(self, unicode_representation_resolver_varnames, par, expected):
-        """Test that single parameters are properly resolved."""
+        """Test that single parameters are properly resolved when show_variable_names is True."""
         assert unicode_representation_resolver_varnames.single_parameter_representation(par) == expected
 
     def test_single_parameter_representation_variable_varnames(self, unicode_representation_resolver_varnames, variable):
-        """Test that variables are properly resolved."""
+        """Test that variables are properly resolved when show_variable_names is True."""
 
         assert unicode_representation_resolver_varnames.single_parameter_representation(variable) == "test"
 
     def test_single_parameter_representation_kwarg_variable_varnames(self, unicode_representation_resolver_varnames, kwarg_variable):
-        """Test that kwarg variables are properly resolved."""
+        """Test that kwarg variables are properly resolved when show_variable_names is True."""
 
         assert unicode_representation_resolver_varnames.single_parameter_representation(kwarg_variable) == "kwarg_test"
 
-
+    @pytest.mark.parametrize("op,wire,target", [
+        (qml.PauliX(wires=[1]), 1, "X"),
+        (qml.CNOT(wires=[0, 1]), 1, "X"),
+        (qml.CNOT(wires=[0, 1]), 0, "C"),
+        (qml.Toffoli(wires=[0, 2, 1]), 1, "X"),
+        (qml.Toffoli(wires=[0, 2, 1]), 0, "C"),
+        (qml.Toffoli(wires=[0, 2, 1]), 2, "C"),
+        (qml.CSWAP(wires=[0, 2, 1]), 1, "SWAP"),
+        (qml.CSWAP(wires=[0, 2, 1]), 2, "SWAP"),
+        (qml.CSWAP(wires=[0, 2, 1]), 0, "C"),
+        (qml.PauliY(wires=[1]), 1, "Y"),
+        (qml.PauliZ(wires=[1]), 1, "Z"),
+        (qml.CZ(wires=[0, 1]), 1, "Z"),
+        (qml.CZ(wires=[0, 1]), 0, "C"),
+        (qml.Identity(wires=[1]), 1, "I"),
+        (qml.Hadamard(wires=[1]), 1, "H"),
+        (qml.CRX(3.14, wires=[0, 1]), 1, "RX(3.14)"),
+        (qml.CRX(3.14, wires=[0, 1]), 0, "C"),
+        (qml.CRY(3.14, wires=[0, 1]), 1, "RY(3.14)"),
+        (qml.CRY(3.14, wires=[0, 1]), 0, "C"),
+        (qml.CRZ(3.14, wires=[0, 1]), 1, "RZ(3.14)"),
+        (qml.CRZ(3.14, wires=[0, 1]), 0, "C"),
+        (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 1, "Rot(3.14, 2.14, 1.14)"),
+        (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 0, "C"),
+        (qml.PhaseShift(3.14, wires=[0]), 0, "P(3.14)"),
+        (qml.Beamsplitter(1, 2, wires=[0, 1]), 1, "BS(1, 2)"),
+        (qml.Beamsplitter(1, 2, wires=[0, 1]), 0, "BS(1, 2)"),
+        (qml.Squeezing(1, 2, wires=[1]), 1, "S(1, 2)"),
+        (qml.TwoModeSqueezing(1, 2, wires=[0, 1]), 1, "S(1, 2)"),
+        (qml.TwoModeSqueezing(1, 2, wires=[0, 1]), 0, "S(1, 2)"),
+        (qml.Displacement(1, 2, wires=[1]), 1, "D(1, 2)"),
+        (qml.NumberOperator(wires=[1]), 1, "n"),
+        (qml.Rotation(3.14, wires=[1]), 1, "R(3.14)"),
+        (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "Add(3.14)"),
+        (qml.ControlledAddition(3.14, wires=[0, 1]), 0, "C"),
+        (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "R(3.14)"),
+        (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
+        (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
+        (qml.GaussianState(np.array([1, 2]), np.array([[2, 0],[0, 2]]), wires=[1]), 1, "Gaussian(M0, M1)"),
+        (qml.QuadraticPhase(3.14, wires=[1]), 1, "QuadPhase(3.14)"),
+        (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
+        (qml.S(wires=[2]), 2, "S"),
+        (qml.T(wires=[2]), 2, "T"),
+        (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
+        (qml.RY(3.14, wires=[1]), 1, "RY(3.14)"),
+        (qml.RZ(3.14, wires=[1]), 1, "RZ(3.14)"),
+        (qml.Rot(3.14, 2.14, 1.14, wires=[1]), 1, "Rot(3.14, 2.14, 1.14)"),
+        (qml.U1(3.14, wires=[1]), 1, "U1(3.14)"),
+        (qml.U2(3.14, 2.14, wires=[1]), 1, "U2(3.14, 2.14)"),
+        (qml.U3(3.14, 2.14, 1.14, wires=[1]), 1, "U3(3.14, 2.14, 1.14)"),
+        (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "│0⟩"),
+        (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "│1⟩"),
+        (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "│0⟩"),
+        (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 1, "QubitStateVector(M0)"),
+        (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 2, "QubitStateVector(M0)"),
+        (qml.QubitUnitary(np.eye(2), wires=[1]), 1, "U0"),
+        (qml.QubitUnitary(np.eye(4), wires=[1, 2]), 2, "U0"),
+        (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
+        (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
+        (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
+        (qml.CubicPhase(3.14, wires=[1]), 1, "CubicPhase(3.14)"),
+        (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
+        (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
+        (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
+        (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
+        (qml.FockDensityMatrix(np.kron(np.eye(4), np.eye(4)), wires=[1, 2]), 1, "FockDensityMatrix(M0)"),
+        (qml.FockDensityMatrix(np.kron(np.eye(4), np.eye(4)), wires=[1, 2]), 2, "FockDensityMatrix(M0)"),
+        (qml.DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14, wires=[1]), 1, "DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14)"),
+        (qml.FockState(7, wires=[1]), 1, "│7⟩"),
+        (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4⟩"),
+        (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 2, "│5⟩"),
+        (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 3, "│7⟩"),
+        (qml.SqueezedState(3.14, 2.14, wires=[1]), 1, "SqueezedState(3.14, 2.14)"),
+    ])
+    def test_operator_representation(self, unicode_representation_resolver, op, wire, target):
+        """Test that an Operator instance is properly resolved."""
+        assert unicode_representation_resolver.operator_representation(op, wire) == target
 
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
