@@ -51,11 +51,30 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-    r"""Reads the molecular structure file and creates a list containing the symbol and Cartesian
-    coordinates of the atomic species. If the file is provided in a format other than 'xyz',
-    Open Babel is used to convert it to an xyz-formatted file. The new file, called
-    ``structure.xyz``, contains the geometry of the molecule. It is created in a directory with
-    path given by 'outpath'.
+    r"""Reads the molecular structure from a file and creates a list containing the
+    symbol and Cartesian coordinates of the atomic species.
+
+    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
+    If `Open Babel <https://openbabel.org/>`_ is installed,
+    `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
+    is also supported. Additionally, the new file ``structure.xyz``,
+    containing the geometry of the molecule, is created in a directory with path given by
+    ``outpath``.
+
+
+    Open Babel can be installed using ``apt`` if on Ubuntu:
+
+    .. code-block:: bash
+
+        sudo apt install openbabel
+
+    or using Anaconda:
+
+    .. code-block:: bash
+
+        conda install -c conda-forge openbabel
+
+    See the Open Babel documentation for more details on installation.
 
     **Example usage:**
 
@@ -71,11 +90,14 @@ def read_structure(filepath, outpath="."):
         list: for each atomic species, a list containing the symbol and the Cartesian coordinates
     """
 
-    babel_error_message = (
+    obabel_error_message = (
         "Open Babel converter not found:\n"
-        "Try: 'sudo apt install babel' "
-        "or download it from http://openbabel.org/wiki/Main_Page \n"
-        "and make sure you add it to the PATH environment variable."
+        "If using Ubuntu or Debian, try: 'sudo apt install openbabel' \n"
+        "If using openSUSE, try: 'sudo zypper install openbabel' \n"
+        "If using CentOS or Fedora, try: 'sudo snap install openbabel' "
+        "Open Babel can also be downloaded from http://openbabel.org/wiki/Main_Page, \n"
+        "make sure you add it to the PATH environment variable. \n"
+        "If Anaconda is installed, try: 'conda install -c conda-forge openbabel'"
     )
 
     extension = filepath.split(".")[-1].strip().lower()
@@ -84,13 +106,14 @@ def read_structure(filepath, outpath="."):
     file_out = os.path.join(outpath, "structure.xyz")
 
     if extension != "xyz":
-        if not _exec_exists("babel"):
-            raise TypeError(babel_error_message)
+        if not _exec_exists("obabel"):
+            raise TypeError(obabel_error_message)
         try:
-            subprocess.run(["babel", "-i" + extension, file_in, "-oxyz", file_out], check=True)
+            subprocess.run(["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out],
+                           check=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                "Babel error. See the following Babel "
+                "Open Babel error. See the following Open Babel "
                 "output for details:\n\n {}\n{}".format(e.stdout, e.stderr)
             )
     else:
