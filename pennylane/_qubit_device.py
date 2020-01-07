@@ -174,6 +174,7 @@ class QubitDevice(Device):
     def probability(self, wires=None, values_only=False):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
+
         Args:
             wires (Sequence[int]): Sequence of wires to return
                 marginal probabilities for. Wires not provided
