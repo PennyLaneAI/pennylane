@@ -671,6 +671,52 @@ class TestRepresentationResolver:
         assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
 
 
+op_CNOT21 = qml.CNOT(wires=[2, 1])
+op_SWAP03 = qml.SWAP(wires=[0, 3])
+op_SWAP12 = qml.SWAP(wires=[1, 2])
+op_X0 = qml.PauliX(0)
+op_CRX20 = qml.CRX(2.3, wires=[2, 0])
+op_Z3 = qml.PauliZ(3)
+
+dummy_raw_operation_grid = [
+    [None, op_SWAP03, op_X0, op_CRX20],
+    [op_CNOT21, op_SWAP12, None, None],
+    [op_CNOT21, op_SWAP12, None, op_CRX20],
+    [op_Z3, op_SWAP03, None, None],
+]
+
+dummy_raw_observable_grid = [
+    [qml.sample(qml.Hermitian(2 * np.eye(2), wires=[0]))],
+    [None],
+    [qml.expval(qml.PauliY(wires=[2]))],
+    [qml.var(qml.Hadamard(wires=[3]))],
+]
+
+
+@pytest.fixture
+def dummy_circuit_drawer():
+    return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
+
+
+class TestCircuitDrawer:
+    """Test the CircuitDrawer class."""
+
+    def test_resolve_representation(self, dummy_circuit_drawer):
+        """Test that resolve_representation calls the representation resolver with the proper arguments."""
+
+        dummy_circuit_drawer.representation_resolver.element_representation = Mock(return_value="Test")
+
+        dummy_circuit_drawer.resolve_representation(
+            Grid(dummy_raw_operation_grid), Grid()
+        )
+
+        args_tuples = [call[0] for call in dummy_circuit_drawer.representation_resolver.element_representation.call_args_list]
+
+        for idx, wire in enumerate(dummy_raw_operation_grid):
+            for op in wire:
+                assert (op, idx) in args_tuples
+
+
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
