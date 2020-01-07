@@ -15,6 +15,7 @@
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
 import abc
+import math
 import numpy as np
 import pennylane as qml
 
@@ -181,6 +182,11 @@ class CharSet(abc.ABC):
     VERTICAL_LINE = None
     CROSSED_LINES = None
 
+    @staticmethod
+    def to_superscript(num):
+        """Convert the given number to a superscripted string."""
+        pass
+
 
 class UnicodeCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
@@ -199,6 +205,45 @@ class UnicodeCharSet(CharSet):
     VERTICAL_LINE = "│"
     CROSSED_LINES = "╳"
 
+    @staticmethod
+    def to_superscript(num):
+        """Convert the given number to a superscripted string."""
+        ret = str(num)
+        for old, new in { 
+                "0": "⁰",
+                "1": "¹",
+                "2": "²",
+                "3": "³",
+                "4": "⁴",
+                "5": "⁵",
+                "6": "⁶",
+                "7": "⁷",
+                "8": "⁸",
+                "9": "⁹",
+        }.items():
+            ret = ret.replace(old, new)
+
+        return ret
+
+    @staticmethod
+    def to_subscript(num):
+        """Convert the given number to a subscripted string."""
+        ret = str(num)
+        for old, new in { 
+                "0": "₀",
+                "1": "₁",
+                "2": "₂",
+                "3": "₃",
+                "4": "₅",
+                "5": "⁵",
+                "6": "₆",
+                "7": "₇",
+                "8": "₈",
+                "9": "₉",
+        }.items():
+            ret = ret.replace(old, new)
+
+        return ret
 
 class AsciiCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
@@ -216,6 +261,16 @@ class AsciiCharSet(CharSet):
     RANGLE = ">"
     VERTICAL_LINE = "|"
     CROSSED_LINES = "X"
+
+    @staticmethod
+    def to_superscript(num):
+        """Convert the given number to a superscripted string."""
+        return "^" + str(num)
+
+    @staticmethod
+    def to_subscript(num):
+        """Convert the given number to a subscripted string."""
+        return "_" + str(num)
 
 
 Charsets = {
@@ -318,6 +373,13 @@ class RepresentationResolver:
 
         return str(round(par, 3))
 
+    def _format_poly_term(self, coefficient, variable):
+        """Format a term of a polynomial."""
+        if coefficient == 0:
+            return ""
+
+        return " {} {} {}".format("+" if coefficient > 0 else "-", round(math.fabs(coefficient), 3), variable)
+
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
 
@@ -364,6 +426,66 @@ class RepresentationResolver:
                 + self.charset.VERTICAL_LINE
             )
 
+        if op.name == "PolyXP":
+            coefficients = op.params[0]
+            order = len(coefficients.shape)
+
+            if order == 1:
+                poly_str = ""
+                if coefficients[0] != 0:
+                    poly_str += str(coefficients[0])
+
+                for idx in range(0, coefficients.shape[0] // 2):
+                    x = 2 * idx + 1
+                    y = 2 * idx + 2
+                    poly_str += self._format_poly_term(coefficients[x], "x{}".format(self.charset.to_subscript(idx)))
+                    poly_str += self._format_poly_term(coefficients[y], "y{}".format(self.charset.to_subscript(idx)))
+
+                return poly_str
+            
+            if order == 2:
+                poly_str = str(coefficients[0, 0])
+
+                for idx in range(0, coefficients.shape[0] // 2):
+                    x = 2 * idx + 1
+                    y = 2 * idx + 2
+                    poly_str += self._format_poly_term(coefficients[0, x] + coefficients[x, 0], "x{}".format(self.charset.to_subscript(idx)))
+                    poly_str += self._format_poly_term(coefficients[0, y] + coefficients[y, 0], "y{}".format(self.charset.to_subscript(idx)))
+
+                for idx1 in range(0, coefficients.shape[0] // 2):
+                    for idx2 in range(idx1, coefficients.shape[0] // 2):
+                        x1 = 2 * idx1 + 1
+                        y1 = 2 * idx1 + 2
+                        x2 = 2 * idx2 + 1
+                        y2 = 2 * idx2 + 2
+
+                        if idx1 == idx2:
+                            poly_str += self._format_poly_term(coefficients[x1, x1], "x{}{}".format(self.charset.to_subscript(idx1), self.charset.to_superscript(2)))
+                            poly_str += self._format_poly_term(coefficients[y1, y1], "y{}{}".format(self.charset.to_subscript(idx1), self.charset.to_superscript(2)))
+                            poly_str += self._format_poly_term(
+                                coefficients[x1, y1] + coefficients[y1, x1], 
+                                "x{}y{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)))
+                        else:
+                            poly_str += self._format_poly_term(
+                                coefficients[x1, x2] + coefficients[x2, x1], 
+                                "x{}x{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)))
+
+                            poly_str += self._format_poly_term(
+                                coefficients[y1, y2] + coefficients[y2, y1], 
+                                "y{}y{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)))
+
+                            poly_str += self._format_poly_term(
+                                coefficients[x1, y2] + coefficients[y2, x1], 
+                                "x{}y{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)))
+
+                            poly_str += self._format_poly_term(
+                                coefficients[y1, x2] + coefficients[x2, y1], 
+                                "x{}y{}".format(self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)))
+
+                print(poly_str)
+                return poly_str
+
+
         if op.name == "FockState":
             return self.charset.VERTICAL_LINE + str(op.params[0]) + self.charset.RANGLE
 
@@ -371,7 +493,7 @@ class RepresentationResolver:
             return self.charset.VERTICAL_LINE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
 
         # Operations that only have matrix arguments
-        if op.name in ["GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector", "Interferometer"]:
+        if op.name in {"GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector", "Interferometer"}:
             param_strings = []
             for param in op.params:
                 if isinstance(param, np.ndarray):
