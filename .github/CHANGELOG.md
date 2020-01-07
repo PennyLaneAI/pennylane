@@ -43,6 +43,11 @@
   of an operator in the computational basis.
   [#454](https://github.com/XanaduAI/pennylane/pull/454)
 
+* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and 
+  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
+  templates.
+  [#459](https://github.com/XanaduAI/pennylane/pull/459)
+
 ### Documentation
 
 * Improved documentation of `AmplitudeEmbedding` and `BasisEmbedding` templates.
