@@ -156,10 +156,10 @@ class TestObservables:
     def test_hermitian_eigegendecomposition_single_wire(
         self, observable, eigvals, eigvecs, tol
     ):
-        """Tests that the eigendecomposition property of the Hermitian class returns the correct results
+        """Tests that the eigendecomposition_of_permuted property of the Hermitian class returns the correct results
         for a single wire."""
 
-        eigendecomp = qml.Hermitian(observable, wires=0).eigendecomposition
+        eigendecomp = qml.Hermitian(observable, wires=0).eigendecomposition_of_permuted
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
@@ -172,11 +172,11 @@ class TestObservables:
     def test_hermitian_eigegendecomposition_multiple_wires(
         self, observable, eigvals, eigvecs, tol
     ):
-        """Tests that the eigendecomposition property of the Hermitian class returns the correct results
+        """Tests that the eigendecomposition_of_permuted property of the Hermitian class returns the correct results
         for multiple wires."""
 
         num_wires = int(np.log2(len(observable)))
-        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition
+        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition_of_permuted
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
@@ -189,11 +189,11 @@ class TestObservables:
     def test_hermitian_eigegendecomposition_multiple_wires_repeat_with_different_wires_new_entry(
         self, observable, eigvals, eigvecs, tol
     ):
-        """Tests that the eigendecomposition property of the Hermitian class returns the correct results
+        """Tests that the eigendecomposition_of_permuted property of the Hermitian class returns the correct results
         for multiple wires when the same operator is specified twice, but with different wires."""
 
         num_wires = int(np.log2(len(observable)))
-        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition
+        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))).eigendecomposition_of_permuted
 
         assert np.allclose(eigendecomp["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
@@ -204,7 +204,7 @@ class TestObservables:
         assert len(qml.Hermitian._eigs) == 1
 
         # Reverse the order of the wires to check if a new entry was added
-        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))[::-1]).eigendecomposition
+        eigendecomp = qml.Hermitian(observable, wires=list(range(num_wires))[::-1]).eigendecomposition_of_permuted
 
         assert len(qml.Hermitian._eigs) == 2
 

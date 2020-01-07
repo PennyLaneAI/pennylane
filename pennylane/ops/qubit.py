@@ -1111,8 +1111,8 @@ class Hermitian(Observable):
         return A
 
     @property
-    def eigendecomposition(self):
-        """Return the eigendecomposition of the specified Hermitian observable.
+    def eigendecomposition_of_permuted(self):
+        """Return the eigendecomposition of the permuted matrix specified to the Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -1144,7 +1144,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        return self.eigendecomposition["eigval"]
+        return self.eigendecomposition_of_permuted["eigval"]
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -1157,7 +1157,7 @@ class Hermitian(Observable):
             list: list containing the gates diagonalizing the Hermitian observable
         """
         return [
-            QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(sorted(self.wires))),
+            QubitUnitary(self.eigendecomposition_of_permuted["eigvec"].conj().T, wires=list(sorted(self.wires))),
         ]
 
 

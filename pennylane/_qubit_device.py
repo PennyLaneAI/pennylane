@@ -48,10 +48,14 @@ class QubitDevice(Device):
 
     @property
     def _probability(self):
+        """Return the current probability of each computational basis state based on the state vector."""
+
         return np.abs(self._state)**2
 
     @property
     def _basis_states(self):
+        """Return the computational basis states in terms of the number of wires specified."""
+
         return np.arange(2**self.num_wires)
 
 
