@@ -488,6 +488,25 @@ class TestRepresentationResolver:
         """Test that an Operator instance is properly resolved."""
         assert unicode_representation_resolver.operator_representation(op, wire) == target
 
+    @pytest.mark.parametrize("obs,wire,target", [
+        (qml.expval(qml.PauliX(wires=[1])), 1, "⟨X⟩"),
+        (qml.expval(qml.PauliY(wires=[1])), 1, "⟨Y⟩"),
+        (qml.expval(qml.PauliZ(wires=[1])), 1, "⟨Z⟩"),
+        (qml.expval(qml.Hadamard(wires=[1])), 1, "⟨H⟩"),
+        (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "⟨H0⟩"),
+        (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "⟨H0⟩"),
+        (qml.expval(qml.NumberOperator(wires=[1])), 1, "⟨n⟩"),
+        (qml.expval(qml.X(wires=[1])), 1, "⟨X⟩"),
+        (qml.expval(qml.P(wires=[1])), 1, "⟨P⟩"),
+        (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "⟨│4, 5, 7╳4, 5, 7│⟩"),
+        (qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 y₁⟩"),
+        (qml.expval(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "⟨1.2 + 1.1 x₀ + 3.2 y₀ + 1.2 x₀² + 2.3 y₀² + 3.0 x₀y₀⟩"),
+        (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨QuadOperator(3.14)⟩"),
+    ])
+    def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
+        """Test that an Observable instance with return type is properly resolved."""
+        assert unicode_representation_resolver.output_representation(obs, wire) == target
+
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
