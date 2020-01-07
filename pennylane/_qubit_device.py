@@ -46,18 +46,6 @@ class QubitDevice(Device):
         self._memory = None
         self._samples = None
 
-    @property
-    def _probability(self):
-        """Return the current probability of each computational basis state based on the state vector."""
-
-        return np.abs(self._state)**2
-
-    @property
-    def _basis_states(self):
-        """Return the computational basis states in terms of the number of wires specified."""
-
-        return np.arange(2**self.num_wires)
-
     def execute(self, queue, observables, parameters=None):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -188,7 +176,7 @@ class QubitDevice(Device):
 
         wires = wires or range(self.num_wires)
 
-        prob = self.marginal_prob(self._probability, wires)
+        prob = self.marginal_prob(np.abs(self._state)**2, wires)
 
         if values_only:
             return prob
