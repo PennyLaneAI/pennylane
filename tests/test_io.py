@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.load` module.
+Unit tests for the :mod:`pennylane.io` module.
 """
 import pytest
 from unittest.mock import Mock
