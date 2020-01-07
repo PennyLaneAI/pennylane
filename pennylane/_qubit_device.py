@@ -166,6 +166,7 @@ class QubitDevice(Device):
             wires (Sequence[int]): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
+
         Returns:
             OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
             to the resulting probability. The dictionary should be sorted such that the
