@@ -203,19 +203,6 @@ def pauli_eigs(n):
         return np.array([1, -1])
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
-
-def reshape_square_operator(Hmat):
-    """Reshapes an arbitrarily shaped square operator into a (dim, dim) shaped matrix.
-
-    As an example, a 4x4 matrix might be given as a (1,4,4) shaped array, this
-    method reshapes such matrices.
-    """
-    Hmat = np.array(Hmat)
-
-    # Shape might be e.g. (1,4,4), reshape such that further checks can be done
-    dim = int(np.sqrt(np.prod(Hmat.shape)))
-    return Hmat.reshape(dim, dim)
-
 class Recorder:
     """Recorder class used by the :class:`~.OperationRecorder`.
 
