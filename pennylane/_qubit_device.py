@@ -42,7 +42,15 @@ class QubitDevice(Device):
         self._state = None
         self._memory = None
         self._samples = None
-        self._probability = None
+
+    @property
+    def _probability(self):
+        return np.abs(self._state)**2
+
+    @property
+    def _basis_states(self):
+        return np.arange(2**self.num_wires)
+
 
     def apply(self, operation):
         """Called during :meth:`execute` before the individual observables are measured."""
@@ -90,7 +98,6 @@ class QubitDevice(Device):
 
             self.post_apply()
 
-            # Pass queue of observables to pre_measure
             self.pre_measure()
 
             for obs in observables:
@@ -138,6 +145,10 @@ class QubitDevice(Device):
 
     def expval(self, observable):
         wires = observable.wires
+        self.rotate_basis(observable)
+
+        sampled_basis_states = self.sample_basis_states()
+        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
 
         if self.analytic:
             # exact expectation value
@@ -151,6 +162,10 @@ class QubitDevice(Device):
 
     def var(self, observable):
         wires = observable.wires
+        self.rotate_basis(observable)
+
+        sampled_basis_states = self.sample_basis_states()
+        self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
 
         if self.analytic:
             # exact variance value
@@ -178,6 +193,13 @@ class QubitDevice(Device):
         # generate computational basis samples
         # sample from the computational basis states based on the state probability
 
+
+    def sample_basis_states(self):
+        """Sample from the computational basis states based on the current state probability.
+
+        """
+        return np.random.choice(self._basis_states, self.shots, p=self._probability)
+
     def sample(self, observable):
         """Return a sample of an observable for software simulators.
 
@@ -202,10 +224,8 @@ class QubitDevice(Device):
             return np.ones([self.shots])
 
         self.rotate_basis(observable)
-        self.rotated_probability =  np.abs(self._state)**2 #list(self.probability().values())
 
-        basis_states = np.arange(2**self.num_wires)
-        sampled_basis_states = np.random.choice(basis_states, self.shots, p=self.rotated_probability)
+        sampled_basis_states = self.sample_basis_states()
         self._samples = self.convert_basis_states_to_binary(sampled_basis_states, self.num_wires)
 
         if isinstance(observable.name, str) and observable.name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
@@ -239,7 +259,6 @@ class QubitDevice(Device):
 
         wires = wires or range(self.num_wires)
 
-        self._probability = np.abs(self._state)**2
         prob = self.marginal_prob(self._probability, wires)
         basis_states = itertools.product(range(2), repeat=len(wires))
         return OrderedDict(zip(basis_states, prob))

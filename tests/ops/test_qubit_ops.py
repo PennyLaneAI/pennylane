@@ -124,8 +124,15 @@ class TestObservables:
         diag_gates = ob.diagonalizing_gates()
         U = np.eye(2)
 
+
         if diag_gates:
-            U = multi_dot([np.eye(2)] + [i.matrix for i in diag_gates])
+            mats = [i.matrix for i in diag_gates]
+            # Need to revert the order in which the matrices are applied such that they adhere to the order
+            # of matrix multiplication
+            # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
+            # becomes Hadamard @ S @ PauliZ, where @ stands for matrix multiplication
+            mats = mats[::-1]
+            U = multi_dot([np.eye(2)] + mats)
 
         res = U @ A @ U.conj().T
         expected = np.diag(eigs)

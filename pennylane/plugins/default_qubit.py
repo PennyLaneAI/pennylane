@@ -422,27 +422,6 @@ class DefaultQubit(QubitDevice):
 
         return self._get_operator_matrix(observable, par)
 
-    def expval(self, observable):
-
-        if self.analytic:
-            # exact expectation value
-            self.rotate_basis(observable)
-            return super().expval(observable)
-
-
-        # estimate the ev
-        return np.mean(self.sample(observable))
-
-    def var(self, observable):
-
-        if self.analytic:
-            # exact variance value
-            self.rotate_basis(observable)
-            return super().var(observable)
-
-        # estimate the ev
-        return np.var(self.sample(observable))
-
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
 
