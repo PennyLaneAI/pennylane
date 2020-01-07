@@ -189,6 +189,7 @@ class QubitDevice(Device):
         """Return the marginal probability of each computational basis
         state from the last run of the device.
 
+
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
