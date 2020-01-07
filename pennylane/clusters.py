@@ -229,22 +229,27 @@ def sum(x):
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
-    if x.interface == "tf":
-        import tensorflow as tf
+    if hasattr(x, "interface") and x.interface is not None:
+        if x.interface == "tf":
+            import tensorflow as tf
 
-        return lambda params, **kwargs: tf.sum(x(params, **kwargs))
+            return lambda params, **kwargs: tf.reduce_sum(x(params, **kwargs))
 
-    if x.interface == "torch":
-        import torch
+        if x.interface == "torch":
+            import torch
 
-        return lambda params, **kwargs: torch.sum(x(params, **kwargs))
+            return lambda params, **kwargs: torch.sum(x(params, **kwargs))
 
-    if x.interface in ("autograd", "numpy"):
-        from autograd import numpy as np
+        if x.interface in ("autograd", "numpy"):
+            from autograd import numpy as np
 
-        return lambda params, **kwargs: np.sum(x(params, **kwargs))
+            return lambda params, **kwargs: np.sum(x(params, **kwargs))
 
-    raise ValueError("Unknown interface {}".format(x.interface))
+        raise ValueError("Unknown interface {}".format(x.interface))
+
+    import numpy as np
+
+    return lambda params, **kwargs: np.sum(x(params, **kwargs))
 
 
 def _get_dot_func(interface):
@@ -259,10 +264,15 @@ def _get_dot_func(interface):
     if interface == "torch":
         import torch
 
-        return torch.dot
+        return torch.matmul
 
     if interface in ("autograd", "numpy"):
         from autograd import numpy as np
+
+        return np.dot
+
+    if interface is None:
+        import numpy as np
 
         return np.dot
 
@@ -322,15 +332,16 @@ def dot(x, y):
         if x.interface != y.interface:
             raise ValueError("QNodeClusters have non-matching interfaces")
 
-        return lambda params, **kwargs: _get_dot_func(x.interface)(
-            x(params, **kwargs), y(params, **kwargs)
-        )
+        fn = _get_dot_func(x.interface)
+        return lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
     if isinstance(x, QNodeCluster):
-        return lambda params, **kwargs: _get_dot_func(x.interface)(x(params, **kwargs), y)
+        fn = _get_dot_func(x.interface)
+        return lambda params, **kwargs: fn(x(params, **kwargs), y)
 
     if isinstance(y, QNodeCluster):
-        return lambda params, **kwargs: _get_dot_func(y.interface)(x, y(params, **kwargs))
+        fn = _get_dot_func(y.interface)
+        return lambda params, **kwargs: fn(x, y(params, **kwargs))
 
     raise ValueError("At least one argument must be a QNodeCluster")
 
