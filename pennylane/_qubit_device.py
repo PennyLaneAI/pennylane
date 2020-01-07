@@ -188,12 +188,14 @@ class QubitDevice(Device):
     def marginal_prob(self, prob, wires=None):
         """Return the marginal probability of each computational basis
         state from the last run of the device.
+
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
             wires (Sequence[int]): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
+
         Returns:
             list[float]: List of the resulting marginal probabilities.
         """
