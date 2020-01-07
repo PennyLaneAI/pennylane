@@ -85,7 +85,7 @@ coordinates of each atomic species.
 Solving the Hartree-Fock equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`~.gen_meanfield_data` function utilizes  `OpenFermion-PySCF <https://github
+The :func:`~.gen_meanfield_data` function uses  `OpenFermion-PySCF <https://github
 .com/quantumlib/OpenFermion-PySCF>`_ and `OpenFermion-Psi4 <https://github
 .com/quantumlib/OpenFermion-Psi4>`_ plugins to solve the Hartree-Fock equations for the molecule
 using the electronic structure packages `PySCF <https://github.com/sunqm/pyscf>`_ and `Psi4
@@ -154,7 +154,7 @@ VQE simulations
 The Variational Quantum Eigensolver (VQE) is a hybrid quantum-classical computational scheme,
 where a quantum computer is used to prepare the trial wave function of a molecule and to measure
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
-find the lowest eigenvalue of the measured Hamiltonian.
+find its ground state.
 
 First, the qubit Hamiltonian ``h`` has to be converted to a PennyLane
 Hamiltonian using the :func:`~.load_hamiltonian` function:
@@ -163,8 +163,8 @@ Hamiltonian using the :func:`~.load_hamiltonian` function:
 
     hamiltonian = qml.qchem.load_hamiltonian(h)
 
-We can then use :func:`~.vqe.cost` to automatically create our QNodes
-and define our cost function:
+We can then use :func:`~.vqe.cost` to automatically create the QNodes
+and define the cost function:
 
 .. code-block:: python
 
