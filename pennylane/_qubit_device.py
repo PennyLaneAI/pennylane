@@ -58,14 +58,6 @@ class QubitDevice(Device):
 
         return np.arange(2**self.num_wires)
 
-
-    def apply(self, operation):
-        """Called during :meth:`execute` before the individual observables are measured."""
-
-
-    def pre_measure(self):
-        """Called during :meth:`execute` before the individual observables are measured."""
-
     def execute(self, queue, observables, parameters=None):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
