@@ -1120,7 +1120,7 @@ class Hermitian(Observable):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         tuples = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
         perm = np.ravel_multi_index(tuples[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
