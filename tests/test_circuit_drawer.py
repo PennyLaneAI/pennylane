@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.circuit_drawer` module.
 
 import pytest
 import numpy as np
+from unittest.mock import Mock
 
 import pennylane as qml
 from pennylane.circuit_drawer import _transpose, Grid, RepresentationResolver, CircuitDrawer
@@ -532,6 +533,41 @@ class TestRepresentationResolver:
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
         """Test that an Observable instance with return type is properly resolved."""
         assert unicode_representation_resolver.output_representation(obs, wire) == target
+
+    def test_element_representation_none(self, unicode_representation_resolver):
+        """Test that element_representation properly handles None."""
+        assert unicode_representation_resolver.element_representation(None, 0) == ""
+
+    def test_element_representation_str(self, unicode_representation_resolver):
+        """Test that element_representation properly handles strings."""
+        assert unicode_representation_resolver.element_representation("Test", 0) == "Test"
+
+    def test_element_representation_calls_output(self, unicode_representation_resolver):
+        """Test that element_representation calls output_representation for returned observables."""
+
+        unicode_representation_resolver.output_representation = Mock()
+
+        obs = qml.sample(qml.PauliX(3))
+        wire = 3
+
+        unicode_representation_resolver.element_representation(obs, wire)
+        
+        assert unicode_representation_resolver.output_representation.call_args[0] == (obs, wire)
+
+    def test_element_representation_calls_operator(self, unicode_representation_resolver):
+        """Test that element_representation calls operator_representation for all operators that are not returned."""
+
+        unicode_representation_resolver.operator_representation = Mock()
+
+        op = qml.PauliX(3)
+        wire = 3
+
+        unicode_representation_resolver.element_representation(op, wire)
+
+        print()
+        
+        assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
+
 
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
