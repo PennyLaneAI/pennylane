@@ -334,18 +334,22 @@ class TestGrid:
 
         assert str(grid) == "[0, 3]\n[1, 4]\n[2, 5]\n"
 
+
 @pytest.fixture
 def unicode_representation_resolver():
     return RepresentationResolver()
+
 
 @pytest.fixture
 def unicode_representation_resolver_varnames():
     return RepresentationResolver(show_variable_names=True)
 
+
 @pytest.fixture
 def variable(monkeypatch):
     monkeypatch.setattr(Variable, "free_param_values", [0, 1, 2, 3])
     yield Variable(2, "test")
+
 
 @pytest.fixture
 def kwarg_variable(monkeypatch):
@@ -356,180 +360,278 @@ def kwarg_variable(monkeypatch):
 class TestRepresentationResolver:
     """Test the RepresentationResolver class."""
 
-    @pytest.mark.parametrize("list,element,index,list_after", [
-        ([1, 2, 3], 2, 1, [1, 2, 3]),
-        ([1, 2, 2, 3], 2, 1, [1, 2, 2, 3]),
-        ([1, 2, 3], 4, 3, [1, 2, 3, 4]),
-    ])
+    @pytest.mark.parametrize(
+        "list,element,index,list_after",
+        [
+            ([1, 2, 3], 2, 1, [1, 2, 3]),
+            ([1, 2, 2, 3], 2, 1, [1, 2, 2, 3]),
+            ([1, 2, 3], 4, 3, [1, 2, 3, 4]),
+        ],
+    )
     def test_index_of_array_or_append(self, list, element, index, list_after):
         """Test the method index_of_array_or_append."""
 
         assert RepresentationResolver.index_of_array_or_append(element, list) == index
         assert list == list_after
 
-    @pytest.mark.parametrize("par,expected", [
-        (3, "3"),
-        (5.236422, "5.236"),
-    ])
+    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.236"),])
     def test_single_parameter_representation(self, unicode_representation_resolver, par, expected):
         """Test that single parameters are properly resolved."""
         assert unicode_representation_resolver.single_parameter_representation(par) == expected
 
-    def test_single_parameter_representation_variable(self, unicode_representation_resolver, variable):
+    def test_single_parameter_representation_variable(
+        self, unicode_representation_resolver, variable
+    ):
         """Test that variables are properly resolved."""
 
         assert unicode_representation_resolver.single_parameter_representation(variable) == "2"
 
-    def test_single_parameter_representation_kwarg_variable(self, unicode_representation_resolver, kwarg_variable):
+    def test_single_parameter_representation_kwarg_variable(
+        self, unicode_representation_resolver, kwarg_variable
+    ):
         """Test that kwarg variables are properly resolved."""
 
-        assert unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
+        assert (
+            unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
+        )
 
-    @pytest.mark.parametrize("par,expected", [
-        (3, "3"),
-        (5.236422, "5.236"),
-    ])
-    def test_single_parameter_representation_varnames(self, unicode_representation_resolver_varnames, par, expected):
+    @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.236"),])
+    def test_single_parameter_representation_varnames(
+        self, unicode_representation_resolver_varnames, par, expected
+    ):
         """Test that single parameters are properly resolved when show_variable_names is True."""
-        assert unicode_representation_resolver_varnames.single_parameter_representation(par) == expected
+        assert (
+            unicode_representation_resolver_varnames.single_parameter_representation(par)
+            == expected
+        )
 
-    def test_single_parameter_representation_variable_varnames(self, unicode_representation_resolver_varnames, variable):
+    def test_single_parameter_representation_variable_varnames(
+        self, unicode_representation_resolver_varnames, variable
+    ):
         """Test that variables are properly resolved when show_variable_names is True."""
 
-        assert unicode_representation_resolver_varnames.single_parameter_representation(variable) == "test"
+        assert (
+            unicode_representation_resolver_varnames.single_parameter_representation(variable)
+            == "test"
+        )
 
-    def test_single_parameter_representation_kwarg_variable_varnames(self, unicode_representation_resolver_varnames, kwarg_variable):
+    def test_single_parameter_representation_kwarg_variable_varnames(
+        self, unicode_representation_resolver_varnames, kwarg_variable
+    ):
         """Test that kwarg variables are properly resolved when show_variable_names is True."""
 
-        assert unicode_representation_resolver_varnames.single_parameter_representation(kwarg_variable) == "kwarg_test"
+        assert (
+            unicode_representation_resolver_varnames.single_parameter_representation(kwarg_variable)
+            == "kwarg_test"
+        )
 
-    @pytest.mark.parametrize("op,wire,target", [
-        (qml.PauliX(wires=[1]), 1, "X"),
-        (qml.CNOT(wires=[0, 1]), 1, "X"),
-        (qml.CNOT(wires=[0, 1]), 0, "C"),
-        (qml.Toffoli(wires=[0, 2, 1]), 1, "X"),
-        (qml.Toffoli(wires=[0, 2, 1]), 0, "C"),
-        (qml.Toffoli(wires=[0, 2, 1]), 2, "C"),
-        (qml.CSWAP(wires=[0, 2, 1]), 1, "SWAP"),
-        (qml.CSWAP(wires=[0, 2, 1]), 2, "SWAP"),
-        (qml.CSWAP(wires=[0, 2, 1]), 0, "C"),
-        (qml.PauliY(wires=[1]), 1, "Y"),
-        (qml.PauliZ(wires=[1]), 1, "Z"),
-        (qml.CZ(wires=[0, 1]), 1, "Z"),
-        (qml.CZ(wires=[0, 1]), 0, "C"),
-        (qml.Identity(wires=[1]), 1, "I"),
-        (qml.Hadamard(wires=[1]), 1, "H"),
-        (qml.CRX(3.14, wires=[0, 1]), 1, "RX(3.14)"),
-        (qml.CRX(3.14, wires=[0, 1]), 0, "C"),
-        (qml.CRY(3.14, wires=[0, 1]), 1, "RY(3.14)"),
-        (qml.CRY(3.14, wires=[0, 1]), 0, "C"),
-        (qml.CRZ(3.14, wires=[0, 1]), 1, "RZ(3.14)"),
-        (qml.CRZ(3.14, wires=[0, 1]), 0, "C"),
-        (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 1, "Rot(3.14, 2.14, 1.14)"),
-        (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 0, "C"),
-        (qml.PhaseShift(3.14, wires=[0]), 0, "P(3.14)"),
-        (qml.Beamsplitter(1, 2, wires=[0, 1]), 1, "BS(1, 2)"),
-        (qml.Beamsplitter(1, 2, wires=[0, 1]), 0, "BS(1, 2)"),
-        (qml.Squeezing(1, 2, wires=[1]), 1, "S(1, 2)"),
-        (qml.TwoModeSqueezing(1, 2, wires=[0, 1]), 1, "S(1, 2)"),
-        (qml.TwoModeSqueezing(1, 2, wires=[0, 1]), 0, "S(1, 2)"),
-        (qml.Displacement(1, 2, wires=[1]), 1, "D(1, 2)"),
-        (qml.NumberOperator(wires=[1]), 1, "n"),
-        (qml.Rotation(3.14, wires=[1]), 1, "R(3.14)"),
-        (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "Add(3.14)"),
-        (qml.ControlledAddition(3.14, wires=[0, 1]), 0, "C"),
-        (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "R(3.14)"),
-        (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
-        (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
-        (qml.GaussianState(np.array([1, 2]), np.array([[2, 0],[0, 2]]), wires=[1]), 1, "Gaussian(M0, M1)"),
-        (qml.QuadraticPhase(3.14, wires=[1]), 1, "QuadPhase(3.14)"),
-        (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
-        (qml.S(wires=[2]), 2, "S"),
-        (qml.T(wires=[2]), 2, "T"),
-        (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
-        (qml.RY(3.14, wires=[1]), 1, "RY(3.14)"),
-        (qml.RZ(3.14, wires=[1]), 1, "RZ(3.14)"),
-        (qml.Rot(3.14, 2.14, 1.14, wires=[1]), 1, "Rot(3.14, 2.14, 1.14)"),
-        (qml.U1(3.14, wires=[1]), 1, "U1(3.14)"),
-        (qml.U2(3.14, 2.14, wires=[1]), 1, "U2(3.14, 2.14)"),
-        (qml.U3(3.14, 2.14, 1.14, wires=[1]), 1, "U3(3.14, 2.14, 1.14)"),
-        (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "│0⟩"),
-        (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "│1⟩"),
-        (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "│0⟩"),
-        (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 1, "QubitStateVector(M0)"),
-        (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 2, "QubitStateVector(M0)"),
-        (qml.QubitUnitary(np.eye(2), wires=[1]), 1, "U0"),
-        (qml.QubitUnitary(np.eye(4), wires=[1, 2]), 2, "U0"),
-        (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
-        (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
-        (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
-        (qml.CubicPhase(3.14, wires=[1]), 1, "CubicPhase(3.14)"),
-        (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
-        (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
-        (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
-        (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
-        (qml.FockDensityMatrix(np.kron(np.eye(4), np.eye(4)), wires=[1, 2]), 1, "FockDensityMatrix(M0)"),
-        (qml.FockDensityMatrix(np.kron(np.eye(4), np.eye(4)), wires=[1, 2]), 2, "FockDensityMatrix(M0)"),
-        (qml.DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14, wires=[1]), 1, "DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14)"),
-        (qml.FockState(7, wires=[1]), 1, "│7⟩"),
-        (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4⟩"),
-        (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 2, "│5⟩"),
-        (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 3, "│7⟩"),
-        (qml.SqueezedState(3.14, 2.14, wires=[1]), 1, "SqueezedState(3.14, 2.14)"),
-        (qml.Hermitian(np.eye(4), wires=[1, 2]), 1, "H0"),
-        (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
-        (qml.X(wires=[1]), 1, "x"),
-        (qml.P(wires=[1]), 1, "p"),
-        (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4, 5, 7╳4, 5, 7│"),
-        (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁"),
-        (qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]), 1, "1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀"),
-        (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
-    ])
+    @pytest.mark.parametrize(
+        "op,wire,target",
+        [
+            (qml.PauliX(wires=[1]), 1, "X"),
+            (qml.CNOT(wires=[0, 1]), 1, "X"),
+            (qml.CNOT(wires=[0, 1]), 0, "C"),
+            (qml.Toffoli(wires=[0, 2, 1]), 1, "X"),
+            (qml.Toffoli(wires=[0, 2, 1]), 0, "C"),
+            (qml.Toffoli(wires=[0, 2, 1]), 2, "C"),
+            (qml.CSWAP(wires=[0, 2, 1]), 1, "SWAP"),
+            (qml.CSWAP(wires=[0, 2, 1]), 2, "SWAP"),
+            (qml.CSWAP(wires=[0, 2, 1]), 0, "C"),
+            (qml.PauliY(wires=[1]), 1, "Y"),
+            (qml.PauliZ(wires=[1]), 1, "Z"),
+            (qml.CZ(wires=[0, 1]), 1, "Z"),
+            (qml.CZ(wires=[0, 1]), 0, "C"),
+            (qml.Identity(wires=[1]), 1, "I"),
+            (qml.Hadamard(wires=[1]), 1, "H"),
+            (qml.CRX(3.14, wires=[0, 1]), 1, "RX(3.14)"),
+            (qml.CRX(3.14, wires=[0, 1]), 0, "C"),
+            (qml.CRY(3.14, wires=[0, 1]), 1, "RY(3.14)"),
+            (qml.CRY(3.14, wires=[0, 1]), 0, "C"),
+            (qml.CRZ(3.14, wires=[0, 1]), 1, "RZ(3.14)"),
+            (qml.CRZ(3.14, wires=[0, 1]), 0, "C"),
+            (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 1, "Rot(3.14, 2.14, 1.14)"),
+            (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 0, "C"),
+            (qml.PhaseShift(3.14, wires=[0]), 0, "P(3.14)"),
+            (qml.Beamsplitter(1, 2, wires=[0, 1]), 1, "BS(1, 2)"),
+            (qml.Beamsplitter(1, 2, wires=[0, 1]), 0, "BS(1, 2)"),
+            (qml.Squeezing(1, 2, wires=[1]), 1, "S(1, 2)"),
+            (qml.TwoModeSqueezing(1, 2, wires=[0, 1]), 1, "S(1, 2)"),
+            (qml.TwoModeSqueezing(1, 2, wires=[0, 1]), 0, "S(1, 2)"),
+            (qml.Displacement(1, 2, wires=[1]), 1, "D(1, 2)"),
+            (qml.NumberOperator(wires=[1]), 1, "n"),
+            (qml.Rotation(3.14, wires=[1]), 1, "R(3.14)"),
+            (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "Add(3.14)"),
+            (qml.ControlledAddition(3.14, wires=[0, 1]), 0, "C"),
+            (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "R(3.14)"),
+            (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
+            (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
+            (
+                qml.GaussianState(np.array([1, 2]), np.array([[2, 0], [0, 2]]), wires=[1]),
+                1,
+                "Gaussian(M0, M1)",
+            ),
+            (qml.QuadraticPhase(3.14, wires=[1]), 1, "QuadPhase(3.14)"),
+            (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
+            (qml.S(wires=[2]), 2, "S"),
+            (qml.T(wires=[2]), 2, "T"),
+            (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
+            (qml.RY(3.14, wires=[1]), 1, "RY(3.14)"),
+            (qml.RZ(3.14, wires=[1]), 1, "RZ(3.14)"),
+            (qml.Rot(3.14, 2.14, 1.14, wires=[1]), 1, "Rot(3.14, 2.14, 1.14)"),
+            (qml.U1(3.14, wires=[1]), 1, "U1(3.14)"),
+            (qml.U2(3.14, 2.14, wires=[1]), 1, "U2(3.14, 2.14)"),
+            (qml.U3(3.14, 2.14, 1.14, wires=[1]), 1, "U3(3.14, 2.14, 1.14)"),
+            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "│0⟩"),
+            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "│1⟩"),
+            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "│0⟩"),
+            (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 1, "QubitStateVector(M0)"),
+            (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 2, "QubitStateVector(M0)"),
+            (qml.QubitUnitary(np.eye(2), wires=[1]), 1, "U0"),
+            (qml.QubitUnitary(np.eye(4), wires=[1, 2]), 2, "U0"),
+            (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
+            (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
+            (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
+            (qml.CubicPhase(3.14, wires=[1]), 1, "CubicPhase(3.14)"),
+            (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
+            (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
+            (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
+            (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
+            (
+                qml.FockDensityMatrix(np.kron(np.eye(4), np.eye(4)), wires=[1, 2]),
+                1,
+                "FockDensityMatrix(M0)",
+            ),
+            (
+                qml.FockDensityMatrix(np.kron(np.eye(4), np.eye(4)), wires=[1, 2]),
+                2,
+                "FockDensityMatrix(M0)",
+            ),
+            (
+                qml.DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14, wires=[1]),
+                1,
+                "DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14)",
+            ),
+            (qml.FockState(7, wires=[1]), 1, "│7⟩"),
+            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4⟩"),
+            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 2, "│5⟩"),
+            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 3, "│7⟩"),
+            (qml.SqueezedState(3.14, 2.14, wires=[1]), 1, "SqueezedState(3.14, 2.14)"),
+            (qml.Hermitian(np.eye(4), wires=[1, 2]), 1, "H0"),
+            (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
+            (qml.X(wires=[1]), 1, "x"),
+            (qml.P(wires=[1]), 1, "p"),
+            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4, 5, 7╳4, 5, 7│"),
+            (
+                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
+                2,
+                "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁",
+            ),
+            (
+                qml.PolyXP(
+                    np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                ),
+                1,
+                "1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀",
+            ),
+            (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
+        ],
+    )
     def test_operator_representation(self, unicode_representation_resolver, op, wire, target):
         """Test that an Operator instance is properly resolved."""
         assert unicode_representation_resolver.operator_representation(op, wire) == target
 
-    @pytest.mark.parametrize("obs,wire,target", [
-        (qml.expval(qml.PauliX(wires=[1])), 1, "⟨X⟩"),
-        (qml.expval(qml.PauliY(wires=[1])), 1, "⟨Y⟩"),
-        (qml.expval(qml.PauliZ(wires=[1])), 1, "⟨Z⟩"),
-        (qml.expval(qml.Hadamard(wires=[1])), 1, "⟨H⟩"),
-        (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "⟨H0⟩"),
-        (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "⟨H0⟩"),
-        (qml.expval(qml.NumberOperator(wires=[1])), 1, "⟨n⟩"),
-        (qml.expval(qml.X(wires=[1])), 1, "⟨x⟩"),
-        (qml.expval(qml.P(wires=[1])), 1, "⟨p⟩"),
-        (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "⟨│4, 5, 7╳4, 5, 7│⟩"),
-        (qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁⟩"),
-        (qml.expval(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "⟨1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀⟩"),
-        (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x + sin(3.14)p⟩"),        
-        (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
-        (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
-        (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
-        (qml.var(qml.Hadamard(wires=[1])), 1, "Var[H]"),
-        (qml.var(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "Var[H0]"),
-        (qml.var(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "Var[H0]"),
-        (qml.var(qml.NumberOperator(wires=[1])), 1, "Var[n]"),
-        (qml.var(qml.X(wires=[1])), 1, "Var[x]"),
-        (qml.var(qml.P(wires=[1])), 1, "Var[p]"),
-        (qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "Var[│4, 5, 7╳4, 5, 7│]"),
-        (qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "Var[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]"),
-        (qml.var(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "Var[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]"),
-        (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
-        (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
-        (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
-        (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
-        (qml.sample(qml.Hadamard(wires=[1])), 1, "Sample[H]"),
-        (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "Sample[H0]"),
-        (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "Sample[H0]"),
-        (qml.sample(qml.NumberOperator(wires=[1])), 1, "Sample[n]"),
-        (qml.sample(qml.X(wires=[1])), 1, "Sample[x]"),
-        (qml.sample(qml.P(wires=[1])), 1, "Sample[p]"),
-        (qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])), 1, "Sample[│4, 5, 7╳4, 5, 7│]"),
-        (qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])), 2, "Sample[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]"),
-        (qml.sample(qml.PolyXP(np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1])), 1, "Sample[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]"),
-        (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
-    ])
+    @pytest.mark.parametrize(
+        "obs,wire,target",
+        [
+            (qml.expval(qml.PauliX(wires=[1])), 1, "⟨X⟩"),
+            (qml.expval(qml.PauliY(wires=[1])), 1, "⟨Y⟩"),
+            (qml.expval(qml.PauliZ(wires=[1])), 1, "⟨Z⟩"),
+            (qml.expval(qml.Hadamard(wires=[1])), 1, "⟨H⟩"),
+            (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "⟨H0⟩"),
+            (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "⟨H0⟩"),
+            (qml.expval(qml.NumberOperator(wires=[1])), 1, "⟨n⟩"),
+            (qml.expval(qml.X(wires=[1])), 1, "⟨x⟩"),
+            (qml.expval(qml.P(wires=[1])), 1, "⟨p⟩"),
+            (
+                qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
+                1,
+                "⟨│4, 5, 7╳4, 5, 7│⟩",
+            ),
+            (
+                qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
+                2,
+                "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁⟩",
+            ),
+            (
+                qml.expval(
+                    qml.PolyXP(
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    )
+                ),
+                1,
+                "⟨1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀⟩",
+            ),
+            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x + sin(3.14)p⟩"),
+            (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
+            (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
+            (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
+            (qml.var(qml.Hadamard(wires=[1])), 1, "Var[H]"),
+            (qml.var(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "Var[H0]"),
+            (qml.var(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "Var[H0]"),
+            (qml.var(qml.NumberOperator(wires=[1])), 1, "Var[n]"),
+            (qml.var(qml.X(wires=[1])), 1, "Var[x]"),
+            (qml.var(qml.P(wires=[1])), 1, "Var[p]"),
+            (
+                qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
+                1,
+                "Var[│4, 5, 7╳4, 5, 7│]",
+            ),
+            (
+                qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
+                2,
+                "Var[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]",
+            ),
+            (
+                qml.var(
+                    qml.PolyXP(
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    )
+                ),
+                1,
+                "Var[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]",
+            ),
+            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
+            (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
+            (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
+            (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
+            (qml.sample(qml.Hadamard(wires=[1])), 1, "Sample[H]"),
+            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "Sample[H0]"),
+            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "Sample[H0]"),
+            (qml.sample(qml.NumberOperator(wires=[1])), 1, "Sample[n]"),
+            (qml.sample(qml.X(wires=[1])), 1, "Sample[x]"),
+            (qml.sample(qml.P(wires=[1])), 1, "Sample[p]"),
+            (
+                qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
+                1,
+                "Sample[│4, 5, 7╳4, 5, 7│]",
+            ),
+            (
+                qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
+                2,
+                "Sample[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]",
+            ),
+            (
+                qml.sample(
+                    qml.PolyXP(
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    )
+                ),
+                1,
+                "Sample[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]",
+            ),
+            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
+        ],
+    )
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
         """Test that an Observable instance with return type is properly resolved."""
         assert unicode_representation_resolver.output_representation(obs, wire) == target
@@ -551,7 +653,7 @@ class TestRepresentationResolver:
         wire = 3
 
         unicode_representation_resolver.element_representation(obs, wire)
-        
+
         assert unicode_representation_resolver.output_representation.call_args[0] == (obs, wire)
 
     def test_element_representation_calls_operator(self, unicode_representation_resolver):
@@ -565,7 +667,7 @@ class TestRepresentationResolver:
         unicode_representation_resolver.element_representation(op, wire)
 
         print()
-        
+
         assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
 
 

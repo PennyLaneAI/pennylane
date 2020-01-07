@@ -209,17 +209,17 @@ class UnicodeCharSet(CharSet):
     def to_superscript(num):
         """Convert the given number to a superscripted string."""
         ret = str(num)
-        for old, new in { 
-                "0": "⁰",
-                "1": "¹",
-                "2": "²",
-                "3": "³",
-                "4": "⁴",
-                "5": "⁵",
-                "6": "⁶",
-                "7": "⁷",
-                "8": "⁸",
-                "9": "⁹",
+        for old, new in {
+            "0": "⁰",
+            "1": "¹",
+            "2": "²",
+            "3": "³",
+            "4": "⁴",
+            "5": "⁵",
+            "6": "⁶",
+            "7": "⁷",
+            "8": "⁸",
+            "9": "⁹",
         }.items():
             ret = ret.replace(old, new)
 
@@ -229,21 +229,22 @@ class UnicodeCharSet(CharSet):
     def to_subscript(num):
         """Convert the given number to a subscripted string."""
         ret = str(num)
-        for old, new in { 
-                "0": "₀",
-                "1": "₁",
-                "2": "₂",
-                "3": "₃",
-                "4": "₅",
-                "5": "⁵",
-                "6": "₆",
-                "7": "₇",
-                "8": "₈",
-                "9": "₉",
+        for old, new in {
+            "0": "₀",
+            "1": "₁",
+            "2": "₂",
+            "3": "₃",
+            "4": "₅",
+            "5": "⁵",
+            "6": "₆",
+            "7": "₇",
+            "8": "₈",
+            "9": "₉",
         }.items():
             ret = ret.replace(old, new)
 
         return ret
+
 
 class AsciiCharSet(CharSet):
     """Charset for CircuitDrawing made of Unicode characters."""
@@ -380,7 +381,9 @@ class RepresentationResolver:
         if coefficient == 0:
             return ""
 
-        return " {} {} {}".format("+" if coefficient > 0 else "-", round(math.fabs(coefficient), 3), variable)
+        return " {} {} {}".format(
+            "+" if coefficient > 0 else "-", round(math.fabs(coefficient), 3), variable
+        )
 
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
@@ -445,19 +448,29 @@ class RepresentationResolver:
                 for idx in range(0, coefficients.shape[0] // 2):
                     x = 2 * idx + 1
                     y = 2 * idx + 2
-                    poly_str += self._format_poly_term(coefficients[x], "x{}".format(self.charset.to_subscript(idx)))
-                    poly_str += self._format_poly_term(coefficients[y], "p{}".format(self.charset.to_subscript(idx)))
+                    poly_str += self._format_poly_term(
+                        coefficients[x], "x{}".format(self.charset.to_subscript(idx))
+                    )
+                    poly_str += self._format_poly_term(
+                        coefficients[y], "p{}".format(self.charset.to_subscript(idx))
+                    )
 
                 return poly_str
-            
+
             if order == 2:
                 poly_str = str(coefficients[0, 0])
 
                 for idx in range(0, coefficients.shape[0] // 2):
                     x = 2 * idx + 1
                     p = 2 * idx + 2
-                    poly_str += self._format_poly_term(coefficients[0, x] + coefficients[x, 0], "x{}".format(self.charset.to_subscript(idx)))
-                    poly_str += self._format_poly_term(coefficients[0, p] + coefficients[p, 0], "p{}".format(self.charset.to_subscript(idx)))
+                    poly_str += self._format_poly_term(
+                        coefficients[0, x] + coefficients[x, 0],
+                        "x{}".format(self.charset.to_subscript(idx)),
+                    )
+                    poly_str += self._format_poly_term(
+                        coefficients[0, p] + coefficients[p, 0],
+                        "p{}".format(self.charset.to_subscript(idx)),
+                    )
 
                 for idx1 in range(0, coefficients.shape[0] // 2):
                     for idx2 in range(idx1, coefficients.shape[0] // 2):
@@ -467,39 +480,73 @@ class RepresentationResolver:
                         p2 = 2 * idx2 + 2
 
                         if idx1 == idx2:
-                            poly_str += self._format_poly_term(coefficients[x1, x1], "x{}{}".format(self.charset.to_subscript(idx1), self.charset.to_superscript(2)))
-                            poly_str += self._format_poly_term(coefficients[p1, p1], "p{}{}".format(self.charset.to_subscript(idx1), self.charset.to_superscript(2)))
                             poly_str += self._format_poly_term(
-                                coefficients[x1, p1] + coefficients[p1, x1], 
-                                "x{}p{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)))
+                                coefficients[x1, x1],
+                                "x{}{}".format(
+                                    self.charset.to_subscript(idx1), self.charset.to_superscript(2)
+                                ),
+                            )
+                            poly_str += self._format_poly_term(
+                                coefficients[p1, p1],
+                                "p{}{}".format(
+                                    self.charset.to_subscript(idx1), self.charset.to_superscript(2)
+                                ),
+                            )
+                            poly_str += self._format_poly_term(
+                                coefficients[x1, p1] + coefficients[p1, x1],
+                                "x{}p{}".format(
+                                    self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)
+                                ),
+                            )
                         else:
                             poly_str += self._format_poly_term(
-                                coefficients[x1, x2] + coefficients[x2, x1], 
-                                "x{}x{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)))
+                                coefficients[x1, x2] + coefficients[x2, x1],
+                                "x{}x{}".format(
+                                    self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
+                                ),
+                            )
 
                             poly_str += self._format_poly_term(
-                                coefficients[p1, p2] + coefficients[p2, p1], 
-                                "p{}p{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)))
+                                coefficients[p1, p2] + coefficients[p2, p1],
+                                "p{}p{}".format(
+                                    self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
+                                ),
+                            )
 
                             poly_str += self._format_poly_term(
-                                coefficients[x1, p2] + coefficients[p2, x1], 
-                                "x{}p{}".format(self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)))
+                                coefficients[x1, p2] + coefficients[p2, x1],
+                                "x{}p{}".format(
+                                    self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
+                                ),
+                            )
 
                             poly_str += self._format_poly_term(
-                                coefficients[p1, x2] + coefficients[x2, p1], 
-                                "x{}p{}".format(self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)))
+                                coefficients[p1, x2] + coefficients[x2, p1],
+                                "x{}p{}".format(
+                                    self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)
+                                ),
+                            )
 
                 return poly_str
-
 
         if op.name == "FockState":
             return self.charset.VERTICAL_LINE + str(op.params[0]) + self.charset.RANGLE
 
         if op.name in {"BasisState", "FockStateVector"}:
-            return self.charset.VERTICAL_LINE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
+            return (
+                self.charset.VERTICAL_LINE
+                + str(op.params[0][op.wires.index(wire)])
+                + self.charset.RANGLE
+            )
 
         # Operations that only have matrix arguments
-        if op.name in {"GaussianState", "FockDensityMatrix", "FockStateVector", "QubitStateVector", "Interferometer"}:
+        if op.name in {
+            "GaussianState",
+            "FockDensityMatrix",
+            "FockStateVector",
+            "QubitStateVector",
+            "Interferometer",
+        }:
             param_strings = []
             for param in op.params:
                 if isinstance(param, np.ndarray):
