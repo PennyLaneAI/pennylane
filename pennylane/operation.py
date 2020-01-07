@@ -800,12 +800,18 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals = pauli_eigs(len(self.wires))
 
+        # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
+        # Hermitian(obs, wires=[1, 3, 4])
+        # Sorting the observables based on wires, so that the order of
+        # the eigenvalues is correct
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
+
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals = np.array([1])
-            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
+            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
                     self._eigvals = np.kron(self._eigvals, pauli_eigs(len(list(g))))
@@ -815,7 +821,11 @@ class Tensor(Observable):
                         # loop through all non-standard observables
                         self._eigvals = np.kron(self._eigvals, ns_ob.eigvals)
 
-        return self._eigvals
+        wire_ordering = np.argsort(np.argsort(list(_flatten(self.wires))))
+        tuples = np.array(list(itertools.product([0, 1], repeat=self.num_wires)))
+        perm = np.ravel_multi_index(tuples[:, wire_ordering].T, [2] * self.num_wires)
+
+        return self._eigvals[perm]
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the

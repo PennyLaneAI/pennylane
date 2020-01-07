@@ -347,7 +347,7 @@ def test_not_xyz_terms_to_qubit_operator():
         ),
     ],
 )
-def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, expected_cost):
+def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, expected_cost, tol):
     r"""Test if `load_hamiltonian()` in qchem integrates with `vqe.cost()` in pennylane"""
 
     qOp = QubitOperator()
@@ -370,7 +370,7 @@ def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, e
         [0.1 * i for i in range(num_qubits)], dummy_ansatz, vqe_hamiltonian, dev
     )
 
-    assert dummy_cost == expected_cost
+    assert np.allclose(dummy_cost, expected_cost, **tol)
 
 
 @pytest.mark.parametrize(
