@@ -747,8 +747,7 @@ class TestTensor:
         """Test that the correct eigenvalues are returned for the Tensor containing
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, 5)
-
+        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4,5])
         res = O.eigvals
         expected = np.kron(np.array([1., -1.]), np.kron(np.array([1.,  1.]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -766,11 +765,11 @@ class TestTensor:
 
         # diagonalize the PauliY on wire 1 (U.Y.U^\dagger = Z
         # where U = HSZ).
-        assert isinstance(res[1], qml.Hadamard)
+        assert isinstance(res[1], qml.PauliZ)
         assert res[1].wires == [1]
         assert isinstance(res[2], qml.S)
         assert res[2].wires == [1]
-        assert isinstance(res[3], qml.PauliZ)
+        assert isinstance(res[3], qml.Hadamard)
         assert res[3].wires == [1]
 
         # diagonalize the Hermitian observable on wires 5, 6
@@ -794,8 +793,7 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        O_mat = functools.reduce(np.kron, [i.matrix for i in O.obs])
-
+        O_mat = O.matrix
         diag_gates = O.diagonalizing_gates()
 
         # group the diagonalizing gates based on what wires they act on
@@ -803,6 +801,12 @@ class TestTensor:
         for _, g in itertools.groupby(diag_gates, lambda x: x.wires):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
+
+            # Need to revert the order in which the matrices are applied such that they adhere to the order
+            # of matrix multiplication
+            # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
+            # becomes Hadamard @ S @ PauliZ, where @ stands for matrix multiplication
+            mats = mats[::-1]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -815,6 +819,7 @@ class TestTensor:
         # in the tensor product, it is sufficient to Kronecker product
         # the entire list.
         U = functools.reduce(np.kron, U_list)
+
 
         res = U @ O_mat @ U.conj().T
         expected = np.diag(O.eigvals)
