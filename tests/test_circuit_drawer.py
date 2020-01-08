@@ -771,6 +771,7 @@ class TestCircuitGraphDrawing:
 
         @qml.qnode(dev)
         def circuit(a, b, weights, c, d, other_weights):
+            qml.BasisState(np.array([0,1,1,0,0,1,0,0]), wires=list(range(8)))
             qml.templates.StronglyEntanglingLayers(weights, wires=range(8))
             qml.RX(a, wires=[0])
             qml.RX(b, wires=[1])
@@ -792,3 +793,5 @@ class TestCircuitGraphDrawing:
         circuit.print_applied()
 
         raise Exception()
+
+# TODO: Change the rendering of kets so that the left bar does not fill the whole line but use a regular bar
