@@ -17,13 +17,14 @@ They implement a transformation from a quantum state to another quantum state.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_type, _check_number_of_layers, _check_shapes,
                                        _get_shape)
 
-
+@template
 def _strongly_entangling_layer(weights, wires, r, imprimitive):
     r"""A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
 
