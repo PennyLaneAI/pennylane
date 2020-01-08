@@ -21,7 +21,6 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import itertools
 import functools
-import warnings
 
 import numpy as np
 from scipy.linalg import eigh

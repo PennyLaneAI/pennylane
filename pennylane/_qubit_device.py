@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
 
 import itertools
 from collections import OrderedDict
@@ -142,6 +142,16 @@ class QubitDevice(Device):
         self._rotated_prob = self.probability(values_only=True)
 
     def generate_samples(self):
+        """If the device contains a sample return type, or the
+        device is running in non-analytic mode, ``dev.shots`` number of
+        computational basis samples are generated and stored within
+        the :attr:`~._samples` attribute.
+
+        .. note::
+
+            This method should only be called by devices that do not
+            generate their own computational basis samples.
+        """
         if self._memory or (not self.analytic):
             # sample from the computational basis states based on the state probability
             basis_states = np.arange(2**self.num_wires)
