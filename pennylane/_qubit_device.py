@@ -38,11 +38,14 @@ class QubitDevice(Device):
             expectation values of observables. Defaults to 1000 if not specified.
     """
     #pylint: disable=too-many-public-methods
-    def __init__(self, wires=1, shots=1000, analytic=True):
+    def __init__(self, wires=1, shots=1000, analytic=True, rotate_basis=True):
         super().__init__(wires=wires, shots=shots)
         self.analytic = analytic
+        self._rotate = rotate_basis
 
         self._state = None
+        self._prob = None
+        self._rotated_prob = None
         self._memory = None
         self._samples = None
 
@@ -83,6 +86,9 @@ class QubitDevice(Device):
                 # Pass instances directly
                 self.apply(operation)
 
+            if self._rotate:
+                self.rotate_basis(observables)
+
             self.post_apply()
 
             self.pre_measure()
@@ -119,26 +125,41 @@ class QubitDevice(Device):
 
             return self._asarray(results)
 
-    def rotate_basis(self, observable):
+    def rotate_basis(self, obs_queue):
         """Rotates the specified wires such that they
         are in the eigenbasis of the provided observable.
-
-        Args:
-            observable (Observable): the observable that is to be
-                measured
         """
-        for diag_gate in observable.diagonalizing_gates():
-            self.apply(diag_gate)
+        self._prob = self.probability(values_only=True)
+
+        self._memory = False
+        for observable in obs_queue:
+            if hasattr(observable, "return_type") and observable.return_type == Sample:
+                self._memory = True  # make sure to return samples
+
+            for diag_gate in observable.diagonalizing_gates():
+                self.apply(diag_gate)
+
+        self._rotated_prob = self.probability(values_only=True)
+
+    def generate_samples(self):
+        if self._memory or (not self.analytic):
+            # sample from the computational basis states based on the state probability
+            basis_states = np.arange(2**self.num_wires)
+            samples = np.random.choice(basis_states, self.shots, p=self._rotated_prob)
+
+            # convert the basis states from base 10 to binary representation
+            self._samples = (((samples[:, None] & (1 << np.arange(2**self.num_wires)))) > 0).astype(int)
 
     def expval(self, observable):
         wires = observable.wires
-        self.rotate_basis(observable)
+
+        if self._rotated_prob is None:
+            self.rotate_basis([observable])
 
         if self.analytic:
             # exact expectation value
             eigvals = observable.eigvals
-            prob = np.abs(self._state ** 2)
-            prob = self.marginal_prob(prob, wires=wires)
+            prob = self.marginal_prob(self._rotated_prob, wires=wires)
             return (eigvals @ prob).real
 
         # estimate the ev
@@ -146,17 +167,40 @@ class QubitDevice(Device):
 
     def var(self, observable):
         wires = observable.wires
-        self.rotate_basis(observable)
+
+        if self._rotated_prob is None:
+            self.rotate_basis([observable])
 
         if self.analytic:
             # exact variance value
             eigvals = observable.eigvals
-            prob = np.abs(self._state ** 2)
-            prob = self.marginal_prob(prob, wires=wires)
+            prob = self.marginal_prob(self._rotated_prob, wires=wires)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
         return np.var(self.sample(observable))
 
+    def sample(self, observable):
+        wires = observable.wires
+        name = observable.name
+
+        if self._rotated_prob is None:
+            observable.return_type = Sample
+            self.rotate_basis([observable])
+            self.generate_samples()
+
+        if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+            # observables all have eigenvalues {1, -1}, so post-processing step is known
+            return 1 - 2 * self._samples[:, wires[0]]
+
+        # Need to post-process the samples using the observables.
+        # Extract only the columns of the basis samples required based on `wires`.
+        wires = np.hstack(wires)
+        samples = self._samples[:, np.array(wires)]
+
+        # replace the basis state in the computational basis with the correct eigenvalue
+        indices = np.ravel_multi_index(samples.T, [2] * len(wires))
+        converted_measurements = observable.eigvals[indices]
+        return converted_measurements
 
     def probability(self, wires=None, values_only=False):
         """Return the (marginal) probability of each computational basis
@@ -166,6 +210,9 @@ class QubitDevice(Device):
             wires (Sequence[int]): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
+            values_only (bool): If ``True``, the return type is modified to
+                instead be a flattened array of the computational
+                basis state probabilities.
 
         Returns:
             OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
@@ -176,7 +223,6 @@ class QubitDevice(Device):
             return None
 
         wires = wires or range(self.num_wires)
-
         prob = self.marginal_prob(np.abs(self._state)**2, wires)
 
         if values_only:
@@ -206,3 +252,15 @@ class QubitDevice(Device):
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
         prob = prob.reshape([2] * self.num_wires)
         return np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+
+    def reset(self):
+        """Reset the backend state.
+
+        After the reset, the backend should be as if it was just constructed.
+        Most importantly the quantum state is reset to its initial value.
+        """
+        self._state = None
+        self._prob = None
+        self._rotated_prob = None
+        self._memory = None
+        self._samples = None
