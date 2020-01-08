@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+#       i Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ class QubitDevice(Device):
         self._state = None
         self._prob = None
         self._rotated_prob = None
+        self._wires_used = None
         self._memory = None
         self._samples = None
 
@@ -132,6 +133,7 @@ class QubitDevice(Device):
         self._prob = self.probability(values_only=True)
 
         self._memory = False
+        wires = []
         for observable in obs_queue:
             if hasattr(observable, "return_type") and observable.return_type == Sample:
                 self._memory = True  # make sure to return samples
@@ -139,7 +141,10 @@ class QubitDevice(Device):
             for diag_gate in observable.diagonalizing_gates():
                 self.apply(diag_gate)
 
-        self._rotated_prob = self.probability(values_only=True)
+            wires.extend(observable.wires)
+
+        self._wires_used = wires
+        self._rotated_prob = self.probability(self._wires_used, values_only=True)
 
     def generate_samples(self):
         """If the device contains a sample return type, or the
@@ -154,7 +159,7 @@ class QubitDevice(Device):
         """
         if self._memory or (not self.analytic):
             # sample from the computational basis states based on the state probability
-            basis_states = np.arange(2**self.num_wires)
+            basis_states = np.arange(2**len(self._wires_used))
             samples = np.random.choice(basis_states, self.shots, p=self._rotated_prob)
 
             # convert the basis states from base 10 to binary representation
