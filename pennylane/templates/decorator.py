@@ -17,6 +17,14 @@ This module contains the template decorator.
 from pennylane.utils import OperationRecorder
 
 def template(func):
+    """Wraps the given function and makes it return a list of all queued Operations.
+    
+    Args:
+        func (callable): A template function
+    
+    Returns:
+        callable: The wrapper function
+    """
     def wrapper(*args, **kwargs):
         with OperationRecorder() as rec:
             func(*args, **kwargs)
