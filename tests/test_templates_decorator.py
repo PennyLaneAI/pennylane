@@ -15,8 +15,6 @@
 Unit tests for the :mod:`pennylane.template.decorator` module.
 Integration tests should be placed into ``test_templates.py``.
 """
-import pytest
-
 import pennylane as qml
 from pennylane.templates.decorator import template
 
