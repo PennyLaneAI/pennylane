@@ -18,12 +18,12 @@ Eigensolver (VQE) algorithm.
 Building the electronic Hamiltonian
 -----------------------------------
 
-The ``qchem`` module provides access to a driver function :func:`~.generate_mol_hamiltonian`
+The ``qchem`` module provides access to a driver function :func:`~.generate_hamiltonian`
 to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
-    h, nr_qubits = qml.qchem.generate_mol_hamiltonian(
+    h, nr_qubits = qml.qchem.generate_hamiltonian(
         name='h2',
         geo_file='h2.xyz',
         charge=0,
@@ -40,7 +40,7 @@ where:
 
 * ``nr_qubits`` is the number of qubits operators needed to represent it.
 
-Internally, :func:`~.generate_mol_hamiltonian` calls the following functions in order
+Internally, :func:`~.generate_hamiltonian` calls the following functions in order
 to generate the qubit Hamiltonian:
 
 .. currentmodule:: pennylane_qchem.qchem
@@ -48,9 +48,9 @@ to generate the qubit Hamiltonian:
 .. autosummary::
 
     read_structure
-    gen_meanfield_data
-    gen_active_space
-    gen_hamiltonian_pauli_basis
+    meanfield_data
+    active_space
+    decompose_hamiltonian
 
 
 For more fine-grained control, these functions may be
@@ -84,7 +84,7 @@ coordinates of each atomic species.
 Solving the Hartree-Fock equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`~.gen_meanfield_data` function uses  `OpenFermion-PySCF <https://github
+The :func:`~.meanfield_data` function uses  `OpenFermion-PySCF <https://github
 .com/quantumlib/OpenFermion-PySCF>`_ and `OpenFermion-Psi4 <https://github
 .com/quantumlib/OpenFermion-Psi4>`_ plugins to solve the Hartree-Fock equations for the molecule
 using the electronic structure packages `PySCF <https://github.com/sunqm/pyscf>`_ and `Psi4
@@ -97,7 +97,7 @@ functions <https://www.basissetexchange.org/>`_.
 .. code-block:: python
 
     geometry = qml.qchem.read_structure('h2o.SDF')
-    hf_data = qml.qchem.gen_meanfield_data(
+    hf_data = qml.qchem.meanfield_data(
         'water',
         geometry,
         charge=0,
@@ -112,21 +112,21 @@ with the Hartree-Fock electronic structure of the water molecule.
 Mapping the Hamiltonian to the Pauli basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The function :func:`~.gen_active_space` is used to create an `active space <https://en.wikipedia
+The function :func:`~.active_space` is used to create an `active space <https://en.wikipedia
 .org/wiki/Complete_active_space>`__  by classifying the Hartree-Fock molecular orbitals as doubly-occupied,
 active and external orbitals. Within this approximation, a certain number of *active electrons*
 can populate the *active orbitals*.
 
 .. code-block:: python
 
-    d_occ_indices, active_indices = qml.qchem.gen_active_space(
+    d_occ_indices, active_indices = qml.qchem.active_space(
         'water',
         hf_data,
         n_active_electrons=2,
         n_active_orbitals=2
     )
 
-Once we have defined the active space, :func:`~.gen_hamiltonian_pauli_basis` calls
+Once we have defined the active space, :func:`~.decompose_hamiltonian` calls
 OpenFermion to generate the second-quantized fermionic Hamiltonian
 and map it to a linear combination of Pauli operators via the `Jordan-Wigner
 <https://en.wikipedia.org/wiki/Jordan%E2%80%93Wigner_transformation>`__ or `Bravyi-Kitaev
@@ -134,7 +134,7 @@ and map it to a linear combination of Pauli operators via the `Jordan-Wigner
 
 .. code-block:: python
 
-    qubit_hamiltonian = qchem.gen_hamiltonian_pauli_basis(
+    qubit_hamiltonian = qchem.decompose_hamiltonian(
         'water',
         hf_data,
         mapping='jordan_wigner',
@@ -156,11 +156,11 @@ the expectation value of the *electronic Hamiltonian*, while a classical optimiz
 find its ground state.
 
 First, the qubit Hamiltonian ``h`` has to be converted to a PennyLane
-Hamiltonian using the :func:`~.load_hamiltonian` function:
+Hamiltonian using the :func:`~.convert_hamiltonian` function:
 
 .. code-block:: python
 
-    hamiltonian = qml.qchem.load_hamiltonian(h)
+    hamiltonian = qml.qchem.convert_hamiltonian(h)
 
 We can then use :func:`~.vqe.cost` to automatically create the QNodes
 and define the cost function:
