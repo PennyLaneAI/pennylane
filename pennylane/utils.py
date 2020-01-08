@@ -18,6 +18,7 @@ across the PennyLane submodules.
 # pylint: disable=protected-access
 from collections.abc import Iterable
 from collections import OrderedDict
+import copy
 import numbers
 import functools
 import inspect
@@ -227,11 +228,11 @@ class Recorder:
 
     @property
     def queue(self):
-        """Queue of the underlying QNode if existant, otherwise a copy of the internal operator list."""
+        """Queue of the underlying QNode if existant, otherwise the internal operator list."""
         if self._old_context:
             return self._old_context.queue
 
-        return self._ops.copy()
+        return self._ops
 
     # Spoof all attributes of the underlying QNode if there is one
     def __getattr__(self, name):
@@ -353,3 +354,30 @@ class OperationRecorder:
                 output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
 
         return output
+
+
+def inv(operation_list):
+    """Invert a list of operations or a template.
+
+    If the inversion happens inside a QNode, the operations are removed and requeued
+    in the reversed order for proper inversion.
+
+    Args:
+        operation_list (Sequence[~.Operation]): A sequence of operations
+
+    Returns:
+        Sequence[~.Operation]: The inverted sequence of operations
+    """
+    inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
+
+    if qml._current_context is not None:
+        indices = [qml._current_context.queue.index(op) for op in operation_list]
+
+        for op in operation_list:
+            qml._current_context.queue.remove(op)
+
+        for idx, inv_op in sorted(zip(indices, inv_ops)):
+            qml._current_context.queue.insert(idx, inv_op)
+            inv_op.queue_idx = idx
+
+    return inv_ops
