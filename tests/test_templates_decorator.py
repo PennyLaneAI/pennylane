@@ -40,6 +40,7 @@ class TestDecorator:
     """Tests the template decorator."""
 
     def test_dummy_template(self):
+        """Test the decorator for a dummy template."""
         @template
         def my_template(wires):
             dummy_template(wires)
@@ -53,6 +54,7 @@ class TestDecorator:
             assert res_op.params == exp_op.params
 
     def test_decorated_dummy_template(self):
+        """Test the decorator for a already decorated template."""
         res = decorated_dummy_template([0, 1])
 
         expected = expected_queue([0, 1])
@@ -63,6 +65,7 @@ class TestDecorator:
             assert res_op.params == exp_op.params
 
     def test_decorated_decorated_dummy_template(self):
+        """Test the decorator for decorating an already decorated template."""
         @template
         def my_template(wires):
             decorated_dummy_template(wires)
