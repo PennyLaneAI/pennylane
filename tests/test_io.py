@@ -63,7 +63,7 @@ class TestLoad:
         with pytest.raises(
             ValueError, match="Converter does not exist. Make sure the required plugin is installed"
         ):
-            qml.load("Test", format="harakiri")
+            qml.load("Test", format="some_non_existing_format")
 
     @pytest.mark.parametrize(
         "method,entry_point_name",
