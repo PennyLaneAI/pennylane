@@ -102,17 +102,21 @@ class TestFlatten:
         with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
             pu.unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
+
 class TestPauliEigs:
     """Tests for the auxiliary function to return the eigenvalues for Paulis"""
 
     paulix = np.array([[0, 1], [1, 0]])
     pauliy = np.array([[0, -1j], [1j, 0]])
     pauliz = np.array([[1, 0], [0, -1]])
-    hadamard = 1/np.sqrt(2)*np.array([[1, 1],[1, -1]])
+    hadamard = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
 
     standard_observables = [paulix, pauliy, pauliz, hadamard]
 
-    matrix_pairs = [np.kron(x, y) for x, y in list(itertools.product(standard_observables, standard_observables))]
+    matrix_pairs = [
+        np.kron(x, y)
+        for x, y in list(itertools.product(standard_observables, standard_observables))
+    ]
 
     @pytest.mark.parametrize("pauli", standard_observables)
     def test_correct_eigenvalues_paulis(self, pauli):
@@ -121,21 +125,23 @@ class TestPauliEigs:
 
     @pytest.mark.parametrize("pauli_product", matrix_pairs)
     def test_correct_eigenvalues_pauli_kronecker_products_two_qubits(self, pauli_product):
-       """Test the paulieigs function for two qubits"""
-       assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
+        """Test the paulieigs function for two qubits"""
+        assert np.array_equal(pu.pauli_eigs(2), np.diag(np.kron(self.pauliz, self.pauliz)))
 
     @pytest.mark.parametrize("pauli_product", matrix_pairs)
     def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
-       """Test the paulieigs function for three qubits"""
-       assert np.array_equal(pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))))
+        """Test the paulieigs function for three qubits"""
+        assert np.array_equal(
+            pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz)))
+        )
 
     @pytest.mark.parametrize("depth", list(range(1, 6)))
     def test_cache_usage(self, depth):
         """Test that the right number of cachings have been executed after clearing the cache"""
         pu.pauli_eigs.cache_clear()
         pu.pauli_eigs(depth)
-        total_runs = sum([2**x for x in range(depth)])
-        assert functools._CacheInfo(depth - 1, depth, 128, depth)== pu.pauli_eigs.cache_info()
+        total_runs = sum([2 ** x for x in range(depth)])
+        assert functools._CacheInfo(depth - 1, depth, 128, depth) == pu.pauli_eigs.cache_info()
 
 
 class TestArgumentHelpers:
@@ -487,6 +493,7 @@ class TestOperationRecorder:
 
         assert str(recorder) == expected_output
 
+
 @qml.template
 def dummy_template(wires):
     """Dummy template for inv tests."""
@@ -494,9 +501,17 @@ def dummy_template(wires):
         qml.RX(1, wires=[wire])
         qml.RY(-1, wires=[wire])
 
+
 def inverted_dummy_template_operations(wires):
     """The expected inverted operations for the dummy template."""
-    return sum([[qml.RY(-1, wires=[wire]).inv(), qml.RX(1, wires=[wire]).inv()] for wire in reversed(wires)], [])
+    return sum(
+        [
+            [qml.RY(-1, wires=[wire]).inv(), qml.RX(1, wires=[wire]).inv()]
+            for wire in reversed(wires)
+        ],
+        [],
+    )
+
 
 class TestInv:
     """Test the template inversion function."""
@@ -550,7 +565,7 @@ class TestInv:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
-            qml.CNOT(wires=[0, 1]) 
+            qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
         inv_queue = [
@@ -574,7 +589,7 @@ class TestInv:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(dummy_template([0, 1, 2]))
-            qml.CNOT(wires=[0, 1]) 
+            qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
         inv_queue = [
@@ -599,7 +614,7 @@ class TestInv:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
-            qml.CNOT(wires=[0, 1]) 
+            qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
         inv_queue = [
@@ -626,7 +641,7 @@ class TestInv:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(dummy_template([0, 1]))
-            qml.CNOT(wires=[0, 1]) 
+            qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
         inv_queue = [

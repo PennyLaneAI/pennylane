@@ -186,6 +186,7 @@ def expand(U, wires, num_wires):
     # permute U to take into account rearranged wires
     return U[:, perm][perm]
 
+
 @functools.lru_cache()
 def pauli_eigs(n):
     """Returns the eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
@@ -203,6 +204,7 @@ def pauli_eigs(n):
     if n == 1:
         return np.array([1, -1])
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
+
 
 class Recorder:
     """Recorder class used by the :class:`~.OperationRecorder`.

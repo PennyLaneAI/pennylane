@@ -18,9 +18,13 @@ Integration tests should be placed into ``test_templates.py``.
 import pennylane as qml
 from pennylane.templates.decorator import template
 
+
 def expected_queue(wires):
     """Expected queue for the dummy template."""
-    return [qml.RX(2 * i, wires=[wire]) for i, wire in enumerate(wires)] + [qml.RY(3 * i, wires=[wire]) for i, wire in enumerate(wires)]
+    return [qml.RX(2 * i, wires=[wire]) for i, wire in enumerate(wires)] + [
+        qml.RY(3 * i, wires=[wire]) for i, wire in enumerate(wires)
+    ]
+
 
 def dummy_template(wires):
     """Dummy template for template decorator tests."""
@@ -29,6 +33,7 @@ def dummy_template(wires):
 
     for i, wire in enumerate(wires):
         qml.RY(3 * i, wires=[wire])
+
 
 @template
 def decorated_dummy_template(wires):
@@ -39,11 +44,13 @@ def decorated_dummy_template(wires):
     for i, wire in enumerate(wires):
         qml.RY(3 * i, wires=[wire])
 
+
 class TestDecorator:
     """Tests the template decorator."""
 
     def test_dummy_template(self):
         """Test the decorator for a dummy template."""
+
         @template
         def my_template(wires):
             dummy_template(wires)
@@ -69,6 +76,7 @@ class TestDecorator:
 
     def test_decorated_decorated_dummy_template(self):
         """Test the decorator for decorating an already decorated template."""
+
         @template
         def my_template(wires):
             decorated_dummy_template(wires)
