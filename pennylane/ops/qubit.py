@@ -16,6 +16,7 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -142,7 +143,7 @@ class PauliY(Observable, Operation):
             list(pennylane.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
-        return [Hadamard(wires=self.wires), S(wires=self.wires), PauliZ(wires=self.wires)]
+        return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
 
 class PauliZ(Observable, Operation):
@@ -1110,6 +1111,30 @@ class Hermitian(Observable):
         return A
 
     @property
+    def eigendecomposition_of_permuted(self):
+        """Return the eigendecomposition of the (permuted) matrix specified by the Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+        """
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
+        perm = np.ravel_multi_index(basis_states[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
+
+        Hmat = self.matrix[:, perm][perm]
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in Hermitian._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+        Hmat = self.matrix
+        return Hermitian._eigs[Hkey]
+
+    @property
     def eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
@@ -1119,12 +1144,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        Hmat = self.matrix
-        Hkey = tuple(self.parameters[0].flatten().tolist())
-        if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}
-        return Hermitian._eigs[Hkey]["eigval"]
+        return self.eigendecomposition_of_permuted["eigval"]
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -1136,13 +1156,8 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        Hmat = self.matrix
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            Hermitian._eigs[Hkey] = {"eigval": w, "eigvec": U}
         return [
-            QubitUnitary(Hermitian._eigs[Hkey]["eigvec"].conj().T, wires=self.wires),
+            QubitUnitary(self.eigendecomposition_of_permuted["eigvec"].conj().T, wires=list(sorted(self.wires))),
         ]
 
 

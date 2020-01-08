@@ -19,7 +19,6 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
-from collections import OrderedDict
 import itertools
 import functools
 import warnings
@@ -27,7 +26,7 @@ import warnings
 import numpy as np
 from scipy.linalg import eigh
 
-from pennylane import Device, DeviceError
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import Operation
 
 
@@ -231,7 +230,6 @@ def hermitian(*args):
         array: square hermitian matrix
     """
     A = np.asarray(args[0])
-
     if A.shape[0] != A.shape[1]:
         raise ValueError("Expectation must be a square matrix.")
 
@@ -253,7 +251,7 @@ def identity(*_):
 #========================================================
 
 
-class DefaultQubit(Device):
+class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
     Args:
@@ -312,7 +310,7 @@ class DefaultQubit(Device):
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots)
+        super().__init__(wires, shots, analytic)
         self.eng = None
         self.analytic = analytic
 
@@ -322,11 +320,14 @@ class DefaultQubit(Device):
     def pre_apply(self):
         self.reset()
 
-    def apply(self, operation, wires, par):
+    def apply(self, operation):
         # number of wires on device
+        wires = operation.wires
+        par = operation.parameters
+
         n = self.num_wires
 
-        if operation == 'QubitStateVector':
+        if isinstance(operation, QubitStateVector):
             input_state = np.asarray(par[0], dtype=np.complex128)
 
             if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
@@ -334,7 +335,7 @@ class DefaultQubit(Device):
             n_state_vector = input_state.shape[0]
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation, self.short_name))
+                                  "on a {} device.".format(operation.name, self.short_name))
             if input_state.ndim == 1 and n_state_vector == 2**len(wires):
 
                 # generate basis states on subset of qubits via the cartesian product
@@ -352,7 +353,8 @@ class DefaultQubit(Device):
                 raise ValueError("State vector must be of length 2**wires.")
             self._first_operation = False
             return
-        if operation == 'BasisState':
+
+        if isinstance(operation, BasisState):
             # length of basis state parameter
             n_basis_state = len(par[0])
 
@@ -362,7 +364,7 @@ class DefaultQubit(Device):
                 raise ValueError("BasisState parameter and wires must be of equal length.")
             if not self._first_operation:
                 raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation, self.short_name))
+                                  "on a {} device.".format(operation.name, self.short_name))
 
 
             # get computational basis state number
@@ -373,7 +375,7 @@ class DefaultQubit(Device):
             self._first_operation = False
             return
 
-        A = self._get_operator_matrix(operation, par)
+        A = self._get_operator_matrix(operation.name, par)
 
         self._state = self.mat_vec_product(A, self._state, wires)
         self._first_operation = False
@@ -419,41 +421,6 @@ class DefaultQubit(Device):
             return self._get_tensor_operator_matrix(observable, par)
 
         return self._get_operator_matrix(observable, par)
-
-    def expval(self, observable, wires, par):
-        if self.analytic:
-            # exact expectation value
-            A = self.get_operator_matrix_for_measurement(observable, par)
-
-            ev = self.ev(A, wires)
-        else:
-            # estimate the ev
-            ev = np.mean(self.sample(observable, wires, par))
-
-        return ev
-
-    def var(self, observable, wires, par):
-        if self.analytic:
-            # exact variance value
-            A = self.get_operator_matrix_for_measurement(observable, par)
-
-            var = self.ev(A@A, wires) - self.ev(A, wires)**2
-        else:
-            # estimate the ev
-            var = np.var(self.sample(observable, wires, par))
-
-        return var
-
-    def sample(self, observable, wires, par):
-        A = self.get_operator_matrix_for_measurement(observable, par)
-
-        a, P = spectral_decomposition(A)
-
-        p = np.zeros(a.shape)
-        for idx, Pi in enumerate(P):
-            p[idx] = self.ev(Pi, wires)
-
-        return np.random.choice(a, self.shots, p=p)
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
@@ -521,16 +488,30 @@ class DefaultQubit(Device):
     def observables(self):
         return set(self._observable_map.keys())
 
-    def probability(self, wires=None):
-        if self._state is None:
-            return None
+    def sample(self, observable):
+        wires = observable.wires
 
-        prob = np.abs(self._state.reshape([2] * self.num_wires)) ** 2
+        A = self.get_operator_matrix_for_measurement(observable.name, observable.parameters)
 
-        wires = wires or range(self.num_wires)
-        wires = np.hstack(wires)
+        a, P = spectral_decomposition(A)
 
-        basis_states = itertools.product(range(2), repeat=len(wires))
-        inactive_wires = list(set(range(self.num_wires)) - set(wires))
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
-        return OrderedDict(zip(basis_states, prob))
+        p = np.zeros(a.shape)
+        for idx, Pi in enumerate(P):
+            p[idx] = self.ev(Pi, wires)
+
+        return np.random.choice(a, self.shots, p=p)
+
+    def ev(self, A, wires):
+        r"""Expectation value of observable on specified wires.
+         Args:
+            A (array[float]): the observable matrix as array
+            wires (Sequence[int]): target subsystems
+         Returns:
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
+        As = self.mat_vec_product(A, self._state, np.hstack(wires).tolist())
+        expectation = np.vdot(self._state, As)
+
+        if np.abs(expectation.imag) > tolerance:
+            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
+        return expectation.real
