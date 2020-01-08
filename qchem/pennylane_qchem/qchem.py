@@ -545,12 +545,10 @@ def generate_hamiltonian(
         mol_name, hf_data, n_active_electrons, n_active_orbitals
     )
 
-    h_of, nr_qubits = (
+    return (
         decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
         2 * len(active_indices),
     )
-
-    return convert_hamiltonian(h_of), nr_qubits
 
 
 __all__ = [
