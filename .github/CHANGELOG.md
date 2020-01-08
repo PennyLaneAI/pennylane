@@ -2,6 +2,10 @@
 
 ### New features since last release
 
+* Added a `qml.inv` method that inverts templates and sequences of Operations.
+  Added a `@qml.template` decorator that makes templates return the queued Operations.
+  [#462](https://github.com/XanaduAI/pennylane/pull/462)
+
 * Added a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [#453](https://github.com/XanaduAI/pennylane/pull/453)
@@ -69,7 +73,7 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
-Soran Jahangiri, Zeyue Niu, Maria Schuld, Antal Száva
+Soran Jahangiri, Johannes Jakob Meyer, Zeyue Niu, Maria Schuld, Antal Száva
 
 ---
 
