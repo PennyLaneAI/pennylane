@@ -489,11 +489,13 @@ class TestOperationRecorder:
 
 @qml.template
 def dummy_template(wires):
+    """Dummy template for inv tests."""
     for wire in wires:
         qml.RX(1, wires=[wire])
         qml.RY(-1, wires=[wire])
 
 def inverted_dummy_template_operations(wires):
+    """The expected inverted operations for the dummy template."""
     return sum([[qml.RY(-1, wires=[wire]).inv(), qml.RX(1, wires=[wire]).inv()] for wire in reversed(wires)], [])
 
 class TestInv:
