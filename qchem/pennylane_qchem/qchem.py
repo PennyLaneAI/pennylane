@@ -531,7 +531,7 @@ def generate_mol_hamiltonian(
                 map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
     Returns:
-        tuple(QubitOperator, int): the fermionic-to-qubit transformed Hamiltonian
+        tuple(pennylane.beta.vqe.Hamiltonian, int): the fermionic-to-qubit transformed Hamiltonian
             and the total number of qubits
      """
 
@@ -549,6 +549,7 @@ def generate_mol_hamiltonian(
                                                         active_indices), 2 * len(active_indices)
 
     return load_hamiltonian(hamiltonian), nr_qubits
+
 
 __all__ = [
     "read_structure",
