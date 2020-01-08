@@ -4,7 +4,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops._qubit_operator import QubitOperator
+from pennylane.beta.vqe import Hamiltonian
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -75,5 +75,5 @@ def test_building_hamiltonian(
         outpath=tmpdir.strpath,
     )
 
-    assert isinstance(built_hamiltonian, QubitOperator)
+    assert isinstance(built_hamiltonian, Hamiltonian)
     assert n_qubits == 2 * n_act_orbitals

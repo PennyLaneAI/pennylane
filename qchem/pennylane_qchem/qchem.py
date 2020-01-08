@@ -545,11 +545,10 @@ def generate_mol_hamiltonian(
         mol_name, hf_data, n_active_electrons, n_active_orbitals
     )
 
-    return (
-        gen_hamiltonian_pauli_basis(mol_name, hf_data, mapping, docc_indices, active_indices),
-        2 * len(active_indices),
-    )
+    hamiltonian, nr_qubits = gen_hamiltonian_pauli_basis(mol_name, hf_data, mapping, docc_indices,
+                                                        active_indices), 2 * len(active_indices)
 
+    return load_hamiltonian(hamiltonian), nr_qubits
 
 __all__ = [
     "read_structure",
