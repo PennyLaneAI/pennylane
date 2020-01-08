@@ -19,17 +19,20 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 
 def expected_queue(wires):
+    """Expected queue for the dummy template."""
     return [qml.RX(2 * i, wires=[wire]) for i, wire in enumerate(wires)] + [qml.RY(3 * i, wires=[wire]) for i, wire in enumerate(wires)]
 
 def dummy_template(wires):
+    """Dummy template for template decorator tests."""
     for i, wire in enumerate(wires):
         qml.RX(2 * i, wires=[wire])
 
     for i, wire in enumerate(wires):
         qml.RY(3 * i, wires=[wire])
 
-@template 
+@template
 def decorated_dummy_template(wires):
+    """Already decorated dummy template for template decorator tests."""
     for i, wire in enumerate(wires):
         qml.RX(2 * i, wires=[wire])
 
