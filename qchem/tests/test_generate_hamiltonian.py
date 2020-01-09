@@ -52,8 +52,8 @@ def test_building_hamiltonian(
     requires_babel,
     tmpdir,
 ):
-    r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the OpenFermion
-    class ``QubitOperator`` and the correctness of the total number of qubits required to run the
+    r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
+    Hamiltonian class and the correctness of the total number of qubits required to run the
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
 

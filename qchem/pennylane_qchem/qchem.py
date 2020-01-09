@@ -543,13 +543,12 @@ def generate_hamiltonian(
     )
 
     docc_indices, active_indices = active_space(
-        mol_name, hf_data, n_active_electrons, n_active_orbitals
-    )
+        mol_name, hf_data, n_active_electrons, n_active_orbitals)
 
-    return (
-        decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
-        2 * len(active_indices),
-    )
+    h_of, nr_qubits = convert_hamiltonian(mol_name, hf_data, mapping, docc_indices,
+                                           active_indices), 2 * len(active_indices)
+
+    return convert_hamiltonian(h_of), nr_qubits
 
 
 __all__ = [
