@@ -547,7 +547,7 @@ def generate_hamiltonian(
 
     return (
         decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
-        2 * len(active_indices),
+        2 * len(active_indices)
     )
 
 
