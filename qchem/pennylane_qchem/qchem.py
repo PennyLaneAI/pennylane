@@ -503,15 +503,8 @@ def generate_hamiltonian(
 
     **Example usage:**
 
-    >>> generate_hamiltonian('h2', 'h2_ref.xyz', 0, 1, 'sto-3g')
-    (-0.04207897696293986+0j) [] +(-0.04475014401986122+0j) [X0 X1 Y2 Y3] +
-    (0.04475014401986122+0j) [X0 Y1 Y2 X3] +(0.04475014401986122+0j) [Y0 X1 X2 Y3] +
-    (-0.04475014401986122+0j) [Y0 Y1 X2 X3] +(0.17771287459806262+0j) [Z0] +
-    (0.1705973832722409+0j) [Z0 Z1] +(0.12293305054268105+0j) [Z0 Z2] +
-    (0.1676831945625423+0j) [Z0 Z3] +(0.17771287459806265+0j) [Z1] +
-    (0.1676831945625423+0j) [Z1 Z2] +(0.12293305054268105+0j) [Z1 Z3] +
-    (-0.2427428049645989+0j) [Z2] +(0.1762764080276107+0j) [Z2 Z3] +
-    (-0.2427428049645989+0j) [Z3], 4)
+    >>> generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g')
+    (<pennylane.beta.vqe.vqe.Hamiltonian object at 0x7fa406966e48>, 4)
 
     Args:
         mol_name (str): name of the molecule
@@ -533,6 +526,7 @@ def generate_hamiltonian(
     Returns:
         tuple(pennylane.beta.vqe.Hamiltonian, int): the fermionic-to-qubit transformed
         Hamiltonian and the number of qubits
+
      """
 
     geometry = read_structure(mol_geo_file, outpath)
@@ -542,13 +536,12 @@ def generate_hamiltonian(
     )
 
     docc_indices, active_indices = active_space(
-        mol_name, hf_data, n_active_electrons, n_active_orbitals
-    )
+        mol_name, hf_data, n_active_electrons, n_active_orbitals)
 
-    return (
-        decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
-        2 * len(active_indices),
-    )
+    h_of, nr_qubits = decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices,
+                                           active_indices), 2 * len(active_indices)
+
+    return convert_hamiltonian(h_of), nr_qubits
 
 
 __all__ = [

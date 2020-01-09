@@ -35,8 +35,7 @@ to generate the electronic Hamiltonian in a single call. For example,
 
 where:
 
-* ``h`` is the qubit Hamiltonian of the molecule represented as an
-  `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ ``QubitOperator``, and
+* ``h`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian, and
 
 * ``nr_qubits`` is the number of qubits operators needed to represent it.
 
@@ -155,15 +154,7 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-First, the qubit Hamiltonian ``h`` has to be converted to a PennyLane
-Hamiltonian using the :func:`~.convert_hamiltonian` function:
-
-.. code-block:: python
-
-    hamiltonian = qml.qchem.convert_hamiltonian(h)
-
-We can then use :func:`~.vqe.cost` to automatically create the QNodes
-and define the cost function:
+We can use :func:`~.vqe.cost` to automatically create the QNodes and define the cost function:
 
 .. code-block:: python
 

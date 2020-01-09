@@ -4,7 +4,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion.ops._qubit_operator import QubitOperator
+from pennylane.beta.vqe import Hamiltonian
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -52,8 +52,8 @@ def test_building_hamiltonian(
     requires_babel,
     tmpdir,
 ):
-    r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the OpenFermion
-    class ``QubitOperator`` and the correctness of the total number of qubits required to run the
+    r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
+    Hamiltonian class and the correctness of the total number of qubits required to run the
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
 
@@ -75,5 +75,5 @@ def test_building_hamiltonian(
         outpath=tmpdir.strpath,
     )
 
-    assert isinstance(built_hamiltonian, QubitOperator)
+    assert isinstance(built_hamiltonian, Hamiltonian)
     assert n_qubits == 2 * n_act_orbitals
