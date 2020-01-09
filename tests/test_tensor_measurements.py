@@ -52,7 +52,7 @@ class TestTensorExpval:
         @qml.qnode(dev)
         def circuit2(a, b, c):
             ansatz(a, b, c)
-            return expval(qml.Hermitian(np.kron(Z, Z), wires=(0, 2)))
+            return expval(qml.Hermitian(np.kron(Z, Z), wires=[0, 2]))
 
         res1 = circuit1(theta, phi, varphi)
         res2 = circuit2(theta, phi, varphi)
@@ -72,7 +72,7 @@ class TestTensorExpval:
         @qml.qnode(dev)
         def circuit2(a, b, c):
             ansatz(a, b, c)
-            return expval(qml.Hermitian(np.kron(Z, Z), wires=(0, 2)))
+            return expval(qml.Hermitian(np.kron(Z, Z), wires=[0, 2]))
 
         @qml.qnode(dev)
         def circuit3(a, b, c):

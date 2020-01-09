@@ -14,9 +14,13 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+import itertools
+import functools
+from unittest.mock import patch
+
 import pytest
 import numpy as np
-from unittest.mock import patch
+from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane.plugins.default_qubit import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
@@ -714,27 +718,137 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert np.array_equal(t.eigvals, np.kron(qml.PauliX.eigvals, qml.PauliY.eigvals))
+        assert np.array_equal(t.eigvals, np.kron([1, -1], [1, -1]))
+
+        # test that the eigvals are now cached and not recalculated
+        assert np.array_equal(t._eigvals, t.eigvals)
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor"""
+        """Test that the correct eigenvalues are returned for the Tensor containing an Hermitian observable"""
         X = qml.PauliX(0)
         hamiltonian = np.array([[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]])
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
         t = Tensor(X, Herm)
         d = np.kron(np.array([1., -1.]), np.array([-1.,  1.,  1.,  1.]))
         t = t.eigvals
-        assert np.allclose(t, d, atol=tol, rtol = 0)
+        assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity(self, tol):
-        """Test that the correct eigenvalues are returned for the Tensor"""
+        """Test that the correct eigenvalues are returned for the Tensor containing an Identity"""
         X = qml.PauliX(0)
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
         d = np.kron(np.array([1., -1.]), np.array([1.,  1.]))
         t = t.eigvals
-        assert np.allclose(t, d, atol=tol, rtol = 0)
+        assert np.allclose(t, d, atol=tol, rtol=0)
+
+    def test_eigvals_identity_and_hermitian(self, tol):
+        """Test that the correct eigenvalues are returned for the Tensor containing
+        multiple types of observables"""
+        H = np.diag([1, 2, 3, 4])
+        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4,5])
+        res = O.eigvals
+        expected = np.kron(np.array([1., -1.]), np.kron(np.array([1.,  1.]), np.arange(1, 5)))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_diagonalizing_gates(self, tol):
+        """Test that the correct diagonalizing gate set is returned for a Tensor of observables"""
+        H = np.diag([1, 2, 3, 4])
+        O = qml.PauliX(0) @ qml.Identity(2)  @ qml.PauliY(1) @ qml.Hermitian(H, [5, 6])
+
+        res = O.diagonalizing_gates()
+
+        # diagonalize the PauliX on wire 0 (H.X.H = Z)
+        assert isinstance(res[0], qml.Hadamard)
+        assert res[0].wires == [0]
+
+        # diagonalize the PauliY on wire 1 (U.Y.U^\dagger = Z
+        # where U = HSZ).
+        assert isinstance(res[1], qml.PauliZ)
+        assert res[1].wires == [1]
+        assert isinstance(res[2], qml.S)
+        assert res[2].wires == [1]
+        assert isinstance(res[3], qml.Hadamard)
+        assert res[3].wires == [1]
+
+        # diagonalize the Hermitian observable on wires 5, 6
+        assert isinstance(res[4], qml.QubitUnitary)
+        assert res[4].wires == [5, 6]
+
+        O = O @ qml.Hadamard(4)
+        res = O.diagonalizing_gates()
+
+        # diagonalize the Hadamard observable on wire 4
+        # (RY(-pi/4).H.RY(pi/4) = Z)
+        assert isinstance(res[-1], qml.RY)
+        assert res[-1].wires == [4]
+        assert np.allclose(res[-1].parameters, -np.pi/4, atol=tol, rtol=0)
+
+    def test_diagonalizing_gates_numerically_diagonalizes(self, tol):
+        """Test that the diagonalizing gate set numerically
+        diagonalizes the tensor observable"""
+
+        # create a tensor observable acting on consecutive wires
+        H = np.diag([1, 2, 3, 4])
+        O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
+
+        O_mat = O.matrix
+        diag_gates = O.diagonalizing_gates()
+
+        # group the diagonalizing gates based on what wires they act on
+        U_list = []
+        for _, g in itertools.groupby(diag_gates, lambda x: x.wires):
+            # extract the matrices of each diagonalizing gate
+            mats = [i.matrix for i in g]
+
+            # Need to revert the order in which the matrices are applied such that they adhere to the order
+            # of matrix multiplication
+            # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
+            # becomes Hadamard @ S @ PauliZ, where @ stands for matrix multiplication
+            mats = mats[::-1]
+
+            if len(mats) > 1:
+                # multiply all unitaries together before appending
+                mats = [multi_dot(mats)]
+
+            # append diagonalizing unitary for specific wire to U_list
+            U_list.append(mats[0])
+
+        # since the test is assuming consecutive wires for each observable
+        # in the tensor product, it is sufficient to Kronecker product
+        # the entire list.
+        U = functools.reduce(np.kron, U_list)
+
+
+        res = U @ O_mat @ U.conj().T
+        expected = np.diag(O.eigvals)
+
+        # once diagonalized by U, the result should be a diagonal
+        # matrix of the eigenvalues.
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_tensor_matrix(self, tol):
+        """Test that the tensor product matrix method returns
+        the correct result"""
+        H = np.diag([1, 2, 3, 4])
+        O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
+
+        res = O.matrix
+        expected = np.kron(qml.PauliY._matrix(), H)
+        expected = np.kron(qml.PauliX._matrix(), expected)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiplication_matrix(self, tol):
+        """If using the ``@`` operator on two observables acting on the
+        same wire, the tensor class should treat this as matrix multiplication."""
+        O = qml.PauliX(0) @ qml.PauliX(0)
+
+        res = O.matrix
+        expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestDecomposition:

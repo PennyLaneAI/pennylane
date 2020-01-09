@@ -11,18 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The PennyLane quantum chemistry package. Supports OpenFermion, Psi4,
-and PySCF for quantum chemistry calculations using PennyLane."""
+"""The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
+and Psi4 for quantum chemistry calculations using PennyLane."""
 import os
 import subprocess
 from shutil import copyfile
 
 import numpy as np
-
 from openfermion.hamiltonians import MolecularData
 from openfermion.ops._qubit_operator import QubitOperator
 from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
-
 from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf
 
@@ -52,10 +50,30 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-    r"""Reads the molecular structure file and creates a list containing the symbol and Cartesian
-    coordinates of the atomic species. If the file is provided in a format other than 'xyz',
-    Open Babel is used to convert it to an xyz-formatted file. The new file, called ``structure.xyz``,
-    contains the geometry of the molecule. It is created in a directory with path given by 'outpath'.
+    r"""Reads the molecular structure from a file and creates a list containing the
+    symbol and Cartesian coordinates of the atomic species.
+
+    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
+    If `Open Babel <https://openbabel.org/>`_ is installed,
+    `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
+    is also supported. Additionally, the new file ``structure.xyz``,
+    containing the geometry of the molecule, is created in a directory with path given by
+    ``outpath``.
+
+
+    Open Babel can be installed using ``apt`` if on Ubuntu:
+
+    .. code-block:: bash
+
+        sudo apt install openbabel
+
+    or using Anaconda:
+
+    .. code-block:: bash
+
+        conda install -c conda-forge openbabel
+
+    See the Open Babel documentation for more details on installation.
 
     **Example usage:**
 
@@ -71,11 +89,14 @@ def read_structure(filepath, outpath="."):
         list: for each atomic species, a list containing the symbol and the Cartesian coordinates
     """
 
-    babel_error_message = (
+    obabel_error_message = (
         "Open Babel converter not found:\n"
-        "Try: 'sudo apt install babel' "
-        "or download it from http://openbabel.org/wiki/Main_Page \n"
-        "and make sure you add it to the PATH environment variable."
+        "If using Ubuntu or Debian, try: 'sudo apt install openbabel' \n"
+        "If using openSUSE, try: 'sudo zypper install openbabel' \n"
+        "If using CentOS or Fedora, try: 'sudo snap install openbabel' "
+        "Open Babel can also be downloaded from http://openbabel.org/wiki/Main_Page, \n"
+        "make sure you add it to the PATH environment variable. \n"
+        "If Anaconda is installed, try: 'conda install -c conda-forge openbabel'"
     )
 
     extension = filepath.split(".")[-1].strip().lower()
@@ -84,13 +105,15 @@ def read_structure(filepath, outpath="."):
     file_out = os.path.join(outpath, "structure.xyz")
 
     if extension != "xyz":
-        if not _exec_exists("babel"):
-            raise TypeError(babel_error_message)
+        if not _exec_exists("obabel"):
+            raise TypeError(obabel_error_message)
         try:
-            subprocess.run(["babel", "-i" + extension, file_in, "-oxyz", file_out], check=True)
+            subprocess.run(
+                ["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out], check=True
+            )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                "Babel error. See the following Babel "
+                "Open Babel error. See the following Open Babel "
                 "output for details:\n\n {}\n{}".format(e.stdout, e.stderr)
             )
     else:
@@ -104,20 +127,19 @@ def read_structure(filepath, outpath="."):
     return geometry
 
 
-def gen_meanfield_data(
-    mol_name, geometry, charge, multiplicity, basis, qc_package="psi4", outpath="."
+def meanfield_data(
+    mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
 ):  # pylint: disable=too-many-arguments
     r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
 
-    Also builds the path
-    to the directory containing the input data file for quantum simulations. The path to the
-    hdf5-formatted file is ``os.path.join(outpath, qc_package, basis)``.
+    Also builds the path to the directory containing the input data file for quantum simulations.
+    The path to the hdf5-formatted file is ``os.path.join(outpath, qc_package, basis)``.
 
     **Example usage:**
 
     >>> geometry = read_structure('h2_ref.xyz')
-    >>> gen_meanfield_data('h2', geometry, 0, 1, 'sto-3g', 'psi4')
-    ./psi4/sto-3g
+    >>> meanfield_data('h2', geometry, 0, 1, 'sto-3g', qc_package='pyscf')
+    ./pyscf/sto-3g
 
     Args:
         mol_name (str): name of the molecule
@@ -129,12 +151,11 @@ def gen_meanfield_data(
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx
             -basiselement>`_
         qc_package (str): quantum chemistry package used to solve Hartree-Fock equations.
-            Either ``'psi4'`` or ``'pyscf'`` can be used
+            Either ``'pyscf'`` or ``'psi4'`` can be used
         outpath (str): path to ouput directory
 
     Returns:
-        str: path to the directory containing the file with the Hartree-Fock
-        electronic structure
+        str: path to the directory containing the file with the Hartree-Fock electronic structure
     """
 
     qc_package = qc_package.strip().lower()
@@ -142,7 +163,7 @@ def gen_meanfield_data(
     if qc_package not in ("psi4", "pyscf"):
         qc_package_error_message = (
             "Integration with quantum chemistry package '{}' is not available. \n Please set"
-            " 'qc_package' to 'psi4' or 'pyscf'.".format(qc_package)
+            " 'qc_package' to 'pyscf' or 'psi4'.".format(qc_package)
         )
         raise TypeError(qc_package_error_message)
 
@@ -172,13 +193,23 @@ def gen_meanfield_data(
     return path_to_hf_data
 
 
-def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
-    r"""Builds the active space for generating the Hamiltonian of the molecule.
+def active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+    r"""Builds the active space by partitioning the set of Hartree-Fock molecular orbitals.
 
     **Example usage:**
 
-    >>> gen_active_space('lih', './psi4/sto-3g', n_active_electrons=2, n_active_orbitals=2)
-    ([0], [1, 2])
+    >>> d_occ_orbitals, active_orbitals = active_space('lih', './pyscf/sto-3g',
+    n_active_electrons=2, n_active_orbitals=2)
+    >>> d_occ_indices  # doubly-occupied molecular orbitals
+    [0]
+    >>> active_indices # active molecular orbitals
+    [1, 2]
+    >>> 2*len(active_indices) # number of qubits required for simulation
+    4
+
+    .. note::
+        The number of active *spin*-orbitals ``2*n_active_orbitals`` determines the number of
+        qubits to perform quantum simulations of the electronic structure of the molecule.
 
     Args:
         mol_name (str): name of the molecule
@@ -271,7 +302,7 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
     return docc_indices, active_indices
 
 
-def gen_hamiltonian_pauli_basis(
+def decompose_hamiltonian(
     mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
 ):
     r"""Decomposes the electronic Hamiltonian into a linear combination of Pauli operators using
@@ -279,7 +310,7 @@ def gen_hamiltonian_pauli_basis(
 
     **Example usage:**
 
-    >>> gen_hamiltonian_pauli_basis('h2', './psi4/sto-3g/', mapping='bravyi_kitaev')
+    >>> decompose_hamiltonian('h2', './pyscf/sto-3g/', mapping='bravyi_kitaev')
     (-0.04207897696293986+0j) [] + (0.04475014401986122+0j) [X0 Z1 X2] +
     (0.04475014401986122+0j) [X0 Z1 X2 Z3] +(0.04475014401986122+0j) [Y0 Z1 Y2] +
     (0.04475014401986122+0j) [Y0 Z1 Y2 Z3] +(0.17771287459806262+0j) [Z0] +
@@ -291,7 +322,8 @@ def gen_hamiltonian_pauli_basis(
 
     Args:
         mol_name (str): name of the molecule
-        hf_data (str): path to the directory containing the file with the Hartree-Fock electronic structure
+        hf_data (str): path to the directory containing the file with the Hartree-Fock
+            electronic structure
         mapping (str): optional argument to specify the fermion-to-qubit mapping
             Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``
         docc_mo_indices (list): indices of doubly-occupied molecular orbitals, i.e.,
@@ -426,13 +458,13 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops)
 
 
-def load_hamiltonian(qubit_hamiltonian):
+def convert_hamiltonian(qubit_hamiltonian):
     r"""Converts OpenFermion `QubitOperator` Hamiltonian to Pennylane VQE Hamiltonian
 
     **Example usage**
 
-    >>> h_of = gen_hamiltonian_pauli_basis('h2', './psi4/sto-3g/')
-    >>> h_pl = load_hamiltonian(h_of)
+    >>> h_of = decompose_hamiltonian('h2', './pyscf/sto-3g/')
+    >>> h_pl = convert_hamiltonian(h_of)
     >>> h_pl.coeffs
     [-0.04207898+0.j  0.17771287+0.j  0.17771287+0.j -0.2427428 +0.j -0.2427428 +0.j  0.17059738+0.j
     0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.12293305+0.j  0.16768319+0.j
@@ -452,13 +484,13 @@ def load_hamiltonian(qubit_hamiltonian):
     return Hamiltonian(*_qubit_operator_to_terms(qubit_hamiltonian))
 
 
-def generate_mol_hamiltonian(
+def generate_hamiltonian(
     mol_name,
     mol_geo_file,
     mol_charge,
     multiplicity,
     basis_set,
-    qc_package="psi4",
+    qc_package="pyscf",
     n_active_electrons=None,
     n_active_orbitals=None,
     mapping="jordan_wigner",
@@ -471,15 +503,8 @@ def generate_mol_hamiltonian(
 
     **Example usage:**
 
-    >>> generate_mol_hamiltonian('h2', 'h2_ref.xyz', 0, 1, 'sto-3g')
-    (-0.04207897696293986+0j) [] +(-0.04475014401986122+0j) [X0 X1 Y2 Y3] +
-    (0.04475014401986122+0j) [X0 Y1 Y2 X3] +(0.04475014401986122+0j) [Y0 X1 X2 Y3] +
-    (-0.04475014401986122+0j) [Y0 Y1 X2 X3] +(0.17771287459806262+0j) [Z0] +
-    (0.1705973832722409+0j) [Z0 Z1] +(0.12293305054268105+0j) [Z0 Z2] +
-    (0.1676831945625423+0j) [Z0 Z3] +(0.17771287459806265+0j) [Z1] +
-    (0.1676831945625423+0j) [Z1 Z2] +(0.12293305054268105+0j) [Z1 Z3] +
-    (-0.2427428049645989+0j) [Z2] +(0.1762764080276107+0j) [Z2 Z3] +
-    (-0.2427428049645989+0j) [Z3], 4)
+    >>> generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g')
+    (<pennylane.beta.vqe.vqe.Hamiltonian object at 0x7fa406966e48>, 4)
 
     Args:
         mol_name (str): name of the molecule
@@ -489,7 +514,7 @@ def generate_mol_hamiltonian(
         basis_set (str): atomic Gaussian-type orbitals basis set. Basis set availability per
                 element can be found `here
                 <www.psicode.org/psi4manual/master/basissets_byelement.html>`_
-        qc_package (str): quantum chemistry package (psi4 or pyscf) used to solve the
+        qc_package (str): quantum chemistry package (pyscf or psi4) used to solve the
                 mean field electronic structure problem
         n_active_electrons (int): number of active electrons. If not specified, all electrons
                 are considered to be active
@@ -499,34 +524,34 @@ def generate_mol_hamiltonian(
                 map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
     Returns:
-        tuple(QubitOperator, int): the fermionic-to-qubit transformed Hamiltonian
-            and the total number of qubits
+        tuple(pennylane.beta.vqe.Hamiltonian, int): the fermionic-to-qubit transformed
+        Hamiltonian and the number of qubits
+
      """
 
     geometry = read_structure(mol_geo_file, outpath)
 
-    hf_data = gen_meanfield_data(
+    hf_data = meanfield_data(
         mol_name, geometry, mol_charge, multiplicity, basis_set, qc_package, outpath
     )
 
-    docc_indices, active_indices = gen_active_space(
-        mol_name, hf_data, n_active_electrons, n_active_orbitals
-    )
+    docc_indices, active_indices = active_space(
+        mol_name, hf_data, n_active_electrons, n_active_orbitals)
 
-    return (
-        gen_hamiltonian_pauli_basis(mol_name, hf_data, mapping, docc_indices, active_indices),
-        2 * len(active_indices),
-    )
+    h_of, nr_qubits = decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices,
+                                           active_indices), 2 * len(active_indices)
+
+    return convert_hamiltonian(h_of), nr_qubits
 
 
 __all__ = [
     "read_structure",
-    "gen_meanfield_data",
-    "gen_active_space",
-    "gen_hamiltonian_pauli_basis",
+    "meanfield_data",
+    "active_space",
+    "decompose_hamiltonian",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
-    "load_hamiltonian",
-    "generate_mol_hamiltonian",
+    "convert_hamiltonian",
+    "generate_hamiltonian",
 ]

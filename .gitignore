@@ -21,3 +21,7 @@ doc/code/api/*
 pennylane_qchem/build/*
 pennylane_qchem/dist/*
 pennylane_qchem/.pytest_cache/*
+qchem/tmp/*
+qchem/timer.dat
+qchem/tests/tmp/*
+qchem/tests/tmp/timer.dat

@@ -101,11 +101,13 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 """
 import abc
 import itertools
+import functools
 import numbers
 from collections.abc import Sequence
 from enum import Enum, IntEnum
 
 import numpy as np
+from numpy.linalg import multi_dot
 
 import pennylane as qml
 
@@ -225,6 +227,32 @@ class Operator(abc.ABC):
             applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
+    @staticmethod
+    def _matrix(*params):
+        """Matrix representation of the operator
+        in the computational basis.
+
+        This is a *static method* that should be defined for all
+        new operations and observables, that returns the matrix representing
+        the operator in the computational basis.
+
+        This private method allows matrices to be computed
+        directly without instantiating the operators first.
+
+        To return the matrices of *instantiated* operators,
+        please use the :attr:`~.Operator.matrix` property instead.
+
+        **Example:**
+
+        >>> qml.RY._matrix(0.5)
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
+        """
+        raise NotImplementedError
+
     @property
     @abc.abstractmethod
     def num_params(self):
@@ -245,11 +273,29 @@ class Operator(abc.ABC):
         * ``'A'``: arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
+
     @property
     def name(self):
         """String for the name of the operator.
         """
         return self._name
+
+    @property
+    def matrix(self):
+        r"""Matrix representation of an instantiated operator
+        in the computational basis.
+
+        **Example:**
+
+        >>> U = qml.RY(0.5, wires=1)
+        >>> U.matrix
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
+        """
+        return self._matrix(*self.parameters)
 
     @name.setter
     def name(self, value):
@@ -606,6 +652,21 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
+    @property
+    def eigvals(self):
+        r"""Returns the eigenvalues of the observable"""
+        raise NotImplementedError
+
+    def diagonalizing_gates(self):
+        r"""Returns the list of operations such that they
+        diagonalize the observable in the computational basis.
+
+        Returns:
+            list(qml.Operation): A list of gates that diagonalize
+            the observable in the computational basis.
+        """
+        raise NotImplementedError
+
 
 class Tensor(Observable):
     """Container class representing tensor products of observables.
@@ -622,6 +683,7 @@ class Tensor(Observable):
 
     >>> T = qml.PauliX(0) @ qml.Hadamard(2)
     """
+    # pylint: disable=abstract-method
     return_type = None
     tensor = True
     par_domain = None
@@ -728,7 +790,7 @@ class Tensor(Observable):
 
         Returns:
             array[float]: array containing the eigenvalues of the tensor product
-                observable
+            observable
         """
         if self._eigvals is not None:
             return self._eigvals
@@ -738,34 +800,102 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals = pauli_eigs(len(self.wires))
 
+        # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
+        # Hermitian(obs, wires=[1, 3, 4])
+        # Sorting the observables based on wires, so that the order of
+        # the eigenvalues is correct
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
+
         # check if there are any non-standard observables (such as Identity)
-        if set(self.obs) - standard_observables:
+        if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals = np.array([1])
-            for k, g in itertools.groupby(zip(self.obs, self.wires,\
-                self.parameters), lambda x: x[0].name in standard_observables):
+            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    # Determine the size of the subgroup, by transposing
-                    # the list, flattening it, and determining the length.
-                    n = len([w for sublist in list(zip(*g))[1] for w in sublist])
-                    self._eigvals = np.kron(self._eigvals, pauli_eigs(n))
+                    self._eigvals = np.kron(self._eigvals, pauli_eigs(len(list(g))))
                 else:
                     # Subgroup g contains only non-standard observables.
-                    for ns_obs in g:
+                    for ns_ob in g:
                         # loop through all non-standard observables
-                        if ns_obs[0].name == "Hermitian":
-                            # Hermitian observable has pre-computed eigenvalues
-                            operator = ns_obs[2]
-                            herm_eigs = qml.Hermitian.eigvals(np.array(operator))
-                            self._eigvals = np.kron(self._eigvals, herm_eigs)
+                        self._eigvals = np.kron(self._eigvals, ns_ob.eigvals)
 
-                        elif ns_obs[0].name == "Identity":
-                            # Identity observable has eigenvalues (1, 1)
-                            self._eigvals = np.kron(self._eigvals, np.array([1, 1]))
+        wire_ordering = np.argsort(np.argsort(list(_flatten(self.wires))))
+        tuples = np.array(list(itertools.product([0, 1], repeat=self.num_wires)))
+        perm = np.ravel_multi_index(tuples[:, wire_ordering].T, [2] * self.num_wires)
 
-        return self._eigvals
+        return self._eigvals[perm]
+
+    def diagonalizing_gates(self):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified tensor observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            list: list containing the gates diagonalizing the tensor observable
+        """
+        diag_gates = []
+        for o in self.obs:
+            diag_gates.extend(o.diagonalizing_gates())
+
+        return diag_gates
+
+    @property
+    def matrix(self):
+        r"""Matrix representation of the tensor operator
+        in the computational basis.
+
+        **Example:**
+
+        Note that the returned matrix *only includes explicitly
+        declared observables* making up the tensor product;
+        that is, it only returns the matrix for the specified
+        subsystem it is defined for.
+
+        >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
+        >>> O.matrix
+        array([[ 1,  0,  0,  0],
+               [ 0, -1,  0,  0],
+               [ 0,  0, -1,  0],
+               [ 0,  0,  0,  1]])
+
+        To get the full :math:`2^3\times 2^3` Hermitian matrix
+        acting on the 3-qubit system, the identity on wire 1
+        must be explicitly included:
+
+        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+        >>> O.matrix
+        array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
+               [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
+               [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
+               [ 0., -0.,  0., -1.,  0., -0.,  0., -0.],
+               [ 0.,  0.,  0.,  0., -1., -0., -0., -0.],
+               [ 0., -0.,  0., -0., -0.,  1., -0.,  0.],
+               [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
+               [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
+
+        Returns:
+            array: matrix representation
+        """
+        # group the observables based on what wires they act on
+        U_list = []
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
+            # extract the matrices of each diagonalizing gate
+            mats = [i.matrix for i in g]
+
+            if len(mats) > 1:
+                # multiply all unitaries together before appending
+                mats = [multi_dot(mats)]
+
+            # append diagonalizing unitary for specific wire to U_list
+            U_list.append(mats[0])
+
+        # Return the Hermitian matrix representing the observable
+        # over the defined wires.
+        return functools.reduce(np.kron, U_list)
 
 #=============================================================================
 # CV Operations and observables
