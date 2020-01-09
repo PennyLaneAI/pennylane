@@ -171,7 +171,7 @@ class TestApply:
     """Tests for the apply function"""
 
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-    def test_apply_summation(self, qnodes, interface, tf_support, torch_support):
+    def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
@@ -195,7 +195,7 @@ class TestApply:
         res = cost(params)
         expected = sfn(qc(params))
 
-        assert res == expected
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
     def test_nested_apply(self, qnodes, interface, tf_support, torch_support, tol):
