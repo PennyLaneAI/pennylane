@@ -28,6 +28,16 @@
   on simulators and hardware.
   [#432](https://github.com/XanaduAI/pennylane/pull/432)
 
+* Added the `QNodeCluster` container class, that allows independent
+  QNodes to be stored and evaluated simultaneously.
+
+* Added high level ``qml.sum``, ``qml.dot``, ``qml.apply`` functions
+  that act on QNode clusters.
+
+* Added a high level ``qml.map`` function, that maps a quantum
+  circuit template over a list of observables or devices, returning
+  a `QNodeCluster`.
+
 ### Breaking changes
 
 * Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
