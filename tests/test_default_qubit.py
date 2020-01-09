@@ -1275,6 +1275,41 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
+    def test_multi_samples_return_correlated_results(self):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
+
+        outcomes = circuit()
+
+        assert np.array_equal(outcomes[0], outcomes[1])
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5, 6, 7, 8])
+    def test_multi_samples_return_correlated_results_more_wires_than_size_of_observable(self, num_wires):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+
+        dev = qml.device('default.qubit', wires=num_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
+
+        outcomes = circuit()
+
+        assert np.array_equal(outcomes[0], outcomes[1])
+
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
