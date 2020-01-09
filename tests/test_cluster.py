@@ -198,7 +198,7 @@ class TestApply:
         assert res == expected
 
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-    def test_nested_apply(self, qnodes, interface, tf_support, torch_support):
+    def test_nested_apply(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that nested apply can be done using all interfaces"""
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
@@ -225,14 +225,14 @@ class TestApply:
         res = cost(params)
         expected = sfn(sinfn(qc(params)))
 
-        assert res == expected
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestSum:
     """Tests for the sum function"""
 
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", None])
-    def test_apply_summation(self, qnodes, interface, tf_support, torch_support):
+    def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
         """Test that summation can be applied using all interfaces"""
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
@@ -252,7 +252,7 @@ class TestSum:
             res = res.numpy()
             expected = expected.numpy()
 
-        assert res == expected
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_unknown_interface(self, monkeypatch):
         """Test exception raised if the interface is unknown"""
