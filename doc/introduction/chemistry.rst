@@ -35,7 +35,7 @@ to generate the electronic Hamiltonian in a single call. For example,
 
 where:
 
-* ``h`` is the qubit Hamiltonian of the molecule represented as PennyLane Hamiltonian, and
+* ``h`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian, and
 
 * ``nr_qubits`` is the number of qubits operators needed to represent it.
 
