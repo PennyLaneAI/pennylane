@@ -18,7 +18,7 @@ Contains high-level QNode processing functions and classes.
 from collections.abc import Sequence
 
 from pennylane.qnodes import QNode
-from pennylane.measure import expval, var, sample, probs
+from pennylane.measure import expval, var, sample
 from pennylane.operation import Observable
 
 
@@ -128,23 +128,6 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     if not isinstance(device, Sequence):
         # broadcast the single device over all observables
         device = [device] * len(observables)
-
-    if measure == "probs":
-        # Since the probs measurement function does not accept
-        # observables and instead acts in the computational basis,
-        # here we branch out.
-        for dev in device:
-
-            wires = list(range(dev.num_wires))
-
-            def circuit(params, _wires=wires, **kwargs):  # pylint: disable=dangerous-default-value
-                template(params, wires=_wires, **kwargs)
-                return probs(wires=_wires)
-
-            qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method)
-            qnodes.append(qnode)
-
-        return qnodes
 
     if not isinstance(measure, (list, tuple)):
         # broadcast the single measurement over all observables
