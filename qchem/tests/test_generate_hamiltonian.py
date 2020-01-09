@@ -62,7 +62,7 @@ def test_building_hamiltonian(
 
     geo_file = os.path.join(ref_dir, geo_file)
 
-    built_hamiltonian, n_qubits = qchem.generate_mol_hamiltonian(
+    built_hamiltonian, n_qubits = qchem.generate_hamiltonian(
         mol_name,
         geo_file,
         charge,
