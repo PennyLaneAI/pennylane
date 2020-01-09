@@ -20,8 +20,7 @@ from shutil import copyfile
 import numpy as np
 from openfermion.hamiltonians import MolecularData
 from openfermion.ops._qubit_operator import QubitOperator
-from openfermion.transforms import (bravyi_kitaev, get_fermion_operator,
-                                    jordan_wigner)
+from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner
 from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf
 
@@ -109,8 +108,9 @@ def read_structure(filepath, outpath="."):
         if not _exec_exists("obabel"):
             raise TypeError(obabel_error_message)
         try:
-            subprocess.run(["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out],
-                           check=True)
+            subprocess.run(
+                ["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out], check=True
+            )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
                 "Open Babel error. See the following Open Babel "
@@ -127,9 +127,9 @@ def read_structure(filepath, outpath="."):
     return geometry
 
 
-def gen_meanfield_data(
-        mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
-        ):  # pylint: disable=too-many-arguments
+def meanfield_data(
+    mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
+):  # pylint: disable=too-many-arguments
     r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
 
     Also builds the path to the directory containing the input data file for quantum simulations.
@@ -138,7 +138,7 @@ def gen_meanfield_data(
     **Example usage:**
 
     >>> geometry = read_structure('h2_ref.xyz')
-    >>> gen_meanfield_data('h2', geometry, 0, 1, 'sto-3g', qc_package='pyscf')
+    >>> meanfield_data('h2', geometry, 0, 1, 'sto-3g', qc_package='pyscf')
     ./pyscf/sto-3g
 
     Args:
@@ -193,12 +193,12 @@ def gen_meanfield_data(
     return path_to_hf_data
 
 
-def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+def active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
     r"""Builds the active space by partitioning the set of Hartree-Fock molecular orbitals.
 
     **Example usage:**
 
-    >>> d_occ_orbitals, active_orbitals = gen_active_space('lih', './pyscf/sto-3g',
+    >>> d_occ_orbitals, active_orbitals = active_space('lih', './pyscf/sto-3g',
     n_active_electrons=2, n_active_orbitals=2)
     >>> d_occ_indices  # doubly-occupied molecular orbitals
     [0]
@@ -302,15 +302,15 @@ def gen_active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbita
     return docc_indices, active_indices
 
 
-def gen_hamiltonian_pauli_basis(
-        mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
-        ):
+def decompose_hamiltonian(
+    mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
+):
     r"""Decomposes the electronic Hamiltonian into a linear combination of Pauli operators using
     OpenFermion tools.
 
     **Example usage:**
 
-    >>> gen_hamiltonian_pauli_basis('h2', './pyscf/sto-3g/', mapping='bravyi_kitaev')
+    >>> decompose_hamiltonian('h2', './pyscf/sto-3g/', mapping='bravyi_kitaev')
     (-0.04207897696293986+0j) [] + (0.04475014401986122+0j) [X0 Z1 X2] +
     (0.04475014401986122+0j) [X0 Z1 X2 Z3] +(0.04475014401986122+0j) [Y0 Z1 Y2] +
     (0.04475014401986122+0j) [Y0 Z1 Y2 Z3] +(0.17771287459806262+0j) [Z0] +
@@ -458,13 +458,13 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops)
 
 
-def load_hamiltonian(qubit_hamiltonian):
+def convert_hamiltonian(qubit_hamiltonian):
     r"""Converts OpenFermion `QubitOperator` Hamiltonian to Pennylane VQE Hamiltonian
 
     **Example usage**
 
-    >>> h_of = gen_hamiltonian_pauli_basis('h2', './pyscf/sto-3g/')
-    >>> h_pl = load_hamiltonian(h_of)
+    >>> h_of = decompose_hamiltonian('h2', './pyscf/sto-3g/')
+    >>> h_pl = convert_hamiltonian(h_of)
     >>> h_pl.coeffs
     [-0.04207898+0.j  0.17771287+0.j  0.17771287+0.j -0.2427428 +0.j -0.2427428 +0.j  0.17059738+0.j
     0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.12293305+0.j  0.16768319+0.j
@@ -484,18 +484,18 @@ def load_hamiltonian(qubit_hamiltonian):
     return Hamiltonian(*_qubit_operator_to_terms(qubit_hamiltonian))
 
 
-def generate_mol_hamiltonian(
-        mol_name,
-        mol_geo_file,
-        mol_charge,
-        multiplicity,
-        basis_set,
-        qc_package="pyscf",
-        n_active_electrons=None,
-        n_active_orbitals=None,
-        mapping="jordan_wigner",
-        outpath=".",
-        ):  # pylint:disable=too-many-arguments
+def generate_hamiltonian(
+    mol_name,
+    mol_geo_file,
+    mol_charge,
+    multiplicity,
+    basis_set,
+    qc_package="pyscf",
+    n_active_electrons=None,
+    n_active_orbitals=None,
+    mapping="jordan_wigner",
+    outpath=".",
+):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
 
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
@@ -503,7 +503,7 @@ def generate_mol_hamiltonian(
 
     **Example usage:**
 
-    >>> generate_mol_hamiltonian('h2', 'h2_ref.xyz', 0, 1, 'sto-3g')
+    >>> generate_hamiltonian('h2', 'h2_ref.xyz', 0, 1, 'sto-3g')
     (-0.04207897696293986+0j) [] +(-0.04475014401986122+0j) [X0 X1 Y2 Y3] +
     (0.04475014401986122+0j) [X0 Y1 Y2 X3] +(0.04475014401986122+0j) [Y0 X1 X2 Y3] +
     (-0.04475014401986122+0j) [Y0 Y1 X2 X3] +(0.17771287459806262+0j) [Z0] +
@@ -531,34 +531,34 @@ def generate_mol_hamiltonian(
                 map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
     Returns:
-        tuple(QubitOperator, int): the fermionic-to-qubit transformed Hamiltonian
-            and the total number of qubits
+        tuple(pennylane.beta.vqe.Hamiltonian, int): the fermionic-to-qubit transformed
+        Hamiltonian and the number of qubits
      """
 
     geometry = read_structure(mol_geo_file, outpath)
 
-    hf_data = gen_meanfield_data(
+    hf_data = meanfield_data(
         mol_name, geometry, mol_charge, multiplicity, basis_set, qc_package, outpath
     )
 
-    docc_indices, active_indices = gen_active_space(
+    docc_indices, active_indices = active_space(
         mol_name, hf_data, n_active_electrons, n_active_orbitals
     )
 
     return (
-        gen_hamiltonian_pauli_basis(mol_name, hf_data, mapping, docc_indices, active_indices),
+        decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
         2 * len(active_indices),
     )
 
 
 __all__ = [
     "read_structure",
-    "gen_meanfield_data",
-    "gen_active_space",
-    "gen_hamiltonian_pauli_basis",
+    "meanfield_data",
+    "active_space",
+    "decompose_hamiltonian",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
-    "load_hamiltonian",
-    "generate_mol_hamiltonian",
+    "convert_hamiltonian",
+    "generate_hamiltonian",
 ]
