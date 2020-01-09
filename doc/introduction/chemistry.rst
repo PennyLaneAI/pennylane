@@ -134,7 +134,7 @@ and map it to a linear combination of Pauli operators via the `Jordan-Wigner
 
 .. code-block:: python
 
-    qubit_hamiltonian = qchem.decompose_hamiltonian(
+    qubit_hamiltonian = qml.qchem.decompose_hamiltonian(
         'water',
         hf_data,
         mapping='jordan_wigner',
