@@ -309,7 +309,7 @@ class DefaultQubit(QubitDevice):
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots, analytic, rotate_basis=True)
+        super().__init__(wires, shots, analytic)
         self.eng = None
         self.analytic = analytic
 
