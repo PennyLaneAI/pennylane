@@ -132,7 +132,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
 
 def apply(func, qnode_cluster):
-    """Lazily apply a function to the constituent QNodes of a :class:`QNodeCluster`.
+    """Apply a function to the constituent QNodes of a :class:`QNodeCluster`.
 
     Args:
         func (callable): A function to be applied to the QNodeCluster results.
