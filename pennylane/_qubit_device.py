@@ -178,7 +178,7 @@ class QubitDevice(Device):
             # convert the basis states from base 10 to binary representation
             powers_of_two = (1 << np.arange(number_of_states))
             states_sampled_base_ten = samples[:, None] & powers_of_two
-            self._samples = (states_sampled > 0).astype(int)
+            self._samples = (states_sampled_base_ten > 0).astype(int)
 
     def expval(self, observable):
         wires = observable.wires
