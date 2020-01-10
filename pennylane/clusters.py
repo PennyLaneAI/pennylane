@@ -1,4 +1,4 @@
-# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,10 +51,10 @@ def map(template, observables, device, measure="expval", interface="autograd", d
         template (callable): the ansatz for the circuit before the final measurement step
         observables (Iterable[:class:`~.Observable`]): observables to measure during the
             final step of each circuit
-        device (Device, List[Device]): Corresponding device(s) where the resulting
+        device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             QNodeCluster should be executed. This can either be a single device, or a list
             of devices of length ``len(observables)``.
-        measure (str, List[str]): Measurement(s) to perform. Options include
+        measure (str, Union(List[str], Tuple[str])): Measurement(s) to perform. Options include
             :func:`'expval' <pennylane.expval>`, :func:`'var' <pennylane.var>`,
             and :func:`'sample' <pennylane.sample>`.
             This can either be a single measurement type, in which case it is applied

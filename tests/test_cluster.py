@@ -1,4 +1,4 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,13 +72,13 @@ class TestMap:
     to return a QNode cluster"""
 
     def test_template_not_callable(self):
-        """test that an exception is correctly called if a
+        """Test that an exception is correctly called if a
         template is not callable"""
         with pytest.raises(ValueError, match="template is not a callable"):
             qml.map(5, 0, 0)
 
     def test_mapping_over_observables(self):
-        """test that mapping over a list of observables produces
+        """Test that mapping over a list of observables produces
         a QNodeCluster with the correct QNodes, with a single
         device broadcast."""
         dev = qml.device("default.qubit", wires=1)
@@ -104,7 +104,7 @@ class TestMap:
         assert qc[0].device is qc[1].device
 
     def test_mapping_over_devices(self):
-        """test that mapping over a list of devices produces
+        """Test that mapping over a list of devices produces
         a QNodeCluster with the correct QNodes"""
         dev_list = [qml.device("default.qubit", wires=1), qml.device("default.qubit", wires=1)]
 
@@ -132,7 +132,7 @@ class TestMap:
         assert qc[1].device is dev_list[1]
 
     def test_mapping_over_measurements(self):
-        """test that mapping over a list of measurement types produces
+        """Test that mapping over a list of measurement types produces
         a QNodeCluster with the correct QNodes"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -157,7 +157,7 @@ class TestMap:
         assert qc[1].ops[1].return_type == qml.operation.Variance
 
     def test_invalid_obserable(self):
-        """test that an invalid observable raises an exception"""
+        """Test that an invalid observable raises an exception"""
         dev = qml.device("default.qubit", wires=1)
 
         obs_list = [qml.PauliX(0), qml.S(wires=0)]
