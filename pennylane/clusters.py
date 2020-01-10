@@ -34,21 +34,19 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     applied to all QNodes in the cluster, or can be provided as a list for more
     fine-grained control.
 
-    Note that the template **must** have the following signature:
-
-    .. code-block:: python
-
-        template(params, wires, **kwargs)
-
-    where
-
-    * ``params`` are the trainable weights of the variational circuit,
-    * ``wires`` is a list of integers representing the wires of the device, and
-    * ``kwargs`` are any additional keyword arguments that need to be passed
-      to the template.
 
     Args:
         template (callable): the ansatz for the circuit before the final measurement step
+            Note that the template **must** have the following signature:
+
+            .. code-block:: python
+
+                template(params, wires, **kwargs)
+
+            where ``params`` are the trainable weights of the variational circuit,
+            ``wires`` is a list of integers representing the wires of the device, and
+            ``kwargs`` are any additional keyword arguments that need to be passed
+            to the template.
         observables (Iterable[:class:`~.Observable`]): observables to measure during the
             final step of each circuit
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
@@ -60,37 +58,10 @@ def map(template, observables, device, measure="expval", interface="autograd", d
             This can either be a single measurement type, in which case it is applied
             to all observables, or a list of measurements of length ``len(observables)``.
         interface (str, None): which interface to use for the returned QNode cluster.
-            This affects the types of objects that can be passed to/returned from the QNode:
-
-            * ``interface='autograd'``: Allows autograd to backpropogate
-              through the QNodeCluster. The QNodeCluster accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
-              and returns NumPy arrays.
-
-            * ``interface='torch'``: Allows PyTorch to backpropogate
-              through the QNodeCluster.The QNodeCluster accepts and returns Torch tensors.
-
-            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
-              through the QNodeCluster. The QNodeCluster accepts and returns
-              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
-
-            * ``None``: The QNodeCluster accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
-              and returns NumPy arrays. It does not connect to any
-              machine learning library automatically for backpropagation.
-
+            This affects the types of objects that can be passed to/returned from the QNode.
+            Supports all interfaces supported by the :func:`~.qnode` decorator.
         diff_method (str, None): the method of differentiation to use in the created QNodeCluster.
-
-            * ``"best"``: Best available method. Uses the device directly to compute
-              the gradient if supported, otherwise will use the analytic parameter-shift
-              rule where possible with finite-difference as a fallback.
-
-            * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible with finite-difference as a fallback.
-
-            * ``"finite-diff"``: Uses numerical finite-differences.
-
-            * ``None``: a non-differentiable QNodeCluster is returned.
+            Supports all differentiation methods supported by the :func:`~.qnode` decorator.
 
     Returns:
         QNodeCluster: a cluster of QNodes executing the circuit template with
@@ -103,9 +74,8 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     .. code-block:: python
 
         def my_template(params, wires, **kwargs):
-            for i in range(2):
-                qml.RX(params[i], wires=wires[i])
-
+            qml.RX(params[0], wires=wires[0])
+            qml.RX(params[1], wires=wires[1])
             qml.CNOT(wires=wires)
 
     We want to compute the expectation values over the following list
@@ -117,7 +87,12 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
-    >>> qnodes([0.54, 0.12])
+
+    The returned :class:`~.QNodeCluster` can be evaluated, returning the results from each
+    mapped QNode as an array:
+
+    >>> params = [0.54, 0.12]
+    >>> qnodes(params)
     array([-0.06154835  0.99280864])
     """
     if not callable(template):
@@ -140,6 +115,10 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
         wires = list(range(dev.num_wires))
 
+        # Note: in the following template definition, we pass the observable, measurement,
+        # and wires as *default arguments* to named parameters. This is to avoid
+        # Python's late binding closure behaviour
+        # (see https://docs.python-guide.org/writing/gotchas/#late-binding-closures)
         def circuit(
             params, _obs=obs, _m=m, _wires=wires, **kwargs
         ):  # pylint: disable=dangerous-default-value, function-redefined
@@ -216,23 +195,23 @@ def sum(x):
         if x.interface == "tf":
             import tensorflow as tf
 
-            return lambda params, **kwargs: tf.reduce_sum(x(params, **kwargs))
+            return apply(tf.reduce_sum, x)
 
         if x.interface == "torch":
             import torch
 
-            return lambda params, **kwargs: torch.sum(x(params, **kwargs))
+            return apply(torch.sum, x)
 
         if x.interface in ("autograd", "numpy"):
             from autograd import numpy as np
 
-            return lambda params, **kwargs: np.sum(x(params, **kwargs))
+            return apply(np.sum, x)
 
         raise ValueError("Unknown interface {}".format(x.interface))
 
     import numpy as np
 
-    return lambda params, **kwargs: np.sum(x(params, **kwargs))
+    return apply(np.sum, x)
 
 
 def _get_dot_func(interface):
@@ -306,7 +285,7 @@ def dot(x, y):
     This is a lazy dot product --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> x = qml.init.strong_ent_layers_normal(3, 2) # generate random parameters
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
