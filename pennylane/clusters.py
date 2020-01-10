@@ -34,7 +34,6 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     applied to all QNodes in the cluster, or can be provided as a list for more
     fine-grained control.
 
-
     Args:
         template (callable): the ansatz for the circuit before the final measurement step
             Note that the template **must** have the following signature:
@@ -321,7 +320,7 @@ class QNodeCluster(Sequence):
         qnodes (None or List[QNode]): A list of QNodes sharing the same signature.
             If not provided, an empty QNode cluster is instantiated.
 
-    .. seealso:: :func:`~.map`
+    .. seealso:: :func:`~.map`, :func:`~.apply`, :func:`~.sum`, :func:`~.dot`
 
     **Example:**
 
