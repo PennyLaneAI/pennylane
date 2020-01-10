@@ -150,10 +150,8 @@ class QubitDevice(Device):
                 self.apply(diag_gate)
 
             for wire in observable.wires:
-
                 if isinstance(wire, int):
                     wires.append(wire)
-
                 else:
                     wires.extend(wire)
 
@@ -173,11 +171,14 @@ class QubitDevice(Device):
         """
         if self._memory or (not self.analytic):
             # sample from the computational basis states based on the state probability
-            basis_states = np.arange(2**len(self._wires_used))
+            number_of_states = 2**len(self._wires_used)
+            basis_states = np.arange(number_of_states)
             samples = np.random.choice(basis_states, self.shots, p=self._rotated_prob)
 
             # convert the basis states from base 10 to binary representation
-            self._samples = (((samples[:, None] & (1 << np.arange(2**self.num_wires)))) > 0).astype(int)
+            powers_of_two = (1 << np.arange(number_of_states))
+            states_sampled_base_ten = samples[:, None] & powers_of_two
+            self._samples = (states_sampled > 0).astype(int)
 
     def expval(self, observable):
         wires = observable.wires
