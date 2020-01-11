@@ -44,8 +44,14 @@ except ImportError as e:
 
 
 @pytest.fixture
-def qnodes(interface):
+def qnodes(interface, tf_support, torch_support):
     """fixture returning some QNodes"""
+    if interface == "torch" and not torch_support:
+        pytest.skip("Skipped, no torch support")
+
+    if interface == "tf" and not tf_support:
+        pytest.skip("Skipped, no tf support")
+
     dev1 = qml.device("default.qubit", wires=2)
     dev2 = qml.device("default.qubit", wires=2)
 

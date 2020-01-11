@@ -275,11 +275,13 @@ def dot(x, y):
     >>> coeffs = torch.tensor([0.32, -0.2], dtype=torch.double)
     >>> cost = qml.dot(coeffs, qnodes)
 
-    Note that ``cost`` is equivalent to computing :math:`\langle 0 | U(\theta)^\dagger H U(\theta) | 0\rangle`
-    where
+    .. note::
 
-    * :math:`U(\theta)` is the unitary applied by the strongly entangling layers, and
-    * :math:`H = 0.32 X\otimes Z - 0.2 Z \otimes Z`.
+        The ``cost`` function is equivalent to computing :math:`\langle 0 | U(\theta)^\dagger H U(\theta) | 0\rangle`
+        where
+
+        * :math:`U(\theta)` is the unitary applied by the strongly entangling layers, and
+        * :math:`H = 0.32 X\otimes Z - 0.2 Z \otimes Z`.
 
     This is a lazy dot product --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
@@ -423,29 +425,63 @@ class QNodeCluster(Sequence):
 
         self.qnodes.extend(qnodes)
 
-    def __call__(self, *args, **kwargs):
+    def evaluate(self, args, kwargs):
+        """Evaluate all QNodes in the cluster.
+
+        Args:
+            args (list): list containing the arguments
+                to pass to all internal QNodes
+            kwargs (dict): dictionary containing the keyword
+                arguments to pass to all internal QNodes
+
+        Returns:
+            list: the results from each QNode
+        """
         results = []
 
         for q in self.qnodes:
             # TODO: allow asynchronous QNode evaluation here
             results.append(q(*args, **kwargs))
 
-        if self.interface == "tf":
+        return results
+
+    @staticmethod
+    def convert_results(results, interface):
+        """Convert a list of results coming from multiple QNodes
+        to the object required by each interface for auto-differentiation.
+
+        Internally, this method makes use of ``tf.stack``, ``torch.stack``,
+        and ``np.vstack``.
+
+        Args:
+            results (list): list containing the results from
+                multiple QNodes
+            interface (str): the interfaces of the underlying QNodes
+
+        Returns:
+            list or array or torch.Tensor or tf.Tensor: the converted
+            and stacked results.
+        """
+        if interface == "tf":
             import tensorflow as tf
 
             return tf.stack(results)
 
-        if self.interface == "torch":
+        if interface == "torch":
             import torch
 
             return torch.stack(results, dim=0)
 
-        if self.interface in ("autograd", "numpy"):
+        if interface in ("autograd", "numpy"):
             from autograd import numpy as np
 
             return np.vstack(results)
 
         return results
+
+    def __call__(self, *args, **kwargs):
+        results = self.evaluate(args, kwargs)
+        return self.convert_results(results, self.interface)
 
     def __len__(self):
         return len(self.qnodes)
