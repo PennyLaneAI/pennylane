@@ -28,6 +28,7 @@ import pennylane.operation
 import pennylane.init
 import pennylane.templates
 from pennylane.about import about
+import pennylane.vqe
 
 
 from .circuit_graph import CircuitGraph

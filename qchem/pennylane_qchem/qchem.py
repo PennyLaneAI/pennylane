@@ -25,7 +25,7 @@ from openfermionpsi4 import run_psi4
 from openfermionpyscf import run_pyscf
 
 import pennylane as qml
-from pennylane.beta.vqe import Hamiltonian
+from pennylane.vqe import Hamiltonian
 
 
 def _exec_exists(prog):
@@ -448,7 +448,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     Args:
         openfermion_qubit_operator (QubitOperator): OpenFermion qubit operator represented as
             a Pauli summation
-        pennylane_qubit_operator (pennylane.beta.vqe.Hamiltonian): PennyLane's VQE
+        pennylane_qubit_operator (pennylane.vqe.Hamiltonian): PennyLane's VQE
             Hamiltonian object
 
     Returns:
@@ -474,7 +474,7 @@ def convert_hamiltonian(qubit_hamiltonian):
         qubit_hamiltonian (QubitOperator): Hamiltonian represented as an OpenFermion `QubitOperator`
 
     Returns:
-        (pennylane.beta.vqe.Hamiltonian): Pennylane VQE Hamiltonian
+        (pennylane.vqe.Hamiltonian): Pennylane VQE Hamiltonian
     """
 
     # The `_qubit_operator_to_terms` function is separated out from this function
@@ -504,7 +504,7 @@ def generate_hamiltonian(
     **Example usage:**
 
     >>> generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g')
-    (<pennylane.beta.vqe.vqe.Hamiltonian object at 0x7fa406966e48>, 4)
+    (<pennylane.vqe.vqe.Hamiltonian object at 0x7fa406966e48>, 4)
 
     Args:
         mol_name (str): name of the molecule
@@ -524,7 +524,7 @@ def generate_hamiltonian(
                 map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
     Returns:
-        tuple(pennylane.beta.vqe.Hamiltonian, int): the fermionic-to-qubit transformed
+        tuple(pennylane.vqe.Hamiltonian, int): the fermionic-to-qubit transformed
         Hamiltonian and the number of qubits
 
      """
