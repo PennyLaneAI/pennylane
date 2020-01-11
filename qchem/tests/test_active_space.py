@@ -25,7 +25,7 @@ def test_active_spaces(
 
     r"""Test the correctness of the generated active spaces"""
 
-    docc_indices, active_indices = qchem.gen_active_space(
+    docc_indices, active_indices = qchem.active_space(
         mol_name, ref_dir, n_act_electrons, n_act_orbitals
     )
 
@@ -53,4 +53,4 @@ def test_inconsistent_active_spaces(mol_name, n_act_electrons, n_act_orbitals, m
     r"""Test that an error is raised if an inconsistent active space is generated"""
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.gen_active_space(mol_name, ref_dir, n_act_electrons, n_act_orbitals)
+        qchem.active_space(mol_name, ref_dir, n_act_electrons, n_act_orbitals)

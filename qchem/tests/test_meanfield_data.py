@@ -23,7 +23,7 @@ def test_path_to_hf_data(names, tmpdir, psi4_support):
 
     path_to_hf_data_ref = os.path.join(tmpdir.strpath, names.lower(), basis.strip())
 
-    path_to_hf_data = qchem.gen_meanfield_data(
+    path_to_hf_data = qchem.meanfield_data(
         mol_name, geometry, charge, multiplicity, basis, qc_package=names, outpath=tmpdir.strpath
     )
 
@@ -60,7 +60,7 @@ def test_hf_calculations(names, tmpdir, psi4_support, tol):
         ]
     )
 
-    path_to_hf_data = qchem.gen_meanfield_data(
+    path_to_hf_data = qchem.meanfield_data(
         mol_name, geometry, charge, multiplicity, basis, qc_package=names, outpath=tmpdir.strpath
     )
 
@@ -80,7 +80,7 @@ def test_not_available_qc_package(names, tmpdir):
     r"""Test that an error is raised if the chosen quantum chemistry package is neither Psi4 nor PySCF"""
 
     with pytest.raises(TypeError, match="Integration with quantum chemistry package"):
-        qchem.gen_meanfield_data(
+        qchem.meanfield_data(
             mol_name,
             geometry,
             charge,
