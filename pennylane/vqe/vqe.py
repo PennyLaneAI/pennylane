@@ -15,6 +15,8 @@
 This submodule contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
+import functools
+
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
@@ -126,7 +128,7 @@ class Hamiltonian:
         return " + ".join(terms)
 
 
-def cost(ansatz, hamiltonian, device, interface="autograd", diff_method="best"):
+class cost:
     """Create a VQE cost function, i.e., a cost function returning the
     expectation value of a Hamiltonian.
 
@@ -197,6 +199,17 @@ def cost(ansatz, hamiltonian, device, interface="autograd", diff_method="best"):
     The cost function can be minimized using any gradient descent-based
     :doc:`optimizer </introduction/optimizers>`.
     """
-    coeffs, observables = hamiltonian.terms
-    qnodes = qml.map(ansatz, observables, device, interface=interface, diff_method=diff_method)
-    return qml.dot(coeffs, qnodes)
+    def __init__(self, ansatz, hamiltonian, device, interface="autograd", diff_method="best"):
+        coeffs, observables = hamiltonian.terms
+        self.hamiltonian = hamiltonian
+        """Hamiltonian: the hamiltonian defining the VQE problem."""
+
+        self.qnodes = qml.map(ansatz, observables, device, interface=interface, diff_method=diff_method)
+        """QNodeCluster: The QNodes to be evaluated. Each QNode corresponds to the
+        the expectation value of each observable term after applying the circuit ansatz.
+        """
+
+        self.cost_fn = qml.dot(coeffs, self.qnodes)
+
+    def __call__(self, *args, **kwargs):
+        return self.cost_fn(*args, **kwargs)

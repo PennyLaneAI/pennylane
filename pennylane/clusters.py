@@ -247,6 +247,9 @@ def _get_dot_func(interface, x=None):
     if interface in ("autograd", "numpy"):
         from autograd import numpy as np
 
+        if x is not None and not isinstance(x, np.ndarray):
+            x = np.array(x)
+
         return np.dot, x
 
     if interface is None:
