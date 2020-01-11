@@ -438,7 +438,7 @@ class TestQNodeCluster:
         assert len(qc) == 0
 
     def test_init_with_qnodes(self):
-        """Test that an QNode cluster can be initialized with QNodes"""
+        """Test that a QNode cluster can be initialized with QNodes"""
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
