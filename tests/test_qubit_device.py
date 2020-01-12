@@ -1,4 +1,3 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +13,16 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
-
 import pytest
+import numpy as np
+import itertools
+import functools
+
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError
 from pennylane.qnodes import QuantumFunctionError
+from pennylane import expval, var, sample
+from pennylane.plugins.default_qubit import I, X, Y, Z, S, Rotx, Roty, H, CNOT
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -345,4 +349,152 @@ class TestParameters:
             mock_qubit_device.execute(queue, observables, parameters=parameters)
 
         assert p_mapping == parameters
+
+THETA = np.linspace(0.11, 3, 5)
+PHI = np.linspace(0.32, 3, 5)
+VARPHI = np.linspace(0.02, 3, 5)
+
+def ansatz(a, b, c):
+    qml.RX(a, wires=0)
+    qml.RX(b, wires=1)
+    qml.RX(c, wires=2)
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[1, 2])
+
+def tensor_product(observables):
+    return functools.reduce(np.kron, observables)
+
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+class TestTensorSample:
+    """Tests for samples of tensor observables"""
+
+    def test_paulix_tensor_pauliz(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliX and PauliZ works correctly"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return sample(qml.PauliX(0) @ qml.PauliZ(1))
+
+        with monkeypatch.context() as m:
+            s1 = circuit()
+
+        # s1 should only contain 1
+        assert np.allclose(s1, 1, atol=tol, rtol=0)
+
+    def test_paulix_tensor_pauliy(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliX and PauliY works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            ansatz(a, b, c)
+            return sample(qml.PauliX(0) @  qml.PauliY(2))
+
+        with monkeypatch.context() as m:
+            s1 = circuit(theta, phi, varphi)
+
+        # s1 should only contain 1 and -1
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+
+        zero_state = np.zeros(2 ** 3)
+        zero_state[0] = 1
+        psi = zero_state
+        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
+        psi = tensor_product([I, Rotx(phi), I]) @ psi
+        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
+        psi = tensor_product([CNOT, I]) @ psi
+        psi = tensor_product([I, CNOT]) @ psi
+
+        # Diagonalize according to the observable
+        psi = tensor_product([H, I, I]) @ psi
+        psi = tensor_product([I, I, Z]) @ psi
+        psi = tensor_product([I, I, S]) @ psi
+        psi = tensor_product([I, I, H]) @ psi
+
+        expected_probabilities = np.abs(psi) ** 2
+        expected_probabilities = expected_probabilities.tolist()
+
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+
+    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving PauliZ and hadamard works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            ansatz(a, b, c)
+            return sample(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
+
+        with monkeypatch.context() as m:
+            s1 = circuit(theta, phi, varphi)
+
+        zero_state = np.zeros(2 ** 3)
+        zero_state[0] = 1
+        psi = zero_state
+        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
+        psi = tensor_product([I, Rotx(phi), I]) @ psi
+        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
+        psi = tensor_product([CNOT, I]) @ psi
+        psi = tensor_product([I, CNOT]) @ psi
+
+        # Diagonalize according to the observable
+        psi = tensor_product([I, Roty(-np.pi/4), I]) @ psi
+        psi = tensor_product([I, I, Z]) @ psi
+        psi = tensor_product([I, I, S]) @ psi
+        psi = tensor_product([I, I, H]) @ psi
+
+        expected_probabilities = np.abs(psi) ** 2
+        expected_probabilities = expected_probabilities.tolist()
+
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
+
+        # s1 should only contain 1 and -1
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+
+    def test_tensor_hermitian(self, theta, phi, varphi, monkeypatch, tol):
+        """Test that a tensor product involving qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit", wires=3)
+
+        A = np.array(
+            [
+                [-6, 2 + 1j, -3, -5 + 2j],
+                [2 - 1j, 0, 2 - 1j, -5 + 4j],
+                [-3, 2 + 1j, 0, -4 + 3j],
+                [-5 - 2j, -5 - 4j, -4 - 3j, -6],
+            ]
+        )
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            ansatz(a, b, c)
+            return sample(qml.PauliZ(0) @ qml.Hermitian(A, [1, 2]))
+
+        with monkeypatch.context() as m:
+            s1 = circuit(theta, phi, varphi)
+
+        # s1 should only contain the eigenvalues of
+        # the hermitian matrix tensor product Z
+        Z = np.diag([1, -1])
+        eigvals = np.linalg.eigvalsh(np.kron(Z, A))
+        assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
+
+        zero_state = np.zeros(2 ** 3)
+        zero_state[0] = 1
+        psi = zero_state
+        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
+        psi = tensor_product([I, Rotx(phi), I]) @ psi
+        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
+        psi = tensor_product([CNOT, I]) @ psi
+        psi = tensor_product([I, CNOT]) @ psi
+
+        # Diagonalize according to the observable
+        eigvals, eigvecs = np.linalg.eigh(A)
+        psi = tensor_product([I, eigvecs.conj().T]) @ psi
+
+        expected_probabilities = np.abs(psi) ** 2
+        expected_probabilities = expected_probabilities.tolist()
+
+        assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
 

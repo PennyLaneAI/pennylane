@@ -86,8 +86,6 @@ class QubitDevice(Device):
         self._parameters = {}
         self._parameters.update(parameters)
 
-        results = []
-
         with self.execution_context():
             self.pre_apply()
 
@@ -101,22 +99,7 @@ class QubitDevice(Device):
 
             self.pre_measure()
 
-            for obs in observables:
-                # Pass instances directly
-                if obs.return_type is Expectation:
-                    results.append(self.expval(obs))
-
-                elif obs.return_type is Variance:
-                    results.append(self.var(obs))
-
-                elif obs.return_type is Sample:
-                    results.append(np.array(self.sample(obs)))
-
-                elif obs.return_type is Probability:
-                    results.append(list(self.probability(wires=obs.wires)))
-
-                elif obs.return_type is not None:
-                    raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
+            results = self.extract_statistics(observables)
 
             self.post_measure()
 
@@ -126,12 +109,42 @@ class QubitDevice(Device):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type is Sample for obs in observables):
-                return self._asarray(results)
-            if any(obs.return_type is Sample for obs in observables):
+            sample_return_types = (obs.return_type is Sample for obs in observables)
+            if any(sample_return_types) and not all(sample_return_types):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
+
+    def extract_statistics(self, observables):
+        """Extracts statistics from a quantum circuit upon calling the execute() method
+        of the device.
+
+        Args:
+            observables (Union[:class:`Observable`, List[:class:`Observable`]]): the number of basis states to sample from
+
+        Returns:
+            Union[float, List[float]]: the corresponding statistics
+        """
+        results = []
+
+        for obs in observables:
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                results.append(self.expval(obs))
+
+            elif obs.return_type is Variance:
+                results.append(self.var(obs))
+
+            elif obs.return_type is Sample:
+                results.append(np.array(self.sample(obs)))
+
+            elif obs.return_type is Probability:
+                results.append(list(self.probability(wires=obs.wires)))
+
+            elif obs.return_type is not None:
+                raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
+
+        return results
 
     def rotate_basis(self, obs_queue):
         """Rotates the specified wires such that they
@@ -143,6 +156,7 @@ class QubitDevice(Device):
         wires = []
 
         for observable in obs_queue:
+            # TODO: self._memory already stores if Sample needs to be returned
             if hasattr(observable, "return_type") and observable.return_type == Sample:
                 self._memory = True  # make sure to return samples
 
@@ -158,8 +172,38 @@ class QubitDevice(Device):
         self._wires_used = wires
         self._rotated_prob = self.probability(wires)
 
+    def sample_basis_states(self, number_of_states, state_probability):
+        """Sample from the computational basis states based on the state
+        probability.
+
+        Args:
+            number_of_states (int): the number of basis states to sample from
+
+        Returns:
+            List[int]: the sampled basis states
+        """
+        basis_states = np.arange(number_of_states)
+        return np.random.choice(basis_states, self.shots, p=state_probability)
+
+    @staticmethod
+    def states_to_binary(samples, number_of_states):
+        """Convert basis states from base 10 to binary representation.
+
+        Args:
+            samples (List[int]): samples of basis states in base 10 representation
+            number_of_states (int): the number of basis states to sample from
+
+        Returns:
+            List[int]: basis states in binary representation
+        """
+        powers_of_two = (1 << np.arange(number_of_states))
+        states_sampled_base_ten = samples[:, None] & powers_of_two
+        return (states_sampled_base_ten > 0).astype(int)
+
     def generate_samples(self):
-        """If the device contains a sample return type, or the
+        """Generate computational basis samples based on the current state.
+
+        If the device contains a sample return type, or the
         device is running in non-analytic mode, ``dev.shots`` number of
         computational basis samples are generated and stored within
         the :attr:`~._samples` attribute.
@@ -169,16 +213,9 @@ class QubitDevice(Device):
             This method should only be called by devices that do not
             generate their own computational basis samples.
         """
-        if self._memory or (not self.analytic):
-            # sample from the computational basis states based on the state probability
-            number_of_states = 2**len(self._wires_used)
-            basis_states = np.arange(number_of_states)
-            samples = np.random.choice(basis_states, self.shots, p=self._rotated_prob)
-
-            # convert the basis states from base 10 to binary representation
-            powers_of_two = (1 << np.arange(number_of_states))
-            states_sampled_base_ten = samples[:, None] & powers_of_two
-            self._samples = (states_sampled_base_ten > 0).astype(int)
+        number_of_states = 2**len(self._wires_used)
+        samples = self.sample_basis_states(number_of_states, self._rotated_prob)
+        self._samples = QubitDevice.states_to_binary(samples, number_of_states)
 
     def expval(self, observable):
         wires = observable.wires
@@ -216,26 +253,48 @@ class QubitDevice(Device):
         if self._rotated_prob is None:
             observable.return_type = Sample
             self.rotate_basis([observable])
-            self.generate_samples()
+
+            if self._memory or (not self.analytic):
+                self.generate_samples()
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            # observables all have eigenvalues {1, -1}, so post-processing step is known
-            return 1 - 2 * self._samples[:, wires[0]]
+            return self.pauli_eigvals_as_samples(wires)
 
-        # Need to post-process the samples using the observables.
-        # Extract only the columns of the basis samples required based on `wires`.
+        return self.custom_eigvals_as_samples(wires, observable.eigvals)
+
+    def pauli_eigvals_as_samples(self, wires):
+        """Process samples using pauli eigenvalues.
+
+        This method should be called for observables having eigenvalues {1, -1},
+        such that the post-processing step is known.
+
+        Args:
+            wires (Sequence[int]): Sequence of wires to return
+
+        Returns:
+            Sequence[int]: standard eigenvalues
+        """
+        return 1 - 2 * self._samples[:, wires[0]]
+
+
+    def custom_eigvals_as_samples(self, wires, eigenvalues):
+        """Replace the basis state in the computational basis with the correct eigenvalue
+
+        Need to post-process the samples using the observables.
+        Extract only the columns of the basis samples required based on `wires`.
+
+        Args:
+            wires (Sequence[int]): Sequence of wires to return
+            eigenvalues (Sequence[complex]): eigenvalues of the observable
+
+        Returns:
+            Sequence[complex]: the sampled eigenvalues of the observable
+        """
         wires = np.hstack(wires)
         samples = self._samples[:, np.array(wires)]
-
-        # replace the basis state in the computational basis with the correct eigenvalue
-        indices = np.ravel_multi_index(samples.T, [2] * len(wires))
-        converted_measurements = observable.eigvals[indices]
-        return converted_measurements
-
-    @property
-    def probabilitiy_with_basis_states(self):
-        basis_states = itertools.product(range(2), repeat=len(wires))
-        return dict(zip(basis_states, self.probability()))
+        unraveled_indices = [2] * len(wires)
+        indices = np.ravel_multi_index(samples.T, unraveled_indices)
+        return eigenvalues[indices]
 
     def probability(self, wires=None):
         """Return the (marginal) probability of each computational basis
@@ -253,7 +312,7 @@ class QubitDevice(Device):
                 basis state probabilities.
 
         Returns:
-            OrderedDict[tuple, float]: Dictionary mapping a tuple representing the state
+            List[float]: Dictionary mapping a tuple representing the state
             to the resulting probability. The dictionary should be sorted such that the
             state tuples are in lexicographical order.
         """
