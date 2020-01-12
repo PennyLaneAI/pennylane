@@ -21,10 +21,41 @@ import pennylane as qml
 from pennylane import QubitDevice, DeviceError
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import expval, var, sample
+from pennylane.operation import Sample, Variance, Expectation, Probability
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
 # pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
+
+
+@pytest.fixture(scope="function")
+def mock_qubit_device(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
+        m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
+        m.setattr(QubitDevice, 'operations', ["PauliY", "RX", "Rot"])
+        m.setattr(QubitDevice, 'observables', ["PauliZ"])
+        m.setattr(QubitDevice, 'short_name', 'MockDevice')
+        m.setattr(QubitDevice, 'expval', lambda self, x: 0)
+        m.setattr(QubitDevice, 'var', lambda self, x: 0)
+        m.setattr(QubitDevice, 'sample', lambda self, x: 0)
+        m.setattr(QubitDevice, 'apply', lambda self, x: None)
+        yield QubitDevice()
+
+@pytest.fixture(scope="function")
+def mock_qubit_device_extract_stats(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
+        m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
+        m.setattr(QubitDevice, 'operations', ["PauliY", "RX", "Rot"])
+        m.setattr(QubitDevice, 'observables', ["PauliZ"])
+        m.setattr(QubitDevice, 'short_name', 'MockDevice')
+        m.setattr(QubitDevice, 'expval', lambda self, x: 0)
+        m.setattr(QubitDevice, 'var', lambda self, x: 0)
+        m.setattr(QubitDevice, 'sample', lambda self, x: 0)
+        m.setattr(QubitDevice, 'probability', lambda self, wires: 0)
+        m.setattr(QubitDevice, 'apply', lambda self, x: None)
+        yield QubitDevice()
 
 @pytest.fixture(scope="function")
 def mock_qubit_device_with_operations(monkeypatch):
@@ -113,20 +144,6 @@ def mock_qubit_device_with_paulis_and_methods(monkeypatch):
         m.setattr(QubitDevice, 'apply', lambda self, x: None)
         yield QubitDevice()
 
-
-@pytest.fixture(scope="function")
-def mock_qubit_device(monkeypatch):
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
-        m.setattr(QubitDevice, 'operations', ["PauliY", "RX", "Rot"])
-        m.setattr(QubitDevice, 'observables', ["PauliZ"])
-        m.setattr(QubitDevice, 'short_name', 'MockDevice')
-        m.setattr(QubitDevice, 'expval', lambda self, x: 0)
-        m.setattr(QubitDevice, 'var', lambda self, x: 0)
-        m.setattr(QubitDevice, 'sample', lambda self, x: 0)
-        m.setattr(QubitDevice, 'apply', lambda self, x: None)
-        yield QubitDevice()
 
 class TestOperations:
     """Tests the logic related to operations"""
@@ -347,4 +364,61 @@ class TestParameters:
             mock_qubit_device.execute(queue, observables, parameters=parameters)
 
         assert p_mapping == parameters
+
+class TestExtractStatistics:
+    """Test the extract_statistics method"""
+
+    @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability])
+    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+        """Tests that the extract_statistics simply builds a results list without any side-effects"""
+
+        class SomeObservable(qml.operation.Observable):
+            num_params = 0
+            num_wires = 1
+            par_domain = 'F'
+            return_type = returntype
+
+        obs = SomeObservable(wires=0)
+
+        with monkeypatch.context() as m:
+            results = mock_qubit_device_extract_stats.extract_statistics([obs])
+
+        assert results == [0]
+
+    @pytest.mark.parametrize("returntype", [None])
+    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+        """Tests that the extract_statistics returns an empyt list if the return type is None"""
+
+        class SomeObservable(qml.operation.Observable):
+            num_params = 0
+            num_wires = 1
+            par_domain = 'F'
+            return_type = returntype
+
+        obs = SomeObservable(wires=0)
+
+        with monkeypatch.context() as m:
+            results = mock_qubit_device_extract_stats.extract_statistics([obs])
+
+        assert results == []
+
+    @pytest.mark.parametrize("returntype", ['not None'])
+    def test_error_return_type_none(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+        """Tests that the extract_statistics raises an error if the return type is not well-defined and
+        is not None"""
+
+        assert returntype not in [Expectation, Variance, Sample, Probability, None]
+
+        class SomeObservable(qml.operation.Observable):
+            num_params = 0
+            num_wires = 1
+            par_domain = 'F'
+            return_type = returntype
+
+        obs = SomeObservable(wires=0)
+
+        with pytest.raises(
+                QuantumFunctionError, match="Unsupported return type"
+        ):
+           results = mock_qubit_device_extract_stats.extract_statistics([obs])
 

@@ -122,6 +122,9 @@ class QubitDevice(Device):
         Args:
             observables (Union[:class:`Observable`, List[:class:`Observable`]]): the number of basis states to sample from
 
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
         Returns:
             Union[float, List[float]]: the corresponding statistics
         """
@@ -139,7 +142,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(list(self.probability(wires=obs.wires)))
+                results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
@@ -172,6 +175,23 @@ class QubitDevice(Device):
         self._wires_used = wires
         self._rotated_prob = self.probability(wires)
 
+    def generate_samples(self):
+        """Generate computational basis samples based on the current state.
+
+        If the device contains a sample return type, or the
+        device is running in non-analytic mode, ``dev.shots`` number of
+        computational basis samples are generated and stored within
+        the :attr:`~._samples` attribute.
+
+        .. note::
+
+            This method should only be called by devices that do not
+            generate their own computational basis samples.
+        """
+        number_of_states = 2**len(self._wires_used)
+        samples = self.sample_basis_states(number_of_states, self._rotated_prob)
+        self._samples = QubitDevice.states_to_binary(samples, number_of_states)
+
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
         probability.
@@ -199,23 +219,6 @@ class QubitDevice(Device):
         powers_of_two = (1 << np.arange(number_of_states))
         states_sampled_base_ten = samples[:, None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(int)
-
-    def generate_samples(self):
-        """Generate computational basis samples based on the current state.
-
-        If the device contains a sample return type, or the
-        device is running in non-analytic mode, ``dev.shots`` number of
-        computational basis samples are generated and stored within
-        the :attr:`~._samples` attribute.
-
-        .. note::
-
-            This method should only be called by devices that do not
-            generate their own computational basis samples.
-        """
-        number_of_states = 2**len(self._wires_used)
-        samples = self.sample_basis_states(number_of_states, self._rotated_prob)
-        self._samples = QubitDevice.states_to_binary(samples, number_of_states)
 
     def expval(self, observable):
         wires = observable.wires
