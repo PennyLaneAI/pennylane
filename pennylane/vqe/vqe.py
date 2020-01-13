@@ -125,7 +125,7 @@ class Hamiltonian:
 
             terms.append(coeff.format(term))
 
-        return " + ".join(terms)
+        return "\n+ ".join(terms)
 
 
 class cost:
