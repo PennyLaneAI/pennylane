@@ -349,7 +349,7 @@ class TestTensorSample:
         @qml.qnode(dev)
         def circuit(a, b, c):
             ansatz(a, b, c)
-            return sample(qml.PauliX(0) @  qml.PauliY(2))
+            return sample(qml.PauliX(0) @ qml.PauliY(2))
 
         with monkeypatch.context() as m:
             s1 = circuit(theta, phi, varphi)
@@ -456,4 +456,3 @@ class TestTensorSample:
         expected_probabilities = expected_probabilities.tolist()
 
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
-
