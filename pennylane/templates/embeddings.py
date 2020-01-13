@@ -339,10 +339,9 @@ def BasisEmbedding(features, wires):
 
     #############
     # Input checks
-    wires, n_wires = _check_wires(wires)
-    _check_shape(features, (n_wires,))
+    wires = _check_wires(wires)
+    _check_shape(features, (len(wires),), msg="Expected features of size {}".format((len(wires),)))
 
-    # basis_state is guaranteed to be a list
     if any([b not in [0, 1] for b in features]):
         raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(features))
     ###############
@@ -492,39 +491,26 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     """
     #############
     # Input checks
-    wires, n_wires = _check_wires(wires)
+    wires = _check_wires(wires)
+    _check_shape(features, (len(wires),), bound='max', msg="Expected features of size {}".format((len(wires),)))
+    _check_hyperp_is_in_options(local_field, ['X', 'Y', 'Z'], msg="Option for local field not known. "
+                                                                  "Has to be one of ``'X'``, ``'Y'``, or ``'Z'``.")
+    repeat = _check_number_of_layers([weights])
+    if len(wires) == 1:
+        _check_shape(weights, (repeat, 1), msg="Expected weight array of shape {}".format((repeat, 1)))
+    elif len(wires) == 2:
+        _check_shape(weights, (repeat, 3), msg="Expected weight array of shape {}".format((repeat, 3)))
+    else:
+        _check_shape(weights, (repeat, 2*len(wires)), msg="Expected weight array of "
+                                                          "shape {}".format((repeat, 2*len(wires))))
+    #####################
 
-    n_features = _get_shape(features)[0]
-    msg = "QAOAEmbedding cannot process more features than number of qubits {};" \
-          "got {}.".format(n_wires, len(features))
-    _check_shape(features, (n_wires,), bound='max', msg=msg)
-
-    msg = "Option for local field not known. Has to be one of ``'X'``, ``'Y'``, or ``'Z'``."
-    _check_hyperp_is_in_options(local_field, ['X', 'Y', 'Z'], msg=msg)
     if local_field == 'Z':
         local_fields = RZ
     elif local_field == 'X':
         local_fields = RX
     else:
         local_fields = RY
-
-    repeat = _check_number_of_layers([weights])
-
-    weights = np.array(weights)
-    weights_shape = weights.shape
-    if n_wires == 1:
-        msg = "QAOAEmbedding with 1 qubit and {} layers requires weight " \
-              "array of shape {}; got {}".format(repeat, (repeat, 1), weights_shape)
-        _check_shape(weights, (repeat, 1), msg=msg)
-    elif n_wires == 2:
-        msg = "QAOAEmbedding with 2 qubits and {} layers requires weight " \
-              "array of shape {}; got {}".format(repeat, (repeat, 3), weights_shape)
-        _check_shape(weights, (repeat, 3), msg=msg)
-    else:
-        msg = "QAOAEmbedding with {} qubits and {} layers requires weight " \
-              "array of shape {}; got {}".format(n_wires, repeat, (repeat, 2*n_wires), weights_shape)
-        _check_shape(weights, (repeat, 2*n_wires), msg=msg)
-    #####################
 
     for l in range(repeat):
         # apply alternating Hamiltonians
@@ -563,16 +549,12 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
 
     #############
     # Input checks
-    _check_no_variable([method, c], ['method', 'c'])
-
-    wires, n_wires = _check_wires(wires)
-
-    msg = "DisplacementEmbedding cannot process more features than number of wires {};" \
-          "got {}.".format(n_wires, len(features))
-    _check_shape(features, (n_wires,), bound='max', msg=msg)
-
-    msg = "Did not recognise parameter encoding method {}.".format(method)
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg=msg)
+    _check_no_variable(method, msg="Argument 'method' cannot be differentiable.")
+    _check_no_variable(c, msg="Argument 'c' cannot be differentiable.")
+    wires = _check_wires(wires)
+    _check_shape(features, (len(wires),), bound='max', msg="Expected features of size {}".format((len(wires),)))
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg="Did not recognise parameter "
+                                                                    "encoding method {}.".format(method))
     #############
 
     for idx, f in enumerate(features):
@@ -612,16 +594,12 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
 
     #############
     # Input checks
-    _check_no_variable([method, c], ['method', 'c'])
-
-    wires, n_wires = _check_wires(wires)
-
-    msg = "SqueezingEmbedding cannot process more features than number of wires {};" \
-          "got {}.".format(n_wires, len(features))
-    _check_shape(features, (n_wires,), bound='max', msg=msg)
-
-    msg = "Did not recognise parameter encoding method {}.".format(method)
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg=msg)
+    _check_no_variable(method, msg="Argument 'method' cannot be differentiable.")
+    _check_no_variable(c, msg="Argument 'c' cannot be differentiable.")
+    wires = _check_wires(wires)
+    _check_shape(features, (len(wires),), bound='max', msg="Expected features of size {}".format((len(wires),)))
+    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg="Did not recognise parameter "
+                                                                    "encoding method {}".format(method))
     #############
 
     for idx, f in enumerate(features):
