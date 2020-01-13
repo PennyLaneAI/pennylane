@@ -141,15 +141,15 @@ result in an expectation value of 0.5, we can do the following:
     phi = tf.Variable([0.5, 0.1], dtype=tf.float64)
     theta = tf.Variable(0.2, dtype=tf.float64)
 
-    opt = tf.train.GradientDescentOptimizer(learning_rate=0.1)
+    opt = tf.keras.optimizers.SGD(learning_rate=0.1)
     steps = 200
 
     for i in range(steps):
         with tf.GradientTape() as tape:
             loss = tf.abs(circuit4(phi, theta) - 0.5)**2
-            grads = tape.gradient(loss, [phi, theta])
 
-        opt.apply_gradients(zip(grads, [phi, theta]), global_step=tf.train.get_or_create_global_step())
+        gradients = tape.gradient(loss, [phi, theta])
+        opt.apply_gradients(zip(gradients, [phi, theta]))
 
 
 The final weights and circuit value are:
