@@ -1242,6 +1242,8 @@ div.body p.centered {
 div.seealso {
   background-color: #ffc;
   border: 1px solid #ff6;
+  padding: 20px 10px 0px 20px;
+  display: block ruby;
 }
 
 
