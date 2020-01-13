@@ -79,7 +79,7 @@ mock_qubit_device_capabilities = {
 
 @pytest.fixture(scope="function")
 def mock_qubit_device_with_paulis_and_methods(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty observables"""
+    """A mock instance of the abstract QubitDevice class that supports Paulis in its capabilities"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, '__abstractmethods__', frozenset())
         m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
