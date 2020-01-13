@@ -191,7 +191,7 @@ class QubitDevice(Device):
 
         .. warning::
 
-            This method should only be called by devices that do not
+            This method should be overwritten on devices that
             generate their own computational basis samples.
         """
         number_of_states = 2**len(self._wires_used)
