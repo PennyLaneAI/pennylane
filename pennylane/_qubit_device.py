@@ -301,7 +301,7 @@ class QubitDevice(Device):
 
 
     def custom_eigvals_as_samples(self, wires, eigenvalues):
-        """Replace the basis state in the computational basis with the correct eigenvalue
+        """Replace the basis state in the computational basis with the correct eigenvalue.
 
         Need to post-process the samples using the observables.
         Extract only the columns of the basis samples required based on `wires`.
