@@ -283,6 +283,7 @@ class QubitDevice(Device):
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             return self.pauli_eigvals_as_samples(wires)
 
+        # Need to post-process the samples using the observables.
         return self.custom_eigvals_as_samples(wires, observable.eigvals)
 
     def pauli_eigvals_as_samples(self, wires):
@@ -303,7 +304,6 @@ class QubitDevice(Device):
     def custom_eigvals_as_samples(self, wires, eigenvalues):
         """Replace the basis state in the computational basis with the correct eigenvalue
 
-        Need to post-process the samples using the observables.
         Extract only the columns of the basis samples required based on `wires`.
 
         Args:
