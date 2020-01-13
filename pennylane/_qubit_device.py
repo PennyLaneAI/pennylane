@@ -330,14 +330,9 @@ class QubitDevice(Device):
             wires (Sequence[int]): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
-            values_only (bool): If ``True``, the return type is modified to
-                instead be a flattened array of the computational
-                basis state probabilities.
 
         Returns:
-            List[float]: Dictionary mapping a tuple representing the state
-            to the resulting probability. The dictionary should be sorted such that the
-            state tuples are in lexicographical order.
+            List[float]: list of the probabilities
         """
         if self._state is None:
             return None
