@@ -381,7 +381,7 @@ class TestExtractStatistics:
 
     @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the statistics simply builds a results list without any side-effects"""
+        """Tests that the statistics method simply builds a results list without any side-effects"""
 
         class SomeObservable(qml.operation.Observable):
             num_params = 0
@@ -398,7 +398,7 @@ class TestExtractStatistics:
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the statistics returns an empyt list if the return type is None"""
+        """Tests that the statistics method returns an empty list if the return type is None"""
 
         class SomeObservable(qml.operation.Observable):
             num_params = 0
@@ -415,7 +415,7 @@ class TestExtractStatistics:
 
     @pytest.mark.parametrize("returntype", ['not None'])
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the statistics raises an error if the return type is not well-defined and is not None"""
+        """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
         assert returntype not in [Expectation, Variance, Sample, Probability, None]
 
