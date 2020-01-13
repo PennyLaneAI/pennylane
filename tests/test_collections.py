@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.cluster` submodule.
+Unit tests for the :mod:`pennylane.collection` submodule.
 """
 from collections.abc import Sequence
 
@@ -75,7 +75,7 @@ def qnodes(interface, tf_support, torch_support):
 
 class TestMap:
     """Test for mapping ansatz over observables or devices,
-    to return a QNode cluster"""
+    to return a QNode collection"""
 
     def test_template_not_callable(self):
         """Test that an exception is correctly called if a
@@ -85,7 +85,7 @@ class TestMap:
 
     def test_mapping_over_observables(self):
         """Test that mapping over a list of observables produces
-        a QNodeCluster with the correct QNodes, with a single
+        a QNodeCollection with the correct QNodes, with a single
         device broadcast."""
         dev = qml.device("default.qubit", wires=1)
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
@@ -95,7 +95,7 @@ class TestMap:
 
         assert len(qc) == 2
 
-        # evaluate cluster so that queue is populated
+        # evaluate collection so that queue is populated
         qc(1)
 
         assert len(qc[0].ops) == 2
@@ -111,7 +111,7 @@ class TestMap:
 
     def test_mapping_over_observables_as_tuples(self):
         """Test that mapping over a tuple of observables produces
-        a QNodeCluster with the correct QNodes, with a single
+        a QNodeCollection with the correct QNodes, with a single
         device broadcast."""
         dev = qml.device("default.qubit", wires=1)
         obs_list = (qml.PauliX(0), qml.PauliY(0))
@@ -121,7 +121,7 @@ class TestMap:
 
         assert len(qc) == 2
 
-        # evaluate cluster so that queue is populated
+        # evaluate collection so that queue is populated
         qc(1)
 
         assert len(qc[0].ops) == 2
@@ -137,7 +137,7 @@ class TestMap:
 
     def test_mapping_over_devices(self):
         """Test that mapping over a list of devices produces
-        a QNodeCluster with the correct QNodes"""
+        a QNodeCollection with the correct QNodes"""
         dev_list = [qml.device("default.qubit", wires=1), qml.device("default.qubit", wires=1)]
 
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
@@ -147,7 +147,7 @@ class TestMap:
 
         assert len(qc) == 2
 
-        # evaluate cluster so that queue is populated
+        # evaluate collection so that queue is populated
         qc(1)
 
         assert len(qc[0].ops) == 2
@@ -165,7 +165,7 @@ class TestMap:
 
     def test_mapping_over_measurements(self):
         """Test that mapping over a list of measurement types produces
-        a QNodeCluster with the correct QNodes"""
+        a QNodeCollection with the correct QNodes"""
         dev = qml.device("default.qubit", wires=1)
 
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
@@ -175,7 +175,7 @@ class TestMap:
 
         assert len(qc) == 2
 
-        # evaluate cluster so that queue is populated
+        # evaluate collection so that queue is populated
         qc(1)
 
         assert len(qc[0].ops) == 2
@@ -212,7 +212,7 @@ class TestApply:
             pytest.skip("Skipped, no tf support")
 
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
 
         if interface == "tf":
             sfn = tf.reduce_sum
@@ -239,7 +239,7 @@ class TestApply:
             pytest.skip("Skipped, no tf support")
 
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
 
         if interface == "tf":
             sinfn = tf.sin
@@ -273,7 +273,7 @@ class TestSum:
             pytest.skip("Skipped, no tf support")
 
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         cost = qml.sum(qc)
 
         params = [0.5643, -0.45]
@@ -288,7 +288,7 @@ class TestSum:
 
     def test_unknown_interface(self, monkeypatch):
         """Test exception raised if the interface is unknown"""
-        monkeypatch.setattr(qml.QNodeCluster, "interface", "invalid")
+        monkeypatch.setattr(qml.QNodeCollection, "interface", "invalid")
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
@@ -296,7 +296,7 @@ class TestSum:
             return qml.expval(qml.PauliZ(0))
 
         qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc = qml.QNodeCluster(qnodes)
+        qc = qml.QNodeCollection(qnodes)
         with pytest.raises(ValueError, match="Unknown interface invalid"):
             qml.sum(qc)
 
@@ -314,7 +314,7 @@ class TestDot:
             pytest.skip("Skipped, no tf support")
 
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
         if interface == "torch":
@@ -349,8 +349,8 @@ class TestDot:
             pytest.skip("Skipped, no tf support")
 
         qnode1, qnode2 = qnodes
-        qc1 = qml.QNodeCluster([qnode1, qnode2])
-        qc2 = qml.QNodeCluster([qnode1, qnode2])
+        qc1 = qml.QNodeCollection([qnode1, qnode2])
+        qc2 = qml.QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
         cost = qml.dot(qc1, qc2)
@@ -379,7 +379,7 @@ class TestDot:
             pytest.skip("Skipped, no tf support")
 
         qnode1, _ = qnodes
-        qc = qml.QNodeCluster([qnode1])
+        qc = qml.QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
         if interface == "torch":
@@ -405,7 +405,7 @@ class TestDot:
 
     def test_unknown_interface(self, monkeypatch):
         """Test exception raised if the interface is unknown"""
-        monkeypatch.setattr(qml.QNodeCluster, "interface", "invalid")
+        monkeypatch.setattr(qml.QNodeCollection, "interface", "invalid")
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -418,27 +418,27 @@ class TestDot:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qc = qml.QNodeCluster([circuit1, circuit2])
+        qc = qml.QNodeCollection([circuit1, circuit2])
         with pytest.raises(ValueError, match="Unknown interface invalid"):
             qml.dot([1, 2], qc)
 
     def test_no_qnodes(self):
         """Test exception raised if no qnodes are provided as arguments"""
-        with pytest.raises(ValueError, match="At least one argument must be a QNodeCluster"):
+        with pytest.raises(ValueError, match="At least one argument must be a QNodeCollection"):
             qml.dot([1, 2], [3, 4])
 
 
-class TestQNodeCluster:
-    """Tests for the QNodeCluster class"""
+class TestQNodeCollection:
+    """Tests for the QNodeCollection class"""
 
     def test_empty_init(self):
-        """Test that an empty QNode cluster can be initialized"""
-        qc = qml.QNodeCluster()
+        """Test that an empty QNode collection can be initialized"""
+        qc = qml.QNodeCollection()
         assert qc.qnodes == []
         assert len(qc) == 0
 
     def test_init_with_qnodes(self):
-        """Test that an QNode cluster can be initialized with QNodes"""
+        """Test that a QNode collection can be initialized with QNodes"""
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
@@ -446,7 +446,7 @@ class TestQNodeCluster:
             return qml.expval(qml.PauliZ(0))
 
         qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc = qml.QNodeCluster(qnodes)
+        qc = qml.QNodeCollection(qnodes)
 
         assert qc.qnodes == qnodes
         assert len(qc) == 4
@@ -461,7 +461,7 @@ class TestQNodeCluster:
         if interface == "tf" and not tf_support:
             pytest.skip("Skipped, no tf support")
 
-        qc = qml.QNodeCluster()
+        qc = qml.QNodeCollection()
         assert qc.interface is None
 
         def circuit(x):
@@ -470,7 +470,7 @@ class TestQNodeCluster:
 
         dev = qml.device("default.qubit", wires=1)
         qnodes = [qml.QNode(circuit, dev, interface=interface) for i in range(4)]
-        qc = qml.QNodeCluster(qnodes)
+        qc = qml.QNodeCollection(qnodes)
 
         if interface == "numpy":
             # Note: the "numpy" interface is deprecated, and
@@ -481,7 +481,7 @@ class TestQNodeCluster:
 
     def test_append_qnode(self):
         """Test that a QNode is correctly appended"""
-        qc = qml.QNodeCluster()
+        qc = qml.QNodeCollection()
         assert qc.qnodes == []
 
         def circuit(x):
@@ -496,7 +496,7 @@ class TestQNodeCluster:
 
     def test_extend_qnodes(self):
         """Test that a list of QNodes is correctly appended"""
-        qc = qml.QNodeCluster()
+        qc = qml.QNodeCollection()
         assert qc.qnodes == []
 
         def circuit(x):
@@ -511,8 +511,8 @@ class TestQNodeCluster:
 
     def test_extend_multiple_interface_qnodes(self):
         """Test that an error is returned if QNodes with differing
-        interfaces are attempted to be added to a QNodeCluster"""
-        qc = qml.QNodeCluster()
+        interfaces are attempted to be added to a QNodeCollection"""
+        qc = qml.QNodeCollection()
 
         def circuit(x):
             qml.RX(x, wires=0)
@@ -529,8 +529,8 @@ class TestQNodeCluster:
 
     def test_extend_interface_mistmatch(self):
         """Test that an error is returned if QNodes with a differing
-        interface to the QNode cluster are appended"""
-        qc = qml.QNodeCluster()
+        interface to the QNode collection are appended"""
+        qc = qml.QNodeCollection()
 
         def circuit(x):
             qml.RX(x, wires=0)
@@ -546,7 +546,7 @@ class TestQNodeCluster:
             qc.extend([qnode2])
 
     def test_indexing(self):
-        """Test that indexing into the QNodeCluster correctly works"""
+        """Test that indexing into the QNodeCollection correctly works"""
 
         def circuit(x):
             qml.RX(x, wires=0)
@@ -555,20 +555,20 @@ class TestQNodeCluster:
         dev = qml.device("default.qubit", wires=1)
         qnodes = [qml.QNode(circuit, dev) for i in range(4)]
 
-        qc = qml.QNodeCluster(qnodes)
+        qc = qml.QNodeCollection(qnodes)
         assert qc[2] == qnodes[2]
 
     def test_sequence(self):
-        """Test that the QNodeCluster is a sequence type"""
-        qc = qml.QNodeCluster()
+        """Test that the QNodeCollection is a sequence type"""
+        qc = qml.QNodeCollection()
         assert isinstance(qc, Sequence)
 
     @pytest.mark.parametrize("interface", ["autograd", "numpy"])
     def test_eval_autograd(self, qnodes):
-        """Test correct evaluation of the QNodeCluster using
+        """Test correct evaluation of the QNodeCollection using
         the Autograd interface"""
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
         res = qc(params)
@@ -577,12 +577,12 @@ class TestQNodeCluster:
 
     @pytest.mark.parametrize("interface", ["autograd", "numpy"])
     def test_grad_autograd(self, qnodes):
-        """Test correct gradient of the QNodeCluster using
+        """Test correct gradient of the QNodeCollection using
         the Autograd interface"""
         qnode1, qnode2 = qnodes
 
         params = [0.5643, -0.45]
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         cost_qc = lambda params: np.sum(qc(params))
         grad_qc = qml.grad(cost_qc, argnum=0)
 
@@ -596,10 +596,10 @@ class TestQNodeCluster:
 
     @pytest.mark.parametrize("interface", ["torch"])
     def test_eval_torch(self, qnodes, skip_if_no_torch_support):
-        """Test correct evaluation of the QNodeCluster using
+        """Test correct evaluation of the QNodeCollection using
         the torch interface"""
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
         res = qc(params).numpy()
@@ -608,13 +608,13 @@ class TestQNodeCluster:
 
     @pytest.mark.parametrize("interface", ["torch"])
     def test_grad_torch(self, qnodes, skip_if_no_torch_support):
-        """Test correct gradient of the QNodeCluster using
+        """Test correct gradient of the QNodeCollection using
         the torch interface"""
         qnode1, qnode2 = qnodes
 
-        # calculate the gradient of the cluster using pytorch
+        # calculate the gradient of the collection using pytorch
         params = torch.autograd.Variable(torch.tensor([0.5643, -0.45]), requires_grad=True)
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         cost = torch.sum(qc(params))
         cost.backward()
         res = params.grad.numpy()
@@ -629,10 +629,10 @@ class TestQNodeCluster:
 
     @pytest.mark.parametrize("interface", ["tf"])
     def test_eval_tf(self, qnodes, skip_if_no_tf_support):
-        """Test correct evaluation of the QNodeCluster using
+        """Test correct evaluation of the QNodeCollection using
         the tf interface"""
         qnode1, qnode2 = qnodes
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
         res = qc(params).numpy()
@@ -641,13 +641,13 @@ class TestQNodeCluster:
 
     @pytest.mark.parametrize("interface", ["tf"])
     def test_grad_tf(self, qnodes, skip_if_no_tf_support):
-        """Test correct gradient of the QNodeCluster using
+        """Test correct gradient of the QNodeCollection using
         the tf interface"""
         qnode1, qnode2 = qnodes
 
-        # calculate the gradient of the cluster using tf
+        # calculate the gradient of the collection using tf
         params = Variable([0.5643, -0.45])
-        qc = qml.QNodeCluster([qnode1, qnode2])
+        qc = qml.QNodeCollection([qnode1, qnode2])
 
         with tf.GradientTape() as tape:
             tape.watch(params)
