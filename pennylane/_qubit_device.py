@@ -19,8 +19,6 @@ This module contains the :class:`QubitDevice` abstract base class.
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
 
-import itertools
-from collections import OrderedDict
 import numpy as np
 
 from pennylane.operation import Sample, Variance, Expectation, Probability
@@ -42,7 +40,12 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots)
         self.analytic = analytic
 
-        self.reset()
+        self._state = None
+        self._prob = None
+        self._rotated_prob = None
+        self._wires_used = None
+        self._memory = None
+        self._samples = None
 
 
     def reset(self):
@@ -329,7 +332,6 @@ class QubitDevice(Device):
         if self._state is None:
             return None
 
-        print(wires)
         wires = wires or range(self.num_wires)
         prob = self.marginal_prob(np.abs(self._state)**2, wires)
         return prob
@@ -356,4 +358,3 @@ class QubitDevice(Device):
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
         prob = prob.reshape([2] * self.num_wires)
         return np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
-
