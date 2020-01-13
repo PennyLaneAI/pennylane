@@ -33,7 +33,7 @@ from pennylane.about import about
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
-from .clusters import apply, map, sum, dot, QNodeCluster
+from .collections import apply, map, sum, dot, QNodeCollection
 from ._qubit_device import QubitDevice
 from .measure import expval, var, sample, probs
 from .ops import *

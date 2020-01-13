@@ -27,11 +27,11 @@ MEASURE_MAP = {"expval": expval, "var": var, "sample": sample}
 
 def map(template, observables, device, measure="expval", interface="autograd", diff_method="best"):
     """Map a quantum template over a list of observables to create
-    a :class:`QNodeCluster`.
+    a :class:`QNodeCollection`.
 
-    The number of QNodes within the created QNode cluster will match the number
+    The number of QNodes within the created QNode collection will match the number
     of observables passed. The device and the measurement type will either be
-    applied to all QNodes in the cluster, or can be provided as a list for more
+    applied to all QNodes in the collection, or can be provided as a list for more
     fine-grained control.
 
     Args:
@@ -49,21 +49,21 @@ def map(template, observables, device, measure="expval", interface="autograd", d
         observables (Iterable[:class:`~.Observable`]): observables to measure during the
             final step of each circuit
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
-            QNodeCluster should be executed. This can either be a single device, or a list
+            QNodeCollection should be executed. This can either be a single device, or a list
             of devices of length ``len(observables)``.
         measure (str, Union(List[str], Tuple[str])): Measurement(s) to perform. Options include
             :func:`'expval' <pennylane.expval>`, :func:`'var' <pennylane.var>`,
             and :func:`'sample' <pennylane.sample>`.
             This can either be a single measurement type, in which case it is applied
             to all observables, or a list of measurements of length ``len(observables)``.
-        interface (str, None): which interface to use for the returned QNode cluster.
+        interface (str, None): which interface to use for the returned QNode collection.
             This affects the types of objects that can be passed to/returned from the QNode.
             Supports all interfaces supported by the :func:`~.qnode` decorator.
-        diff_method (str, None): the method of differentiation to use in the created QNodeCluster.
+        diff_method (str, None): the method of differentiation to use in the created QNodeCollection.
             Supports all differentiation methods supported by the :func:`~.qnode` decorator.
 
     Returns:
-        QNodeCluster: a cluster of QNodes executing the circuit template with
+        QNodeCollection: a collection of QNodes executing the circuit template with
         the specified measurements
 
     **Example:**
@@ -87,7 +87,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
 
-    The returned :class:`~.QNodeCluster` can be evaluated, returning the results from each
+    The returned :class:`~.QNodeCollection` can be evaluated, returning the results from each
     mapped QNode as an array:
 
     >>> params = [0.54, 0.12]
@@ -97,7 +97,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")
 
-    qnodes = QNodeCluster()
+    qnodes = QNodeCollection()
 
     if not isinstance(device, Sequence):
         # broadcast the single device over all observables
@@ -130,26 +130,26 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     return qnodes
 
 
-def apply(func, qnode_cluster):
-    """Apply a function to the constituent QNodes of a :class:`QNodeCluster`.
+def apply(func, qnode_collection):
+    """Apply a function to the constituent QNodes of a :class:`QNodeCollection`.
 
     Args:
-        func (callable): A function to be applied to the QNodeCluster results.
-            This function must be supported by the corresponding QNodeCluster
-            interface; i.e., a ``torch`` QNodeCluster can only be acted on functions
+        func (callable): A function to be applied to the QNodeCollection results.
+            This function must be supported by the corresponding QNodeCollection
+            interface; i.e., a ``torch`` QNodeCollection can only be acted on functions
             that accept ``torch.tensor`` objects.
-        qnode_cluster (QNodeCluster): a QNode cluster.
+        qnode_collection (QNodeCollection): a QNode collection.
 
     **Example:**
 
-    We can create a QNodeCluster using :func:`~.map`:
+    We can create a QNodeCollection using :func:`~.map`:
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
     >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
 
     As we are using the ``'torch'`` interface, we now apply ``torch.sum``
-    to the QNodeCluster:
+    to the QNodeCollection:
 
     >>> cost = qml.apply(torch.sum, qnodes)
 
@@ -160,26 +160,26 @@ def apply(func, qnode_cluster):
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
-    return lambda params, **kwargs: func(qnode_cluster(params, **kwargs))
+    return lambda params, **kwargs: func(qnode_collection(params, **kwargs))
 
 
 def sum(x):
-    """Lazily sum the constituent QNodes of a :class:`QNodeCluster`.
+    """Lazily sum the constituent QNodes of a :class:`QNodeCollection`.
 
     Args:
-        x (QNodeCluster): a QNode cluster of independent QNodes.
+        x (QNodeCollection): a QNode collection of independent QNodes.
 
     .. seealso:: :func:`~.apply`, :func:`~.dot`
 
     **Example:**
 
-    We can create a QNodeCluster using :func:`~.map`:
+    We can create a QNodeCollection using :func:`~.map`:
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
     >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
 
-    For the cost function, we now sum the results of all QNodes in the cluster:
+    For the cost function, we now sum the results of all QNodes in the collection:
 
     >>> cost = qml.sum(qnodes)
 
@@ -215,7 +215,7 @@ def sum(x):
 
 def _get_dot_func(interface):
     """Helper function for :func:`~.dot` to determine
-    the correct dot product function depending on the QNodeCluster
+    the correct dot product function depending on the QNodeCollection
     interface"""
     if interface == "tf":
         import tensorflow as tf
@@ -241,36 +241,36 @@ def _get_dot_func(interface):
 
 
 def dot(x, y):
-    r"""Lazily perform the dot product between arrays, tensors, and :class:`QNodeCluster`.
+    r"""Lazily perform the dot product between arrays, tensors, and :class:`QNodeCollection`.
 
-    Using this function, lazy dot products can be computed between two :class:`QNodeCluster`
-    objects, or a :class:`QNodeCluster` object and an array/tensor object. In the latter
+    Using this function, lazy dot products can be computed between two :class:`QNodeCollection`
+    objects, or a :class:`QNodeCollection` object and an array/tensor object. In the latter
     case, only one-dimensional arrays/tensors are supported.
 
     Args:
-        x (array or tensor or QNodeCluster): A QNode cluster of independent QNodes,
+        x (array or tensor or QNodeCollection): A QNode collection of independent QNodes,
             or an array/tensor object.
-        y (array or tensor or QNodeCluster): A QNode cluster of independent QNodes,
+        y (array or tensor or QNodeCollection): A QNode collection of independent QNodes,
             or an array/tensor object.
 
     .. seealso:: :func:`~.apply`, :func:`~.sum`
 
     **Example:**
 
-    We can create a QNodeCluster using :func:`~.map`:
+    We can create a QNodeCollection using :func:`~.map`:
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
     >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
 
-    The returned QNodeCluster contains 2 QNodes, as we mapped the :func:`~.StronglyEntanglingLayers`
+    The returned QNodeCollection contains 2 QNodes, as we mapped the :func:`~.StronglyEntanglingLayers`
     over a list of two observables:
 
     >>> len(qnodes)
     2
 
     For the cost function, we now perform the dot product between a vector of coefficients
-    and the QNodeCluster:
+    and the QNodeCollection:
 
     >>> coeffs = torch.tensor([0.32, -0.2], dtype=torch.double)
     >>> cost = qml.dot(coeffs, qnodes)
@@ -290,49 +290,49 @@ def dot(x, y):
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
-    if isinstance(x, QNodeCluster) and isinstance(y, QNodeCluster):
+    if isinstance(x, QNodeCollection) and isinstance(y, QNodeCollection):
 
         if x.interface != y.interface:
-            raise ValueError("QNodeClusters have non-matching interfaces")
+            raise ValueError("QNodeCollections have non-matching interfaces")
 
         fn = _get_dot_func(x.interface)
         return lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
-    if isinstance(x, QNodeCluster):
+    if isinstance(x, QNodeCollection):
         fn = _get_dot_func(x.interface)
         return lambda params, **kwargs: fn(x(params, **kwargs), y)
 
-    if isinstance(y, QNodeCluster):
+    if isinstance(y, QNodeCollection):
         fn = _get_dot_func(y.interface)
         return lambda params, **kwargs: fn(x, y(params, **kwargs))
 
-    raise ValueError("At least one argument must be a QNodeCluster")
+    raise ValueError("At least one argument must be a QNodeCollection")
 
 
-class QNodeCluster(Sequence):
+class QNodeCollection(Sequence):
     """Represents a sequence of independent QNodes that all share the same signature.
-    When the cluster is evaluated, all QNodes are simultaneously evaluated
+    When the collection is evaluated, all QNodes are simultaneously evaluated
     with the same parameters.
 
-    All QNodes within a QNodeCluster **must** use the same interface.
+    All QNodes within a QNodeCollection **must** use the same interface.
 
-    .. note:: the recommended method of creating a QNodeCluster is via :func:`~.map`.
+    .. note:: the recommended method of creating a QNodeCollection is via :func:`~.map`.
 
     Args:
         qnodes (None or List[QNode]): A list of QNodes sharing the same signature.
-            If not provided, an empty QNode cluster is instantiated.
+            If not provided, an empty QNode collection is instantiated.
 
     .. seealso:: :func:`~.map`, :func:`~.apply`, :func:`~.sum`, :func:`~.dot`
 
     **Example:**
 
-    A QNodeCluster can be created using a list of existing QNodes:
+    A QNodeCollection can be created using a list of existing QNodes:
 
-    >>> qnode = qml.QNodeCluster([qnode1, qnode2])
+    >>> qnode = qml.QNodeCollection([qnode1, qnode2])
 
-    Instantiating a QNode cluster with no arguments creates an empty cluster:
+    Instantiating a QNode collection with no arguments creates an empty collection:
 
-    >>> qnodes = qml.QNodeCluster()
+    >>> qnodes = qml.QNodeCollection()
     >>> len(qnodes)
     0
 
@@ -358,7 +358,7 @@ class QNodeCluster(Sequence):
     >>> [i.num_wires for i in qnodes]
     [2, 2, 2]
 
-    To evaluate a QNodeCluster, simply call the cluster, passing the parameters
+    To evaluate a QNodeCollection, simply call the collection, passing the parameters
     as required by the constituent QNode. For example, consider the
     following two QNodes with the same signature:
 
@@ -381,11 +381,11 @@ class QNodeCluster(Sequence):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-    Creating a QNodeCluster,
+    Creating a QNodeCollection,
 
-    >>> qnodes = qml.QNodeCluster([qnode1, qnode2])
+    >>> qnodes = qml.QNodeCollection([qnode1, qnode2])
 
-    We can evaluate this QNode cluster directly:
+    We can evaluate this QNode collection directly:
 
     >>> qnodes(0.5643, -0.45)
     [ 7.60844651e-01 -5.55111512e-17  1.00000000e+00]
@@ -400,33 +400,33 @@ class QNodeCluster(Sequence):
 
     @property
     def interface(self):
-        """str, None: automatic differentiation interface used by the cluster, if any"""
+        """str, None: automatic differentiation interface used by the collection, if any"""
         if not self.qnodes:
             return None
 
         return self.qnodes[0].interface
 
     def append(self, qnode):
-        """Appends a QNode to the cluster. The appended QNode *must* have the same
-        interface as the QNode cluster."""
+        """Appends a QNode to the collection. The appended QNode *must* have the same
+        interface as the QNode collection."""
         self.extend([qnode])
 
     def extend(self, qnodes):
-        """Extends the cluster by a list of QNodes. The appended QNodes *must* have the same
-        interface as the QNode cluster."""
+        """Extends the collection by a list of QNodes. The appended QNodes *must* have the same
+        interface as the QNode collection."""
         if not all(i.interface == qnodes[0].interface for i in qnodes):
             raise ValueError("Provided QNodes do not all use the same interface")
 
         if self.qnodes and (qnodes[0].interface != self.interface):
             raise ValueError(
                 "Interface mismatch. Provided QNodes use the {} interface, "
-                "QNode cluster uses the {} interface".format(qnodes[0].interface, self.interface)
+                "QNode collection uses the {} interface".format(qnodes[0].interface, self.interface)
             )
 
         self.qnodes.extend(qnodes)
 
     def evaluate(self, args, kwargs):
-        """Evaluate all QNodes in the cluster.
+        """Evaluate all QNodes in the collection.
 
         Args:
             args (list): list containing the arguments
