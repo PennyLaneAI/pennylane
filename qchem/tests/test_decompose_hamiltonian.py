@@ -517,7 +517,7 @@ def test_transformation(
     of the electronic Hamiltonian of different molecules (:math: `H_2, H_2O, LiH`) represented
     in different active spaces."""
 
-    transformed_hamiltonian = qchem.gen_hamiltonian_pauli_basis(
+    transformed_hamiltonian = qchem.decompose_hamiltonian(
         hf_filename,
         ref_dir,
         mapping=type_of_transformation,
@@ -538,7 +538,7 @@ def test_not_available_transformation():
     is neither 'jordan_wigner' nor 'bravyi_kitaev'."""
 
     with pytest.raises(TypeError, match="transformation is not available"):
-        qchem.gen_hamiltonian_pauli_basis(
+        qchem.decompose_hamiltonian(
             "lih",
             ref_dir,
             mapping="not_available_transformation",
