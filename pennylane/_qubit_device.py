@@ -286,7 +286,7 @@ class QubitDevice(Device):
         return self.custom_eigvals_as_samples(wires, observable.eigvals)
 
     def pauli_eigvals_as_samples(self, wires):
-        """Process samples using pauli eigenvalues.
+        """Process samples for observables with eigenvalues {1, -1}.
 
         This method should be called for observables having eigenvalues {1, -1},
         such that the post-processing step is known.
