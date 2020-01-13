@@ -304,7 +304,7 @@ class QubitDevice(Device):
         """Replace the basis state in the computational basis with the correct eigenvalue.
 
         Need to post-process the samples using the observables.
-        Extract only the columns of the basis samples required based on `wires`.
+        Extract only the columns of the basis samples required based on ``wires``.
 
         Args:
             wires (Sequence[int]): Sequence of wires to return
