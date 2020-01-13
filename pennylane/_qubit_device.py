@@ -233,6 +233,9 @@ class QubitDevice(Device):
     def expval(self, observable):
         wires = observable.wires
 
+        # TODO: remove the following part as we can assume that
+        # rotate_basis has already been called. Doing so will, however break
+        # unit tests directly calling on expval()
         if self._rotated_prob is None:
             self.rotate_basis([observable])
 
@@ -248,6 +251,9 @@ class QubitDevice(Device):
     def var(self, observable):
         wires = observable.wires
 
+        # TODO: remove the following part as we can assume that
+        # rotate_basis has already been called. Doing so will, however break
+        # unit tests directly calling on var()
         if self._rotated_prob is None:
             self.rotate_basis([observable])
 
@@ -264,6 +270,9 @@ class QubitDevice(Device):
         wires = observable.wires
         name = observable.name
 
+        # TODO: remove the following part as we can assume that
+        # rotate_basis has already been called. Doing so will, however break
+        # unit tests directly calling on sample()
         if self._rotated_prob is None:
             observable.return_type = Sample
             self.rotate_basis([observable])
