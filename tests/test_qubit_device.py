@@ -71,38 +71,6 @@ def mock_qubit_device_with_original_statistics(monkeypatch):
         m.setattr(QubitDevice, 'short_name', 'MockDevice')
         yield QubitDevice()
 
-@pytest.fixture(scope="function")
-def mock_qubit_device_with_operations(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty operations"""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, 'operations', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'observables', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'short_name', 'MockDevice')
-        yield QubitDevice()
-
-
-@pytest.fixture(scope="function")
-def mock_qubit_device_with_observables(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty observables"""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, 'operations', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'observables', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'short_name', 'MockDevice')
-        yield QubitDevice()
-
-
-@pytest.fixture(scope="function")
-def mock_qubit_device_supporting_paulis(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty observables"""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, 'operations', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'observables', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'short_name', 'MockDevice')
-        yield QubitDevice()
-
 mock_qubit_device_capabilities = {
     "measurements": "everything",
     "noise_models": ["depolarizing", "bitflip"],
