@@ -447,7 +447,6 @@ class TestTensorSample:
         psi = tensor_product([I, eigvecs.conj().T]) @ psi
 
         expected_probabilities = np.abs(psi) ** 2
-        expected_probabilities = expected_probabilities.tolist()
 
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
 
