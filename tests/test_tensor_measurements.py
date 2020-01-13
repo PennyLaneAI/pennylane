@@ -327,7 +327,7 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
-    def test_paulix_tensor_pauliz(self, theta, phi, varphi, monkeypatch, tol):
+    def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -336,13 +336,12 @@ class TestTensorSample:
             qml.Hadamard(wires=0)
             return sample(qml.PauliX(0) @ qml.PauliZ(1))
 
-        with monkeypatch.context() as m:
-            s1 = circuit()
+        s1 = circuit()
 
         # s1 should only contain 1
         assert np.allclose(s1, 1, atol=tol, rtol=0)
 
-    def test_paulix_tensor_pauliy(self, theta, phi, varphi, monkeypatch, tol):
+    def test_paulix_tensor_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -351,8 +350,7 @@ class TestTensorSample:
             ansatz(a, b, c)
             return sample(qml.PauliX(0) @  qml.PauliY(2))
 
-        with monkeypatch.context() as m:
-            s1 = circuit(theta, phi, varphi)
+        s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
@@ -373,11 +371,10 @@ class TestTensorSample:
         psi = tensor_product([I, I, H]) @ psi
 
         expected_probabilities = np.abs(psi) ** 2
-        expected_probabilities = expected_probabilities.tolist()
 
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
 
-    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, monkeypatch, tol):
+    def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -386,8 +383,7 @@ class TestTensorSample:
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
 
-        with monkeypatch.context() as m:
-            s1 = circuit(theta, phi, varphi)
+        s1 = circuit(theta, phi, varphi)
 
         zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
@@ -405,14 +401,13 @@ class TestTensorSample:
         psi = tensor_product([I, I, H]) @ psi
 
         expected_probabilities = np.abs(psi) ** 2
-        expected_probabilities = expected_probabilities.tolist()
 
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
 
-    def test_tensor_hermitian(self, theta, phi, varphi, monkeypatch, tol):
+    def test_tensor_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -430,8 +425,7 @@ class TestTensorSample:
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hermitian(A, [1, 2]))
 
-        with monkeypatch.context() as m:
-            s1 = circuit(theta, phi, varphi)
+        s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
