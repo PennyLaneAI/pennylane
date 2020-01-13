@@ -189,7 +189,7 @@ class QubitDevice(Device):
         computational basis samples are generated and stored within
         the :attr:`~._samples` attribute.
 
-        .. note::
+        .. warning::
 
             This method should only be called by devices that do not
             generate their own computational basis samples.
