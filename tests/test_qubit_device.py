@@ -31,6 +31,7 @@ mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
 @pytest.fixture(scope="function")
 def mock_qubit_device(monkeypatch):
+    """ A mock device that mocks most of the methods except for e.g. probability()"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, '__abstractmethods__', frozenset())
         m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
@@ -45,6 +46,7 @@ def mock_qubit_device(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_qubit_device_extract_stats(monkeypatch):
+    """ A mock device that mocks the methods related to statistics (expval, var, sample, probability)"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, '__abstractmethods__', frozenset())
         m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
@@ -60,6 +62,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
 
 @pytest.fixture(scope="function")
 def mock_qubit_device_with_original_statistics(monkeypatch):
+    """ A mock device that mocks only basis methods and uses the original statistics related methods"""
     with monkeypatch.context() as m:
         m.setattr(QubitDevice, '__abstractmethods__', frozenset())
         m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
@@ -100,44 +103,10 @@ def mock_qubit_device_supporting_paulis(monkeypatch):
         m.setattr(QubitDevice, 'short_name', 'MockDevice')
         yield QubitDevice()
 
-
-@pytest.fixture(scope="function")
-def mock_qubit_device_supporting_paulis_and_inverse(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty operations
-    and supporting inverses"""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, 'operations', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'observables', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'short_name', 'MockQubitDevice')
-        m.setattr(QubitDevice, '_capabilities', {"inverse_operations": True})
-        yield QubitDevice()
-
-@pytest.fixture(scope="function")
-def mock_qubit_device_supporting_observables_and_inverse(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty operations
-    and supporting inverses"""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, 'operations', mock_qubit_device_paulis)
-        m.setattr(QubitDevice, 'observables', mock_qubit_device_paulis + ['Hermitian'])
-        m.setattr(QubitDevice, 'short_name', 'MockDevice')
-        m.setattr(QubitDevice, '_capabilities', {"inverse_operations": True})
-        yield QubitDevice()
-
 mock_qubit_device_capabilities = {
     "measurements": "everything",
     "noise_models": ["depolarizing", "bitflip"],
 }
-
-
-@pytest.fixture(scope="function")
-def mock_qubit_device_with_capabilities(monkeypatch):
-    """A mock instance of the abstract QubitDevice class with non-empty observables"""
-    with monkeypatch.context() as m:
-        m.setattr(QubitDevice, '__abstractmethods__', frozenset())
-        m.setattr(QubitDevice, '_capabilities', mock_qubit_device_capabilities)
-        yield QubitDevice()
 
 
 @pytest.fixture(scope="function")
