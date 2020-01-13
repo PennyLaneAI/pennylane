@@ -152,6 +152,9 @@ class QubitDevice(Device):
     def rotate_basis(self, obs_queue):
         """Rotates the specified wires such that they
         are in the eigenbasis of the provided observable.
+
+        Args:
+            observables (List[:class:`Observable`]): the observable queue
         """
         self._prob = self.probability()
         self._memory = False
@@ -159,7 +162,6 @@ class QubitDevice(Device):
         wires = []
 
         for observable in obs_queue:
-            # TODO: self._memory already stores if Sample needs to be returned
             if hasattr(observable, "return_type") and observable.return_type == Sample:
                 self._memory = True  # make sure to return samples
 
@@ -196,6 +198,8 @@ class QubitDevice(Device):
         """Sample from the computational basis states based on the state
         probability.
 
+        This is an auxiliary method to the generate_samples method.
+
         Args:
             number_of_states (int): the number of basis states to sample from
 
@@ -208,6 +212,8 @@ class QubitDevice(Device):
     @staticmethod
     def states_to_binary(samples, number_of_states):
         """Convert basis states from base 10 to binary representation.
+
+        This is an auxiliary method to the generate_samples method.
 
         Args:
             samples (List[int]): samples of basis states in base 10 representation
@@ -247,6 +253,7 @@ class QubitDevice(Device):
             prob = self.probability(wires=wires)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
+        # estimate the variance
         return np.var(self.sample(observable))
 
     def sample(self, observable):
