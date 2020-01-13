@@ -329,6 +329,7 @@ class QubitDevice(Device):
         if self._state is None:
             return None
 
+        print(wires)
         wires = wires or range(self.num_wires)
         prob = self.marginal_prob(np.abs(self._state)**2, wires)
         return prob

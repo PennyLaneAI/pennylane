@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
 import pytest
 import numpy as np
+from random import random
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError
@@ -549,11 +550,86 @@ class TestSampleBasisStates:
         assert res[1] == shots
         assert res[2] == state_probs
 
+class TestStatesToBinary:
+    """Test the states_to_binary method"""
+
+    def test_correct_conversion_two_states(self, mock_qubit_device, monkeypatch):
+        """Tests that the sample_basis_states method converts samples to binary correctly"""
+        number_of_states = 2
+        basis_states = np.arange(number_of_states)
+        samples = np.random.choice(basis_states, mock_qubit_device.shots)
+
+        with monkeypatch.context() as m:
+            res = mock_qubit_device.states_to_binary(samples, number_of_states)
+
+        assert np.array_equal(res[:,0], samples)
+        assert np.array_equal(res[:,1], np.zeros(mock_qubit_device.shots))
+
+    @pytest.mark.parametrize("samples, binary_states",
+                            [
+                            (
+                              np.array([2, 3, 2, 0, 0]),
+                              np.array([[0, 1, 0, 0],
+                                        [1, 1, 0, 0],
+                                        [0, 1, 0, 0],
+                                        [0, 0, 0, 0],
+                                        [0, 0, 0, 0]],
+                             )
+                               ),
+                            (
+                            np.array([2, 3, 1, 3, 1]),
+                            np.array([[0, 1, 0, 0],
+                                       [1, 1, 0, 0],
+                                       [1, 0, 0, 0],
+                                       [1, 1, 0, 0],
+                                       [1, 0, 0, 0]])
+
+                            )
+                            ])
+    def test_correct_conversion_four_states(self, mock_qubit_device, monkeypatch, samples, binary_states, tol):
+        """Tests that the states_to_binary method converts samples to binary correctly for four states"""
+        mock_qubit_device.shots = 5
+
+        number_of_states = 4
+
+        with monkeypatch.context() as m:
+            res = mock_qubit_device.states_to_binary(samples, number_of_states)
+
+        assert np.allclose(res, binary_states, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("samples, binary_states",
+                            [
+                            (
+                            np.array([7, 7, 1, 5, 2]),
+                            np.array([[1, 1, 1, 0, 0, 0, 0, 0],
+                                       [1, 1, 1, 0, 0, 0, 0, 0],
+                                       [1, 0, 0, 0, 0, 0, 0, 0],
+                                       [1, 0, 1, 0, 0, 0, 0, 0],
+                                       [0, 1, 0, 0, 0, 0, 0, 0]])
+                            )
+                            ])
+    def test_correct_conversion_eight_states(self, mock_qubit_device, monkeypatch, samples, binary_states, tol):
+        """Tests that the states_to_binary method converts samples to binary correctly for eight states"""
+        mock_qubit_device.shots = 5
+
+        number_of_states = 8
+
+        with monkeypatch.context() as m:
+            res = mock_qubit_device.states_to_binary(samples, number_of_states)
+
+        assert np.allclose(res, binary_states, atol=tol, rtol=0)
+
+
 class TestExpval:
     """Test the expval method"""
 
-    def test_rotate_basis(self, mock_qubit_device_with_original_statistics, monkeypatch):
-        """Tests that expval method when the _rotated_prob attribute is None"""
+    def test_rotated_prob_none_rotate_basis(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that expval method when the _rotated_prob attribute is None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        """
         assert mock_qubit_device_with_original_statistics._rotated_prob is None
 
         obs = qml.PauliX(0)
@@ -567,4 +643,479 @@ class TestExpval:
         assert len(call_history) == 1
         assert isinstance(call_history[0], qml.PauliX)
         assert call_history[0].wires == [0]
+
+    def test_rotated_prob_not_none_no_rotate_basis(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that expval method when the _rotated_prob attribute is another value than None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        mock_qubit_device_with_original_statistics._rotated_prob = []
+
+        obs = qml.PauliX(0)
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: call_history.extend(op))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            res = mock_qubit_device_with_original_statistics.expval(obs)
+
+        assert call_history == []
+
+    def test_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that expval method when the analytic attribute is True
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        """
+        obs = qml.PauliX(0)
+        probs = [0.5, 0.5]
+
+        assert mock_qubit_device_with_original_statistics.analytic
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: probs)
+            res = mock_qubit_device_with_original_statistics.expval(obs)
+
+        assert res == (obs.eigvals @ probs).real
+
+    def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that expval method when the analytic attribute is False
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -sample
+        -numpy.mean
+        """
+        obs = qml.PauliX(0)
+
+        assert mock_qubit_device_with_original_statistics.analytic
+        mock_qubit_device_with_original_statistics.analytic = False
+
+        assert not mock_qubit_device_with_original_statistics.analytic
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'sample', lambda self, obs: obs)
+            m.setattr("numpy.mean", lambda obs: obs)
+            res = mock_qubit_device_with_original_statistics.expval(obs)
+
+        assert res == obs
+
+class TestVar:
+    """Test the var method"""
+
+    def test_rotated_prob_none_rotate_basis(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the _rotated_prob attribute is None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        obs = qml.PauliX(0)
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: call_history.extend(op))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            res = mock_qubit_device_with_original_statistics.var(obs)
+
+        assert len(call_history) == 1
+        assert isinstance(call_history[0], qml.PauliX)
+        assert call_history[0].wires == [0]
+
+    def test_rotated_prob_not_none_no_rotate_basis(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the _rotated_prob attribute is another value than None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        mock_qubit_device_with_original_statistics._rotated_prob = []
+
+        obs = qml.PauliX(0)
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: call_history.extend(op))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            res = mock_qubit_device_with_original_statistics.var(obs)
+
+        assert call_history == []
+
+    def test_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the analytic attribute is True
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        """
+        obs = qml.PauliX(0)
+        probs = [0.5, 0.5]
+
+        assert mock_qubit_device_with_original_statistics.analytic
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: probs)
+            res = mock_qubit_device_with_original_statistics.var(obs)
+
+        assert res == (obs.eigvals ** 2) @ probs - (obs.eigvals @ probs).real ** 2
+
+    def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the analytic attribute is False
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -sample
+        -numpy.var
+        """
+        obs = qml.PauliX(0)
+
+        assert mock_qubit_device_with_original_statistics.analytic
+        mock_qubit_device_with_original_statistics.analytic = False
+
+        assert not mock_qubit_device_with_original_statistics.analytic
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'sample', lambda self, obs: obs)
+            m.setattr("numpy.var", lambda obs: obs)
+            res = mock_qubit_device_with_original_statistics.var(obs)
+
+        assert res == obs
+
+class TestSample:
+    """Test the sample method"""
+
+    def test_rotated_prob_none_rotate_with_memory(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that the sample method calls on the following methods the _rotated_prob attribute is None:
+        -rotate_basis
+        -generate_samples
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -generate_samples
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        obs = qml.PauliX(0)
+
+        mock_qubit_device_with_original_statistics._memory = True
+        mock_qubit_device_with_original_statistics.analytic = False
+
+        rotate_basis_call_history = []
+        generate_samples_called = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: rotate_basis_call_history.extend(op))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'generate_samples', lambda self: generate_samples_called.append(1))
+            m.setattr(QubitDevice, 'pauli_eigvals_as_samples', lambda self, wires: None)
+            m.setattr(QubitDevice, 'custom_eigvals_as_samples', lambda self, wires, eigvals: eigvals)
+
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert len(rotate_basis_call_history) == 1
+        assert isinstance(rotate_basis_call_history[0], qml.PauliX)
+        assert rotate_basis_call_history[0].wires == [0]
+
+        assert generate_samples_called == [1]
+
+    def test_rotated_prob_none_rotate_basis_without_memory(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the _rotated_prob attribute is None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -generate_samples
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        obs = qml.PauliX(0)
+
+        mock_qubit_device_with_original_statistics._memory = False
+        mock_qubit_device_with_original_statistics.analytic = True
+
+        rotate_basis_call_history = []
+        generate_samples_called = []
+
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: rotate_basis_call_history.extend(op))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'generate_samples', lambda self: generate_samples_called.append(1))
+            m.setattr(QubitDevice, 'pauli_eigvals_as_samples', lambda self, wires: None)
+            m.setattr(QubitDevice, 'custom_eigvals_as_samples', lambda self, wires, eigvals: eigvals)
+
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert len(rotate_basis_call_history) == 1
+        assert isinstance(rotate_basis_call_history[0], qml.PauliX)
+        assert rotate_basis_call_history[0].wires == [0]
+
+        assert generate_samples_called == []
+
+    def test_rotated_prob_not_none_no_rotate_basis(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the _rotated_prob attribute is another value than None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        mock_qubit_device_with_original_statistics._rotated_prob = []
+
+        obs = qml.PauliX(0)
+
+        call_history_1 = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: call_history_1.extend(op))
+            m.setattr(QubitDevice, 'generate_samples', lambda self: times_called.append(1))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'pauli_eigvals_as_samples', lambda self, wires: None)
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert call_history_1 == []
+
+    def test_pauli_eigvals_called_rotated_prob_none(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that the sample method calls the pauli_eigvals_as_samples when the _rotated_prob attribute is  None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        obs = qml.PauliX(0)
+
+        pauli_eigvals_call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'generate_samples', lambda self: times_called.append(1))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'pauli_eigvals_as_samples', lambda self, wires: pauli_eigvals_call_history.append(1))
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert pauli_eigvals_call_history == [1]
+
+    def test_pauli_eigvals_called_rotated_prob_not_none(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that the sample method calls the pauli_eigvals_as_samples when the _rotated_prob attribute is  None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        # Setting the attribute to not None
+        mock_qubit_device_with_original_statistics._rotated_prob = 'NotNone'
+
+        obs = qml.PauliX(0)
+
+        pauli_eigvals_call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'generate_samples', lambda self: times_called.append(1))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'pauli_eigvals_as_samples', lambda self, wires: pauli_eigvals_call_history.append(1))
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert pauli_eigvals_call_history == [1]
+
+    def test_custom_eigvals_called_rotated_prob_none(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that the sample method calls the custom_eigvals_as_samples when the _rotated_prob attribute is  None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        obs = qml.PauliX(0) @ qml.PauliX(1)
+
+        custom_eigvals_call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'generate_samples', lambda self: times_called.append(1))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'custom_eigvals_as_samples', lambda self, wires, eigvals: custom_eigvals_call_history.append(1))
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert custom_eigvals_call_history == [1]
+
+    def test_custom_eigvals_called_rotated_prob_not_none(self, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests that the sample method calls the pauli_eigvals_as_samples when the _rotated_prob attribute is  None
+
+        Additional QubitDevice methods that are mocked:
+        -rotate_basis
+        -probability
+        -pauli_eigvals_as_samples
+        """
+        assert mock_qubit_device_with_original_statistics._rotated_prob is None
+
+        # Setting the attribute to not None
+        mock_qubit_device_with_original_statistics._rotated_prob = 'NotNone'
+
+        obs = qml.PauliX(0) @ qml.PauliX(1)
+
+        custom_eigvals_call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
+            m.setattr(QubitDevice, 'generate_samples', lambda self: times_called.append(1))
+            m.setattr(QubitDevice, 'probability', lambda self, wires=None: [1,1])
+            m.setattr(QubitDevice, 'custom_eigvals_as_samples', lambda self, wires, eigvals: custom_eigvals_call_history.append(1))
+            res = mock_qubit_device_with_original_statistics.sample(obs)
+
+        assert custom_eigvals_call_history == [1]
+
+class TestPauliEigvalsAsSamples:
+    """Test the pauli_eigvals_as_samples method"""
+
+    def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, monkeypatch, tol):
+        """Test that pauli_eigvals_as_samples method only produces -1 and 1 samples"""
+
+        some_wires = [0]
+
+        mock_qubit_device_with_original_statistics._samples = np.array([[1,0], [0,0]])
+        with monkeypatch.context() as m:
+            res = mock_qubit_device_with_original_statistics.pauli_eigvals_as_samples(some_wires)
+
+        assert np.allclose(res ** 2, 1, atol=tol, rtol=0)
+
+class TestCustomEigvalsAsSamples:
+    """Test the custom_eigvals_as_samples method"""
+
+    def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics, monkeypatch, tol):
+        """Test that pauli_eigvals_as_samples method only produces samples of eigenvalues"""
+        some_wires = [0]
+
+        mock_qubit_device_with_original_statistics._samples = np.array([[1,0], [0,0]])
+
+        eigenvalues = np.array([6, 5, 12, -54])
+
+        with monkeypatch.context() as m:
+            res = mock_qubit_device_with_original_statistics.custom_eigvals_as_samples(some_wires, eigenvalues)
+
+        assert np.array_equal(res, np.array([5, 6]))
+
+class TestProbability:
+    """Test the probability method"""
+
+    def test_state_none(self, mock_qubit_device_with_original_statistics, monkeypatch, tol):
+        """Test that None is returned if the state is None"""
+        mock_qubit_device_with_original_statistics._state = None
+        with monkeypatch.context() as m:
+            res = mock_qubit_device_with_original_statistics.probability()
+
+        assert res is None
+
+    @pytest.mark.parametrize("wires", [[0],
+                                      [1],
+                                      [2],
+                                      [0,1],
+                                      [0,2],
+                                      [1,2],
+                                      [0, 1, 2],
+                                      ])
+    def test_correct_arguments_for_marginals(self, mock_qubit_device_with_original_statistics, wires, monkeypatch, tol):
+        """Test that None is returned if the state is None"""
+        mock_qubit_device_with_original_statistics._state = None
+
+        # Generate array to be used as a state
+        state = np.array([random() for i in range(2 ** 3)])
+
+        mock_qubit_device_with_original_statistics._state = state
+
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, "marginal_prob", lambda self, state, wires: (state, wires))
+            res = mock_qubit_device_with_original_statistics.probability(wires=wires)
+
+        assert np.allclose(res[0], np.abs(state)**2, atol=tol, rtol=0)
+        assert res[1] == wires
+
+class TestMarginalProb:
+    """Test the marginal_prob method"""
+
+    @pytest.mark.parametrize("wires, inactive_wires", [([0], [1, 2]),
+                                                      ([1], [0, 2]),
+                                                      ([2], [0, 1]),
+                                                      ([0,1], [2]),
+                                                      ([0,2], [1]),
+                                                      ([1,2], [0]),
+                                                      ([0, 1, 2], []),
+                                                      ])
+    def test_correct_arguments_for_marginals(self, mock_qubit_device_with_original_statistics, monkeypatch, wires, inactive_wires, tol):
+        """Test that the correct arguments are passed to the marginal_prob method"""
+
+        mock_qubit_device_with_original_statistics.num_wires = 3
+
+        # Generate probabilities
+        probs = np.array([random() for i in range(2 ** 3)])
+        probs /= sum(probs)
+
+        def apply_over_axes_mock(x, y, p):
+            arguments_apply_over_axes.append((y, p))
+            return np.array([0])
+
+        arguments_apply_over_axes = []
+        with monkeypatch.context() as m:
+            m.setattr("numpy.apply_over_axes", apply_over_axes_mock)
+            res = mock_qubit_device_with_original_statistics.marginal_prob(probs, wires=wires)
+
+        assert np.array_equal(arguments_apply_over_axes[0][0].flatten(), probs)
+        assert np.array_equal(arguments_apply_over_axes[0][1], inactive_wires)
+
+    def test_correct_arguments_for_marginals_no_wires(self, mock_qubit_device_with_original_statistics, monkeypatch, tol):
+        """Test that the correct arguments are passed to the marginal_prob method with no wires specified"""
+
+        mock_qubit_device_with_original_statistics.num_wires = 3
+
+        # Generate probabilities
+        probs = np.array([random() for i in range(2 ** 3)])
+        probs /= sum(probs)
+
+        def apply_over_axes_mock(x, y, p):
+            arguments_apply_over_axes.append((y, p))
+            return np.array([0])
+
+        arguments_apply_over_axes = []
+        with monkeypatch.context() as m:
+            m.setattr("numpy.apply_over_axes", apply_over_axes_mock)
+            res = mock_qubit_device_with_original_statistics.marginal_prob(probs)
+
+        assert np.array_equal(arguments_apply_over_axes[0][0].flatten(), probs)
+        assert np.array_equal(arguments_apply_over_axes[0][1], [])
+
+    @pytest.mark.parametrize("probs, marginals, wires",
+                                    [(np.array([[0.1, 0.2], [0.3, 0.4]]), np.array([0.4, 0.6]), [1]),
+                                    (np.array([[0.1, 0.2], [0.3, 0.4]]), np.array([0.3, 0.7]), [0])])
+    def test_correct_marginals_returned(self, mock_qubit_device_with_original_statistics, monkeypatch, probs, marginals, wires, tol):
+        """Test that the correct marginals are returned by the marginal_prob method"""
+
+        mock_qubit_device_with_original_statistics.num_wires = 2
+
+        with monkeypatch.context() as m:
+            res = mock_qubit_device_with_original_statistics.marginal_prob(probs, wires=wires)
+
+        assert np.allclose(res, marginals, atol=tol, rtol=0)
 
