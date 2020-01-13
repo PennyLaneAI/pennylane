@@ -377,11 +377,11 @@ class TestParameters:
         assert p_mapping == parameters
 
 class TestExtractStatistics:
-    """Test the extract_statistics method"""
+    """Test the statistics method"""
 
     @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the extract_statistics simply builds a results list without any side-effects"""
+        """Tests that the statistics simply builds a results list without any side-effects"""
 
         class SomeObservable(qml.operation.Observable):
             num_params = 0
@@ -392,13 +392,13 @@ class TestExtractStatistics:
         obs = SomeObservable(wires=0)
 
         with monkeypatch.context() as m:
-            results = mock_qubit_device_extract_stats.extract_statistics([obs])
+            results = mock_qubit_device_extract_stats.statistics([obs])
 
         assert results == [0]
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the extract_statistics returns an empyt list if the return type is None"""
+        """Tests that the statistics returns an empyt list if the return type is None"""
 
         class SomeObservable(qml.operation.Observable):
             num_params = 0
@@ -409,13 +409,13 @@ class TestExtractStatistics:
         obs = SomeObservable(wires=0)
 
         with monkeypatch.context() as m:
-            results = mock_qubit_device_extract_stats.extract_statistics([obs])
+            results = mock_qubit_device_extract_stats.statistics([obs])
 
         assert results == []
 
     @pytest.mark.parametrize("returntype", ['not None'])
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
-        """Tests that the extract_statistics raises an error if the return type is not well-defined and is not None"""
+        """Tests that the statistics raises an error if the return type is not well-defined and is not None"""
 
         assert returntype not in [Expectation, Variance, Sample, Probability, None]
 
@@ -430,7 +430,7 @@ class TestExtractStatistics:
         with pytest.raises(
                 QuantumFunctionError, match="Unsupported return type"
         ):
-           results = mock_qubit_device_extract_stats.extract_statistics([obs])
+           results = mock_qubit_device_extract_stats.statistics([obs])
 
 class TestRotateBasis:
     """Test the rotate_basis method"""

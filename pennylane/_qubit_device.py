@@ -102,7 +102,7 @@ class QubitDevice(Device):
 
             self.pre_measure()
 
-            results = self.extract_statistics(observables)
+            results = self.statistics(observables)
 
             self.post_measure()
 
@@ -118,9 +118,10 @@ class QubitDevice(Device):
 
             return self._asarray(results)
 
-    def extract_statistics(self, observables):
-        """Extracts statistics from a quantum circuit upon calling the execute() method
-        of the device.
+    def statistics(self, observables):
+        """Process measurement results from circuit execution and return statistics.
+
+        This includes returning expectation values, variance, samples and probabilities.
 
         Args:
             observables (Union[:class:`Observable`, List[:class:`Observable`]]): the number of basis states to sample from
