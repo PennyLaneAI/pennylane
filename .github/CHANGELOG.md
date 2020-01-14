@@ -139,8 +139,6 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
 Soran Jahangiri, Zeyue Niu, Maria Schuld, Antal Száva
 
----
-
 # Release 0.7.0 (current release)
 
 <h3>New features since last release</h3>
@@ -248,8 +246,6 @@ This release contains contributions from (in alphabetical order):
 Ville Bergholm, Josh Izaac, Nathan Killoran, Angus Lowe, Johannes Jakob Meyer,
 Oluwatobi Ogunbayo, Maria Schuld, Antal Száva.
 
----
-
 # Release 0.6.1
 
 <h3>New features since last release</h3>
@@ -305,8 +301,6 @@ Oluwatobi Ogunbayo, Maria Schuld, Antal Száva.
 This release contains contributions from (in alphabetical order):
 
 Ville Bergholm, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva
-
----
 
 # Release 0.6.0
 
@@ -398,8 +392,6 @@ This release contains contributions from (in alphabetical order):
 
 Shahnawaz Ahmed, Ville Bergholm, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Angus Lowe,
 Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
-
----
 
 # Release 0.5.0
 
@@ -537,8 +529,6 @@ This release contains contributions from (in alphabetical order):
 
 Simon Cross, Aroosa Ijaz, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer,
 Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
-
----
 
 # Release 0.4.0
 
