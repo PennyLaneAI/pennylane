@@ -656,3 +656,15 @@ class TestInv:
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
+
+    def test_argument_wrapping(self):
+        """Test that a single operation can be given to inv and is properly inverted."""
+        op = qml.PauliX(0)
+        exp_op = qml.PauliX(0).inv()
+
+        inv_ops = pu.inv(op)
+
+        assert inv_ops[0].name == exp_op.name
+        assert inv_ops[0].wires == exp_op.wires
+        assert inv_ops[0].params == exp_op.params
+
