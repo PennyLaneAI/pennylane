@@ -299,7 +299,7 @@ def test_load_hamiltonian(mol_name, terms_ref, monkeypatch):
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_hamiltonian = qchem.load_hamiltonian(qOp)
+    vqe_hamiltonian = qchem.convert_hamiltonian(qOp)
 
     assert qchem._qubit_operators_equivalent(qOp, vqe_hamiltonian)
 
@@ -348,12 +348,12 @@ def test_not_xyz_terms_to_qubit_operator():
     ],
 )
 def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, expected_cost, tol):
-    r"""Test if `load_hamiltonian()` in qchem integrates with `vqe.cost()` in pennylane"""
+    r"""Test if `convert_hamiltonian()` in qchem integrates with `vqe.cost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_hamiltonian = qchem.load_hamiltonian(qOp)
+    vqe_hamiltonian = qchem.convert_hamiltonian(qOp)
 
     # maybe make num_qubits a @property of the Hamiltonian class?
     num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for ws in op.wires for w in ws])))
@@ -387,11 +387,11 @@ def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, e
 def test_integration_mol_file_to_vqe_cost(
     hf_filename, docc_mo, act_mo, type_of_transformation, expected_cost, tol
 ):
-    r"""Test if the output of `gen_hamiltonian_pauli_basis()` works with `load_hamiltonian()`
+    r"""Test if the output of `decompose_hamiltonian()` works with `convert_hamiltonian()`
     to generate `vqe.cost()`"""
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
-    transformed_hamiltonian = qchem.gen_hamiltonian_pauli_basis(
+    transformed_hamiltonian = qchem.decompose_hamiltonian(
         hf_filename,
         ref_dir,
         mapping=type_of_transformation,
@@ -399,7 +399,7 @@ def test_integration_mol_file_to_vqe_cost(
         active_mo_indices=act_mo,
     )
 
-    vqe_hamiltonian = qchem.load_hamiltonian(transformed_hamiltonian)
+    vqe_hamiltonian = qchem.convert_hamiltonian(transformed_hamiltonian)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
 
     num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for ws in op.wires for w in ws])))
