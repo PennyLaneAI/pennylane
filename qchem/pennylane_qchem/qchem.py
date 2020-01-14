@@ -363,7 +363,7 @@ def decompose_hamiltonian(
 
 
 def _qubit_operator_to_terms(qubit_operator):
-    r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of real coefficients and
+    r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
     Args:
