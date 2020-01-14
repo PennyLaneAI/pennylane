@@ -160,7 +160,6 @@ class QubitDevice(Device):
         Args:
             observables (List[:class:`Observable`]): the observable queue
         """
-        self._prob = self.probability()
         self._memory = False
 
         wires = []

@@ -408,7 +408,6 @@ class TestRotateBasis:
         with monkeypatch.context() as m:
             mock_qubit_device_extract_stats.rotate_basis(obs_queue)
 
-        assert mock_qubit_device_extract_stats._prob == 0
         assert mock_qubit_device_extract_stats._rotated_prob == [0, 1]
 
     def test_diagonalizing_gates_applied(self, mock_qubit_device_extract_stats, monkeypatch):
