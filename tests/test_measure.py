@@ -192,7 +192,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (3, n_sample))
-        assert result.dtype == np.dtype("float")
+        assert result.dtype == np.dtype("int")
 
     def test_sample_output_type_in_combination(self, tol):
         """Test the return type and shape of sampling multiple works
@@ -213,7 +213,7 @@ class TestSample:
         assert np.array_equal(result.shape, (3,))
         assert isinstance(result[0], float)
         assert isinstance(result[1], float)
-        assert result[2].dtype == np.dtype("float")
+        assert result[2].dtype == np.dtype("int")
         assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_not_an_observable(self):
