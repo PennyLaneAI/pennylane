@@ -159,7 +159,7 @@ def from_qasm_file(qasm_filename: str):
 
 
 def from_pyquil(pyquil_program):
-    """Loads pyquil Program objects by using the converter in the
+    """Loads pyQuil Program objects by using the converter in the
     PennyLane-Forest plugin.
 
     **Example:**
