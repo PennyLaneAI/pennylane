@@ -673,6 +673,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
+            return qml.expval(qml.PauliZ(0))
+
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -682,6 +684,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
+
+        qfunc()
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -703,6 +707,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
+            return qml.expval(qml.PauliZ(0))
+
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -712,6 +718,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
+
+        qfunc()
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -733,6 +741,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
+            return qml.expval(qml.PauliZ(0))
+
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -743,6 +753,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
+
+        qfunc()
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
@@ -761,6 +773,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=[0])
 
+            return qml.expval(qml.PauliZ(0))
+
         inv_queue = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -768,6 +782,8 @@ class TestInv:
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
+
+        qfunc()
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
