@@ -41,7 +41,6 @@ class QubitDevice(Device):
         self.analytic = analytic
 
         self._state = None
-        self._prob = None
         self._rotated_prob = None
         self._wires_used = None
         self._memory = None
@@ -55,7 +54,6 @@ class QubitDevice(Device):
         Most importantly the quantum state is reset to its initial value.
         """
         self._state = None
-        self._prob = None
         self._rotated_prob = None
         self._wires_used = None
         self._memory = None
