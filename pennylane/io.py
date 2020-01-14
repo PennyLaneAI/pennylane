@@ -182,8 +182,8 @@ def from_pyquil(pyquil_program):
         pyquil_program (pyquil.Program): a program created in pyQuil
 
     Returns:
-        pennylane_forest.ProgramLoader: a pennylane_forest.ProgramLoader instance that can
-            be used like a PennyLane template and that contains additional inspection properties
+        pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
+        be used like a PennyLane template and that contains additional inspection properties
     """
     return load(pyquil_program, format='pyquil_program')
 
@@ -196,7 +196,7 @@ def from_quil(quil: str):
 
     .. code-block:: python
 
-        >>> quil_str = 'H 0\n' \\
+        >>> quil_str = 'H 0\\n'
         ...            'CNOT 0 1'
         >>> my_circuit = qml.from_quil(quil_str)
 
@@ -213,8 +213,8 @@ def from_quil(quil: str):
         quil (str): a Quil string containing a valid quantum circuit
 
     Returns:
-        pennylane_forest.ProgramLoader: a pennylane_forest.ProgramLoader instance that can
-            be used like a PennyLane template and that contains additional inspection properties
+        pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
+        be used like a PennyLane template and that contains additional inspection properties
     """
     return load(quil, format='quil')
 
@@ -240,7 +240,7 @@ def from_quil_file(quil_filename: str):
         quil_filename (str): path to a Quil file containing a valid quantum circuit
 
     Returns:
-        pennylane_forest.ProgramLoader: a pennylane_forest.ProgramLoader instance that can
-            be used like a PennyLane template and that contains additional inspection properties
+        pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
+        be used like a PennyLane template and that contains additional inspection properties
     """
     return load(quil_filename, format='quil_file')

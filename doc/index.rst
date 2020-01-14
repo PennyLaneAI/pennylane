@@ -145,16 +145,22 @@ If you are doing research using PennyLane, please cite
     *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
     `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
 
-Support
--------
+Support and contribution
+------------------------
 
 - **Source Code:** https://github.com/XanaduAI/PennyLane
 - **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
 
 If you are having issues, please let us know by posting the issue on our GitHub issue tracker.
 
-We also have a `PennyLane discussion forum <https://discuss.pennylane.ai>`_—come join the
-discussion and chat with our PennyLane team.
+We encourage contributions — simply fork the PennyLane repository, and then make a
+`pull request <https://help.github.com/articles/about-pull-requests/>`_ containing
+your contribution. All contributers to PennyLane will be listed as authors on the releases.
+
+To chat directly with the team designing and building PennyLane, as well as members of
+our community — ranging from quantum machine learning researchers, to students, to those
+just interested in being a part of a rapidly growing industry — you can join our
+`discussion forum <https://discuss.pennylane.ai>`_.
 
 License
 -------
@@ -183,7 +189,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    development/guide
    development/plugins
-   development/research
+   development/release_notes.md
 
 .. toctree::
    :maxdepth: 1
