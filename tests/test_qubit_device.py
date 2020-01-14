@@ -502,6 +502,10 @@ class TestStatesToBinary:
         assert np.array_equal(res[:,0], samples)
         assert np.array_equal(res[:,1], np.zeros(mock_qubit_device.shots))
 
+
+    # Note: in this visual matrix representation, the first columns stands for the first qubit
+    # contrary to the bra-ket notation, so e.g. 2 will be represented as [0, 1, 0, 0] whereas
+    # in bra-ket notation it would be |0010>
     @pytest.mark.parametrize("samples, binary_states",
                             [
                             (
