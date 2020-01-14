@@ -368,8 +368,13 @@ def inv(operation_list):
         operation_list (Sequence[~.Operation]): A sequence of operations
 
     Returns:
-        Sequence[~.Operation]: The inverted sequence of operations
+        Iterable[~.Operation]: The inverted sequence of operations
     """
+    if isinstance(operation_list, qml.operation.Operation):
+        operation_list = [operation_list]
+    elif not isinstance(operation_list, Iterable):
+        raise ValueError("The given operation_list is not iterable.")
+
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
     if qml._current_context is not None:
