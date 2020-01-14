@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Unified the way how samples are generated on qubit based devices by refactoring the `QubitDevice`
+  class and adding the `sample` and further auxiliary methods.
+  [#461](https://github.com/XanaduAI/pennylane/pull/461)
+
 * Added a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [(#453)](https://github.com/XanaduAI/pennylane/pull/453)
