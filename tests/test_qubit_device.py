@@ -400,7 +400,6 @@ class TestRotateBasis:
     def test_probabilities_set_correctly(self, mock_qubit_device_extract_stats, monkeypatch):
         """Tests that the rotate_basis method correctly sets probabilities correctly"""
 
-        assert mock_qubit_device_extract_stats._prob is None
         assert mock_qubit_device_extract_stats._rotated_prob is None
 
         obs_queue = [qml.PauliX(0), qml.PauliZ(1)]
