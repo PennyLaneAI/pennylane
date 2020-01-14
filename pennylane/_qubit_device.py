@@ -183,17 +183,12 @@ class QubitDevice(Device):
     def generate_samples(self):
         """Generate computational basis samples based on the current state.
 
-        Warning: this method will have to be redefined for hardware devices, since it uses
-        the device._rotated_prob. This attribute might not be available for such devices.
-
         If the device contains a sample return type, or the
         device is running in non-analytic mode, ``dev.shots`` number of
         computational basis samples are generated and stored within
         the :attr:`~._samples` attribute.
 
-        .. warning::
-
-            This method should be overwritten on devices that
+        .. warning:: This method should be overwritten on devices that
             generate their own computational basis samples.
         """
         number_of_states = 2**len(self._wires_used)
@@ -326,11 +321,11 @@ class QubitDevice(Device):
         """Return the (marginal) probability of each computational basis
         state from the last run of the device.
 
-        Warning: this method will have to be redefined for hardware devices, since it uses
-        the device._state attribut. This attribute might not be available for such devices.
-
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
+
+        .. warning:: This method will have to be redefined for hardware devices, since it uses
+            the ``device._state`` attribute. This attribute might not be available for such devices.
 
         Args:
             wires (Sequence[int]): Sequence of wires to return
