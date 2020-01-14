@@ -363,7 +363,7 @@ def decompose_hamiltonian(
 
 
 def _qubit_operator_to_terms(qubit_operator):
-    r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of complex coefficients and
+    r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of real coefficients and
     PennyLane Pauli observables.
 
     Args:
@@ -371,8 +371,8 @@ def _qubit_operator_to_terms(qubit_operator):
             Pauli matrices
 
     Returns:
-        tuple[array[complex], Iterable[pennylane.operation.Observable]]: complex
-        coefficients and their corresponding PennyLane observables in the Pauli basis
+        tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
+        corresponding PennyLane observables in the Pauli basis
     """
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
         return np.array([0.0]), [qml.operation.Tensor(qml.Identity(0))]
