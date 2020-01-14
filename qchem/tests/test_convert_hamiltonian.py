@@ -362,15 +362,15 @@ def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, e
     print(vqe_hamiltonian.terms)
 
     # can replace the ansatz with more suitable ones later.
-    def dummy_ansatz(*phis, wires):
+    def dummy_ansatz(phis, wires):
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
 
-    dummy_cost = qml.beta.vqe.cost(
-        [0.1 * i for i in range(num_qubits)], dummy_ansatz, vqe_hamiltonian, dev
-    )
+    dummy_cost = qml.vqe.cost(dummy_ansatz, vqe_hamiltonian, dev)
+    params = [0.1 * i for i in range(num_qubits)]
+    res = dummy_cost(params)
 
-    assert np.allclose(dummy_cost, expected_cost, **tol)
+    assert np.allclose(res, expected_cost, **tol)
 
 
 @pytest.mark.parametrize(
@@ -408,12 +408,13 @@ def test_integration_mol_file_to_vqe_cost(
     dev = qml.device("default.qubit", wires=num_qubits)
 
     # can replace the ansatz with more suitable ones later.
-    def dummy_ansatz(*phis, wires):
+    def dummy_ansatz(phis, wires):
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
 
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = qml.beta.vqe.cost(phis, dummy_ansatz, vqe_hamiltonian, dev)
+    dummy_cost = qml.vqe.cost(dummy_ansatz, vqe_hamiltonian, dev)
+    res = dummy_cost(phis)
 
-    assert np.abs(dummy_cost - expected_cost) < tol["atol"]
+    assert np.abs(res - expected_cost) < tol["atol"]

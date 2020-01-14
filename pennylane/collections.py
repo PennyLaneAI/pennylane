@@ -165,54 +165,6 @@ def apply(func, qnode_collection):
     return new_func
 
 
-def real(x):
-    """Lazily take the real part of the constituent QNodes of a :class:`QNodeCollection`.
-
-    Args:
-        x (QNodeCollection): a QNode collection of independent QNodes.
-
-    .. seealso:: :func:`~.apply`, :func:`~.dot`, :func:`~.sum`
-
-    **Example:**
-
-    We can create a QNodeCollection using :func:`~.map`:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-    >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
-
-    For the cost function, we now take the real parts and sum:
-
-    >>> cost = qml.sum(qml.real(qnodes))
-
-    This is a lazy evaluation --- no QNode evaluation has yet occured. Evaluation
-    only occurs when the returned function ``cost`` is evaluated:
-
-    >>> x = qml.init.strong_ent_layers_normal(3, 2)
-    >>> cost(x)
-    tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
-    """
-    if hasattr(x, "interface") and x.interface is not None:
-        if x.interface == "tf":
-            import tensorflow as tf
-
-            return apply(tf.math.real, x)
-
-        if x.interface == "torch":
-            return x
-
-        if x.interface in ("autograd", "numpy"):
-            from autograd import numpy as np
-
-            return apply(np.real, x)
-
-        raise ValueError("Unknown interface {}".format(x.interface))
-
-    import numpy as np
-
-    return apply(np.real, x)
-
-
 def sum(x):
     """Lazily sum the constituent QNodes of a :class:`QNodeCollection`.
 
@@ -360,7 +312,7 @@ def dot(x, y):
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
-    if isinstance(x, QNodeCollection) and isinstance(y, QNodeCollection):
+    if hasattr(x, "interface") and hasattr(y, "interface"):
 
         if x.interface != y.interface:
             raise ValueError("QNodeCollections have non-matching interfaces")
@@ -369,15 +321,16 @@ def dot(x, y):
         fn, _ = _get_dot_func(interface)
         func = lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
-    elif isinstance(x, QNodeCollection):
+    elif hasattr(x, "interface"):
         interface = x.interface
         fn, y = _get_dot_func(interface, y)
         func = lambda params, **kwargs: fn(x(params, **kwargs), y)
 
-    elif isinstance(y, QNodeCollection):
+    elif hasattr(y, "interface"):
         interface = y.interface
         fn, x = _get_dot_func(interface, x)
         func = lambda params, **kwargs: fn(x, y(params, **kwargs))
+
     else:
         raise ValueError("At least one argument must be a QNodeCollection")
 
