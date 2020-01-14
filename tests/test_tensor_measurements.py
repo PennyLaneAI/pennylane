@@ -348,7 +348,7 @@ class TestTensorSample:
         @qml.qnode(dev)
         def circuit(a, b, c):
             ansatz(a, b, c)
-            return sample(qml.PauliX(0) @  qml.PauliY(2))
+            return sample(qml.PauliX(0) @ qml.PauliY(2))
 
         s1 = circuit(theta, phi, varphi)
 
@@ -449,4 +449,3 @@ class TestTensorSample:
         expected_probabilities = np.abs(psi) ** 2
 
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol, rtol=0)
-
