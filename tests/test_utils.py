@@ -668,3 +668,8 @@ class TestInv:
         assert inv_ops[0].wires == exp_op.wires
         assert inv_ops[0].params == exp_op.params
 
+    @pytest.mark.parametrize("arg", [2.3, object()])
+    def test_argument_type_error(self, arg):
+        """Test that the proper error is raised when the argument type is wrong."""
+        with pytest.raises(ValueError, match="The given operation_list is not iterable"):
+            pu.inv(arg)
