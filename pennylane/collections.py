@@ -164,12 +164,12 @@ def apply(func, qnode_collection):
 
 
 def real(x):
-    """Lazily sum the constituent QNodes of a :class:`QNodeCollection`.
+    """Lazily take the real part of the constituent QNodes of a :class:`QNodeCollection`.
 
     Args:
         x (QNodeCollection): a QNode collection of independent QNodes.
 
-    .. seealso:: :func:`~.apply`, :func:`~.dot`
+    .. seealso:: :func:`~.apply`, :func:`~.dot`, :func:`~.sum`
 
     **Example:**
 
@@ -179,11 +179,11 @@ def real(x):
     >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
     >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
 
-    For the cost function, we now sum the results of all QNodes in the collection:
+    For the cost function, we now take the real parts and sum:
 
-    >>> cost = qml.sum(qnodes)
+    >>> cost = qml.sum(qml.real(qnodes))
 
-    This is a lazy summation --- no QNode evaluation has yet occured. Evaluation
+    This is a lazy evaluation --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
     >>> x = qml.init.strong_ent_layers_normal(3, 2)

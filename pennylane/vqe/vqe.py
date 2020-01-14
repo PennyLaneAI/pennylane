@@ -212,4 +212,4 @@ class cost:
         self.cost_fn = qml.real(qml.dot(coeffs, self.qnodes))
 
     def __call__(self, *args, **kwargs):
-        return self.cost_fn(*args, **kwargs)
+        return self.cost_fn(*args, **kwargs)[0]
