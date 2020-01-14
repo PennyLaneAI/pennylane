@@ -163,6 +163,54 @@ def apply(func, qnode_collection):
     return lambda params, **kwargs: func(qnode_collection(params, **kwargs))
 
 
+def real(x):
+    """Lazily sum the constituent QNodes of a :class:`QNodeCollection`.
+
+    Args:
+        x (QNodeCollection): a QNode collection of independent QNodes.
+
+    .. seealso:: :func:`~.apply`, :func:`~.dot`
+
+    **Example:**
+
+    We can create a QNodeCollection using :func:`~.map`:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+    >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+
+    For the cost function, we now sum the results of all QNodes in the collection:
+
+    >>> cost = qml.sum(qnodes)
+
+    This is a lazy summation --- no QNode evaluation has yet occured. Evaluation
+    only occurs when the returned function ``cost`` is evaluated:
+
+    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> cost(x)
+    tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
+    """
+    if hasattr(x, "interface") and x.interface is not None:
+        if x.interface == "tf":
+            import tensorflow as tf
+
+            return apply(tf.math.real, x)
+
+        if x.interface == "torch":
+            return x
+
+        if x.interface in ("autograd", "numpy"):
+            from autograd import numpy as np
+
+            return apply(np.real, x)
+
+        raise ValueError("Unknown interface {}".format(x.interface))
+
+    import numpy as np
+
+    return apply(np.real, x)
+
+
 def sum(x):
     """Lazily sum the constituent QNodes of a :class:`QNodeCollection`.
 

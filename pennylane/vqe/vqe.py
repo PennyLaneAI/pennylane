@@ -209,7 +209,7 @@ class cost:
         the expectation value of each observable term after applying the circuit ansatz.
         """
 
-        self.cost_fn = qml.dot(coeffs, self.qnodes)
+        self.cost_fn = qml.real(qml.dot(coeffs, self.qnodes))
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
