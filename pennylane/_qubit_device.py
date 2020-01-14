@@ -178,6 +178,8 @@ class QubitDevice(Device):
                 else:
                     wires.extend(wire)
 
+        # Store the wires used by the observables such that
+        # an Identity is considered on the remaining wires
         self._wires_used = wires
         self._rotated_prob = self.probability(wires)
 
