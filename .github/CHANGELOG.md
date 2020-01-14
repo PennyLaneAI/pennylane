@@ -89,6 +89,11 @@
   `qml.sum` and `qml.dot` take the sum of a QNode collection, and a
   dot product of tensors/arrays/QNode collections, respectively.
 
+* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and 
+  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
+  templates. This feature requires the latest version of the PennyLane-Forest plugin.
+  [#459](https://github.com/XanaduAI/pennylane/pull/459)
+
 <h3>Breaking changes</h3>
 
 * Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
@@ -111,8 +116,6 @@
 * Added a `QubitDevice` class which implements common functionalities of plugin devices such that
   plugin devices can rely on these implementations.
   [(#452)](https://github.com/XanaduAI/pennylane/pull/452)
-
-<h3>Documentation</h3>
 
 * Improved documentation of `AmplitudeEmbedding` and `BasisEmbedding` templates.
   [(#441)](https://github.com/XanaduAI/pennylane/pull/441)
