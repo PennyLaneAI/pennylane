@@ -392,7 +392,7 @@ def _qubit_operator_to_terms(qubit_operator):
         ]
     )
 
-    return np.array(coeffs), list(ops)
+    return np.real(np.array(coeffs)), list(ops)
 
 
 def _terms_to_qubit_operator(coeffs, ops):
