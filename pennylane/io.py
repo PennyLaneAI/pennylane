@@ -179,7 +179,7 @@ def from_pyquil(pyquil_program):
     >>>     return qml.expval(qml.PauliZ(0))
 
     Args:
-        pyquil_program (pyquil.Program): a program created in pyquil
+        pyquil_program (pyquil.Program): a program created in pyQuil
 
     Returns:
         pennylane_forest.ProgramLoader: a pennylane_forest.ProgramLoader instance that can
