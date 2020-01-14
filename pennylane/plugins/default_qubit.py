@@ -21,7 +21,6 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import itertools
 import functools
-import warnings
 
 import numpy as np
 from scipy.linalg import eigh
@@ -380,6 +379,10 @@ class DefaultQubit(QubitDevice):
         self._state = self.mat_vec_product(A, self._state, wires)
         self._first_operation = False
 
+    def post_apply(self):
+        # generate computational basis samples
+        self.generate_samples()
+
     def mat_vec_product(self, mat, vec, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
@@ -457,25 +460,10 @@ class DefaultQubit(QubitDevice):
         ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
         return functools.reduce(np.kron, ops)
 
-    def ev(self, A, wires):
-        r"""Expectation value of observable on specified wires.
-
-         Args:
-            A (array[float]): the observable matrix as array
-            wires (Sequence[int]): target subsystems
-         Returns:
-            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-        """
-        As = self.mat_vec_product(A, self._state, np.hstack(wires).tolist())
-        expectation = np.vdot(self._state, As)
-
-        if np.abs(expectation.imag) > tolerance:
-            warnings.warn('Nonvanishing imaginary part {} in expectation value.'.format(expectation.imag), RuntimeWarning)
-        return expectation.real
-
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
+        super().reset()
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
         self._first_operation = True
@@ -487,16 +475,3 @@ class DefaultQubit(QubitDevice):
     @property
     def observables(self):
         return set(self._observable_map.keys())
-
-    def sample(self, observable):
-        wires = observable.wires
-
-        A = self.get_operator_matrix_for_measurement(observable.name, observable.parameters)
-
-        a, P = spectral_decomposition(A)
-
-        p = np.zeros(a.shape)
-        for idx, Pi in enumerate(P):
-            p[idx] = self.ev(Pi, wires)
-
-        return np.random.choice(a, self.shots, p=p)
