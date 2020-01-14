@@ -504,13 +504,13 @@ def dummy_template(wires):
 
 def inverted_dummy_template_operations(wires):
     """The expected inverted operations for the dummy template."""
-    return sum(
-        [
-            [qml.RY(-1, wires=[wire]).inv(), qml.RX(1, wires=[wire]).inv()]
-            for wire in reversed(wires)
-        ],
-        [],
-    )
+    ops = []
+
+    for wire in reversed(wires):
+        ops.append(qml.RY(-1, wires=[wire]).inv())
+        ops.append(qml.RX(1, wires=[wire]).inv())
+        
+    return ops
 
 
 class TestInv:
