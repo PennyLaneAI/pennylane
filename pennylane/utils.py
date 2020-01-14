@@ -375,12 +375,18 @@ def inv(operation_list):
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The given operation_list is not iterable.")
 
-    non_ops = [(op, idx) for idx, op in enumerate(operation_list) if not isinstance(op, qml.operation.Operation)]
+    non_ops = [
+        (op, idx)
+        for idx, op in enumerate(operation_list)
+        if not isinstance(op, qml.operation.Operation)
+    ]
     if non_ops:
         string_reps = [" operation_list[{}] = {}".format(idx, op) for op, idx in non_ops]
-        raise ValueError("The given operation_list does not only contain Operations." +
-                         "The following elements of the iterable were not Operations:" + 
-                         ",".join(string_reps))
+        raise ValueError(
+            "The given operation_list does not only contain Operations."
+            + "The following elements of the iterable were not Operations:"
+            + ",".join(string_reps)
+        )
 
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 

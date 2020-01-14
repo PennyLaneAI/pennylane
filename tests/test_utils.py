@@ -807,12 +807,10 @@ class TestInv:
         with pytest.raises(ValueError, match="The given operation_list is not iterable"):
             pu.inv(arg)
 
-    @pytest.mark.parametrize("arg", [
-        [1, 2, 3],
-        [qml.PauliX(0), qml.PauliY(1), "Test"],
-        "Test",
-    ])
+    @pytest.mark.parametrize("arg", [[1, 2, 3], [qml.PauliX(0), qml.PauliY(1), "Test"], "Test",])
     def test_non_operations_in_list(self, arg):
         """Test that the proper error is raised when the argument does not only contain operations."""
-        with pytest.raises(ValueError, match="The given operation_list does not only contain Operations"):
+        with pytest.raises(
+            ValueError, match="The given operation_list does not only contain Operations"
+        ):
             pu.inv(arg)
