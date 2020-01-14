@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Gradient descent optimizer"""
-
+import numpy as np
 import autograd
 from pennylane.utils import _flatten, unflatten
 
@@ -65,7 +65,7 @@ class GradientDescentOptimizer:
 
         x_out = self.apply_grad(g, x)
 
-        return x_out
+        return np.real_if_close(x_out)
 
     @staticmethod
     def compute_grad(objective_fn, x, grad_fn=None):

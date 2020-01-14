@@ -160,7 +160,9 @@ def apply(func, qnode_collection):
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
-    return lambda params, **kwargs: func(qnode_collection(params, **kwargs))
+    new_func = lambda params, **kwargs: func(qnode_collection(params, **kwargs))
+    new_func.interface = qnode_collection.interface
+    return new_func
 
 
 def real(x):
@@ -363,18 +365,24 @@ def dot(x, y):
         if x.interface != y.interface:
             raise ValueError("QNodeCollections have non-matching interfaces")
 
-        fn, _ = _get_dot_func(x.interface)
-        return lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
+        interface = x.interface
+        fn, _ = _get_dot_func(interface)
+        func = lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
-    if isinstance(x, QNodeCollection):
-        fn, y = _get_dot_func(x.interface, y)
-        return lambda params, **kwargs: fn(x(params, **kwargs), y)
+    elif isinstance(x, QNodeCollection):
+        interface = x.interface
+        fn, y = _get_dot_func(interface, y)
+        func = lambda params, **kwargs: fn(x(params, **kwargs), y)
 
-    if isinstance(y, QNodeCollection):
-        fn, x = _get_dot_func(y.interface, x)
-        return lambda params, **kwargs: fn(x, y(params, **kwargs))
+    elif isinstance(y, QNodeCollection):
+        interface = y.interface
+        fn, x = _get_dot_func(interface, x)
+        func = lambda params, **kwargs: fn(x, y(params, **kwargs))
+    else:
+        raise ValueError("At least one argument must be a QNodeCollection")
 
-    raise ValueError("At least one argument must be a QNodeCollection")
+    func.interface = interface
+    return func
 
 
 class QNodeCollection(Sequence):

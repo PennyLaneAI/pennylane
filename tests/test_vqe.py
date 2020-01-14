@@ -274,8 +274,8 @@ class TestVQE:
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
         expval = qml.vqe.cost(ansatz, hamiltonian, dev)
-        assert type(expval(params)) == np.ndarray
-        assert np.shape(expval(params)) == (1,)  # expval should be scalar
+        assert type(expval(params)) == np.float64
+        assert np.shape(expval(params)) == ()  # expval should be scalar
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_cost_expvals(self, coeffs, observables, expected):

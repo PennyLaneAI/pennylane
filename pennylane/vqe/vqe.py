@@ -212,4 +212,7 @@ class cost:
         self.cost_fn = qml.real(qml.dot(coeffs, self.qnodes))
 
     def __call__(self, *args, **kwargs):
-        return self.cost_fn(*args, **kwargs)[0]
+        if self.qnodes.interface == "autograd":
+            return self.cost_fn(*args, **kwargs)[0]
+        else:
+            return self.cost_fn(*args, **kwargs)
