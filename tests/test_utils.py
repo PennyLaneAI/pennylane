@@ -583,6 +583,62 @@ class TestInv:
             assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
+    def test_non_queued_inversion_with_context(self):
+        """Test that a sequence of operations is properly inverted when a context is present.
+        Test that this also works for operations that were not queued."""
+        inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
+
+        with pu.OperationRecorder() as rec:
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            pu.inv(inv_ops)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=[0])
+
+        inv_queue = [
+            qml.Hadamard(wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(3, wires=[0]).inv(),
+            qml.RY(2, wires=[0]).inv(),
+            qml.RX(1, wires=[0]).inv(),
+            qml.CNOT(wires=[0, 1]),
+            qml.Hadamard(wires=[0]),
+        ]
+
+        for inv_op, exp_op in zip(rec.queue, inv_queue):
+            assert inv_op.name == exp_op.name
+            assert inv_op.wires == exp_op.wires
+            assert inv_op.params == exp_op.params
+
+    def test_mixed_inversion_with_context(self):
+        """Test that a sequence of operations is properly inverted when a context is present.
+        Test that this also works for operations that were not queued."""
+        X0 = qml.PauliX(0)
+        Z0 = qml.PauliZ(0)
+
+        with pu.OperationRecorder() as rec:
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=[0])
+
+        inv_queue = [
+            qml.Hadamard(wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(2, wires=[0]).inv(),
+            qml.PauliZ(0).inv(),
+            qml.RX(1, wires=[0]).inv(),
+            qml.PauliX(0).inv(),
+            qml.CNOT(wires=[0, 1]),
+            qml.Hadamard(wires=[0]),
+        ]
+
+        for inv_op, exp_op in zip(rec.queue, inv_queue):
+            assert inv_op.name == exp_op.name
+            assert inv_op.wires == exp_op.wires
+            assert inv_op.params == exp_op.params
+
     def test_template_inversion_with_context(self):
         """Test that a template is properly inverted when a context is present."""
         with pu.OperationRecorder() as rec:
@@ -623,6 +679,67 @@ class TestInv:
             qml.RZ(3, wires=[0]).inv(),
             qml.RY(2, wires=[0]).inv(),
             qml.RX(1, wires=[0]).inv(),
+            qml.CNOT(wires=[0, 1]),
+            qml.Hadamard(wires=[0]),
+        ]
+
+        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+            assert inv_op.name == exp_op.name
+            assert inv_op.wires == exp_op.wires
+            assert inv_op.params == exp_op.params
+
+    def test_non_queued_inversion_with_qnode(self):
+        """Test that a sequence of operations is properly inverted inside a QNode.
+        Test that this also works for operations that were not queued."""
+        inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def qfunc():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            pu.inv(inv_ops)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=[0])
+
+        inv_queue = [
+            qml.Hadamard(wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(3, wires=[0]).inv(),
+            qml.RY(2, wires=[0]).inv(),
+            qml.RX(1, wires=[0]).inv(),
+            qml.CNOT(wires=[0, 1]),
+            qml.Hadamard(wires=[0]),
+        ]
+
+        for inv_op, exp_op in zip(qfunc.ops, inv_queue):
+            assert inv_op.name == exp_op.name
+            assert inv_op.wires == exp_op.wires
+            assert inv_op.params == exp_op.params
+
+    def test_mixed_inversion_with_qnode(self):
+        """Test that a sequence of operations is properly inverted inside a QNode.
+        Test that this also works for operations of queued and non-queued operations."""
+        X0 = qml.PauliX(0)
+        Z0 = qml.PauliZ(0)
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def qfunc():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=[0])
+
+        inv_queue = [
+            qml.Hadamard(wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(2, wires=[0]).inv(),
+            qml.PauliZ(0).inv(),
+            qml.RX(1, wires=[0]).inv(),
+            qml.PauliX(0).inv(),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
         ]
