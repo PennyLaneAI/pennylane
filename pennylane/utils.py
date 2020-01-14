@@ -365,15 +365,22 @@ def inv(operation_list):
     in the reversed order for proper inversion.
 
     Args:
-        operation_list (Sequence[~.Operation]): A sequence of operations
+        operation_list (Iterable[~.Operation]): An iterable of operations
 
     Returns:
-        Iterable[~.Operation]: The inverted sequence of operations
+        List[~.Operation]: The inverted list of operations
     """
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The given operation_list is not iterable.")
+
+    non_ops = [(op, idx) for idx, op in enumerate(operation_list) if not isinstance(op, qml.operation.Operation)]
+    if non_ops:
+        string_reps = [" operation_list[{}] = {}".format(idx, op) for op, idx in non_ops]
+        raise ValueError("The given operation_list does not only contain Operations." +
+                         "The following elements of the iterable were not Operations:" + 
+                         ",".join(string_reps))
 
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
