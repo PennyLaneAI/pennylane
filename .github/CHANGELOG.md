@@ -435,7 +435,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 * The following CV observables were renamed to comply with the new Operation/Observable
   scheme: `MeanPhoton` to `NumberOperator`, `Homodyne` to `QuadOperator` and `NumberState` to `FockStateProjector`.
-  [(#243)](https://github.com/XanaduAI/pennylane/pull/254)
+  [(#254)](https://github.com/XanaduAI/pennylane/pull/254)
 
 <h3>Improvements</h3>
 
@@ -689,8 +689,8 @@ Josh Izaac and Nathan Killoran.
 * Removed use of hardcoded values in the optimizers, made them parameters (see [#131](https://github.com/XanaduAI/pennylane/pull/131) and [#132](https://github.com/XanaduAI/pennylane/pull/132))
 * Created the new `PlaceholderExpectation`, to be used when both CV and qubit expval modules contain expectations with the same name
 * Provide the plugins a way to view the operation queue _before_ applying operations. This allows for on-the-fly modifications of
-  the queue, allowing hardware-based plugins to support the full range of qubit expectation values. (#143)
-* QNode return values now support _any_ form of sequence, such as lists, sets, etc. (#144)
+  the queue, allowing hardware-based plugins to support the full range of qubit expectation values. [(#143)](https://github.com/XanaduAI/pennylane/pull/143)
+* QNode return values now support _any_ form of sequence, such as lists, sets, etc. [(#144)](https://github.com/XanaduAI/pennylane/pull/144)
 * CV analytic gradient calculation is now more robust, allowing for operations which may not themselves be differentiated, but have a
   well defined `_heisenberg_rep` method, and so may succeed operations that are analytically differentiable [(#152)](https://github.com/XanaduAI/pennylane/pull/152)
 
