@@ -94,7 +94,8 @@ class Variable:
 
     def __init__(self, idx, name=None):
         self.idx = idx  #: int: parameter index
-        self.name = name  #: str: parameter name
+        self.name = name
+        self.assigned_name = id(self)  #: str: parameter name
         self.mult = 1  #: int, float: parameter scalar multiplier
 
     def __str__(self):
@@ -139,3 +140,22 @@ class Variable:
         # The variable is a placeholder for a keyword argument
         values = Variable.kwarg_values[self.name]
         return values[self.idx] * self.mult
+
+    def render(self, show_name_only=False):
+        """Returns a string representation of the Variable.
+        Args:
+            show_name_only (bool, optional): Render the name instead of the value. Defaults to False.
+        Returns:
+            str: A string representation of the Variable
+        """
+
+        if self.name is None:
+            if self.mult != 1:
+                return "{}*#{}".format(str(round(self.mult, 3)), self.idx)
+
+            return "#{}".format(self.idx)
+
+        if self.mult != 1:
+            return "{}*{}".format(str(round(self.mult, 3)), self.name)
+
+        return self.name
