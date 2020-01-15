@@ -284,7 +284,7 @@ from pennylane import qchem
         ),
     ],
 )
-def test_load_hamiltonian(mol_name, terms_ref, monkeypatch):
+def test_hamiltonian_conversion(mol_name, terms_ref, monkeypatch):
 
     r"""Test the correctness of the QubitOperator Hamiltonian conversion from
     OpenFermion to Pennylane.
