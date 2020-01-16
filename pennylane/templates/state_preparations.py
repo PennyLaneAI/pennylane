@@ -21,6 +21,7 @@ from scipy import sparse
 
 import pennylane as qml
 
+from pennylane.templates.decorator import template
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
                                        _check_shape)
@@ -53,7 +54,7 @@ def gray_code(rank):
 
     return g
 
-
+@template
 def BasisStatePreparation(basis_state, wires):
     r"""
     Prepares a basis state on the given wires using a sequence of Pauli X gates.
@@ -261,6 +262,7 @@ def _get_alpha_y(a, n, k):
     return alpha
 
 
+@template
 def MottonenStatePreparation(state_vector, wires):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed

@@ -18,12 +18,14 @@ repeatedly.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
+from pennylane.templates.decorator import template
 from pennylane.templates.utils import (_check_shapes,
                                        _check_no_variable,
                                        _check_wires,
                                        _check_hyperp_is_in_options)
 
 
+@template
 def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='pennylane'):
     r"""General linear interferometer, an array of beamsplitters and phase shifters.
 
