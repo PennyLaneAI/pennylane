@@ -509,7 +509,7 @@ def inverted_dummy_template_operations(wires):
     for wire in reversed(wires):
         ops.append(qml.RY(-1, wires=[wire]).inv())
         ops.append(qml.RX(1, wires=[wire]).inv())
-        
+
     return ops
 
 
@@ -806,6 +806,11 @@ class TestInv:
         """Test that the proper error is raised when the argument type is wrong."""
         with pytest.raises(ValueError, match="The given operation_list is not iterable"):
             pu.inv(arg)
+
+    def test_argument_none_error(self):
+        """Test that the proper error is raised when the argument type is wrong."""
+        with pytest.raises(ValueError, match="None was passed as an argument to inv. This could happen if inversion of a template without the template decorator is attempted"):
+            pu.inv(None)
 
     @pytest.mark.parametrize("arg", [[1, 2, 3], [qml.PauliX(0), qml.PauliY(1), "Test"], "Test",])
     def test_non_operations_in_list(self, arg):

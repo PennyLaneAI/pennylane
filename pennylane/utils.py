@@ -372,16 +372,18 @@ def inv(operation_list):
     """
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
+    elif operation_list is None:
+        raise ValueError("None was passed as an argument to inv. This could happen if inversion of a template without the template decorator is attempted.")
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The given operation_list is not iterable.")
 
     non_ops = [
-        (op, idx)
+        (idx, op)
         for idx, op in enumerate(operation_list)
         if not isinstance(op, qml.operation.Operation)
     ]
     if non_ops:
-        string_reps = [" operation_list[{}] = {}".format(idx, op) for op, idx in non_ops]
+        string_reps = [" operation_list[{}] = {}".format(idx, op) for idx, op in non_ops]
         raise ValueError(
             "The given operation_list does not only contain Operations."
             + "The following elements of the iterable were not Operations:"
