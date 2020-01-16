@@ -45,7 +45,10 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     'sphinx_copybutton',
+    "m2r"
 ]
+
+source_suffix = ['.rst', '.md']
 
 autosummary_generate = True
 autosummary_imported_members = False
