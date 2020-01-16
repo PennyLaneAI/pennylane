@@ -23,6 +23,21 @@
 
   Check out the [quantum chemistry quickstart](https://pennylane.readthedocs.io/en/latest/introduction/chemistry.html), as well the quantum chemistry and VQE tutorials.
 
+* PennyLane now has some helper functions classes for creating and solving VQE
+  problems. [(#467)](https://github.com/XanaduAI/pennylane/pull/467)
+
+  - ``qml.Hamiltonian``: a light weight class for representing qubit Hamiltonians
+  - ``qml.VQECost``: a class for quickly constructing a differentiable cost function
+    given a circuit ansatz, Hamiltonian, and one or more devices.
+
+    ```python
+    >>> H = qml.vqe.Hamiltonian(coeffs, obs)
+    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> params = torch.rand([4, 3])
+    >>> cost(params)
+    tensor(0.0245, dtype=torch.float64)
+    ```
+
 * Added `QAOAEmbedding` and its parameter initialization
   as a new trainable template.
   [(#442)](https://github.com/XanaduAI/pennylane/pull/442)
