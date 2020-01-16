@@ -228,6 +228,15 @@ class Recorder:
         if self._old_context:
             self._old_context._append_op(op)
 
+    def _remove_op(self, op):
+        """Remove an Operation from the queue."""
+        self._ops.remove(op)
+
+        # this ensure the recorder does not interfere with
+        # any QNode contexts
+        if self._old_context:
+            self._old_context._remove_op(op)
+
     @property
     def queue(self):
         """Queue of the underlying QNode if existant, otherwise the internal operator list."""
@@ -399,10 +408,10 @@ def inv(operation_list):
         ops_in_queue = {op for op in operation_list if op in qml._current_context.queue}
 
         for op in ops_in_queue:
-            qml._current_context.queue.remove(op)
+            qml._current_context._remove_op(op)
 
         for inv_op in inv_ops:
-            qml._current_context.queue.append(inv_op)
+            qml._current_context._append_op(inv_op)
             inv_op.queue_idx = qml._current_context.queue.index(inv_op)
 
     return inv_ops
