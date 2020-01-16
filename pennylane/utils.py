@@ -373,7 +373,10 @@ def inv(operation_list):
     if isinstance(operation_list, qml.operation.Operation):
         operation_list = [operation_list]
     elif operation_list is None:
-        raise ValueError("None was passed as an argument to inv. This could happen if inversion of a template without the template decorator is attempted.")
+        raise ValueError(
+            "None was passed as an argument to inv. "
+            + "This could happen if inversion of a template without the template decorator is attempted."
+        )
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The given operation_list is not iterable.")
 
@@ -391,7 +394,6 @@ def inv(operation_list):
         )
 
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
-
 
     if qml._current_context is not None:
         ops_in_queue = {op for op in operation_list if op in qml._current_context.queue}

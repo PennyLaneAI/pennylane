@@ -809,7 +809,11 @@ class TestInv:
 
     def test_argument_none_error(self):
         """Test that the proper error is raised when the argument type is wrong."""
-        with pytest.raises(ValueError, match="None was passed as an argument to inv. This could happen if inversion of a template without the template decorator is attempted"):
+        with pytest.raises(
+            ValueError,
+            match="None was passed as an argument to inv. "
+            + "This could happen if inversion of a template without the template decorator is attempted",
+        ):
             pu.inv(None)
 
     @pytest.mark.parametrize("arg", [[1, 2, 3], [qml.PauliX(0), qml.PauliY(1), "Test"], "Test",])
