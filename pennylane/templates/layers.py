@@ -17,12 +17,12 @@ They implement a transformation from a quantum state to another quantum state.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ, Rot, Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_type, _check_number_of_layers, _check_shapes,
                                        _get_shape)
-
 
 def _strongly_entangling_layer(weights, wires, r, imprimitive):
     r"""A layer applying rotations on each qubit followed by cascades of 2-qubit entangling gates.
@@ -110,6 +110,7 @@ def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, var
         Kerr(k[i], wires=wire)
 
 
+@template
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     r"""Layers consisting of single qubit rotations and entanglers, inspired by the circuit-centric classifier design
     `arXiv:1804.00633 <https://arxiv.org/abs/1804.00633>`_.
@@ -173,6 +174,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
         _strongly_entangling_layer(weights=weights[l], wires=wires, r=ranges[l], imprimitive=imprimitive)
 
 
+@template
 def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=None, seed=42):
     r"""Layers of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
@@ -248,6 +250,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
                       rotations=rotations, seed=seed)
 
 
+@template
 def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
     r"""A sequence of layers of a continuous-variable quantum neural network,
     as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
