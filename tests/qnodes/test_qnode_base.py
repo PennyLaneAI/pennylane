@@ -194,6 +194,44 @@ class TestQNodeOperationQueue:
 
         assert out == expected_qnode_print.format(x=0.1)
 
+    def test_operation_appending(self, mock_device):
+        """Tests that operations are correctly appended."""
+        CNOT = qml.CNOT(wires=[0, 1])
+        def circuit(x):
+            qml._current_context._append_op(CNOT)
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        qnode = BaseQNode(circuit, mock_device)
+        qnode._construct([1.0], {})
+
+        assert qnode.ops[0].name == "CNOT"
+        assert qnode.ops[1].name == "RY"
+        assert qnode.ops[2].name == "RZ"
+        assert qnode.ops[3].name == "PauliX"
+
+    def test_operation_removal(self, mock_device):
+        """Tests that operations are correctly removed."""    
+        def circuit(x):
+            RX = qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+
+            qml._current_context._remove_op(RX)
+
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        qnode = BaseQNode(circuit, mock_device)
+        qnode._construct([1.0], {})
+
+        assert qnode.ops[0].name == "CNOT"
+        assert qnode.ops[1].name == "RY"
+        assert qnode.ops[2].name == "RZ"
+        assert qnode.ops[3].name == "PauliX"
+
 
 class TestQNodeExceptions:
     """Tests that QNode raises proper errors"""
