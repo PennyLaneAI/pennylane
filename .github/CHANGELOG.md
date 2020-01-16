@@ -2,15 +2,6 @@
 
 <h3>New features since last release</h3>
 
-* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and 
-  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
-  templates. This feature requires the latest version of the PennyLane-Forest plugin.
-  [#459](https://github.com/XanaduAI/pennylane/pull/459)
-
-* Added a `qml.inv` method that inverts templates and sequences of Operations.
-  Added a `@qml.template` decorator that makes templates return the queued Operations.
-  [#462](https://github.com/XanaduAI/pennylane/pull/462)
-
 * Added a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [(#453)](https://github.com/XanaduAI/pennylane/pull/453)
@@ -55,6 +46,34 @@
   ```
   QNodes that return probabilities fully support autodifferentiation.
 
+* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and 
+  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
+  templates. This feature requires the latest version of the PennyLane-Forest plugin.
+  [#459](https://github.com/XanaduAI/pennylane/pull/459)
+
+* Added a `qml.inv` method that inverts templates and sequences of Operations.
+  Added a `@qml.template` decorator that makes templates return the queued Operations.
+  [#462](https://github.com/XanaduAI/pennylane/pull/462)
+
+  For example, using this function to invert a template inside a QNode:
+
+  ```python3
+      @qml.template
+      def ansatz(weights, wires):
+          for idx, wire in enumerate(wires):
+              qml.RX(weights[idx], wires=[wire])
+
+          for idx in range(len(wires) - 1):
+              qml.CNOT(wires=[wires[idx], wires[idx + 1]])
+
+      dev = qml.device('default.qubit', wires=2)
+
+      @qml.qnode(dev)
+      def circuit(weights):
+          qml.inv(ansatz(weights, wires=[0, 1]))
+          return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    ```
+
 * Added the `QNodeCollection` container class, that allows independent
   QNodes to be stored and evaluated simultaneously.
   [(#466)](https://github.com/XanaduAI/pennylane/pull/466)
@@ -94,11 +113,6 @@
 
   `qml.sum` and `qml.dot` take the sum of a QNode collection, and a
   dot product of tensors/arrays/QNode collections, respectively.
-  
-  
-* Unified the way how samples are generated on qubit based devices by refactoring the `QubitDevice`
-  class and adding the `sample` and further auxiliary methods.
-  [#461](https://github.com/XanaduAI/pennylane/pull/461)
 
 <h3>Breaking changes</h3>
 
@@ -107,6 +121,10 @@
   [(#440)](https://github.com/XanaduAI/pennylane/pull/440)
 
 <h3>Improvements</h3>
+
+* Unified the way samples are generated on qubit based devices by refactoring the `QubitDevice`
+  class and adding the `sample` and further auxiliary methods.
+  [#461](https://github.com/XanaduAI/pennylane/pull/461)
 
 * Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
   [(#449)](https://github.com/XanaduAI/pennylane/pull/449)

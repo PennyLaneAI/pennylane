@@ -368,16 +368,16 @@ class OperationRecorder:
 
 
 def inv(operation_list):
-    """Invert a list of operations or a template.
+    """Invert a list of operations or a :doc:`template </introduction/templates>`.
 
     If the inversion happens inside a QNode, the operations are removed and requeued
     in the reversed order for proper inversion.
 
+    **Example:**
+
     The following example illuminates the inversion of a template:
 
-    .. code-block:: python
-
-        import pennylane as qml
+    .. code-block:: python3
 
         @qml.template
         def ansatz(weights, wires):
@@ -392,16 +392,11 @@ def inv(operation_list):
         @qml.qnode(dev)
         def circuit(weights):
             qml.inv(ansatz(weights, wires=[0, 1]))
-
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        ZZ = circuit([0.3, 0.4])
+    We may also invert an operation sequence:
 
-    This example highlights the inversion of an operation sequence:
-
-    .. code-block:: python
-
-        import pennylane as qml
+    .. code-block:: python3
 
         dev = qml.device('default.qubit', wires=2)
 
@@ -410,19 +405,19 @@ def inv(operation_list):
             qml.T(wires=[0]).inv()
             qml.Hadamard(wires=[0]).inv()
             qml.S(wires=[0]).inv()
-
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @qml.qnode(dev)
         def circuit2():
             qml.inv([qml.S(wires=[0]), qml.Hadamard(wires=[0]), qml.T(wires=[0])])
-
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        ZZ1 = circuit1()
-        ZZ2 = circuit2()
+    Double checking that both circuits produce the same output:
 
-        assert ZZ1 == ZZ2
+    >>> ZZ1 = circuit1()
+    >>> ZZ2 = circuit2()
+    >>> assert ZZ1 == ZZ2
+    True
 
     Args:
         operation_list (Iterable[~.Operation]): An iterable of operations

@@ -14,31 +14,39 @@
 """
 This module contains the template decorator.
 """
+from functools import wraps
+
 from pennylane.utils import OperationRecorder
+
 
 def template(func):
     """Register a quantum template with PennyLane.
 
     This decorator wraps the given function and makes it return a list of all queued Operations.
 
-    .. code-block:: python
+    **Example:**
 
-        import pennylane as qml
+    When defining a :doc:`template </introduction/templates>`, simply decorate
+    the template function with this decorator.
+
+    .. code-block:: python3
 
         @qml.template
         def bell_state_preparation(wires):
             qml.Hadamard(wires=wires[0])
             qml.CNOT(wires=wires)
 
+    This registers the template with PennyLane, making it compatible with
+    functions that act on templates, such as :func:`~.inv`:
+
+    .. code-block:: python3
+
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
         def circuit():
-            bell_state_preparation(wires=[0, 1])
-
+            qml.inv(bell_state_preparation(wires=[0, 1]))
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        ZZ = circuit()
 
     Args:
         func (callable): A template function
@@ -46,6 +54,7 @@ def template(func):
     Returns:
         callable: The wrapper function
     """
+    @wraps(func)
     def wrapper(*args, **kwargs):
         with OperationRecorder() as rec:
             func(*args, **kwargs)
