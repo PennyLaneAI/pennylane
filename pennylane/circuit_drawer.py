@@ -181,6 +181,7 @@ class CharSet(abc.ABC):
     RANGLE = None
     VERTICAL_LINE = None
     CROSSED_LINES = None
+    PIPE = None
 
     @staticmethod
     def to_superscript(num):
@@ -204,6 +205,7 @@ class UnicodeCharSet(CharSet):
     RANGLE = "⟩"
     VERTICAL_LINE = "│"
     CROSSED_LINES = "╳"
+    PIPE = "|"
 
     @staticmethod
     def to_superscript(num):
@@ -262,6 +264,7 @@ class AsciiCharSet(CharSet):
     RANGLE = ">"
     VERTICAL_LINE = "|"
     CROSSED_LINES = "X"
+    PIPE = "|"
 
     @staticmethod
     def to_superscript(num):
@@ -429,11 +432,11 @@ class RepresentationResolver:
             n_str = ", ".join([str(n) for n in op.params[0]])
 
             return (
-                self.charset.VERTICAL_LINE
+                self.charset.PIPE
                 + n_str
                 + self.charset.CROSSED_LINES
                 + n_str
-                + self.charset.VERTICAL_LINE
+                + self.charset.PIPE
             )
 
         if op.name == "PolyXP":
@@ -530,11 +533,11 @@ class RepresentationResolver:
                 return poly_str
 
         if op.name == "FockState":
-            return self.charset.VERTICAL_LINE + str(op.params[0]) + self.charset.RANGLE
+            return self.charset.PIPE + str(op.params[0]) + self.charset.RANGLE
 
         if op.name in {"BasisState", "FockStateVector"}:
             return (
-                self.charset.VERTICAL_LINE
+                self.charset.PIPE
                 + str(op.params[0][op.wires.index(wire)])
                 + self.charset.RANGLE
             )
