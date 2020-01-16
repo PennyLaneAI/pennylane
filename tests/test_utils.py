@@ -326,6 +326,30 @@ class TestRecorder:
 
         assert rec._ops == [op]
 
+    def test_remove_op_calls_underlying_context(self):
+        """Test that the underlying context is called in _remove_op."""
+        qnode_mock = MagicMock()
+
+        rec = pu.Recorder(qnode_mock)
+        op = qml.PauliZ(3)
+        rec._append_op(op)
+        rec._remove_op(op)
+
+        assert qnode_mock._remove_op.call_args[0][0] == op
+        assert rec._ops == []
+
+    def test_remove_op_no_context(self):
+        """Test that the operation is removed when no context is supplied."""
+        rec = pu.Recorder(None)
+
+        op = qml.PauliZ(3)
+        rec._append_op(op)
+        assert rec._ops == [op]
+
+        rec._remove_op(op)
+
+        assert rec._ops == []
+
     def test_context_method_spoofing(self):
         """Test that unknown methods are properly relayed to the underlying context."""
 
