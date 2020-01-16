@@ -438,7 +438,7 @@ def inv(operation_list):
             + "This could happen if inversion of a template without the template decorator is attempted."
         )
     elif not isinstance(operation_list, Iterable):
-        raise ValueError("The given operation_list is not iterable.")
+        raise ValueError("The provided operation_list is not iterable.")
 
     non_ops = [
         (idx, op)
