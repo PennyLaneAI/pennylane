@@ -863,7 +863,7 @@ class TestInv:
     @pytest.mark.parametrize("arg", [2.3, object()])
     def test_argument_type_error(self, arg):
         """Test that the proper error is raised when the argument type is wrong."""
-        with pytest.raises(ValueError, match="The given operation_list is not iterable"):
+        with pytest.raises(ValueError, match="The provided operation_list is not iterable"):
             pu.inv(arg)
 
     def test_argument_none_error(self):
