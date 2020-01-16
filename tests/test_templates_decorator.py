@@ -64,7 +64,7 @@ class TestDecorator:
             assert res_op.params == exp_op.params
 
     def test_decorated_dummy_template(self):
-        """Test the decorator for a already decorated template."""
+        """Test the decorator for an already decorated template."""
         res = decorated_dummy_template([0, 1])
 
         expected = expected_queue([0, 1])
