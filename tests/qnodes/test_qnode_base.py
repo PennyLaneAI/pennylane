@@ -49,7 +49,7 @@ def operable_mock_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, "__abstractmethods__", frozenset())
-        m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, "reset", lambda self: None)
@@ -64,12 +64,16 @@ def operable_mock_CV_device_2_wires(monkeypatch):
 
     dev = Device
     with monkeypatch.context() as m:
-        m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, 'operations', ["Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"])
-        m.setattr(dev, 'observables', ["X", "NumberOperator"])
-        m.setattr(dev, 'reset', lambda self: None)
-        m.setattr(dev, 'apply', lambda self, x, y, z: None)
-        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
+        m.setattr(dev, "__abstractmethods__", frozenset())
+        m.setattr(
+            dev,
+            "operations",
+            ["Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"],
+        )
+        m.setattr(dev, "observables", ["X", "NumberOperator"])
+        m.setattr(dev, "reset", lambda self: None)
+        m.setattr(dev, "apply", lambda self, x, y, z: None)
+        m.setattr(dev, "expval", lambda self, x, y, z: 1)
         yield Device(wires=2)
 
 
@@ -193,6 +197,46 @@ class TestQNodeOperationQueue:
             out = f.getvalue().strip()
 
         assert out == expected_qnode_print.format(x=0.1)
+
+    def test_operation_appending(self, mock_device):
+        """Tests that operations are correctly appended."""
+        CNOT = qml.CNOT(wires=[0, 1])
+
+        def circuit(x):
+            qml._current_context._append_op(CNOT)
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        qnode = BaseQNode(circuit, mock_device)
+        qnode._construct([1.0], {})
+
+        assert qnode.ops[0].name == "CNOT"
+        assert qnode.ops[1].name == "RY"
+        assert qnode.ops[2].name == "RZ"
+        assert qnode.ops[3].name == "PauliX"
+
+    def test_operation_removal(self, mock_device):
+        """Tests that operations are correctly removed."""
+
+        def circuit(x):
+            RX = qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.4, wires=[0])
+            qml.RZ(-0.2, wires=[1])
+
+            qml._current_context._remove_op(RX)
+
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        qnode = BaseQNode(circuit, mock_device)
+        qnode._construct([1.0], {})
+
+        assert qnode.ops[0].name == "CNOT"
+        assert qnode.ops[1].name == "RY"
+        assert qnode.ops[2].name == "RZ"
+        assert qnode.ops[3].name == "PauliX"
 
 
 class TestQNodeExceptions:
@@ -345,8 +389,10 @@ class TestQNodeExceptions:
     def test_operation_requiring_all_wires(self, operable_mock_device_2_wires):
         """Error: an operation that must be applied to all wires is not
         applied to all wires."""
+
         class DummyOp(qml.operation.Operation):
             """Dummy operation"""
+
             num_wires = qml.operation.Wires.All
             num_params = 0
             par_domain = None
@@ -688,6 +734,7 @@ class TestQNodeArgs:
     def test_keywordargs_with_kwargs(self, qubit_device_1_wire, tol):
         """Tests that nothing happens if unknown keyword arg passed with
         qnodes accepting **kwargs."""
+
         def circuit(w, x=None, **kwargs):
             qml.RX(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -746,7 +793,6 @@ class TestQNodeCaching:
         node.ops[0] is temp  # it's the same circuit with the same objects
 
 
-
 class TestQNodeEvaluate:
     """Test for observable statistic evaluation"""
 
@@ -766,7 +812,7 @@ class TestQNodeEvaluate:
 
         node = BaseQNode(circuit, dev)
         res = node.evaluate([x, y], {})
-        expected = np.sin(y)*np.cos(x)
+        expected = np.sin(y) * np.cos(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -788,7 +834,7 @@ class TestQNodeEvaluate:
         # test standard evaluation
         node = BaseQNode(circuit, dev)
         res = node.evaluate([x, y], {})
-        expected = np.sin(y)*np.cos(x)
+        expected = np.sin(y) * np.cos(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # hot-swap the observable
@@ -820,11 +866,7 @@ class TestDecomposition:
         """Test that decompose queue makes no changes
         if there are no operations to be decomposed"""
 
-        queue = [
-            qml.Rot(0, 1, 2, wires=0),
-            qml.CNOT(wires=[0, 1]),
-            qml.RX(6, wires=0)
-        ]
+        queue = [qml.Rot(0, 1, 2, wires=0), qml.CNOT(wires=[0, 1]), qml.RX(6, wires=0)]
 
         res = decompose_queue(queue, operable_mock_device_2_wires)
         assert res == queue
@@ -833,11 +875,7 @@ class TestDecomposition:
         """Test that decompose queue works correctly
         when an operation exists that can be decomposed"""
 
-        queue = [
-            qml.Rot(0, 1, 2, wires=0),
-            qml.U3(3, 4, 5, wires=0),
-            qml.RX(6, wires=0)
-        ]
+        queue = [qml.Rot(0, 1, 2, wires=0), qml.U3(3, 4, 5, wires=0), qml.RX(6, wires=0)]
 
         res = decompose_queue(queue, operable_mock_device_2_wires)
 
@@ -865,6 +903,7 @@ class TestDecomposition:
 
         class DummyOp(qml.operation.Operation):
             """Dummy operation"""
+
             num_params = 0
             num_wires = 1
             par_domain = "R"
@@ -875,11 +914,7 @@ class TestDecomposition:
                 ops = [qml.Hadamard(wires=wires)]
                 return ops
 
-        queue = [
-            qml.Rot(0, 1, 2, wires=0),
-            DummyOp(wires=0),
-            qml.RX(6, wires=0)
-        ]
+        queue = [qml.Rot(0, 1, 2, wires=0), DummyOp(wires=0), qml.RX(6, wires=0)]
 
         with pytest.raises(qml.DeviceError, match="DummyOp not supported on device"):
             decompose_queue(queue, operable_mock_device_2_wires)

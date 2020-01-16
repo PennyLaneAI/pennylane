@@ -18,6 +18,7 @@ used at the beginning of a circuit.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
                                        _check_hyperp_is_in_options, _check_type,
@@ -83,7 +84,7 @@ def _qaoa_ising_hamiltonian(weights, wires, local_fields, l):
         for i, _ in enumerate(wires):
             local_fields(weights[l, len(wires) + i], wires=wires[i])
 
-
+@template
 def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
@@ -266,6 +267,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     QubitStateVector(features, wires=wires)
 
 
+@template
 def AngleEmbedding(features, wires, rotation='X'):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
@@ -317,6 +319,7 @@ def AngleEmbedding(features, wires, rotation='X'):
             RZ(f, wires=w)
 
 
+@template
 def BasisEmbedding(features, wires):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
@@ -351,6 +354,7 @@ def BasisEmbedding(features, wires):
     BasisState(features, wires=wires)
 
 
+@template
 def QAOAEmbedding(features, weights, wires, local_field='Y'):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
@@ -535,6 +539,7 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     _qaoa_feature_encoding_hamiltonian(features, n_features, wires)
 
 
+@template
 def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
     r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
      where :math:`N\leq M`.
@@ -582,6 +587,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
             Displacement(c, f, wires=wires[idx])
 
 
+@template
 def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     r"""Encodes :math:`N` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
     of :math:`M` modes, where :math:`N\leq M`.
