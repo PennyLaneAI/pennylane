@@ -15,8 +15,7 @@
 This submodule contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
-import functools
-
+# pylint: disable=too-many-arguments, too-few-public-methods
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
@@ -214,5 +213,5 @@ class VQECost:
     def __call__(self, *args, **kwargs):
         if self.qnodes.interface == "autograd":
             return self.cost_fn(*args, **kwargs)[0]
-        else:
-            return self.cost_fn(*args, **kwargs)
+
+        return self.cost_fn(*args, **kwargs)
