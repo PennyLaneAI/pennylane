@@ -445,6 +445,7 @@ def inv(operation_list):
         for idx, op in enumerate(operation_list)
         if not isinstance(op, qml.operation.Operation)
     ]
+
     if non_ops:
         string_reps = [" operation_list[{}] = {}".format(idx, op) for idx, op in non_ops]
         raise ValueError(
