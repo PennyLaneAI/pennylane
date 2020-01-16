@@ -2,9 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Unified the way how samples are generated on qubit based devices by refactoring the `QubitDevice`
-  class and adding the `sample` and further auxiliary methods.
-  [#461](https://github.com/XanaduAI/pennylane/pull/461)
+* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and 
+  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
+  templates. This feature requires the latest version of the PennyLane-Forest plugin.
+  [#459](https://github.com/XanaduAI/pennylane/pull/459)
 
 * Added a `qml.inv` method that inverts templates and sequences of Operations.
   Added a `@qml.template` decorator that makes templates return the queued Operations.
@@ -21,7 +22,8 @@
   - Allow to define an active space based on the number of active electrons and active orbitals.
   - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
     using different functions implemented in OpenFermion.
-  - Convert OpenFermion's QubitOperator to Pennylane's Hamiltonian class.
+  - Convert OpenFermion's QubitOperator to a Pennylane `Hamiltonian` class.
+  - Perform a Variational Quantum Eigensolver (VQE) computation with this Hamiltonian in PennyLane.
 
   Check out the [quantum chemistry quickstart](https://pennylane.readthedocs.io/en/latest/introduction/chemistry.html), as well the quantum chemistry and VQE tutorials.
 
@@ -62,18 +64,14 @@
   a `QNodeCollection`.
   [(#466)](https://github.com/XanaduAI/pennylane/pull/466)
 
-  `qml.map` allows a circuit template to be mapped over a list of
-  observables or devices, returning a QNode collection.
+  For example:
 
-  ```python
-  def my_template(params, wires, **kwargs):
-      qml.RX(params[0], wires=wires[0])
-      qml.RX(params[1], wires=wires[1])
-      qml.CNOT(wires=wires)
-  ```
-
-  Using the ansatz above,
   ```python3
+  >>> def my_template(params, wires, **kwargs):
+  >>>    qml.RX(params[0], wires=wires[0])
+  >>>    qml.RX(params[1], wires=wires[1])
+  >>>    qml.CNOT(wires=wires)
+
   >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
   >>> dev = qml.device("default.qubit", wires=2)
   >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
@@ -96,15 +94,15 @@
 
   `qml.sum` and `qml.dot` take the sum of a QNode collection, and a
   dot product of tensors/arrays/QNode collections, respectively.
-
-* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and 
-  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
-  templates. This feature requires the latest version of the PennyLane-Forest plugin.
-  [#459](https://github.com/XanaduAI/pennylane/pull/459)
+  
+  
+* Unified the way how samples are generated on qubit based devices by refactoring the `QubitDevice`
+  class and adding the `sample` and further auxiliary methods.
+  [#461](https://github.com/XanaduAI/pennylane/pull/461)
 
 <h3>Breaking changes</h3>
 
-* Deprecated the old `QNode` such that only the new `QNode` and its syntax can be used,
+* Deprecated the old-style `QNode` such that only the new-style `QNode` and its syntax can be used,
   moved all related files from the `pennylane/beta` folder to `pennylane`.
   [(#440)](https://github.com/XanaduAI/pennylane/pull/440)
 
