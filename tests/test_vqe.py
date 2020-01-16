@@ -273,7 +273,7 @@ class TestVQE:
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
-        expval = qml.vqe.cost(ansatz, hamiltonian, dev)
+        expval = qml.VQECost(ansatz, hamiltonian, dev)
         assert type(expval(params)) == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
@@ -282,7 +282,7 @@ class TestVQE:
         """Tests that the cost function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
-        cost = qml.vqe.cost(lambda params, **kwargs: None, hamiltonian, dev)
+        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
@@ -290,7 +290,7 @@ class TestVQE:
         """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
-            cost = qml.vqe.cost(4, hamiltonian, mock_device)
+            cost = qml.VQECost(4, hamiltonian, mock_device)
 
 
 class TestAutogradInterface:
@@ -326,7 +326,7 @@ class TestAutogradInterface:
         a, b = 0.54, 0.123
         params = np.array([a, b])
 
-        cost = qml.vqe.cost(ansatz, H, dev, interface=interface)
+        cost = qml.VQECost(ansatz, H, dev, interface=interface)
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
@@ -368,7 +368,7 @@ class TestTorchInterface:
         a, b = 0.54, 0.123
         params = torch.autograd.Variable(torch.tensor([a, b]), requires_grad=True)
 
-        cost = qml.vqe.cost(ansatz, H, dev, interface="torch")
+        cost = qml.VQECost(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
 
@@ -415,7 +415,7 @@ class TestTFInterface:
         H = qml.vqe.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
         params = Variable([a, b], dtype=tf.float64)
-        cost = qml.vqe.cost(ansatz, H, dev, interface="tf")
+        cost = qml.VQECost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
@@ -447,7 +447,7 @@ class TestMultipleInterfaceIntegration:
         params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.vqe.cost(ansatz, H, dev, interface="tf")
+        cost = qml.VQECost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
             loss = cost(params)
@@ -458,7 +458,7 @@ class TestMultipleInterfaceIntegration:
         params = torch.autograd.Variable(params, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
-        cost = qml.vqe.cost(ansatz, H, dev, interface="torch")
+        cost = qml.VQECost(ansatz, H, dev, interface="torch")
         loss = cost(params)
         loss.backward()
         res_torch = params.grad.numpy()
@@ -466,7 +466,7 @@ class TestMultipleInterfaceIntegration:
         # NumPy interface
         params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
-        cost = qml.vqe.cost(ansatz, H, dev, interface="numpy")
+        cost = qml.VQECost(ansatz, H, dev, interface="numpy")
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(params)
 
