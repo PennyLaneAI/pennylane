@@ -44,7 +44,7 @@ class Hamiltonian:
         coeffs (Iterable[float]): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression
 
-    .. seealso:: :class:`qml.vqe.cost <pennylane.vqe.cost>`, :func:`~.generate_hamiltonian`
+    .. seealso:: :class:`~.VQECost`, :func:`~.generate_hamiltonian`
 
     **Example:**
 
@@ -128,7 +128,7 @@ class Hamiltonian:
         return "\n+ ".join(terms)
 
 
-class cost:
+class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
     expectation value of a Hamiltonian.
 
@@ -191,7 +191,7 @@ class cost:
 
     Next, we can define the cost function:
 
-    >>> cost = qml.vqe.cost(ansatz, hamiltonian, dev, interface="torch")
+    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
     >>> params = torch.rand([4, 3])
     >>> cost(params)
     tensor(0.0245, dtype=torch.float64)

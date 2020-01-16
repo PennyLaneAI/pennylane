@@ -154,7 +154,7 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-We can use :func:`~.vqe.cost` to automatically create the QNodes and define the cost function:
+We can use :class:`~.VQECost` to automatically create the QNodes and define the cost function:
 
 .. code-block:: python
 
@@ -168,7 +168,7 @@ We can use :func:`~.vqe.cost` to automatically create the QNodes and define the 
         qml.CNOT(wires=[2, 0])
         qml.CNOT(wires=[3, 1])
 
-    cost = qml.vqe.cost(circuit, hamiltonian, dev, interface="torch")
+    cost = qml.VQECost(circuit, hamiltonian, dev, interface="torch")
     params = torch.rand([4, 3])
     cost(params)
 
