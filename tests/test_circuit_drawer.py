@@ -15,6 +15,7 @@
 Unit tests for the :mod:`pennylane.circuit_drawer` module.
 """
 
+import itertools
 import pytest
 import numpy as np
 from unittest.mock import Mock
@@ -40,6 +41,9 @@ def parameterized_qubit_circuit():
         qml.CRY(0.3589, wires=[3, 1])
         qml.QubitUnitary(np.eye(2), wires=[2])
         qml.Toffoli(wires=[0, 2, 1])
+        qml.CNOT(wires=[0, 2])
+        qml.PauliZ(wires=[1])
+        qml.PauliZ(wires=[1])
         qml.CZ(wires=[0, 1])
         qml.CZ(wires=[0, 2])
         qml.CNOT(wires=[2, 1])
@@ -66,6 +70,7 @@ def parameterized_wide_qubit_circuit():
         qml.RX(b, wires=1)
         [qml.CNOT(wires=[2 * i, 2 * i + 1]) for i in range(4)]
         [qml.CNOT(wires=[i, i + 4]) for i in range(4)]
+        [qml.PauliY(wires=[2 * i]) for i in range(4)]
         [qml.CSWAP(wires=[i + 2, i, i + 4]) for i in range(4)]
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
@@ -685,6 +690,43 @@ dummy_raw_operation_grid = [
     [op_Z3, op_SWAP03, None, None],
 ]
 
+@pytest.fixture
+def dummy_operation_grid():
+    return Grid(dummy_raw_operation_grid.copy())
+
+dummy_raw_moved_operation_grid = [
+    [None, None, op_SWAP03, op_X0, op_CRX20],
+    [op_CNOT21, op_SWAP12, None, None, None],
+    [op_CNOT21, op_SWAP12, None, None, op_CRX20],
+    [op_Z3, None, op_SWAP03, None, None],
+]
+
+@pytest.fixture
+def dummy_moved_operation_grid():
+    return Grid(dummy_raw_moved_operation_grid.copy())
+
+dummy_raw_representation_grid = [
+    ["", "SWAP", "X", "RX(2.3)"],
+    ["X", "SWAP", "", ""],
+    ["C", "SWAP", "", "C"],
+    ["Z", "SWAP", "", ""],
+]
+
+@pytest.fixture
+def dummy_representation_grid():
+    return Grid(dummy_raw_representation_grid.copy())
+
+dummy_raw_moved_representation_grid = [
+    ["", "", "SWAP", "X", "RX(2.3)"],
+    ["X", "SWAP", "", "", ""],
+    ["C", "SWAP", "", "", "C"],
+    ["Z", "", "SWAP", "", ""],
+]
+
+@pytest.fixture
+def dummy_moved_representation_grid():
+    return Grid(dummy_raw_moved_representation_grid.copy())
+
 dummy_raw_observable_grid = [
     [qml.sample(qml.Hermitian(2 * np.eye(2), wires=[0]))],
     [None],
@@ -692,11 +734,41 @@ dummy_raw_observable_grid = [
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
 
-
 @pytest.fixture
 def dummy_circuit_drawer():
     return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
 
+def flatten(list_of_lists):
+    """Transforms a 2D list to a 1D list
+
+    Args:
+        list_of_lists (Iterable[Iterable[Any]]): The 2D list
+
+    Returns:
+        Iterable[Any]: The flattened list
+    """
+    return itertools.chain.from_iterable(list_of_lists)
+
+def assert_nested_lists_equal(list1, list2):
+    for (obj1, obj2) in zip(flatten(list1), flatten(list2)):
+        assert obj1 == obj2
+
+def to_layer(operation_list, num_wires):
+    layer = [None] * num_wires
+
+    for op in operation_list:
+        for wire in op.wires:
+            layer[wire] = op
+
+    return layer
+
+def to_grid(layer_list, num_wires):
+    grid = Grid(_transpose([to_layer(layer_list[0], num_wires)]))
+
+    for i in range(1, len(layer_list)):
+        grid.append_layer(to_layer(layer_list[i], num_wires))
+
+    return grid
 
 class TestCircuitDrawer:
     """Test the CircuitDrawer class."""
@@ -715,7 +787,30 @@ class TestCircuitDrawer:
         for idx, wire in enumerate(dummy_raw_operation_grid):
             for op in wire:
                 assert (op, idx) in args_tuples
+     
 
+class TestCircuitDrawerIntegration:
+
+    def test_operation_grid(self, dummy_circuit_drawer, dummy_moved_operation_grid):
+        print(dummy_circuit_drawer.operation_grid)
+        print(dummy_moved_operation_grid)
+
+        for (op, expected) in zip(flatten(dummy_circuit_drawer.operation_grid.raw_grid), flatten(dummy_moved_operation_grid.raw_grid)):
+            assert op == expected
+
+    CNOT04 = qml.CNOT(wires=[0, 4])
+    CNOT13 = qml.CNOT(wires=[1, 3])
+    PauliX2 = qml.PauliX(2)
+
+    @pytest.mark.parametrize("operation_grid,expected_operation_grid", [
+        (
+            to_grid([[CNOT04, CNOT13, PauliX2]], 5), 
+            to_grid([[CNOT04, PauliX2], [CNOT13]], 5))
+    ])
+    def test_operation_grid_moving(self, operation_grid, expected_operation_grid):
+        drawer = CircuitDrawer(operation_grid.raw_grid, [[]])
+
+        assert_nested_lists_equal(drawer.operation_grid.raw_grid, expected_operation_grid.raw_grid)
 
 class TestCircuitGraphDrawing:
     def test_simple_circuit(self, parameterized_qubit_circuit):
