@@ -21,7 +21,7 @@ import numpy as np
 from unittest.mock import Mock
 
 import pennylane as qml
-from pennylane.circuit_drawer import _transpose, Grid, RepresentationResolver, CircuitDrawer
+from pennylane.circuit_drawer import _remove_duplicates, _transpose, Grid, RepresentationResolver, CircuitDrawer
 from pennylane.variable import Variable
 
 
@@ -156,6 +156,15 @@ class TestFunctions:
     def test_transpose_squared(self, input):
         """Test that transpose transposes a list of list."""
         assert _transpose(_transpose(input)) == input
+
+    @pytest.mark.parametrize("input,expected_output", [
+        ([1, 1, 1, 2, 2, 2, 3, 2, 3], [1, 2, 3]),
+        (["a", "b", "c", "c", "a", "d"], ["a", "b", "c", "d"]),
+        ([1, 2, 3, 4], [1, 2, 3, 4])
+    ])
+    def test_remove_duplicates(self, input, expected_output):
+        assert _remove_duplicates(input) == expected_output
+
 
 
 class TestGrid:
