@@ -25,42 +25,6 @@ from pennylane.circuit_drawer import _remove_duplicates, _transpose, Grid, Repre
 from pennylane.variable import Variable
 
 
-@pytest.fixture
-def parameterized_qubit_circuit():
-    def qfunc(a, b, c, angles):
-        qml.RX(a, wires=0)
-        qml.RX(b, wires=1)
-        qml.PauliZ(1)
-        qml.CNOT(wires=[0, 1])
-        qml.CRY(b, wires=[3, 1])
-        qml.RX(angles[0], wires=0)
-        qml.RX(4 * angles[1], wires=1)
-        qml.RY(17 / 9 * c, wires=2)
-        qml.RZ(b, wires=3)
-        qml.RX(angles[2], wires=2)
-        qml.CRY(0.3589, wires=[3, 1])
-        qml.QubitUnitary(np.eye(2), wires=[2])
-        qml.Toffoli(wires=[0, 2, 1])
-        qml.CNOT(wires=[0, 2])
-        qml.PauliZ(wires=[1])
-        qml.PauliZ(wires=[1])
-        qml.CZ(wires=[0, 1])
-        qml.CZ(wires=[0, 2])
-        qml.CNOT(wires=[2, 1])
-        qml.CNOT(wires=[0, 2])
-        qml.SWAP(wires=[0, 2])
-        qml.CNOT(wires=[1, 3])
-        qml.RZ(b, wires=3)
-        qml.CSWAP(wires=[4, 0, 1])
-
-        return [
-            qml.expval(qml.PauliY(0)),
-            qml.var(qml.Hadamard(wires=1)),
-            qml.sample(qml.PauliX(2)),
-            qml.expval(qml.Hermitian(np.eye(4), wires=[3, 4])),
-        ]
-
-    return qfunc
 
 
 @pytest.fixture
@@ -798,41 +762,91 @@ class TestCircuitDrawer:
                 assert (op, idx) in args_tuples
      
 
+@pytest.fixture
+def parameterized_qubit_qnode():
+    def qfunc(a, b, c, angles):
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=1)
+        qml.PauliZ(1)
+        qml.CNOT(wires=[0, 1])
+        qml.CRY(b, wires=[3, 1])
+        qml.RX(angles[0], wires=0)
+        qml.RX(4 * angles[1], wires=1)
+        qml.RY(17 / 9 * c, wires=2)
+        qml.RZ(b, wires=3)
+        qml.RX(angles[2], wires=2)
+        qml.CRY(0.3589, wires=[3, 1])
+        qml.QubitUnitary(np.eye(2), wires=[2])
+        qml.Toffoli(wires=[0, 2, 1])
+        qml.CNOT(wires=[0, 2])
+        qml.PauliZ(wires=[1])
+        qml.PauliZ(wires=[1])
+        qml.CZ(wires=[0, 1])
+        qml.CZ(wires=[0, 2])
+        qml.CNOT(wires=[2, 1])
+        qml.CNOT(wires=[0, 2])
+        qml.SWAP(wires=[0, 2])
+        qml.CNOT(wires=[1, 3])
+        qml.RZ(b, wires=3)
+        qml.CSWAP(wires=[4, 0, 1])
+
+        return [
+            qml.expval(qml.PauliY(0)),
+            qml.var(qml.Hadamard(wires=1)),
+            qml.sample(qml.PauliX(2)),
+            qml.expval(qml.Hermitian(np.eye(4), wires=[3, 4])),
+        ]
+
+    dev = qml.device("default.qubit", wires=5)
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6])), {})
+    qnode.evaluate((0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6])), {})
+
+    return qnode
+
+@pytest.fixture
+def drawn_parameterized_qubit_circuit_with_variable_names():
+    return (" 0: ──RX(a)───────────────────────╭C────RX(angles[0])───────────────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP───╭SWAP───┤ ⟨Y⟩       \n" +
+            " 1: ──RX(b)────────Z──────────────╰X───╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│───────├SWAP───┤ Var[H]    \n" +
+            " 2: ──RY(1.889*c)──RX(angles[2])───U0──│────────────────────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP───│───────┤ Sample[X] \n" +
+            " 3: ───────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────────────────────────────╰X───────RZ(b)──│──────╭┤ ⟨H0⟩      \n" +
+            " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n" +
+            "U0 =\n" +
+            "[[1. 0.]\n" +
+            " [0. 1.]]\n" +
+            "H0 =\n" +
+            "[[1. 0. 0. 0.]\n" +
+            " [0. 1. 0. 0.]\n" +
+            " [0. 0. 1. 0.]\n" +
+            " [0. 0. 0. 1.]]\n")
+
+@pytest.fixture
+def drawn_parameterized_qubit_circuit_with_values():
+    return (" 0: ──RX(0.1)─────────────╭C────RX(0.4)───────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP─────╭SWAP───┤ ⟨Y⟩       \n" +
+            " 1: ──RX(0.2)────Z────────╰X───╭RY(0.2)──RX(2.0)──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n" +
+            " 2: ──RY(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n" +
+            " 3: ───────────────────────────╰C────────RZ(0.2)──╰C────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n" +
+            " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n" +
+            "U0 =\n" +
+            "[[1. 0.]\n" +
+            " [0. 1.]]\n" +
+            "H0 =\n" +
+            "[[1. 0. 0. 0.]\n" +
+            " [0. 1. 0. 0.]\n" +
+            " [0. 0. 1. 0.]\n" +
+            " [0. 0. 0. 1.]]\n")
+
 class TestCircuitDrawerIntegration:
+    def test_qubit_circuit_with_variable_names(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names):
+        output = parameterized_qubit_qnode.circuit.draw(show_variable_names=True)
 
-    def test_operation_grid(self, dummy_circuit_drawer, dummy_moved_operation_grid):
-        print(dummy_circuit_drawer.operation_grid)
-        print(dummy_moved_operation_grid)
+        assert output == drawn_parameterized_qubit_circuit_with_variable_names
 
-        for (op, expected) in zip(flatten(dummy_circuit_drawer.operation_grid.raw_grid), flatten(dummy_moved_operation_grid.raw_grid)):
-            assert op == expected
+    def test_qubit_circuit_with_values(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values):
+        output = parameterized_qubit_qnode.circuit.draw(show_variable_names=False)
 
-    CNOT04 = qml.CNOT(wires=[0, 4])
-    CNOT13 = qml.CNOT(wires=[1, 3])
-    PauliX2 = qml.PauliX(2)
-
-    @pytest.mark.parametrize("operation_grid,expected_operation_grid", [
-        (
-            to_grid([[CNOT04, CNOT13, PauliX2]], 5), 
-            to_grid([[CNOT04, PauliX2], [CNOT13]], 5))
-    ])
-    def test_operation_grid_moving(self, operation_grid, expected_operation_grid):
-        drawer = CircuitDrawer(operation_grid.raw_grid, [[]])
-
-        assert_nested_lists_equal(drawer.operation_grid.raw_grid, expected_operation_grid.raw_grid)
-
-class TestCircuitGraphDrawing:
-    def test_simple_circuit(self, parameterized_qubit_circuit):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
-
-        dev = qml.device("default.qubit", wires=5)
-        qnode = qml.QNode(parameterized_qubit_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6])), {})
-        print(qnode.circuit.draw(show_variable_names=True))
-        qnode.evaluate((0.1, 0.2, 0.3, np.array([47 / 17, 0.5, 0.6])), {})
-        print(qnode.draw())
-
-        raise Exception()
+        assert output == drawn_parameterized_qubit_circuit_with_values
 
     def test_wide_circuit(self, parameterized_wide_qubit_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
@@ -843,6 +857,12 @@ class TestCircuitGraphDrawing:
         print(qnode.circuit.draw(show_variable_names=True))
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.draw())
+
+        print(output)
+
+        file = open("test.txt", "w")
+        print("number of chars written = ", file.buffer.write(output.encode("utf8")))
+        file.close()
 
         raise Exception()
 
