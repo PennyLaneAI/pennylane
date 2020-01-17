@@ -16,7 +16,10 @@ This module contains the CircuitDrawer class which is used to draw CircuitGraph 
 """
 import abc
 import math
+from collections import OrderedDict
+
 import numpy as np
+
 import pennylane as qml
 
 
@@ -444,11 +447,7 @@ class RepresentationResolver:
             n_str = ", ".join([str(n) for n in op.params[0]])
 
             return (
-                self.charset.PIPE
-                + n_str
-                + self.charset.CROSSED_LINES
-                + n_str
-                + self.charset.PIPE
+                self.charset.PIPE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.PIPE
             )
 
         if op.name == "PolyXP":
@@ -548,11 +547,7 @@ class RepresentationResolver:
             return self.charset.PIPE + str(op.params[0]) + self.charset.RANGLE
 
         if op.name in {"BasisState", "FockStateVector"}:
-            return (
-                self.charset.PIPE
-                + str(op.params[0][op.wires.index(wire)])
-                + self.charset.RANGLE
-            )
+            return self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
 
         # Operations that only have matrix arguments
         if op.name in {
@@ -621,6 +616,20 @@ class RepresentationResolver:
             return self.operator_representation(element, wire)
 
 
+def _remove_duplicates(input_list):
+    """Remove duplicate entries from a list.
+
+    This operation preserves the order of the list's elements.
+    
+    Args:
+        input_list (list[Hashable]): The list whose duplicate entries shall be removed
+    
+    Returns:
+        list[Hashable]: The input list without duplicate entries
+    """
+    return list(OrderedDict.fromkeys(input_list))
+
+
 class CircuitDrawer:
     """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
 
@@ -664,7 +673,7 @@ class CircuitDrawer:
         inserted_indices = []
 
         for i in range(grid.num_layers):
-            layer_operators = set(grid.layer(i))
+            layer_operators = _remove_duplicates(grid.layer(i))
 
             if not separate:
                 decoration_layer = [""] * grid.num_wires
@@ -704,21 +713,6 @@ class CircuitDrawer:
 
         return inserted_indices
 
-    def justify_and_prepend(self, target, prepend_str, suffix_str, max_width, pad_str):
-        """Left justify the given string and prepend.
-
-        Args:
-            target (str): String that shall be justified and prepended
-            prepend_str (str): String that shall be prepended to the target string
-            suffix_str (str): String that shall be appended to the target string
-            max_width (int): Maximum width of the justified target string
-            pad_str (str): String that shall be used for padding
-
-        Returns:
-            str: The prepended and justified string
-        """
-        return prepend_str + str.ljust(target, max_width, pad_str) + suffix_str
-
     def pad_representation(
         self,
         representation_grid,
@@ -744,24 +738,14 @@ class CircuitDrawer:
 
             if i in skip_prepend_idx:
                 representation_grid.replace_layer(
-                    i,
-                    list(
-                        map(
-                            lambda x: self.justify_and_prepend(
-                                x, "", "", max_width, skip_prepend_pad_str
-                            ),
-                            layer,
-                        )
-                    ),
+                    i, list(map(lambda x: str.ljust(x, max_width, skip_prepend_pad_str), layer,)),
                 )
             else:
                 representation_grid.replace_layer(
                     i,
                     list(
                         map(
-                            lambda x: self.justify_and_prepend(
-                                x, prepend_str, suffix_str, max_width, pad_str
-                            ),
+                            lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str,
                             layer,
                         )
                     ),
@@ -779,7 +763,7 @@ class CircuitDrawer:
             i += 1
 
             this_layer = operator_grid.layer(i)
-            layer_ops = list(set(this_layer))
+            layer_ops = _remove_duplicates(this_layer)
             other_layer = [None] * operator_grid.num_wires
 
             for j in range(len(layer_ops)):
@@ -849,14 +833,10 @@ class CircuitDrawer:
 
         # Add multi-wire gate lines
         self.operation_decoration_indices = self.resolve_decorations(
-            self.operation_grid,
-            self.operation_representation_grid,
-            False,
+            self.operation_grid, self.operation_representation_grid, False,
         )
         self.observable_decoration_indices = self.resolve_decorations(
-            self.observable_grid,
-            self.observable_representation_grid,
-            True,
+            self.observable_grid, self.observable_representation_grid, True,
         )
 
         self.pad_representation(
