@@ -812,6 +812,7 @@ class TestQNodeEvaluate:
         res = node(0.432, 0.12)
         assert res.shape == (10,)
 
+
 class TestDecomposition:
     """Test for queue decomposition"""
 
