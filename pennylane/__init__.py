@@ -29,7 +29,6 @@ import pennylane.init
 import pennylane.templates
 from pennylane.templates import template
 from pennylane.about import about
-import pennylane.vqe
 from pennylane.vqe import Hamiltonian, VQECost
 
 from .circuit_graph import CircuitGraph
