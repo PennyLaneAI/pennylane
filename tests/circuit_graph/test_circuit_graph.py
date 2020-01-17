@@ -20,9 +20,10 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Tensor
+from pennylane.operation import Expectation
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.variable import Variable
+
+
 
 @pytest.fixture
 def queue():
