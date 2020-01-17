@@ -1543,16 +1543,21 @@ class TestTensorExpval:
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit", wires=3, analytic=True)
-        dev.reset()
-        dev.apply([qml.RY(theta, wires=[0])])
-        dev.apply([qml.RY(phi, wires=[1])])
-        dev.apply([qml.CNOT(wires=[0, 1])])
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
         Identity = np.array([[1, 0],[0, 1]])
+        H = np.kron(np.kron(Identity,Identity), A)
+        obs = qml.Hermitian(H, wires=[2, 1, 0])
 
-        obs = np.kron(np.kron(Identity,Identity), A)
-        res = dev.expval(qml.Hermitian(obs, wires=[2,1,0]))
+        dev.apply(
+            [
+                qml.RY(theta, wires=[0]),
+                qml.RY(phi, wires=[1]),
+                qml.CNOT(wires=[0, 1])
+            ],
+            obs.diagonalizing_gates()
+        )
+        res = dev.expval(obs)
 
         a = A[0, 0]
         re_b = A[0, 1].real
