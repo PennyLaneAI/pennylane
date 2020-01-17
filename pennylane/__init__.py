@@ -60,6 +60,23 @@ default_config = Configuration("config.toml")
 plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.plugins")}
 
 # get chemistry plugin
+class NestedAttrError:
+    error_msg = ("PennyLane-QChem not installed. \n\nTo access the qchem "
+                 "module, you can install PennyLane-QChem via pip:"
+                 "\n\npip install pennylane-qchem"
+                 "\n\nFor more details, see the quantum chemistry documentation:"
+                 "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html")
+
+    def __str__(self):
+        raise ImportError(self.error_msg) from None
+
+    def __getattr__(self, name):
+        raise ImportError(self.error_msg) from None
+
+    __repr__ = __str__
+
+qchem = NestedAttrError()
+
 for entry in iter_entry_points("pennylane.qchem"):
     if entry.name == "OpenFermion":
         qchem = entry.load()
