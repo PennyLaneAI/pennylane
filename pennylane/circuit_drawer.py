@@ -636,17 +636,21 @@ class CircuitDrawer:
 
             representation_grid.append_layer(representation_layer)
 
-    def resolve_decorations(self, grid, representation_grid, inserted_indices, separate):
+    def resolve_decorations(self, grid, representation_grid, separate):
         """Resolve the decorations of the given Grid.
 
         Args:
             grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
             representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations and into
                 which the decorations will be inserted
-            inserted_indices (list[int]): List to which the inserted indices will be appended
             separate (bool): Insert decorations into separate layers
+
+        Returns:        
+            list[int]: List with indices of inserted decoration layers
         """
         j = 0
+        inserted_indices = []
+
         for i in range(grid.num_layers):
             layer_operators = set(grid.layer(i))
 
@@ -665,14 +669,16 @@ class CircuitDrawer:
                     sorted_wires.sort()
 
                     decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
-                    decoration_layer[
-                        sorted_wires[-1]
-                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
+
                     for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
                         if k in sorted_wires:
                             decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
                         else:
                             decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
+
+                    decoration_layer[
+                        sorted_wires[-1]
+                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
 
                     if separate:
                         representation_grid.insert_layer(i + j, decoration_layer)
@@ -683,6 +689,8 @@ class CircuitDrawer:
                 representation_grid.insert_layer(i + j, decoration_layer)
                 inserted_indices.append(i + j)
                 j += 1
+
+        return inserted_indices
 
     def justify_and_prepend(self, target, prepend_str, suffix_str, max_width, pad_str):
         """Left justify the given string and prepend.
@@ -828,16 +836,14 @@ class CircuitDrawer:
         self.resolve_representation(self.observable_grid, self.observable_representation_grid)
 
         # Add multi-wire gate lines
-        self.resolve_decorations(
+        self.operation_decoration_indices = self.resolve_decorations(
             self.operation_grid,
             self.operation_representation_grid,
-            self.operation_decoration_indices,
             False,
         )
-        self.resolve_decorations(
+        self.observable_decoration_indices = self.resolve_decorations(
             self.observable_grid,
             self.observable_representation_grid,
-            self.observable_decoration_indices,
             True,
         )
 
