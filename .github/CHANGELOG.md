@@ -18,12 +18,12 @@
 
   Check out the [quantum chemistry quickstart](https://pennylane.readthedocs.io/en/latest/introduction/chemistry.html), as well the quantum chemistry and VQE tutorials.
 
-* PennyLane now has some helper functions and classes for creating and solving VQE
+* PennyLane now has some functions and classes for creating and solving VQE
   problems. [(#467)](https://github.com/XanaduAI/pennylane/pull/467)
 
-  - ``qml.Hamiltonian``: a light weight class for representing qubit Hamiltonians
+  - ``qml.Hamiltonian``: a lightweight class for representing qubit Hamiltonians
   - ``qml.VQECost``: a class for quickly constructing a differentiable cost function
-    given a circuit ansatz, Hamiltonian, and one or more devices.
+    given a circuit ansatz, Hamiltonian, and one or more devices
 
     ```python
     >>> H = qml.vqe.Hamiltonian(coeffs, obs)

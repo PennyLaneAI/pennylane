@@ -448,7 +448,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     Args:
         openfermion_qubit_operator (QubitOperator): OpenFermion qubit operator represented as
             a Pauli summation
-        pennylane_qubit_operator (pennylane.vqe.Hamiltonian): PennyLane's VQE
+        pennylane_qubit_operator (pennylane.Hamiltonian): PennyLane
             Hamiltonian object
 
     Returns:
@@ -474,7 +474,7 @@ def convert_hamiltonian(qubit_hamiltonian):
         qubit_hamiltonian (QubitOperator): Hamiltonian represented as an OpenFermion `QubitOperator`
 
     Returns:
-        (pennylane.vqe.Hamiltonian): Pennylane VQE Hamiltonian
+        (pennylane.Hamiltonian): Pennylane VQE Hamiltonian
     """
 
     # The `_qubit_operator_to_terms` function is separated out from this function
@@ -524,7 +524,7 @@ def generate_hamiltonian(
                 map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
     Returns:
-        tuple(pennylane.vqe.Hamiltonian, int): the fermionic-to-qubit transformed
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed
         Hamiltonian and the number of qubits
 
      """
