@@ -481,9 +481,9 @@ class TestRepresentationResolver:
             (qml.U1(3.14, wires=[1]), 1, "U1(3.14)"),
             (qml.U2(3.14, 2.14, wires=[1]), 1, "U2(3.14, 2.14)"),
             (qml.U3(3.14, 2.14, 1.14, wires=[1]), 1, "U3(3.14, 2.14, 1.14)"),
-            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "│0⟩"),
-            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "│1⟩"),
-            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "│0⟩"),
+            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "|0⟩"),
+            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "|1⟩"),
+            (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "|0⟩"),
             (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 1, "QubitStateVector(M0)"),
             (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 2, "QubitStateVector(M0)"),
             (qml.QubitUnitary(np.eye(2), wires=[1]), 1, "U0"),
@@ -511,16 +511,16 @@ class TestRepresentationResolver:
                 1,
                 "DisplacedSqueezedState(3.14, 2.14, 1.14, 0.14)",
             ),
-            (qml.FockState(7, wires=[1]), 1, "│7⟩"),
-            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4⟩"),
-            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 2, "│5⟩"),
-            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 3, "│7⟩"),
+            (qml.FockState(7, wires=[1]), 1, "|7⟩"),
+            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4⟩"),
+            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 2, "|5⟩"),
+            (qml.FockStateVector(np.array([4, 5, 7]), wires=[1, 2, 3]), 3, "|7⟩"),
             (qml.SqueezedState(3.14, 2.14, wires=[1]), 1, "SqueezedState(3.14, 2.14)"),
             (qml.Hermitian(np.eye(4), wires=[1, 2]), 1, "H0"),
             (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
-            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "│4, 5, 7╳4, 5, 7│"),
+            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4, 5, 7╳4, 5, 7|"),
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
@@ -555,7 +555,7 @@ class TestRepresentationResolver:
             (
                 qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "⟨│4, 5, 7╳4, 5, 7│⟩",
+                "⟨|4, 5, 7╳4, 5, 7|⟩",
             ),
             (
                 qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -584,7 +584,7 @@ class TestRepresentationResolver:
             (
                 qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "Var[│4, 5, 7╳4, 5, 7│]",
+                "Var[|4, 5, 7╳4, 5, 7|]",
             ),
             (
                 qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -613,7 +613,7 @@ class TestRepresentationResolver:
             (
                 qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "Sample[│4, 5, 7╳4, 5, 7│]",
+                "Sample[|4, 5, 7╳4, 5, 7|]",
             ),
             (
                 qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
