@@ -154,8 +154,8 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-We can use :func:`~.VQECost` to automatically create the required PennyLane QNodes and define t
-he cost function:
+We can use :func:`~.VQECost` to automatically create the required PennyLane QNodes and define 
+the cost function:
 
 .. code-block:: python
 
