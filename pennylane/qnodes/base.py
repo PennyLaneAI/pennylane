@@ -303,8 +303,6 @@ class BaseQNode:
                 )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
-
-
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
 
