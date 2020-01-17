@@ -314,23 +314,28 @@ class DefaultQubit(QubitDevice):
         self.analytic = analytic
         self._state = None
 
-    def apply(self, operations, rotations):
+    def apply(self, operations, rotations=None):
+        rotations = rotations or []
+
         # apply the circuit operations
         for i, operation in enumerate(operations):
             # number of wires on device
             wires = operation.wires
             par = operation.parameters
 
+            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+                raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
+                                  "on a {} device.".format(operation.name, self.short_name))
+
             if isinstance(operation, QubitStateVector):
                 self.apply_state_vector(wires, par)
-                return
 
-            if isinstance(operation, BasisState):
+            elif isinstance(operation, BasisState):
                 self.apply_basis_state(wires, par)
-                return
 
-            A = self._get_operator_matrix(operation.name, par)
-            self._state = self.mat_vec_product(A, self._state, wires)
+            else:
+                A = self._get_operator_matrix(operation.name, par)
+                self._state = self.mat_vec_product(A, self._state, wires)
 
         # store the pre-rotated state
         self.state = self._state
@@ -342,17 +347,13 @@ class DefaultQubit(QubitDevice):
             A = self._get_operator_matrix(operation.name, par)
             self._state = self.mat_vec_product(A, self._state, wires)
 
-    def apply_state_vector(wires, par):
+    def apply_state_vector(self, wires, par):
         input_state = np.asarray(par[0], dtype=np.complex128)
 
         if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         n_state_vector = input_state.shape[0]
-
-        if i > 0:
-            raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                              "on a {} device.".format(operation.name, self.short_name))
 
         if input_state.ndim == 1 and n_state_vector == 2**len(wires):
             # generate basis states on subset of qubits via the cartesian product
@@ -369,7 +370,7 @@ class DefaultQubit(QubitDevice):
         else:
             raise ValueError("State vector must be of length 2**wires.")
 
-    def apply_basis_state(wires, par):
+    def apply_basis_state(self, wires, par):
         # length of basis state parameter
         n_basis_state = len(par[0])
 
@@ -378,10 +379,6 @@ class DefaultQubit(QubitDevice):
 
         if n_basis_state != len(wires):
             raise ValueError("BasisState parameter and wires must be of equal length.")
-
-        if i > 0:
-            raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                              "on a {} device.".format(operation.name, self.short_name))
 
         # get computational basis state number
         num = int(np.dot(par[0], 2**(self.num_wires - 1 - np.array(wires))))

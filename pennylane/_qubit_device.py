@@ -139,7 +139,7 @@ class QubitDevice(Device):
             return self._asarray(results)
 
     @abc.abstractmethod
-    def apply(self, operations, rotations, **kwargs):
+    def apply(self, operations, rotations=None, **kwargs):
         """Apply quantum operations, and execute the quantum circuit.
 
         Args:
