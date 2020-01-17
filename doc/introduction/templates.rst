@@ -47,6 +47,35 @@ together with the layer template :func:`~.StronglyEntanglingLayers`,
 and the uniform parameter initialization strategy
 :func:`~.strong_ent_layers_uniform`.
 
+Custom templates
+----------------
+
+In addition, custom templates can be created; simply
+decorate a Python function that applies quantum gates
+with the :func:`~.template` decorator:
+
+.. code-block:: python3
+
+    @qml.template
+    def bell_state_preparation(wires):
+        qml.Hadamard(wires=wires[0])
+        qml.CNOT(wires=wires)
+
+This registers the template with PennyLane, making it compatible with
+functions that act on templates, such as :func:`~.inv`:
+
+.. code-block:: python3
+
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.inv(bell_state_preparation(wires=[0, 1]))
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+
+See below for details on built-in templates provided by PennyLane.
+
 
 .. _intro_ref_temp_lay:
 
