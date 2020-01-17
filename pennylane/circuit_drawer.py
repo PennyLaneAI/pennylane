@@ -60,6 +60,8 @@ class Grid:
         self.raw_grid_transpose.insert(idx, layer)
         self.raw_grid = _transpose(self.raw_grid_transpose)
 
+        return self
+
     def append_layer(self, layer):
         """Append a layer to the Grid.
 
@@ -68,6 +70,8 @@ class Grid:
         """
         self.raw_grid_transpose.append(layer)
         self.raw_grid = _transpose(self.raw_grid_transpose)
+
+        return self
 
     def replace_layer(self, idx, layer):
         """Replace a layer in the Grid at the specified index.
@@ -79,6 +83,8 @@ class Grid:
         self.raw_grid_transpose[idx] = layer
         self.raw_grid = _transpose(self.raw_grid_transpose)
 
+        return self
+
     def insert_wire(self, idx, wire):
         """Insert a wire into the Grid at the specified index.
 
@@ -89,6 +95,8 @@ class Grid:
         self.raw_grid.insert(idx, wire)
         self.raw_grid_transpose = _transpose(self.raw_grid)
 
+        return self
+
     def append_wire(self, wire):
         """Append a wire to the Grid.
 
@@ -97,6 +105,8 @@ class Grid:
         """
         self.raw_grid.append(wire)
         self.raw_grid_transpose = _transpose(self.raw_grid)
+
+        return self
 
     @property
     def num_layers(self):
@@ -154,6 +164,8 @@ class Grid:
         """
         for i in range(other_grid.num_layers):
             self.append_layer(other_grid.layer(i))
+
+        return self
 
     def __str__(self):
         """String representation"""
