@@ -312,76 +312,82 @@ class DefaultQubit(QubitDevice):
         super().__init__(wires, shots, analytic)
         self.eng = None
         self.analytic = analytic
-
         self._state = None
-        self._first_operation = True
 
-    def pre_apply(self):
-        self.reset()
+    def apply(self, operations, rotations):
+        # apply the circuit operations
+        for i, operation in enumerate(operations):
+            # number of wires on device
+            wires = operation.wires
+            par = operation.parameters
 
-    def apply(self, operation):
-        # number of wires on device
-        wires = operation.wires
-        par = operation.parameters
+            if isinstance(operation, QubitStateVector):
+                self.apply_state_vector(wires, par)
+                return
 
-        n = self.num_wires
+            if isinstance(operation, BasisState):
+                self.apply_basis_state(wires, par)
+                return
 
-        if isinstance(operation, QubitStateVector):
-            input_state = np.asarray(par[0], dtype=np.complex128)
+            A = self._get_operator_matrix(operation.name, par)
+            self._state = self.mat_vec_product(A, self._state, wires)
 
-            if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
-            n_state_vector = input_state.shape[0]
-            if not self._first_operation:
-                raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation.name, self.short_name))
-            if input_state.ndim == 1 and n_state_vector == 2**len(wires):
+        # store the pre-rotated state
+        self.state = self._state
 
-                # generate basis states on subset of qubits via the cartesian product
-                tuples = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+        # apply the circuit rotations
+        for operation in rotations:
+            wires = operation.wires
+            par = operation.parameters
+            A = self._get_operator_matrix(operation.name, par)
+            self._state = self.mat_vec_product(A, self._state, wires)
 
-                # get basis states to alter on full set of qubits
-                unravelled_nums = np.zeros((2 ** len(wires), n), dtype=int)
-                unravelled_nums[:, wires] = tuples
+    def apply_state_vector(wires, par):
+        input_state = np.asarray(par[0], dtype=np.complex128)
 
-                # get indices for which the state is changed to input state vector elements
-                nums = np.ravel_multi_index(unravelled_nums.T, [2] * n)
-                self._state = np.zeros_like(self._state)
-                self._state[nums] = input_state
-            else:
-                raise ValueError("State vector must be of length 2**wires.")
-            self._first_operation = False
-            return
+        if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
+            raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        if isinstance(operation, BasisState):
-            # length of basis state parameter
-            n_basis_state = len(par[0])
+        n_state_vector = input_state.shape[0]
 
-            if not set(par[0]).issubset({0, 1}):
-                raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
-            if n_basis_state != len(wires):
-                raise ValueError("BasisState parameter and wires must be of equal length.")
-            if not self._first_operation:
-                raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation.name, self.short_name))
+        if i > 0:
+            raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
+                              "on a {} device.".format(operation.name, self.short_name))
 
+        if input_state.ndim == 1 and n_state_vector == 2**len(wires):
+            # generate basis states on subset of qubits via the cartesian product
+            tuples = np.array(list(itertools.product([0, 1], repeat=len(wires))))
 
-            # get computational basis state number
-            num = int(np.dot(par[0], 2**(n - 1 - np.array(wires))))
+            # get basis states to alter on full set of qubits
+            unravelled_nums = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
+            unravelled_nums[:, wires] = tuples
 
+            # get indices for which the state is changed to input state vector elements
+            nums = np.ravel_multi_index(unravelled_nums.T, [2] * self.num_wires)
             self._state = np.zeros_like(self._state)
-            self._state[num] = 1.
-            self._first_operation = False
-            return
+            self._state[nums] = input_state
+        else:
+            raise ValueError("State vector must be of length 2**wires.")
 
-        A = self._get_operator_matrix(operation.name, par)
+    def apply_basis_state(wires, par):
+        # length of basis state parameter
+        n_basis_state = len(par[0])
 
-        self._state = self.mat_vec_product(A, self._state, wires)
-        self._first_operation = False
+        if not set(par[0]).issubset({0, 1}):
+            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
 
-    def post_apply(self):
-        # generate computational basis samples
-        self.generate_samples()
+        if n_basis_state != len(wires):
+            raise ValueError("BasisState parameter and wires must be of equal length.")
+
+        if i > 0:
+            raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
+                              "on a {} device.".format(operation.name, self.short_name))
+
+        # get computational basis state number
+        num = int(np.dot(par[0], 2**(self.num_wires - 1 - np.array(wires))))
+
+        self._state = np.zeros_like(self._state)
+        self._state[num] = 1.
 
     def mat_vec_product(self, mat, vec, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
@@ -466,7 +472,6 @@ class DefaultQubit(QubitDevice):
         super().reset()
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
-        self._first_operation = True
 
     @property
     def operations(self):
@@ -475,3 +480,28 @@ class DefaultQubit(QubitDevice):
     @property
     def observables(self):
         return set(self._observable_map.keys())
+
+    def probability(self, wires=None):
+        """Return the (marginal) probability of each computational basis
+        state from the last run of the device.
+
+        If no wires are specified, then all the basis states representable by
+        the device are considered and no marginalization takes place.
+
+        .. warning:: This method will have to be redefined for hardware devices, since it uses
+            the ``device._state`` attribute. This attribute might not be available for such devices.
+
+        Args:
+            wires (Sequence[int]): Sequence of wires to return
+                marginal probabilities for. Wires not provided
+                are traced out of the system.
+
+        Returns:
+            List[float]: list of the probabilities
+        """
+        if self._state is None:
+            return None
+
+        wires = wires or range(self.num_wires)
+        prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
+        return prob
