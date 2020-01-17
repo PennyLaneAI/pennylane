@@ -27,6 +27,7 @@ import pennylane.operation
 
 import pennylane.init
 import pennylane.templates
+from pennylane.templates import template
 from pennylane.about import about
 
 
@@ -40,6 +41,7 @@ from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
 from ._version import __version__
+from .io import *
 
 
 _current_context = None
@@ -55,9 +57,6 @@ default_config = Configuration("config.toml")
 
 # get list of installed plugin devices
 plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.plugins")}
-
-# get list of installed plugin converters
-plugin_converters = {entry.name: entry for entry in iter_entry_points("pennylane.io")}
 
 # get chemistry plugin
 for entry in iter_entry_points("pennylane.qchem"):
@@ -138,145 +137,6 @@ def device(name, *args, **kwargs):
     raise DeviceError(
         "Device does not exist. Make sure the required plugin is installed."
     )
-
-
-def load(quantum_circuit_object, format: str):
-    """Load external quantum assembly and quantum circuits from supported frameworks
-    into PennyLane templates.
-
-    .. note::
-
-        For more details on which formats are supported
-        please consult the corresponding plugin documentation:
-        https://pennylane.ai/plugins.html
-
-    **Example:**
-
-    >>> qc = qiskit.QuantumCircuit(2)
-    >>> qc.rz(0.543, [0])
-    >>> qc.cx(0, 1)
-    >>> my_circuit = qml.load(qc, format='qiskit')
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
-
-    Args:
-        quantum_circuit_object: the quantum circuit that will be converted
-            to a PennyLane template
-        format (str): the format of the quantum circuit object to convert from
-
-    Returns:
-        function: the PennyLane template created from the quantum circuit
-        object
-    """
-
-    if format in plugin_converters:
-
-        # loads the plugin load function
-        plugin_converter = plugin_converters[format].load()
-
-        # calls the load function of the converter on the quantum circuit object
-        return plugin_converter(quantum_circuit_object)
-
-    raise ValueError(
-        "Converter does not exist. Make sure the required plugin is installed "
-        "and supports conversion."
-    )
-
-
-def from_qiskit(quantum_circuit):
-    """Loads Qiskit QuantumCircuit objects by using the converter in the
-    PennyLane-Qiskit plugin.
-
-    **Example:**
-
-    >>> qc = qiskit.QuantumCircuit(2)
-    >>> qc.rz(0.543, [0])
-    >>> qc.cx(0, 1)
-    >>> my_circuit = qml.from_qiskit(qc)
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
-
-    Args:
-        quantum_circuit (qiskit.QuantumCircuit): a quantum circuit created in qiskit
-
-    Returns:
-        function: the PennyLane template created based on the QuantumCircuit
-        object
-    """
-    return load(quantum_circuit, format='qiskit')
-
-
-def from_qasm(quantum_circuit: str):
-    """Loads quantum circuits from a QASM string using the converter in the
-    PennyLane-Qiskit plugin.
-
-    **Example:**
-
-    .. code-block:: python
-
-        >>> hadamard_qasm = 'OPENQASM 2.0;' \\
-        ...                 'include "qelib1.inc";' \\
-        ...                 'qreg q[1];' \\
-        ...                 'h q[0];'
-        >>> my_circuit = qml.from_qasm(hadamard_qasm)
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
-
-    Args:
-        quantum_circuit (str): a QASM string containing a valid quantum circuit
-
-    Returns:
-        function: the PennyLane template created based on the QASM string
-    """
-    return load(quantum_circuit, format='qasm')
-
-
-def from_qasm_file(qasm_filename: str):
-    """Loads quantum circuits from a QASM file using the converter in the
-    PennyLane-Qiskit plugin.
-
-    **Example:**
-
-    >>> my_circuit = qml.from_qasm("hadamard_circuit.qasm")
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.PauliZ(0))
-
-    Args:
-        qasm_filename (str): path to a QASM file containing a valid quantum circuit
-
-    Returns:
-        function: the PennyLane template created based on the QASM file
-    """
-    return load(qasm_filename, format='qasm_file')
-
 
 def grad(func, argnum):
     """Returns the gradient as a callable function of (functions of) QNodes.

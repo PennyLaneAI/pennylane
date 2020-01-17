@@ -1,4 +1,4 @@
-# Copyright 2018 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -720,15 +720,6 @@ class TestExpval:
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
-    def test_expval_warnings(self, qubit_device_1_wire):
-        """Tests that expval raises a warning if the given observable is complex."""
-
-        qubit_device_1_wire.reset()
-
-        # text warning raised if matrix is complex
-        with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
-            qubit_device_1_wire.ev(np.array([[1+1j, 0], [0, 1+1j]]), wires=[0])
-
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
@@ -836,10 +827,12 @@ class TestSample:
         s1 = qubit_device_2_wires.sample(qml.PauliZ(wires=[0]))
         assert np.array_equal(s1.shape, (10,))
 
+        qubit_device_2_wires.reset()
         qubit_device_2_wires.shots = 12
         s2 = qubit_device_2_wires.sample(qml.PauliZ(wires=[1]))
         assert np.array_equal(s2.shape, (12,))
 
+        qubit_device_2_wires.reset()
         qubit_device_2_wires.shots = 17
         s3 = qubit_device_2_wires.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
@@ -1282,6 +1275,41 @@ class TestDefaultQubitIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
+    def test_multi_samples_return_correlated_results(self):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
+
+        outcomes = circuit()
+
+        assert np.array_equal(outcomes[0], outcomes[1])
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5, 6, 7, 8])
+    def test_multi_samples_return_correlated_results_more_wires_than_size_of_observable(self, num_wires):
+        """Tests if the samples returned by the sample function have
+        the correct dimensions
+        """
+
+        dev = qml.device('default.qubit', wires=num_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
+
+        outcomes = circuit()
+
+        assert np.array_equal(outcomes[0], outcomes[1])
+
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
@@ -1564,13 +1592,12 @@ class TestTensorSample:
         dev.apply(qml.CNOT(wires=[0, 1]))
         dev.apply(qml.CNOT(wires=[1, 2]))
 
-        with monkeypatch.context() as m:
-            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
-            s1, p = dev.sample(qml.PauliX(0) @ qml.PauliY(2))
+        obs = qml.PauliX(0) @ qml.PauliY(2)
+        dev.sample(obs)
 
+        s1 = obs.eigvals
+        p = dev.probability(wires=obs.wires)
 
-        print(s1)
-        print(p)
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
 
@@ -1599,9 +1626,11 @@ class TestTensorSample:
         dev.apply(qml.CNOT(wires=[0, 1]))
         dev.apply(qml.CNOT(wires=[1, 2]))
 
-        with monkeypatch.context() as m:
-            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
-            s1, p = dev.sample(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
+        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
+        dev.sample(obs)
+
+        s1 = obs.eigvals
+        p = dev.marginal_prob(dev._rotated_prob, wires=obs.wires)
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
@@ -1638,9 +1667,11 @@ class TestTensorSample:
             ]
         )
 
-        with monkeypatch.context() as m:
-            m.setattr("numpy.random.choice", lambda x, y, p: (x, p))
-            s1, p = dev.sample(qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+        dev.sample(obs)
+
+        s1 = obs.eigvals
+        p = dev.marginal_prob(dev._rotated_prob, wires=obs.wires)
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
