@@ -25,25 +25,6 @@ from pennylane.circuit_drawer import _remove_duplicates, _transpose, Grid, Repre
 from pennylane.variable import Variable
 
 
-
-
-@pytest.fixture
-def parameterized_wide_qubit_circuit():
-    def qfunc(a, b, c, d, e, f):
-        qml.RX(a, wires=0)
-        qml.RX(b, wires=1)
-        [qml.CNOT(wires=[2 * i, 2 * i + 1]) for i in range(4)]
-        [qml.CNOT(wires=[i, i + 4]) for i in range(4)]
-        [qml.PauliY(wires=[2 * i]) for i in range(4)]
-        [qml.CSWAP(wires=[i + 2, i, i + 4]) for i in range(4)]
-        qml.RX(a, wires=0)
-        qml.RX(b, wires=1)
-
-        return [qml.expval(qml.Hermitian(np.eye(4), wires=[i, i + 4])) for i in range(4)]
-
-    return qfunc
-
-
 @pytest.fixture
 def parameterized_wide_cv_circuit():
     def qfunc(a, b, c, d, e, f):
@@ -837,6 +818,61 @@ def drawn_parameterized_qubit_circuit_with_values():
             " [0. 0. 1. 0.]\n" +
             " [0. 0. 0. 1.]]\n")
 
+@pytest.fixture
+def parameterized_wide_qubit_qnode():
+    def qfunc(a, b, c, d, e, f):
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=1)
+        [qml.CNOT(wires=[2 * i, 2 * i + 1]) for i in range(4)]
+        [qml.CNOT(wires=[i, i + 4]) for i in range(4)]
+        [qml.PauliY(wires=[2 * i]) for i in range(4)]
+        [qml.CSWAP(wires=[i + 2, i, i + 4]) for i in range(4)]
+        qml.RX(a, wires=0)
+        qml.RX(b, wires=1)
+
+        return [qml.expval(qml.Hermitian(np.eye(4), wires=[i, i + 4])) for i in range(4)]
+
+    dev = qml.device("default.qubit", wires=8)
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+    qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
+
+    return qnode
+
+@pytest.fixture
+def drawn_parameterized_wide_qubit_qnode_with_variable_names():
+    return (
+        " 0: ───RX(a)──╭C─────────────╭C──Y─────────────────╭SWAP───RX(a)──╭───┤ ⟨H0⟩ \n" +
+        " 1: ───RX(b)──╰X─────────╭C──│──────╭SWAP───RX(b)──│──────────────│╭──┤ ⟨H0⟩ \n" +
+        " 2: ──╭C──────────╭C──Y──│───│──────│──────────────├C─────╭SWAP───││╭─┤ ⟨H0⟩ \n" +
+        " 3: ──╰X──────╭C──│──────│───│──────├C─────╭SWAP───│──────│───────│││╭┤ ⟨H0⟩ \n" +
+        " 4: ──╭C──────│───│──────│───╰X──Y──│──────│───────╰SWAP──├C──────╰│││┤ ⟨H0⟩ \n" +
+        " 5: ──╰X──────│───│──────╰X─────────╰SWAP──├C─────────────│────────╰││┤ ⟨H0⟩ \n" +
+        " 6: ──╭C──────│───╰X──Y────────────────────│──────────────╰SWAP─────╰│┤ ⟨H0⟩ \n" +
+        " 7: ──╰X──────╰X───────────────────────────╰SWAP─────────────────────╰┤ ⟨H0⟩ \n" +
+        "H0 =\n" +
+        "[[1. 0. 0. 0.]\n" +
+        " [0. 1. 0. 0.]\n" +
+        " [0. 0. 1. 0.]\n" +
+        " [0. 0. 0. 1.]]\n")
+
+@pytest.fixture
+def drawn_parameterized_wide_qubit_qnode_with_values():
+    return (
+        " 0: ───RX(0.1)──╭C─────────────╭C──Y───────────────────╭SWAP───RX(0.1)──╭───┤ ⟨H0⟩ \n" +
+        " 1: ───RX(0.2)──╰X─────────╭C──│──────╭SWAP───RX(0.2)──│────────────────│╭──┤ ⟨H0⟩ \n" +
+        " 2: ──╭C────────────╭C──Y──│───│──────│────────────────├C─────╭SWAP─────││╭─┤ ⟨H0⟩ \n" +
+        " 3: ──╰X────────╭C──│──────│───│──────├C─────╭SWAP─────│──────│─────────│││╭┤ ⟨H0⟩ \n" +
+        " 4: ──╭C────────│───│──────│───╰X──Y──│──────│─────────╰SWAP──├C────────╰│││┤ ⟨H0⟩ \n" +
+        " 5: ──╰X────────│───│──────╰X─────────╰SWAP──├C───────────────│──────────╰││┤ ⟨H0⟩ \n" +
+        " 6: ──╭C────────│───╰X──Y────────────────────│────────────────╰SWAP───────╰│┤ ⟨H0⟩ \n" +
+        " 7: ──╰X────────╰X───────────────────────────╰SWAP─────────────────────────╰┤ ⟨H0⟩ \n" +
+        "H0 =\n" +
+        "[[1. 0. 0. 0.]\n" +
+        " [0. 1. 0. 0.]\n" +
+        " [0. 0. 1. 0.]\n" +
+        " [0. 0. 0. 1.]]\n")
+
 class TestCircuitDrawerIntegration:
     def test_qubit_circuit_with_variable_names(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names):
         output = parameterized_qubit_qnode.circuit.draw(show_variable_names=True)
@@ -848,23 +884,15 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_parameterized_qubit_circuit_with_values
 
-    def test_wide_circuit(self, parameterized_wide_qubit_circuit):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
+    def test_wide_qubit_circuit_with_variable_names(self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_variable_names):
+        output = parameterized_wide_qubit_qnode.draw(show_variable_names=True)
 
-        dev = qml.device("default.qubit", wires=8)
-        qnode = qml.QNode(parameterized_wide_qubit_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        print(qnode.circuit.draw(show_variable_names=True))
-        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        print(qnode.circuit.draw())
+        assert output == drawn_parameterized_wide_qubit_qnode_with_variable_names
 
-        print(output)
+    def test_wide_qubit_circuit_with_values(self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_values):
+        output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
 
-        file = open("test.txt", "w")
-        print("number of chars written = ", file.buffer.write(output.encode("utf8")))
-        file.close()
-
-        raise Exception()
+        assert output == drawn_parameterized_wide_qubit_qnode_with_values
 
     def test_simple_cv_circuit(self, parameterized_cv_circuit):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
@@ -875,6 +903,12 @@ class TestCircuitDrawerIntegration:
         print(qnode.circuit.draw())
         qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
         print(qnode.circuit.draw())
+
+        print(output)
+
+        file = open("test.txt", "w")
+        print("number of chars written = ", file.buffer.write(output.encode("utf8")))
+        file.close()
 
         raise Exception()
 
