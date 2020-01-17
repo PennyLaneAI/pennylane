@@ -217,12 +217,12 @@ def sum(x):
 
 def _get_dot_func(interface, x=None):
     """Helper function for :func:`~.dot` to determine
-    the correct dot product function depending on the QNodeCluster
+    the correct dot product function depending on the QNodeCollection
     interface.
 
     Args:
         interface (str): the interface to get the dot product function for
-        x (Sequence): A non-QNodeCluster sequence. If it isn't the correct
+        x (Sequence): A non-QNodeCollection sequence. If it isn't the correct
             type for the interface, it is automatically converted.
 
     Returns:

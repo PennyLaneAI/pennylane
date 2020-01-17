@@ -52,7 +52,7 @@ class Hamiltonian:
 
     >>> coeffs = [0.2, -0.543]
     >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
-    >>> H = qml.vqe.Hamiltonian(coeffs, obs)
+    >>> H = qml.Hamiltonian(coeffs, obs)
     >>> print(H)
     (0.2) [X0 Z1] + (-0.543) [Z0 H2]
 
@@ -132,7 +132,7 @@ class VQECost:
     expectation value of a Hamiltonian.
 
     Args:
-        ansatz (callable): the ansatz for the circuit before the final measurement step
+        ansatz (callable): The ansatz for the circuit before the final measurement step
             Note that the ansatz **must** have the following signature:
 
             .. code-block:: python
@@ -145,15 +145,15 @@ class VQECost:
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             cost function should be executed. This can either be a single device, or a list
             of devices of length matching the number of terms in the Hamiltonian.
-        interface (str, None): which interface to use.
+        interface (str, None): Which interface to use.
             This affects the types of objects that can be passed to/returned to the cost function.
             Supports all interfaces supported by the :func:`~.qnode` decorator.
-        diff_method (str, None): the method of differentiation to use with the created cost function.
+        diff_method (str, None): The method of differentiation to use with the created cost function.
             Supports all differentiation methods supported by the :func:`~.qnode` decorator.
 
     Returns:
         callable: a cost function with signature ``cost_fn(params, **kwargs)`` that evaluates
-        the expectation of the Hamiltonian on the provided device(s).
+        the expectation of the Hamiltonian on the provided device(s)
 
     .. seealso:: :class:`~.Hamiltonian`, :func:`~.generate_hamiltonian`, :func:`~.map`, :func:`~.dot`
 
@@ -204,7 +204,7 @@ class VQECost:
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
         self.qnodes = qml.map(ansatz, observables, device, interface=interface, diff_method=diff_method)
-        """QNodeCluster: The QNodes to be evaluated. Each QNode corresponds to the
+        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the
         the expectation value of each observable term after applying the circuit ansatz.
         """
 
