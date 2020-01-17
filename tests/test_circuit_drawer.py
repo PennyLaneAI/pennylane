@@ -875,21 +875,25 @@ def drawn_parameterized_wide_qubit_qnode_with_values():
 
 class TestCircuitDrawerIntegration:
     def test_qubit_circuit_with_variable_names(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names):
+        """Test that a parametrized qubit circuit renders correctly with variable names."""
         output = parameterized_qubit_qnode.circuit.draw(show_variable_names=True)
 
         assert output == drawn_parameterized_qubit_circuit_with_variable_names
 
     def test_qubit_circuit_with_values(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values):
+        """Test that a parametrized qubit circuit renders correctly with values."""
         output = parameterized_qubit_qnode.circuit.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_qubit_circuit_with_values
 
     def test_wide_qubit_circuit_with_variable_names(self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_variable_names):
+        """Test that a wide parametrized qubit circuit renders correctly with variable names."""
         output = parameterized_wide_qubit_qnode.draw(show_variable_names=True)
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_variable_names
 
     def test_wide_qubit_circuit_with_values(self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_values):
+        """Test that a wide parametrized qubit circuit renders correctly with values."""
         output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
