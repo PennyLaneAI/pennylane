@@ -380,6 +380,8 @@ class BaseQNode:
         # generate the DAG
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
 
+        self.circuit_hash = self.circuit.circuit_hash
+
         # check for unused positional params
         if self.properties.get("par_check", False):
             unused = [k for k, v in self.variable_deps.items() if not v]

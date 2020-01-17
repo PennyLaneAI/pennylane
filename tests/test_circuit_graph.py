@@ -20,10 +20,9 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation
+from pennylane.operation import Expectation, Tensor
 from pennylane.circuit_graph import CircuitGraph
-
-
+from pennylane.variable import Variable
 
 @pytest.fixture
 def queue():
@@ -209,3 +208,169 @@ class TestCircuitGraph:
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (4, 5)
         assert set(result[2][3]) == set(circuit.observables[1:])
+
+class TestCircuitGraphHash:
+    """Test the creation of a hash to the CircuitGraph"""
+
+    numeric_queues = [
+                        ([
+                            qml.RX(0.3, wires=[0])
+                        ],
+                         [],
+                        'RX!0.3![0]|||'
+                        ),
+                        ([
+                            qml.RX(0.3, wires=[0]),
+                            qml.RX(0.4, wires=[1]),
+                            qml.RX(0.5, wires=[2]),
+                        ],
+                         [],
+                        'RX!0.3![0]RX!0.4![1]RX!0.5![2]|||'
+                        )
+                     ]
+
+    @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_queues)
+    def test_create_hash_argument_numeric_arguments(self, queue, observable_queue, expected_string):
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+
+        assert circuit_graph_1.create_hash_argument() == circuit_graph_2.create_hash_argument()
+        assert expected_string == circuit_graph_1.create_hash_argument()
+
+
+    variable = Variable(1)
+
+    symbolic_queue = [
+                        ([qml.RX(variable, wires=[0])],
+                         [],
+                        'RX!' + str(variable.idx) + '![0]|||'
+                        ),
+
+                    ]
+
+
+    @pytest.mark.parametrize("queue, observable_queue, expected_string", symbolic_queue)
+    def test_create_hash_argument_symbolic_argument(self, queue, observable_queue, expected_string):
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+
+        assert circuit_graph_1.create_hash_argument() == circuit_graph_2.create_hash_argument()
+        assert expected_string == circuit_graph_1.create_hash_argument()
+
+
+    variable = Variable(1)
+
+    symbolic_queue = [
+                        ([
+                            qml.RX(variable, wires=[0]),
+                            qml.RX(0.3, wires=[1]),
+                            qml.RX(variable, wires=[2])
+                        ],
+                         [],
+                        'RX!' + str(variable.idx) + '![0]RX!0.3![1]RX!' + str(variable.idx) + '![2]|||'
+                        ),
+
+                        ]
+
+
+    @pytest.mark.parametrize("queue, observable_queue, expected_string", symbolic_queue)
+    def test_create_hash_argument_numeric_and_symbolic_argument(self, queue, observable_queue, expected_string):
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+
+        assert circuit_graph_1.create_hash_argument() == circuit_graph_2.create_hash_argument()
+        assert expected_string == circuit_graph_1.create_hash_argument()
+
+    variable = Variable(1)
+
+    many_symbolic_queue = [
+                        ([
+                            qml.RX(variable, wires=[0]),
+                            qml.RX(variable, wires=[1])
+                            ],
+                         [],
+                        'RX!' + str(variable.idx) + '![0]' +
+                        'RX!' + str(variable.idx) + '![1]' +
+                        '|||'
+                        ),
+
+                        ]
+
+    @pytest.mark.parametrize("queue, observable_queue, expected_string", many_symbolic_queue)
+    def test_create_hash_argument_symbolic_argument_multiple_times(self, queue, observable_queue, expected_string):
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+
+        assert circuit_graph_1.create_hash_argument() == circuit_graph_2.create_hash_argument()
+        assert expected_string == circuit_graph_1.create_hash_argument()
+
+    variable1 = Variable(1)
+    variable2 = Variable(2)
+
+    multiple_symbolic_queue = [
+                        ([
+                            qml.RX(variable1, wires=[0]),
+                            qml.RX(variable2, wires=[1])
+                            ],
+                         [],
+                        'RX!' + str(variable1.idx) + '![0]' +
+                        'RX!' + str(variable2.idx) + '![1]' +
+                        '|||'
+                        ),
+                        ]
+
+    @pytest.mark.parametrize("queue, observable_queue, expected_string", multiple_symbolic_queue)
+    def test_create_hash_argument_multiple_symbolic_arguments(self, queue, observable_queue, expected_string):
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+
+        assert circuit_graph_1.create_hash_argument() == circuit_graph_2.create_hash_argument()
+        assert expected_string == circuit_graph_1.create_hash_argument()
+
+
+    observable1 = qml.PauliZ(0)
+    observable1.return_type = not None
+
+    observable2 = qml.Hermitian(np.array([[1, 0],[0, -1]]), wires=[0])
+    observable2.return_type = not None
+
+    observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
+    observable3.return_type = not None
+
+    numeric_observable_queue = [
+                        ([],
+                         [observable1],
+                        '|||PauliZ[0]'
+                        ),
+                        (
+                         [],
+                         [observable2],
+                        '|||Hermitian![[ 1  0]\n [ 0 -1]]![0]'
+                        ),
+                        (
+                         [],
+                         [observable3],
+                        '|||[\'PauliZ\', \'PauliZ\'][[0], [1]]'
+                        )
+
+                     ]
+
+    @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_observable_queue)
+    def test_create_hash_argument_numeric_arguments_observables(self, queue, observable_queue, expected_string):
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+
+        assert circuit_graph_1.create_hash_argument() == circuit_graph_2.create_hash_argument()
+        assert expected_string == circuit_graph_1.create_hash_argument()

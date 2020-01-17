@@ -812,6 +812,35 @@ class TestQNodeEvaluate:
         res = node(0.432, 0.12)
         assert res.shape == (10,)
 
+    @pytest.mark.parametrize(
+        "x,y",
+        zip(np.linspace(-2 * np.pi, 2 * np.pi, 7), np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11),
+    )
+    def test_evaluate_circuit_hash(self, x, y, tol):
+        """Tests that the circuit hash of identical circuits are equal"""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit1(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node1 = BaseQNode(circuit1, dev)
+        node1.evaluate([x, y], {})
+        circuit_hash_1 = node1.circuit.circuit_hash
+
+        def circuit2(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node2 = BaseQNode(circuit2, dev)
+        node2.evaluate([x, y], {})
+        circuit_hash_2 = node2.circuit.circuit_hash
+
+        assert circuit_hash_1 == circuit_hash_2
 
 class TestDecomposition:
     """Test for queue decomposition"""

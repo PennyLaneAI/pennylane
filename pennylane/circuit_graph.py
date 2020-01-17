@@ -117,56 +117,55 @@ class CircuitGraph:
                 # Create an edge between this and the previous operator
                 self._graph.add_edge(wire[i - 1], wire[i])
 
-        self.assign_hash()
-
-    def create_hash(self):
+    def create_hash_argument(self):
         """Create a unique hash based on the operation queue, observables queue and variable
         deps.
         """
         key_to_be_hashed = ''
+
+        delimiter = '!'
+
         for op in self.operations_in_order:
-            key_to_be_hashed += op.name + str(op.wires)
+            key_to_be_hashed += op.name
 
             for param in op.params:
                 if isinstance(param, Variable):
-                    #key_to_be_hashed += str(param.render(show_name_only=False))
-                    print(param.assigned_name)
-                    print(str(param))
-                    key_to_be_hashed += str(param.assigned_name)
+                    key_to_be_hashed += delimiter
+                    key_to_be_hashed += str(param.idx)
+                    key_to_be_hashed += delimiter
+
                 else:
+                    key_to_be_hashed += delimiter
                     key_to_be_hashed += str(param)
-            print(op.params)
+                    key_to_be_hashed += delimiter
+
+            key_to_be_hashed += str(op.wires)
 
         # Adding a distinct separating string that could not occur by any combining the
         # name of the operation and wires
-        key_to_be_hashed += '000'
+        key_to_be_hashed += '|||'
 
         for obs in self.observables_in_order:
-            key_to_be_hashed += obs.name + str(obs.wires) + str(obs.parameters)
-            print(obs.parameters)
+            key_to_be_hashed += str(obs.name)
+            for param in obs.params:
+                if isinstance(param, Variable):
+                    key_to_be_hashed += delimiter
+                    key_to_be_hashed += str(param.idx)
+                    key_to_be_hashed += delimiter
 
-        # Adding a distinct separating string that could not occur by any combining the
-        # name of the operation and wires
-        key_to_be_hashed += '111'
-
-        for (idx, param_deps_list) in self.variable_deps.items():
-            key_to_be_hashed += str(idx)
-            print(param_deps_list)
-            for param_dep in param_deps_list:
-                operator = param_dep[0]
-                print(operator.parameters)
-
-                key_to_be_hashed += str(param_dep[1])
-
-        print(key_to_be_hashed)
-        print(hash(key_to_be_hashed))
-
-    def assign_hash(self):
-
-        current_hash = self.create_hash()
-        # if self.hash is None or :
+                else:
+                    key_to_be_hashed += delimiter
+                    key_to_be_hashed += str(param)
+                    key_to_be_hashed += delimiter
 
 
+            key_to_be_hashed += str(obs.wires)
+
+        return key_to_be_hashed
+
+    @property
+    def circuit_hash(self):
+        return hash(self.create_hash_argument())
 
     @property
     def observables_in_order(self):
