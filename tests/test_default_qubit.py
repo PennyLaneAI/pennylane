@@ -1407,14 +1407,21 @@ class TestTensorExpval:
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply([qml.RX(theta, wires=[0])])
-        dev.apply([qml.RX(phi, wires=[1])])
-        dev.apply([qml.RX(varphi, wires=[2])])
-        dev.apply([qml.CNOT(wires=[0, 1])])
-        dev.apply([qml.CNOT(wires=[1, 2])])
+        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
-        res = dev.expval(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
+        dev.reset()
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
 
@@ -1424,11 +1431,6 @@ class TestTensorExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
-        dev.apply([qml.RX(theta, wires=[0])])
-        dev.apply([qml.RX(phi, wires=[1])])
-        dev.apply([qml.RX(varphi, wires=[2])])
-        dev.apply([qml.CNOT(wires=[0, 1])])
-        dev.apply([qml.CNOT(wires=[1, 2])])
 
         A = np.array(
             [
@@ -1439,7 +1441,20 @@ class TestTensorExpval:
             ]
         )
 
-        res = dev.expval(qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = 0.5 * (
             -6 * np.cos(theta) * (np.cos(varphi) + 1)
@@ -1453,12 +1468,6 @@ class TestTensorExpval:
     def test_hermitian_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply([qml.RX(theta, wires=[0])])
-        dev.apply([qml.RX(phi, wires=[1])])
-        dev.apply([qml.RX(varphi, wires=[2])])
-        dev.apply([qml.CNOT(wires=[0, 1])])
-        dev.apply([qml.CNOT(wires=[1, 2])])
 
         A1 = np.array([[1, 2],
                        [2, 4]])
@@ -1472,7 +1481,20 @@ class TestTensorExpval:
             ]
         )
 
-        res = dev.expval(qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2]))
+        obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = 0.25 * (
             -30
@@ -1495,14 +1517,21 @@ class TestTensorExpval:
     def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit", wires=2)
-        dev.reset()
-        dev.apply([qml.RY(theta, wires=[0])])
-        dev.apply([qml.RY(phi, wires=[1])])
-        dev.apply([qml.CNOT(wires=[0, 1])])
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
-        res = dev.expval(qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1]))
+        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+
+        dev.apply(
+            [
+                qml.RY(theta, wires=[0]),
+                qml.RY(phi, wires=[1]),
+                qml.CNOT(wires=[0, 1])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         a = A[0, 0]
         re_b = A[0, 1].real

@@ -309,10 +309,10 @@ class DefaultQubit(QubitDevice):
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        super().__init__(wires, shots, analytic)
         self.eng = None
         self.analytic = analytic
         self._state = None
+        super().__init__(wires, shots, analytic)
 
     def apply(self, operations, rotations=None):
         rotations = rotations or []
