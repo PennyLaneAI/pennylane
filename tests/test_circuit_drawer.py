@@ -794,4 +794,3 @@ class TestCircuitGraphDrawing:
 
         raise Exception()
 
-# TODO: Change the rendering of kets so that the left bar does not fill the whole line but use a regular bar
