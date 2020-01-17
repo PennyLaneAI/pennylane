@@ -459,7 +459,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
 
 
 def convert_hamiltonian(qubit_hamiltonian):
-    r"""Converts OpenFermion `QubitOperator` Hamiltonian to Pennylane VQE Hamiltonian
+    r"""Converts OpenFermion :class:`~.QubitOperator` Hamiltonian to Pennylane VQE Hamiltonian
 
     **Example usage**
 
