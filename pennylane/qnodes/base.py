@@ -604,5 +604,10 @@ class BaseQNode:
         self._set_variables(args, kwargs)
 
         self.device.reset()
-        ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
+
+        if isinstance(self.device, qml.QubitDevice):
+            circuit_graph = CircuitGraph(self.circuit.operations + obs, self.circuit.variable_deps)
+            ret = self.device.execute(circuit_graph)
+        else:
+            ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret
