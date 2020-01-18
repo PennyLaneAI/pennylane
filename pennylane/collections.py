@@ -160,7 +160,9 @@ def apply(func, qnode_collection):
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
-    return lambda params, **kwargs: func(qnode_collection(params, **kwargs))
+    new_func = lambda params, **kwargs: func(qnode_collection(params, **kwargs))
+    new_func.interface = qnode_collection.interface
+    return new_func
 
 
 def sum(x):
@@ -213,29 +215,49 @@ def sum(x):
     return apply(np.sum, x)
 
 
-def _get_dot_func(interface):
+def _get_dot_func(interface, x=None):
     """Helper function for :func:`~.dot` to determine
     the correct dot product function depending on the QNodeCollection
-    interface"""
+    interface.
+
+    Args:
+        interface (str): the interface to get the dot product function for
+        x (Sequence): A non-QNodeCollection sequence. If it isn't the correct
+            type for the interface, it is automatically converted.
+
+    Returns:
+        tuple[callable, Sequence or torch.Tensor or tf.Variable]: a tuple
+        containing the required dot product function, as well as the
+        (potentially converted) sequence.
+    """
     if interface == "tf":
         import tensorflow as tf
 
-        return lambda a, b: tf.tensordot(a, b, 1)
+        if x is not None and not isinstance(x, (tf.Tensor, tf.Variable)):
+            x = tf.Variable(x, dtype=tf.float64)
+
+        return lambda a, b: tf.tensordot(a, b, 1), x
 
     if interface == "torch":
         import torch
 
-        return torch.matmul
+        if x is not None and not isinstance(x, torch.Tensor):
+            x = torch.tensor(x, dtype=torch.float64)
+
+        return torch.matmul, x
 
     if interface in ("autograd", "numpy"):
         from autograd import numpy as np
 
-        return np.dot
+        if x is not None and not isinstance(x, np.ndarray):
+            x = np.array(x)
+
+        return np.dot, x
 
     if interface is None:
         import numpy as np
 
-        return np.dot
+        return np.dot, x
 
     raise ValueError("Unknown interface {}".format(interface))
 
@@ -290,23 +312,30 @@ def dot(x, y):
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
-    if isinstance(x, QNodeCollection) and isinstance(y, QNodeCollection):
+    if hasattr(x, "interface") and hasattr(y, "interface"):
 
         if x.interface != y.interface:
             raise ValueError("QNodeCollections have non-matching interfaces")
 
-        fn = _get_dot_func(x.interface)
-        return lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
+        interface = x.interface
+        fn, _ = _get_dot_func(interface)
+        func = lambda params, **kwargs: fn(x(params, **kwargs), y(params, **kwargs))
 
-    if isinstance(x, QNodeCollection):
-        fn = _get_dot_func(x.interface)
-        return lambda params, **kwargs: fn(x(params, **kwargs), y)
+    elif hasattr(x, "interface"):
+        interface = x.interface
+        fn, y = _get_dot_func(interface, y)
+        func = lambda params, **kwargs: fn(x(params, **kwargs), y)
 
-    if isinstance(y, QNodeCollection):
-        fn = _get_dot_func(y.interface)
-        return lambda params, **kwargs: fn(x, y(params, **kwargs))
+    elif hasattr(y, "interface"):
+        interface = y.interface
+        fn, x = _get_dot_func(interface, x)
+        func = lambda params, **kwargs: fn(x, y(params, **kwargs))
 
-    raise ValueError("At least one argument must be a QNodeCollection")
+    else:
+        raise ValueError("At least one argument must be a QNodeCollection")
+
+    func.interface = interface
+    return func
 
 
 class QNodeCollection(Sequence):
