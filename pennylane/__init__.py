@@ -60,11 +60,19 @@ plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.pl
 
 # get chemistry plugin
 class NestedAttrError:
-    error_msg = ("PennyLane-QChem not installed. \n\nTo access the qchem "
-                 "module, you can install PennyLane-QChem via pip:"
-                 "\n\npip install pennylane-qchem"
-                 "\n\nFor more details, see the quantum chemistry documentation:"
-                 "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html")
+    """This class mocks out the qchem module in case
+    it is not installed. Any attempt to print an instance
+    of this class, or to access an attribute of this class,
+    results in an import error, directing the user to the installation
+    instructions for PennyLane Qchem"""
+
+    error_msg = (
+        "PennyLane-QChem not installed. \n\nTo access the qchem "
+        "module, you can install PennyLane-QChem via pip:"
+        "\n\npip install pennylane-qchem"
+        "\n\nFor more details, see the quantum chemistry documentation:"
+        "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html"
+    )
 
     def __str__(self):
         raise ImportError(self.error_msg) from None
@@ -73,6 +81,7 @@ class NestedAttrError:
         raise ImportError(self.error_msg) from None
 
     __repr__ = __str__
+
 
 qchem = NestedAttrError()
 
@@ -151,9 +160,8 @@ def device(name, *args, **kwargs):
         # load plugin device
         return plugin_device_class(*args, **options)
 
-    raise DeviceError(
-        "Device does not exist. Make sure the required plugin is installed."
-    )
+    raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
+
 
 def grad(func, argnum):
     """Returns the gradient as a callable function of (functions of) QNodes.
@@ -196,7 +204,9 @@ def jacobian(func, argnum):
     # pylint: disable=no-value-for-parameter
     if isinstance(argnum, int):
         return _jacobian(func, argnum)
-    return lambda *args, **kwargs: numpy.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+    return lambda *args, **kwargs: numpy.stack(
+        [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
+    ).T
 
 
 def version():
