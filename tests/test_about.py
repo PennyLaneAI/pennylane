@@ -63,3 +63,5 @@ def test_qchem_not_installed_error(monkeypatch):
 
         with pytest.raises(ImportError, match="PennyLane-QChem not installed."):
             qml.qchem.generate_hamiltonian()
+
+    importlib.reload(qml)
