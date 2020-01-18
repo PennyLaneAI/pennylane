@@ -14,4 +14,3 @@
 """
 This module contains experimental, contributed, and beta code.
 """
-import pennylane.beta.vqe

@@ -154,13 +154,13 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-We can use :func:`~.vqe.cost` to automatically create the QNodes and define the cost function:
+We can use :class:`~.VQECost` to automatically create the QNodes and define the cost function:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=nr_qubits)
+    dev = qml.device('default.qubit', wires=4)
 
-    def circuit(*params, wires):
+    def circuit(params, wires):
         qml.BasisState(np.array([1, 1, 0, 0]), wires=wires)
         for i in wires:
             qml.Rot(*params[i], wires=i)
@@ -168,9 +168,9 @@ We can use :func:`~.vqe.cost` to automatically create the QNodes and define the 
         qml.CNOT(wires=[2, 0])
         qml.CNOT(wires=[3, 1])
 
-    def cost_fn(params):
-        cost = qml.beta.vqe.cost(params, circuit, hamiltonian, dev, interface="torch")
-        return cost
+    cost = qml.VQECost(circuit, hamiltonian, dev, interface="torch")
+    params = torch.rand([4, 3])
+    cost(params)
 
 The rotation angles can be optimized using the machine learning interface of choice
 until the energy difference between two consecutive iterations has converged to near zero.
