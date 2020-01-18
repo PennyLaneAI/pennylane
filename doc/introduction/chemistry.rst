@@ -83,7 +83,7 @@ coordinates of each atomic species.
 Solving the Hartree-Fock equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`~.meanfield_data` function uses  `OpenFermion-PySCF <https://github
+The :func:`~.meanfield_data` function uses the `OpenFermion-PySCF <https://github
 .com/quantumlib/OpenFermion-PySCF>`_ and `OpenFermion-Psi4 <https://github
 .com/quantumlib/OpenFermion-Psi4>`_ plugins to solve the Hartree-Fock equations for the molecule
 using the electronic structure packages `PySCF <https://github.com/sunqm/pyscf>`_ and `Psi4
@@ -113,7 +113,7 @@ Mapping the Hamiltonian to the Pauli basis
 
 The function :func:`~.active_space` is used to create an `active space <https://en.wikipedia
 .org/wiki/Complete_active_space>`__  by classifying the Hartree-Fock molecular orbitals as doubly-occupied,
-active and external orbitals. Within this approximation, a certain number of *active electrons*
+active, and external orbitals. Within this approximation, a certain number of *active electrons*
 can populate the *active orbitals*.
 
 .. code-block:: python
@@ -154,7 +154,8 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-We can use :class:`~.VQECost` to automatically create the QNodes and define the cost function:
+We can use :class:`~.VQECost` to automatically create the required PennyLane QNodes and define 
+the cost function:
 
 .. code-block:: python
 
