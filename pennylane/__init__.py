@@ -15,7 +15,7 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-from pkg_resources import iter_entry_points
+import pkg_resources
 
 from autograd import numpy
 from autograd import grad as _grad
@@ -56,7 +56,7 @@ default_config = Configuration("config.toml")
 
 
 # get list of installed plugin devices
-plugin_devices = {entry.name: entry for entry in iter_entry_points("pennylane.plugins")}
+plugin_devices = {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
 
 # get chemistry plugin
 class NestedAttrError:
@@ -85,7 +85,7 @@ class NestedAttrError:
 
 qchem = NestedAttrError()
 
-for entry in iter_entry_points("pennylane.qchem"):
+for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
     if entry.name == "OpenFermion":
         qchem = entry.load()
 
