@@ -424,7 +424,7 @@ class RepresentationResolver:
 
             return (" " + self.charset.OTIMES + " ").join(constituent_representations)
 
-        name = op.name        
+        name = op.name
 
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
@@ -693,11 +693,16 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                if len(op.wires) > 1:
+                if isinstance(op, qml.operation.Tensor):
+                    wires = list(qml.utils._flatten(op.wires))
+                else:
+                    wires = op.wires
+
+                if len(wires) > 1:
                     if separate:
                         decoration_layer = [""] * grid.num_wires
 
-                    sorted_wires = op.wires.copy()
+                    sorted_wires = wires.copy()
                     sorted_wires.sort()
 
                     decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
