@@ -38,13 +38,13 @@ info = {
                     'pennylane',
                     'pennylane.beta',
                     'pennylane.beta.plugins',
-                    'pennylane.beta.vqe',
                     'pennylane.interfaces',
                     'pennylane.ops',
                     'pennylane.optimize',
                     'pennylane.plugins',
                     'pennylane.qnodes',
                     'pennylane.templates',
+                    'pennylane.vqe',
                 ],
     'entry_points': {
         'pennylane.plugins': [

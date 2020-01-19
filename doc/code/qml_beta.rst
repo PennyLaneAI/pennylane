@@ -9,7 +9,3 @@ and features.
 .. automodapi:: pennylane.beta.plugins
     :include-all-objects:
     :no-inheritance-diagram:
-
-.. automodapi:: pennylane.beta.vqe
-    :include-all-objects:
-    :no-inheritance-diagram:

@@ -1,9 +1,12 @@
 PennyLane-Qchem
 ===============
 
-PennyLane-Qchem is a Python package that can be used to generate and decompose the
-many-electron Hamiltonian of a molecular system to perform quantum chemistry simulations
-using PennyLane.
+PennyLane-Qchem is a PennyLane package that provides tools to generate and decompose the
+many-electron Hamiltonian of a molecular system. Once generated, the Hamiltonian can
+be used to perform quantum chemistry simulations in PennyLane.
+
+See the `documentation <https://pennylane.readthedocs.io/en/stable/introduction/chemistry.html>`_
+for more details.
 
 Features
 --------
@@ -27,12 +30,47 @@ Features
 Installation
 ------------
 
-PennyLane-Qchem requires Python version 3.5 and above. Installation of PennyLane-Qchem, as well
-as all dependencies, can be done using pip:
+PennyLane-Qchem requires Python version 3.5 and above, and the following dependencies:
+
+* `pySCF <https://sunqm.github.io/pyscf>`__
+  and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.4
+
+* (optional) `Psi4 <http://www.psicode.org/>`__
+  and `OpenFermion-Psi4 <https://github.com/quantumlib/OpenFermion-Psi4>`__ >= 0.4
+
+  The easiest way to install Psi4 is via Ananconda:
+
+  .. code-block:: bash
+
+    conda install psi4 psi4-rt -c psi4
+
+* `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 0.10
+
+* `Open Babel <https://openbabel.org>`__ (optional)
+
+  Open Babel can be installed using ``apt`` if on Ubuntu/Debian:
+
+  .. code-block:: bash
+
+      sudo apt install openbabel
+
+  or using Anaconda:
+
+  .. code-block:: bash
+
+      conda install -c conda-forge openbabel
+
+Once the requirements are installed, PennyLane-Qchem can be installed using pip:
 
 .. code-block:: bash
 
-    $ python -m pip install pennylane-qchem
+    pip install pennylane-qchem
+
+Once installed, it is available via
+
+.. code-block:: python
+
+	from pennylane import qchem
 
 Authors
 -------

@@ -109,7 +109,32 @@ add_module_names = False
 # built documents.
 
 import pennylane
-import pennylane_qchem
+
+try:
+    import pennylane_qchem
+except ImportError:
+    from unittest.mock import MagicMock
+
+    class Mock(MagicMock):
+        __name__ = 'foo'
+        __repr__ = lambda self: __name__
+
+        @classmethod
+        def __getattr__(cls, name):
+            return MagicMock()
+
+    MOCK_MODULES = [
+        'pennylane_qchem',
+        'pennylane_qchem.qchem',
+        ]
+
+    mock_fn = Mock(__name__='foo')
+    mock_fns = {"__all__": list(), "__dir__": list(), "__dict__": dict()}
+
+    mock = Mock(**mock_fns)
+    for mod_name in MOCK_MODULES:
+        sys.modules[mod_name] = mock
+
 # The full version, including alpha/beta/rc tags.
 release = pennylane.__version__
 
