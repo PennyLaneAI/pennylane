@@ -263,6 +263,12 @@ def unicode_representation_resolver():
 
 
 @pytest.fixture
+def ascii_representation_resolver():
+    """An instance of a RepresentationResolver with unicode charset."""
+    return RepresentationResolver(charset=qml.circuit_drawer.AsciiCharSet)
+
+
+@pytest.fixture
 def unicode_representation_resolver_varnames():
     """An instance of a RepresentationResolver with unicode charset and show_variable_names=True."""
     return RepresentationResolver(show_variable_names=True)
@@ -608,6 +614,151 @@ class TestRepresentationResolver:
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
         """Test that an Observable instance with return type is properly resolved."""
         assert unicode_representation_resolver.output_representation(obs, wire) == target
+
+
+    @pytest.mark.parametrize(
+        "obs,wire,target",
+        [
+            (qml.expval(qml.PauliX(wires=[1])), 1, "<X>"),
+            (qml.expval(qml.PauliY(wires=[1])), 1, "<Y>"),
+            (qml.expval(qml.PauliZ(wires=[1])), 1, "<Z>"),
+            (qml.expval(qml.Hadamard(wires=[1])), 1, "<H>"),
+            (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "<H0>"),
+            (qml.expval(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "<H0>"),
+            (qml.expval(qml.NumberOperator(wires=[1])), 1, "<n>"),
+            (qml.expval(qml.X(wires=[1])), 1, "<x>"),
+            (qml.expval(qml.P(wires=[1])), 1, "<p>"),
+            (
+                qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
+                1,
+                "<|4, 5, 7X4, 5, 7|>",
+            ),
+            (
+                qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
+                2,
+                "<1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1>",
+            ),
+            (
+                qml.expval(
+                    qml.PolyXP(
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    )
+                ),
+                1,
+                "<1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0>",
+            ),
+            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "<cos(3.14)x + sin(3.14)p>"),
+            (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
+            (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
+            (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
+            (qml.var(qml.Hadamard(wires=[1])), 1, "Var[H]"),
+            (qml.var(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "Var[H0]"),
+            (qml.var(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "Var[H0]"),
+            (qml.var(qml.NumberOperator(wires=[1])), 1, "Var[n]"),
+            (qml.var(qml.X(wires=[1])), 1, "Var[x]"),
+            (qml.var(qml.P(wires=[1])), 1, "Var[p]"),
+            (
+                qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
+                1,
+                "Var[|4, 5, 7X4, 5, 7|]",
+            ),
+            (
+                qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
+                2,
+                "Var[1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1]",
+            ),
+            (
+                qml.var(
+                    qml.PolyXP(
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    )
+                ),
+                1,
+                "Var[1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0]",
+            ),
+            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
+            (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
+            (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
+            (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
+            (qml.sample(qml.Hadamard(wires=[1])), 1, "Sample[H]"),
+            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2])), 1, "Sample[H0]"),
+            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2])), 2, "Sample[H0]"),
+            (qml.sample(qml.NumberOperator(wires=[1])), 1, "Sample[n]"),
+            (qml.sample(qml.X(wires=[1])), 1, "Sample[x]"),
+            (qml.sample(qml.P(wires=[1])), 1, "Sample[p]"),
+            (
+                qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
+                1,
+                "Sample[|4, 5, 7X4, 5, 7|]",
+            ),
+            (
+                qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
+                2,
+                "Sample[1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1]",
+            ),
+            (
+                qml.sample(
+                    qml.PolyXP(
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    )
+                ),
+                1,
+                "Sample[1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0]",
+            ),
+            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
+            (
+                qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])),
+                1,
+                "<X @ Y @ Z>",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                1,
+                "<|4, 5, 7X4, 5, 7| @ x>",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                2,
+                "<|4, 5, 7X4, 5, 7| @ x>",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                3,
+                "<|4, 5, 7X4, 5, 7| @ x>",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                4,
+                "<|4, 5, 7X4, 5, 7| @ x>",
+            ),
+            (
+                qml.sample(
+                    qml.Hermitian(np.eye(4), wires=[1, 2]) @ qml.Hermitian(np.eye(4), wires=[0, 3])
+                ),
+                0,
+                "Sample[H0 @ H0]",
+            ),
+            (
+                qml.sample(
+                    qml.Hermitian(np.eye(4), wires=[1, 2])
+                    @ qml.Hermitian(2 * np.eye(4), wires=[0, 3])
+                ),
+                0,
+                "Sample[H0 @ H1]",
+            ),
+        ],
+    )
+    def test_output_representation_ascii(self, ascii_representation_resolver, obs, wire, target):
+        """Test that an Observable instance with return type is properly resolved."""
+        assert ascii_representation_resolver.output_representation(obs, wire) == target
 
     def test_element_representation_none(self, unicode_representation_resolver):
         """Test that element_representation properly handles None."""
