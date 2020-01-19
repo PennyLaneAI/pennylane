@@ -118,7 +118,8 @@ class CircuitGraph:
                 self._graph.add_edge(wire[i - 1], wire[i])
 
     def create_hash_argument(self):
-        """Create a unique hash based on the operations and observables in the circuit graph and the index of the variables
+        """Create a unique hash based on the operations and observables
+        in the circuit graph and the index of the variables used by them.
         used by them.
         """
         key_to_be_hashed = ''
