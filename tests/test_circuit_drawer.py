@@ -799,6 +799,39 @@ class TestCircuitDrawer:
 
         assert_nested_lists_equal(representation_grid.raw_grid, target_representation_grid.raw_grid)
 
+    CNOT04 = qml.CNOT(wires=[0, 4])
+    CNOT15 = qml.CNOT(wires=[1, 5])
+    Toffoli236 = qml.Toffoli(wires=[2, 3, 6])
+
+    interlocking_CNOT_grid = to_grid([[CNOT04, CNOT15, Toffoli236]], 7)
+    moved_interlocking_CNOT_grid = to_grid([[Toffoli236], [CNOT15], [CNOT04]], 7)
+
+    SWAP02 = qml.SWAP(wires=[0, 2])
+    SWAP35 = qml.SWAP(wires=[3, 5])
+    SWAP14 = qml.SWAP(wires=[1, 4])
+    SWAP24 = qml.SWAP(wires=[2, 4])
+
+    interlocking_SWAP_grid = to_grid([[SWAP02, SWAP35, SWAP14], [SWAP24]], 6)
+    moved_interlocking_SWAP_grid = to_grid([[SWAP35], [SWAP14], [SWAP02], [SWAP24]], 6)
+
+    @pytest.mark.parametrize(
+        "grid,target_grid",
+        [
+            (interlocking_CNOT_grid, moved_interlocking_CNOT_grid),
+            (interlocking_SWAP_grid, moved_interlocking_SWAP_grid),
+        ],
+    )
+    def test_move_multi_wire_gates(self, dummy_circuit_drawer, grid, target_grid):
+        """Test that decorations are properly resolved."""
+
+        operator_grid = grid.copy()
+        dummy_circuit_drawer.move_multi_wire_gates(operator_grid)
+
+        print(operator_grid)
+        print(target_grid)
+
+        assert_nested_lists_equal(operator_grid.raw_grid, target_grid.raw_grid)
+
 
 @pytest.fixture
 def parameterized_qubit_qnode():
