@@ -200,6 +200,7 @@ class CharSet(abc.ABC):
     VERTICAL_LINE = None
     CROSSED_LINES = None
     PIPE = None
+    OTIMES = None
 
     @staticmethod
     def to_superscript(num):
@@ -224,6 +225,7 @@ class UnicodeCharSet(CharSet):
     VERTICAL_LINE = "│"
     CROSSED_LINES = "╳"
     PIPE = "|"
+    OTIMES = "⊗"
 
     @staticmethod
     def to_superscript(num):
@@ -283,6 +285,7 @@ class AsciiCharSet(CharSet):
     VERTICAL_LINE = "|"
     CROSSED_LINES = "X"
     PIPE = "|"
+    OTIMES = "@"
 
     @staticmethod
     def to_superscript(num):
@@ -428,6 +431,11 @@ class RepresentationResolver:
 
         if op.num_params == 0:
             return name
+
+        if isinstance(op, qml.operation.Tensor):
+            constituent_representations = [self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs]
+
+            return (" " +  self.charset.OTIMES + " ").join(constituent_representations)
 
         if op.name == "QubitUnitary":
             mat = op.params[0]
