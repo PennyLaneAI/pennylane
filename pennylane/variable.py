@@ -172,12 +172,6 @@ class Variable:
             ):
                 return str(round(self.val, 3))
 
-        if self.name is None:
-            if self.mult != 1:
-                return "{}*#{}".format(str(round(self.mult, 3)), self.idx)
-
-            return "#{}".format(self.idx)
-
         if self.mult != 1:
             return "{}*{}".format(str(round(self.mult, 3)), self.name)
 
