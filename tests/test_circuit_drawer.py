@@ -745,6 +745,14 @@ class TestRepresentationResolver:
         assert unicode_representation_resolver.output_representation(obs, wire) == target
 
 
+    def test_fallback_output_representation_unicode(self, unicode_representation_resolver):
+        """Test that an Observable instance with return type is properly resolved."""
+        obs = qml.PauliZ(0)
+        obs.return_type = "TestReturnType"
+
+        assert unicode_representation_resolver.output_representation(obs, 0) == "TestReturnType[Z]"
+
+
     @pytest.mark.parametrize(
         "obs,wire,target",
         [
