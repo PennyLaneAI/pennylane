@@ -631,10 +631,10 @@ def _remove_duplicates(input_list):
     """Remove duplicate entries from a list.
 
     This operation preserves the order of the list's elements.
-    
+
     Args:
         input_list (list[Hashable]): The list whose duplicate entries shall be removed
-    
+
     Returns:
         list[Hashable]: The input list without duplicate entries
     """

@@ -70,6 +70,7 @@ class TestFunctions:
         ],
     )
     def test_remove_duplicates(self, input, expected_output):
+        """Test the function _remove_duplicates."""
         assert _remove_duplicates(input) == expected_output
 
 
@@ -257,22 +258,26 @@ class TestGrid:
 
 @pytest.fixture
 def unicode_representation_resolver():
+    """An instance of a RepresentationResolver with unicode charset."""
     return RepresentationResolver()
 
 
 @pytest.fixture
 def unicode_representation_resolver_varnames():
+    """An instance of a RepresentationResolver with unicode charset and show_variable_names=True."""
     return RepresentationResolver(show_variable_names=True)
 
 
 @pytest.fixture
 def variable(monkeypatch):
+    """A mocked Variable instance for a non-keyword variable."""
     monkeypatch.setattr(Variable, "free_param_values", [0, 1, 2, 3])
     yield Variable(2, "test")
 
 
 @pytest.fixture
 def kwarg_variable(monkeypatch):
+    """A mocked Variable instance for a keyword variable."""
     monkeypatch.setattr(Variable, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
     yield Variable(1, "kwarg_test", True)
 
@@ -653,58 +658,12 @@ dummy_raw_operation_grid = [
     [op_Z3, op_SWAP03, None, None],
 ]
 
-
-@pytest.fixture
-def dummy_operation_grid():
-    return Grid(dummy_raw_operation_grid.copy())
-
-
-dummy_raw_moved_operation_grid = [
-    [None, None, op_SWAP03, op_X0, op_CRX20],
-    [op_CNOT21, op_SWAP12, None, None, None],
-    [op_CNOT21, op_SWAP12, None, None, op_CRX20],
-    [op_Z3, None, op_SWAP03, None, None],
-]
-
-
-@pytest.fixture
-def dummy_moved_operation_grid():
-    return Grid(dummy_raw_moved_operation_grid.copy())
-
-
-dummy_raw_representation_grid = [
-    ["", "SWAP", "X", "RX(2.3)"],
-    ["X", "SWAP", "", ""],
-    ["C", "SWAP", "", "C"],
-    ["Z", "SWAP", "", ""],
-]
-
-
-@pytest.fixture
-def dummy_representation_grid():
-    return Grid(dummy_raw_representation_grid.copy())
-
-
-dummy_raw_moved_representation_grid = [
-    ["", "", "SWAP", "X", "RX(2.3)"],
-    ["X", "SWAP", "", "", ""],
-    ["C", "SWAP", "", "", "C"],
-    ["Z", "", "SWAP", "", ""],
-]
-
-
-@pytest.fixture
-def dummy_moved_representation_grid():
-    return Grid(dummy_raw_moved_representation_grid.copy())
-
-
 dummy_raw_observable_grid = [
     [qml.sample(qml.Hermitian(2 * np.eye(2), wires=[0]))],
     [None],
     [qml.expval(qml.PauliY(wires=[2]))],
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
-
 
 @pytest.fixture
 def dummy_circuit_drawer():
