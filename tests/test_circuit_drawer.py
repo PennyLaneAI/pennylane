@@ -667,6 +667,7 @@ dummy_raw_observable_grid = [
 
 @pytest.fixture
 def dummy_circuit_drawer():
+    """A dummy CircuitDrawer instance."""
     return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
 
 
@@ -683,11 +684,26 @@ def flatten(list_of_lists):
 
 
 def assert_nested_lists_equal(list1, list2):
+    """Assert that two nested lists are equal.
+
+    Args:
+        list1 (list[list[Any]]): The first list to be compared
+        list2 (list[list[Any]]): The second list to be compared
+    """
     for (obj1, obj2) in zip(flatten(list1), flatten(list2)):
         assert obj1 == obj2
 
 
 def to_layer(operation_list, num_wires):
+    """Convert the given list of operations to a layer.
+
+    Args:
+        operation_list (list[~.Operation]): List of Operations in the layer
+        num_wires (int): Number of wires in the system
+
+    Returns:
+        list[Union[~.Operation,None]]: The corresponding layer
+    """
     layer = [None] * num_wires
 
     for op in operation_list:
@@ -698,6 +714,15 @@ def to_layer(operation_list, num_wires):
 
 
 def to_grid(layer_list, num_wires):
+    """Convert the given list of operations per layer to a Grid.
+
+    Args:
+        layer_list (list[list[~.Operation]]): List of layers in terms of Operations
+        num_wires (int): Number of wires in the system
+
+    Returns:
+        ~.Grid: The corresponding Operation grid
+    """
     grid = Grid(_transpose([to_layer(layer_list[0], num_wires)]))
 
     for i in range(1, len(layer_list)):

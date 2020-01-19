@@ -677,7 +677,7 @@ class CircuitDrawer:
                 which the decorations will be inserted
             separate (bool): Insert decorations into separate layers
 
-        Returns:        
+        Returns:
             list[int]: List with indices of inserted decoration layers
         """
         j = 0
@@ -739,7 +739,7 @@ class CircuitDrawer:
         skip_prepend_idx,
     ):
         """Pads the given representation so that all layers have equal width.
-        
+
         Args:
             representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
             pad_str (str): String that shall be used for padding
@@ -776,7 +776,7 @@ class CircuitDrawer:
         skip_indices,
     ):
         """Pads the given representation so that width inside layers is constant.
-        
+
         Args:
             representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
             pad_str (str): String that shall be used for padding
@@ -790,7 +790,7 @@ class CircuitDrawer:
 
             if i in skip_indices:
                 continue
-            
+
             representation_grid.replace_layer(
                 i,
                 list(
@@ -952,4 +952,3 @@ class CircuitDrawer:
                 rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
 
         return rendered_string
-
