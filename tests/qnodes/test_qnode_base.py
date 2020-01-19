@@ -1078,6 +1078,12 @@ class TestQNodeVariableMap:
         for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
             assert var == expected
 
-        
 
-        
+class TestQNodeDraw:
+    """Test functionality related to draw."""
+
+    def test_unknown_charset_error(self, mock_qnode):
+        """Test that an error is raised for an unsupported charset."""
+
+        with pytest.raises(ValueError, match="Charset does_not_exist is not supported"):
+            mock_qnode.draw(charset="does_not_exist")
