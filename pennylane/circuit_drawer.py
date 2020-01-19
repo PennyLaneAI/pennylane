@@ -572,12 +572,9 @@ class RepresentationResolver:
         }:
             param_strings = []
             for param in op.params:
-                if isinstance(param, np.ndarray):
-                    idx = RepresentationResolver.index_of_array_or_append(param, self.matrix_cache)
+                idx = RepresentationResolver.index_of_array_or_append(param, self.matrix_cache)
 
-                    param_strings.append("M{}".format(idx))
-                else:
-                    param_strings.append(self.single_parameter_representation(param))
+                param_strings.append("M{}".format(idx))
 
             return "{}({})".format(name, ", ".join(param_strings))
 
