@@ -795,9 +795,6 @@ class CircuitDrawer:
 
                     blocked_wires = list(range(sorted_wires[0], sorted_wires[-1] + 1))
 
-                    if not blocked_wires:
-                        continue
-
                     for k in range(j + 1, len(layer_ops)):
                         other_op = layer_ops[k]
 
