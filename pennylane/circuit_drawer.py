@@ -762,7 +762,7 @@ class CircuitDrawer:
         suffix_str,
         skip_indices,
     ):
-        """Pads the given representation so that all layers have equal width.
+        """Pads the given representation so that width inside layers is constant.
         
         Args:
             representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
