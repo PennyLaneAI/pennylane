@@ -550,6 +550,13 @@ class TestRepresentationResolver:
                 "Sample[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]",
             ),
             (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
+            (qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])), 1, "⟨X ⊗ Y ⊗ Z⟩"),
+            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 1, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
+            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 2, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
+            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 3, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
+            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 4, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
+            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2]) @ qml.Hermitian(np.eye(4), wires=[0, 3])), 0, "Sample[H0 ⊗ H0]"),
+            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2]) @ qml.Hermitian(2 * np.eye(4), wires=[0, 3])), 0, "Sample[H0 ⊗ H1]"),
         ],
     )
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):

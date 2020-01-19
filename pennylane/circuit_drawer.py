@@ -419,7 +419,12 @@ class RepresentationResolver:
         Returns:
             str: String representation of the Operator
         """
-        name = op.name
+        if isinstance(op, qml.operation.Tensor):
+            constituent_representations = [self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs]
+
+            return (" " + self.charset.OTIMES + " ").join(constituent_representations)
+
+        name = op.name        
 
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
@@ -431,11 +436,6 @@ class RepresentationResolver:
 
         if op.num_params == 0:
             return name
-
-        if isinstance(op, qml.operation.Tensor):
-            constituent_representations = [self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs]
-
-            return (" " +  self.charset.OTIMES + " ").join(constituent_representations)
 
         if op.name == "QubitUnitary":
             mat = op.params[0]
