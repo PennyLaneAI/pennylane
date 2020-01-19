@@ -671,18 +671,6 @@ def dummy_circuit_drawer():
     return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
 
 
-def flatten(list_of_lists):
-    """Transforms a 2D list to a 1D list
-
-    Args:
-        list_of_lists (Iterable[Iterable[Any]]): The 2D list
-
-    Returns:
-        Iterable[Any]: The flattened list
-    """
-    return itertools.chain.from_iterable(list_of_lists)
-
-
 def assert_nested_lists_equal(list1, list2):
     """Assert that two nested lists are equal.
 
@@ -690,7 +678,8 @@ def assert_nested_lists_equal(list1, list2):
         list1 (list[list[Any]]): The first list to be compared
         list2 (list[list[Any]]): The second list to be compared
     """
-    for (obj1, obj2) in zip(flatten(list1), flatten(list2)):
+    # pylint: disable=protected-access
+    for (obj1, obj2) in zip(qml.utils._flatten(list1), qml.utils._flatten(list2)):
         assert obj1 == obj2
 
 

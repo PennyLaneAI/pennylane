@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 
+# pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements
 
 def _transpose(target_list):
     """Transpose the given list of lists.
@@ -607,6 +608,9 @@ class RepresentationResolver:
         if obs.return_type == qml.operation.Sample:
             return "Sample[{}]".format(self.operator_representation(obs, wire))
 
+        # Unknown return_type
+        return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))
+
     def element_representation(self, element, wire):
         """Resolve the representation of an element in the circuit's Grid.
 
@@ -619,12 +623,12 @@ class RepresentationResolver:
         """
         if element is None:
             return ""
-        elif isinstance(element, str):
+        if isinstance(element, str):
             return element
-        elif isinstance(element, qml.operation.Observable) and element.return_type is not None:
+        if isinstance(element, qml.operation.Observable) and element.return_type is not None:
             return self.output_representation(element, wire)
-        else:
-            return self.operator_representation(element, wire)
+
+        return self.operator_representation(element, wire)
 
 
 def _remove_duplicates(input_list):
@@ -694,6 +698,7 @@ class CircuitDrawer:
                     continue
 
                 if isinstance(op, qml.operation.Tensor):
+                    # pylint: disable=protected-access
                     wires = list(qml.utils._flatten(op.wires))
                 else:
                     wires = op.wires
@@ -729,46 +734,8 @@ class CircuitDrawer:
 
         return inserted_indices
 
-    def pad_representation2(
-        self,
-        representation_grid,
-        pad_str,
-        skip_prepend_pad_str,
-        prepend_str,
-        suffix_str,
-        skip_prepend_idx,
-    ):
-        """Pads the given representation so that all layers have equal width.
-
-        Args:
-            representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
-            pad_str (str): String that shall be used for padding
-            skip_prepend_pad_str (str): String that will used for padding if prepending is skipped
-            prepend_str (str): String that is prepended to all representations that are not skipped
-            suffix_str (str): String that is appended to all representations
-            skip_prepend_idx (list[int]): List of layer indices for which prepending is skipped
-        """
-        for i in range(representation_grid.num_layers):
-            layer = representation_grid.layer(i)
-            max_width = max(map(len, layer))
-
-            if i in skip_prepend_idx:
-                representation_grid.replace_layer(
-                    i, list(map(lambda x: str.ljust(x, max_width, skip_prepend_pad_str), layer,)),
-                )
-            else:
-                representation_grid.replace_layer(
-                    i,
-                    list(
-                        map(
-                            lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str,
-                            layer,
-                        )
-                    ),
-                )
-
+    @staticmethod
     def pad_representation(
-        self,
         representation_grid,
         pad_str,
         prepend_str,
@@ -791,6 +758,7 @@ class CircuitDrawer:
             if i in skip_indices:
                 continue
 
+            # pylint: disable=cell-var-from-loop
             representation_grid.replace_layer(
                 i,
                 list(
@@ -801,7 +769,8 @@ class CircuitDrawer:
                 ),
             )
 
-    def move_multi_wire_gates(self, operator_grid):
+    @staticmethod
+    def move_multi_wire_gates(operator_grid):
         """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
 
         Args:
@@ -875,7 +844,7 @@ class CircuitDrawer:
         self.operation_decoration_indices = []
         self.observable_decoration_indices = []
 
-        self.move_multi_wire_gates(self.operation_grid)
+        CircuitDrawer.move_multi_wire_gates(self.operation_grid)
 
         # Resolve operator names
         self.resolve_representation(self.operation_grid, self.operation_representation_grid)
@@ -889,7 +858,7 @@ class CircuitDrawer:
             self.observable_grid, self.observable_representation_grid, True,
         )
 
-        self.pad_representation(
+        CircuitDrawer.pad_representation(
             self.operation_representation_grid,
             charset.WIRE,
             "",
@@ -897,7 +866,7 @@ class CircuitDrawer:
             self.operation_decoration_indices,
         )
 
-        self.pad_representation(
+        CircuitDrawer.pad_representation(
             self.operation_representation_grid,
             charset.WIRE,
             "",
@@ -905,7 +874,7 @@ class CircuitDrawer:
             set(range(self.operation_grid.num_layers)) - set(self.operation_decoration_indices),
         )
 
-        self.pad_representation(
+        CircuitDrawer.pad_representation(
             self.observable_representation_grid,
             " ",
             charset.MEASUREMENT + " ",
@@ -913,7 +882,7 @@ class CircuitDrawer:
             self.observable_decoration_indices,
         )
 
-        self.pad_representation(
+        CircuitDrawer.pad_representation(
             self.observable_representation_grid,
             charset.WIRE,
             "",
