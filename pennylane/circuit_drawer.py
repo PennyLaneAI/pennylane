@@ -274,7 +274,7 @@ class AsciiCharSet(CharSet):
     # pylint: disable=too-few-public-methods
 
     WIRE = "-"
-    MEASUREMENT = "-|"
+    MEASUREMENT = "|"
     TOP_MULTI_LINE_GATE_CONNECTOR = "+"
     MIDDLE_MULTI_LINE_GATE_CONNECTOR = "+"
     BOTTOM_MULTI_LINE_GATE_CONNECTOR = "+"

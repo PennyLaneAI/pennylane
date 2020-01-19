@@ -1247,6 +1247,11 @@ class TestCircuitDrawerIntegration:
             + " 1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩ \n"
         )
 
+        assert qfunc.draw(charset="ascii") == (
+            " 0: --H--+C----------------------------+C---------+| <Z @ Z> \n"
+            + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
+        )
+
         assert qfunc.draw(show_variable_names=True) == (
             " 0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"
             + " 1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩ \n"
