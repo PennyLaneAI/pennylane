@@ -21,9 +21,14 @@ import numpy as np
 from unittest.mock import Mock
 
 import pennylane as qml
-from pennylane.circuit_drawer import _remove_duplicates, _transpose, Grid, RepresentationResolver, CircuitDrawer
+from pennylane.circuit_drawer import (
+    _remove_duplicates,
+    _transpose,
+    Grid,
+    RepresentationResolver,
+    CircuitDrawer,
+)
 from pennylane.variable import Variable
-
 
 
 class TestFunctions:
@@ -56,14 +61,16 @@ class TestFunctions:
         """Test that transpose transposes a list of list."""
         assert _transpose(_transpose(input)) == input
 
-    @pytest.mark.parametrize("input,expected_output", [
-        ([1, 1, 1, 2, 2, 2, 3, 2, 3], [1, 2, 3]),
-        (["a", "b", "c", "c", "a", "d"], ["a", "b", "c", "d"]),
-        ([1, 2, 3, 4], [1, 2, 3, 4])
-    ])
+    @pytest.mark.parametrize(
+        "input,expected_output",
+        [
+            ([1, 1, 1, 2, 2, 2, 3, 2, 3], [1, 2, 3]),
+            (["a", "b", "c", "c", "a", "d"], ["a", "b", "c", "d"]),
+            ([1, 2, 3, 4], [1, 2, 3, 4]),
+        ],
+    )
     def test_remove_duplicates(self, input, expected_output):
         assert _remove_duplicates(input) == expected_output
-
 
 
 class TestGrid:
@@ -598,9 +605,11 @@ dummy_raw_operation_grid = [
     [op_Z3, op_SWAP03, None, None],
 ]
 
+
 @pytest.fixture
 def dummy_operation_grid():
     return Grid(dummy_raw_operation_grid.copy())
+
 
 dummy_raw_moved_operation_grid = [
     [None, None, op_SWAP03, op_X0, op_CRX20],
@@ -609,9 +618,11 @@ dummy_raw_moved_operation_grid = [
     [op_Z3, None, op_SWAP03, None, None],
 ]
 
+
 @pytest.fixture
 def dummy_moved_operation_grid():
     return Grid(dummy_raw_moved_operation_grid.copy())
+
 
 dummy_raw_representation_grid = [
     ["", "SWAP", "X", "RX(2.3)"],
@@ -620,9 +631,11 @@ dummy_raw_representation_grid = [
     ["Z", "SWAP", "", ""],
 ]
 
+
 @pytest.fixture
 def dummy_representation_grid():
     return Grid(dummy_raw_representation_grid.copy())
+
 
 dummy_raw_moved_representation_grid = [
     ["", "", "SWAP", "X", "RX(2.3)"],
@@ -631,9 +644,11 @@ dummy_raw_moved_representation_grid = [
     ["Z", "", "SWAP", "", ""],
 ]
 
+
 @pytest.fixture
 def dummy_moved_representation_grid():
     return Grid(dummy_raw_moved_representation_grid.copy())
+
 
 dummy_raw_observable_grid = [
     [qml.sample(qml.Hermitian(2 * np.eye(2), wires=[0]))],
@@ -642,9 +657,11 @@ dummy_raw_observable_grid = [
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
 
+
 @pytest.fixture
 def dummy_circuit_drawer():
     return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
+
 
 def flatten(list_of_lists):
     """Transforms a 2D list to a 1D list
@@ -657,9 +674,11 @@ def flatten(list_of_lists):
     """
     return itertools.chain.from_iterable(list_of_lists)
 
+
 def assert_nested_lists_equal(list1, list2):
     for (obj1, obj2) in zip(flatten(list1), flatten(list2)):
         assert obj1 == obj2
+
 
 def to_layer(operation_list, num_wires):
     layer = [None] * num_wires
@@ -670,6 +689,7 @@ def to_layer(operation_list, num_wires):
 
     return layer
 
+
 def to_grid(layer_list, num_wires):
     grid = Grid(_transpose([to_layer(layer_list[0], num_wires)]))
 
@@ -678,28 +698,33 @@ def to_grid(layer_list, num_wires):
 
     return grid
 
+
 class TestCircuitDrawer:
     """Test the CircuitDrawer class."""
 
     def test_resolve_representation(self, dummy_circuit_drawer):
         """Test that resolve_representation calls the representation resolver with the proper arguments."""
 
-        dummy_circuit_drawer.representation_resolver.element_representation = Mock(return_value="Test")
-
-        dummy_circuit_drawer.resolve_representation(
-            Grid(dummy_raw_operation_grid), Grid()
+        dummy_circuit_drawer.representation_resolver.element_representation = Mock(
+            return_value="Test"
         )
 
-        args_tuples = [call[0] for call in dummy_circuit_drawer.representation_resolver.element_representation.call_args_list]
+        dummy_circuit_drawer.resolve_representation(Grid(dummy_raw_operation_grid), Grid())
+
+        args_tuples = [
+            call[0]
+            for call in dummy_circuit_drawer.representation_resolver.element_representation.call_args_list
+        ]
 
         for idx, wire in enumerate(dummy_raw_operation_grid):
             for op in wire:
                 assert (op, idx) in args_tuples
-     
+
 
 @pytest.fixture
 def parameterized_qubit_qnode():
     """A parametrized qubit ciruit."""
+
     def qfunc(a, b, c, angles):
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
@@ -741,43 +766,51 @@ def parameterized_qubit_qnode():
 
     return qnode
 
+
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_variable_names():
     """The rendered circuit representation of the above qubit circuit with variable names."""
-    return (" 0: ──RX(a)───────────────────────╭C────RX(angles[0])───────────────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP───╭SWAP───┤ ⟨Y⟩       \n" +
-            " 1: ──RX(b)────────Z──────────────╰X───╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│───────├SWAP───┤ Var[H]    \n" +
-            " 2: ──RY(1.889*c)──RX(angles[2])───U0──│────────────────────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP───│───────┤ Sample[X] \n" +
-            " 3: ───────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────────────────────────────╰X───────RZ(b)──│──────╭┤ ⟨H0⟩      \n" +
-            " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n" +
-            "U0 =\n" +
-            "[[1. 0.]\n" +
-            " [0. 1.]]\n" +
-            "H0 =\n" +
-            "[[1. 0. 0. 0.]\n" +
-            " [0. 1. 0. 0.]\n" +
-            " [0. 0. 1. 0.]\n" +
-            " [0. 0. 0. 1.]]\n")
+    return (
+        " 0: ──RX(a)───────────────────────╭C────RX(angles[0])───────────────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP───╭SWAP───┤ ⟨Y⟩       \n"
+        + " 1: ──RX(b)────────Z──────────────╰X───╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│───────├SWAP───┤ Var[H]    \n"
+        + " 2: ──RY(1.889*c)──RX(angles[2])───U0──│────────────────────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP───│───────┤ Sample[X] \n"
+        + " 3: ───────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────────────────────────────╰X───────RZ(b)──│──────╭┤ ⟨H0⟩      \n"
+        + " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
+        + "U0 =\n"
+        + "[[1. 0.]\n"
+        + " [0. 1.]]\n"
+        + "H0 =\n"
+        + "[[1. 0. 0. 0.]\n"
+        + " [0. 1. 0. 0.]\n"
+        + " [0. 0. 1. 0.]\n"
+        + " [0. 0. 0. 1.]]\n"
+    )
+
 
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_values():
     """The rendered circuit representation of the above qubit circuit with variable values."""
-    return (" 0: ──RX(0.1)─────────────╭C────RX(0.4)───────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP─────╭SWAP───┤ ⟨Y⟩       \n" +
-            " 1: ──RX(0.2)────Z────────╰X───╭RY(0.2)──RX(2.0)──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n" +
-            " 2: ──RY(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n" +
-            " 3: ───────────────────────────╰C────────RZ(0.2)──╰C────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n" +
-            " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n" +
-            "U0 =\n" +
-            "[[1. 0.]\n" +
-            " [0. 1.]]\n" +
-            "H0 =\n" +
-            "[[1. 0. 0. 0.]\n" +
-            " [0. 1. 0. 0.]\n" +
-            " [0. 0. 1. 0.]\n" +
-            " [0. 0. 0. 1.]]\n")
+    return (
+        " 0: ──RX(0.1)─────────────╭C────RX(0.4)───────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP─────╭SWAP───┤ ⟨Y⟩       \n"
+        + " 1: ──RX(0.2)────Z────────╰X───╭RY(0.2)──RX(2.0)──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n"
+        + " 2: ──RY(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n"
+        + " 3: ───────────────────────────╰C────────RZ(0.2)──╰C────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n"
+        + " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
+        + "U0 =\n"
+        + "[[1. 0.]\n"
+        + " [0. 1.]]\n"
+        + "H0 =\n"
+        + "[[1. 0. 0. 0.]\n"
+        + " [0. 1. 0. 0.]\n"
+        + " [0. 0. 1. 0.]\n"
+        + " [0. 0. 0. 1.]]\n"
+    )
+
 
 @pytest.fixture
 def parameterized_wide_qubit_qnode():
     """A wide parametrized qubit circuit."""
+
     def qfunc(a, b, c, d, e, f):
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
@@ -797,46 +830,51 @@ def parameterized_wide_qubit_qnode():
 
     return qnode
 
+
 @pytest.fixture
 def drawn_parameterized_wide_qubit_qnode_with_variable_names():
     """The rendered circuit representation of the above wide qubit circuit with variable names."""
     return (
-        " 0: ───RX(a)──╭C─────────────╭C──Y─────────────────╭SWAP───RX(a)──╭───┤ ⟨H0⟩ \n" +
-        " 1: ───RX(b)──╰X─────────╭C──│──────╭SWAP───RX(b)──│──────────────│╭──┤ ⟨H0⟩ \n" +
-        " 2: ──╭C──────────╭C──Y──│───│──────│──────────────├C─────╭SWAP───││╭─┤ ⟨H0⟩ \n" +
-        " 3: ──╰X──────╭C──│──────│───│──────├C─────╭SWAP───│──────│───────│││╭┤ ⟨H0⟩ \n" +
-        " 4: ──╭C──────│───│──────│───╰X──Y──│──────│───────╰SWAP──├C──────╰│││┤ ⟨H0⟩ \n" +
-        " 5: ──╰X──────│───│──────╰X─────────╰SWAP──├C─────────────│────────╰││┤ ⟨H0⟩ \n" +
-        " 6: ──╭C──────│───╰X──Y────────────────────│──────────────╰SWAP─────╰│┤ ⟨H0⟩ \n" +
-        " 7: ──╰X──────╰X───────────────────────────╰SWAP─────────────────────╰┤ ⟨H0⟩ \n" +
-        "H0 =\n" +
-        "[[1. 0. 0. 0.]\n" +
-        " [0. 1. 0. 0.]\n" +
-        " [0. 0. 1. 0.]\n" +
-        " [0. 0. 0. 1.]]\n")
+        " 0: ───RX(a)──╭C─────────────╭C──Y─────────────────╭SWAP───RX(a)──╭───┤ ⟨H0⟩ \n"
+        + " 1: ───RX(b)──╰X─────────╭C──│──────╭SWAP───RX(b)──│──────────────│╭──┤ ⟨H0⟩ \n"
+        + " 2: ──╭C──────────╭C──Y──│───│──────│──────────────├C─────╭SWAP───││╭─┤ ⟨H0⟩ \n"
+        + " 3: ──╰X──────╭C──│──────│───│──────├C─────╭SWAP───│──────│───────│││╭┤ ⟨H0⟩ \n"
+        + " 4: ──╭C──────│───│──────│───╰X──Y──│──────│───────╰SWAP──├C──────╰│││┤ ⟨H0⟩ \n"
+        + " 5: ──╰X──────│───│──────╰X─────────╰SWAP──├C─────────────│────────╰││┤ ⟨H0⟩ \n"
+        + " 6: ──╭C──────│───╰X──Y────────────────────│──────────────╰SWAP─────╰│┤ ⟨H0⟩ \n"
+        + " 7: ──╰X──────╰X───────────────────────────╰SWAP─────────────────────╰┤ ⟨H0⟩ \n"
+        + "H0 =\n"
+        + "[[1. 0. 0. 0.]\n"
+        + " [0. 1. 0. 0.]\n"
+        + " [0. 0. 1. 0.]\n"
+        + " [0. 0. 0. 1.]]\n"
+    )
+
 
 @pytest.fixture
 def drawn_parameterized_wide_qubit_qnode_with_values():
     """The rendered circuit representation of the above wide qubit circuit with variable values."""
     return (
-        " 0: ───RX(0.1)──╭C─────────────╭C──Y───────────────────╭SWAP───RX(0.1)──╭───┤ ⟨H0⟩ \n" +
-        " 1: ───RX(0.2)──╰X─────────╭C──│──────╭SWAP───RX(0.2)──│────────────────│╭──┤ ⟨H0⟩ \n" +
-        " 2: ──╭C────────────╭C──Y──│───│──────│────────────────├C─────╭SWAP─────││╭─┤ ⟨H0⟩ \n" +
-        " 3: ──╰X────────╭C──│──────│───│──────├C─────╭SWAP─────│──────│─────────│││╭┤ ⟨H0⟩ \n" +
-        " 4: ──╭C────────│───│──────│───╰X──Y──│──────│─────────╰SWAP──├C────────╰│││┤ ⟨H0⟩ \n" +
-        " 5: ──╰X────────│───│──────╰X─────────╰SWAP──├C───────────────│──────────╰││┤ ⟨H0⟩ \n" +
-        " 6: ──╭C────────│───╰X──Y────────────────────│────────────────╰SWAP───────╰│┤ ⟨H0⟩ \n" +
-        " 7: ──╰X────────╰X───────────────────────────╰SWAP─────────────────────────╰┤ ⟨H0⟩ \n" +
-        "H0 =\n" +
-        "[[1. 0. 0. 0.]\n" +
-        " [0. 1. 0. 0.]\n" +
-        " [0. 0. 1. 0.]\n" +
-        " [0. 0. 0. 1.]]\n")
+        " 0: ───RX(0.1)──╭C─────────────╭C──Y───────────────────╭SWAP───RX(0.1)──╭───┤ ⟨H0⟩ \n"
+        + " 1: ───RX(0.2)──╰X─────────╭C──│──────╭SWAP───RX(0.2)──│────────────────│╭──┤ ⟨H0⟩ \n"
+        + " 2: ──╭C────────────╭C──Y──│───│──────│────────────────├C─────╭SWAP─────││╭─┤ ⟨H0⟩ \n"
+        + " 3: ──╰X────────╭C──│──────│───│──────├C─────╭SWAP─────│──────│─────────│││╭┤ ⟨H0⟩ \n"
+        + " 4: ──╭C────────│───│──────│───╰X──Y──│──────│─────────╰SWAP──├C────────╰│││┤ ⟨H0⟩ \n"
+        + " 5: ──╰X────────│───│──────╰X─────────╰SWAP──├C───────────────│──────────╰││┤ ⟨H0⟩ \n"
+        + " 6: ──╭C────────│───╰X──Y────────────────────│────────────────╰SWAP───────╰│┤ ⟨H0⟩ \n"
+        + " 7: ──╰X────────╰X───────────────────────────╰SWAP─────────────────────────╰┤ ⟨H0⟩ \n"
+        + "H0 =\n"
+        + "[[1. 0. 0. 0.]\n"
+        + " [0. 1. 0. 0.]\n"
+        + " [0. 0. 1. 0.]\n"
+        + " [0. 0. 0. 1.]]\n"
+    )
 
 
 @pytest.fixture
 def wide_cv_qnode():
     """A wide unparametrized CV circuit."""
+
     def qfunc():
         qml.GaussianState(
             np.array([(2 * i + 2) // 2 for i in range(16)]), 2 * np.eye(16), wires=list(range(8))
@@ -855,41 +893,45 @@ def wide_cv_qnode():
 
     return qnode
 
+
 @pytest.fixture
 def drawn_wide_cv_qnode():
     """The rendered circuit representation of the above wide CV circuit."""
     return (
-        " 0: ──╭Gaussian(M0, M1)──╭BS(0.4, 0)───────────────────────────────────────────────────────────╭BS(0.255, 0.231)──╭───┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 1: ──├Gaussian(M0, M1)──╰BS(0.4, 0)────────────────────────────────────────╭BS(0.255, 0.231)──│──────────────────│╭──┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 2: ──├Gaussian(M0, M1)──╭BS(0.4, 0)─────────────────────╭BS(0.255, 0.231)──│──────────────────│──────────────────││╭─┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 3: ──├Gaussian(M0, M1)──╰BS(0.4, 0)──╭BS(0.255, 0.231)──│──────────────────│──────────────────│──────────────────│││╭┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 4: ──├Gaussian(M0, M1)──╭BS(0.4, 0)──│──────────────────│──────────────────│──────────────────╰BS(0.255, 0.231)──╰│││┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 5: ──├Gaussian(M0, M1)──╰BS(0.4, 0)──│──────────────────│──────────────────╰BS(0.255, 0.231)──────────────────────╰││┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 6: ──├Gaussian(M0, M1)──╭BS(0.4, 0)──│──────────────────╰BS(0.255, 0.231)──────────────────────────────────────────╰│┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        " 7: ──╰Gaussian(M0, M1)──╰BS(0.4, 0)──╰BS(0.255, 0.231)──────────────────────────────────────────────────────────────╰┤ ⟨|1, 1╳1, 1|⟩ \n" +
-        "M0 =\n" +
-        "[ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16]\n" +
-        "M1 =\n" +
-        "[[2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2.]]\n")
+        " 0: ──╭Gaussian(M0, M1)──╭BS(0.4, 0)───────────────────────────────────────────────────────────╭BS(0.255, 0.231)──╭───┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 1: ──├Gaussian(M0, M1)──╰BS(0.4, 0)────────────────────────────────────────╭BS(0.255, 0.231)──│──────────────────│╭──┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 2: ──├Gaussian(M0, M1)──╭BS(0.4, 0)─────────────────────╭BS(0.255, 0.231)──│──────────────────│──────────────────││╭─┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 3: ──├Gaussian(M0, M1)──╰BS(0.4, 0)──╭BS(0.255, 0.231)──│──────────────────│──────────────────│──────────────────│││╭┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 4: ──├Gaussian(M0, M1)──╭BS(0.4, 0)──│──────────────────│──────────────────│──────────────────╰BS(0.255, 0.231)──╰│││┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 5: ──├Gaussian(M0, M1)──╰BS(0.4, 0)──│──────────────────│──────────────────╰BS(0.255, 0.231)──────────────────────╰││┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 6: ──├Gaussian(M0, M1)──╭BS(0.4, 0)──│──────────────────╰BS(0.255, 0.231)──────────────────────────────────────────╰│┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + " 7: ──╰Gaussian(M0, M1)──╰BS(0.4, 0)──╰BS(0.255, 0.231)──────────────────────────────────────────────────────────────╰┤ ⟨|1, 1╳1, 1|⟩ \n"
+        + "M0 =\n"
+        + "[ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16]\n"
+        + "M1 =\n"
+        + "[[2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2.]]\n"
+    )
+
 
 @pytest.fixture
 def parameterized_cv_qnode():
     """A parametrized CV circuit."""
+
     def qfunc(a, b, c, d, e, f):
         qml.ThermalState(3, wires=[1])
         qml.GaussianState(np.array([1, 1, 1, 2, 2, 3, 3, 3]), 2 * np.eye(8), wires=[0, 1, 2, 3])
@@ -921,68 +963,83 @@ def parameterized_cv_qnode():
 
     return qnode
 
+
 @pytest.fixture
 def drawn_parameterized_cv_qnode_with_variable_names():
     """The rendered circuit representation of the above CV circuit with variable names."""
     return (
-        " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n" +
-        " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n" +
-        " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n" +
-        " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n" +
-        "M0 =\n" +
-        "[1 1 1 2 2 3 3 3]\n" +
-        "M1 =\n" +
-        "[[2. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 2. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 2. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 2. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 2. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 2. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 2. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 2.]]\n")
+        " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
+        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
+        + " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
+        + " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
+        + "M0 =\n"
+        + "[1 1 1 2 2 3 3 3]\n"
+        + "M1 =\n"
+        + "[[2. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 2. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 2. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 2. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 2. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 2. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 2. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 2.]]\n"
+    )
+
 
 @pytest.fixture
 def drawn_parameterized_cv_qnode_with_values():
     """The rendered circuit representation of the above CV circuit with variable values."""
     return (
-        " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n" +
-        " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n" +
-        " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n" +
-        " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n" +
-        "M0 =\n" +
-        "[1 1 1 2 2 3 3 3]\n" +
-        "M1 =\n" +
-        "[[2. 0. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 2. 0. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 2. 0. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 2. 0. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 2. 0. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 2. 0. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 2. 0.]\n" +
-        " [0. 0. 0. 0. 0. 0. 0. 2.]]\n")
+        " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
+        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
+        + " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
+        + " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
+        + "M0 =\n"
+        + "[1 1 1 2 2 3 3 3]\n"
+        + "M1 =\n"
+        + "[[2. 0. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 2. 0. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 2. 0. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 2. 0. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 2. 0. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 2. 0. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 2. 0.]\n"
+        + " [0. 0. 0. 0. 0. 0. 0. 2.]]\n"
+    )
+
 
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
 
-    def test_qubit_circuit_with_variable_names(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names):
+    def test_qubit_circuit_with_variable_names(
+        self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names
+    ):
         """Test that a parametrized qubit circuit renders correctly with variable names."""
         output = parameterized_qubit_qnode.circuit.draw(show_variable_names=True)
 
         assert output == drawn_parameterized_qubit_circuit_with_variable_names
 
-    def test_qubit_circuit_with_values(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values):
+    def test_qubit_circuit_with_values(
+        self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_values
+    ):
         """Test that a parametrized qubit circuit renders correctly with values."""
         output = parameterized_qubit_qnode.circuit.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_qubit_circuit_with_values
 
-    def test_wide_qubit_circuit_with_variable_names(self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_variable_names):
+    def test_wide_qubit_circuit_with_variable_names(
+        self,
+        parameterized_wide_qubit_qnode,
+        drawn_parameterized_wide_qubit_qnode_with_variable_names,
+    ):
         """Test that a wide parametrized qubit circuit renders correctly with variable names."""
         output = parameterized_wide_qubit_qnode.draw(show_variable_names=True)
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_variable_names
 
-    def test_wide_qubit_circuit_with_values(self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_values):
+    def test_wide_qubit_circuit_with_values(
+        self, parameterized_wide_qubit_qnode, drawn_parameterized_wide_qubit_qnode_with_values
+    ):
         """Test that a wide parametrized qubit circuit renders correctly with values."""
         output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
 
@@ -994,15 +1051,18 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_wide_cv_qnode
 
-    def test_cv_circuit_with_variable_names(self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_variable_names):
+    def test_cv_circuit_with_variable_names(
+        self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_variable_names
+    ):
         """Test that a parametrized CV circuit renders correctly with variable names."""
         output = parameterized_cv_qnode.draw(show_variable_names=True)
 
         assert output == drawn_parameterized_cv_qnode_with_variable_names
 
-    def test_cv_circuit_with_values(self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values):
+    def test_cv_circuit_with_values(
+        self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values
+    ):
         """Test that a parametrized CV circuit renders correctly with values."""
         output = parameterized_cv_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_cv_qnode_with_values
-
