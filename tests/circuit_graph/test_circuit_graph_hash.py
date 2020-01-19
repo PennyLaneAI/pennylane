@@ -24,7 +24,7 @@ from pennylane.qnodes import BaseQNode
 from pennylane.variable import Variable
 
 class TestCircuitGraphHash:
-    """Test the creation of a hash to the CircuitGraph"""
+    """Test the creation of a hash on a CircuitGraph"""
 
     numeric_queues = [
                         ([
@@ -748,5 +748,4 @@ class TestQNodeCircuitHashDifferentHashIntegration:
         circuit_hash_2 = node2.circuit.circuit_hash
 
         assert circuit_hash_1 != circuit_hash_2
-
 
