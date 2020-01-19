@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 
-# pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements
+# pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements,too-many-statements,consider-using-enumerate,too-many-instance-attributes
 
 def _transpose(target_list):
     """Transpose the given list of lists.
@@ -401,7 +401,8 @@ class RepresentationResolver:
 
         return str(round(par, 3))
 
-    def _format_poly_term(self, coefficient, variable):
+    @staticmethod
+    def _format_poly_term(coefficient, variable):
         """Format a term of a polynomial."""
         if coefficient == 0:
             return ""
@@ -474,10 +475,10 @@ class RepresentationResolver:
                 for idx in range(0, coefficients.shape[0] // 2):
                     x = 2 * idx + 1
                     y = 2 * idx + 2
-                    poly_str += self._format_poly_term(
+                    poly_str += RepresentationResolver._format_poly_term(
                         coefficients[x], "x{}".format(self.charset.to_subscript(idx))
                     )
-                    poly_str += self._format_poly_term(
+                    poly_str += RepresentationResolver._format_poly_term(
                         coefficients[y], "p{}".format(self.charset.to_subscript(idx))
                     )
 
@@ -489,11 +490,11 @@ class RepresentationResolver:
                 for idx in range(0, coefficients.shape[0] // 2):
                     x = 2 * idx + 1
                     p = 2 * idx + 2
-                    poly_str += self._format_poly_term(
+                    poly_str += RepresentationResolver._format_poly_term(
                         coefficients[0, x] + coefficients[x, 0],
                         "x{}".format(self.charset.to_subscript(idx)),
                     )
-                    poly_str += self._format_poly_term(
+                    poly_str += RepresentationResolver._format_poly_term(
                         coefficients[0, p] + coefficients[p, 0],
                         "p{}".format(self.charset.to_subscript(idx)),
                     )
@@ -506,47 +507,47 @@ class RepresentationResolver:
                         p2 = 2 * idx2 + 2
 
                         if idx1 == idx2:
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[x1, x1],
                                 "x{}{}".format(
                                     self.charset.to_subscript(idx1), self.charset.to_superscript(2)
                                 ),
                             )
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[p1, p1],
                                 "p{}{}".format(
                                     self.charset.to_subscript(idx1), self.charset.to_superscript(2)
                                 ),
                             )
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[x1, p1] + coefficients[p1, x1],
                                 "x{}p{}".format(
                                     self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)
                                 ),
                             )
                         else:
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[x1, x2] + coefficients[x2, x1],
                                 "x{}x{}".format(
                                     self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
                                 ),
                             )
 
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[p1, p2] + coefficients[p2, p1],
                                 "p{}p{}".format(
                                     self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
                                 ),
                             )
 
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[x1, p2] + coefficients[p2, x1],
                                 "x{}p{}".format(
                                     self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
                                 ),
                             )
 
-                            poly_str += self._format_poly_term(
+                            poly_str += RepresentationResolver._format_poly_term(
                                 coefficients[p1, x2] + coefficients[x2, p1],
                                 "x{}p{}".format(
                                     self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)
