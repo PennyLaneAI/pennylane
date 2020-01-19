@@ -24,6 +24,7 @@ import pennylane as qml
 
 # pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements,too-many-statements,consider-using-enumerate,too-many-instance-attributes
 
+
 def _transpose(target_list):
     """Transpose the given list of lists.
 
@@ -422,7 +423,9 @@ class RepresentationResolver:
             str: String representation of the Operator
         """
         if isinstance(op, qml.operation.Tensor):
-            constituent_representations = [self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs]
+            constituent_representations = [
+                self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs
+            ]
 
             return (" " + self.charset.OTIMES + " ").join(constituent_representations)
 
@@ -734,11 +737,7 @@ class CircuitDrawer:
 
     @staticmethod
     def pad_representation(
-        representation_grid,
-        pad_str,
-        prepend_str,
-        suffix_str,
-        skip_indices,
+        representation_grid, pad_str, prepend_str, suffix_str, skip_indices,
     ):
         """Pads the given representation so that width inside layers is constant.
 
@@ -885,7 +884,6 @@ class CircuitDrawer:
             set(range(self.observable_grid.num_layers)) - set(self.observable_decoration_indices),
         )
 
-
         self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
@@ -907,11 +905,11 @@ class CircuitDrawer:
 
             rendered_string += "\n"
 
-        for symbol, cache in {
-            "U": self.representation_resolver.unitary_matrix_cache,
-            "H": self.representation_resolver.hermitian_matrix_cache,
-            "M": self.representation_resolver.matrix_cache,
-        }.items():
+        for symbol, cache in [
+            ("U", self.representation_resolver.unitary_matrix_cache),
+            ("H", self.representation_resolver.hermitian_matrix_cache),
+            ("M", self.representation_resolver.matrix_cache),
+        ]:
             for idx, matrix in enumerate(cache):
                 rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
 
