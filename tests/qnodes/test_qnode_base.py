@@ -1084,6 +1084,18 @@ class TestQNodeDraw:
 
     def test_unknown_charset_error(self, mock_qnode):
         """Test that an error is raised for an unsupported charset."""
-
         with pytest.raises(ValueError, match="Charset does_not_exist is not supported"):
             mock_qnode.draw(charset="does_not_exist")
+
+    def test_draw_before_construction_error(self):
+        """Test that an error is raised when drawing a QNode that is not yet constructed is attempted."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=[0])
+
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(QuantumFunctionError, match="The QNode can only be drawn after its CircuitGraph has been constructed"):
+            circuit.draw()
