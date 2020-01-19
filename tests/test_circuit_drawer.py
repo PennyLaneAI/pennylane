@@ -550,13 +550,54 @@ class TestRepresentationResolver:
                 "Sample[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]",
             ),
             (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
-            (qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])), 1, "⟨X ⊗ Y ⊗ Z⟩"),
-            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 1, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
-            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 2, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
-            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 3, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
-            (qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])), 4, "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩"),
-            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2]) @ qml.Hermitian(np.eye(4), wires=[0, 3])), 0, "Sample[H0 ⊗ H0]"),
-            (qml.sample(qml.Hermitian(np.eye(4), wires=[1, 2]) @ qml.Hermitian(2 * np.eye(4), wires=[0, 3])), 0, "Sample[H0 ⊗ H1]"),
+            (
+                qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])),
+                1,
+                "⟨X ⊗ Y ⊗ Z⟩",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                1,
+                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                2,
+                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                3,
+                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+            ),
+            (
+                qml.expval(
+                    qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
+                ),
+                4,
+                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+            ),
+            (
+                qml.sample(
+                    qml.Hermitian(np.eye(4), wires=[1, 2]) @ qml.Hermitian(np.eye(4), wires=[0, 3])
+                ),
+                0,
+                "Sample[H0 ⊗ H0]",
+            ),
+            (
+                qml.sample(
+                    qml.Hermitian(np.eye(4), wires=[1, 2])
+                    @ qml.Hermitian(2 * np.eye(4), wires=[0, 3])
+                ),
+                0,
+                "Sample[H0 ⊗ H1]",
+            ),
         ],
     )
     def test_output_representation(self, unicode_representation_resolver, obs, wire, target):
@@ -1185,3 +1226,28 @@ class TestCircuitDrawerIntegration:
         output = parameterized_cv_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_cv_qnode_with_values
+
+    def test_direct_qnode_integration(self):
+        """Test that a regular QNode renders correctly."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def qfunc(a, w):
+            qml.Hadamard(0)
+            qml.CRX(a, wires=[0, 1])
+            qml.Rot(w[0], w[1], w[2], wires=[1])
+            qml.CRX(-a, wires=[0, 1])
+
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        res = qfunc(2.3, [1.2, 3.2, 0.7])
+
+        assert qfunc.draw() == (
+            " 0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"
+            + " 1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩ \n"
+        )
+
+        assert qfunc.draw(show_variable_names=True) == (
+            " 0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"
+            + " 1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩ \n"
+        )
