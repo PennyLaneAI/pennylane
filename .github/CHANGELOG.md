@@ -2,6 +2,37 @@
 
 <h3>New features since last release</h3>
 
+* Added a circuit drawing feature that provides a text-based representation
+  of a QNode instance. It can be invoked via `qnode.draw()`. The user can specify
+  to display variable names instead of variable values and choose either an ASCII
+  or Unicode charset. 
+  [(#446)](https://github.com/XanaduAI/pennylane/pull/446)
+
+  Consider the following circuit as an example:
+  ```python
+  @qml.qnode(dev)
+  def qfunc(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(w[0], w[1], w[2], wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  We can draw the circuit after it has been executed:
+  ```
+  >>> result = qfunc(2.3, [1.2, 3.2, 0.7])
+  >>> print(qfunc.draw())
+   0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+   1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+  >>> print(qfunc.draw(charset="ascii"))  
+   0: --H--+C----------------------------+C---------+| <Z @ Z>
+   1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+  >>> print(qfunc.draw(show_variable_names=True))  
+   0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ 
+   1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩ 
+  ```
+
 * Added a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [(#453)](https://github.com/XanaduAI/pennylane/pull/453)
