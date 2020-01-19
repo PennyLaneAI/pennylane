@@ -25,52 +25,6 @@ from pennylane.circuit_drawer import _remove_duplicates, _transpose, Grid, Repre
 from pennylane.variable import Variable
 
 
-@pytest.fixture
-def parameterized_wide_cv_circuit():
-    def qfunc(a, b, c, d, e, f):
-        qml.GaussianState(
-            np.array([(2 * i + 2) // 2 for i in range(16)]), 2 * np.eye(16), wires=list(range(8))
-        )
-        [qml.Beamsplitter(0.4, 0, wires=[2 * i, 2 * i + 1]) for i in range(4)]
-        [qml.Beamsplitter(0.25475, 0.2312344, wires=[i, i + 4]) for i in range(4)]
-
-        return [
-            qml.expval(qml.FockStateProjector(np.array([1, 1]), wires=[i, i + 4])) for i in range(4)
-        ]
-
-    return qfunc
-
-
-@pytest.fixture
-def parameterized_cv_circuit():
-    def qfunc(a, b, c, d, e, f):
-        qml.ThermalState(3, wires=[1])
-        qml.GaussianState(np.array([1, 1, 1, 2, 2, 3, 3, 3]), 2 * np.eye(8), wires=[0, 1, 2, 3])
-        qml.Rotation(a, wires=0)
-        qml.Rotation(b, wires=1)
-        qml.Beamsplitter(d, 1, wires=[0, 1])
-        qml.Beamsplitter(e, 1, wires=[1, 2])
-        qml.Displacement(f, 0, wires=[3])
-        qml.Squeezing(2.3, 0, wires=[0])
-        qml.Squeezing(2.3, 0, wires=[2])
-        qml.Beamsplitter(d, 1, wires=[1, 2])
-        qml.Beamsplitter(e, 1, wires=[2, 3])
-        qml.TwoModeSqueezing(2, 2, wires=[3, 1])
-        qml.ControlledPhase(2.3, wires=[2, 1])
-        qml.ControlledAddition(2, wires=[0, 3])
-        qml.QuadraticPhase(4, wires=[0])
-        # qml.Kerr(2, wires=[1])
-        # qml.CubicPhase(2, wires=[2])
-        # qml.CrossKerr(2, wires=[3, 1])
-
-        return [
-            qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
-            qml.expval(qml.ops.QuadOperator(4, wires=1)),
-            qml.expval(qml.ops.FockStateProjector(np.array([1, 5]), wires=[2, 3])),
-        ]
-
-    return qfunc
-
 
 class TestFunctions:
     """Test the helper functions."""
@@ -834,7 +788,7 @@ def parameterized_wide_qubit_qnode():
 
     dev = qml.device("default.qubit", wires=8)
     qnode = qml.QNode(qfunc, dev)
-    qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
+    qnode._construct((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
     qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
 
     return qnode
@@ -873,6 +827,131 @@ def drawn_parameterized_wide_qubit_qnode_with_values():
         " [0. 0. 1. 0.]\n" +
         " [0. 0. 0. 1.]]\n")
 
+
+@pytest.fixture
+def wide_cv_qnode():
+    def qfunc():
+        qml.GaussianState(
+            np.array([(2 * i + 2) // 2 for i in range(16)]), 2 * np.eye(16), wires=list(range(8))
+        )
+        [qml.Beamsplitter(0.4, 0, wires=[2 * i, 2 * i + 1]) for i in range(4)]
+        [qml.Beamsplitter(0.25475, 0.2312344, wires=[i, i + 4]) for i in range(4)]
+
+        return [
+            qml.expval(qml.FockStateProjector(np.array([1, 1]), wires=[i, i + 4])) for i in range(4)
+        ]
+
+    dev = qml.device("default.gaussian", wires=8)
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+@pytest.fixture
+def drawn_wide_cv_qnode():
+    return (
+        " 0: ──╭Gaussian(M0, M1)──╭BS(0.4, 0)───────────────────────────────────────────────────────────╭BS(0.255, 0.231)──╭───┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 1: ──├Gaussian(M0, M1)──╰BS(0.4, 0)────────────────────────────────────────╭BS(0.255, 0.231)──│──────────────────│╭──┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 2: ──├Gaussian(M0, M1)──╭BS(0.4, 0)─────────────────────╭BS(0.255, 0.231)──│──────────────────│──────────────────││╭─┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 3: ──├Gaussian(M0, M1)──╰BS(0.4, 0)──╭BS(0.255, 0.231)──│──────────────────│──────────────────│──────────────────│││╭┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 4: ──├Gaussian(M0, M1)──╭BS(0.4, 0)──│──────────────────│──────────────────│──────────────────╰BS(0.255, 0.231)──╰│││┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 5: ──├Gaussian(M0, M1)──╰BS(0.4, 0)──│──────────────────│──────────────────╰BS(0.255, 0.231)──────────────────────╰││┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 6: ──├Gaussian(M0, M1)──╭BS(0.4, 0)──│──────────────────╰BS(0.255, 0.231)──────────────────────────────────────────╰│┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        " 7: ──╰Gaussian(M0, M1)──╰BS(0.4, 0)──╰BS(0.255, 0.231)──────────────────────────────────────────────────────────────╰┤ ⟨|1, 1╳1, 1|⟩ \n" +
+        "M0 =\n" +
+        "[ 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16]\n" +
+        "M1 =\n" +
+        "[[2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 2.]]\n")
+
+@pytest.fixture
+def parameterized_cv_qnode():
+    def qfunc(a, b, c, d, e, f):
+        qml.ThermalState(3, wires=[1])
+        qml.GaussianState(np.array([1, 1, 1, 2, 2, 3, 3, 3]), 2 * np.eye(8), wires=[0, 1, 2, 3])
+        qml.Rotation(a, wires=0)
+        qml.Rotation(b, wires=1)
+        qml.Beamsplitter(d, 1, wires=[0, 1])
+        qml.Beamsplitter(e, 1, wires=[1, 2])
+        qml.Displacement(f, 0, wires=[3])
+        qml.Squeezing(2.3, 0, wires=[0])
+        qml.Squeezing(2.3, 0, wires=[2])
+        qml.Beamsplitter(d, 1, wires=[1, 2])
+        qml.Beamsplitter(e, 1, wires=[2, 3])
+        qml.TwoModeSqueezing(2, 2, wires=[3, 1])
+        qml.ControlledPhase(2.3, wires=[2, 1])
+        qml.ControlledAddition(2, wires=[0, 3])
+        qml.QuadraticPhase(4, wires=[0])
+        # qml.Kerr(2, wires=[1])
+        # qml.CubicPhase(2, wires=[2])
+        # qml.CrossKerr(2, wires=[3, 1])
+
+        return [
+            qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
+            qml.expval(qml.ops.QuadOperator(4, wires=1)),
+            qml.expval(qml.ops.FockStateProjector(np.array([1, 5]), wires=[2, 3])),
+        ]
+
+    dev = qml.device("default.gaussian", wires=4)
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
+    qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
+
+    return qnode
+
+@pytest.fixture
+def drawn_parameterized_cv_qnode_with_variable_names():
+    return (
+        " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n" +
+        " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n" +
+        " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n" +
+        " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n" +
+        "M0 =\n" +
+        "[1 1 1 2 2 3 3 3]\n" +
+        "M1 =\n" +
+        "[[2. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 2. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 2. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 2. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 2. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 2. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 2. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 2.]]\n")
+
+@pytest.fixture
+def drawn_parameterized_cv_qnode_with_values():
+    return (
+        " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n" +
+        " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n" +
+        " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n" +
+        " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n" +
+        "M0 =\n" +
+        "[1 1 1 2 2 3 3 3]\n" +
+        "M1 =\n" +
+        "[[2. 0. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 2. 0. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 2. 0. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 2. 0. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 2. 0. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 2. 0. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 2. 0.]\n" +
+        " [0. 0. 0. 0. 0. 0. 0. 2.]]\n")
+
 class TestCircuitDrawerIntegration:
     def test_qubit_circuit_with_variable_names(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names):
         """Test that a parametrized qubit circuit renders correctly with variable names."""
@@ -898,61 +977,18 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
 
-    def test_simple_cv_circuit(self, parameterized_cv_circuit):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
+    def test_wide_cv_circuit(self, wide_cv_qnode, drawn_wide_cv_qnode):
+        output = wide_cv_qnode.draw()
 
-        dev = qml.device("default.gaussian", wires=4)
-        qnode = qml.QNode(parameterized_cv_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        print(qnode.circuit.draw())
-        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        print(qnode.circuit.draw())
+        assert output == drawn_wide_cv_qnode
 
-        print(output)
+    def test_cv_circuit_with_variable_names(self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_variable_names):
+        output = parameterized_cv_qnode.draw(show_variable_names=True)
 
-        file = open("test.txt", "w")
-        print("number of chars written = ", file.buffer.write(output.encode("utf8")))
-        file.close()
+        assert output == drawn_parameterized_cv_qnode_with_variable_names
 
-        raise Exception()
+    def test_cv_circuit_with_values(self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values):
+        output = parameterized_cv_qnode.draw(show_variable_names=False)
 
-    def test_wide_cv_circuit(self, parameterized_wide_cv_circuit):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
-
-        dev = qml.device("default.gaussian", wires=8)
-        qnode = qml.QNode(parameterized_wide_cv_circuit, dev)
-        qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
-        print(qnode.circuit.draw())
-        qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
-        print(qnode.circuit.draw())
-
-    def test_template(self, parameterized_wide_cv_circuit):
-        """A test of the different layers, their successors and ancestors using a simple circuit"""
-
-        dev = qml.device("default.qubit", wires=8)
-
-        @qml.qnode(dev)
-        def circuit(a, b, weights, c, d, other_weights):
-            qml.BasisState(np.array([0,1,1,0,0,1,0,0]), wires=list(range(8)))
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(8))
-            qml.RX(a, wires=[0])
-            qml.RX(b, wires=[1])
-            qml.RX(c, wires=[2])
-            qml.RX(d, wires=[3])
-            [qml.RX(other_weights[i], wires=[i]) for i, weight in enumerate(other_weights)]
-
-            return [qml.var(qml.PauliX(i)) for i in range(8)]
-
-        weights = qml.init.strong_ent_layers_uniform(3, 8)
-
-        circuit._construct((2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4])), {})
-
-        print(circuit.draw(show_variable_names=True))
-
-        circuit(2, 3, weights, 1, 33, np.array([1, 3, 4, 2, 2, 2, 3, 4]))
-
-        print(circuit.draw())
-        circuit.print_applied()
-
-        raise Exception()
+        assert output == drawn_parameterized_cv_qnode_with_values
 
