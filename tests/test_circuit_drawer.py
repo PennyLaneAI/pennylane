@@ -699,6 +699,7 @@ class TestCircuitDrawer:
 
 @pytest.fixture
 def parameterized_qubit_qnode():
+    """A parametrized qubit ciruit."""
     def qfunc(a, b, c, angles):
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
@@ -742,6 +743,7 @@ def parameterized_qubit_qnode():
 
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_variable_names():
+    """The rendered circuit representation of the above qubit circuit with variable names."""
     return (" 0: ──RX(a)───────────────────────╭C────RX(angles[0])───────────────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP───╭SWAP───┤ ⟨Y⟩       \n" +
             " 1: ──RX(b)────────Z──────────────╰X───╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│───────├SWAP───┤ Var[H]    \n" +
             " 2: ──RY(1.889*c)──RX(angles[2])───U0──│────────────────────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP───│───────┤ Sample[X] \n" +
@@ -758,6 +760,7 @@ def drawn_parameterized_qubit_circuit_with_variable_names():
 
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_values():
+    """The rendered circuit representation of the above qubit circuit with variable values."""
     return (" 0: ──RX(0.1)─────────────╭C────RX(0.4)───────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP─────╭SWAP───┤ ⟨Y⟩       \n" +
             " 1: ──RX(0.2)────Z────────╰X───╭RY(0.2)──RX(2.0)──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n" +
             " 2: ──RY(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n" +
@@ -774,6 +777,7 @@ def drawn_parameterized_qubit_circuit_with_values():
 
 @pytest.fixture
 def parameterized_wide_qubit_qnode():
+    """A wide parametrized qubit circuit."""
     def qfunc(a, b, c, d, e, f):
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
@@ -795,6 +799,7 @@ def parameterized_wide_qubit_qnode():
 
 @pytest.fixture
 def drawn_parameterized_wide_qubit_qnode_with_variable_names():
+    """The rendered circuit representation of the above wide qubit circuit with variable names."""
     return (
         " 0: ───RX(a)──╭C─────────────╭C──Y─────────────────╭SWAP───RX(a)──╭───┤ ⟨H0⟩ \n" +
         " 1: ───RX(b)──╰X─────────╭C──│──────╭SWAP───RX(b)──│──────────────│╭──┤ ⟨H0⟩ \n" +
@@ -812,6 +817,7 @@ def drawn_parameterized_wide_qubit_qnode_with_variable_names():
 
 @pytest.fixture
 def drawn_parameterized_wide_qubit_qnode_with_values():
+    """The rendered circuit representation of the above wide qubit circuit with variable values."""
     return (
         " 0: ───RX(0.1)──╭C─────────────╭C──Y───────────────────╭SWAP───RX(0.1)──╭───┤ ⟨H0⟩ \n" +
         " 1: ───RX(0.2)──╰X─────────╭C──│──────╭SWAP───RX(0.2)──│────────────────│╭──┤ ⟨H0⟩ \n" +
@@ -830,6 +836,7 @@ def drawn_parameterized_wide_qubit_qnode_with_values():
 
 @pytest.fixture
 def wide_cv_qnode():
+    """A wide unparametrized CV circuit."""
     def qfunc():
         qml.GaussianState(
             np.array([(2 * i + 2) // 2 for i in range(16)]), 2 * np.eye(16), wires=list(range(8))
@@ -850,6 +857,7 @@ def wide_cv_qnode():
 
 @pytest.fixture
 def drawn_wide_cv_qnode():
+    """The rendered circuit representation of the above wide CV circuit."""
     return (
         " 0: ──╭Gaussian(M0, M1)──╭BS(0.4, 0)───────────────────────────────────────────────────────────╭BS(0.255, 0.231)──╭───┤ ⟨|1, 1╳1, 1|⟩ \n" +
         " 1: ──├Gaussian(M0, M1)──╰BS(0.4, 0)────────────────────────────────────────╭BS(0.255, 0.231)──│──────────────────│╭──┤ ⟨|1, 1╳1, 1|⟩ \n" +
@@ -881,6 +889,7 @@ def drawn_wide_cv_qnode():
 
 @pytest.fixture
 def parameterized_cv_qnode():
+    """A parametrized CV circuit."""
     def qfunc(a, b, c, d, e, f):
         qml.ThermalState(3, wires=[1])
         qml.GaussianState(np.array([1, 1, 1, 2, 2, 3, 3, 3]), 2 * np.eye(8), wires=[0, 1, 2, 3])
@@ -897,9 +906,6 @@ def parameterized_cv_qnode():
         qml.ControlledPhase(2.3, wires=[2, 1])
         qml.ControlledAddition(2, wires=[0, 3])
         qml.QuadraticPhase(4, wires=[0])
-        # qml.Kerr(2, wires=[1])
-        # qml.CubicPhase(2, wires=[2])
-        # qml.CrossKerr(2, wires=[3, 1])
 
         return [
             qml.expval(qml.ops.PolyXP(np.array([0, 1, 2]), wires=0)),
@@ -908,6 +914,7 @@ def parameterized_cv_qnode():
         ]
 
     dev = qml.device("default.gaussian", wires=4)
+
     qnode = qml.QNode(qfunc, dev)
     qnode._construct((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
     qnode.evaluate((0.1, 0.2, 0.3, 47 / 17, 0.5, 0.6), {})
@@ -916,6 +923,7 @@ def parameterized_cv_qnode():
 
 @pytest.fixture
 def drawn_parameterized_cv_qnode_with_variable_names():
+    """The rendered circuit representation of the above CV circuit with variable names."""
     return (
         " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n" +
         " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n" +
@@ -935,6 +943,7 @@ def drawn_parameterized_cv_qnode_with_variable_names():
 
 @pytest.fixture
 def drawn_parameterized_cv_qnode_with_values():
+    """The rendered circuit representation of the above CV circuit with variable values."""
     return (
         " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n" +
         " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n" +
@@ -953,6 +962,8 @@ def drawn_parameterized_cv_qnode_with_values():
         " [0. 0. 0. 0. 0. 0. 0. 2.]]\n")
 
 class TestCircuitDrawerIntegration:
+    """Test that QNodes are properly drawn."""
+
     def test_qubit_circuit_with_variable_names(self, parameterized_qubit_qnode, drawn_parameterized_qubit_circuit_with_variable_names):
         """Test that a parametrized qubit circuit renders correctly with variable names."""
         output = parameterized_qubit_qnode.circuit.draw(show_variable_names=True)
@@ -978,16 +989,19 @@ class TestCircuitDrawerIntegration:
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
 
     def test_wide_cv_circuit(self, wide_cv_qnode, drawn_wide_cv_qnode):
+        """Test that a wide CV circuit renders correctly."""
         output = wide_cv_qnode.draw()
 
         assert output == drawn_wide_cv_qnode
 
     def test_cv_circuit_with_variable_names(self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_variable_names):
+        """Test that a parametrized CV circuit renders correctly with variable names."""
         output = parameterized_cv_qnode.draw(show_variable_names=True)
 
         assert output == drawn_parameterized_cv_qnode_with_variable_names
 
     def test_cv_circuit_with_values(self, parameterized_cv_qnode, drawn_parameterized_cv_qnode_with_values):
+        """Test that a parametrized CV circuit renders correctly with values."""
         output = parameterized_cv_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_cv_qnode_with_values
