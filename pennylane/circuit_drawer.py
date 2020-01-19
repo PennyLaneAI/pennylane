@@ -49,7 +49,10 @@ class Grid:
         raw_grid (list, optional): Raw grid from which the Grid instance is built. Defaults to [].
     """
 
-    def __init__(self, raw_grid=[]):
+    def __init__(self, raw_grid=None):
+        if raw_grid is None:
+            raw_grid = []
+
         self.raw_grid = raw_grid
         self.raw_grid_transpose = _transpose(raw_grid)
 
@@ -713,7 +716,7 @@ class CircuitDrawer:
 
         return inserted_indices
 
-    def pad_representation(
+    def pad_representation2(
         self,
         representation_grid,
         pad_str,
@@ -750,6 +753,40 @@ class CircuitDrawer:
                         )
                     ),
                 )
+
+    def pad_representation(
+        self,
+        representation_grid,
+        pad_str,
+        prepend_str,
+        suffix_str,
+        skip_indices,
+    ):
+        """Pads the given representation so that all layers have equal width.
+        
+        Args:
+            representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations that will be padded
+            pad_str (str): String that shall be used for padding
+            prepend_str (str): String that is prepended to all representations that are not skipped
+            suffix_str (str): String that is appended to all representations
+            skip_indices (list[int]): Indices of layers that should be skipped
+        """
+        for i in range(representation_grid.num_layers):
+            layer = representation_grid.layer(i)
+            max_width = max(map(len, layer))
+
+            if i in skip_indices:
+                continue
+            
+            representation_grid.replace_layer(
+                i,
+                list(
+                    map(
+                        lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str,
+                        layer,
+                    )
+                ),
+            )
 
     def move_multi_wire_gates(self, operator_grid):
         """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
@@ -842,19 +879,35 @@ class CircuitDrawer:
         self.pad_representation(
             self.operation_representation_grid,
             charset.WIRE,
-            charset.WIRE,
             "",
             2 * charset.WIRE,
             self.operation_decoration_indices,
         )
+
+        self.pad_representation(
+            self.operation_representation_grid,
+            charset.WIRE,
+            "",
+            "",
+            set(range(self.operation_grid.num_layers)) - set(self.operation_decoration_indices),
+        )
+
         self.pad_representation(
             self.observable_representation_grid,
             " ",
-            charset.WIRE,
             charset.MEASUREMENT + " ",
             " ",
             self.observable_decoration_indices,
         )
+
+        self.pad_representation(
+            self.observable_representation_grid,
+            charset.WIRE,
+            "",
+            "",
+            set(range(self.observable_grid.num_layers)) - set(self.observable_decoration_indices),
+        )
+
 
         self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
