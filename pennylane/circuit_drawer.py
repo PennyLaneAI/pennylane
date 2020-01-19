@@ -940,7 +940,3 @@ class CircuitDrawer:
 
         return rendered_string
 
-
-# TODO:
-# * Write tests
-# * Add changelog entry
