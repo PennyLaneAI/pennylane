@@ -128,8 +128,8 @@ class CircuitGraph:
             string: serialized quantum circuit graph
         """
         serialization_string = ""
-
         delimiter = "!"
+        variable_delimiter = "V"
 
         for op in self.operations_in_order:
             serialization_string += op.name
@@ -137,6 +137,7 @@ class CircuitGraph:
             for param in op.params:
                 if isinstance(param, Variable):
                     serialization_string += delimiter
+                    serialization_string += variable_delimiter
                     serialization_string += str(param.idx)
                     serialization_string += delimiter
 
