@@ -17,8 +17,6 @@ Contains high-level QNode processing functions and classes.
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
 
-from joblib import Parallel, delayed, parallel_backend
-
 from pennylane.qnodes import QNode
 from pennylane.measure import expval, var, sample
 from pennylane.operation import Observable
@@ -467,8 +465,20 @@ class QNodeCollection(Sequence):
         Returns:
             list: the results from each QNode
         """
-        with parallel_backend("loky"):
-            return Parallel(n_jobs=-1)(delayed(q)(*args, **kwargs) for q in self.qnodes)
+        results = []
+        async = kwargs.pop("async", False)
+
+        if async:
+            import dask
+            for q in self.qnodes:
+                results.append(dask.delayed(q)(*args, **kwargs))
+
+            return dask.compute(*results)
+
+        for q in self.qnodes:
+            results.append(q(*args, **kwargs))
+
+        return results
 
     @staticmethod
     def convert_results(results, interface):
