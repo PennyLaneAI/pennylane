@@ -68,22 +68,29 @@ You can also use list comprehensions, and other common Python patterns:
 
 As an example of combined measurements, let us look at
 a Bell state :math:`(|00\rangle + |11\rangle)/\sqrt{2}`, prepared
-by a :func:`~.pennylane.Hadamard` and :func:`~.pennylane.CNOT` gate. A combined :func:`~.pennylane.PauliZ`
-measurement of the first and second qubit returns a list of two lists, each containing
-the measurement results of one qubit. Since the two qubits are maximally entangled,
-the measurements always coincide, and the lists are equal:
+by a ``Hadamard`` and ``CNOT`` gate.
 
 .. code-block:: python
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
-    def bell_state():
+    def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0, 1])
         return [qml.sample(qml.PauliZ(i)) for i in range(2)]
 
-    result = bell_state()
+The combined PauliZ-measurement of the
+first and second qubit returns a list of two lists, each containing
+the measurement results of the respective qubit. As a default, :func:`~.pennylane.sample`
+returns 1000 samples per observable.
+
+>>> result = circuit()
+>>> len(result[0]), len(result[1])
+1000, 1000
+
+Since the two qubits are maximally entangled,
+the measurements always coincide, and the lists are therefore equal:
 
 >>> result[0] == result[1]
 [True True ... True]
@@ -178,7 +185,7 @@ circuit:
 
     from pennylane import numpy as np
 
-    # fix seed to produce same samples across runs
+    # fix seed to produce same samples in different runs
     np.random.seed(1)
 
     dev = qml.device("default.qubit", wires=1)
@@ -193,7 +200,7 @@ Running the simulator without specifying the shot number returns the exact expec
 >>> circuit()
 0.0
 
-Now we allow the device to return stochastic results and increase the shot number.
+Now we set the device to return stochastic results, and increase the shot number.
 
 >>> dev.analytic = False
 >>> dev.shots = 10
