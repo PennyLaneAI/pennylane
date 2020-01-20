@@ -154,15 +154,9 @@ class CircuitGraph:
         for obs in self.observables_in_order:
             serialization_string += str(obs.name)
             for param in obs.params:
-                if isinstance(param, Variable):
-                    serialization_string += delimiter
-                    serialization_string += str(param.idx)
-                    serialization_string += delimiter
-
-                else:
-                    serialization_string += delimiter
-                    serialization_string += str(param)
-                    serialization_string += delimiter
+                serialization_string += delimiter
+                serialization_string += str(param)
+                serialization_string += delimiter
 
             serialization_string += str(obs.wires)
 
