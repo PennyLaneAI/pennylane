@@ -58,7 +58,7 @@ class TestCircuitGraphHash:
     symbolic_queue = [
                         ([qml.RX(variable, wires=[0])],
                          [],
-                        'RX!' + str(variable.idx) + '![0]|||'
+                        'RX!1![0]|||'
                         ),
 
                     ]
@@ -83,7 +83,7 @@ class TestCircuitGraphHash:
                             qml.RX(variable, wires=[2])
                         ],
                          [],
-                        'RX!' + str(variable.idx) + '![0]RX!0.3![1]RX!' + str(variable.idx) + '![2]|||'
+                        'RX!1![0]RX!0.3![1]RX!1![2]|||'
                         ),
 
                         ]
@@ -107,8 +107,8 @@ class TestCircuitGraphHash:
                             qml.RX(variable, wires=[1])
                             ],
                          [],
-                        'RX!' + str(variable.idx) + '![0]' +
-                        'RX!' + str(variable.idx) + '![1]' +
+                        'RX!1![0]' +
+                        'RX!1![1]' +
                         '|||'
                         ),
 
@@ -133,8 +133,8 @@ class TestCircuitGraphHash:
                             qml.RX(variable2, wires=[1])
                             ],
                          [],
-                        'RX!' + str(variable1.idx) + '![0]' +
-                        'RX!' + str(variable2.idx) + '![1]' +
+                        'RX!1![0]' +
+                        'RX!2![1]' +
                         '|||'
                         ),
                         ]
