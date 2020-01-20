@@ -118,7 +118,8 @@ class CircuitGraph:
                 self._graph.add_edge(wire[i - 1], wire[i])
 
     def serialize(self):
-        """Serialize the quantum circuit graph based on the operations and observables in the circuit graph and the index of the variables
+        """Serialize the quantum circuit graph based on the operations and
+        observables in the circuit graph and the index of the variables
         used by them.
 
         The string that is produced can be later hashed to assign a unique value to the circuit graph.
