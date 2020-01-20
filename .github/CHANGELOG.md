@@ -18,6 +18,21 @@
 
   Check out the [quantum chemistry quickstart](https://pennylane.readthedocs.io/en/latest/introduction/chemistry.html), as well the quantum chemistry and VQE tutorials.
 
+* PennyLane now has some functions and classes for creating and solving VQE
+  problems. [(#467)](https://github.com/XanaduAI/pennylane/pull/467)
+
+  - ``qml.Hamiltonian``: a lightweight class for representing qubit Hamiltonians
+  - ``qml.VQECost``: a class for quickly constructing a differentiable cost function
+    given a circuit ansatz, Hamiltonian, and one or more devices
+
+    ```python
+    >>> H = qml.vqe.Hamiltonian(coeffs, obs)
+    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> params = torch.rand([4, 3])
+    >>> cost(params)
+    tensor(0.0245, dtype=torch.float64)
+    ```
+
 * Added `QAOAEmbedding` and its parameter initialization
   as a new trainable template.
   [(#442)](https://github.com/XanaduAI/pennylane/pull/442)
@@ -122,9 +137,13 @@
 
 <h3>Improvements</h3>
 
+* Added a serialization method to the `CircuitGraph` class that is used to create a unique
+  hash for each quantum circuit graph.
+  [(#470)](https://github.com/XanaduAI/pennylane/pull/470)
+
 * Unified the way samples are generated on qubit based devices by refactoring the `QubitDevice`
   class and adding the `sample` and further auxiliary methods.
-  [#461](https://github.com/XanaduAI/pennylane/pull/461)
+  [(#461)](https://github.com/XanaduAI/pennylane/pull/461)
 
 * Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
   [(#449)](https://github.com/XanaduAI/pennylane/pull/449)
