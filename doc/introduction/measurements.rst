@@ -42,10 +42,10 @@ The available measurement functions are
     exception of :func:`~.pennylane.sample`, as it returns *stochastic*
     results.
 
-Multiple measurements
+Combined measurements
 ---------------------
 
-Quantum functions can also return multiple measurements, as long as each wire
+Quantum functions can also return combined measurements of multiple observables, as long as each wire
 is not measured more than once:
 
 .. code-block:: python
@@ -65,6 +65,29 @@ You can also use list comprehensions, and other common Python patterns:
         qml.CNOT(wires=[0, 1])
         qml.RY(y, wires=1)
         return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+As an example of combined measurements, let us look at
+a Bell state :math:`(|00\rangle + |11\rangle)/\sqrt{2}`, prepared
+by a :func:`~.pennylane.Hadamard` and :func:`~.pennylane.CNOT` gate. A combined :func:`~.pennylane.PauliZ`
+measurement of the first and second qubit returns a list of two lists, each containing
+the measurement results of one qubit. Since the two qubits are maximally entangled,
+the measurements always coincide, and the lists are equal:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def bell_state():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return [qml.sample(qml.PauliZ(i)) for i in range(2)]
+
+    result = bell_state()
+
+>>> result[0] == result[1]
+[True True ... True]
+
 
 Tensor observables
 ------------------
@@ -145,3 +168,44 @@ number of shots. This can be done by modifying the value of :attr:`.Device.shots
     # execute the QNode again, now using 1 shot
     dev.shots = 1
     result = circuit(0.54, 0.1)
+
+
+With an increasing number of shots, the average over
+measurement samples converges to the exact expectation of an observable. Consider the following
+circuit:
+
+.. code-block:: python
+
+    from pennylane import numpy as np
+
+    # fix seed to produce same samples across runs
+    np.random.seed(1)
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+Running the simulator without specifying the shot number returns the exact expectation.
+
+>>> circuit()
+0.0
+
+Now we allow the device to return stochastic results and increase the shot number.
+
+>>> dev.analytic = False
+>>> dev.shots = 10
+>>> circuit()
+0.2
+
+>>> dev.shots = 1000
+>>> circuit()
+-0.062
+
+>>> dev.shots = 100000
+>>> circuit()
+0.00056
+
+The result converges to the exact expectation.
