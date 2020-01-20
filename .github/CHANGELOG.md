@@ -137,9 +137,13 @@
 
 <h3>Improvements</h3>
 
+* Added a serialization method to the `CircuitGraph` class that is used to create a unique
+  hash for each quantum circuit graph.
+  [(#470)](https://github.com/XanaduAI/pennylane/pull/470)
+
 * Unified the way samples are generated on qubit based devices by refactoring the `QubitDevice`
   class and adding the `sample` and further auxiliary methods.
-  [#461](https://github.com/XanaduAI/pennylane/pull/461)
+  [(#461)](https://github.com/XanaduAI/pennylane/pull/461)
 
 * Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
   [(#449)](https://github.com/XanaduAI/pennylane/pull/449)
