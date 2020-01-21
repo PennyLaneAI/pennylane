@@ -313,7 +313,7 @@ class RepresentationResolver:
                 self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs
             ]
 
-            return (" " + self.charset.OTIMES + " ").join(constituent_representations)
+            return self.charset.OTIMES.join(constituent_representations)
 
         name = op.name
 
@@ -343,10 +343,10 @@ class RepresentationResolver:
         if op.name == "QuadOperator":
             par_rep = self.single_parameter_representation(op.params[0])
 
-            return "cos({0})x + sin({0})p".format(par_rep)
+            return "cos({0})x+sin({0})p".format(par_rep)
 
         if op.name == "FockStateProjector":
-            n_str = ", ".join([str(n) for n in op.params[0]])
+            n_str = ",".join([str(n) for n in op.params[0]])
 
             return (
                 self.charset.PIPE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.PIPE
