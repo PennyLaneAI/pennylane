@@ -163,7 +163,7 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            set[int]: the set of wires activated by the specified operations
+            set[int]: the set of wires activated by the specified operators
         """
         wires = []
         for op in operators:
