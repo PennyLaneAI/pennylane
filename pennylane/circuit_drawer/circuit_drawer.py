@@ -52,6 +52,71 @@ class CircuitDrawer:
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
+    def __init__(
+        self,
+        raw_operation_grid,
+        raw_observable_grid,
+        charset=UnicodeCharSet,
+        show_variable_names=False,
+    ):
+        self.charset = charset
+        self.show_variable_names = show_variable_names
+        self.representation_resolver = RepresentationResolver(charset, show_variable_names)
+        self.operation_grid = Grid(raw_operation_grid)
+        self.observable_grid = Grid(raw_observable_grid)
+        self.operation_representation_grid = Grid()
+        self.observable_representation_grid = Grid()
+        self.operation_decoration_indices = []
+        self.observable_decoration_indices = []
+
+        CircuitDrawer.move_multi_wire_gates(self.operation_grid)
+
+        # Resolve operator names
+        self.resolve_representation(self.operation_grid, self.operation_representation_grid)
+        self.resolve_representation(self.observable_grid, self.observable_representation_grid)
+
+        # Add multi-wire gate lines
+        self.operation_decoration_indices = self.resolve_decorations(
+            self.operation_grid, self.operation_representation_grid,
+        )
+        self.observable_decoration_indices = self.resolve_decorations(
+            self.observable_grid, self.observable_representation_grid,
+        )
+
+        CircuitDrawer.pad_representation(
+            self.operation_representation_grid,
+            charset.WIRE,
+            "",
+            2 * charset.WIRE,
+            self.operation_decoration_indices,
+        )
+
+        CircuitDrawer.pad_representation(
+            self.operation_representation_grid,
+            charset.WIRE,
+            "",
+            "",
+            set(range(self.operation_grid.num_layers)) - set(self.operation_decoration_indices),
+        )
+
+        CircuitDrawer.pad_representation(
+            self.observable_representation_grid,
+            " ",
+            charset.MEASUREMENT + " ",
+            " ",
+            self.observable_decoration_indices,
+        )
+
+        CircuitDrawer.pad_representation(
+            self.observable_representation_grid,
+            charset.WIRE,
+            "",
+            "",
+            set(range(self.observable_grid.num_layers)) - set(self.observable_decoration_indices),
+        )
+
+        self.full_representation_grid = self.operation_representation_grid.copy()
+        self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
@@ -232,72 +297,6 @@ class CircuitDrawer:
             if not all([item is None for item in other_layer]):
                 operator_grid.insert_layer(i + 1, other_layer)
                 n += 1
-
-    def __init__(
-        self,
-        raw_operation_grid,
-        raw_observable_grid,
-        charset=UnicodeCharSet,
-        show_variable_names=False,
-    ):
-        self.charset = charset
-        self.show_variable_names = show_variable_names
-        self.representation_resolver = RepresentationResolver(charset, show_variable_names)
-        self.operation_grid = Grid(raw_operation_grid)
-        self.observable_grid = Grid(raw_observable_grid)
-        self.operation_representation_grid = Grid()
-        self.observable_representation_grid = Grid()
-        self.operation_decoration_indices = []
-        self.observable_decoration_indices = []
-
-        CircuitDrawer.move_multi_wire_gates(self.operation_grid)
-
-        # Resolve operator names
-        self.resolve_representation(self.operation_grid, self.operation_representation_grid)
-        self.resolve_representation(self.observable_grid, self.observable_representation_grid)
-
-        # Add multi-wire gate lines
-        self.operation_decoration_indices = self.resolve_decorations(
-            self.operation_grid, self.operation_representation_grid,
-        )
-        self.observable_decoration_indices = self.resolve_decorations(
-            self.observable_grid, self.observable_representation_grid,
-        )
-
-        CircuitDrawer.pad_representation(
-            self.operation_representation_grid,
-            charset.WIRE,
-            "",
-            2 * charset.WIRE,
-            self.operation_decoration_indices,
-        )
-
-        CircuitDrawer.pad_representation(
-            self.operation_representation_grid,
-            charset.WIRE,
-            "",
-            "",
-            set(range(self.operation_grid.num_layers)) - set(self.operation_decoration_indices),
-        )
-
-        CircuitDrawer.pad_representation(
-            self.observable_representation_grid,
-            " ",
-            charset.MEASUREMENT + " ",
-            " ",
-            self.observable_decoration_indices,
-        )
-
-        CircuitDrawer.pad_representation(
-            self.observable_representation_grid,
-            charset.WIRE,
-            "",
-            "",
-            set(range(self.observable_grid.num_layers)) - set(self.observable_decoration_indices),
-        )
-
-        self.full_representation_grid = self.operation_representation_grid.copy()
-        self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def draw(self):
         """Draw the circuit diagram.
