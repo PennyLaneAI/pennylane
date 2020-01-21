@@ -70,14 +70,38 @@ class CircuitDrawer:
 
             representation_grid.append_layer(representation_layer)
 
-    def resolve_decorations(self, grid, representation_grid, separate):
+    def add_multi_wire_connectors_to_layer(self, wires, decoration_layer):
+        """Add multi wire connectors for the given wires to a layer.
+
+        Args:
+            wires (list[int]): The wires that are to be connected
+            decoration_layer (list[str]): The decoration layer to which the wires will be added
+        """
+        min_wire = min(wires)
+        max_wire = max(wires)
+
+        decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
+
+        for k in range(min_wire + 1, max_wire):
+            if k in wires:
+                decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
+            else:
+                decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
+
+        decoration_layer[
+            max_wire
+        ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
+
+
+    def resolve_decorations(self, grid, representation_grid):
         """Resolve the decorations of the given Grid.
+
+        If decorations are in conflict, they are automatically spread over multiple layers.
 
         Args:
             grid (pennylane.circuit_drawer.Grid): Grid that holds the circuit information
             representation_grid (pennylane.circuit_drawer.Grid): Grid that holds the string representations and into
                 which the decorations will be inserted
-            separate (bool): Insert decorations into separate layers
 
         Returns:
             list[int]: List with indices of inserted decoration layers
@@ -88,8 +112,8 @@ class CircuitDrawer:
         for i in range(grid.num_layers):
             layer_operators = _remove_duplicates(grid.layer(i))
 
-            if not separate:
-                decoration_layer = [""] * grid.num_wires
+            decoration_layer = [""] * grid.num_wires
+
 
             for op in layer_operators:
                 if op is None:
@@ -102,33 +126,22 @@ class CircuitDrawer:
                     wires = op.wires
 
                 if len(wires) > 1:
-                    if separate:
-                        decoration_layer = [""] * grid.num_wires
+                    min_wire = min(wires)
+                    max_wire = max(wires)
 
-                    sorted_wires = wires.copy()
-                    sorted_wires.sort()
-
-                    decoration_layer[sorted_wires[0]] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
-
-                    for k in range(sorted_wires[0] + 1, sorted_wires[-1]):
-                        if k in sorted_wires:
-                            decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
-                        else:
-                            decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
-
-                    decoration_layer[
-                        sorted_wires[-1]
-                    ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
-
-                    if separate:
+                    # If there is a conflict between decorations, we start a new decoration_layer
+                    if any([decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)]):
                         representation_grid.insert_layer(i + j, decoration_layer)
                         inserted_indices.append(i + j)
                         j += 1
 
-            if not separate:
-                representation_grid.insert_layer(i + j, decoration_layer)
-                inserted_indices.append(i + j)
-                j += 1
+                        decoration_layer = [""] * grid.num_wires
+
+                    self.add_multi_wire_connectors_to_layer(wires, decoration_layer)
+
+            representation_grid.insert_layer(i + j, decoration_layer)
+            inserted_indices.append(i + j)
+            j += 1
 
         return inserted_indices
 
@@ -243,10 +256,10 @@ class CircuitDrawer:
 
         # Add multi-wire gate lines
         self.operation_decoration_indices = self.resolve_decorations(
-            self.operation_grid, self.operation_representation_grid, False,
+            self.operation_grid, self.operation_representation_grid,
         )
         self.observable_decoration_indices = self.resolve_decorations(
-            self.observable_grid, self.observable_representation_grid, True,
+            self.observable_grid, self.observable_representation_grid,
         )
 
         CircuitDrawer.pad_representation(

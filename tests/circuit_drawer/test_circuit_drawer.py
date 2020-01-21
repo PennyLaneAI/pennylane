@@ -167,27 +167,6 @@ class TestCircuitDrawer:
         [["╭"], ["├"], ["├"], ["├"], ["├"], ["╰"]]
     )
 
-    @pytest.mark.parametrize(
-        "grid,target_representation_grid",
-        [
-            (interlocking_multiwire_gate_grid, interlocking_multiwire_gate_representation_grid),
-            (
-                multiwire_and_single_wire_gate_grid,
-                multiwire_and_single_wire_gate_representation_grid,
-            ),
-            (all_wire_state_preparation_grid, all_wire_state_preparation_representation_grid),
-        ],
-    )
-    def test_resolve_decorations_separate(
-        self, dummy_circuit_drawer, grid, target_representation_grid
-    ):
-        """Test that decorations are properly resolved."""
-
-        representation_grid = Grid()
-        dummy_circuit_drawer.resolve_decorations(grid, representation_grid, True)
-
-        assert_nested_lists_equal(representation_grid.raw_grid, target_representation_grid.raw_grid)
-
     multiwire_gate_grid = to_grid([[qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[3, 4])]], 5)
 
     multiwire_gate_representation_grid = Grid([["╭"], ["╰"], [""], ["╭"], ["╰"],])
@@ -203,17 +182,23 @@ class TestCircuitDrawer:
     @pytest.mark.parametrize(
         "grid,target_representation_grid",
         [
+            (interlocking_multiwire_gate_grid, interlocking_multiwire_gate_representation_grid),
+            (
+                multiwire_and_single_wire_gate_grid,
+                multiwire_and_single_wire_gate_representation_grid,
+            ),
+            (all_wire_state_preparation_grid, all_wire_state_preparation_representation_grid),
             (multiwire_gate_grid, multiwire_gate_representation_grid),
             (multi_and_single_wire_gate_grid, multi_and_single_wire_gate_representation_grid),
         ],
     )
-    def test_resolve_decorations_not_separate(
+    def test_resolve_decorations(
         self, dummy_circuit_drawer, grid, target_representation_grid
     ):
         """Test that decorations are properly resolved."""
 
         representation_grid = Grid()
-        dummy_circuit_drawer.resolve_decorations(grid, representation_grid, False)
+        dummy_circuit_drawer.resolve_decorations(grid, representation_grid)
 
         assert_nested_lists_equal(representation_grid.raw_grid, target_representation_grid.raw_grid)
 
