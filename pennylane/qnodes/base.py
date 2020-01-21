@@ -408,7 +408,7 @@ class BaseQNode:
 
         .. code-block:: python
             >>> dev._make_variables([3.4, [1.2, 3.4, 5.6]], {})
-            ["a", ["w[0]", "w[1]", "w[2]"]]
+            ["a", ["w[0]", "w[1]", "w[2]"]], {}
 
         where the Variable instances are replaced with their name for readability.
 

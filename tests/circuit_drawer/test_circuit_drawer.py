@@ -192,9 +192,7 @@ class TestCircuitDrawer:
             (multi_and_single_wire_gate_grid, multi_and_single_wire_gate_representation_grid),
         ],
     )
-    def test_resolve_decorations(
-        self, dummy_circuit_drawer, grid, target_representation_grid
-    ):
+    def test_resolve_decorations(self, dummy_circuit_drawer, grid, target_representation_grid):
         """Test that decorations are properly resolved."""
 
         representation_grid = Grid()

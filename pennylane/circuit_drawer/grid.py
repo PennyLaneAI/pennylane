@@ -15,6 +15,7 @@
 This module contains the Grid class which emulates a 2D array.
 """
 
+
 def _transpose(target_list):
     """Transpose the given list of lists.
 

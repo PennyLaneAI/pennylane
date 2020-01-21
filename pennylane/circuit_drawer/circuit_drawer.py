@@ -48,6 +48,7 @@ class CircuitDrawer:
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
+
     def __init__(
         self,
         raw_operation_grid,
@@ -149,10 +150,7 @@ class CircuitDrawer:
             else:
                 decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
 
-        decoration_layer[
-            max_wire
-        ] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
-
+        decoration_layer[max_wire] = self.charset.BOTTOM_MULTI_LINE_GATE_CONNECTOR
 
     def resolve_decorations(self, grid, representation_grid):
         """Resolve the decorations of the given Grid.
@@ -175,7 +173,6 @@ class CircuitDrawer:
 
             decoration_layer = [""] * grid.num_wires
 
-
             for op in layer_operators:
                 if op is None:
                     continue
@@ -191,7 +188,9 @@ class CircuitDrawer:
                     max_wire = max(wires)
 
                     # If there is a conflict between decorations, we start a new decoration_layer
-                    if any([decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)]):
+                    if any(
+                        [decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)]
+                    ):
                         representation_grid.insert_layer(i + j, decoration_layer)
                         inserted_indices.append(i + j)
                         j += 1

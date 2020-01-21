@@ -20,6 +20,7 @@ import pennylane as qml
 
 from .charsets import UnicodeCharSet
 
+
 class RepresentationResolver:
     """Resolves the string representation of PennyLane objects.
 
@@ -128,9 +129,7 @@ class RepresentationResolver:
         if coefficient == -1.0:
             return "-" + str(variable)
 
-        return "{:+.3g}{}".format(
-            coefficient, variable
-        )
+        return "{:+.3g}{}".format(coefficient, variable)
 
     @staticmethod
     def _format_matrix_operation(operation, symbol, cache):
@@ -242,7 +241,6 @@ class RepresentationResolver:
 
             return poly_str
 
-
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
 
@@ -276,10 +274,14 @@ class RepresentationResolver:
             return name
 
         if op.name == "QubitUnitary":
-            return RepresentationResolver._format_matrix_operation(op, "U", self.unitary_matrix_cache)
+            return RepresentationResolver._format_matrix_operation(
+                op, "U", self.unitary_matrix_cache
+            )
 
         if op.name == "Hermitian":
-            return RepresentationResolver._format_matrix_operation(op, "H", self.hermitian_matrix_cache)
+            return RepresentationResolver._format_matrix_operation(
+                op, "H", self.hermitian_matrix_cache
+            )
 
         if op.name == "QuadOperator":
             par_rep = self.single_parameter_representation(op.params[0])
@@ -310,7 +312,9 @@ class RepresentationResolver:
             "QubitStateVector",
             "Interferometer",
         }:
-            return name + RepresentationResolver._format_matrix_arguments(op.params, "M", self.matrix_cache)
+            return name + RepresentationResolver._format_matrix_arguments(
+                op.params, "M", self.matrix_cache
+            )
 
         return "{}({})".format(
             name, ", ".join([self.single_parameter_representation(par) for par in op.params])
@@ -361,4 +365,3 @@ class RepresentationResolver:
             return self.output_representation(element, wire)
 
         return self.operator_representation(element, wire)
-
