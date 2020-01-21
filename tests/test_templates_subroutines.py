@@ -48,7 +48,7 @@ class TestInterferometer:
             Interferometer(theta=[], phi=[], varphi=varphi, beamsplitter=bs, wires=0)
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(ValueError, match="Beamsplitter option"):
+        with pytest.raises(ValueError, match="did not recognize option"):
             circuit(varphi, bs='a')
 
     def test_clements_beamsplitter_convention(self, tol):

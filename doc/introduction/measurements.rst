@@ -42,10 +42,10 @@ The available measurement functions are
     exception of :func:`~.pennylane.sample`, as it returns *stochastic*
     results.
 
-Multiple measurements
+Combined measurements
 ---------------------
 
-Quantum functions can also return multiple measurements, as long as each wire
+Quantum functions can also return combined measurements of multiple observables, as long as each wire
 is not measured more than once:
 
 .. code-block:: python
@@ -65,6 +65,39 @@ You can also use list comprehensions, and other common Python patterns:
         qml.CNOT(wires=[0, 1])
         qml.RY(y, wires=1)
         return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+As a full example of combined measurements, let us look at
+a Bell state :math:`(|00\rangle + |11\rangle)/\sqrt{2}`, prepared
+by a ``Hadamard`` and ``CNOT`` gate.
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane import numpy as np
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
+
+The combined PauliZ-measurement of the
+first and second qubit returns a list of two lists, each containing
+the measurement results of the respective qubit. As a default, :func:`~.pennylane.sample`
+returns 1000 samples per observable.
+
+>>> result = circuit()
+>>> result.shape
+(2, 1000)
+
+Since the two qubits are maximally entangled,
+the measurement results always coincide, and the lists are therefore equal:
+
+>>> np.all(result[0] == result[1])
+True
+
 
 Tensor observables
 ------------------
@@ -126,7 +159,12 @@ Changing the number of shots
 For hardware devices where the number of shots determines the accuracy
 of the expectation value and variance, as well as the number of samples returned,
 it can sometimes be convenient to execute the same QNode with differing
-number of shots. This can be done by modifying the value of :attr:`.Device.shots`:
+number of shots.
+
+For simulators like ``default.qubit``, finite shots will be simulated if
+we set ``analytic=False`` in the device.
+
+The shot number can be changed by modifying the value of :attr:`.Device.shots`:
 
 
 .. code-block:: python
@@ -145,3 +183,42 @@ number of shots. This can be done by modifying the value of :attr:`.Device.shots
     # execute the QNode again, now using 1 shot
     dev.shots = 1
     result = circuit(0.54, 0.1)
+
+
+With an increasing number of shots, the average over
+measurement samples converges to the exact expectation of an observable. Consider the following
+circuit:
+
+.. code-block:: python
+
+    # fix seed to make results reproducable
+    np.random.seed(1)
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+Running the simulator when ``analytic`` is set to ``True`` returns the exact expectation.
+
+>>> circuit()
+0.0
+
+Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
+
+>>> dev.analytic = False
+>>> dev.shots = 10
+>>> circuit()
+0.2
+
+>>> dev.shots = 1000
+>>> circuit()
+-0.062
+
+>>> dev.shots = 100000
+>>> circuit()
+0.00056
+
+The result converges to the exact expectation.
