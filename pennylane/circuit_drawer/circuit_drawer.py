@@ -165,6 +165,8 @@ class CircuitDrawer:
             if i in skip_indices:
                 continue
 
+            # Take the current layer and pad it with the pad_str
+            # and also prepend with prepend_str and append the suffix_str
             # pylint: disable=cell-var-from-loop
             representation_grid.replace_layer(
                 i,
