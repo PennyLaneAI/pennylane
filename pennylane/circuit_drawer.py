@@ -271,7 +271,7 @@ class UnicodeCharSet(CharSet):
 
 
 class AsciiCharSet(CharSet):
-    """Charset for CircuitDrawing made of Unicode characters."""
+    """Charset for CircuitDrawing made of ASCII characters."""
 
     # pylint: disable=too-few-public-methods
 
