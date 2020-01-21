@@ -935,7 +935,7 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        node._construct([1.0, 2.0, 3.0, 4.0], {})
+        arg_vars, kwarg_vars = node._make_variables([1.0, 2.0, 3.0, 4.0], {})
 
         expected_arg_vars = [
             Variable(0, "a"),
@@ -944,10 +944,10 @@ class TestQNodeVariableMap:
             Variable(3, "d"),
         ]
 
-        for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
             assert var == expected
 
-        assert not node.kwarg_vars
+        assert not kwarg_vars
 
     def test_array_arguments(self, mock_device):
         """Test that array arguments are properly converted to Variable instances."""
@@ -962,8 +962,7 @@ class TestQNodeVariableMap:
         node = BaseQNode(circuit, mock_device)
 
         weights = np.array([[1, 2], [3, 4]])
-
-        node._construct([weights], {})
+        arg_vars, kwarg_vars = node._make_variables([weights], {})
 
         expected_arg_vars = [
             Variable(0, "weights[0,0]"),
@@ -972,10 +971,10 @@ class TestQNodeVariableMap:
             Variable(3, "weights[1,1]"),
         ]
 
-        for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
             assert var == expected
 
-        assert not node.kwarg_vars
+        assert not kwarg_vars
 
     def test_regular_keyword_arguments(self, mock_device):
         """Test that regular keyword arguments are properly converted to Variable instances."""
@@ -988,7 +987,7 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        node._construct([], {"b" : 3})
+        arg_vars, kwarg_vars = node._make_variables([], {"b" : 3})
 
         expected_kwarg_vars = {
             "a" : [Variable(0, "a", is_kwarg=True)],
@@ -997,15 +996,10 @@ class TestQNodeVariableMap:
             "d" : [Variable(0, "d", is_kwarg=True)],
         }
 
-        assert not node.arg_vars
-
-        print(node.kwarg_vars)
+        assert not arg_vars
 
         for expected_key in expected_kwarg_vars:
-            print("expected_key = ", expected_key)
-            for var, expected in zip(qml.utils._flatten(node.kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
-                print("var = ", var)
-                print("expected = ", expected)
+            for var, expected in zip(qml.utils._flatten(kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
                 assert var == expected
 
     def test_array_keyword_arguments(self, mock_device):
@@ -1022,7 +1016,7 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        node._construct([], {"b" : np.array([6,7,8,9])})
+        arg_vars, kwarg_vars = node._make_variables([], {"b" : np.array([6,7,8,9])})
 
         expected_kwarg_vars = {
             "a" : [
@@ -1039,15 +1033,10 @@ class TestQNodeVariableMap:
             ],
         }
 
-        assert not node.arg_vars
-
-        print(node.kwarg_vars)
+        assert not arg_vars
 
         for expected_key in expected_kwarg_vars:
-            print("expected_key = ", expected_key)
-            for var, expected in zip(qml.utils._flatten(node.kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
-                print("var = ", var)
-                print("expected = ", expected)
+            for var, expected in zip(qml.utils._flatten(kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
                 assert var == expected
 
     def test_variadic_arguments(self, mock_device):
@@ -1061,7 +1050,7 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        node._construct([0.1, 0.2, np.array([0, 1, 2, 3]), 0.5], {})
+        arg_vars, kwarg_vars = node._make_variables([0.1, 0.2, np.array([0, 1, 2, 3]), 0.5], {})
 
         expected_arg_vars = [
             Variable(0, "a"),
@@ -1073,9 +1062,9 @@ class TestQNodeVariableMap:
             Variable(6, "b[2]"),
         ]
 
-        assert not node.kwarg_vars
+        assert not kwarg_vars
 
-        for var, expected in zip(qml.utils._flatten(node.arg_vars), expected_arg_vars):
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
             assert var == expected
 
 
