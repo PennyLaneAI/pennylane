@@ -313,7 +313,7 @@ class RepresentationResolver:
                 self.operator_representation(tensor_obs, wire) for tensor_obs in op.obs
             ]
 
-            return self.charset.OTIMES.join(constituent_representations)
+            return (" " + self.charset.OTIMES + " ").join(constituent_representations)
 
         name = op.name
 
