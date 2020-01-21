@@ -200,7 +200,7 @@ Running the simulator without specifying the shot number returns the exact expec
 >>> circuit()
 0.0
 
-Now we set the device to return stochastic results, and increase the shot number.
+Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
 
 >>> dev.analytic = False
 >>> dev.shots = 10
