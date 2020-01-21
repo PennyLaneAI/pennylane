@@ -21,7 +21,7 @@ import networkx as nx
 
 import pennylane as qml
 
-from .circuit_drawer import Charsets, CircuitDrawer
+from .circuit_drawer import CHARSETS, CircuitDrawer
 from .utils import _flatten
 
 
@@ -427,7 +427,7 @@ class CircuitGraph:
         """
         grid, obs = self.greedy_layers()
 
-        if charset not in Charsets:
+        if charset not in CHARSETS:
             raise ValueError(
                 "Charset {} is not supported. Supported charsets: {}.".format(
                     charset, ", ".join(Charsets.keys())
