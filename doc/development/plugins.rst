@@ -29,8 +29,8 @@ A quick primer on terminology of PennyLane plugins in this section:
 
 .. important::
 
-    In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy)
-    should be imported in all places (i.e., ``import numpy as np``).
+    In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by
+    PennyLane) should be imported in all places (i.e., ``import numpy as np``).
 
 
 Creating your device
@@ -44,25 +44,19 @@ Creating your device
     returns correct expectation values.
 
 The first step in creating your PennyLane plugin is to create your device class.
-This is as simple as importing the abstract base class :class:`~.QubitDevice` from PennyLane,
-and subclassing it:
+This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
 
 .. code-block:: python
 
-    from pennylane import QubitDevice
+    from pennylane import Device
 
-    class MyDevice(QubitDevice):
+    class MyDevice(Device):
         """MyDevice docstring"""
         name = 'My custom device'
         short_name = 'example.mydevice'
         pennylane_requires = '0.1.0'
         version = '0.0.1'
         author = 'Ada Lovelace'
-
-.. note::
-
-    The :class:`~.Device` class has been **deprecated**, and all new plugin devices
-    should instead subclass :class:`~.QubitDevice`.
 
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
@@ -83,6 +77,12 @@ and use the device. These include:
 * :attr:`.Device.author`: the author of the device
 
 Defining all these attributes is mandatory.
+
+.. note::
+
+    For examples of subclasses of :class:`~.Device`, see :class:`~.DefaultQubit`,
+    :class:`~.DefaultGaussian`, or the `Qiskit <https://pennylane-qiskit.readthedocs.io/>`_
+    plugin.
 
 
 Supporting operators and observables
@@ -136,15 +136,14 @@ Device execution
 Once all the class attributes are defined, it is necessary to define some required class
 methods, to allow PennyLane to apply operations and measure observables on your device.
 
-To execute operations on the device, the following methods **must** be defined:
+Applying operations
+^^^^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.QubitDevice
+To execute operations on the device, the following method must be defined:
 
-.. autosummary::
-
-    apply
-    probability
-
+* :meth:`.Device.apply`: This accepts an operation name (as a string), the wires (subsystems)
+  to apply the operation to, and the parameters for the operation, and should apply the
+  resulting operation to given wires of the device.
 
 Measuring observables
 ^^^^^^^^^^^^^^^^^^^^^
