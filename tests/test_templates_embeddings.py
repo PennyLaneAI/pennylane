@@ -94,7 +94,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(ValueError, match="Vector of features has to be normalized to 1.0"):
+        with pytest.raises(ValueError, match="'features' must be a vector of length"):
             circuit(x=not_nrmlzd)
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
@@ -111,7 +111,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="AmplitudeEmbedding must get a feature vector of size"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=inpt)
 
     @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
@@ -128,7 +128,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="AmplitudeEmbedding must get a feature vector of size"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=inpt)
 
     @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
@@ -145,7 +145,7 @@ class TestAmplitudeEmbedding:
             AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=0., normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="AmplitudeEmbedding must get a feature vector of at least size"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=inpt)
 
 
@@ -220,7 +220,7 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation=strategy)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError, match="AngleEmbedding cannot process more features than number of qubits"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=features)
 
     def test_angle_embedding_exception_wrongrot(self):
@@ -235,7 +235,7 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires=range(n_subsystems), rotation='A')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_subsystems)]
 
-        with pytest.raises(ValueError, match="Rotation strategy"):
+        with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1])
 
     def test_angle_embedding_exception_wires_not_valid(self):
@@ -250,7 +250,7 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires='a')
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Wires must be a positive"):
+        with pytest.raises(ValueError, match="wires must be a positive"):
             circuit(x=[1])
 
 
@@ -311,7 +311,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires="a")
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Wires must be a positive"):
+        with pytest.raises(ValueError, match="wires must be a positive"):
             circuit(x=[1, 0])
 
     def test_basis_embedding_input_not_binary_exception(self):
@@ -326,7 +326,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Basis state must only consist of 0s and 1s"):
+        with pytest.raises(ValueError, match="'basis_state' must only consist of"):
             circuit(x=[2, 3])
 
 
@@ -453,7 +453,7 @@ class TestQAOAEmbedding:
             QAOAEmbedding(features=x, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="QAOAEmbedding cannot process more features"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=features)
 
     def test_qaoa_embedding_exception_wrongrot(self):
@@ -469,7 +469,7 @@ class TestQAOAEmbedding:
             QAOAEmbedding(features=x, weights=weights, wires=range(n_wires), local_field='A')
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="Option for local field not known"):
+        with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1])
 
     def test_qaoa_embedding_exception_wires_not_valid(self):
@@ -485,7 +485,7 @@ class TestQAOAEmbedding:
             QAOAEmbedding(features=x, weights=weights, wires='a')
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Wires must be a positive"):
+        with pytest.raises(ValueError, match="wires must be a positive"):
             circuit(x=[1])
 
 
@@ -536,7 +536,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="DisplacementEmbedding cannot process more features than number of"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=[0.2, 0.3, 0.4])
 
     def test_displacement_embedding_strategy_not_recognized_exception(self):
@@ -551,7 +551,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="Did not recognise parameter encoding method"):
+        with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1, 2])
 
     def test_displacement_embedding_wires_not_valid_exception(self):
@@ -566,7 +566,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires='a')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match="Wires must be a positive"):
+        with pytest.raises(ValueError, match="wires must be a positive"):
             circuit(x=[1])
 
 
@@ -616,7 +616,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="SqueezingEmbedding cannot process more features than number of"):
+        with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=[0.2, 0.3, 0.4])
 
     def test_squeezing_embedding_strategy_not_recognized_exception(self):
@@ -631,7 +631,7 @@ class TestSqueezingEmbedding:
             SqueezingEmbedding(features=x, wires=range(n_wires), method='A')
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="Did not recognise parameter encoding method"):
+        with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1, 2])
 
     def test_squeezing_embedding_wires_not_valid_exception(self):
@@ -646,5 +646,5 @@ class TestSqueezingEmbedding:
             DisplacementEmbedding(features=x, wires='a')
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match="Wires must be a positive"):
+        with pytest.raises(ValueError, match="wires must be a positive"):
             circuit(x=[1])

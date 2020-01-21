@@ -22,7 +22,7 @@ from pennylane.templates.decorator import template
 from pennylane.templates.utils import (_check_shapes,
                                        _check_no_variable,
                                        _check_wires,
-                                       _check_hyperp_is_in_options)
+                                       _check_is_in_options)
 
 
 @template
@@ -107,20 +107,21 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
 
     #############
     # Input checks
-    _check_no_variable([beamsplitter, mesh], ['beamsplitter', 'mesh'])
+    _check_no_variable(beamsplitter, msg="'beamsplitter' cannot be differentiable")
+    _check_no_variable(mesh, msg="'mesh' cannot be differentiable")
 
-    wires, n_wires = _check_wires(wires)
+    wires = _check_wires(wires)
 
     weights_list = [theta, phi, varphi]
+    n_wires = len(wires)
     n_if = n_wires*(n_wires-1)//2
-    shape_list = [(n_if,), (n_if,), (n_wires,)]
-    _check_shapes(weights_list, shape_list)
+    expected_shapes = [(n_if,), (n_if,), (n_wires,)]
+    _check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
 
-    msg = "Beamsplitter option {} not recognized.".format(mesh)
-    _check_hyperp_is_in_options(beamsplitter, ['clements', 'pennylane'], msg=msg)
-
-    msg = "Mesh option {} not recognized.".format(mesh)
-    _check_hyperp_is_in_options(mesh, ['triangular', 'rectangular'], msg=msg)
+    _check_is_in_options(beamsplitter, ['clements', 'pennylane'], msg="did not recognize option {} for 'beamsplitter'"
+                                                                      "".format(beamsplitter))
+    _check_is_in_options(mesh, ['triangular', 'rectangular'], msg="did not recognize option {} for 'mesh'"
+                                                                  "".format(mesh))
     ###############
 
     M = len(wires)
