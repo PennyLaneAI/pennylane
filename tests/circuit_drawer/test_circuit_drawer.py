@@ -22,11 +22,13 @@ from unittest.mock import Mock
 
 import pennylane as qml
 from pennylane.circuit_drawer import (
-    _remove_duplicates,
-    _transpose,
     Grid,
     RepresentationResolver,
     CircuitDrawer,
+)
+from pennylane.circuit_drawer.circuit_drawer import (
+    _remove_duplicates,
+    _transpose,
 )
 from pennylane.variable import Variable
 
