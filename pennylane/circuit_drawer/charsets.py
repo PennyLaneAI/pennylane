@@ -61,22 +61,37 @@ class UnicodeCharSet(CharSet):
     PIPE = "|"
     OTIMES = "⊗"
 
+    _superscript_dict = {
+        "0": "⁰",
+        "1": "¹",
+        "2": "²",
+        "3": "³",
+        "4": "⁴",
+        "5": "⁵",
+        "6": "⁶",
+        "7": "⁷",
+        "8": "⁸",
+        "9": "⁹",
+    }
+
+    _subscript_dict = {
+        "0": "₀",
+        "1": "₁",
+        "2": "₂",
+        "3": "₃",
+        "4": "₅",
+        "5": "⁵",
+        "6": "₆",
+        "7": "₇",
+        "8": "₈",
+        "9": "₉",
+    }
+
     @staticmethod
     def to_superscript(num):
         """Convert the given number to a superscripted string."""
         ret = str(num)
-        for old, new in {
-            "0": "⁰",
-            "1": "¹",
-            "2": "²",
-            "3": "³",
-            "4": "⁴",
-            "5": "⁵",
-            "6": "⁶",
-            "7": "⁷",
-            "8": "⁸",
-            "9": "⁹",
-        }.items():
+        for old, new in UnicodeCharSet._superscript_dict.items():
             ret = ret.replace(old, new)
 
         return ret
@@ -85,18 +100,7 @@ class UnicodeCharSet(CharSet):
     def to_subscript(num):
         """Convert the given number to a subscripted string."""
         ret = str(num)
-        for old, new in {
-            "0": "₀",
-            "1": "₁",
-            "2": "₂",
-            "3": "₃",
-            "4": "₅",
-            "5": "⁵",
-            "6": "₆",
-            "7": "₇",
-            "8": "₈",
-            "9": "₉",
-        }.items():
+        for old, new in UnicodeCharSet._subscript_dict.items():
             ret = ret.replace(old, new)
 
         return ret
