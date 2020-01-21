@@ -24,7 +24,8 @@ import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
-                                       _check_shape)
+                                       _check_shape,
+                                       _get_shape)
 from pennylane.variable import Variable
 
 
@@ -77,19 +78,21 @@ def BasisStatePreparation(basis_state, wires):
 
     ######################
     # Input checks
-    wires, n_wires = _check_wires(wires)
 
-    msg = "The size of the basis state must match the number of qubits {}; got {}.".format(n_wires, len(basis_state))
-    _check_shape(basis_state, (n_wires,), msg=msg)
+    wires = _check_wires(wires)
+
+    expected_shape = (len(wires),)
+    _check_shape(basis_state, expected_shape, msg=" 'basis_state' must be of shape {}; got {}."
+                                                  "".format(expected_shape, _get_shape(basis_state)))
 
     # basis_state cannot be trainable
-    msg = "Basis state influences circuit architecture and can therefore not be passed as a " \
-           "positional argument to the quantum node."
-    _check_no_variable([basis_state], ['basisstate'], msg=msg)
+    _check_no_variable(basis_state, msg="'basis_state' cannot be differentiable; must be passed as a keyword argument "
+                                        "to the quantum node")
 
-    # basis_state is guaranteed to be a list
+    # basis_state is guaranteed to be a list of binary values
     if any([b not in [0, 1] for b in basis_state]):
-        raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(basis_state))
+        raise ValueError("'basis_state' must only contain values of 0 and 1; got {}".format(basis_state))
+
     ######################
 
     for wire, state in zip(wires, basis_state):
@@ -290,10 +293,13 @@ def MottonenStatePreparation(state_vector, wires):
 
     ###############
     # Input checks
-    wires, n_wires = _check_wires(wires)
 
-    msg = "The state vector must be of size {}; got {}.".format(2**n_wires, len(state_vector))
-    _check_shape(state_vector, (2**n_wires,), msg=msg)
+    wires = _check_wires(wires)
+
+    n_wires = len(wires)
+    expected_shape = (2**n_wires,)
+    _check_shape(state_vector, expected_shape, msg="'state_vector' must be of shape {}; got {}."
+                                                   "".format(expected_shape, _get_shape(state_vector)))
 
     # check if state_vector is normalized
     if isinstance(state_vector[0], Variable):
@@ -301,9 +307,9 @@ def MottonenStatePreparation(state_vector, wires):
         norm = np.sum(np.abs(state_vector_values)**2)
     else:
         norm = np.sum(np.abs(state_vector)**2)
-
     if not np.isclose(norm, 1.0, atol=1e-3):
-        raise ValueError("State vector probabilities have to sum up to 1.0, got {}".format(norm))
+        raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
+
     #######################
 
     # Change ordering of indices, original code was for IBM machines
