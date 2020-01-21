@@ -357,7 +357,7 @@ class BaseQNode:
                 )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
-    def _determine_variable_name(self, parameter_value, prefix):
+    def _determine_structured_variable_name(self, parameter_value, prefix):
         """Determine the variable names corresponding to a parameter.
 
         This method unrolls the parameter value if it has an array
@@ -379,7 +379,7 @@ class BaseQNode:
             variable_name_string = []
 
             for idx, val in enumerate(parameter_value):
-                variable_name_string.append(self._determine_variable_name(val, "{}[{}]".format(prefix, idx)))
+                variable_name_string.append(self._determine_structured_variable_name(val, "{}[{}]".format(prefix, idx)))
         else:
             variable_name_string = prefix
 
@@ -387,6 +387,10 @@ class BaseQNode:
 
     def _make_variables(self, args, kwargs):
         """Create the :class:`~.variable.Variable` instances representing the QNode's arguments.
+
+        The created :class:`~.variable.Variable` instances are given in the same nested structure
+        as the original arguments. The :class:`~.variable.Variable` instances are named according 
+        to the python expression that adresses them inside the qfunc.
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
@@ -400,7 +404,7 @@ class BaseQNode:
         # args
         variable_name_strings = []
         for variable_name, variable_value in zip(full_argspec.args, args):
-            variable_name_strings.append(self._determine_variable_name(variable_value, variable_name))
+            variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
 
         # varargs
         len_diff = len(args) - len(full_argspec.args)
@@ -408,7 +412,7 @@ class BaseQNode:
             for idx, variable_value in enumerate(args[-len_diff:]):
                 variable_name = "{}[{}]".format(full_argspec.varargs, idx)
 
-                variable_name_strings.append(self._determine_variable_name(variable_value, variable_name))
+                variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
 
         arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
