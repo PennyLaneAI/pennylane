@@ -27,7 +27,9 @@ from pennylane.circuit_drawer import (
     CircuitDrawer,
 )
 from pennylane.circuit_drawer.circuit_drawer import (
-    _remove_duplicates,
+    _remove_duplicates
+)
+from pennylane.circuit_drawer.grid import (
     _transpose,
 )
 from pennylane.variable import Variable
