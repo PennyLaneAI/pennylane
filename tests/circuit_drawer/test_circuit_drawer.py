@@ -457,21 +457,21 @@ class TestRepresentationResolver:
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
-                "1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁",
+                "1+2x₀-1.3x₁+6p₁",
             ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
                 ),
                 1,
-                "1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀",
+                "1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀",
             ),
             (
                 qml.PolyXP(
-                    np.array([[1.2, 2.3, 4.5, 0, 0], [-1.2, 1.2, -1.5, 0, 0], [-1.3, 4.5, 2.3, 0, 0], [0, 2.6, 0, 0, 0], [0, 0, 0, -4.7, 0]]), wires=[1]
+                    np.array([[1.2, 2.3, 4.5, 0, 0], [-1.2, 1.2, -1.5, 0, 0], [-1.3, 4.5, 2.3, 0, 0], [0, 2.6, 0, 0, 0], [0, 0, 0, -4.7, -1.0]]), wires=[1]
                 ),
                 1,
-                "1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀ + 2.6 x₀x₁ - 4.7 x₁p₁",
+                "1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀+2.6x₀x₁-p₁²-4.7x₁p₁",
             ),
             (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
         ],
@@ -579,21 +579,21 @@ class TestRepresentationResolver:
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
-                "1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1",
+                "1+2x_0-1.3x_1+6p_1",
             ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
                 ),
                 1,
-                "1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0",
+                "1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0",
             ),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5, 0, 0], [-1.2, 1.2, -1.5, 0, 0], [-1.3, 4.5, 2.3, 0, 0], [0, 2.6, 0, 0, 0], [0, 0, 0, -4.7, 0]]), wires=[1]
                 ),
                 1,
-                "1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0 + 2.6 x_0x_1 - 4.7 x_1p_1",
+                "1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0+2.6x_0x_1-4.7x_1p_1",
             ),
             (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
         ],
@@ -622,7 +622,7 @@ class TestRepresentationResolver:
             (
                 qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
                 2,
-                "⟨1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁⟩",
+                "⟨1+2x₀-1.3x₁+6p₁⟩",
             ),
             (
                 qml.expval(
@@ -631,7 +631,7 @@ class TestRepresentationResolver:
                     )
                 ),
                 1,
-                "⟨1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀⟩",
+                "⟨1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀⟩",
             ),
             (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x + sin(3.14)p⟩"),
             (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
@@ -651,7 +651,7 @@ class TestRepresentationResolver:
             (
                 qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
                 2,
-                "Var[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]",
+                "Var[1+2x₀-1.3x₁+6p₁]",
             ),
             (
                 qml.var(
@@ -660,7 +660,7 @@ class TestRepresentationResolver:
                     )
                 ),
                 1,
-                "Var[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]",
+                "Var[1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀]",
             ),
             (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
             (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
@@ -680,7 +680,7 @@ class TestRepresentationResolver:
             (
                 qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
                 2,
-                "Sample[1.0 + 2.0 x₀ - 1.3 x₁ + 6.0 p₁]",
+                "Sample[1+2x₀-1.3x₁+6p₁]",
             ),
             (
                 qml.sample(
@@ -689,7 +689,7 @@ class TestRepresentationResolver:
                     )
                 ),
                 1,
-                "Sample[1.2 + 1.1 x₀ + 3.2 p₀ + 1.2 x₀² + 2.3 p₀² + 3.0 x₀p₀]",
+                "Sample[1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀]",
             ),
             (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
             (
@@ -775,7 +775,7 @@ class TestRepresentationResolver:
             (
                 qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
                 2,
-                "<1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1>",
+                "<1+2x_0-1.3x_1+6p_1>",
             ),
             (
                 qml.expval(
@@ -784,7 +784,7 @@ class TestRepresentationResolver:
                     )
                 ),
                 1,
-                "<1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0>",
+                "<1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0>",
             ),
             (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "<cos(3.14)x + sin(3.14)p>"),
             (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
@@ -804,7 +804,7 @@ class TestRepresentationResolver:
             (
                 qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
                 2,
-                "Var[1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1]",
+                "Var[1+2x_0-1.3x_1+6p_1]",
             ),
             (
                 qml.var(
@@ -813,7 +813,7 @@ class TestRepresentationResolver:
                     )
                 ),
                 1,
-                "Var[1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0]",
+                "Var[1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0]",
             ),
             (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
             (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
@@ -833,7 +833,7 @@ class TestRepresentationResolver:
             (
                 qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
                 2,
-                "Sample[1.0 + 2.0 x_0 - 1.3 x_1 + 6.0 p_1]",
+                "Sample[1+2x_0-1.3x_1+6p_1]",
             ),
             (
                 qml.sample(
@@ -842,7 +842,7 @@ class TestRepresentationResolver:
                     )
                 ),
                 1,
-                "Sample[1.2 + 1.1 x_0 + 3.2 p_0 + 1.2 x_0^2 + 2.3 p_0^2 + 3.0 x_0p_0]",
+                "Sample[1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0]",
             ),
             (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
             (
@@ -1391,10 +1391,10 @@ def parameterized_cv_qnode():
 def drawn_parameterized_cv_qnode_with_variable_names():
     """The rendered circuit representation of the above CV circuit with variable names."""
     return (
-          " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
-        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
-        + " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
-        + " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
+          " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨x₀+2p₀⟩            \n"
+        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x + sin(4)p⟩ \n"
+        + " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│────────────╭┤ ⟨|1, 5╳1, 5|⟩       \n"
+        + " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1, 5╳1, 5|⟩       \n"
         + "M0 =\n"
         + "[1 1 1 2 2 3 3 3]\n"
         + "M1 =\n"
@@ -1413,10 +1413,10 @@ def drawn_parameterized_cv_qnode_with_variable_names():
 def drawn_parameterized_cv_qnode_with_values():
     """The rendered circuit representation of the above CV circuit with variable values."""
     return (
-          " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
-        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
-        + " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
-        + " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
+          " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨x₀+2p₀⟩            \n"
+        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x + sin(4)p⟩ \n"
+        + " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│────────────╭┤ ⟨|1, 5╳1, 5|⟩       \n"
+        + " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1, 5╳1, 5|⟩       \n"
         + "M0 =\n"
         + "[1 1 1 2 2 3 3 3]\n"
         + "M1 =\n"

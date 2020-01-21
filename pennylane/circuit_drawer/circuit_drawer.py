@@ -288,8 +288,14 @@ class RepresentationResolver:
         if coefficient == 0:
             return ""
 
-        return " {} {} {}".format(
-            "+" if coefficient > 0 else "-", round(math.fabs(coefficient), 3), variable
+        if coefficient == 1.0:
+            return str(variable)
+
+        if coefficient == -1.0:
+            return "-" + str(variable)
+
+        return "{:+.3g}{}".format(
+            coefficient, variable
         )
 
     def operator_representation(self, op, wire):
@@ -353,7 +359,7 @@ class RepresentationResolver:
             if order == 1:
                 poly_str = ""
                 if coefficients[0] != 0:
-                    poly_str += str(coefficients[0])
+                    poly_str += "{:.3g}".format(coefficients[0])
 
                 for idx in range(0, coefficients.shape[0] // 2):
                     x = 2 * idx + 1
