@@ -52,42 +52,39 @@ class DefaultQubit(QubitDevice):
     author = 'Xanadu Inc.'
     _capabilities = {"model": "qubit", "tensor_observables": True, "inverse_operations": True}
 
-    # Note: BasisState and QubitStateVector don't
-    # map to any particular function, as they modify
-    # the internal device state directly.
-    _operation_map = {
-        'BasisState': None,
-        'QubitStateVector': None,
-        'QubitUnitary': unitary,
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'S': S,
-        'T': T,
-        'CNOT': CNOT,
-        'SWAP': SWAP,
-        'CSWAP': CSWAP,
-        'Toffoli': Toffoli,
-        'CZ': CZ,
-        'PhaseShift': Rphi,
-        'RX': Rotx,
-        'RY': Roty,
-        'RZ': Rotz,
-        'Rot': Rot3,
-        'CRX': CRotx,
-        'CRY': CRoty,
-        'CRZ': CRotz,
-        'CRot': CRot3
+    operations = {
+        'BasisState',
+        'QubitStateVector',
+        'QubitUnitary',
+        'PauliX',
+        'PauliY',
+        'PauliZ',
+        'Hadamard',
+        'S',
+        'T',
+        'CNOT',
+        'SWAP',
+        'CSWAP',
+        'Toffoli',
+        'CZ',
+        'PhaseShift',
+        'RX',
+        'RY',
+        'RZ',
+        'Rot',
+        'CRX',
+        'CRY',
+        'CRZ',
+        'CRot'
     }
 
-    _observable_map = {
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'Hermitian': hermitian,
-        'Identity': identity
+    observables = {
+        'PauliX',
+        'PauliY',
+        'PauliZ',
+        'Hadamard',
+        'Hermitian',
+        'Identity'
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
@@ -131,8 +128,7 @@ class DefaultQubit(QubitDevice):
         for operation in rotations:
             wires = operation.wires
             par = operation.parameters
-            A = self._get_operator_matrix(operation.name, par)
-            self._state = self.mat_vec_product(A, self._state, wires)
+            self._state = self.mat_vec_product(operation.matrix, self._state, wires)
 
     @property
     def state(self):
@@ -220,55 +216,6 @@ class DefaultQubit(QubitDevice):
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
-    def get_operator_matrix_for_measurement(self, observable, par):
-        """Get the operator matrix for a given observable before measurement.
-
-        Args:
-          observable (str or list[str]): name of the operation/observable
-          par (tuple[float] or list[list[Any]]): parameter values
-        Returns:
-          array: matrix representation.
-        """
-        if isinstance(observable, list):
-            return self._get_tensor_operator_matrix(observable, par)
-
-        return self._get_operator_matrix(observable, par)
-
-    def _get_operator_matrix(self, operation, par):
-        """Get the operator matrix for a given operation or observable.
-
-        If the inverse was defined for an operation, returns the
-        conjugate transpose of the operator matrix.
-
-        Args:
-          operation    (str): name of the operation/observable
-          par (tuple[float]): parameter values
-        Returns:
-          array: matrix representation.
-        """
-
-        operation_map = {**self._operation_map, **self._observable_map}
-
-        if operation.endswith(Operation.string_for_inverse):
-            A = operation_map[operation[:-len(Operation.string_for_inverse)]]
-            return A.conj().T if not callable(A) else A(*par).conj().T
-
-        A = operation_map[operation]
-        return A if not callable(A) else A(*par)
-
-    def _get_tensor_operator_matrix(self, obs, par):
-        """Get the operator matrix for a given tensor product of operations.
-
-        Args:
-            obs (list[str]): list of observable names to tensor
-            par (list[list[Any]]): parameter values
-
-        Returns:
-            array: matrix representation.
-        """
-        ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
-        return functools.reduce(np.kron, ops)
-
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
@@ -276,14 +223,6 @@ class DefaultQubit(QubitDevice):
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
         self._pre_rotated_state = self._state
-
-    @property
-    def operations(self):
-        return set(self._operation_map.keys())
-
-    @property
-    def observables(self):
-        return set(self._observable_map.keys())
 
     def probability(self, wires=None):
         if self._state is None:

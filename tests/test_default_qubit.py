@@ -22,10 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.operation import Operation
-from pennylane.plugins.default_qubit import (CRot3, CRotx, CRoty, CRotz,
-                                             Rot3, Rotx, Roty, Rotz,
-                                             Rphi, Y, Z, hermitian,
-                                             spectral_decomposition, unitary)
 
 U = np.array(
     [

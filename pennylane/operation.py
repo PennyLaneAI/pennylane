@@ -569,6 +569,13 @@ class Operation(Operator):
         return self
 
     @property
+    def matrix(self):
+        if self.inverse:
+            return np.linalg.inv(self._matrix(*self.parameters))
+
+        return self._matrix(*self.parameters)
+
+    @property
     def base_name(self):
         """Get base name of the operator.
         """
