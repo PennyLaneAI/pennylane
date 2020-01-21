@@ -62,7 +62,7 @@ class Hadamard(Observable, Operation):
         where :math:`U = R_y(-\pi/4)`.
 
         Returns:
-            list(pennylane.Operation): A list of gates that diagonalize Hadamard in
+            list(~.Operation): A list of gates that diagonalize Hadamard in
             the computational basis.
         """
         return [RY(-np.pi/4, wires=self.wires)]
@@ -140,7 +140,7 @@ class PauliY(Observable, Operation):
         where :math:`U=HSZ`.
 
         Returns:
-            list(pennylane.Operation): A list of gates that diagonalize PauliY in the
+            list(~.Operation): A list of gates that diagonalize PauliY in the
                 computational basis.
         """
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]

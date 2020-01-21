@@ -168,7 +168,7 @@ class Grid:
         """Append the layers of another Grid to this Grid.
 
         Args:
-            other_grid (pennylane.circuit_drawer.Grid): Grid whos layers will be appended
+            other_grid (pennylane.circuit_drawer.Grid): Grid whose layers will be appended
         """
         for i in range(other_grid.num_layers):
             self.append_layer(other_grid.layer(i))
@@ -304,7 +304,7 @@ Charsets = {
     "unicode": UnicodeCharSet,
     "ascii": AsciiCharSet,
 }
-"""Dictionary with all available CharSets."""
+"""Dict[str, CharSet]: Dictionary mapping character sets to all available :class:`~.CharSets` classes."""
 
 
 class RepresentationResolver:
@@ -416,7 +416,7 @@ class RepresentationResolver:
         """Resolve the representation of an Operator.
 
         Args:
-            op (pennylane.operation.Operator): The Operator instance whos representation shall be resolved
+            op (pennylane.operation.Operator): The Operator instance whose representation shall be resolved
             wire (int): The Operator's wire which is currently resolved
 
         Returns:
@@ -589,7 +589,7 @@ class RepresentationResolver:
         """Resolve the representation of a circuit's output.
 
         Args:
-            obs (pennylane.ops.Observable): The Observable instance whos representation shall be resolved
+            obs (pennylane.ops.Observable): The Observable instance whose representation shall be resolved
             wire (int): The Observable's wire which is currently resolved
 
         Returns:
@@ -616,7 +616,7 @@ class RepresentationResolver:
         """Resolve the representation of an element in the circuit's Grid.
 
         Args:
-            element (Union[NoneType,str,qml.operation.Operator]): The circuit element whos representation shall be resolved
+            element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be resolved
             wire (int): The element's wire which is currently resolved
 
         Returns:
@@ -650,7 +650,7 @@ class CircuitDrawer:
     """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
 
     Args:
-        raw_operation_grid (list[list[qml.operation.Operation]]): The CircuitGraph's operations
+        raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing. Defaults to UnicodeCharSet.
         show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
