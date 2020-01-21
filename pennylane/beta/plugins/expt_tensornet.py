@@ -19,6 +19,7 @@ import warnings
 from itertools import product
 
 import numpy as np
+from numpy.linalg import eigh
 
 try:
     import tensornetwork as tn

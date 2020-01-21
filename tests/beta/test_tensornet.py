@@ -21,6 +21,32 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np, QuantumFunctionError
+from pennylane.beta.plugins.expt_tensornet import (
+    CNOT,
+    CSWAP,
+    CZ,
+    SWAP,
+    CRot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    H,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
+    X,
+    Y,
+    Z,
+    hermitian,
+    identity,
+    Toffoli,
+    spectral_decomposition,
+    unitary,
+)
 
 tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 
