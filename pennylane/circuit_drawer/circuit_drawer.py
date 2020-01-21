@@ -317,9 +317,11 @@ class RepresentationResolver:
 
         name = op.name
 
+        # Use a shorter name if applicable
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
+        # Display a control symbol for all controlling qubits of a controlled Operation
         if op.name in self.control_wire_dict and wire in [
             op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]
         ]:
