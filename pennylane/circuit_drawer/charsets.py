@@ -37,9 +37,14 @@ class CharSet(abc.ABC):
     OTIMES = None
 
     @staticmethod
+    @abc.abstractmethod
     def to_superscript(num):
         """Convert the given number to a superscripted string."""
-        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def to_subscript(num):
+        """Convert the given number to a subscripted string."""
 
 
 class UnicodeCharSet(CharSet):
