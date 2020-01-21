@@ -25,3 +25,5 @@ qchem/tmp/*
 qchem/timer.dat
 qchem/tests/tmp/*
 qchem/tests/tmp/timer.dat
+timer.dat
+tmp/*

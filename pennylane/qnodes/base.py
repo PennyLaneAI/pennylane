@@ -1,4 +1,4 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -267,6 +267,14 @@ class BaseQNode:
         if only == "G":
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
+
+    def _remove_op(self, op):
+        """Remove a quantum operation from the circuit queue.
+
+        Args:
+            op (:class:`~.operation.Operation`): quantum operation to be removed from the circuit
+        """
+        self.queue.remove(op)
 
     def _append_op(self, op):
         """Append a quantum operation into the circuit queue.
