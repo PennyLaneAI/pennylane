@@ -389,8 +389,28 @@ class BaseQNode:
         """Create the :class:`~.variable.Variable` instances representing the QNode's arguments.
 
         The created :class:`~.variable.Variable` instances are given in the same nested structure
-        as the original arguments. The :class:`~.variable.Variable` instances are named according 
-        to the python expression that adresses them inside the qfunc.
+        as the original arguments. The :class:`~.variable.Variable` instances are named according
+        to the python expression that adresses them inside the qfunc. Consider the following example:
+
+        .. code-block:: python
+            @qml.qnode(dev)
+            def qfunc(a, w):
+                qml.Hadamard(0)
+                qml.CRX(a, wires=[0, 1])
+                qml.Rot(w[0], w[1], w[2], wires=[1])
+                qml.CRX(-a, wires=[0, 1])
+
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+            qfunc(3.4, [1.2, 3.4, 5.6])
+
+        In this example, ``_make_variables`` will return the following :class:`~.variable.Variable` instances
+
+        .. code-block:: python
+            >>> dev._make_variables([3.4, [1.2, 3.4, 5.6]], {})
+            ["a", ["w[0]", "w[1]", "w[2]"]]
+
+        where the Variable instances are replaced with their name for readability.
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
@@ -399,6 +419,7 @@ class BaseQNode:
                 Each positional argument is replaced with a :class:`~.variable.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
         """
+        # Get the name of the qfunc's arguments
         full_argspec = inspect.getfullargspec(self.func)
 
         # args
