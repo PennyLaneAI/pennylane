@@ -453,7 +453,7 @@ class TestRepresentationResolver:
             (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
-            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4, 5, 7╳4, 5, 7|"),
+            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7╳4,5,7|"),
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
@@ -473,7 +473,7 @@ class TestRepresentationResolver:
                 1,
                 "1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀+2.6x₀x₁-p₁²-4.7x₁p₁",
             ),
-            (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
+            (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x+sin(3.14)p"),
         ],
     )
     def test_operator_representation_unicode(self, unicode_representation_resolver, op, wire, target):
@@ -575,7 +575,7 @@ class TestRepresentationResolver:
             (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
-            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4, 5, 7X4, 5, 7|"),
+            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7X4,5,7|"),
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
@@ -595,7 +595,7 @@ class TestRepresentationResolver:
                 1,
                 "1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0+2.6x_0x_1-4.7x_1p_1",
             ),
-            (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x + sin(3.14)p"),
+            (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x+sin(3.14)p"),
         ],
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):
@@ -617,7 +617,7 @@ class TestRepresentationResolver:
             (
                 qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "⟨|4, 5, 7╳4, 5, 7|⟩",
+                "⟨|4,5,7╳4,5,7|⟩",
             ),
             (
                 qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -633,7 +633,7 @@ class TestRepresentationResolver:
                 1,
                 "⟨1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀⟩",
             ),
-            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x + sin(3.14)p⟩"),
+            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x+sin(3.14)p⟩"),
             (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
             (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
             (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
@@ -646,7 +646,7 @@ class TestRepresentationResolver:
             (
                 qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "Var[|4, 5, 7╳4, 5, 7|]",
+                "Var[|4,5,7╳4,5,7|]",
             ),
             (
                 qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -662,7 +662,7 @@ class TestRepresentationResolver:
                 1,
                 "Var[1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀]",
             ),
-            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
+            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x+sin(3.14)p]"),
             (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
             (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
             (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
@@ -675,7 +675,7 @@ class TestRepresentationResolver:
             (
                 qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "Sample[|4, 5, 7╳4, 5, 7|]",
+                "Sample[|4,5,7╳4,5,7|]",
             ),
             (
                 qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -691,7 +691,7 @@ class TestRepresentationResolver:
                 1,
                 "Sample[1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀]",
             ),
-            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
+            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x+sin(3.14)p]"),
             (
                 qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])),
                 1,
@@ -702,28 +702,28 @@ class TestRepresentationResolver:
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 1,
-                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+                "⟨|4,5,7╳4,5,7| ⊗ x⟩",
             ),
             (
                 qml.expval(
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 2,
-                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+                "⟨|4,5,7╳4,5,7| ⊗ x⟩",
             ),
             (
                 qml.expval(
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 3,
-                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+                "⟨|4,5,7╳4,5,7| ⊗ x⟩",
             ),
             (
                 qml.expval(
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 4,
-                "⟨|4, 5, 7╳4, 5, 7| ⊗ x⟩",
+                "⟨|4,5,7╳4,5,7| ⊗ x⟩",
             ),
             (
                 qml.sample(
@@ -770,7 +770,7 @@ class TestRepresentationResolver:
             (
                 qml.expval(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "<|4, 5, 7X4, 5, 7|>",
+                "<|4,5,7X4,5,7|>",
             ),
             (
                 qml.expval(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -786,7 +786,7 @@ class TestRepresentationResolver:
                 1,
                 "<1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0>",
             ),
-            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "<cos(3.14)x + sin(3.14)p>"),
+            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "<cos(3.14)x+sin(3.14)p>"),
             (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
             (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
             (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
@@ -799,7 +799,7 @@ class TestRepresentationResolver:
             (
                 qml.var(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "Var[|4, 5, 7X4, 5, 7|]",
+                "Var[|4,5,7X4,5,7|]",
             ),
             (
                 qml.var(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -815,7 +815,7 @@ class TestRepresentationResolver:
                 1,
                 "Var[1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0]",
             ),
-            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x + sin(3.14)p]"),
+            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x+sin(3.14)p]"),
             (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
             (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
             (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
@@ -828,7 +828,7 @@ class TestRepresentationResolver:
             (
                 qml.sample(qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3])),
                 1,
-                "Sample[|4, 5, 7X4, 5, 7|]",
+                "Sample[|4,5,7X4,5,7|]",
             ),
             (
                 qml.sample(qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1])),
@@ -844,7 +844,7 @@ class TestRepresentationResolver:
                 1,
                 "Sample[1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0]",
             ),
-            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x + sin(3.14)p]"),
+            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x+sin(3.14)p]"),
             (
                 qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])),
                 1,
@@ -855,28 +855,28 @@ class TestRepresentationResolver:
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 1,
-                "<|4, 5, 7X4, 5, 7| @ x>",
+                "<|4,5,7X4,5,7| @ x>",
             ),
             (
                 qml.expval(
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 2,
-                "<|4, 5, 7X4, 5, 7| @ x>",
+                "<|4,5,7X4,5,7| @ x>",
             ),
             (
                 qml.expval(
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 3,
-                "<|4, 5, 7X4, 5, 7| @ x>",
+                "<|4,5,7X4,5,7| @ x>",
             ),
             (
                 qml.expval(
                     qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]) @ qml.X(wires=[4])
                 ),
                 4,
-                "<|4, 5, 7X4, 5, 7| @ x>",
+                "<|4,5,7X4,5,7| @ x>",
             ),
             (
                 qml.sample(
