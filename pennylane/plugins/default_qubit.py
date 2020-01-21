@@ -338,7 +338,7 @@ class DefaultQubit(QubitDevice):
                 self._state = self.mat_vec_product(A, self._state, wires)
 
         # store the pre-rotated state
-        self.state = self._state
+        self._pre_rotated_state = self._state
 
         # apply the circuit rotations
         for operation in rotations:
@@ -346,6 +346,9 @@ class DefaultQubit(QubitDevice):
             par = operation.parameters
             A = self._get_operator_matrix(operation.name, par)
             self._state = self.mat_vec_product(A, self._state, wires)
+
+    def state(self):
+        return self._pre_rotated_state
 
     def apply_state_vector(self, wires, par):
         input_state = np.asarray(par[0], dtype=np.complex128)
@@ -357,16 +360,16 @@ class DefaultQubit(QubitDevice):
 
         if input_state.ndim == 1 and n_state_vector == 2**len(wires):
             # generate basis states on subset of qubits via the cartesian product
-            tuples = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+            basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
 
             # get basis states to alter on full set of qubits
-            unravelled_nums = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
-            unravelled_nums[:, wires] = tuples
+            unravelled_indices = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
+            unravelled_indices[:, wires] = basis_states
 
             # get indices for which the state is changed to input state vector elements
-            nums = np.ravel_multi_index(unravelled_nums.T, [2] * self.num_wires)
+            ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
             self._state = np.zeros_like(self._state)
-            self._state[nums] = input_state
+            self._state[ravelled_indices] = input_state
         else:
             raise ValueError("State vector must be of length 2**wires.")
 
@@ -381,7 +384,8 @@ class DefaultQubit(QubitDevice):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
-        num = int(np.dot(par[0], 2**(self.num_wires - 1 - np.array(wires))))
+        basis_states = 2**(self.num_wires - 1 - np.array(wires))
+        num = int(np.dot(par[0], basis_states))
 
         self._state = np.zeros_like(self._state)
         self._state[num] = 1.

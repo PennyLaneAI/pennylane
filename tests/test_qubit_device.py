@@ -282,64 +282,25 @@ class TestExtractStatistics:
 class TestRotateBasis:
     """Test the rotate_basis method"""
 
-    def test_wires_used_correct(self, mock_qubit_device_extract_stats, monkeypatch):
+    def test_wires_measured_correct(self, mock_qubit_device_extract_stats, monkeypatch):
         """Tests that the rotate_basis method correctly stored the wires used"""
 
-        assert not mock_qubit_device_extract_stats._wires_used
+        assert not mock_qubit_device_extract_stats._wires_measured
 
         obs_queue = [qml.PauliX(0), qml.PauliZ(1)]
 
-        with monkeypatch.context() as m:
-            results = mock_qubit_device_extract_stats.rotate_basis(obs_queue)
+        assert mock_qubit_device_extract_stats.active_wires(obs_queue) == {0, 1}
 
-        assert mock_qubit_device_extract_stats._wires_used == {0, 1}
-
-    def test_wires_used_correct_for_empyt_obs_queue(self, mock_qubit_device_extract_stats, monkeypatch):
+    def test_wires_measured_correct_for_empyt_obs_queue(self, mock_qubit_device_extract_stats, monkeypatch):
         """Tests that the rotate_basis method correctly stores an empty list when an empty
         observable queue is specified"""
 
-        assert not mock_qubit_device_extract_stats._wires_used
+        assert not mock_qubit_device_extract_stats._wires_measured
 
         obs_queue = []
 
-        with monkeypatch.context() as m:
-            results = mock_qubit_device_extract_stats.rotate_basis(obs_queue)
+        assert mock_qubit_device_extract_stats.active_wires(obs_queue) == set()
 
-        assert mock_qubit_device_extract_stats._wires_used == set()
-
-    def test_diagonalizing_gates_applied(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Tests that the rotate_basis method applies the diagonalizing gates"""
-        obs_queue = [qml.PauliX(0), qml.PauliZ(1)]
-
-        diag_gates = mock_qubit_device_extract_stats.rotate_basis(obs_queue)
-
-        assert len(diag_gates) == 1
-        assert isinstance(diag_gates[0], qml.Hadamard)
-        assert diag_gates[0].wires == [0]
-
-    def test_memory_set_if_sample_return_type(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Tests that the rotate_basis method sets the _memory attribute correctly"""
-
-        assert not mock_qubit_device_extract_stats._memory
-
-        mock_qubit_device_extract_stats.rotate_basis([])
-
-        assert not mock_qubit_device_extract_stats._memory
-
-        class SomeObservable(qml.operation.Observable):
-            num_params = 0
-            num_wires = 1
-            par_domain = 'F'
-            return_type = Sample
-            diagonalizing_gates = lambda self: []
-
-        obs_queue = [SomeObservable(0)]
-
-        with monkeypatch.context() as m:
-            m.setattr(QubitDevice, 'apply', lambda self, op: None)
-            mock_qubit_device_extract_stats.rotate_basis(obs_queue)
-
-        assert mock_qubit_device_extract_stats._memory
 
 class TestGenerateSamples:
     """Test the generate_samples method"""
@@ -347,8 +308,8 @@ class TestGenerateSamples:
     def test_auxiliary_methods_called_correctly(self, mock_qubit_device, monkeypatch):
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
-        mock_qubit_device._wires_used = [1,2]
-        number_of_states = 2 ** len(mock_qubit_device._wires_used)
+        mock_qubit_device._wires_measured = [1,2]
+        number_of_states = 2 ** len(mock_qubit_device._wires_measured)
 
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
@@ -470,7 +431,6 @@ class TestExpval:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
             m.setattr(QubitDevice, 'probability', lambda self, wires=None: probs)
             res = mock_qubit_device_with_original_statistics.expval(obs)
 
@@ -493,7 +453,6 @@ class TestExpval:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
             m.setattr(QubitDevice, 'sample', lambda self, obs: obs)
             m.setattr("numpy.mean", lambda obs: obs)
             res = mock_qubit_device_with_original_statistics.expval(obs)
@@ -517,7 +476,6 @@ class TestVar:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
             m.setattr(QubitDevice, 'probability', lambda self, wires=None: probs)
             res = mock_qubit_device_with_original_statistics.var(obs)
 
@@ -540,7 +498,6 @@ class TestVar:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, 'rotate_basis', lambda self, op: None)
             m.setattr(QubitDevice, 'sample', lambda self, obs: obs)
             m.setattr("numpy.var", lambda obs: obs)
             res = mock_qubit_device_with_original_statistics.var(obs)
