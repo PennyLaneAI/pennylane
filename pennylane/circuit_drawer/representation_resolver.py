@@ -132,6 +132,14 @@ class RepresentationResolver:
             coefficient, variable
         )
 
+    @staticmethod
+    def _format_matrix_operation(operation, symbol, cache):
+            mat = operation.params[0]
+            idx = RepresentationResolver.index_of_array_or_append(mat, cache)
+
+            return "{}{}".format(symbol, idx)
+
+
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
 
@@ -165,16 +173,10 @@ class RepresentationResolver:
             return name
 
         if op.name == "QubitUnitary":
-            mat = op.params[0]
-            idx = RepresentationResolver.index_of_array_or_append(mat, self.unitary_matrix_cache)
-
-            return "U{}".format(idx)
+            return RepresentationResolver._format_matrix_operation(op, "U", self.unitary_matrix_cache)
 
         if op.name == "Hermitian":
-            mat = op.params[0]
-            idx = RepresentationResolver.index_of_array_or_append(mat, self.hermitian_matrix_cache)
-
-            return "H{}".format(idx)
+            return RepresentationResolver._format_matrix_operation(op, "H", self.hermitian_matrix_cache)
 
         if op.name == "QuadOperator":
             par_rep = self.single_parameter_representation(op.params[0])
