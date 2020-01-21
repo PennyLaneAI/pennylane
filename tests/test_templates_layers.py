@@ -119,7 +119,7 @@ class TestCVNeuralNet:
         qnode = qml.QNode(circuit, gaussian_device_4modes)
 
         wrong_weights = [np.array([1]) if i < 10 else np.array([1, 1]) for i in range(11)]
-        with pytest.raises(ValueError, match="The first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
             qnode(wrong_weights)
 
 
@@ -182,7 +182,7 @@ class TestStronglyEntangling:
 
         qnode = qml.QNode(circuit, dev)
 
-        with pytest.raises(ValueError, match="The range hyperparameter for all layers needs to be smaller than"):
+        with pytest.raises(ValueError, match="the range for all layers needs to be smaller than"):
             qnode(weights)
 
     def test_strong_ent_layers_illegal_ranges_exception(self):
@@ -198,7 +198,7 @@ class TestStronglyEntangling:
 
         qnode = qml.QNode(circuit, dev)
 
-        with pytest.raises(ValueError, match="StronglyEntanglingLayers expects ``ranges`` to be a list of integers"):
+        with pytest.raises(ValueError, match="'ranges' must be a list of integers"):
             qnode(weights)
 
     @pytest.mark.parametrize("n_layers, ranges", [(2, [1, 2, 4]),
@@ -216,8 +216,7 @@ class TestStronglyEntangling:
 
         qnode = qml.QNode(circuit, dev)
 
-        with pytest.raises(ValueError, match="StronglyEntanglingLayers expects ``ranges`` to contain "
-                                             "a range for each layer"):
+        with pytest.raises(ValueError, match="'ranges' must be of shape"):
             qnode(weights)
 
 
