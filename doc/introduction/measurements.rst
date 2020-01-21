@@ -159,7 +159,12 @@ Changing the number of shots
 For hardware devices where the number of shots determines the accuracy
 of the expectation value and variance, as well as the number of samples returned,
 it can sometimes be convenient to execute the same QNode with differing
-number of shots. This can be done by modifying the value of :attr:`.Device.shots`:
+number of shots.
+
+For simulators like ``default.qubit``, finite shots will be simulated if
+we set ``analytic=False`` in the device.
+
+The shot number can be changed by modifying the value of :attr:`.Device.shots`:
 
 
 .. code-block:: python
@@ -186,9 +191,7 @@ circuit:
 
 .. code-block:: python
 
-    from pennylane import numpy as np
-
-    # fix seed to produce same samples in different runs
+    # fix seed to make results reproducable
     np.random.seed(1)
 
     dev = qml.device("default.qubit", wires=1)
