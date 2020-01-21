@@ -22,6 +22,8 @@ import numpy as np
 
 import pennylane as qml
 
+from .charsets import UnicodeCharSet
+
 # pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements,too-many-statements,consider-using-enumerate,too-many-instance-attributes
 
 
