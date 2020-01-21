@@ -18,6 +18,8 @@ representation of a quantum circuit from an Operator queue.
 from collections import namedtuple
 import networkx as nx
 
+from pennylane.operation import Sample
+
 from .utils import _flatten
 from .variable import Variable
 
@@ -371,3 +373,24 @@ class CircuitGraph:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
+
+    @property
+    def diagonalizing_gates(self):
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Returns:
+            List[~.Operation]: the operations that diagonalize the observables
+        """
+        rotation_gates = []
+
+        for observable in self.observables_in_order:
+            rotation_gates.extend(observable.diagonalizing_gates())
+
+        return rotation_gates
+
+    @property
+    def is_sampled(self):
+        """Returns ``True`` if the circuit graph contains observables
+        which are sampled."""
+        return any(obs.return_type == Sample for obs in self.observables_in_order)

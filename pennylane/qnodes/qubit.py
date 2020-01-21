@@ -336,6 +336,7 @@ class QubitQNode(JacobianQNode):
         Returns:
             array[float]: metric tensor
         """
+        # pylint:disable=too-many-branches
         kwargs = kwargs or {}
         kwargs = self._default_args(kwargs)
 
@@ -365,7 +366,14 @@ class QubitQNode(JacobianQNode):
                 # block diagonal approximation
 
                 unitary_op = qml.QubitUnitary(V, wires=list(range(self.num_wires)), do_queue=False)
-                self.device.execute(circuit["queue"] + [unitary_op], [qml.expval(qml.PauliZ(wire)) for wire in list(range(self.device.num_wires))])
+
+                if isinstance(self.device, qml.QubitDevice):
+                    ops = circuit["queue"] + [unitary_op] + [qml.expval(qml.PauliZ(0))]
+                    circuit_graph = qml.CircuitGraph(ops, self.variable_deps)
+                    self.device.execute(circuit_graph)
+                else:
+                    self.device.execute(circuit["queue"] + [unitary_op], [qml.expval(qml.PauliZ(wire)) for wire in list(range(self.device.num_wires))])
+
                 probs = list(self.device.probability())
 
                 first_order_ev = np.zeros([len(params)])
@@ -401,9 +409,13 @@ class QubitQNode(JacobianQNode):
 
             else:
                 # diagonal approximation
-                circuit["result"] = s ** 2 * self.device.execute(
-                    circuit["queue"], circuit["observable"]
-                )
+                if isinstance(self.device, qml.QubitDevice):
+                    circuit_graph = qml.CircuitGraph(circuit["queue"] + circuit["observable"], self.variable_deps)
+                    variances = self.device.execute(circuit_graph)
+                else:
+                    variances = self.device.execute(circuit["queue"], circuit["observable"])
+
+                circuit["result"] = s ** 2 * variances
                 tensor[np.array(params), np.array(params)] = circuit["result"]
 
         return tensor
