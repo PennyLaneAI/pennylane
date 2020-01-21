@@ -118,20 +118,6 @@ class RepresentationResolver:
         return str(round(par, 3))
 
     @staticmethod
-    def _format_poly_term(coefficient, variable):
-        """Format a term of a polynomial."""
-        if coefficient == 0:
-            return ""
-
-        if coefficient == 1.0:
-            return str(variable)
-
-        if coefficient == -1.0:
-            return "-" + str(variable)
-
-        return "{:+.3g}{}".format(coefficient, variable)
-
-    @staticmethod
     def _format_matrix_operation(operation, symbol, cache):
         mat = operation.params[0]
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
@@ -147,6 +133,20 @@ class RepresentationResolver:
             param_strings.append("{}{}".format(symbol, idx))
 
         return "(" + ",".join(param_strings) + ")"
+
+    @staticmethod
+    def _format_poly_term(coefficient, variable):
+        """Format a term of a polynomial."""
+        if coefficient == 0:
+            return ""
+
+        if coefficient == 1.0:
+            return str(variable)
+
+        if coefficient == -1.0:
+            return "-" + str(variable)
+
+        return "{:+.3g}{}".format(coefficient, variable)
 
     def _format_polyxp(self, operation):
         coefficients = operation.params[0]
@@ -169,78 +169,79 @@ class RepresentationResolver:
 
             return poly_str
 
-        if order == 2:
-            poly_str = str(coefficients[0, 0])
+        # order == 2
+        poly_str = str(coefficients[0, 0])
 
-            for idx in range(0, coefficients.shape[0] // 2):
-                x = 2 * idx + 1
-                p = 2 * idx + 2
-                poly_str += RepresentationResolver._format_poly_term(
-                    coefficients[0, x] + coefficients[x, 0],
-                    "x{}".format(self.charset.to_subscript(idx)),
-                )
-                poly_str += RepresentationResolver._format_poly_term(
-                    coefficients[0, p] + coefficients[p, 0],
-                    "p{}".format(self.charset.to_subscript(idx)),
-                )
+        for idx in range(0, coefficients.shape[0] // 2):
+            x = 2 * idx + 1
+            p = 2 * idx + 2
+            poly_str += RepresentationResolver._format_poly_term(
+                coefficients[0, x] + coefficients[x, 0],
+                "x{}".format(self.charset.to_subscript(idx)),
+            )
+            poly_str += RepresentationResolver._format_poly_term(
+                coefficients[0, p] + coefficients[p, 0],
+                "p{}".format(self.charset.to_subscript(idx)),
+            )
 
-            for idx1 in range(0, coefficients.shape[0] // 2):
-                for idx2 in range(idx1, coefficients.shape[0] // 2):
-                    x1 = 2 * idx1 + 1
-                    p1 = 2 * idx1 + 2
-                    x2 = 2 * idx2 + 1
-                    p2 = 2 * idx2 + 2
+        for idx1 in range(0, coefficients.shape[0] // 2):
+            for idx2 in range(idx1, coefficients.shape[0] // 2):
+                x1 = 2 * idx1 + 1
+                p1 = 2 * idx1 + 2
+                x2 = 2 * idx2 + 1
+                p2 = 2 * idx2 + 2
 
-                    if idx1 == idx2:
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[x1, x1],
-                            "x{}{}".format(
-                                self.charset.to_subscript(idx1), self.charset.to_superscript(2)
-                            ),
-                        )
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[p1, p1],
-                            "p{}{}".format(
-                                self.charset.to_subscript(idx1), self.charset.to_superscript(2)
-                            ),
-                        )
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[x1, p1] + coefficients[p1, x1],
-                            "x{}p{}".format(
-                                self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)
-                            ),
-                        )
-                    else:
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[x1, x2] + coefficients[x2, x1],
-                            "x{}x{}".format(
-                                self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
-                            ),
-                        )
+                if idx1 == idx2:
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[x1, x1],
+                        "x{}{}".format(
+                            self.charset.to_subscript(idx1), self.charset.to_superscript(2)
+                        ),
+                    )
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[p1, p1],
+                        "p{}{}".format(
+                            self.charset.to_subscript(idx1), self.charset.to_superscript(2)
+                        ),
+                    )
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[x1, p1] + coefficients[p1, x1],
+                        "x{}p{}".format(
+                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)
+                        ),
+                    )
+                else:
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[x1, x2] + coefficients[x2, x1],
+                        "x{}x{}".format(
+                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
+                        ),
+                    )
 
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[p1, p2] + coefficients[p2, p1],
-                            "p{}p{}".format(
-                                self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
-                            ),
-                        )
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[p1, p2] + coefficients[p2, p1],
+                        "p{}p{}".format(
+                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
+                        ),
+                    )
 
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[x1, p2] + coefficients[p2, x1],
-                            "x{}p{}".format(
-                                self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
-                            ),
-                        )
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[x1, p2] + coefficients[p2, x1],
+                        "x{}p{}".format(
+                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
+                        ),
+                    )
 
-                        poly_str += RepresentationResolver._format_poly_term(
-                            coefficients[p1, x2] + coefficients[x2, p1],
-                            "x{}p{}".format(
-                                self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)
-                            ),
-                        )
+                    poly_str += RepresentationResolver._format_poly_term(
+                        coefficients[p1, x2] + coefficients[x2, p1],
+                        "x{}p{}".format(
+                            self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)
+                        ),
+                    )
 
-            return poly_str
+        return poly_str
 
+    # pylint: disable=too-many-return-statements
     def operator_representation(self, op, wire):
         """Resolve the representation of an Operator.
 

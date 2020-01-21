@@ -372,7 +372,7 @@ class CircuitGraph:
                     self._grid[wire],
                 )
             )
-            
+
             if not observables[wire]:
                 observables[wire] = [None]
 
