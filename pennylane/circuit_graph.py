@@ -430,12 +430,12 @@ class CircuitGraph:
         if charset not in CHARSETS:
             raise ValueError(
                 "Charset {} is not supported. Supported charsets: {}.".format(
-                    charset, ", ".join(Charsets.keys())
+                    charset, ", ".join(CHARSETS.keys())
                 )
             )
 
         drawer = CircuitDrawer(
-            grid, obs, charset=Charsets[charset], show_variable_names=show_variable_names
+            grid, obs, charset=CHARSETS[charset], show_variable_names=show_variable_names
         )
 
         return drawer.draw()
