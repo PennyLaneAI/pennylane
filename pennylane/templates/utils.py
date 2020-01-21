@@ -56,8 +56,8 @@ def _check_wires(wires):
     if isinstance(wires, int):
         wires = [wires]
 
-    msg = "Wires must be a positive integer or a " \
-           "list of positive integers; got {}.".format(wires)
+    msg = "wires must be a positive integer or a " \
+          "list of positive integers; got {}.".format(wires)
     if not isinstance(wires, Iterable):
         raise ValueError(msg)
     if not all([isinstance(w, int) for w in wires]):
@@ -108,54 +108,50 @@ def _check_shape(inpt, target_shape, bound=None, msg=None):
     return shape
 
 
-def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
-    """Same as `_check_shape()`, but for lists.
+def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
+    """Same as `_check_shape()`, but for lists of elements.
 
     Args:
         inpt_list (list): list of elements of which to check the shape
-        target_shape_list (list): list of target shapes, of same length as ``inpt_list``
-        bound_list (list): list of 'max' or 'min', indicating the bound that the target shape imposes on the input
-             shape
+        target_shapes (list): list of target shapes, of same length as ``inpt_list``
         msg (str): error message to display
+        bounds (list): list of 'max' or 'min', indicating the bound that the target shape imposes on the input
+            shape
 
     Raises:
         ValueError
     """
 
-    if bound_list is None:
-        bound_list = [None] * len(inpt_list)
+    if bounds is None:
+        bounds = [None] * len(inpt_list)
 
-    shape_list = [_check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shape_list, bound_list)]
+    shape_list = [_check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)]
     return shape_list
 
 
-def _check_is_in_options(element, options, msg=None):
-    """Checks that a hyperparameter is one of the valid options of hyperparameters.
+def _check_is_in_options(element, options, msg):
+    """Checks that the value of ``element`` is in ``options``.
 
     Args:
-        element: any element
-        options: possible realizations for ``element``
+        element: arbitraty variable
+        options: possible options for ``element``
         msg (str): error message to display
     """
-    if msg is None:
-        msg = "Hyperparameter {} must be one of '{}'".format(element, *options)
 
     if element not in options:
         raise ValueError(msg)
 
 
-def _check_type(element, type_list, msg=None):
-    """Checks the type of a hyperparameter.
+def _check_type(element, types, msg):
+    """Checks that the type of ``element'' is one of ``types``.
 
     Args:
-        element: element to check
-        type_list (list): possible types for ``element``
+        element: variable to check
+        types (list): possible types for ``element``
          msg (str): error message to display
     """
-    if msg is None:
-        msg = "Hyperparameter type must be one of {}, got {}".format(type_list, type(element))
 
-    if not any([isinstance(element, t) for t in type_list]):
+    if not any([isinstance(element, t) for t in types]):
         raise ValueError(msg)
 
 
@@ -176,15 +172,15 @@ def _check_number_of_layers(list_of_weights):
     shapes = [_get_shape(weight) for weight in list_of_weights]
 
     if any(len(s) == 0 for s in shapes):
-        raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
-                         "template. Found scalar weights.")
+        raise ValueError("the first dimension of the weight parameters must be the number of layers in the "
+                         "template; got scalar weights.")
 
     first_dimensions = [s[0] for s in shapes]
     different_first_dims = set(first_dimensions)
     n_different_first_dims = len(different_first_dims)
 
     if n_different_first_dims > 1:
-        raise ValueError("The first dimension of the weight parameters must be the number of layers in the "
-                         "template. Found different first dimensions: {}.".format(*different_first_dims))
+        raise ValueError("the first dimension of the weight parameters must be the number of layers in the "
+                         "template; got differing first dimensions: {}.".format(*different_first_dims))
 
     return first_dimensions[0]

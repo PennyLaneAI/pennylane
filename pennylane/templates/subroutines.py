@@ -118,9 +118,9 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     expected_shapes = [(n_if,), (n_if,), (n_wires,)]
     _check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
 
-    _check_is_in_options(beamsplitter, ['clements', 'pennylane'], msg="'beamsplitter' option {} not recognized"
+    _check_is_in_options(beamsplitter, ['clements', 'pennylane'], msg="did not recognize option {} for 'beamsplitter'"
                                                                       "".format(beamsplitter))
-    _check_is_in_options(mesh, ['triangular', 'rectangular'], msg="'mesh' option {} not recognized"
+    _check_is_in_options(mesh, ['triangular', 'rectangular'], msg="did not recognize option {} for 'mesh'"
                                                                   "".format(mesh))
     ###############
 

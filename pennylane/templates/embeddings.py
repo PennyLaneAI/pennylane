@@ -189,8 +189,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
                                                                       "to be padded; got {}"
                                                                       "".format(expected_shape, _get_shape(features)))
 
-    _check_type(pad, [float, complex, type(None)])
-    _check_type(normalize, [bool])
+    _check_type(pad, [float, complex, type(None)], msg="'pad' must be a float or complex; got {}".format(pad))
+    _check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
 
     ###############
 
@@ -258,9 +258,9 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     _check_shape(features, (len(wires),), bound='max', msg="'features' must be of shape {} or smaller; "
                                                            "got {}.".format((len(wires),), _get_shape(features)))
-    _check_type(rotation, [str])
+    _check_type(rotation, [str], msg="'rotation' must be a string; got {}".format(rotation))
 
-    _check_is_in_options(rotation, ['X', 'Y', 'Z'], msg="'rotation' value {} not recognized.".format(rotation))
+    _check_is_in_options(rotation, ['X', 'Y', 'Z'], msg="did not recognize option {} for 'rotation'.".format(rotation))
 
     ###############
 
@@ -306,7 +306,7 @@ def BasisEmbedding(features, wires):
                                                "".format(expected_shape, _get_shape(features)))
 
     if any([b not in [0, 1] for b in features]):
-        raise ValueError("basis state must only consist of 0s and 1s; got {}".format(features))
+        raise ValueError("'basis_state' must only consist of 0s and 1s; got {}".format(features))
 
     ###############
 
@@ -341,33 +341,33 @@ def _qaoa_ising_hamiltonian(weights, wires, local_fields, l):
     """
     # trainable "Ising" ansatz
     if len(wires) == 1:
-        local_fields(weights[l, 0], wires=wires[0])
+        local_fields(weights[l][0], wires=wires[0])
 
     elif len(wires) == 2:
         # ZZ coupling
         CNOT(wires=[wires[0], wires[1]])
-        RZ(2 * weights[l, 0], wires=wires[0])
+        RZ(2 * weights[l][0], wires=wires[0])
         CNOT(wires=[wires[0], wires[1]])
 
         # local fields
         for i, _ in enumerate(wires):
-            local_fields(weights[l, i + 1], wires=wires[i])
+            local_fields(weights[l][i + 1], wires=wires[i])
 
     else:
         for i, _ in enumerate(wires):
             if i < len(wires) - 1:
                 # ZZ coupling
                 CNOT(wires=[wires[i], wires[i + 1]])
-                RZ(2 * weights[l, i], wires=wires[i])
+                RZ(2 * weights[l][i], wires=wires[i])
                 CNOT(wires=[wires[i], wires[i + 1]])
             else:
                 # ZZ coupling to enforce periodic boundary condition
                 CNOT(wires=[wires[i], wires[0]])
-                RZ(2 * weights[l, i], wires=wires[i])
+                RZ(2 * weights[l][i], wires=wires[i])
                 CNOT(wires=[wires[i], wires[0]])
         # local fields
         for i, _ in enumerate(wires):
-            local_fields(weights[l, len(wires) + i], wires=wires[i])
+            local_fields(weights[l][len(wires) + i], wires=wires[i])
 
 
 @template
@@ -519,7 +519,7 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}"
                                                             "".format((len(wires),), _get_shape(features)))
 
-    _check_is_in_options(local_field, ['X', 'Y', 'Z'], msg="did not recognise option {} for 'local_field'"
+    _check_is_in_options(local_field, ['X', 'Y', 'Z'], msg="did not recognize option {} for 'local_field'"
                                                            "".format(local_field))
 
     repeat = _check_number_of_layers([weights])
@@ -596,7 +596,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
     _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}."
                                                             "".format(expected_shape, _get_shape(features)))
 
-    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognise option {} for 'method'"
+    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognize option {} for 'method'"
                                                              "".format(method))
 
     #############
@@ -649,7 +649,7 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}"
                                                             "".format(expected_shape, _get_shape(features)))
 
-    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognise option {} for 'method'".format(method))
+    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognize option {} for 'method'".format(method))
 
     #############
 
