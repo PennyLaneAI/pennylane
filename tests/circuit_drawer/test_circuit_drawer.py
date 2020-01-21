@@ -384,7 +384,7 @@ class TestRepresentationResolver:
             (qml.CRZ(3.14, wires=[0, 1]), 0, "C"),
             (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 1, "Rot(3.14, 2.14, 1.14)"),
             (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 0, "C"),
-            (qml.PhaseShift(3.14, wires=[0]), 0, "P(3.14)"),
+            (qml.PhaseShift(3.14, wires=[0]), 0, "Rϕ(3.14)"),
             (qml.Beamsplitter(1, 2, wires=[0, 1]), 1, "BS(1, 2)"),
             (qml.Beamsplitter(1, 2, wires=[0, 1]), 0, "BS(1, 2)"),
             (qml.Squeezing(1, 2, wires=[1]), 1, "S(1, 2)"),
@@ -393,9 +393,9 @@ class TestRepresentationResolver:
             (qml.Displacement(1, 2, wires=[1]), 1, "D(1, 2)"),
             (qml.NumberOperator(wires=[1]), 1, "n"),
             (qml.Rotation(3.14, wires=[1]), 1, "R(3.14)"),
-            (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "Add(3.14)"),
+            (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "X(3.14)"),
             (qml.ControlledAddition(3.14, wires=[0, 1]), 0, "C"),
-            (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "R(3.14)"),
+            (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "Z(3.14)"),
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
@@ -403,7 +403,7 @@ class TestRepresentationResolver:
                 1,
                 "Gaussian(M0, M1)",
             ),
-            (qml.QuadraticPhase(3.14, wires=[1]), 1, "QuadPhase(3.14)"),
+            (qml.QuadraticPhase(3.14, wires=[1]), 1, "P(3.14)"),
             (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
             (qml.S(wires=[2]), 2, "S"),
             (qml.T(wires=[2]), 2, "T"),
@@ -424,7 +424,7 @@ class TestRepresentationResolver:
             (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
-            (qml.CubicPhase(3.14, wires=[1]), 1, "CubicPhase(3.14)"),
+            (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
             (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
             (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
@@ -506,7 +506,7 @@ class TestRepresentationResolver:
             (qml.CRZ(3.14, wires=[0, 1]), 0, "C"),
             (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 1, "Rot(3.14, 2.14, 1.14)"),
             (qml.CRot(3.14, 2.14, 1.14, wires=[0, 1]), 0, "C"),
-            (qml.PhaseShift(3.14, wires=[0]), 0, "P(3.14)"),
+            (qml.PhaseShift(3.14, wires=[0]), 0, "Rϕ(3.14)"),
             (qml.Beamsplitter(1, 2, wires=[0, 1]), 1, "BS(1, 2)"),
             (qml.Beamsplitter(1, 2, wires=[0, 1]), 0, "BS(1, 2)"),
             (qml.Squeezing(1, 2, wires=[1]), 1, "S(1, 2)"),
@@ -515,9 +515,9 @@ class TestRepresentationResolver:
             (qml.Displacement(1, 2, wires=[1]), 1, "D(1, 2)"),
             (qml.NumberOperator(wires=[1]), 1, "n"),
             (qml.Rotation(3.14, wires=[1]), 1, "R(3.14)"),
-            (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "Add(3.14)"),
+            (qml.ControlledAddition(3.14, wires=[0, 1]), 1, "X(3.14)"),
             (qml.ControlledAddition(3.14, wires=[0, 1]), 0, "C"),
-            (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "R(3.14)"),
+            (qml.ControlledPhase(3.14, wires=[0, 1]), 1, "Z(3.14)"),
             (qml.ControlledPhase(3.14, wires=[0, 1]), 0, "C"),
             (qml.ThermalState(3, wires=[1]), 1, "Thermal(3)"),
             (
@@ -525,7 +525,7 @@ class TestRepresentationResolver:
                 1,
                 "Gaussian(M0, M1)",
             ),
-            (qml.QuadraticPhase(3.14, wires=[1]), 1, "QuadPhase(3.14)"),
+            (qml.QuadraticPhase(3.14, wires=[1]), 1, "P(3.14)"),
             (qml.RX(3.14, wires=[1]), 1, "RX(3.14)"),
             (qml.S(wires=[2]), 2, "S"),
             (qml.T(wires=[2]), 2, "T"),
@@ -546,7 +546,7 @@ class TestRepresentationResolver:
             (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
-            (qml.CubicPhase(3.14, wires=[1]), 1, "CubicPhase(3.14)"),
+            (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
             (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
             (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
@@ -1216,7 +1216,7 @@ def drawn_parameterized_qubit_circuit_with_values():
     return (
         " 0: ──RX(0.1)─────────────╭C────RX(0.4)───────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP─────╭SWAP───┤ ⟨Y⟩       \n"
         + " 1: ──RX(0.2)────Z────────╰X───╭RY(0.2)──RX(2.0)──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n"
-        + " 2: ──RY(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n"
+        + " 2: ──Rϕ(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n"
         + " 3: ───────────────────────────╰C────────RZ(0.2)──╰C────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n"
         + " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
         + "U0 =\n"
@@ -1391,10 +1391,10 @@ def parameterized_cv_qnode():
 def drawn_parameterized_cv_qnode_with_variable_names():
     """The rendered circuit representation of the above CV circuit with variable names."""
     return (
-        " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
-        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
-        + " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
-        + " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
+          " 0: ──────────────╭Gaussian(M0, M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
+        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
+        + " 2: ──────────────├Gaussian(M0, M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
+        + " 3: ──────────────╰Gaussian(M0, M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
         + "M0 =\n"
         + "[1 1 1 2 2 3 3 3]\n"
         + "M1 =\n"
@@ -1413,10 +1413,10 @@ def drawn_parameterized_cv_qnode_with_variable_names():
 def drawn_parameterized_cv_qnode_with_values():
     """The rendered circuit representation of the above CV circuit with variable values."""
     return (
-        " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C───────QuadPhase(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
-        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭R(2.3)──│───────────────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
-        + " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│──────────────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
-        + " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰Add(2)────────────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
+          " 0: ──────────────╭Gaussian(M0, M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨ + 1.0 x₀ + 2.0 p₀⟩ \n"
+        + " 1: ──Thermal(3)──├Gaussian(M0, M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x + sin(4)p⟩  \n"
+        + " 2: ──────────────├Gaussian(M0, M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│────────────╭┤ ⟨|1, 5╳1, 5|⟩        \n"
+        + " 3: ──────────────╰Gaussian(M0, M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1, 5╳1, 5|⟩        \n"
         + "M0 =\n"
         + "[1 1 1 2 2 3 3 3]\n"
         + "M1 =\n"
