@@ -78,7 +78,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0, 1])
-        return [qml.sample(qml.PauliZ(i)) for i in range(2)]
+        return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
 
 The combined PauliZ-measurement of the
 first and second qubit returns a list of two lists, each containing
