@@ -336,6 +336,7 @@ class QubitQNode(JacobianQNode):
         Returns:
             array[float]: metric tensor
         """
+        # pylint:disable=too-many-branches
         kwargs = kwargs or {}
         kwargs = self._default_args(kwargs)
 

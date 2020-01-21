@@ -311,10 +311,14 @@ class DefaultQubit(QubitDevice):
     def __init__(self, wires, *, shots=1000, analytic=True):
         self.eng = None
         self.analytic = analytic
-        self._state = None
+
+        self._state = np.zeros(2**wires, dtype=complex)
+        self._state[0] = 1
+        self._pre_rotated_state = self._state
+
         super().__init__(wires, shots, analytic)
 
-    def apply(self, operations, rotations=None):
+    def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
         # apply the circuit operations
@@ -328,13 +332,16 @@ class DefaultQubit(QubitDevice):
                                   "on a {} device.".format(operation.name, self.short_name))
 
             if isinstance(operation, QubitStateVector):
-                self.apply_state_vector(wires, par)
+                input_state = np.asarray(par[0], dtype=np.complex128)
+                self.apply_state_vector(input_state, wires)
 
             elif isinstance(operation, BasisState):
-                self.apply_basis_state(wires, par)
+                basis_state = par[0]
+                self.apply_basis_state(basis_state, wires)
 
             else:
                 A = self._get_operator_matrix(operation.name, par)
+                print(A, self._state, wires)
                 self._state = self.mat_vec_product(A, self._state, wires)
 
         # store the pre-rotated state
@@ -351,9 +358,15 @@ class DefaultQubit(QubitDevice):
     def state(self):
         return self._pre_rotated_state
 
-    def apply_state_vector(self, wires, par):
-        input_state = np.asarray(par[0], dtype=np.complex128)
+    def apply_state_vector(self, input_state, wires):
+        """Initialize the internal state vector in a specified state.
 
+        Args:
+            input_state (array[complex]): normalized input state of length
+                ``2**len(wires)``
+            wires (list[int]): list of wires where the provided state should
+                be initialized
+        """
         if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
@@ -374,11 +387,19 @@ class DefaultQubit(QubitDevice):
         else:
             raise ValueError("State vector must be of length 2**wires.")
 
-    def apply_basis_state(self, wires, par):
-        # length of basis state parameter
-        n_basis_state = len(par[0])
+    def apply_basis_state(self, state, wires):
+        """Initialize the state vector in a specified computational basis state.
 
-        if not set(par[0]).issubset({0, 1}):
+        Args:
+            state (array[int]): computational basis state of shape ``(wires,)``
+                consisting of 0s and 1s.
+            wires (list[int]): list of wires where the provided computational state should
+                be initialized
+        """
+        # length of basis state parameter
+        n_basis_state = len(state)
+
+        if not set(state).issubset({0, 1}):
             raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
 
         if n_basis_state != len(wires):
@@ -386,7 +407,7 @@ class DefaultQubit(QubitDevice):
 
         # get computational basis state number
         basis_states = 2**(self.num_wires - 1 - np.array(wires))
-        num = int(np.dot(par[0], basis_states))
+        num = int(np.dot(state, basis_states))
 
         self._state = np.zeros_like(self._state)
         self._state[num] = 1.
@@ -474,6 +495,7 @@ class DefaultQubit(QubitDevice):
         super().reset()
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
+        self._pre_rotated_state = self._state
 
     @property
     def operations(self):
