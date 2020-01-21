@@ -78,7 +78,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0, 1])
-        return [qml.sample(qml.PauliZ(i)) for i in range(2)]
+        return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
 
 The combined PauliZ-measurement of the
 first and second qubit returns a list of two lists, each containing
@@ -90,7 +90,7 @@ returns 1000 samples per observable.
 1000, 1000
 
 Since the two qubits are maximally entangled,
-the measurements always coincide, and the lists are therefore equal:
+the measurement results always coincide, and the lists are therefore equal:
 
 >>> result[0] == result[1]
 [True True ... True]
@@ -195,12 +195,12 @@ circuit:
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(0))
 
-Running the simulator without specifying the shot number returns the exact expectation.
+Running the simulator when ``analytic`` is set to ``True`` returns the exact expectation.
 
 >>> circuit()
 0.0
 
-Now we set the device to return stochastic results, and increase the shot number.
+Now we set the device to return stochastic results, and increase the number of shots starting from ``10``.
 
 >>> dev.analytic = False
 >>> dev.shots = 10
