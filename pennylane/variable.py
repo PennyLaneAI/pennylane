@@ -156,7 +156,7 @@ class Variable:
         """Returns a string representation of the Variable.
 
         Args:
-            show_name_only (bool, optional): Render the name instead of the value. Defaults to False.
+            show_name_only (bool, optional): Render the name instead of the value.
 
         Returns:
             str: A string representation of the Variable

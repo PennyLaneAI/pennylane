@@ -50,7 +50,7 @@ class Grid:
     (layers are indexed).
 
     Args:
-        raw_grid (list, optional): Raw grid from which the Grid instance is built. Defaults to [].
+        raw_grid (list, optional): Raw grid from which the Grid instance is built.
     """
 
     def __init__(self, raw_grid=None):
@@ -190,8 +190,8 @@ class RepresentationResolver:
     """Resolves the string representation of PennyLane objects.
 
     Args:
-        charset (CharSet, optional): The CharSet to be used for representation resolution. Defaults to UnicodeCharSet.
-        show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
+        charset (CharSet, optional): The CharSet to be used for representation resolution.
+        show_variable_names (bool, optional): Show variable names instead of variable values.
     """
 
     # Symbol for uncontrolled wires
@@ -531,8 +531,8 @@ class CircuitDrawer:
     Args:
         raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
-        charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing. Defaults to UnicodeCharSet.
-        show_variable_names (bool, optional): Show variable names instead of variable values. Defaults to False.
+        charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
+        show_variable_names (bool, optional): Show variable names instead of variable values.
     """
 
     def resolve_representation(self, grid, representation_grid):

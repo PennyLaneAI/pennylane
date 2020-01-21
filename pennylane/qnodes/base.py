@@ -240,8 +240,8 @@ class BaseQNode:
         """Draw the QNode as a circuit diagram.
 
         Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported. Defaults to "unicode".
-            show_variable_names (bool, optional): Show variable names instead of values. Defaults to False.
+            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
+            show_variable_names (bool, optional): Show variable names instead of values.
 
         Raises:
             ValueError: If the given charset is not supported
