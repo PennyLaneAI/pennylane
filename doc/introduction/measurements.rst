@@ -90,7 +90,7 @@ returns 1000 samples per observable.
 1000, 1000
 
 Since the two qubits are maximally entangled,
-the measurements always coincide, and the lists are therefore equal:
+the measurement results always coincide, and the lists are therefore equal:
 
 >>> result[0] == result[1]
 [True True ... True]
