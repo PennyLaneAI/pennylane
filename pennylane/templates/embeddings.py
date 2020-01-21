@@ -182,8 +182,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     expected_shape = (n_amplitudes,)
     if pad is None:
         shape = _check_shape(features, expected_shape, msg="'features' must be of shape {}; got {}. Use the 'pad' "
-                                                         "argument for automated padding."
-                                                         "".format(expected_shape, _get_shape(features)))
+                                                           "argument for automated padding."
+                                                           "".format(expected_shape, _get_shape(features)))
     else:
         shape = _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller "
                                                                       "to be padded; got {}"
