@@ -195,7 +195,7 @@ circuit:
         qml.Hadamard(wires=0)
         return qml.expval(qml.PauliZ(0))
 
-Running the simulator without specifying the shot number returns the exact expectation.
+Running the simulator when ``analytic`` is set to ``True`` returns the exact expectation.
 
 >>> circuit()
 0.0
