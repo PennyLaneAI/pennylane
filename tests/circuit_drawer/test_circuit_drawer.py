@@ -14,52 +14,18 @@
 """
 Unit tests for the :mod:`pennylane.circuit_drawer` module.
 """
+from unittest.mock import Mock
 import pytest
 import numpy as np
-from unittest.mock import Mock
 
 import pennylane as qml
-from pennylane.circuit_drawer import (
-    Grid,
-    CircuitDrawer,
-)
-from pennylane.circuit_drawer.circuit_drawer import (
-    _remove_duplicates
-)
-from pennylane.circuit_drawer.grid import (
-    _transpose,
-)
+from pennylane.circuit_drawer import CircuitDrawer
+from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
+from pennylane.circuit_drawer.grid import Grid, _transpose
 
 
 class TestFunctions:
     """Test the helper functions."""
-
-    @pytest.mark.parametrize(
-        "input,expected_output",
-        [
-            ([[0, 1], [2, 3]], [[0, 2], [1, 3]]),
-            ([[0, 1, 2], [3, 4, 5]], [[0, 3], [1, 4], [2, 5]]),
-            ([[0], [1], [2]], [[0, 1, 2]]),
-        ],
-    )
-    def test_transpose(self, input, expected_output):
-        """Test that transpose transposes a list of list."""
-        assert _transpose(input) == expected_output
-
-    @pytest.mark.parametrize(
-        "input",
-        [
-            [[0, 1], [2, 3]],
-            [[0, 2], [1, 3]],
-            [[0, 1, 2], [3, 4, 5]],
-            [[0, 3], [1, 4], [2, 5]],
-            [[0], [1], [2]],
-            [[0, 1, 2]],
-        ],
-    )
-    def test_transpose_squared(self, input):
-        """Test that transpose transposes a list of list."""
-        assert _transpose(_transpose(input)) == input
 
     @pytest.mark.parametrize(
         "input,expected_output",
@@ -73,187 +39,6 @@ class TestFunctions:
         """Test the function _remove_duplicates."""
         assert _remove_duplicates(input) == expected_output
 
-
-class TestGrid:
-    """Test the Grid helper class."""
-
-    def test_init(self):
-        """Test that the Grid class is initialized correctly."""
-
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        assert grid.raw_grid == raw_grid
-        assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5]]
-
-    @pytest.mark.parametrize(
-        "idx,expected_transposed_grid",
-        [
-            (0, [[6, 7, 8], [0, 1, 2], [3, 4, 5]]),
-            (1, [[0, 1, 2], [6, 7, 8], [3, 4, 5]]),
-            (2, [[0, 1, 2], [3, 4, 5], [6, 7, 8]]),
-        ],
-    )
-    def test_insert_layer(self, idx, expected_transposed_grid):
-        """Test that layer insertion works properly."""
-
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        grid.insert_layer(idx, [6, 7, 8])
-
-        assert grid.raw_grid_transpose == expected_transposed_grid
-        assert grid.raw_grid == _transpose(expected_transposed_grid)
-
-    def test_append_layer(self):
-        """Test that layer appending works properly."""
-
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        grid.append_layer([6, 7, 8])
-
-        assert grid.raw_grid == [[0, 3, 6], [1, 4, 7], [2, 5, 8]]
-        assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
-
-    @pytest.mark.parametrize(
-        "idx,expected_transposed_grid", [(0, [[6, 7, 8], [3, 4, 5]]), (1, [[0, 1, 2], [6, 7, 8]]),]
-    )
-    def test_replace_layer(self, idx, expected_transposed_grid):
-        """Test that layer replacement works properly."""
-
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        grid.replace_layer(idx, [6, 7, 8])
-
-        assert grid.raw_grid_transpose == expected_transposed_grid
-        assert grid.raw_grid == _transpose(expected_transposed_grid)
-
-    @pytest.mark.parametrize(
-        "idx,expected_grid",
-        [
-            (0, [[6, 7], [0, 3], [1, 4], [2, 5]]),
-            (1, [[0, 3], [6, 7], [1, 4], [2, 5]]),
-            (2, [[0, 3], [1, 4], [6, 7], [2, 5]]),
-            (3, [[0, 3], [1, 4], [2, 5], [6, 7]]),
-        ],
-    )
-    def test_insert_wire(self, idx, expected_grid):
-        """Test that wire insertion works properly."""
-
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        grid.insert_wire(idx, [6, 7])
-
-        assert grid.raw_grid == expected_grid
-        assert grid.raw_grid_transpose == _transpose(expected_grid)
-
-    def test_append_wire(self):
-        """Test that wire appending works properly."""
-
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        grid.append_wire([6, 7])
-
-        assert grid.raw_grid == [[0, 3], [1, 4], [2, 5], [6, 7]]
-        assert grid.raw_grid_transpose == [[0, 1, 2, 6], [3, 4, 5, 7]]
-
-    @pytest.mark.parametrize(
-        "raw_grid,expected_num_layers",
-        [
-            ([[6, 7], [0, 3], [1, 4], [2, 5]], 2),
-            ([[0, 1, 2, 6], [3, 4, 5, 7]], 4),
-            ([[0, 2, 6], [3, 5, 7]], 3),
-        ],
-    )
-    def test_num_layers(self, raw_grid, expected_num_layers):
-        """Test that num_layers returns the correct number of layers."""
-        grid = Grid(raw_grid)
-
-        assert grid.num_layers == expected_num_layers
-
-    @pytest.mark.parametrize(
-        "raw_grid,expected_num_wires",
-        [
-            ([[6, 7], [0, 3], [1, 4], [2, 5]], 4),
-            ([[0, 1, 2, 6], [3, 4, 5, 7]], 2),
-            ([[0, 2, 6], [3, 5, 7]], 2),
-        ],
-    )
-    def test_num_wires(self, raw_grid, expected_num_wires):
-        """Test that num_layers returns the correct number of wires."""
-        grid = Grid(raw_grid)
-
-        assert grid.num_wires == expected_num_wires
-
-    @pytest.mark.parametrize(
-        "raw_transposed_grid",
-        [
-            ([[6, 7], [0, 3], [1, 4], [2, 5]]),
-            ([[0, 1, 2, 6], [3, 4, 5, 7]]),
-            ([[0, 2, 6], [3, 5, 7]]),
-        ],
-    )
-    def test_layer(self, raw_transposed_grid):
-        """Test that layer returns the correct layer."""
-        grid = Grid(_transpose(raw_transposed_grid))
-
-        for idx, layer in enumerate(raw_transposed_grid):
-            assert grid.layer(idx) == layer
-
-    @pytest.mark.parametrize(
-        "raw_grid",
-        [
-            ([[6, 7], [0, 3], [1, 4], [2, 5]]),
-            ([[0, 1, 2, 6], [3, 4, 5, 7]]),
-            ([[0, 2, 6], [3, 5, 7]]),
-        ],
-    )
-    def test_wire(self, raw_grid):
-        """Test that wire returns the correct wire."""
-        grid = Grid(raw_grid)
-
-        for idx, wire in enumerate(raw_grid):
-            assert grid.wire(idx) == wire
-
-    def test_copy(self):
-        """Test that copy copies the grid."""
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        other_grid = grid.copy()
-
-        # Assert that everything is indeed copied
-        assert other_grid is not grid
-        assert other_grid.raw_grid is not grid.raw_grid
-        assert other_grid.raw_grid_transpose is not grid.raw_grid_transpose
-
-        # Assert the copy is correct
-        assert other_grid.raw_grid == grid.raw_grid
-        assert other_grid.raw_grid_transpose == grid.raw_grid_transpose
-
-    def test_append_grid_by_layers(self):
-        """Test appending a grid to another by layers."""
-        raw_grid_transpose1 = [[0, 3], [1, 4], [2, 5]]
-        raw_grid_transpose2 = [[6, 7], [8, 9]]
-
-        grid1 = Grid(_transpose(raw_grid_transpose1))
-        grid2 = Grid(_transpose(raw_grid_transpose2))
-
-        grid1.append_grid_by_layers(grid2)
-
-        assert grid1.raw_grid_transpose == [[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]]
-        assert grid1.raw_grid == _transpose([[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]])
-
-    def test_str(self):
-        """Test string rendering of Grid."""
-        raw_grid = [[0, 3], [1, 4], [2, 5]]
-        grid = Grid(raw_grid)
-
-        assert str(grid) == "[0, 3]\n[1, 4]\n[2, 5]\n"
 
 op_CNOT21 = qml.CNOT(wires=[2, 1])
 op_SWAP03 = qml.SWAP(wires=[0, 3])
@@ -275,6 +60,7 @@ dummy_raw_observable_grid = [
     [qml.expval(qml.PauliY(wires=[2]))],
     [qml.var(qml.Hadamard(wires=[3]))],
 ]
+
 
 @pytest.fixture
 def dummy_circuit_drawer():
@@ -642,7 +428,7 @@ def wide_cv_qnode():
 def drawn_wide_cv_qnode():
     """The rendered circuit representation of the above wide CV circuit."""
     return (
-          " 0: ──╭Gaussian(M0,M1)──╭BS(0.4, 0)───────────────────────────────────────────────────────────╭BS(0.255, 0.231)──╭───┤ ⟨|1,1╳1,1|⟩ \n"
+        " 0: ──╭Gaussian(M0,M1)──╭BS(0.4, 0)───────────────────────────────────────────────────────────╭BS(0.255, 0.231)──╭───┤ ⟨|1,1╳1,1|⟩ \n"
         + " 1: ──├Gaussian(M0,M1)──╰BS(0.4, 0)────────────────────────────────────────╭BS(0.255, 0.231)──│──────────────────│╭──┤ ⟨|1,1╳1,1|⟩ \n"
         + " 2: ──├Gaussian(M0,M1)──╭BS(0.4, 0)─────────────────────╭BS(0.255, 0.231)──│──────────────────│──────────────────││╭─┤ ⟨|1,1╳1,1|⟩ \n"
         + " 3: ──├Gaussian(M0,M1)──╰BS(0.4, 0)──╭BS(0.255, 0.231)──│──────────────────│──────────────────│──────────────────│││╭┤ ⟨|1,1╳1,1|⟩ \n"
@@ -712,7 +498,7 @@ def parameterized_cv_qnode():
 def drawn_parameterized_cv_qnode_with_variable_names():
     """The rendered circuit representation of the above CV circuit with variable names."""
     return (
-          " 0: ──────────────╭Gaussian(M0,M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨x₀+2p₀⟩          \n"
+        " 0: ──────────────╭Gaussian(M0,M1)──R(a)─────╭BS(d, 1)───S(2.3, 0)──────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨x₀+2p₀⟩          \n"
         + " 1: ──Thermal(3)──├Gaussian(M0,M1)──R(b)─────╰BS(d, 1)──╭BS(e, 1)──────────────╭BS(d, 1)─────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x+sin(4)p⟩ \n"
         + " 2: ──────────────├Gaussian(M0,M1)──────────────────────╰BS(e, 1)───S(2.3, 0)──╰BS(d, 1)──╭BS(e, 1)──│─────────╰C───────│────────────╭┤ ⟨|1,5╳1,5|⟩       \n"
         + " 3: ──────────────╰Gaussian(M0,M1)──D(f, 0)───────────────────────────────────────────────╰BS(e, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1,5╳1,5|⟩       \n"
@@ -734,7 +520,7 @@ def drawn_parameterized_cv_qnode_with_variable_names():
 def drawn_parameterized_cv_qnode_with_values():
     """The rendered circuit representation of the above CV circuit with variable values."""
     return (
-          " 0: ──────────────╭Gaussian(M0,M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨x₀+2p₀⟩          \n"
+        " 0: ──────────────╭Gaussian(M0,M1)──R(0.1)─────╭BS(2.765, 1)───S(2.3, 0)─────────────────────────────────────────────────────────────╭C─────P(4)───┤ ⟨x₀+2p₀⟩          \n"
         + " 1: ──Thermal(3)──├Gaussian(M0,M1)──R(0.2)─────╰BS(2.765, 1)──╭BS(0.5, 1)─────────────╭BS(2.765, 1)───────────────╭S(2, 2)──╭Z(2.3)──│─────────────┤ ⟨cos(4)x+sin(4)p⟩ \n"
         + " 2: ──────────────├Gaussian(M0,M1)────────────────────────────╰BS(0.5, 1)──S(2.3, 0)──╰BS(2.765, 1)──╭BS(0.5, 1)──│─────────╰C───────│────────────╭┤ ⟨|1,5╳1,5|⟩       \n"
         + " 3: ──────────────╰Gaussian(M0,M1)──D(0.6, 0)────────────────────────────────────────────────────────╰BS(0.5, 1)──╰S(2, 2)───────────╰X(2)────────╰┤ ⟨|1,5╳1,5|⟩       \n"

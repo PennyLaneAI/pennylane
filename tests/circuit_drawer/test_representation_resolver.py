@@ -14,13 +14,14 @@
 """
 Unit tests for the :mod:`pennylane.circuit_drawer.representation_resolver` module.
 """
+from unittest.mock import Mock
 import pytest
 import numpy as np
-from unittest.mock import Mock
 
 import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
 from pennylane.variable import Variable
+
 
 @pytest.fixture
 def unicode_representation_resolver():
@@ -218,11 +219,7 @@ class TestRepresentationResolver:
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
             (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7╳4,5,7|"),
-            (
-                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
-                2,
-                "1+2x₀-1.3x₁+6p₁",
-            ),
+            (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1+2x₀-1.3x₁+6p₁",),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
@@ -232,7 +229,16 @@ class TestRepresentationResolver:
             ),
             (
                 qml.PolyXP(
-                    np.array([[1.2, 2.3, 4.5, 0, 0], [-1.2, 1.2, -1.5, 0, 0], [-1.3, 4.5, 2.3, 0, 0], [0, 2.6, 0, 0, 0], [0, 0, 0, -4.7, -1.0]]), wires=[1]
+                    np.array(
+                        [
+                            [1.2, 2.3, 4.5, 0, 0],
+                            [-1.2, 1.2, -1.5, 0, 0],
+                            [-1.3, 4.5, 2.3, 0, 0],
+                            [0, 2.6, 0, 0, 0],
+                            [0, 0, 0, -4.7, -1.0],
+                        ]
+                    ),
+                    wires=[1],
                 ),
                 1,
                 "1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀+2.6x₀x₁-p₁²-4.7x₁p₁",
@@ -240,10 +246,12 @@ class TestRepresentationResolver:
             (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x+sin(3.14)p"),
         ],
     )
-    def test_operator_representation_unicode(self, unicode_representation_resolver, op, wire, target):
+    def test_operator_representation_unicode(
+        self, unicode_representation_resolver, op, wire, target
+    ):
         """Test that an Operator instance is properly resolved."""
         assert unicode_representation_resolver.operator_representation(op, wire) == target
-        
+
     @pytest.mark.parametrize(
         "op,wire,target",
         [
@@ -340,11 +348,7 @@ class TestRepresentationResolver:
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
             (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7X4,5,7|"),
-            (
-                qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
-                2,
-                "1+2x_0-1.3x_1+6p_1",
-            ),
+            (qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]), 2, "1+2x_0-1.3x_1+6p_1",),
             (
                 qml.PolyXP(
                     np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
@@ -354,7 +358,16 @@ class TestRepresentationResolver:
             ),
             (
                 qml.PolyXP(
-                    np.array([[1.2, 2.3, 4.5, 0, 0], [-1.2, 1.2, -1.5, 0, 0], [-1.3, 4.5, 2.3, 0, 0], [0, 2.6, 0, 0, 0], [0, 0, 0, -4.7, 0]]), wires=[1]
+                    np.array(
+                        [
+                            [1.2, 2.3, 4.5, 0, 0],
+                            [-1.2, 1.2, -1.5, 0, 0],
+                            [-1.3, 4.5, 2.3, 0, 0],
+                            [0, 2.6, 0, 0, 0],
+                            [0, 0, 0, -4.7, 0],
+                        ]
+                    ),
+                    wires=[1],
                 ),
                 1,
                 "1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0+2.6x_0x_1-4.7x_1p_1",
@@ -506,10 +519,11 @@ class TestRepresentationResolver:
             ),
         ],
     )
-    def test_output_representation_unicode(self, unicode_representation_resolver, obs, wire, target):
+    def test_output_representation_unicode(
+        self, unicode_representation_resolver, obs, wire, target
+    ):
         """Test that an Observable instance with return type is properly resolved."""
         assert unicode_representation_resolver.output_representation(obs, wire) == target
-
 
     def test_fallback_output_representation_unicode(self, unicode_representation_resolver):
         """Test that an Observable instance with return type is properly resolved."""
@@ -517,7 +531,6 @@ class TestRepresentationResolver:
         obs.return_type = "TestReturnType"
 
         assert unicode_representation_resolver.output_representation(obs, 0) == "TestReturnType[Z]"
-
 
     @pytest.mark.parametrize(
         "obs,wire,target",
@@ -696,4 +709,3 @@ class TestRepresentationResolver:
         print()
 
         assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
-
