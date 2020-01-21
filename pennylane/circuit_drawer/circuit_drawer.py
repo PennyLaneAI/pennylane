@@ -14,11 +14,7 @@
 """
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
-import abc
-import math
 from collections import OrderedDict
-
-import numpy as np
 
 import pennylane as qml
 
