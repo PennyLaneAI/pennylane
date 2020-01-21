@@ -284,7 +284,7 @@ class QubitDevice(Device):
                 are traced out of the system.
 
         Returns:
-            array[float]: array of the probabilities
+            List[float]: list of the probabilities
         """
 
     def marginal_prob(self, prob, wires=None):

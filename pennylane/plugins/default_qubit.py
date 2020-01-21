@@ -483,23 +483,6 @@ class DefaultQubit(QubitDevice):
         return set(self._observable_map.keys())
 
     def probability(self, wires=None):
-        """Return the (marginal) probability of each computational basis
-        state from the last run of the device.
-
-        If no wires are specified, then all the basis states representable by
-        the device are considered and no marginalization takes place.
-
-        .. warning:: This method will have to be redefined for hardware devices, since it uses
-            the ``device._state`` attribute. This attribute might not be available for such devices.
-
-        Args:
-            wires (Sequence[int]): Sequence of wires to return
-                marginal probabilities for. Wires not provided
-                are traced out of the system.
-
-        Returns:
-            List[float]: list of the probabilities
-        """
         if self._state is None:
             return None
 
