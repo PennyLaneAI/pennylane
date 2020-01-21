@@ -21,68 +21,12 @@ import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard, BasisState, Squeezing, Displacement, QubitStateVector
 from pennylane.templates.utils import (_check_shape, _check_no_variable, _check_wires,
-                                       _check_hyperp_is_in_options, _check_type,
+                                       _check_is_in_options, _check_type,
                                        _check_number_of_layers, _get_shape)
 from pennylane.variable import Variable
 
 
 TOLERANCE = 1e-3
-
-
-def _qaoa_feature_encoding_hamiltonian(features, n_features, wires):
-    """Implements the encoding Hamiltonian of the QAOA embedding.
-
-    Args:
-        features (array): array of features to encode
-        n_features (int): number of features to encode
-    """
-    for idx, w in enumerate(wires):
-        # Either feed in feature
-        if idx < n_features:
-            RX(features[idx], wires=w)
-        # or a Hadamard
-        else:
-            Hadamard(wires=w)
-
-
-def _qaoa_ising_hamiltonian(weights, wires, local_fields, l):
-    """Implements the Ising-like Hamiltonian of the QAOA embedding.
-
-    Args:
-        weights (array): array of weights
-        wires (Sequence[int] or int): `n` qubit indices that the template acts on
-        local_fields (str): gate implementing the local field
-        l (int): layer index
-    """
-    # trainable "Ising" ansatz
-    if len(wires) == 1:
-        local_fields(weights[l, 0], wires=wires[0])
-
-    elif len(wires) == 2:
-        # ZZ coupling
-        CNOT(wires=[wires[0], wires[1]])
-        RZ(2 * weights[l, 0], wires=wires[0])
-        CNOT(wires=[wires[0], wires[1]])
-
-        # local fields
-        for i, _ in enumerate(wires):
-            local_fields(weights[l, i + 1], wires=wires[i])
-
-    else:
-        for i, _ in enumerate(wires):
-            if i < len(wires) - 1:
-                # ZZ coupling
-                CNOT(wires=[wires[i], wires[i + 1]])
-                RZ(2 * weights[l, i], wires=wires[i])
-                CNOT(wires=[wires[i], wires[i + 1]])
-            else:
-                # ZZ coupling to enforce periodic boundary condition
-                CNOT(wires=[wires[i], wires[0]])
-                RZ(2 * weights[l, i], wires=wires[i])
-                CNOT(wires=[wires[i], wires[0]])
-        # local fields
-        for i, _ in enumerate(wires):
-            local_fields(weights[l, len(wires) + i], wires=wires[i])
 
 @template
 def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
@@ -228,28 +172,37 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     #############
     # Input checks
-    _check_no_variable([pad, normalize], ['pad', 'normalize'])
-    wires, n_wires = _check_wires(wires)
 
-    n_ampl = 2**n_wires
+    _check_no_variable(pad, msg="'pad' cannot be differentiable")
+    _check_no_variable(normalize, msg="'normalize' cannot be differentiable")
+
+    wires = _check_wires(wires)
+
+    n_amplitudes = 2**len(wires)
+    expected_shape = (n_amplitudes,)
     if pad is None:
-        msg = "AmplitudeEmbedding must get a feature vector of size 2**len(wires), which is {}. Use 'pad' " \
-               "argument for automated padding.".format(n_ampl)
-        shp = _check_shape(features, (n_ampl,), msg=msg)
+        shp = _check_shape(features, expected_shape, msg="'features' must be of shape {}; got {}. Use 'pad' "
+                                                         "argument for automated padding."
+                                                         "".format(expected_shape, _get_shape(features)))
     else:
-        msg = "AmplitudeEmbedding must get a feature vector of at least size 2**len(wires) = {}.".format(n_ampl)
-        shp = _check_shape(features, (n_ampl,), msg=msg, bound='max')
+        shp = _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller "
+                                                                      "to be padded; got {}"
+                                                                      "".format(expected_shape, _get_shape(features)))
 
     _check_type(pad, [float, complex, type(None)])
     _check_type(normalize, [bool])
+
     ###############
 
-    # Pad
-    n_feats = shp[0]
-    if pad is not None and n_ampl > n_feats:
-        features = np.pad(features, (0, n_ampl-n_feats), mode='constant', constant_values=pad)
+    #############
+    # Preprocessing
 
-    # Normalize
+    # pad
+    n_feats = shp[0]
+    if pad is not None and n_amplitudes > n_feats:
+        features = np.pad(features, (0, n_amplitudes-n_feats), mode='constant', constant_values=pad)
+
+    # normalize
     if isinstance(features[0], Variable):
         feature_values = [s.val for s in features]
         norm = np.sum(np.abs(feature_values)**2)
@@ -260,8 +213,10 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         if normalize or pad:
             features = features/np.sqrt(norm)
         else:
-            raise ValueError("Vector of features has to be normalized to 1.0, got {}."
+            raise ValueError("'features' must be a vector of length 1.0; got length {}."
                              "Use 'normalization=True' to automatically normalize.".format(norm))
+
+    ###############
 
     features = np.array(features)
     QubitStateVector(features, wires=wires)
@@ -296,16 +251,17 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     #############
     # Input checks
-    _check_no_variable([rotation], ['rotation'])
-    wires, n_wires = _check_wires(wires)
 
-    msg = "AngleEmbedding cannot process more features than number of qubits {};" \
-          "got {}.".format(n_wires, len(features))
-    _check_shape(features, (n_wires,), bound='max', msg=msg)
+    _check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+
+    wires = _check_wires(wires)
+
+    _check_shape(features, (len(wires),), bound='max', msg="'features' must be of shape {} or smaller; "
+                                                           "got {}.".format((len(wires),), _get_shape(features)))
     _check_type(rotation, [str])
 
-    msg = "Rotation strategy {} not recognized.".format(rotation)
-    _check_hyperp_is_in_options(rotation, ['X', 'Y', 'Z'], msg=msg)
+    _check_is_in_options(rotation, ['X', 'Y', 'Z'], msg="'rotation' value {} not recognized.".format(rotation))
+
     ###############
 
     if rotation == 'X':
@@ -342,15 +298,76 @@ def BasisEmbedding(features, wires):
 
     #############
     # Input checks
+
     wires = _check_wires(wires)
-    _check_shape(features, (len(wires),), msg="Expected features of size {}".format((len(wires),)))
+
+    expected_shape = (len(wires),)
+    _check_shape(features, expected_shape, msg="'features' must be of shape {}; got {}"
+                                               "".format(expected_shape, _get_shape(features)))
 
     if any([b not in [0, 1] for b in features]):
-        raise ValueError("Basis state must only consist of 0s and 1s, got {}".format(features))
+        raise ValueError("basis state must only consist of 0s and 1s; got {}".format(features))
+
     ###############
 
     features = np.array(features)
     BasisState(features, wires=wires)
+
+
+def _qaoa_feature_encoding_hamiltonian(features, n_features, wires):
+    """Implements the encoding Hamiltonian of the QAOA embedding.
+
+    Args:
+        features (array): array of features to encode
+        n_features (int): number of features to encode
+    """
+    for idx, w in enumerate(wires):
+        # Either feed in feature
+        if idx < n_features:
+            RX(features[idx], wires=w)
+        # or a Hadamard
+        else:
+            Hadamard(wires=w)
+
+
+def _qaoa_ising_hamiltonian(weights, wires, local_fields, l):
+    """Implements the Ising-like Hamiltonian of the QAOA embedding.
+
+    Args:
+        weights (array): array of weights
+        wires (Sequence[int] or int): `n` qubit indices that the template acts on
+        local_fields (str): gate implementing the local field
+        l (int): layer index
+    """
+    # trainable "Ising" ansatz
+    if len(wires) == 1:
+        local_fields(weights[l, 0], wires=wires[0])
+
+    elif len(wires) == 2:
+        # ZZ coupling
+        CNOT(wires=[wires[0], wires[1]])
+        RZ(2 * weights[l, 0], wires=wires[0])
+        CNOT(wires=[wires[0], wires[1]])
+
+        # local fields
+        for i, _ in enumerate(wires):
+            local_fields(weights[l, i + 1], wires=wires[i])
+
+    else:
+        for i, _ in enumerate(wires):
+            if i < len(wires) - 1:
+                # ZZ coupling
+                CNOT(wires=[wires[i], wires[i + 1]])
+                RZ(2 * weights[l, i], wires=wires[i])
+                CNOT(wires=[wires[i], wires[i + 1]])
+            else:
+                # ZZ coupling to enforce periodic boundary condition
+                CNOT(wires=[wires[i], wires[0]])
+                RZ(2 * weights[l, i], wires=wires[i])
+                CNOT(wires=[wires[i], wires[0]])
+        # local fields
+        for i, _ in enumerate(wires):
+            local_fields(weights[l, len(wires) + i], wires=wires[i])
 
 
 @template
@@ -495,19 +512,34 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     """
     #############
     # Input checks
+
     wires = _check_wires(wires)
-    _check_shape(features, (len(wires),), bound='max', msg="Expected features of size {}".format((len(wires),)))
-    _check_hyperp_is_in_options(local_field, ['X', 'Y', 'Z'], msg="Option for local field not known. "
-                                                                  "Has to be one of ``'X'``, ``'Y'``, or ``'Z'``.")
+
+    expected_shape = (len(wires),)
+    _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}"
+                                                            "".format((len(wires),), _get_shape(features)))
+
+    _check_is_in_options(local_field, ['X', 'Y', 'Z'], msg="did not recognise option {} for 'local_field'"
+                                                           "".format(local_field))
+
     repeat = _check_number_of_layers([weights])
+
     if len(wires) == 1:
-        _check_shape(weights, (repeat, 1), msg="Expected weight array of shape {}".format((repeat, 1)))
+        expected_shape = (repeat, 1)
+        _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
+                                                  "".format(expected_shape, _get_shape(features)))
     elif len(wires) == 2:
-        _check_shape(weights, (repeat, 3), msg="Expected weight array of shape {}".format((repeat, 3)))
+        expected_shape = (repeat, 3)
+        _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
+                                                  "".format(expected_shape, _get_shape(features)))
     else:
-        _check_shape(weights, (repeat, 2*len(wires)), msg="Expected weight array of "
-                                                          "shape {}".format((repeat, 2*len(wires))))
+        expected_shape = (repeat, 2*len(wires))
+        _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
+                                                  "".format(expected_shape, _get_shape(features)))
+
     #####################
+
+    n_features = _get_shape(features)[0]
 
     if local_field == 'Z':
         local_fields = RZ
@@ -554,12 +586,19 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
 
     #############
     # Input checks
-    _check_no_variable(method, msg="Argument 'method' cannot be differentiable.")
-    _check_no_variable(c, msg="Argument 'c' cannot be differentiable.")
+
+    _check_no_variable(method, msg="'method' cannot be differentiable")
+    _check_no_variable(c, msg="'c' cannot be differentiable")
+
     wires = _check_wires(wires)
-    _check_shape(features, (len(wires),), bound='max', msg="Expected features of size {}".format((len(wires),)))
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg="Did not recognise parameter "
-                                                                    "encoding method {}.".format(method))
+
+    expected_shape = (len(wires),)
+    _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}."
+                                                            "".format(expected_shape, _get_shape(features)))
+
+    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognise option {} for 'method'"
+                                                             "".format(method))
+
     #############
 
     for idx, f in enumerate(features):
@@ -600,12 +639,18 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
 
     #############
     # Input checks
-    _check_no_variable(method, msg="Argument 'method' cannot be differentiable.")
-    _check_no_variable(c, msg="Argument 'c' cannot be differentiable.")
+
+    _check_no_variable(method, msg="'method' cannot be differentiable")
+    _check_no_variable(c, msg="'c' cannot be differentiable")
+
     wires = _check_wires(wires)
-    _check_shape(features, (len(wires),), bound='max', msg="Expected features of size {}".format((len(wires),)))
-    _check_hyperp_is_in_options(method, ['amplitude', 'phase'], msg="Did not recognise parameter "
-                                                                    "encoding method {}".format(method))
+
+    expected_shape = (len(wires),)
+    _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}"
+                                                            "".format(expected_shape, _get_shape(features)))
+
+    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognise option {} for 'method'".format(method))
+
     #############
 
     for idx, f in enumerate(features):

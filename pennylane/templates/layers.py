@@ -145,28 +145,34 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     #############
     # Input checks
-    _check_no_variable([ranges, imprimitive], ['ranges', 'imprimitive'])
 
-    wires, n_wires = _check_wires(wires)
+    _check_no_variable(ranges, msg="'ranges' cannot be differentiable")
+    _check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
+
+    wires = _check_wires(wires)
 
     repeat = _check_number_of_layers([weights])
 
-    _check_shape(weights, (repeat, n_wires, 3))
+    expected_shape = (repeat, len(wires), 3)
+    _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
+                                              "".format(expected_shape, _get_shape(weights)))
 
     _check_type(ranges, [list, type(None)])
 
     if ranges is None:
-        # Tile ranges with iterations of range(1, n_wires)
-        ranges = [(l % (n_wires-1)) + 1 for l in range(repeat)]
+        # tile ranges with iterations of range(1, n_wires)
+        ranges = [(l % (len(wires)-1)) + 1 for l in range(repeat)]
 
-    msg = "StronglyEntanglingLayers expects ``ranges`` to contain a range for each layer; " \
-          "got {}.".format(len(ranges))
-    _check_shape(ranges, (repeat,), msg=msg)
-    msg = "StronglyEntanglingLayers expects ``ranges`` to be a list of integers; got {}.".format(len(ranges))
-    _check_type(ranges[0], [int], msg=msg)
-    if any((r >= n_wires or r == 0) for r in ranges):
-        raise ValueError("The range hyperparameter for all layers needs to be smaller than the number of "
+    expected_shape = (repeat,)
+    _check_shape(ranges, expected_shape, msg="'ranges' must be of shape {}; got {}"
+                                             "".format(expected_shape, _get_shape(weights)))
+
+    _check_type(ranges[0], [int], msg="'ranges' must be a list of integers; got {}.".format(ranges))
+
+    if any((r >= len(wires) or r == 0) for r in ranges):
+        raise ValueError("the range for all layers needs to be smaller than the number of "
                          "qubits; got ranges {}.".format(ranges))
+
     ###############
 
     for l in range(repeat):
@@ -228,6 +234,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     #############
     # Input checks
+
     hyperparams = [ratio_imprim, imprimitive, rotations, seed]
     hyperparam_names = ['ratio_imprim', 'imprimitive', 'rotations', 'seed']
     _check_no_variable(hyperparams, hyperparam_names)
@@ -239,10 +246,13 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     _check_shape(weights, (repeat, n_rots))
 
-    _check_type(ratio_imprim, [float, type(None)])
-    _check_type(n_rots, [int, type(None)])
-    _check_type(rotations, [list, type(None)])
-    _check_type(seed, [int, type(None)])
+    _check_type(ratio_imprim, [float, type(None)], msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim))
+    _check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
+    #TODO: Check that 'rotations' contains operations
+    _check_type(rotations, [list, type(None)], msg="'rotations' must be a list of PennyLane operations; got {}"
+                                                   "".format(rotations))
+    _check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
+
     ###############
 
     for l in range(repeat):
@@ -299,18 +309,19 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
 
     #############
     # Input checks
-    wires, n_wires = _check_wires(wires)
 
+    wires = _check_wires(wires)
+
+    n_wires = len(wires)
     n_if = n_wires*(n_wires-1)//2
     weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
     repeat = _check_number_of_layers(weights_list)
 
-    shapes_list = [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                   (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                   (repeat, n_wires)]
-    _check_shapes(weights_list, shapes_list)
+    expected_shapes = [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
+                       (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
+                       (repeat, n_wires)]
+    _check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
 
-    _check_type(repeat, [int])
     ###############
 
     for l in range(repeat):

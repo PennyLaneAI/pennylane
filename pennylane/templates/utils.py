@@ -22,34 +22,33 @@ import numpy as np
 from pennylane.variable import Variable
 
 
-def _check_no_variable(arg, arg_str, msg=None):
-    """Checks that ``arg`` does not contain a pennylane.Variable object.
+def _check_no_variable(arg, msg=None):
+    """Checks that `arg` does not contain a pennylane.Variable object.
+
+    Ensures that the user has not passed `arg` to the qnode as a
+    positional argument.
 
     Args:
-        arg (list): arguments or list of arguments to check
-        arg_str (list[str]): name of arguments for error printing
+        arg: argument to check
         msg (str): error message
     """
 
-    for a, s in zip(arg, arg_str):
-        if msg is None:
-            msg = "The argument '{}' can not be passed as a QNode parameter. Try passing it as a keyword argument."\
-                .format(s)
-        if isinstance(a, Variable):
+    if isinstance(arg, Variable):
+        raise ValueError(msg)
+
+    if isinstance(arg, Iterable):
+        if any([isinstance(a_, Variable) for a_ in arg]):
             raise ValueError(msg)
-        if isinstance(a, Iterable):
-            if any([isinstance(a_, Variable) for a_ in a]):
-                raise ValueError(msg)
 
 
 def _check_wires(wires):
     """Standard checks for the wires argument.
 
     Args:
-        wires (int or list): (subset of) wires of a quantum node
+        wires (int or list): (subset of) wires of a quantum node, can be list or a single integer
 
     Return:
-        tuple(list, int): tuple containing the list of wires and number of wires
+        list: list of wires
 
     Raises:
         ValueError: if the wires argument is invalid
@@ -65,43 +64,36 @@ def _check_wires(wires):
         raise ValueError(msg)
     if not all([w >= 0 for w in wires]):
         raise ValueError(msg)
-    return wires, len(wires)
+    return wires
 
 
 def _get_shape(inpt):
-    """Return the shape of ``inpt``.
+    """Turn ``inpt`` to an array and return its shape.
 
     Args:
         inpt (list): input to a qnode
 
     Returns:
         tuple: shape of ``inpt``
-
-    Raises:
-        ValueError: if ``inpt`` fails to convert to a NumPy array
     """
-    # Todo: Wrap this into a "try" statement
     inpt = np.array(inpt)
 
     return inpt.shape
 
 
-def _check_shape(inpt, target_shape, msg=None, bound=None):
+def _check_shape(inpt, target_shape, bound=None, msg=None):
     """Checks that the shape of ``inpt`` is equal to the target shape.
     Args:
         inpt (list): input to a qnode
         target_shape (tuple[int]): expected shape of inpt
-        msg (str): error message if the shapes are different
         bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
+        msg (str): error message if the shapes are different
 
     Raises:
         ValueError
     """
 
     shape = _get_shape(inpt)
-
-    if msg is None:
-        msg = "Input has shape {}; expected {}.".format(shape, target_shape)
 
     if bound == 'max':
         if shape > target_shape:
@@ -117,7 +109,7 @@ def _check_shape(inpt, target_shape, msg=None, bound=None):
 
 
 def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
-    """Same as _check_shape, but for lists.
+    """Same as `_check_shape()`, but for lists.
 
     Args:
         inpt_list (list): list of elements of which to check the shape
@@ -137,7 +129,7 @@ def _check_shapes(inpt_list, target_shape_list, bound_list=None, msg=None):
     return shape_list
 
 
-def _check_hyperp_is_in_options(element, options, msg=None):
+def _check_is_in_options(element, options, msg=None):
     """Checks that a hyperparameter is one of the valid options of hyperparameters.
 
     Args:
