@@ -155,16 +155,20 @@ class QubitDevice(Device):
         """
 
     @staticmethod
-    def active_wires(operations):
-        """Returns the wires acted on by the circuit.
+    def active_wires(operators):
+        """Returns the wires acted on by a set of operators.
+
+        Args:
+            operators (list[~.Operation]): operators for which
+                we are gathering the active wires
 
         Returns:
             set[int]: the set of wires to be measured by the device
         """
         wires = []
-        for operations in operations:
+        for op in operators:
 
-            for wire in operations.wires:
+            for wire in op.wires:
                 if isinstance(wire, int):
                     wires.append(wire)
                 else:

@@ -606,6 +606,8 @@ class BaseQNode:
         self.device.reset()
 
         if isinstance(self.device, qml.QubitDevice):
+            # create a circuit graph containing the existing operations, and the
+            # observables to be evaluated.
             circuit_graph = CircuitGraph(self.circuit.operations + obs, self.circuit.variable_deps)
             ret = self.device.execute(circuit_graph)
         else:
