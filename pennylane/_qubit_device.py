@@ -68,7 +68,7 @@ class QubitDevice(Device):
 
         self.analytic = analytic
         """bool: If ``True``, the device supports exact calculation of expectation
-        values, variance, and probabilities. If ``False``, samples are used
+        values, variances, and probabilities. If ``False``, samples are used
         to estimate the statistical quantities above."""
 
         self._wires_measured = set()
