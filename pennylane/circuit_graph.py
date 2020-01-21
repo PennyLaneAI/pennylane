@@ -51,6 +51,21 @@ def _is_observable(x):
     return getattr(x, "return_type", None) is not None
 
 
+def _list_at_index_or_none(list, idx):
+    """Return the element of a list at the given index if it exists, return None otherwise.
+
+    Args:
+        list (list[object]): The target list
+        idx (int): The target index
+
+    Returns:
+        Union[object,NoneType]: The element at the target index or None
+    """
+    if len(list) > idx:
+        return list[idx]
+
+    return None
+
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
 
@@ -304,37 +319,6 @@ class CircuitGraph:
             post_queue = self.descendants_in_order(ops)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
-    @staticmethod
-    def list_at_index_or_none(list, idx):
-        """Return the element of a list at the given index if it exists, return None otherwise.
-
-        Args:
-            list (list[object]): The target list
-            idx (int): The target index
-
-        Returns:
-            Union[object,NoneType]: The element at the target index or None
-        """
-        if len(list) > idx:
-            return list[idx]
-
-        return None
-
-    @staticmethod
-    def empty_list_to_none(list):
-        """Returns the list if it isn't empty, otherwise return a list that contains None.
-
-        Args:
-            list (list[object]): The target list
-
-        Returns:
-            list[object]: The target list or [None] if the target list was empty
-        """
-        if list:
-            return list
-
-        return [None]
-
     def greedy_layers(self):
         """Greedily collected layers of the circuit. Empty slots are filled with ``None``.
 
@@ -361,7 +345,7 @@ class CircuitGraph:
 
         while True:
             layer_ops = {
-                wire: CircuitGraph.list_at_index_or_none(operations[wire], l) for wire in operations
+                wire: _list_at_index_or_none(operations[wire], l) for wire in operations
             }
             num_ops = Counter(layer_ops.values())
 
@@ -381,15 +365,16 @@ class CircuitGraph:
 
         observables = OrderedDict()
         for wire in sorted(self._grid):
-            observables[wire] = CircuitGraph.empty_list_to_none(
-                list(
-                    filter(
-                        lambda op: isinstance(op, qml.operation.Observable)
-                        and op.return_type is not None,
-                        self._grid[wire],
-                    )
+            observables[wire] = list(
+                filter(
+                    lambda op: isinstance(op, qml.operation.Observable)
+                    and op.return_type is not None,
+                    self._grid[wire],
                 )
             )
+            
+            if not observables[wire]:
+                observables[wire] = [None]
 
         return (
             [operations[wire] for wire in operations],

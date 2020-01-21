@@ -198,13 +198,3 @@ class TestCircuitGraph:
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (4, 5)
         assert set(result[2][3]) == set(circuit.observables[1:])
-
-    @pytest.mark.parametrize("input,expected_output", [
-        ([], [None]),
-        ([1], [1]),
-        ([1, 2, 3, 4], [1, 2, 3, 4])
-    ])
-    def test_empty_list_to_none(self, input, expected_output):
-        """Test the method empty_list_to_none."""
-
-        assert CircuitGraph.empty_list_to_none(input) == expected_output
