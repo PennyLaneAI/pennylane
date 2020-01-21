@@ -374,7 +374,7 @@ class RepresentationResolver:
         If the target element is not in the list it will be added to the list.
 
         Args:
-            target_element (np.ndarray): The object whos index is to be returned
+            target_element (np.ndarray): The object whose index is to be returned
             target_list (list[np.ndarray]): The list which shall be searched
 
         Returns:
