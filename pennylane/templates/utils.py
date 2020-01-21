@@ -22,15 +22,15 @@ import numpy as np
 from pennylane.variable import Variable
 
 
-def _check_no_variable(arg, msg=None):
-    """Checks that `arg` does not contain a pennylane.Variable object.
+def _check_no_variable(arg, msg):
+    """Checks that `arg` does not represent or contain a :func:`~.pennylane.Variable` object.
 
-    Ensures that the user has not passed `arg` to the qnode as a
+    This ensures that the user has not passed `arg` to the qnode as a
     positional argument.
 
     Args:
         arg: argument to check
-        msg (str): error message
+        msg (str): error message to display
     """
 
     if isinstance(arg, Variable):
@@ -81,13 +81,14 @@ def _get_shape(inpt):
     return inpt.shape
 
 
-def _check_shape(inpt, target_shape, bound=None, msg=None):
+def _check_shape(inpt, target_shape, msg, bound=None):
     """Checks that the shape of ``inpt`` is equal to the target shape.
+
     Args:
         inpt (list): input to a qnode
         target_shape (tuple[int]): expected shape of inpt
+        msg (str): error message to display if the shapes are different
         bound (str): If 'max' or 'min', the target shape is merely required to be a bound on the input shape
-        msg (str): error message if the shapes are different
 
     Raises:
         ValueError
@@ -109,7 +110,8 @@ def _check_shape(inpt, target_shape, bound=None, msg=None):
 
 
 def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
-    """Same as `_check_shape()`, but for lists of elements.
+    """Checks that the shape of elements in the ``inpt`` list are equal to the shapes of elements
+    in the ``target shape`` list.
 
     Args:
         inpt_list (list): list of elements of which to check the shape
