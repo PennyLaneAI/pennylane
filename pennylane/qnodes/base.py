@@ -239,6 +239,32 @@ class BaseQNode:
     def draw(self, charset="unicode", show_variable_names=False):
         """Draw the QNode as a circuit diagram.
 
+        Consider the following circuit as an example:
+
+        .. code-block:: python
+            @qml.qnode(dev)
+            def qfunc(a, w):
+                qml.Hadamard(0)
+                qml.CRX(a, wires=[0, 1])
+                qml.Rot(w[0], w[1], w[2], wires=[1])
+                qml.CRX(-a, wires=[0, 1])
+
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        We can draw the circuit after it has been executed:
+
+        .. code-block:: python
+            >>> result = qfunc(2.3, [1.2, 3.2, 0.7])
+            >>> print(qfunc.draw())
+            0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+            1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+            >>> print(qfunc.draw(charset="ascii"))
+            0: --H--+C----------------------------+C---------+| <Z @ Z>
+            1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+            >>> print(qfunc.draw(show_variable_names=True))
+            0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+            1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩
+
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
             show_variable_names (bool, optional): Show variable names instead of values.
@@ -332,16 +358,28 @@ class BaseQNode:
                 )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
-    def _determine_variable_name(self, variable_value, prefix):
-        if isinstance(variable_value, np.ndarray):
-            variable_name_string = np.empty_like(variable_value, dtype=object)
+    def _determine_variable_name(self, parameter_value, prefix):
+        """Determine the variable names corresponding to a parameter.
+        
+        This method unrolls the parameter value if it has an array
+        or list structure.
+
+        Args:
+            parameter_value (Union[numeric,Sequence[Any],array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
+        
+        Returns:
+            Union[str,Sequence[str],array[str]]: The variable name(s) in the same structure as the parameter value
+        """
+        if isinstance(parameter_value, np.ndarray):
+            variable_name_string = np.empty_like(parameter_value, dtype=object)
 
             for index in np.ndindex(*variable_name_string.shape):
                 variable_name_string[index] = "{}[{}]".format(prefix, ",".join([str(i) for i in index]))
-        elif isinstance(variable_value, Sequence):
+        elif isinstance(parameter_value, Sequence):
             variable_name_string = []
 
-            for idx, val in enumerate(variable_value):
+            for idx, val in enumerate(parameter_value):
                 variable_name_string.append(self._determine_variable_name(val, "{}[{}]".format(prefix, idx)))
         else:
             variable_name_string = prefix
