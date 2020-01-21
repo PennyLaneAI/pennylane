@@ -134,17 +134,30 @@ class QubitDevice(Device):
 
     @abc.abstractmethod
     def apply(self, operations, rotations=None, **kwargs):
-        """Apply quantum operations, and execute the quantum circuit.
+        """Apply quantum operations, rotate the circuit into the measurement
+        basis, and compile and execute the quantum circuit.
 
         This method recieves a list of quantum operations queued by the QNode,
         and should be responsible for:
 
         * Constructing the quantum program
-        * (Optional) rotating the quantum circuit using the rotation
+        * (Optional) Rotating the quantum circuit using the rotation
           operations provided. This diagonalizes the circuit so that arbitrary
           observables can be measured in the computational basis.
         * Compile the circuit
         * Execute the quantum circuit
+
+        Both arguments are provided as lists of PennyLane :class:`~.Operation`
+        instances. Useful properties include :attr:`~.Operation.name`,
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
+
+        >>> op = qml.RX(0.2, wires=[0])
+        >>> op.name # returns the operation name
+        "RX"
+        >>> op.wires # returns a list of wires
+        [0]
+        >>> op.parameters # returns a list of parameters
+        [0.2]
 
         Args:
             operations (list[~.Operation]): operations to apply to the device
