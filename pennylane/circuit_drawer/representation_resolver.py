@@ -134,10 +134,20 @@ class RepresentationResolver:
 
     @staticmethod
     def _format_matrix_operation(operation, symbol, cache):
-            mat = operation.params[0]
-            idx = RepresentationResolver.index_of_array_or_append(mat, cache)
+        mat = operation.params[0]
+        idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
-            return "{}{}".format(symbol, idx)
+        return "{}{}".format(symbol, idx)
+
+    @staticmethod
+    def _format_matrix_arguments(params, symbol, cache):
+        param_strings = []
+        for param in params:
+            idx = RepresentationResolver.index_of_array_or_append(param, cache)
+
+            param_strings.append("{}{}".format(symbol, idx))
+
+        return "(" + ",".join(param_strings) + ")"
 
 
     def operator_representation(self, op, wire):
@@ -297,13 +307,7 @@ class RepresentationResolver:
             "QubitStateVector",
             "Interferometer",
         }:
-            param_strings = []
-            for param in op.params:
-                idx = RepresentationResolver.index_of_array_or_append(param, self.matrix_cache)
-
-                param_strings.append("M{}".format(idx))
-
-            return "{}({})".format(name, ", ".join(param_strings))
+            return name + RepresentationResolver._format_matrix_arguments(op.params, "M", self.matrix_cache)
 
         return "{}({})".format(
             name, ", ".join([self.single_parameter_representation(par) for par in op.params])
