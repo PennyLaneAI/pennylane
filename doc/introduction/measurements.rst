@@ -66,11 +66,14 @@ You can also use list comprehensions, and other common Python patterns:
         qml.RY(y, wires=1)
         return [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
-As an example of combined measurements, let us look at
+As a full example of combined measurements, let us look at
 a Bell state :math:`(|00\rangle + |11\rangle)/\sqrt{2}`, prepared
 by a ``Hadamard`` and ``CNOT`` gate.
 
 .. code-block:: python
+
+    import pennylane as qml
+    from pennylane import numpy as np
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -86,14 +89,14 @@ the measurement results of the respective qubit. As a default, :func:`~.pennylan
 returns 1000 samples per observable.
 
 >>> result = circuit()
->>> len(result[0]), len(result[1])
-1000, 1000
+>>> result.shape
+(2, 1000)
 
 Since the two qubits are maximally entangled,
 the measurement results always coincide, and the lists are therefore equal:
 
->>> result[0] == result[1]
-[True True ... True]
+>>> np.all(result[0] == result[1])
+True
 
 
 Tensor observables
