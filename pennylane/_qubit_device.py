@@ -302,7 +302,7 @@ class QubitDevice(Device):
                 are traced out of the system.
 
         Returns:
-            list[float]: List of the resulting marginal probabilities.
+            array[float]: array of the resulting marginal probabilities.
         """
         wires = list(wires or range(self.num_wires))
         wires = np.hstack(wires)
