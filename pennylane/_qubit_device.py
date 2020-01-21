@@ -159,7 +159,7 @@ class QubitDevice(Device):
         """Returns the wires acted on by the circuit.
 
         Returns:
-            set[int]: the set of wires to be measured by the device
+            set[int]: the set of wires activated by the specified operations
         """
         wires = []
         for operations in operations:
