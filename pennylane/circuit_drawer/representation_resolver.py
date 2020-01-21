@@ -243,11 +243,11 @@ class RepresentationResolver:
 
     # pylint: disable=too-many-return-statements
     def operator_representation(self, op, wire):
-        """Resolve the representation of an Operator.
+        """Return the string representation of an Operator.
 
         Args:
-            op (pennylane.operation.Operator): The Operator instance whose representation shall be resolved
-            wire (int): The Operator's wire which is currently resolved
+            op (pennylane.operation.Operator): The Operator instance whose representation shall be returned
+            wire (int): The Operator's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Operator
@@ -322,11 +322,11 @@ class RepresentationResolver:
         )
 
     def output_representation(self, obs, wire):
-        """Resolve the representation of a circuit's output.
+        """Return the string representation of a circuit's output.
 
         Args:
-            obs (pennylane.ops.Observable): The Observable instance whose representation shall be resolved
-            wire (int): The Observable's wire which is currently resolved
+            obs (pennylane.ops.Observable): The Observable instance whose representation shall be returned
+            wire (int): The Observable's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Observable
@@ -349,11 +349,11 @@ class RepresentationResolver:
         return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))
 
     def element_representation(self, element, wire):
-        """Resolve the representation of an element in the circuit's Grid.
+        """Return the string representation of an element in the circuit's Grid.
 
         Args:
-            element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be resolved
-            wire (int): The element's wire which is currently resolved
+            element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be returned
+            wire (int): The element's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the element
