@@ -20,12 +20,10 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 simulation of a qubit-based quantum circuit architecture.
 """
 import itertools
-import functools
 
 import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import Operation
 
 
 # tolerance for numerical errors
