@@ -278,7 +278,7 @@ class BaseQNode:
         if self.circuit:
             return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
 
-        raise QuantumFunctionError("The QNode can only be drawn after its CircuitGraph has been constructed.")
+        raise RuntimeError("The QNode can only be drawn after its CircuitGraph has been constructed.")
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
@@ -364,7 +364,7 @@ class BaseQNode:
         or list structure.
 
         Args:
-            parameter_value (Union[numeric,Sequence[Any],array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
             prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
 
         Returns:
@@ -407,7 +407,7 @@ class BaseQNode:
         In this example, ``_make_variables`` will return the following :class:`~.variable.Variable` instances
 
         .. code-block:: python
-            >>> dev._make_variables([3.4, [1.2, 3.4, 5.6]], {})
+            >>> qfunc._make_variables([3.4, [1.2, 3.4, 5.6]], {})
             ["a", ["w[0]", "w[1]", "w[2]"]], {}
 
         where the Variable instances are replaced with their name for readability.
