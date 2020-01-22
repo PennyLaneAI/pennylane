@@ -6,6 +6,9 @@ of the electronic structure of molecules. ``qchem`` contains tools to construct 
 electronic Hamiltonian of molecules, and uses PennyLane to implement the Variational Quantum
 Eigensolver (VQE) algorithm.
 
+.. figure:: ../_static/sketch_pennylane_qchem.png
+    :width: 50%
+    :align: center
 
 .. note::
 
