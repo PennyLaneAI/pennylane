@@ -23,8 +23,10 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-from pennylane.beta.plugins.expt_tensornet import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.operation import Tensor
+
+from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
+
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
