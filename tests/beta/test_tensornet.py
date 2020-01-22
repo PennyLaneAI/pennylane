@@ -19,6 +19,11 @@ import cmath
 import math
 
 import pytest
+
+# TODO: remove the following skip when Tensornet has been ported to
+# Qubit device, and the gate imports above are removed.
+tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
+
 import pennylane as qml
 from pennylane import numpy as np, QuantumFunctionError
 from pennylane.beta.plugins.expt_tensornet import (
@@ -49,9 +54,6 @@ from pennylane.beta.plugins.expt_tensornet import (
 )
 
 tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
-# TODO: remove the following skip when Tensornet has been ported to
-# Qubit device, and the gate imports above are removed.
-tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 
 
 U = np.array(
