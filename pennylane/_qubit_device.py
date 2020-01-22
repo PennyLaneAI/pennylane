@@ -243,12 +243,9 @@ class QubitDevice(Device):
         return results
 
     def generate_samples(self):
-        """Generate computational basis samples.
-
-        If the device contains a sample return type, or the
-        device is running in non-analytic mode, ``dev.shots`` number of
-        computational basis samples are generated and stored within
-        the :attr:`~._samples` attribute.
+        """Generate computational basis samples for all measured wires
+        (``self.measured_wires``) and stores the results in
+        the attributes ``self._samples``.
 
         .. warning::
 
@@ -310,6 +307,11 @@ class QubitDevice(Device):
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
+
+        .. note::
+
+            :meth:`marginal_prob` may be used as a utility method
+            to calculate the marginal probability distribution.
 
         Args:
             wires (Sequence[int]): Sequence of wires to return

@@ -29,8 +29,8 @@ A quick primer on terminology of PennyLane plugins in this section:
 
 .. important::
 
-    In your plugin module, **standard NumPy** (*not* the wrapped NumPy module provided by
-    PennyLane) should be imported in all places (i.e., ``import numpy as np``).
+    In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy)
+    should be imported in all places (i.e., ``import numpy as np``).
 
 
 Creating your device
@@ -44,19 +44,25 @@ Creating your device
     returns correct expectation values.
 
 The first step in creating your PennyLane plugin is to create your device class.
-This is as simple as importing the abstract base class :class:`~.Device` from PennyLane, and subclassing it:
+This is as simple as importing the abstract base class :class:`~.QubitDevice` from PennyLane,
+and subclassing it:
 
 .. code-block:: python
 
-    from pennylane import Device
+    from pennylane import QubitDevice
 
-    class MyDevice(Device):
+    class MyDevice(QubitDevice):
         """MyDevice docstring"""
         name = 'My custom device'
         short_name = 'example.mydevice'
         pennylane_requires = '0.1.0'
         version = '0.0.1'
         author = 'Ada Lovelace'
+
+.. warning::
+
+    The original :class:`~.Device` class has been **deprecated**, and all new plugin devices
+    should instead subclass :class:`~.QubitDevice`.
 
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
@@ -77,12 +83,6 @@ and use the device. These include:
 * :attr:`.Device.author`: the author of the device
 
 Defining all these attributes is mandatory.
-
-.. note::
-
-    For examples of subclasses of :class:`~.Device`, see :class:`~.DefaultQubit`,
-    :class:`~.DefaultGaussian`, or the `Qiskit <https://pennylane-qiskit.readthedocs.io/>`_
-    plugin.
 
 
 Supporting operators and observables
@@ -117,9 +117,6 @@ as well as potential further capabilities, by providing the following class attr
   * ``'tensor_observables'`` (*bool*): ``True`` if the device supports measuring tensor products
     of observables, ``False`` otherwise.
 
-For a better idea of how to best implement :attr:`.Device.operations` and
-:attr:`.Device.observables`, refer to the two reference plugins.
-
 .. note::
 
     When writing a plugin device for PennyLane, make sure that your plugin
@@ -136,56 +133,25 @@ Device execution
 Once all the class attributes are defined, it is necessary to define some required class
 methods, to allow PennyLane to apply operations and measure observables on your device.
 
-Applying operations
-^^^^^^^^^^^^^^^^^^^
+To execute operations on the device, the following methods **must** be defined:
 
-To execute operations on the device, the following method must be defined:
+.. currentmodule:: pennylane.QubitDevice
 
-* :meth:`.Device.apply`: This accepts an operation name (as a string), the wires (subsystems)
-  to apply the operation to, and the parameters for the operation, and should apply the
-  resulting operation to given wires of the device.
+.. autosummary::
 
-Measuring observables
-^^^^^^^^^^^^^^^^^^^^^
+    apply
+    probability
 
-PennyLane supports three measurement functions, :func:`.expval`, :func:`.var`,
-and :func:`.sample`. To support these operations, the following methods must be defined:
+In addition, if your device generates its own computational basis samples for measured modes
+after execution, you need to overwrite the following method:
 
-* :meth:`.Device.expval`: This accepts an observable name (as a string), the wires
-  (subsystems) to measure, and the parameters for the observable. It is expected to return
-  the resulting expectation value from the device.
+.. autosummary::
 
-* :meth:`.Device.var`: This accepts an observable name (as a string), the wires (subsystems)
-  to measure, and the parameters for the observable. It is expected to return the resulting
-  variance of the measured observable value from the device.
+    generate_samples
 
-* :meth:`.Device.sample`: This accepts an observable name (as a string), the wires (subsystems)
-  to measure, and the parameters for the observable. It is expected to return samples of the
-  measured observable value from the device. Number of samples is determined by attribute
-  :attr:`.Device.shots`.
-
-.. note::
-
-    Currently, PennyLane only supports measurements that return a scalar value.
-
-Tensor observables
-~~~~~~~~~~~~~~~~~~
-
-A user may specify multi-wire observables using either :class:`pennylane.Hermitian` and
-providing an Hermitian NumPy array, or by declaring a tensor product of single-wire observables
-using the syntax ``qml.PauliX(0) @ qml.PauliZ(1)``.
-
-If you would like to support tensor observables, make sure to specify ``tensor_observables: True``
-in the :attr:`~.Device._capabilities` dictionary. When a measurement function is called
-with a tensor product of observables, each argument (``observable``, ``wires``, ``par``)
-become lists of equal size.
-
-For example, for ``qml.PauliX(0) @ qml.Hermitian(A, [1, 3])``,
-the :meth:`~.Device.expval` method will be called as follows from PennyLane:
-
-.. code-block:: python
-
-    result = dev.expval(["PauliX, Hermitian"], wires=[[0], [1, 3]], par=[[], [A]])
+And thats it! The device has inherited :class:`~.QubitDevice.expval`, :class:`~.QubitDevice.var`,
+and :class:`~.QubitDevice.sample` methods, that accepts an observable (or tensor product of
+observables) and returns the corresponding measurement statistic.
 
 
 Advanced execution control
@@ -199,66 +165,45 @@ your plugin, which, by default performs the following process:
 
 .. code-block:: python
 
-    results = []
+    self.check_validity(circuit.operations, circuit.observables)
 
-    with self.execution_context():
-        self.pre_apply()
-        for operation in queue:
-            self.apply(operation.name, operation.wires, operation.parameters)
-        self.post_apply()
+    # apply all circuit operations
+    self.apply(circuit.operations, circuit.diagonalizing_gates)
 
-        self.pre_measure()
+    # determine the wires that are measured by the circuit
+    self._wires_measured = QubitDevice.active_wires(circuit.observables)
 
-        for obs in observables:
-            if obs.return_type is Expectation:
-                results.append(self.expval(obs.name, obs.wires, obs.parameters))
+    # generate computational basis samples
+    if (not self.analytic) or circuit.is_sampled:
+        self.generate_samples()
 
-            elif obs.return_type is Variance:
-                results.append(self.var(obs.name, obs.wires, obs.parameters))
+    # compute the required statistics
+    results = self.statistics(circuit.observables)
 
-            elif obs.return_type is Sample:
-                results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+    return self._asarray(results)
 
-        self.post_measure()
+where
 
-        return np.array(results)
+* ``circuit`` is a :class:`~.CircuitGraph` object
 
-where ``queue`` is a list of PennyLane :class:`~.Operation` instances to be applied,
-and ``observables`` is a list of PennyLane :class:`~.Observable` instances to be
-measured and returned.
+* :attr:`circuit.operations <pennylane.CircuitGraph.operations>` are the user-provided
+  operations to be executed
 
-.. important::
+* :attr:`circuit.observables <pennylane.CircuitGraph.observables>` are the user-provided
+  observables to be measured
 
-    At any point, the properties :attr:`self.op_queue <~.Device.op_queue>`
-    and :attr:`self.obs_queue <~.Device.obs_queue>` can be used to 'peek'
-    at the operation and observable queues respectively.
+* :attr:`circuit.diagonalizing_gates <pennylane.CircuitGraph.diagonalizing_gates>` are the
+  gates that rotate the circuit prior to measurement so that computational basis
+  measurements are performed in the eigenbasis of the requested observables
 
-In cases where additional logic is required, the following (optional) methods may
-also be implemented:
+* :meth:`~.QubitDevice.active_wires` is a static method that accepts a list containing
+  :class:`~.Operator` objects, and returns the wires that are acted on.
 
-* :meth:`.Device.__init__`: By default, this method receives the number of wires
-  (``self.num_wires``) and number of shots ``self.shots`` of the device. This is the right place to set
-  up your device. You may add parameters while overwriting this method if you need to add additional
-  options that the user must pass to the device on initialization. Make sure that you call
-  ``super().__init__(wires, shots)`` at some point here.
 
-* :meth:`.Device.execution_context`: Here you may return a context manager for the circuit
-  execution phase (see above). You can implement this method if the quantum library for which you are writing the device requires such an execution context while applying operations and measuring results from the device.
-
-* :meth:`.Device.pre_apply`: for any setup/code that must be executed before applying operations
-
-* :meth:`.Device.post_apply`: for any setup/code that must be executed after applying operations
-
-* :meth:`.Device.pre_measure`: for any setup/code that must be executed before measuring observables
-
-* :meth:`.Device.post_measure`: for any setup/code that must be executed after measuring observables
-
-.. warning::
-
-    In advanced cases, the :meth:`.Device.execute` method may be overwritten directly.
-    This provides full flexibility for handling the device execution yourself. However,
-    this may have unintended side-effects and is not recommended — if possible, try implementing
-    a suitable subset of the methods provided above.
+In advanced cases, the :meth:`.Device.execute` method may be overwritten directly.
+This provides full flexibility for handling the device execution yourself. However,
+this may have unintended side-effects and is not recommended — if possible, try implementing
+a suitable subset of the methods provided above.
 
 
 .. _installing_plugin:
@@ -325,8 +270,8 @@ that it *applies* and *measures* quantum operations and observables correctly.
 Supporting new operations
 -------------------------
 
-If you would like to support an operation or observable that is not currently supported by
-PennyLane, you can subclass the :class:`~.Operation` and :class:`~.Observable` classes, and
+If you would like to support an operation that is not currently supported by
+PennyLane, you can subclass the :class:`~.Operation` class, and
 define the number of parameters the operation takes, and the number of wires the operation
 acts on. For example, to define a custom gate depending on parameter :math:`\phi`,
 
@@ -334,11 +279,16 @@ acts on. For example, to define a custom gate depending on parameter :math:`\phi
 
     class CustomGate(Operation):
         """Custom gate"""
-        num_params = 1
-        num_wires = 2
+        num_params = 2
+        num_wires = 1
         par_domain = 'R'
+
         grad_method = 'A'
         grad_recipe = None
+
+        @staticmethod
+        def _matrix(*params):
+            return np.array([[params[0], 1], [1, -params[1]]]) / np.sqrt(2)
 
 where
 
@@ -371,6 +321,9 @@ where
   which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate
   :math:`O(\phi_k)`.
 
+* :meth:`~.Operation._matrix`: returns the matrix representation of the operator for the
+  provided parameter values, in the computational basis.
+
 Note that if ``grad_recipe = None``, the default gradient recipe is
 :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
 
@@ -392,6 +345,40 @@ The user can then import this operation directly from your plugin, and use it wh
     If you are providing custom operations not natively supported by PennyLane, it is recommended
     that the plugin unittests **do** provide tests to ensure that PennyLane returns the correct
     gradient for the custom operations.
+
+Supporting new observables
+--------------------------
+
+Custom observables can be added in an identical manner to operations above, but with three
+small changes:
+
+* The :class:`~.Observable` class should instead be subclassed.
+
+* The class attribute :attr:`~.Observable.eigvals` should be defined, returning
+  the eigenvalues of the observable.
+
+* The method :meth:`~.Observable.diagonalizing_gates` should be defined. This method
+  returns a list of PennyLane :class:`~.Operation` objects that diagonalize the observable
+  in the computational basis. This is used to support devices that can only perform
+  measurements in the computational basis.
+
+For example:
+
+.. code-block:: python
+
+    class CustomObservable(Observable):
+        """Custom observable"""
+        num_params = 0
+        num_wires = 1
+        par_domain = None
+        eigvals = np.array([0.2, 0.1])
+
+        def diagonalizing_gates(self):
+            return [PauliX(wires=self.wires), Hadamard(wires=self.wires)]
+
+        @staticmethod
+        def _matrix(*params):
+            return np.array([[0, 1], [1, 0]]) / np.sqrt(2)
 
 
 Supporting new CV operations
