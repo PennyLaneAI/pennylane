@@ -3,8 +3,8 @@
 
 .. _plugin_overview:
 
-Building a plugin
-=================
+Plugins and operations
+======================
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the
 automatic differentiation ability of PennyLane, is a simple and easy process. In this section,
@@ -141,6 +141,8 @@ To execute operations on the device, the following methods **must** be defined:
 
     apply
     probability
+
+(Click the name of each method to see more details and examples).
 
 In addition, if your device generates its own computational basis samples for measured modes
 after execution, you need to overwrite the following method:

@@ -167,7 +167,8 @@ class QubitDevice(Device):
 
         Both arguments are provided as lists of PennyLane :class:`~.Operation`
         instances. Useful properties include :attr:`~.Operation.name`,
-        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`,
+        and :attr:`~.Operation.inverse`:
 
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
@@ -176,6 +177,11 @@ class QubitDevice(Device):
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
+        >>> op.inverse # check if the operation should be inverted
+        False
+        >>> op = qml.RX(0.2, wires=[0]).inv
+        >>> op.inverse
+        True
 
         Args:
             operations (list[~.Operation]): operations to apply to the device
