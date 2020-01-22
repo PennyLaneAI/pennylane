@@ -7,7 +7,7 @@ electronic Hamiltonian of molecules, and uses PennyLane to implement the Variati
 Eigensolver (VQE) algorithm.
 
 .. figure:: ../_static/sketch_pennylane_qchem.png
-    :width: 50%
+    :width: 30%
     :align: center
 
 .. note::
