@@ -38,6 +38,7 @@ info = {
                     'pennylane',
                     'pennylane.beta',
                     'pennylane.beta.plugins',
+                    'pennylane.circuit_drawer',
                     'pennylane.interfaces',
                     'pennylane.ops',
                     'pennylane.optimize',
