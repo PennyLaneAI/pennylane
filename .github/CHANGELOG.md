@@ -168,9 +168,13 @@
 
 <h3>Improvements</h3>
 
+* Added a serialization method to the `CircuitGraph` class that is used to create a unique
+  hash for each quantum circuit graph.
+  [(#470)](https://github.com/XanaduAI/pennylane/pull/470)
+
 * Unified the way samples are generated on qubit based devices by refactoring the `QubitDevice`
   class and adding the `sample` and further auxiliary methods.
-  [#461](https://github.com/XanaduAI/pennylane/pull/461)
+  [(#461)](https://github.com/XanaduAI/pennylane/pull/461)
 
 * Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
   [(#449)](https://github.com/XanaduAI/pennylane/pull/449)
@@ -184,8 +188,10 @@
   [(#454)](https://github.com/XanaduAI/pennylane/pull/454)
 
 * Added a `QubitDevice` class which implements common functionalities of plugin devices such that
-  plugin devices can rely on these implementations.
+  plugin devices can rely on these implementations. The new `QubitDevice` also includes
+  a new execute method, which allows for more convenient plugin design.
   [(#452)](https://github.com/XanaduAI/pennylane/pull/452)
+  [(#473)](https://github.com/XanaduAI/pennylane/pull/473)
 
 * Improved documentation of `AmplitudeEmbedding` and `BasisEmbedding` templates.
   [(#441)](https://github.com/XanaduAI/pennylane/pull/441)

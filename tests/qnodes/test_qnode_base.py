@@ -839,7 +839,7 @@ class TestQNodeEvaluate:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # hot-swap the observable
-        res = node.evaluate_obs([qml.PauliZ(0) @ qml.PauliZ(1)], [x, y], {})
+        res = node.evaluate_obs([qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))], [x, y], {})
         expected = np.cos(y)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 

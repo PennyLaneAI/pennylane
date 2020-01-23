@@ -403,7 +403,7 @@ class TestApply:
            operations that have no parameters."""
 
         qubit_device_1_wire._state = np.array(input)
-        qubit_device_1_wire.apply(operation(wires=[0]))
+        qubit_device_1_wire.apply([operation(wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -413,7 +413,7 @@ class TestApply:
            operations that have no parameters."""
 
         qubit_device_1_wire._state = np.array(input)
-        qubit_device_1_wire.apply(operation(wires=[0]).inv())
+        qubit_device_1_wire.apply([operation(wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -435,7 +435,7 @@ class TestApply:
            operations that have no parameters."""
 
         qubit_device_2_wires._state = np.array(input)
-        qubit_device_2_wires.apply(operation(wires=[0, 1]))
+        qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -445,7 +445,7 @@ class TestApply:
            operations that have no parameters."""
 
         qubit_device_2_wires._state = np.array(input)
-        qubit_device_2_wires.apply(operation(wires=[0, 1]).inv())
+        qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -461,7 +461,7 @@ class TestApply:
            operations that have no parameters."""
 
         qubit_device_3_wires._state = np.array(input)
-        qubit_device_3_wires.apply(operation(wires=[0, 1, 2]))
+        qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
         assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -471,7 +471,7 @@ class TestApply:
            operations that have no parameters."""
 
         qubit_device_3_wires._state = np.array(input)
-        qubit_device_3_wires.apply(operation(wires=[0, 1, 2]).inv())
+        qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
         assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -492,7 +492,7 @@ class TestApply:
 
         par = np.array(par)
         qubit_device_2_wires.reset()
-        qubit_device_2_wires.apply(operation(par, wires=[0, 1]))
+        qubit_device_2_wires.apply([operation(par, wires=[0, 1])])
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -548,7 +548,7 @@ class TestApply:
         #parameter = par[0]
         qubit_device_1_wire._state = np.array(input)
 
-        qubit_device_1_wire.apply(operation(*par, wires=[0]))
+        qubit_device_1_wire.apply([operation(*par, wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -558,7 +558,7 @@ class TestApply:
            operations that have parameters."""
 
         qubit_device_1_wire._state = np.array(input)
-        qubit_device_1_wire.apply(operation(*par, wires=[0]).inv())
+        qubit_device_1_wire.apply([operation(*par, wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -603,7 +603,7 @@ class TestApply:
            operations that have parameters."""
 
         qubit_device_2_wires._state = np.array(input)
-        qubit_device_2_wires.apply(operation(*par, wires=[0, 1]))
+        qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -613,7 +613,7 @@ class TestApply:
            operations that have parameters."""
 
         qubit_device_2_wires._state = np.array(input)
-        qubit_device_2_wires.apply(operation(*par, wires=[0, 1]).inv())
+        qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
 
@@ -623,14 +623,14 @@ class TestApply:
             ValueError,
             match="Sum of amplitudes-squared does not equal one."
         ):
-            qubit_device_2_wires.apply(qml.QubitStateVector(np.array([1, -1]), wires=[0]))
+            qubit_device_2_wires.apply([qml.QubitStateVector(np.array([1, -1]), wires=[0])])
 
         with pytest.raises(
             ValueError,
             match=r"State vector must be of length 2\*\*wires."
         ):
             p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
-            qubit_device_2_wires.apply(qml.QubitStateVector(p, wires=[0, 1]))
+            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
 
         with pytest.raises(
             DeviceError,
@@ -638,21 +638,23 @@ class TestApply:
                                   "on a default.qubit device."
         ):
             qubit_device_2_wires.reset()
-            qubit_device_2_wires.apply(qml.RZ(0.5, wires=[0]))
-            qubit_device_2_wires.apply(qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[0, 1]))
+            qubit_device_2_wires.apply([
+                qml.RZ(0.5, wires=[0]),
+                qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[0, 1])
+            ])
 
     def test_apply_errors_basis_state(self, qubit_device_2_wires):
         with pytest.raises(
             ValueError,
             match="BasisState parameter must consist of 0 or 1 integers."
         ):
-            qubit_device_2_wires.apply(qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1]))
+            qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
         with pytest.raises(
             ValueError,
             match="BasisState parameter and wires must be of equal length."
         ):
-            qubit_device_2_wires.apply(qml.BasisState(np.array([0, 1]), wires=[0]))
+            qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
 
         with pytest.raises(
             DeviceError,
@@ -660,8 +662,10 @@ class TestApply:
                                   "on a default.qubit device."
         ):
             qubit_device_2_wires.reset()
-            qubit_device_2_wires.apply(qml.RZ(0.5, wires=[0]))
-            qubit_device_2_wires.apply(qml.BasisState(np.array([1, 1]), wires=[0, 1]))
+            qubit_device_2_wires.apply([
+                qml.RZ(0.5, wires=[0]),
+                qml.BasisState(np.array([1, 1]), wires=[0, 1])
+            ])
 
 class TestExpval:
     """Tests that expectation values are properly calculated or that the proper errors are raised."""
@@ -686,8 +690,14 @@ class TestExpval:
     def test_expval_single_wire_no_parameters(self, qubit_device_1_wire, tol, operation, input, expected_output):
         """Tests that expectation values are properly calculated for single-wire observables without parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.expval(operation(wires=[0]))
+        obs = operation(wires=[0])
+
+        qubit_device_1_wire.reset()
+        qubit_device_1_wire.apply(
+            [qml.QubitStateVector(np.array(input), wires=[0])],
+            obs.diagonalizing_gates()
+        )
+        res = qubit_device_1_wire.expval(obs)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -699,8 +709,14 @@ class TestExpval:
     def test_expval_single_wire_with_parameters(self, qubit_device_1_wire, tol, operation, input, expected_output, par):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.expval(operation(np.array(par), wires=[0]))
+        obs = operation(np.array(par), wires=[0])
+
+        qubit_device_1_wire.reset()
+        qubit_device_1_wire.apply(
+            [qml.QubitStateVector(np.array(input), wires=[0])],
+            obs.diagonalizing_gates()
+        )
+        res = qubit_device_1_wire.expval(obs)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -715,8 +731,14 @@ class TestExpval:
     def test_expval_two_wires_with_parameters(self, qubit_device_2_wires, tol, operation, input, expected_output, par):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
-        res = qubit_device_2_wires.expval(operation(np.array(par), wires=[0, 1]))
+        obs = operation(np.array(par), wires=[0, 1])
+
+        qubit_device_2_wires.reset()
+        qubit_device_2_wires.apply(
+            [qml.QubitStateVector(np.array(input), wires=[0, 1])],
+            obs.diagonalizing_gates()
+        )
+        res = qubit_device_2_wires.expval(obs)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -759,8 +781,14 @@ class TestVar:
     def test_var_single_wire_no_parameters(self, qubit_device_1_wire, tol, operation, input, expected_output):
         """Tests that variances are properly calculated for single-wire observables without parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.var(operation(wires=[0]))
+        obs = operation(wires=[0])
+
+        qubit_device_1_wire.reset()
+        qubit_device_1_wire.apply(
+            [qml.QubitStateVector(np.array(input), wires=[0])],
+            obs.diagonalizing_gates()
+        )
+        res = qubit_device_1_wire.var(obs)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -772,8 +800,14 @@ class TestVar:
     def test_var_single_wire_with_parameters(self, qubit_device_1_wire, tol, operation, input, expected_output, par):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
-        res = qubit_device_1_wire.var(operation(np.array(par), wires=[0]))
+        obs = operation(np.array(par), wires=[0])
+
+        qubit_device_1_wire.reset()
+        qubit_device_1_wire.apply(
+            [qml.QubitStateVector(np.array(input), wires=[0])],
+            obs.diagonalizing_gates()
+        )
+        res = qubit_device_1_wire.var(obs)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -787,8 +821,14 @@ class TestVar:
     def test_var_two_wires_with_parameters(self, qubit_device_2_wires, tol, operation, input, expected_output, par):
         """Tests that variances are properly calculated for two-wire observables with parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
-        res = qubit_device_2_wires.var(operation(np.array(par), wires=[0, 1]))
+        obs = operation(np.array(par), wires=[0, 1])
+
+        qubit_device_2_wires.reset()
+        qubit_device_2_wires.apply(
+            [qml.QubitStateVector(np.array(input), wires=[0, 1])],
+            obs.diagonalizing_gates()
+        )
+        res = qubit_device_2_wires.var(obs)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -820,20 +860,27 @@ class TestSample:
         # initialized during reset
         qubit_device_2_wires.reset()
 
-        qubit_device_2_wires.apply(qml.RX(1.5708, wires=[0]))
-        qubit_device_2_wires.apply(qml.RX(1.5708, wires=[1]))
+        qubit_device_2_wires.apply(
+            [qml.RX(1.5708, wires=[0]), qml.RX(1.5708, wires=[1])]
+        )
 
         qubit_device_2_wires.shots = 10
+        qubit_device_2_wires._wires_measured = {0}
+        qubit_device_2_wires.generate_samples()
         s1 = qubit_device_2_wires.sample(qml.PauliZ(wires=[0]))
         assert np.array_equal(s1.shape, (10,))
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.shots = 12
+        qubit_device_2_wires._wires_measured = {1}
+        qubit_device_2_wires.generate_samples()
         s2 = qubit_device_2_wires.sample(qml.PauliZ(wires=[1]))
         assert np.array_equal(s2.shape, (12,))
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.shots = 17
+        qubit_device_2_wires._wires_measured = {0, 1}
+        qubit_device_2_wires.generate_samples()
         s3 = qubit_device_2_wires.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
 
@@ -847,7 +894,9 @@ class TestSample:
         # initialized during reset
         qubit_device_2_wires.reset()
 
-        qubit_device_2_wires.apply(qml.RX(1.5708, wires=[0]))
+        qubit_device_2_wires.apply([qml.RX(1.5708, wires=[0])])
+        qubit_device_2_wires._wires_measured = {0}
+        qubit_device_2_wires.generate_samples()
 
         s1 = qubit_device_2_wires.sample(qml.PauliZ(0))
 
@@ -1319,13 +1368,20 @@ class TestTensorExpval:
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
 
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
+        obs = qml.PauliX(0) @ qml.PauliY(2)
 
-        res = dev.expval(qml.PauliX(0) @ qml.PauliY(2))
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
 
@@ -1336,13 +1392,20 @@ class TestTensorExpval:
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
 
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
 
-        res = dev.expval(qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2))
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = np.cos(varphi)*np.cos(phi)
 
@@ -1351,14 +1414,21 @@ class TestTensorExpval:
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
-        res = dev.expval(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
+        dev.reset()
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
 
@@ -1368,11 +1438,6 @@ class TestTensorExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
 
         A = np.array(
             [
@@ -1383,7 +1448,20 @@ class TestTensorExpval:
             ]
         )
 
-        res = dev.expval(qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = 0.5 * (
             -6 * np.cos(theta) * (np.cos(varphi) + 1)
@@ -1397,12 +1475,6 @@ class TestTensorExpval:
     def test_hermitian_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
 
         A1 = np.array([[1, 2],
                        [2, 4]])
@@ -1416,7 +1488,20 @@ class TestTensorExpval:
             ]
         )
 
-        res = dev.expval(qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2]))
+        obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         expected = 0.25 * (
             -30
@@ -1439,14 +1524,21 @@ class TestTensorExpval:
     def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit", wires=2)
-        dev.reset()
-        dev.apply(qml.RY(theta, wires=[0]))
-        dev.apply(qml.RY(phi, wires=[1]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
-        res = dev.expval(qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1]))
+        obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
+
+        dev.apply(
+            [
+                qml.RY(theta, wires=[0]),
+                qml.RY(phi, wires=[1]),
+                qml.CNOT(wires=[0, 1])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.expval(obs)
 
         a = A[0, 0]
         re_b = A[0, 1].real
@@ -1458,16 +1550,21 @@ class TestTensorExpval:
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit", wires=3, analytic=True)
-        dev.reset()
-        dev.apply(qml.RY(theta, wires=[0]))
-        dev.apply(qml.RY(phi, wires=[1]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
 
         A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
         Identity = np.array([[1, 0],[0, 1]])
+        H = np.kron(np.kron(Identity,Identity), A)
+        obs = qml.Hermitian(H, wires=[2, 1, 0])
 
-        obs = np.kron(np.kron(Identity,Identity), A)
-        res = dev.expval(qml.Hermitian(obs, wires=[2,1,0]))
+        dev.apply(
+            [
+                qml.RY(theta, wires=[0]),
+                qml.RY(phi, wires=[1]),
+                qml.CNOT(wires=[0, 1])
+            ],
+            obs.diagonalizing_gates()
+        )
+        res = dev.expval(obs)
 
         a = A[0, 0]
         re_b = A[0, 1].real
@@ -1483,14 +1580,21 @@ class TestTensorVar:
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
 
-        res = dev.var(qml.PauliX(0) @ qml.PauliY(2))
+        obs = qml.PauliX(0) @ qml.PauliY(2)
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.var(obs)
 
         expected = (
             8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
@@ -1506,14 +1610,21 @@ class TestTensorVar:
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
-        res = dev.var(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
+        dev.reset()
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.var(obs)
 
         expected = (
             3
@@ -1527,12 +1638,6 @@ class TestTensorVar:
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
 
         A = np.array(
             [
@@ -1543,7 +1648,20 @@ class TestTensorVar:
             ]
         )
 
-        res = dev.var(qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2]))
+        obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        res = dev.var(obs)
 
         expected = (
             1057
@@ -1585,14 +1703,22 @@ class TestTensorSample:
     def test_paulix_pauliy(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=10000)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
+
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        dev._wires_measured = {0, 1, 2}
+        dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals
@@ -1619,18 +1745,24 @@ class TestTensorSample:
     def test_pauliz_hadamard(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
-
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        dev._wires_measured = {0, 1, 2}
+        dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals
-        p = dev.marginal_prob(dev._rotated_prob, wires=obs.wires)
+        p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
@@ -1651,12 +1783,6 @@ class TestTensorSample:
     def test_hermitian(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
-        dev.reset()
-        dev.apply(qml.RX(theta, wires=[0]))
-        dev.apply(qml.RX(phi, wires=[1]))
-        dev.apply(qml.RX(varphi, wires=[2]))
-        dev.apply(qml.CNOT(wires=[0, 1]))
-        dev.apply(qml.CNOT(wires=[1, 2]))
 
         A = np.array(
             [
@@ -1668,10 +1794,23 @@ class TestTensorSample:
         )
 
         obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
+        dev.apply(
+            [
+                qml.RX(theta, wires=[0]),
+                qml.RX(phi, wires=[1]),
+                qml.RX(varphi, wires=[2]),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2])
+            ],
+            obs.diagonalizing_gates()
+        )
+
+        dev._wires_measured = {0, 1, 2}
+        dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals
-        p = dev.marginal_prob(dev._rotated_prob, wires=obs.wires)
+        p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z

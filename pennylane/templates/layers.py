@@ -43,73 +43,6 @@ def _strongly_entangling_layer(weights, wires, r, imprimitive):
             imprimitive(wires=[wires[i], wires[(i + r) % n_wires]])
 
 
-def _random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
-    r"""A single random layer.
-
-    Args:
-        weights (array[float]): array of weights of shape ``(k,)``
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
-        ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
-        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
-        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
-            determines how often a particular rotation type is used. Defaults to the use of all three
-            rotations with equal frequency.
-        seed (int): seed to generate random architecture
-    """
-    if seed is not None:
-        np.random.seed(seed)
-
-    i = 0
-    while i < len(weights):
-        if np.random.random() > ratio_imprim:
-            gate = np.random.choice(rotations)
-            wire = np.random.choice(wires)
-            gate(weights[i], wires=wire)
-            i += 1
-        else:
-            if len(wires) > 1:
-                on_wires = np.random.permutation(wires)[:2]
-                on_wires = list(on_wires)
-                imprimitive(wires=on_wires)
-
-
-def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
-    r"""A single continuous-variable neural network layer.
-
-    The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
-    of :math:`K=M(M-1)/2` beamsplitters.
-
-    Args:
-        theta_1 (array[float]): length :math:`(K, )` array of transmittivity angles for first interferometer
-        phi_1 (array[float]): length :math:`(K, )` array of phase angles for first interferometer
-        varphi_1 (array[float]): length :math:`(M, )` array of rotation angles to apply after first interferometer
-        r (array[float]): length :math:`(M, )` array of squeezing amounts for
-            :class:`~pennylane.ops.Squeezing` operations
-        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for
-            :class:`~pennylane.ops.Squeezing` operations
-        theta_2 (array[float]): length :math:`(K, )` array of transmittivity angles for second interferometer
-        phi_2 (array[float]): length :math:`(K, )` array of phase angles for second interferometer
-        varphi_2 (array[float]): length :math:`(M, )` array of rotation angles to apply after second interferometer
-        a (array[float]): length :math:`(M, )` array of displacement magnitudes for
-            :class:`~pennylane.ops.Displacement` operations
-        phi_a (array[float]): length :math:`(M, )` array of displacement angles for
-            :class:`~pennylane.ops.Displacement` operations
-        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
-        wires (Sequence[int]): sequence of mode indices that the template acts on
-    """
-    Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
-    for i, wire in enumerate(wires):
-        Squeezing(r[i], phi_r[i], wires=wire)
-
-    Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
-
-    for i, wire in enumerate(wires):
-        Displacement(a[i], phi_a[i], wires=wire)
-
-    for i, wire in enumerate(wires):
-        Kerr(k[i], wires=wire)
-
-
 @template
 def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     r"""Layers consisting of single qubit rotations and entanglers, inspired by the circuit-centric classifier design
@@ -145,33 +78,70 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     #############
     # Input checks
-    _check_no_variable([ranges, imprimitive], ['ranges', 'imprimitive'])
 
-    wires, n_wires = _check_wires(wires)
+    _check_no_variable(ranges, msg="'ranges' cannot be differentiable")
+    _check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
+
+    wires = _check_wires(wires)
 
     repeat = _check_number_of_layers([weights])
 
-    _check_shape(weights, (repeat, n_wires, 3))
-
-    _check_type(ranges, [list, type(None)])
+    expected_shape = (repeat, len(wires), 3)
+    _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
+                                              "".format(expected_shape, _get_shape(weights)))
 
     if ranges is None:
-        # Tile ranges with iterations of range(1, n_wires)
-        ranges = [(l % (n_wires-1)) + 1 for l in range(repeat)]
+        # tile ranges with iterations of range(1, n_wires)
+        ranges = [(l % (len(wires)-1)) + 1 for l in range(repeat)]
 
-    msg = "StronglyEntanglingLayers expects ``ranges`` to contain a range for each layer; " \
-          "got {}.".format(len(ranges))
-    _check_shape(ranges, (repeat,), msg=msg)
-    msg = "StronglyEntanglingLayers expects ``ranges`` to be a list of integers; got {}.".format(len(ranges))
-    _check_type(ranges[0], [int], msg=msg)
-    if any((r >= n_wires or r == 0) for r in ranges):
-        raise ValueError("The range hyperparameter for all layers needs to be smaller than the number of "
+    expected_shape = (repeat,)
+    _check_shape(ranges, expected_shape, msg="'ranges' must be of shape {}; got {}"
+                                             "".format(expected_shape, _get_shape(weights)))
+
+    _check_type(ranges, [list], msg="'ranges' must be a list; got {}"
+                                    "".format(ranges))
+    for r in ranges:
+        _check_type(r, [int], msg="'ranges' must be a list of integers; got {}"
+                                  "".format(ranges))
+    if any((r >= len(wires) or r == 0) for r in ranges):
+        raise ValueError("the range for all layers needs to be smaller than the number of "
                          "qubits; got ranges {}.".format(ranges))
+
     ###############
 
     for l in range(repeat):
 
         _strongly_entangling_layer(weights=weights[l], wires=wires, r=ranges[l], imprimitive=imprimitive)
+
+
+def _random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
+    r"""A single random layer.
+
+    Args:
+        weights (array[float]): array of weights of shape ``(k,)``
+        wires (Sequence[int]): sequence of qubit indices that the template acts on
+        ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
+        imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
+        rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
+            determines how often a particular rotation type is used. Defaults to the use of all three
+            rotations with equal frequency.
+        seed (int): seed to generate random architecture
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    i = 0
+    while i < len(weights):
+        if np.random.random() > ratio_imprim:
+            gate = np.random.choice(rotations)
+            wire = np.random.choice(wires)
+            gate(weights[i], wires=wire)
+            i += 1
+        else:
+            if len(wires) > 1:
+                on_wires = np.random.permutation(wires)[:2]
+                on_wires = list(on_wires)
+                imprimitive(wires=on_wires)
 
 
 @template
@@ -228,26 +198,70 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     #############
     # Input checks
-    hyperparams = [ratio_imprim, imprimitive, rotations, seed]
-    hyperparam_names = ['ratio_imprim', 'imprimitive', 'rotations', 'seed']
-    _check_no_variable(hyperparams, hyperparam_names)
 
-    wires, _ = _check_wires(wires)
+    _check_no_variable(ratio_imprim, msg="'ratio_imprim' cannot be differentiable")
+    _check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
+    _check_no_variable(rotations, msg="'rotations' cannot be differentiable")
+    _check_no_variable(seed, msg="'seed' cannot be differentiable")
+
+    wires = _check_wires(wires)
 
     repeat = _check_number_of_layers([weights])
     n_rots = _get_shape(weights)[1]
 
-    _check_shape(weights, (repeat, n_rots))
+    expected_shape = (repeat, n_rots)
+    _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
+                                              "".format(expected_shape, _get_shape(weights)))
 
-    _check_type(ratio_imprim, [float, type(None)])
-    _check_type(n_rots, [int, type(None)])
-    _check_type(rotations, [list, type(None)])
-    _check_type(seed, [int, type(None)])
+    _check_type(ratio_imprim, [float, type(None)], msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim))
+    _check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
+    #TODO: Check that 'rotations' contains operations
+    _check_type(rotations, [list, type(None)], msg="'rotations' must be a list of PennyLane operations; got {}"
+                                                   "".format(rotations))
+    _check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
+
     ###############
 
     for l in range(repeat):
         _random_layer(weights=weights[l], wires=wires, ratio_imprim=ratio_imprim, imprimitive=imprimitive,
                       rotations=rotations, seed=seed)
+
+
+def _cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
+    r"""A single continuous-variable neural network layer.
+
+    The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
+    of :math:`K=M(M-1)/2` beamsplitters.
+
+    Args:
+        theta_1 (array[float]): length :math:`(K, )` array of transmittivity angles for first interferometer
+        phi_1 (array[float]): length :math:`(K, )` array of phase angles for first interferometer
+        varphi_1 (array[float]): length :math:`(M, )` array of rotation angles to apply after first interferometer
+        r (array[float]): length :math:`(M, )` array of squeezing amounts for
+            :class:`~pennylane.ops.Squeezing` operations
+        phi_r (array[float]): length :math:`(M, )` array of squeezing angles for
+            :class:`~pennylane.ops.Squeezing` operations
+        theta_2 (array[float]): length :math:`(K, )` array of transmittivity angles for second interferometer
+        phi_2 (array[float]): length :math:`(K, )` array of phase angles for second interferometer
+        varphi_2 (array[float]): length :math:`(M, )` array of rotation angles to apply after second interferometer
+        a (array[float]): length :math:`(M, )` array of displacement magnitudes for
+            :class:`~pennylane.ops.Displacement` operations
+        phi_a (array[float]): length :math:`(M, )` array of displacement angles for
+            :class:`~pennylane.ops.Displacement` operations
+        k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+        wires (Sequence[int]): sequence of mode indices that the template acts on
+    """
+    Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
+    for i, wire in enumerate(wires):
+        Squeezing(r[i], phi_r[i], wires=wire)
+
+    Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
+
+    for i, wire in enumerate(wires):
+        Displacement(a[i], phi_a[i], wires=wire)
+
+    for i, wire in enumerate(wires):
+        Kerr(k[i], wires=wire)
 
 
 @template
@@ -299,18 +313,19 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
 
     #############
     # Input checks
-    wires, n_wires = _check_wires(wires)
 
+    wires = _check_wires(wires)
+
+    n_wires = len(wires)
     n_if = n_wires*(n_wires-1)//2
     weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
     repeat = _check_number_of_layers(weights_list)
 
-    shapes_list = [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                   (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                   (repeat, n_wires)]
-    _check_shapes(weights_list, shapes_list)
+    expected_shapes = [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
+                       (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
+                       (repeat, n_wires)]
+    _check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
 
-    _check_type(repeat, [int])
     ###############
 
     for l in range(repeat):

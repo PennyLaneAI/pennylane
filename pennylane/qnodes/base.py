@@ -1,4 +1,4 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -722,9 +722,13 @@ class BaseQNode:
             self._construct(args, kwargs)
 
         self.device.reset()
-        ret = self.device.execute(
-            self.circuit.operations, self.circuit.observables, self.variable_deps
-        )
+
+        if isinstance(self.device, qml.QubitDevice):
+            ret = self.device.execute(self.circuit)
+        else:
+            ret = self.device.execute(
+                self.circuit.operations, self.circuit.observables, self.variable_deps
+            )
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):
@@ -744,5 +748,12 @@ class BaseQNode:
         self._set_variables(args, kwargs)
 
         self.device.reset()
-        ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
+
+        if isinstance(self.device, qml.QubitDevice):
+            # create a circuit graph containing the existing operations, and the
+            # observables to be evaluated.
+            circuit_graph = CircuitGraph(self.circuit.operations + obs, self.circuit.variable_deps)
+            ret = self.device.execute(circuit_graph)
+        else:
+            ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret

@@ -1,4 +1,4 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -198,3 +198,22 @@ class TestCircuitGraph:
         assert set(result[2][1]) == set(circuit.operations[5:])
         assert result[2][2] == (4, 5)
         assert set(result[2][3]) == set(circuit.observables[1:])
+
+    def test_diagonalizing_gates(self):
+        """Tests that the diagonalizing gates are correct for a circuit"""
+        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {})
+        diag_gates = circuit.diagonalizing_gates
+
+        assert len(diag_gates) == 1
+        assert isinstance(diag_gates[0], qml.Hadamard)
+        assert diag_gates[0].wires == [0]
+
+    def test_is_sampled(self):
+        """Test that circuit graphs with sampled observables properly return
+        True for CircuitGraph.is_sampled"""
+        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {})
+        assert not circuit.is_sampled
+
+        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.sample(qml.PauliZ(1))], {})
+        assert circuit.is_sampled
+
