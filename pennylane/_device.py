@@ -45,8 +45,7 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
-        self._shots = 1000
-        self.shots = shots
+        self._shots = shots
 
         self._op_queue = None
         self._obs_queue = None
@@ -107,7 +106,6 @@ class Device(abc.ABC):
     def shots(self):
         """Number of circuit evaluations/random samples used to estimate
         expectation values of observables"""
-
         return self._shots
 
     @shots.setter
