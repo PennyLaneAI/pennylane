@@ -28,8 +28,6 @@ from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 
 
-_MARKER = inspect.Parameter.empty  # singleton marker, could be any singleton class
-
 
 ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 """Represents the dependence of an Operator on a positional parameter of the quantum function.
@@ -182,7 +180,7 @@ class BaseQNode:
 
         self.variable_deps = {}
         """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc positional parameter
-        index to thelist of :class:`~pennylane.operation.Operator` instances (in this circuit)
+        index to the list of :class:`~pennylane.operation.Operator` instances (in this circuit)
         that depend on it.
         """
 
@@ -196,15 +194,16 @@ class BaseQNode:
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
-    def __str__(self):
-        """String representation"""
+    def __repr__(self):
+        """String representation."""
         detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
-    __repr__ = __str__
-
     def print_applied(self):
-        """Prints the most recently applied operations from the QNode."""
+        """Prints the most recently applied operations from the QNode.
+
+        FIXME what's the purpose of this? Could be a CircuitGraph method.
+        """
         if self.circuit is None:
             print("QNode has not yet been executed.")
             return
@@ -242,7 +241,7 @@ class BaseQNode:
             args (tuple[Any]): positional (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
-        Variable.free_param_values = np.array(list(_flatten(args)))
+        Variable.positional_arg_values = np.array(list(_flatten(args)))
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
             Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
@@ -508,7 +507,7 @@ class BaseQNode:
             kwargs (dict[str, Any]): auxiliary arguments (given using the keyword syntax)
 
         Raises:
-            QuantumFunctionError: if the parameter to the quantum function was invalid
+            QuantumFunctionError: some of the arguments are invalid
 
         Returns:
             dict[str, Any]: all auxiliary arguments (with defaults)
@@ -531,6 +530,7 @@ class BaseQNode:
 
             # The following is a check of the default parameter which works for numpy
             # arrays as well (if it is a numpy array, each element is checked separately).
+            # FIXME why are numpy array default values not good automatically?
             correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
                                         if isinstance(default_parameter, np.ndarray)\
                                         else default_parameter == inspect.Parameter.empty
@@ -555,7 +555,7 @@ class BaseQNode:
         return kwargs
 
     def __call__(self, *args, **kwargs):
-        """Wrapper for :meth:`~.QNode.evaluate`.
+        """Wrapper for :meth:`.BaseQNode.evaluate`.
         """
         return self.evaluate(args, kwargs)
 
@@ -594,12 +594,14 @@ class BaseQNode:
 
         Args:
             obs  (Iterable[Observable]): observables to measure
-            args (array[float]): positional arguments to the quantum function (differentiable)
+            args (tuple[Any]): positional arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
         Returns:
             array[float]: measured values
         """
+        kwargs = self._default_args(kwargs)
+
         # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
 
@@ -608,7 +610,8 @@ class BaseQNode:
         if isinstance(self.device, qml.QubitDevice):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
-            circuit_graph = CircuitGraph(self.circuit.operations + obs, self.circuit.variable_deps)
+            circuit_graph = CircuitGraph(self.circuit.operations + list(obs),
+                                         self.circuit.variable_deps)
             ret = self.device.execute(circuit_graph)
         else:
             ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
