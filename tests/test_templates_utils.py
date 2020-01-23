@@ -24,16 +24,16 @@ from pennylane.templates.utils import (_check_wires,
                                        _get_shape,
                                        _check_number_of_layers,
                                        _check_no_variable,
-                                       _check_hyperp_is_in_options,
+                                       _check_is_in_options,
                                        _check_type)
 
 
 #########################################
 # Inputs
 
-WIRES_PASS = [(0, ([0], 1)),
-              ([4], ([4], 1)),
-              ([1, 2], ([1, 2], 2))]
+WIRES_PASS = [(0, [0]),
+              ([4], [4]),
+              ([1, 2], [1, 2])]
 WIRES_FAIL = [[-1],
               ['a'],
               lambda x: x]
@@ -96,7 +96,7 @@ NO_VARIABLES_PASS = [[[], np.array([1., 4.])],
 
 NO_VARIABLES_FAIL = [[[Variable(0.1)], Variable([0.1])],
                      np.array([Variable(0.3), Variable(4.)]),
-                     [Variable(-1.)]]
+                     Variable(-1.)]
 
 OPTIONS_PASS = [("a", ["a", "b"])]
 
@@ -119,39 +119,28 @@ TYPE_FAIL = [("a", list, type(None)),
 class TestInputChecks:
     """Test private functions that check the input of templates."""
 
-    @pytest.mark.parametrize("wires, targt", WIRES_PASS)
-    def test_check_wires(self, wires, targt):
+    @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
+    def test_check_no_variable(self, arg):
+        """Tests that variable check succeeds for valid arguments."""
+        _check_no_variable(arg, msg="XXX")
+
+    @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
+    def test_check_no_variable_exception(self, arg):
+        """Tests that variable check throws error for invalid arguments."""
+        with pytest.raises(ValueError, match="XXX"):
+            _check_no_variable(arg, msg="XXX")
+
+    @pytest.mark.parametrize("wires, target", WIRES_PASS)
+    def test_check_wires(self, wires, target):
         """Tests that wires check returns correct wires list and its length."""
         res = _check_wires(wires=wires)
-        assert res == targt
+        assert res == target
 
     @pytest.mark.parametrize("wires", WIRES_FAIL)
     def test_check_wires_exception(self, wires):
         """Tests that wires check fails if ``wires`` is not an integer or iterable."""
-        with pytest.raises(ValueError, match="Wires must be a positive integer"):
+        with pytest.raises(ValueError, match="wires must be a positive integer"):
             _check_wires(wires=wires)
-
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_PASS)
-    def test_check_shape(self, inpt, target_shape, bound):
-        """Tests that shape check succeeds for valid arguments."""
-        _check_shape(inpt, target_shape, bound=bound)
-
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_PASS)
-    def test_check_shape_list_of_inputs(self, inpt, target_shape, bound):
-        """Tests that list version of shape check succeeds for valid arguments."""
-        _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
-
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_FAIL)
-    def test_check_shape_exception(self, inpt, target_shape, bound):
-        """Tests that shape check fails for invalid arguments."""
-        with pytest.raises(ValueError, match="Input has shape"):
-            _check_shape(inpt, target_shape, bound=bound)
-
-    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_FAIL)
-    def test_check_shape_list_of_inputs_exception(self, inpt, target_shape, bound):
-        """Tests that list version of shape check succeeds for valid arguments."""
-        with pytest.raises(ValueError, match="Input has shape"):
-            _check_shapes(inpt, target_shape, bound_list=[bound]*len(inpt))
 
     @pytest.mark.parametrize("inpt, target_shape", GET_SHAPE_PASS)
     def test_get_shape(self, inpt, target_shape):
@@ -159,11 +148,49 @@ class TestInputChecks:
         shape = _get_shape(inpt)
         assert shape == target_shape
 
-    @pytest.mark.parametrize("inpt", GET_SHAPE_FAIL)
-    def test_get_shape_exception(self, inpt):
-        """Tests that ``_get_shape`` throws error when failing to convert argument to array."""
-        with pytest.raises(ValueError, match="Fails to convert"):
-            _get_shape(inpt)
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_PASS)
+    def test_check_shape(self, inpt, target_shape, bound):
+        """Tests that shape check succeeds for valid arguments."""
+        _check_shape(inpt, target_shape, bound=bound, msg="XXX")
+
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_PASS)
+    def test_check_shape_list_of_inputs(self, inpt, target_shape, bound):
+        """Tests that list version of shape check succeeds for valid arguments."""
+        _check_shapes(inpt, target_shape, bounds=[bound]*len(inpt), msg="XXX")
+
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_FAIL)
+    def test_check_shape_exception(self, inpt, target_shape, bound):
+        """Tests that shape check fails for invalid arguments."""
+        with pytest.raises(ValueError, match="XXX"):
+            _check_shape(inpt, target_shape, bound=bound, msg="XXX")
+
+    @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_FAIL)
+    def test_check_shape_list_of_inputs_exception(self, inpt, target_shape, bound):
+        """Tests that list version of shape check succeeds for valid arguments."""
+        with pytest.raises(ValueError, match="XXX"):
+            _check_shapes(inpt, target_shape, bounds=[bound]*len(inpt), msg="XXX")
+
+    @pytest.mark.parametrize("hp, opts", OPTIONS_PASS)
+    def test_check_options(self, hp, opts):
+        """Tests that option check succeeds for valid arguments."""
+        _check_is_in_options(hp, opts, msg="XXX")
+
+    @pytest.mark.parametrize("hp, opts", OPTIONS_FAIL)
+    def test_check_options_exception(self, hp, opts):
+        """Tests that option check throws error for invalid arguments."""
+        with pytest.raises(ValueError, match="XXX"):
+            _check_is_in_options(hp, opts, msg="XXX")
+
+    @pytest.mark.parametrize("hp, typ, alt", TYPE_PASS)
+    def test_check_type(self, hp, typ, alt):
+        """Tests that type check succeeds for valid arguments."""
+        _check_type(hp, [typ, alt], msg="XXX")
+
+    @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
+    def test_check_type_exception(self, hp, typ, alt):
+        """Tests that type check throws error for invalid arguments."""
+        with pytest.raises(ValueError, match="XXX"):
+            _check_type(hp, [typ, alt], msg="XXX")
 
     @pytest.mark.parametrize("inpt, repeat", LAYERS_PASS)
     def test_check_num_layers(self, inpt, repeat):
@@ -174,55 +201,6 @@ class TestInputChecks:
     @pytest.mark.parametrize("inpt, repeat", LAYERS_FAIL)
     def test_check_num_layers_exception(self, inpt, repeat):
         """Tests that layer check throws exception for invalid arguments."""
-        with pytest.raises(ValueError, match="The first dimension of the weight parameters"):
+        with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
             _check_number_of_layers(inpt)
 
-    def test_check_shape_exception_message(self):
-        """Tests that shape check displays custom error message."""
-        with pytest.raises(ValueError, match="XXX"):
-            _check_shape([0.], (3,), msg="XXX")
-
-    @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
-    def test_check_no_variables(self, arg):
-        """Tests that variable check succeeds for valid arguments."""
-        _check_no_variable([arg], ["dummy"])
-
-    @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
-    def test_check_no_variables_exception(self, arg):
-        """Tests that variable check throws error for invalid arguments."""
-        with pytest.raises(ValueError, match="The argument 'dummy' can not be passed"):
-            _check_no_variable([arg], ["dummy"])
-
-    def test_check_no_variables_exception_message(self):
-        """Tests that variable check displays custom error message."""
-        with pytest.raises(ValueError, match="XXX"):
-            a = Variable(0)
-            _check_no_variable([a], ["dummy"], msg="XXX")
-
-    @pytest.mark.parametrize("hp, opts", OPTIONS_PASS)
-    def test_check_hyperp_options(self, hp, opts):
-        """Tests that hyperparameter option check succeeds for valid arguments."""
-        _check_hyperp_is_in_options(hp, opts)
-
-    @pytest.mark.parametrize("hp, opts", OPTIONS_FAIL)
-    def test_check_hyperp_options_exception(self, hp, opts):
-        """Tests that hyperparameter option check throws error for invalid arguments."""
-        with pytest.raises(ValueError, match="Hyperparameter c must be one"):
-            _check_hyperp_is_in_options(hp, opts)
-
-    @pytest.mark.parametrize("hp, typ, alt", TYPE_PASS)
-    def test_check_type(self, hp, typ, alt):
-        """Tests that type check succeeds for valid arguments."""
-        _check_type(hp, [typ, alt])
-
-    @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
-    def test_check_type_exception(self, hp, typ, alt):
-        """Tests that type check throws error for invalid arguments."""
-        with pytest.raises(ValueError, match="Hyperparameter type must be one"):
-            _check_type(hp, [typ, alt])
-
-    @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
-    def test_check_type_exception_message(self, hp, typ, alt):
-        """Tests that type check displays custom error message."""
-        with pytest.raises(ValueError, match="XXX"):
-            _check_type(hp, [typ, alt], msg="XXX")

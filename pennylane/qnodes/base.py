@@ -1,4 +1,4 @@
-# Copyright 2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -278,7 +278,7 @@ class BaseQNode:
         if self.circuit:
             return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
 
-        raise QuantumFunctionError("The QNode can only be drawn after its CircuitGraph has been constructed.")
+        raise RuntimeError("The QNode can only be drawn after its CircuitGraph has been constructed.")
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
@@ -364,7 +364,7 @@ class BaseQNode:
         or list structure.
 
         Args:
-            parameter_value (Union[numeric,Sequence[Any],array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
             prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
 
         Returns:
@@ -407,7 +407,7 @@ class BaseQNode:
         In this example, ``_make_variables`` will return the following :class:`~.variable.Variable` instances
 
         .. code-block:: python
-            >>> dev._make_variables([3.4, [1.2, 3.4, 5.6]], {})
+            >>> qfunc._make_variables([3.4, [1.2, 3.4, 5.6]], {})
             ["a", ["w[0]", "w[1]", "w[2]"]], {}
 
         where the Variable instances are replaced with their name for readability.
@@ -722,9 +722,13 @@ class BaseQNode:
             self._construct(args, kwargs)
 
         self.device.reset()
-        ret = self.device.execute(
-            self.circuit.operations, self.circuit.observables, self.variable_deps
-        )
+
+        if isinstance(self.device, qml.QubitDevice):
+            ret = self.device.execute(self.circuit)
+        else:
+            ret = self.device.execute(
+                self.circuit.operations, self.circuit.observables, self.variable_deps
+            )
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):
@@ -744,5 +748,12 @@ class BaseQNode:
         self._set_variables(args, kwargs)
 
         self.device.reset()
-        ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
+
+        if isinstance(self.device, qml.QubitDevice):
+            # create a circuit graph containing the existing operations, and the
+            # observables to be evaluated.
+            circuit_graph = CircuitGraph(self.circuit.operations + obs, self.circuit.variable_deps)
+            ret = self.device.execute(circuit_graph)
+        else:
+            ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret
