@@ -1086,5 +1086,5 @@ class TestQNodeDraw:
 
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(QuantumFunctionError, match="The QNode can only be drawn after its CircuitGraph has been constructed"):
+        with pytest.raises(RuntimeError, match="The QNode can only be drawn after its CircuitGraph has been constructed"):
             circuit.draw()
