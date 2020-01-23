@@ -466,9 +466,9 @@ class QNodeCollection(Sequence):
             list: the results from each QNode
         """
         results = []
-        async = kwargs.pop("async", False)
+        _async = kwargs.pop("async", False)
 
-        if async:
+        if _async:
             import dask
             for q in self.qnodes:
                 results.append(dask.delayed(q)(*args, **kwargs))
