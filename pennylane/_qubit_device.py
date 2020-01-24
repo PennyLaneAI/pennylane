@@ -346,7 +346,7 @@ class QubitDevice(Device):
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        wires = np.hstack(wires)
+        wires = np.sort(np.hstack(wires))
         samples = self._samples[:, np.array(wires)]
         unraveled_indices = [2] * len(wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
