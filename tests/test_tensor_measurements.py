@@ -46,14 +46,14 @@ class TestTensorExpval:
     @pytest.fixture
     def tolerance(self, analytic, tol):
         if not analytic:
-            return {"atol": 0.01, "rtol": 0.2}
+            return {"atol": 0.01, "rtol": 0.1}
 
         return {"atol": tol, "rtol": 0}
 
     def test_tensor_product(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product ZxZ gives the same result as simply
         using an Hermitian matrix"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit1(a, b, c):
@@ -73,7 +73,7 @@ class TestTensorExpval:
     def test_combine_tensor_with_non_tensor(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product along with a non-tensor product
         continues to function correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit1(a, b, c):
@@ -97,7 +97,7 @@ class TestTensorExpval:
 
     def test_paulix_tensor_pauliy(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -111,7 +111,7 @@ class TestTensorExpval:
 
     def test_paulix_tensor_pauliy_gradient(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -126,7 +126,7 @@ class TestTensorExpval:
 
     def test_pauliz_tensor_identity(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -140,7 +140,7 @@ class TestTensorExpval:
 
     def test_pauliz_tensor_hadamard(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -154,7 +154,7 @@ class TestTensorExpval:
 
     def test_hermitian(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving an Hermitian matrix works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         A = np.array(
             [
@@ -182,7 +182,7 @@ class TestTensorExpval:
 
     def test_hermitian_tensor_hermitian(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         A1 = np.array([[1, 2], [2, 4]])
 
@@ -222,7 +222,7 @@ class TestTensorExpval:
 
     def test_hermitian_tensor_identity_expectation(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=2, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=2, analytic=analytic, shots=int(1e6))
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -259,7 +259,7 @@ class TestTensorVar:
 
     def test_paulix_tensor_pauliy(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -280,7 +280,7 @@ class TestTensorVar:
 
     def test_pauliz_tensor_hadamard(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         @qml.qnode(dev)
         def circuit(a, b, c):
@@ -299,7 +299,7 @@ class TestTensorVar:
 
     def test_tensor_hermitian(self, analytic, theta, phi, varphi, tolerance):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=100000)
+        dev = qml.device("default.qubit", wires=3, analytic=analytic, shots=int(1e6))
 
         A = np.array(
             [
