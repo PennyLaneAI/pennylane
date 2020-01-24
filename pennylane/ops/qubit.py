@@ -16,7 +16,6 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
