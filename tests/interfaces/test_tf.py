@@ -36,8 +36,9 @@ import pennylane as qml
 
 from pennylane.utils import _flatten, unflatten
 from pennylane.qnodes import QNode, QuantumFunctionError
-from pennylane.plugins.default_qubit import CNOT, Rotx, Roty, Rotz, I, Y, Z
 from pennylane._device import DeviceError
+
+from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
 
 def expZ(state):

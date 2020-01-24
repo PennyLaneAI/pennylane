@@ -20,234 +20,14 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 simulation of a qubit-based quantum circuit architecture.
 """
 import itertools
-import functools
 
 import numpy as np
-from scipy.linalg import eigh
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import Operation
 
 
 # tolerance for numerical errors
 tolerance = 1e-10
-
-
-#========================================================
-#  utilities
-#========================================================
-
-def spectral_decomposition(A):
-    r"""Spectral decomposition of a Hermitian matrix.
-
-    Args:
-        A (array): Hermitian matrix
-
-    Returns:
-        (vector[float], list[array[complex]]): (a, P): eigenvalues and hermitian projectors
-            such that :math:`A = \sum_k a_k P_k`.
-    """
-    d, v = eigh(A)
-    P = []
-    for k in range(d.shape[0]):
-        temp = v[:, k]
-        P.append(np.outer(temp, temp.conj()))
-    return d, P
-
-
-#========================================================
-#  fixed gates
-#========================================================
-
-I = np.eye(2)
-# Pauli matrices
-X = np.array([[0, 1], [1, 0]]) #: Pauli-X matrix
-Y = np.array([[0, -1j], [1j, 0]]) #: Pauli-Y matrix
-Z = np.array([[1, 0], [0, -1]]) #: Pauli-Z matrix
-
-H = np.array([[1, 1], [1, -1]])/np.sqrt(2) #: Hadamard gate
-# Two qubit gates
-CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]) #: CNOT gate
-SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]) #: SWAP gate
-CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]) #: CZ gate
-S = np.array([[1, 0], [0, 1j]]) #: Phase Gate
-T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]]) #: T Gate
-# Three qubit gates
-CSWAP = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-                  [0, 1, 0, 0, 0, 0, 0, 0],
-                  [0, 0, 1, 0, 0, 0, 0, 0],
-                  [0, 0, 0, 1, 0, 0, 0, 0],
-                  [0, 0, 0, 0, 1, 0, 0, 0],
-                  [0, 0, 0, 0, 0, 0, 1, 0],
-                  [0, 0, 0, 0, 0, 1, 0, 0],
-                  [0, 0, 0, 0, 0, 0, 0, 1]]) #: CSWAP gate
-
-Toffoli = np.diag([1 for i in range(8)])
-Toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
-
-#========================================================
-#  parametrized gates
-#========================================================
-
-def Rphi(phi):
-    r"""One-qubit phase shift.
-
-    Args:
-        phi (float): phase shift angle
-    Returns:
-        array: unitary 2x2 phase shift matrix
-    """
-    return np.array([[1, 0], [0, np.exp(1j*phi)]])
-
-
-def Rotx(theta):
-    r"""One-qubit rotation about the x axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
-    """
-    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * X
-
-
-def Roty(theta):
-    r"""One-qubit rotation about the y axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
-    """
-    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Y
-
-
-def Rotz(theta):
-    r"""One-qubit rotation about the z axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
-    """
-    return np.cos(theta/2) * I + 1j * np.sin(-theta/2) * Z
-
-
-def Rot3(a, b, c):
-    r"""Arbitrary one-qubit rotation using three Euler angles.
-
-    Args:
-        a,b,c (float): rotation angles
-    Returns:
-        array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
-    """
-    return Rotz(c) @ (Roty(b) @ Rotz(a))
-
-
-def CRotx(theta):
-    r"""Two-qubit controlled rotation about the x axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
-    """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -1j*np.sin(theta/2)], [0, 0, -1j*np.sin(theta/2), np.cos(theta/2)]])
-
-
-def CRoty(theta):
-    r"""Two-qubit controlled rotation about the y axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
-    """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.cos(theta/2), -np.sin(theta/2)], [0, 0, np.sin(theta/2), np.cos(theta/2)]])
-
-
-def CRotz(theta):
-    r"""Two-qubit controlled rotation about the z axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
-    """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*theta/2), 0], [0, 0, 0, np.exp(1j*theta/2)]])
-
-
-def CRot3(a, b, c):
-    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
-
-    Args:
-        a,b,c (float): rotation angles
-    Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
-    """
-    return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j*(a+c)/2)*np.cos(b/2), -np.exp(1j*(a-c)/2)*np.sin(b/2)], [0, 0, np.exp(-1j*(a-c)/2)*np.sin(b/2), np.exp(1j*(a+c)/2)*np.cos(b/2)]])
-
-
-
-#========================================================
-#  Arbitrary states and operators
-#========================================================
-
-def unitary(*args):
-    r"""Input validation for an arbitary unitary operation.
-
-    Args:
-        args (array): square unitary matrix
-
-    Raises:
-        ValueError: if the matrix is not unitary or square
-
-    Returns:
-        array: square unitary matrix
-    """
-    U = np.asarray(args[0])
-
-    if U.shape[0] != U.shape[1]:
-        raise ValueError("Operator must be a square matrix.")
-
-    if not np.allclose(U @ U.conj().T, np.identity(U.shape[0])):
-        raise ValueError("Operator must be unitary.")
-
-    return U
-
-
-def hermitian(*args):
-    r"""Input validation for an arbitary Hermitian expectation.
-
-    Args:
-        args (array): square hermitian matrix
-
-    Raises:
-        ValueError: if the matrix is not Hermitian or square
-
-    Returns:
-        array: square hermitian matrix
-    """
-    A = np.asarray(args[0])
-    if A.shape[0] != A.shape[1]:
-        raise ValueError("Expectation must be a square matrix.")
-
-    if not np.allclose(A, A.conj().T):
-        raise ValueError("Expectation must be Hermitian.")
-
-    return A
-
-def identity(*_):
-    """Identity matrix observable.
-
-    Returns:
-        array: 2x2 identity matrix
-    """
-    return np.identity(2)
-
-#========================================================
-#  device
-#========================================================
 
 
 class DefaultQubit(QubitDevice):
@@ -268,44 +48,41 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = '0.8'
     version = '0.8.0'
     author = 'Xanadu Inc.'
-    _capabilities = {"model": "qubit", "tensor_observables": True, "inverse_operations": True}
+    _capabilities = {"inverse_operations": True}
 
-    # Note: BasisState and QubitStateVector don't
-    # map to any particular function, as they modify
-    # the internal device state directly.
-    _operation_map = {
-        'BasisState': None,
-        'QubitStateVector': None,
-        'QubitUnitary': unitary,
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'S': S,
-        'T': T,
-        'CNOT': CNOT,
-        'SWAP': SWAP,
-        'CSWAP': CSWAP,
-        'Toffoli': Toffoli,
-        'CZ': CZ,
-        'PhaseShift': Rphi,
-        'RX': Rotx,
-        'RY': Roty,
-        'RZ': Rotz,
-        'Rot': Rot3,
-        'CRX': CRotx,
-        'CRY': CRoty,
-        'CRZ': CRotz,
-        'CRot': CRot3
+    operations = {
+        'BasisState',
+        'QubitStateVector',
+        'QubitUnitary',
+        'PauliX',
+        'PauliY',
+        'PauliZ',
+        'Hadamard',
+        'S',
+        'T',
+        'CNOT',
+        'SWAP',
+        'CSWAP',
+        'Toffoli',
+        'CZ',
+        'PhaseShift',
+        'RX',
+        'RY',
+        'RZ',
+        'Rot',
+        'CRX',
+        'CRY',
+        'CRZ',
+        'CRot'
     }
 
-    _observable_map = {
-        'PauliX': X,
-        'PauliY': Y,
-        'PauliZ': Z,
-        'Hadamard': H,
-        'Hermitian': hermitian,
-        'Identity': identity
+    observables = {
+        'PauliX',
+        'PauliY',
+        'PauliZ',
+        'Hadamard',
+        'Hermitian',
+        'Identity'
     }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
@@ -340,8 +117,7 @@ class DefaultQubit(QubitDevice):
                 self.apply_basis_state(basis_state, wires)
 
             else:
-                A = self._get_operator_matrix(operation.name, par)
-                self._state = self.mat_vec_product(A, self._state, wires)
+                self._state = self.mat_vec_product(operation.matrix, self._state, wires)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
@@ -350,8 +126,7 @@ class DefaultQubit(QubitDevice):
         for operation in rotations:
             wires = operation.wires
             par = operation.parameters
-            A = self._get_operator_matrix(operation.name, par)
-            self._state = self.mat_vec_product(A, self._state, wires)
+            self._state = self.mat_vec_product(operation.matrix, self._state, wires)
 
     @property
     def state(self):
@@ -439,55 +214,6 @@ class DefaultQubit(QubitDevice):
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
-    def get_operator_matrix_for_measurement(self, observable, par):
-        """Get the operator matrix for a given observable before measurement.
-
-        Args:
-          observable (str or list[str]): name of the operation/observable
-          par (tuple[float] or list[list[Any]]): parameter values
-        Returns:
-          array: matrix representation.
-        """
-        if isinstance(observable, list):
-            return self._get_tensor_operator_matrix(observable, par)
-
-        return self._get_operator_matrix(observable, par)
-
-    def _get_operator_matrix(self, operation, par):
-        """Get the operator matrix for a given operation or observable.
-
-        If the inverse was defined for an operation, returns the
-        conjugate transpose of the operator matrix.
-
-        Args:
-          operation    (str): name of the operation/observable
-          par (tuple[float]): parameter values
-        Returns:
-          array: matrix representation.
-        """
-
-        operation_map = {**self._operation_map, **self._observable_map}
-
-        if operation.endswith(Operation.string_for_inverse):
-            A = operation_map[operation[:-len(Operation.string_for_inverse)]]
-            return A.conj().T if not callable(A) else A(*par).conj().T
-
-        A = operation_map[operation]
-        return A if not callable(A) else A(*par)
-
-    def _get_tensor_operator_matrix(self, obs, par):
-        """Get the operator matrix for a given tensor product of operations.
-
-        Args:
-            obs (list[str]): list of observable names to tensor
-            par (list[list[Any]]): parameter values
-
-        Returns:
-            array: matrix representation.
-        """
-        ops = [self._get_operator_matrix(o, p) for o, p in zip(obs, par)]
-        return functools.reduce(np.kron, ops)
-
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
@@ -495,14 +221,6 @@ class DefaultQubit(QubitDevice):
         self._state = np.zeros(2**self.num_wires, dtype=complex)
         self._state[0] = 1
         self._pre_rotated_state = self._state
-
-    @property
-    def operations(self):
-        return set(self._operation_map.keys())
-
-    @property
-    def observables(self):
-        return set(self._observable_map.keys())
 
     def probability(self, wires=None):
         if self._state is None:
