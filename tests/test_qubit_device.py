@@ -308,7 +308,6 @@ class TestGenerateSamples:
     def test_auxiliary_methods_called_correctly(self, mock_qubit_device, monkeypatch):
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
-        mock_qubit_device._wires_measured = [1,2]
         number_of_states = 2 ** mock_qubit_device.num_wires
 
         with monkeypatch.context() as m:
