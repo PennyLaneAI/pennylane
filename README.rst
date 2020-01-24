@@ -48,7 +48,7 @@ Features
 
 .. raw:: html
 
-    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
+    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px" align="right">
 
 - **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
 
