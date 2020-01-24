@@ -190,12 +190,7 @@ class QubitDevice(Device):
         """
         wires = []
         for op in operators:
-
-            for wire in op.wires:
-                if isinstance(wire, int):
-                    wires.append(wire)
-                else:
-                    wires.extend(wire)
+            wires.extend(op.wires)
 
         return set(wires)
 
