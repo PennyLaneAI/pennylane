@@ -16,6 +16,8 @@ Contains high-level QNode processing functions and classes.
 """
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
+import copy
+import warnings
 
 from pennylane.qnodes import QNode
 from pennylane.measure import expval, var, sample
@@ -101,6 +103,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     if not isinstance(device, Sequence):
         # broadcast the single device over all observables
         device = [device] * len(observables)
+        # device = [copy.deepcopy(device) for _ in range(len(observables))]
 
     if not isinstance(measure, (list, tuple)):
         # broadcast the single measurement over all observables
@@ -420,6 +423,58 @@ class QNodeCollection(Sequence):
 
     where the results from each QNode have been flattened and concatenated
     into a single one-dimensional list.
+
+    .. caution::
+
+        **Asynchronous evaluation**
+
+        By default, the QNodes within the QNode cluster are executed sequentially.
+
+        However, experimental asynchronous support is now available using the
+        `Dask <https://dask.org/>`_ parallelism library. This can be activated
+        by passing the ``parallel=True`` keyword argument when evaluating the
+        QNodeCollection.
+
+        For example, let's create the following two QVM simulation devices:
+
+        >>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D", shots=1000)
+        >>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B", shots=1000)
+
+        We can create a collection of QNodes with different observables by mapping
+        an ansatz over these devices using :func:`~.map`:
+
+        >>> obs_list = [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+        >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, [qpu1, qpu2])
+
+        We can now creating some parameters and evaluate the collection:
+
+        >>> params = qml.init.strong_ent_layers_normal(n_layers=4, n_wires=4)
+        >>> qnodes(params)
+        array([0.046875  , 0.93164062])
+
+        The above collection was executed sequentially. Executing it in parallel:
+
+        >>> qnodes(params, parallel=True)
+        array([0.0234375 , 0.92578125])
+
+        We can time both approaches from within IPython or a Jupyter notebook:
+
+        >>> %timeit qnodes(params)
+        5.16 s ± 162 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+        >>> %timeit qnodes(params, parallel=True)
+        2.99 s ± 40.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+
+
+    .. warning::
+
+        Asynchronous evaluation is experimental --- please report all bugs and issues
+        to our GitHub page. It currently works with all interfaces, however backpropagation
+        and gradient computation is limited to Autograd and PyTorch. **Quantum gradients
+        using TensorFlow in asynchronous mode is currently not supported**.
+
+        You will find the best speedups when using asynchronous mode when QNodes are to
+        be evaluated on external hardware devices or external simulators. **It is not
+        advised to use asynchronous mode with** ``default.qubit``**.**
     """
 
     def __init__(self, qnodes=None):
@@ -466,14 +521,22 @@ class QNodeCollection(Sequence):
             list: the results from each QNode
         """
         results = []
-        _async = kwargs.pop("async", False)
+        _async = kwargs.pop("parallel", False)
+        _scheduler = kwargs.pop("scheduler", "threads")
 
         if _async:
             import dask
+
+            if self.interface == "tf":
+                warnings.warn("Parallel execution of QNode clusters is "
+                              "an experimental feature, and currently doesn't "
+                              "work with TensorFlow backpropagation. Please use "
+                              "the PyTorch or Autograd interfaces instead.", UserWarning)
+
             for q in self.qnodes:
                 results.append(dask.delayed(q)(*args, **kwargs))
 
-            return dask.compute(*results)
+            return dask.compute(*results, scheduler=_scheduler)
 
         for q in self.qnodes:
             results.append(q(*args, **kwargs))
