@@ -19,8 +19,39 @@ import cmath
 import math
 
 import pytest
+
+# TODO: remove the following skip when Tensornet has been ported to
+# Qubit device, and the gate imports above are removed.
+tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
+
 import pennylane as qml
 from pennylane import numpy as np, QuantumFunctionError
+from pennylane.beta.plugins.expt_tensornet import (
+    CNOT,
+    CSWAP,
+    CZ,
+    SWAP,
+    CRot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    H,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    T,
+    X,
+    Y,
+    Z,
+    hermitian,
+    identity,
+    Toffoli,
+    spectral_decomposition,
+    unitary,
+)
 
 tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 
@@ -94,6 +125,211 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+
+class TestAuxillaryFunctions:
+    """Test auxillary functions."""
+
+    def test_spectral_decomposition(self, tol):
+        """Test that the correct spectral decomposition is returned."""
+
+        a, P = spectral_decomposition(H)
+
+        # verify that H = \sum_k a_k P_k
+        assert np.allclose(H, np.einsum("i,ijk->jk", a, P), atol=tol, rtol=0)
+
+    def test_phase_shift(self, tol):
+        """Test phase shift is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(Rphi(0), np.identity(2), atol=tol, rtol=0)
+
+        # test arbitrary phase shift
+        phi = 0.5432
+        expected = np.array([[1, 0], [0, np.exp(1j * phi)]])
+        assert np.allclose(Rphi(phi), expected, atol=tol, rtol=0)
+
+    def test_x_rotation(self, tol):
+        """Test x rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(Rotx(0), np.identity(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, -1j], [-1j, 1]]) / np.sqrt(2)
+        assert np.allclose(Rotx(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = -1j * np.array([[0, 1], [1, 0]])
+        assert np.allclose(Rotx(np.pi), expected, atol=tol, rtol=0)
+
+    def test_y_rotation(self, tol):
+        """Test y rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(Roty(0), np.identity(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, -1], [1, 1]]) / np.sqrt(2)
+        assert np.allclose(Roty(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[0, -1], [1, 0]])
+        assert np.allclose(Roty(np.pi), expected, atol=tol, rtol=0)
+
+    def test_z_rotation(self, tol):
+        """Test z rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(Rotz(0), np.identity(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4]))
+        assert np.allclose(Rotz(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        assert np.allclose(Rotz(np.pi), -1j * Z, atol=tol, rtol=0)
+
+    def test_arbitrary_rotation(self, tol):
+        """Test arbitrary single qubit rotation is correct"""
+
+        # test identity for phi,theta,omega=0
+        assert np.allclose(Rot3(0, 0, 0), np.identity(2), atol=tol, rtol=0)
+
+        # expected result
+        def arbitrary_rotation(x, y, z):
+            """arbitrary single qubit rotation"""
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c],
+                ]
+            )
+
+        a, b, c = 0.432, -0.152, 0.9234
+        assert np.allclose(Rot3(a, b, c), arbitrary_rotation(a, b, c), atol=tol, rtol=0)
+
+    def test_C_x_rotation(self, tol):
+        """Test controlled x rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(CRotx(0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]])
+        assert np.allclose(CRotx(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])
+        assert np.allclose(CRotx(np.pi), expected, atol=tol, rtol=0)
+
+    def test_C_y_rotation(self, tol):
+        """Test controlled y rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(CRoty(0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]])
+        assert np.allclose(CRoty(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        assert np.allclose(CRoty(np.pi), expected, atol=tol, rtol=0)
+
+    def test_C_z_rotation(self, tol):
+        """Test controlled z rotation is correct"""
+
+        # test identity for theta=0
+        assert np.allclose(CRotz(0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]])
+        assert np.allclose(CRotz(np.pi / 2), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
+        assert np.allclose(CRotz(np.pi), expected, atol=tol, rtol=0)
+
+    def test_controlled_arbitrary_rotation(self, tol):
+        """Test controlled arbitrary rotation is correct"""
+
+        # test identity for phi,theta,omega=0
+        assert np.allclose(CRot3(0, 0, 0), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for phi,theta,omega=pi
+        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
+        assert np.allclose(CRot3(np.pi, np.pi, np.pi), expected, atol=tol, rtol=0)
+
+        def arbitrary_Crotation(x, y, z):
+            """controlled arbitrary single qubit rotation"""
+            c = np.cos(y / 2)
+            s = np.sin(y / 2)
+            return np.array(
+                [
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
+                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c]
+                ]
+            )
+
+        a, b, c = 0.432, -0.152, 0.9234
+        assert np.allclose(CRot3(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0)
+
+
+class TestStateFunctions:
+    """Arbitrary state and operator tests."""
+
+    def test_unitary(self, tol):
+        """Test that the unitary function produces the correct output."""
+
+        out = unitary(U)
+
+        # verify output type
+        assert isinstance(out, np.ndarray)
+
+        # verify equivalent to input state
+        assert np.allclose(out, U, atol=tol, rtol=0)
+
+    def test_unitary_exceptions(self):
+        """Tests that the unitary function raises the proper errors."""
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be a square matrix"):
+            unitary(U[1:])
+
+        # test non-unitary matrix
+        U3 = U.copy()
+        U3[0, 0] += 0.5
+        with pytest.raises(ValueError, match="must be unitary"):
+            unitary(U3)
+
+    def test_hermitian(self, tol):
+        """Test that the hermitian function produces the correct output."""
+
+        out = hermitian(H)
+
+        # verify output type
+        assert isinstance(out, np.ndarray)
+
+        # verify equivalent to input state
+        assert np.allclose(out, H, atol=tol, rtol=0)
+
+    def test_hermitian_exceptions(self):
+        """Tests that the hermitian function raises the proper errors."""
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be a square matrix"):
+            hermitian(H[1:])
+
+        # test non-Hermitian matrix
+        H2 = H.copy()
+        H2[0, 1] = H2[0, 1].conj()
+        with pytest.raises(ValueError, match="must be Hermitian"):
+            hermitian(H2)
+ 
 
 class TestTensornetIntegration:
     """Integration tests for expt.tensornet. This test ensures it integrates
