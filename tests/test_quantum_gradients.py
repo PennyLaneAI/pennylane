@@ -21,7 +21,7 @@ import autograd.numpy as anp  # only to be used inside classical computational n
 import numpy as np
 
 import pennylane as qml
-from pennylane.plugins.default_qubit import Rotx as Rx, Roty as Ry, Rotz as Rz
+from gate_data import Rotx as Rx, Roty as Ry, Rotz as Rz
 
 
 alpha = 0.5  # displacement in tests
