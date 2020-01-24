@@ -821,11 +821,7 @@ class Tensor(Observable):
                         # loop through all non-standard observables
                         self._eigvals = np.kron(self._eigvals, ns_ob.eigvals)
 
-        wire_ordering = np.argsort(np.argsort(list(_flatten(self.wires))))
-        tuples = np.array(list(itertools.product([0, 1], repeat=self.num_wires)))
-        perm = np.ravel_multi_index(tuples[:, wire_ordering].T, [2] * self.num_wires)
-
-        return self._eigvals[perm]
+        return self._eigvals
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the

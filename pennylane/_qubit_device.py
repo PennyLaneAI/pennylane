@@ -19,6 +19,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes
 import abc
+import itertools
 
 import numpy as np
 
@@ -306,11 +307,17 @@ class QubitDevice(Device):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
-        wires = list(wires or range(self.num_wires))
+        if wires is None:
+            # no need to marginalize
+            return prob
+
         wires = np.hstack(wires)
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
         prob = prob.reshape([2] * self.num_wires)
-        return np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+        perm = np.ravel_multi_index(basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires))
+        return np.apply_over_axes(np.sum, prob, inactive_wires).flatten()[perm]
 
     def expval(self, observable):
         wires = observable.wires
@@ -346,7 +353,7 @@ class QubitDevice(Device):
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        wires = np.sort(np.hstack(wires))
+        wires = np.hstack(wires)
         samples = self._samples[:, np.array(wires)]
         unraveled_indices = [2] * len(wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)

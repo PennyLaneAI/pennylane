@@ -549,7 +549,7 @@ class TestMarginalProb:
 
         def apply_over_axes_mock(x, y, p):
             arguments_apply_over_axes.append((y, p))
-            return np.array([0])
+            return np.zeros([2**len(wires)])
 
         arguments_apply_over_axes = []
         with monkeypatch.context() as m:
@@ -559,37 +559,19 @@ class TestMarginalProb:
         assert np.array_equal(arguments_apply_over_axes[0][0].flatten(), probs)
         assert np.array_equal(arguments_apply_over_axes[0][1], inactive_wires)
 
-    def test_correct_arguments_for_marginals_no_wires(self, mock_qubit_device_with_original_statistics, monkeypatch, tol):
-        """Test that the correct arguments are passed to the marginal_prob method with no wires specified"""
+    marginal_test_data = [
+        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.4, 0.6]), [1]),
+        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.3, 0.7]), [0]),
+        (
+            np.array([0.17794671, 0.06184147, 0.21909549, 0.04932204, 0.19595214, 0.19176834, 0.08495311, 0.0191207 ]),
+            np.array([0.3970422 , 0.28090525, 0.11116351, 0.21088904]),
+            [2, 0]
+        ),
+    ]
 
-        mock_qubit_device_with_original_statistics.num_wires = 3
-
-        # Generate probabilities
-        probs = np.array([random() for i in range(2 ** 3)])
-        probs /= sum(probs)
-
-        def apply_over_axes_mock(x, y, p):
-            arguments_apply_over_axes.append((y, p))
-            return np.array([0])
-
-        arguments_apply_over_axes = []
-        with monkeypatch.context() as m:
-            m.setattr("numpy.apply_over_axes", apply_over_axes_mock)
-            res = mock_qubit_device_with_original_statistics.marginal_prob(probs)
-
-        assert np.array_equal(arguments_apply_over_axes[0][0].flatten(), probs)
-        assert np.array_equal(arguments_apply_over_axes[0][1], [])
-
-    @pytest.mark.parametrize("probs, marginals, wires",
-                                    [(np.array([[0.1, 0.2], [0.3, 0.4]]), np.array([0.4, 0.6]), [1]),
-                                    (np.array([[0.1, 0.2], [0.3, 0.4]]), np.array([0.3, 0.7]), [0])])
-    def test_correct_marginals_returned(self, mock_qubit_device_with_original_statistics, monkeypatch, probs, marginals, wires, tol):
+    @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
+    def test_correct_marginals_returned(self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol):
         """Test that the correct marginals are returned by the marginal_prob method"""
-
-        mock_qubit_device_with_original_statistics.num_wires = 2
-
-        with monkeypatch.context() as m:
-            res = mock_qubit_device_with_original_statistics.marginal_prob(probs, wires=wires)
-
+        mock_qubit_device_with_original_statistics.num_wires = int(np.log2(len(probs)))
+        res = mock_qubit_device_with_original_statistics.marginal_prob(probs, wires=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
-
