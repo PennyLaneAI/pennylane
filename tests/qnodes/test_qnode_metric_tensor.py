@@ -21,7 +21,7 @@ from scipy.linalg import block_diag
 import pennylane as qml
 from pennylane.qnodes.qubit import QubitQNode
 from pennylane.qnodes.base import QuantumFunctionError
-from pennylane.plugins.default_qubit import Y, Z
+from gate_data import Y, Z
 
 
 class TestMetricTensor:

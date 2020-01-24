@@ -21,7 +21,7 @@ import itertools
 import functools
 import pennylane as qml
 from pennylane import expval, var, sample
-from pennylane.plugins.default_qubit import I, X, Y, Z, S, Rotx, Roty, H, CNOT
+from gate_data import I, X, Y, Z, S, Rotx, Roty, H, CNOT
 
 
 Z = np.array([[1, 0], [0, -1]])
