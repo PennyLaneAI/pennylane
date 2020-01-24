@@ -23,19 +23,7 @@ from scipy.linalg import block_diag
 import pennylane as qml
 from pennylane.templates.layers import StronglyEntanglingLayers
 
-I = np.eye(2)
-X = np.array([[0, 1], [1, 0]])
-Y = np.array([[0, -1j], [1j, 0]])
-Z = np.array([[1, 0], [0, -1]])
-H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-
-CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-S = np.array([[1, 0], [0, 1j]])
-T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
-CSWAP = block_diag(I, I, SWAP)
-Toffoli = block_diag(I, I, CNOT)
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli
 
 
 # Standard observables, their matrix representation, and eigenvlaues
