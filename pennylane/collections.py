@@ -16,7 +16,6 @@ Contains high-level QNode processing functions and classes.
 """
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
-import copy
 import warnings
 
 from pennylane.qnodes import QNode
@@ -525,7 +524,12 @@ class QNodeCollection(Sequence):
         _scheduler = kwargs.pop("scheduler", "threads")
 
         if _async:
-            import dask
+            try:
+                import dask
+            except:
+                raise ImportError("Dask must be installed for parallel evaluation. "
+                                  "\nDask can be installed using pip:"
+                                  "\n\npip install dask[delayed]")
 
             if self.interface == "tf":
                 warnings.warn("Parallel execution of QNode clusters is "
