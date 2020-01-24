@@ -341,7 +341,6 @@ class DefaultQubit(QubitDevice):
 
             else:
                 A = self._get_operator_matrix(operation.name, par)
-                print(A, self._state, wires)
                 self._state = self.mat_vec_product(A, self._state, wires)
 
         # store the pre-rotated state
