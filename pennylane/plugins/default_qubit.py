@@ -48,7 +48,7 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = '0.8'
     version = '0.8.0'
     author = 'Xanadu Inc.'
-    _capabilities = {"model": "qubit", "tensor_observables": True, "inverse_operations": True}
+    _capabilities = {"inverse_operations": True}
 
     operations = {
         'BasisState',
