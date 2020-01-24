@@ -309,7 +309,7 @@ class TestGenerateSamples:
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
         mock_qubit_device._wires_measured = [1,2]
-        number_of_states = 2 ** len(mock_qubit_device._wires_measured)
+        number_of_states = 2 ** mock_qubit_device.num_wires
 
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
@@ -317,7 +317,7 @@ class TestGenerateSamples:
             m.setattr(QubitDevice, 'states_to_binary', lambda a, b: (a, b))
             mock_qubit_device.generate_samples()
 
-        assert mock_qubit_device._samples == (number_of_states, number_of_states)
+        assert mock_qubit_device._samples == (number_of_states, mock_qubit_device.num_wires)
 
 class TestSampleBasisStates:
     """Test the sample_basis_states method"""
@@ -343,17 +343,21 @@ class TestSampleBasisStates:
 class TestStatesToBinary:
     """Test the states_to_binary method"""
 
-    def test_correct_conversion_two_states(self, mock_qubit_device, monkeypatch):
+    def test_correct_conversion_two_states(self, mock_qubit_device):
         """Tests that the sample_basis_states method converts samples to binary correctly"""
-        number_of_states = 2
+        wires = 4
+        shots = 10
+
+        number_of_states = 2 ** wires
         basis_states = np.arange(number_of_states)
-        samples = np.random.choice(basis_states, mock_qubit_device.shots)
+        samples = np.random.choice(basis_states, shots)
 
-        with monkeypatch.context() as m:
-            res = mock_qubit_device.states_to_binary(samples, number_of_states)
+        res = mock_qubit_device.states_to_binary(samples, wires)
 
-        assert np.array_equal(res[:,0], samples)
-        assert np.array_equal(res[:,1], np.zeros(mock_qubit_device.shots))
+        format_smt = "{{:0{}b}}".format(wires)
+        expected = np.array([[int(x) for x in list(format_smt.format(i))] for i in samples])
+
+        assert np.all(res == expected)
 
 
     # Note: in this visual matrix representation, the first columns stands for the first qubit
@@ -363,53 +367,47 @@ class TestStatesToBinary:
                             [
                             (
                               np.array([2, 3, 2, 0, 0]),
-                              np.array([[0, 1, 0, 0],
-                                        [1, 1, 0, 0],
-                                        [0, 1, 0, 0],
-                                        [0, 0, 0, 0],
-                                        [0, 0, 0, 0]],
+                              np.array([[1, 0],
+                                        [1, 1],
+                                        [1, 0],
+                                        [0, 0],
+                                        [0, 0]],
                              )
                                ),
                             (
                             np.array([2, 3, 1, 3, 1]),
-                            np.array([[0, 1, 0, 0],
-                                       [1, 1, 0, 0],
-                                       [1, 0, 0, 0],
-                                       [1, 1, 0, 0],
-                                       [1, 0, 0, 0]])
+                            np.array([[1, 0],
+                                      [1, 1],
+                                      [0, 1],
+                                      [1, 1],
+                                      [0, 1]])
 
                             )
                             ])
-    def test_correct_conversion_four_states(self, mock_qubit_device, monkeypatch, samples, binary_states, tol):
+    def test_correct_conversion_four_states(self, mock_qubit_device, samples, binary_states, tol):
         """Tests that the states_to_binary method converts samples to binary correctly for four states"""
         mock_qubit_device.shots = 5
-
-        number_of_states = 4
-
-        with monkeypatch.context() as m:
-            res = mock_qubit_device.states_to_binary(samples, number_of_states)
-
+        wires = 2
+        res = mock_qubit_device.states_to_binary(samples, wires)
         assert np.allclose(res, binary_states, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("samples, binary_states",
                             [
                             (
                             np.array([7, 7, 1, 5, 2]),
-                            np.array([[1, 1, 1, 0, 0, 0, 0, 0],
-                                       [1, 1, 1, 0, 0, 0, 0, 0],
-                                       [1, 0, 0, 0, 0, 0, 0, 0],
-                                       [1, 0, 1, 0, 0, 0, 0, 0],
-                                       [0, 1, 0, 0, 0, 0, 0, 0]])
+                            np.array([[1, 1, 1],
+                                      [1, 1, 1],
+                                      [0, 0, 1],
+                                      [1, 0, 1],
+                                      [0, 1, 0]])
                             )
                             ])
-    def test_correct_conversion_eight_states(self, mock_qubit_device, monkeypatch, samples, binary_states, tol):
+    def test_correct_conversion_eight_states(self, mock_qubit_device, samples, binary_states, tol):
         """Tests that the states_to_binary method converts samples to binary correctly for eight states"""
         mock_qubit_device.shots = 5
 
-        number_of_states = 8
-
-        with monkeypatch.context() as m:
-            res = mock_qubit_device.states_to_binary(samples, number_of_states)
+        wires = 3
+        res = mock_qubit_device.states_to_binary(samples, wires)
 
         assert np.allclose(res, binary_states, atol=tol, rtol=0)
 

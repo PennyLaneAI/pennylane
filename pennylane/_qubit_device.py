@@ -224,10 +224,10 @@ class QubitDevice(Device):
             This method should be overwritten on devices that
             generate their own computational basis samples.
         """
-        number_of_states = 2 ** len(self._wires_measured)
-        rotated_prob = self.probability(self._wires_measured)
+        number_of_states = 2 ** self.num_wires
+        rotated_prob = self.probability()
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        self._samples = QubitDevice.states_to_binary(samples, number_of_states)
+        self._samples = QubitDevice.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -245,7 +245,7 @@ class QubitDevice(Device):
         return np.random.choice(basis_states, self.shots, p=state_probability)
 
     @staticmethod
-    def states_to_binary(samples, number_of_states):
+    def states_to_binary(samples, num_wires):
         """Convert basis states from base 10 to binary representation.
 
         This is an auxiliary method to the generate_samples method.
@@ -257,9 +257,9 @@ class QubitDevice(Device):
         Returns:
             List[int]: basis states in binary representation
         """
-        powers_of_two = 1 << np.arange(number_of_states)
+        powers_of_two = 1 << np.arange(num_wires)
         states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(int)
+        return (states_sampled_base_ten > 0).astype(int)[:, ::-1]
 
     @property
     def state(self):
