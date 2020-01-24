@@ -359,56 +359,38 @@ class TestStatesToBinary:
 
         assert np.all(res == expected)
 
+    test_binary_conversion_data = [(
+            np.array([2, 3, 2, 0, 0]),
+            np.array([[1, 0],
+                      [1, 1],
+                      [1, 0],
+                      [0, 0],
+                      [0, 0]])
+        ),
+        (
+            np.array([2, 3, 1, 3, 1]),
+            np.array([[1, 0],
+                      [1, 1],
+                      [0, 1],
+                      [1, 1],
+                      [0, 1]])
+        ),
+        (
+            np.array([7, 7, 1, 5, 2]),
+            np.array([[1, 1, 1],
+                      [1, 1, 1],
+                      [0, 0, 1],
+                      [1, 0, 1],
+                      [0, 1, 0]])
+        )
+    ]
 
-    # Note: in this visual matrix representation, the first columns stands for the first qubit
-    # contrary to the bra-ket notation, so e.g. 2 will be represented as [0, 1, 0, 0] whereas
-    # in bra-ket notation it would be |0010>
-    @pytest.mark.parametrize("samples, binary_states",
-                            [
-                            (
-                              np.array([2, 3, 2, 0, 0]),
-                              np.array([[1, 0],
-                                        [1, 1],
-                                        [1, 0],
-                                        [0, 0],
-                                        [0, 0]],
-                             )
-                               ),
-                            (
-                            np.array([2, 3, 1, 3, 1]),
-                            np.array([[1, 0],
-                                      [1, 1],
-                                      [0, 1],
-                                      [1, 1],
-                                      [0, 1]])
-
-                            )
-                            ])
-    def test_correct_conversion_four_states(self, mock_qubit_device, samples, binary_states, tol):
-        """Tests that the states_to_binary method converts samples to binary correctly for four states"""
+    @pytest.mark.parametrize("samples, binary_states", test_binary_conversion_data)
+    def test_correct_conversion(self, mock_qubit_device, samples, binary_states, tol):
+        """Tests that the states_to_binary method converts samples to binary correctly"""
         mock_qubit_device.shots = 5
-        wires = 2
+        wires = binary_states.shape[1]
         res = mock_qubit_device.states_to_binary(samples, wires)
-        assert np.allclose(res, binary_states, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("samples, binary_states",
-                            [
-                            (
-                            np.array([7, 7, 1, 5, 2]),
-                            np.array([[1, 1, 1],
-                                      [1, 1, 1],
-                                      [0, 0, 1],
-                                      [1, 0, 1],
-                                      [0, 1, 0]])
-                            )
-                            ])
-    def test_correct_conversion_eight_states(self, mock_qubit_device, samples, binary_states, tol):
-        """Tests that the states_to_binary method converts samples to binary correctly for eight states"""
-        mock_qubit_device.shots = 5
-
-        wires = 3
-        res = mock_qubit_device.states_to_binary(samples, wires)
-
         assert np.allclose(res, binary_states, atol=tol, rtol=0)
 
 
