@@ -279,28 +279,6 @@ class TestExtractStatistics:
         ):
            results = mock_qubit_device_extract_stats.statistics([obs])
 
-class TestRotateBasis:
-    """Test the rotate_basis method"""
-
-    def test_wires_measured_correct(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Tests that the rotate_basis method correctly stored the wires used"""
-
-        assert not mock_qubit_device_extract_stats._wires_measured
-
-        obs_queue = [qml.PauliX(0), qml.PauliZ(1)]
-
-        assert mock_qubit_device_extract_stats.active_wires(obs_queue) == {0, 1}
-
-    def test_wires_measured_correct_for_empyt_obs_queue(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Tests that the rotate_basis method correctly stores an empty list when an empty
-        observable queue is specified"""
-
-        assert not mock_qubit_device_extract_stats._wires_measured
-
-        obs_queue = []
-
-        assert mock_qubit_device_extract_stats.active_wires(obs_queue) == set()
-
 
 class TestGenerateSamples:
     """Test the generate_samples method"""
