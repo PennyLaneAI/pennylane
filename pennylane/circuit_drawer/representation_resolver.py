@@ -126,6 +126,16 @@ class RepresentationResolver:
 
     @staticmethod
     def _format_matrix_arguments(params, symbol, cache):
+        """Format a sequence of matrix parameters.
+
+        Args:
+            params (List[numpy.ndarray]): List of matrix parameters
+            symbol (str): The symbol that should be used to identify matrices
+            cache (List[numpy.ndarray]): The cache of already known matrices
+
+        Returns:
+            str: The formatted matrix arguments
+        """
         param_strings = []
         for param in params:
             idx = RepresentationResolver.index_of_array_or_append(param, cache)
