@@ -149,6 +149,12 @@ class TestOperations:
         assert isinstance(call_history[0], qml.PauliX)
         assert call_history[0].wires == [0]
 
+        assert isinstance(call_history[1], qml.PauliY)
+        assert call_history[1].wires == [1]
+
+        assert isinstance(call_history[2], qml.PauliZ)
+        assert call_history[2].wires == [2]
+
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
         queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
