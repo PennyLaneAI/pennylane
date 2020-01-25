@@ -28,6 +28,12 @@ class RepresentationResolver:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
+    def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
+        self.charset = charset
+        self.show_variable_names = show_variable_names
+        self.matrix_cache = []
+        self.unitary_matrix_cache = []
+        self.hermitian_matrix_cache = []
 
     # Symbol for uncontrolled wires
     resolution_dict = {
@@ -75,13 +81,6 @@ class RepresentationResolver:
         "ControlledPhase": [0],
     }
     """Indices of control wires."""
-
-    def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
-        self.charset = charset
-        self.show_variable_names = show_variable_names
-        self.matrix_cache = []
-        self.unitary_matrix_cache = []
-        self.hermitian_matrix_cache = []
 
     @staticmethod
     def index_of_array_or_append(target_element, target_list):
