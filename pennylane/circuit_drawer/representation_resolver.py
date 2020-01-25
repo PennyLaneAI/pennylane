@@ -149,6 +149,16 @@ class RepresentationResolver:
         return "{:+.3g}{}".format(coefficient, variable)
 
     def _format_polyxp(self, operation):
+        """Format a polynomial of x and p operators.
+
+        Theses operators appear as observables in CV quantum computing.
+        
+        Args:
+            operation (~.PolyXP): The PolyXP observable that shall be formatted.
+        
+        Returns:
+            str: A string representing the polynomial
+        """
         coefficients = operation.params[0]
         order = len(coefficients.shape)
 
