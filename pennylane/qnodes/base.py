@@ -240,7 +240,8 @@ class BaseQNode:
 
         Consider the following circuit as an example:
 
-        .. code-block:: python
+        .. code-block:: python3
+
             @qml.qnode(dev)
             def qfunc(a, w):
                 qml.Hadamard(0)
@@ -253,6 +254,7 @@ class BaseQNode:
         We can draw the circuit after it has been executed:
 
         .. code-block:: python
+
             >>> result = qfunc(2.3, [1.2, 3.2, 0.7])
             >>> print(qfunc.draw())
             0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
@@ -390,9 +392,10 @@ class BaseQNode:
 
         The created :class:`~.variable.Variable` instances are given in the same nested structure
         as the original arguments. The :class:`~.variable.Variable` instances are named according
-        to the python expression that adresses them inside the qfunc. Consider the following example:
+        to the argument names given in the QNode definition. Consider the following example:
 
-        .. code-block:: python
+        .. code-block:: python3
+
             @qml.qnode(dev)
             def qfunc(a, w):
                 qml.Hadamard(0)
@@ -406,7 +409,8 @@ class BaseQNode:
 
         In this example, ``_make_variables`` will return the following :class:`~.variable.Variable` instances
 
-        .. code-block:: python
+        .. code-block:: python3
+
             >>> qfunc._make_variables([3.4, [1.2, 3.4, 5.6]], {})
             ["a", ["w[0]", "w[1]", "w[2]"]], {}
 

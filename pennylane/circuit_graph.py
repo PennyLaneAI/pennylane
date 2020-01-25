@@ -381,8 +381,8 @@ class CircuitGraph:
 
         Returns:
             Tuple[list[list[~.Operation]], list[list[~.Observable]]]:
-                Tuple of the circuits operations and the circuits observables, both indexed
-                by wires.
+            Tuple of the circuits operations and the circuits observables, both indexed
+            by wires.
         """
         l = 0
 
