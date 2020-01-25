@@ -129,36 +129,7 @@ class TestOperations:
     def test_op_queue_is_filled_during_execution(
         self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
-        """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
-           op_queue raises no error"""
-        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
-
-        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
-
-        circuit_graph = CircuitGraph(queue + observables, {})
-
-        call_history = []
-
-        with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "apply", lambda self, x, y: call_history.extend(x + y))
-            mock_qubit_device_with_paulis_and_methods.execute(circuit_graph)
-
-        assert call_history == queue
-
-        assert len(call_history) == 3
-        assert isinstance(call_history[0], qml.PauliX)
-        assert call_history[0].wires == [0]
-
-        assert isinstance(call_history[1], qml.PauliY)
-        assert call_history[1].wires == [1]
-
-        assert isinstance(call_history[2], qml.PauliZ)
-        assert call_history[2].wires == [2]
-
-    def test_op_queue_is_filled_during_execution(
-        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
-    ):
-        """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
+        """Tests that the op_queue is correctly filled when apply is called and that accessing
            op_queue raises no error"""
         queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
