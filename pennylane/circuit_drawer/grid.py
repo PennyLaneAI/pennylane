@@ -14,7 +14,7 @@
 """
 This module contains the Grid class which emulates a 2D array.
 """
-
+import numpy as np
 
 def _transpose(target_list):
     """Transpose the given list of lists.
@@ -43,11 +43,11 @@ class Grid:
     """
 
     def __init__(self, raw_grid=None):
+        # Let initialization pend until first data is entered
         if raw_grid is None:
-            raw_grid = []
-
-        self.raw_grid = raw_grid
-        self.raw_grid_transpose = _transpose(raw_grid)
+            self.raw_grid = None
+        else:
+            self.raw_grid = np.array(raw_grid, dtype=object)
 
     def insert_layer(self, idx, layer):
         """Insert a layer into the Grid at the specified index.
@@ -56,8 +56,10 @@ class Grid:
             idx (int): Index at which to insert the new layer
             layer (list): Layer that will be inserted
         """
-        self.raw_grid_transpose.insert(idx, layer)
-        self.raw_grid = _transpose(self.raw_grid_transpose)
+        if self.raw_grid is not None:
+            self.raw_grid = np.insert(self.raw_grid, idx, np.array([layer], dtype=object), axis=1)
+        else:
+            self.raw_grid = np.array([layer], dtype=object).T
 
         return self
 
@@ -67,8 +69,10 @@ class Grid:
         Args:
             layer (list): Layer that will be appended
         """
-        self.raw_grid_transpose.append(layer)
-        self.raw_grid = _transpose(self.raw_grid_transpose)
+        if self.raw_grid is not None:
+            self.raw_grid = np.append(self.raw_grid, np.array([layer], dtype=object).T, axis=1)
+        else:
+            self.raw_grid = np.array([layer], dtype=object).T
 
         return self
 
@@ -79,8 +83,7 @@ class Grid:
             idx (int): Index of the layer to be replaced
             layer (list): Layer that replaces the old layer
         """
-        self.raw_grid_transpose[idx] = layer
-        self.raw_grid = _transpose(self.raw_grid_transpose)
+        self.raw_grid[:, idx] = np.array(layer, dtype=object)
 
         return self
 
@@ -91,8 +94,10 @@ class Grid:
             idx (int): Index at which to insert the new wire
             wire (list): Wire that will be inserted
         """
-        self.raw_grid.insert(idx, wire)
-        self.raw_grid_transpose = _transpose(self.raw_grid)
+        if self.raw_grid is not None:
+            self.raw_grid = np.insert(self.raw_grid, idx, np.array([wire], dtype=object), axis=0)
+        else:
+            self.raw_grid = np.array([wire], dtype=object)
 
         return self
 
@@ -102,8 +107,10 @@ class Grid:
         Args:
             wire (list): Wire that will be appended
         """
-        self.raw_grid.append(wire)
-        self.raw_grid_transpose = _transpose(self.raw_grid)
+        if self.raw_grid is not None:
+            self.raw_grid = np.append(self.raw_grid, np.array([wire], dtype=object), axis=0)
+        else:
+            self.raw_grid = np.array([wire], dtype=object)
 
         return self
 
@@ -114,7 +121,10 @@ class Grid:
         Returns:
             int: Number of layers in the Grid
         """
-        return len(self.raw_grid_transpose)
+        if self.raw_grid is not None:
+            return self.raw_grid.shape[1]
+        else:
+            return 0
 
     def layer(self, idx):
         """Return the layer at the specified index.
@@ -125,7 +135,7 @@ class Grid:
         Returns:
             list: The layer at the specified index
         """
-        return self.raw_grid_transpose[idx]
+        return self.raw_grid[:, idx]
 
     @property
     def num_wires(self):
@@ -134,7 +144,10 @@ class Grid:
         Returns:
             int: Number of wires in the Grid
         """
-        return len(self.raw_grid)
+        if self.raw_grid is not None:
+            return self.raw_grid.shape[0]
+        else:
+            return 0
 
     def wire(self, idx):
         """Return the wire at the specified index.

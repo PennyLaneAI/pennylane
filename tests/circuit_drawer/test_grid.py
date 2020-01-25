@@ -15,6 +15,7 @@
 Unit tests for the :mod:`pennylane.circuit_drawer.grid` module.
 """
 import pytest
+import numpy as np
 
 from pennylane.circuit_drawer import Grid
 from pennylane.circuit_drawer.grid import _transpose
@@ -60,8 +61,8 @@ class TestGrid:
         raw_grid = [[0, 3], [1, 4], [2, 5]]
         grid = Grid(raw_grid)
 
-        assert grid.raw_grid == raw_grid
-        assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5]]
+        assert np.array_equal(grid.raw_grid, raw_grid)
+        assert np.array_equal(grid.raw_grid.T, [[0, 1, 2], [3, 4, 5]])
 
     @pytest.mark.parametrize(
         "idx,expected_transposed_grid",
@@ -79,8 +80,8 @@ class TestGrid:
 
         grid.insert_layer(idx, [6, 7, 8])
 
-        assert grid.raw_grid_transpose == expected_transposed_grid
-        assert grid.raw_grid == _transpose(expected_transposed_grid)
+        assert np.array_equal(grid.raw_grid.T, expected_transposed_grid)
+        assert np.array_equal(grid.raw_grid, _transpose(expected_transposed_grid))
 
     def test_append_layer(self):
         """Test that layer appending works properly."""
@@ -90,8 +91,8 @@ class TestGrid:
 
         grid.append_layer([6, 7, 8])
 
-        assert grid.raw_grid == [[0, 3, 6], [1, 4, 7], [2, 5, 8]]
-        assert grid.raw_grid_transpose == [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+        assert np.array_equal(grid.raw_grid, [[0, 3, 6], [1, 4, 7], [2, 5, 8]])
+        assert np.array_equal(grid.raw_grid.T, [[0, 1, 2], [3, 4, 5], [6, 7, 8]])
 
     @pytest.mark.parametrize(
         "idx,expected_transposed_grid", [(0, [[6, 7, 8], [3, 4, 5]]), (1, [[0, 1, 2], [6, 7, 8]]),]
@@ -104,8 +105,8 @@ class TestGrid:
 
         grid.replace_layer(idx, [6, 7, 8])
 
-        assert grid.raw_grid_transpose == expected_transposed_grid
-        assert grid.raw_grid == _transpose(expected_transposed_grid)
+        assert np.array_equal(grid.raw_grid.T, expected_transposed_grid)
+        assert np.array_equal(grid.raw_grid, _transpose(expected_transposed_grid))
 
     @pytest.mark.parametrize(
         "idx,expected_grid",
@@ -124,8 +125,8 @@ class TestGrid:
 
         grid.insert_wire(idx, [6, 7])
 
-        assert grid.raw_grid == expected_grid
-        assert grid.raw_grid_transpose == _transpose(expected_grid)
+        assert np.array_equal(grid.raw_grid, expected_grid)
+        assert np.array_equal(grid.raw_grid.T, _transpose(expected_grid))
 
     def test_append_wire(self):
         """Test that wire appending works properly."""
@@ -135,8 +136,8 @@ class TestGrid:
 
         grid.append_wire([6, 7])
 
-        assert grid.raw_grid == [[0, 3], [1, 4], [2, 5], [6, 7]]
-        assert grid.raw_grid_transpose == [[0, 1, 2, 6], [3, 4, 5, 7]]
+        assert np.array_equal(grid.raw_grid, [[0, 3], [1, 4], [2, 5], [6, 7]])
+        assert np.array_equal(grid.raw_grid.T, [[0, 1, 2, 6], [3, 4, 5, 7]])
 
     @pytest.mark.parametrize(
         "raw_grid,expected_num_layers",
@@ -179,7 +180,7 @@ class TestGrid:
         grid = Grid(_transpose(raw_transposed_grid))
 
         for idx, layer in enumerate(raw_transposed_grid):
-            assert grid.layer(idx) == layer
+            assert np.array_equal(grid.layer(idx), layer)
 
     @pytest.mark.parametrize(
         "raw_grid",
@@ -194,7 +195,7 @@ class TestGrid:
         grid = Grid(raw_grid)
 
         for idx, wire in enumerate(raw_grid):
-            assert grid.wire(idx) == wire
+            assert np.array_equal(grid.wire(idx), wire)
 
     def test_copy(self):
         """Test that copy copies the grid."""
@@ -206,11 +207,9 @@ class TestGrid:
         # Assert that everything is indeed copied
         assert other_grid is not grid
         assert other_grid.raw_grid is not grid.raw_grid
-        assert other_grid.raw_grid_transpose is not grid.raw_grid_transpose
 
         # Assert the copy is correct
-        assert other_grid.raw_grid == grid.raw_grid
-        assert other_grid.raw_grid_transpose == grid.raw_grid_transpose
+        assert np.array_equal(other_grid.raw_grid, grid.raw_grid)
 
     def test_append_grid_by_layers(self):
         """Test appending a grid to another by layers."""
@@ -222,12 +221,12 @@ class TestGrid:
 
         grid1.append_grid_by_layers(grid2)
 
-        assert grid1.raw_grid_transpose == [[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]]
-        assert grid1.raw_grid == _transpose([[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]])
+        assert np.array_equal(grid1.raw_grid.T, [[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]])
+        assert np.array_equal(grid1.raw_grid, _transpose([[0, 3], [1, 4], [2, 5], [6, 7], [8, 9]]))
 
     def test_str(self):
         """Test string rendering of Grid."""
         raw_grid = [[0, 3], [1, 4], [2, 5]]
         grid = Grid(raw_grid)
 
-        assert str(grid) == "[0, 3]\n[1, 4]\n[2, 5]\n"
+        assert str(grid) == "[0 3]\n[1 4]\n[2 5]\n"
