@@ -134,7 +134,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
         # generate computational basis samples
         if (not self.analytic) or circuit.is_sampled:
@@ -152,7 +152,7 @@ class QubitDevice(Device):
         return self._asarray(results)
 
     @abc.abstractmethod
-    def apply(self, operations, rotations=None, **kwargs):
+    def apply(self, operations, **kwargs):
         """Apply quantum operations, rotate the circuit into the measurement
         basis, and compile and execute the quantum circuit.
 
@@ -182,6 +182,11 @@ class QubitDevice(Device):
             operations (list[~.Operation]): operations to apply to the device
             rotations (list[~.Operation]): operations that rotate the circuit
                 pre-measurement into the eigenbasis of the observables.
+
+        Keyword args:
+            rotations: the rotations that diagonalize the state according to the
+                specified observables
+            hash: the hash value of the circuit constructed by `CircuitGraph.hash`
         """
 
     @staticmethod

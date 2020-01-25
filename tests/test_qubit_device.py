@@ -169,7 +169,7 @@ class TestOperations:
         call_history = []
 
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "apply", lambda self, x, y: call_history.extend(x + y))
+            m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
             mock_qubit_device_with_paulis_and_methods.execute(circuit_graph)
 
         assert call_history == queue
@@ -222,7 +222,7 @@ class TestOperations:
         call_history = {}
 
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "apply", lambda self, x, y, **kwargs: call_history.update(kwargs))
+            m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
             mock_qubit_device_with_paulis_rotations_and_methods.execute(circuit_graph, hash=circuit_graph.hash)
 
         len(call_history.items()) == 1
@@ -272,7 +272,7 @@ class TestObservables:
         circuit_graph = CircuitGraph(queue + observables, {})
 
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "apply", lambda self, x, y: None)
+            m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
                 QuantumFunctionError, match="Unsupported return type specified for observable"
             ):
