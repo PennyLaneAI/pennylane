@@ -170,6 +170,8 @@ class BaseQNode:
         self.num_variables = (
             None  #: int: number of flattened differentiable parameters in the circuit
         )
+        self.arg_vars = None
+        self.kwarg_vars = None
 
         self.ops = (
             []
@@ -495,7 +497,8 @@ class BaseQNode:
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
-        arg_vars, kwarg_vars = self._make_variables(args, kwargs)
+        if self.arg_vars is None or self.kwarg_vars is None:
+            self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -513,10 +516,17 @@ class BaseQNode:
             if self.mutable:
                 # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
                 # (positional args must be replaced because parameter-shift differentiation requires Variables)
-                res = self.func(*arg_vars, **kwargs)
+                res = self.func(*self.arg_vars, **kwargs)
             else:
                 # TODO: Maybe we should only convert the kwarg_vars that were actually given
-                res = self.func(*arg_vars, **kwarg_vars)
+                res = self.func(*self.arg_vars, **self.kwarg_vars)
+        except:
+            # If there was an error in the function call it could be that the parameters were corrupted
+            # In this case we wipe our Variable cache
+            self.arg_vars = None
+            self.kwarg_vars = None
+
+            raise
         finally:
             qml._current_context = None
 
