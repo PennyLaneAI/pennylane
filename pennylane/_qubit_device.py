@@ -102,7 +102,7 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    def execute(self, circuit):
+    def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
@@ -114,6 +114,10 @@ class QubitDevice(Device):
         * :meth:`~.generate_samples`
 
         * :meth:`~.probability`
+
+        Additional keyword arguments may be passed to the this method
+        that can be utilised by :meth:`apply`. An example would be passing
+        the `QNode` hash that can be used later for parametric comiplation.
 
         Args:
             circuit (~.CircuitGraph): circuit to execute on the device
@@ -127,7 +131,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, circuit.diagonalizing_gates)
+        self.apply(circuit.operations, circuit.diagonalizing_gates, **kwargs)
 
         # generate computational basis samples
         if (not self.analytic) or circuit.is_sampled:

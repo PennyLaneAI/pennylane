@@ -580,7 +580,7 @@ class BaseQNode:
         self.device.reset()
 
         if isinstance(self.device, qml.QubitDevice):
-            ret = self.device.execute(self.circuit)
+            ret = self.device.execute(self.circuit, hash=self.circuit.hash)
         else:
             ret = self.device.execute(
                 self.circuit.operations, self.circuit.observables, self.variable_deps

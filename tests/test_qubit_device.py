@@ -24,8 +24,10 @@ from pennylane.qnodes import QuantumFunctionError
 from pennylane import expval, var, sample
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.variable import Variable
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
+mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 # pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
 
@@ -98,6 +100,20 @@ def mock_qubit_device_with_paulis_and_methods(monkeypatch):
         m.setattr(QubitDevice, "apply", lambda self, x: None)
         yield QubitDevice()
 
+@pytest.fixture(scope="function")
+def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
+    """A mock instance of the abstract QubitDevice class that supports Paulis in its capabilities"""
+    with monkeypatch.context() as m:
+        m.setattr(QubitDevice, "__abstractmethods__", frozenset())
+        m.setattr(QubitDevice, "_capabilities", mock_qubit_device_capabilities)
+        m.setattr(QubitDevice, "operations", mock_qubit_device_paulis + mock_qubit_device_rotations)
+        m.setattr(QubitDevice, "observables", mock_qubit_device_paulis)
+        m.setattr(QubitDevice, "short_name", "MockDevice")
+        m.setattr(QubitDevice, "expval", lambda self, x: 0)
+        m.setattr(QubitDevice, "var", lambda self, x: 0)
+        m.setattr(QubitDevice, "sample", lambda self, x: 0)
+        m.setattr(QubitDevice, "apply", lambda self, x: None)
+        yield QubitDevice()
 
 class TestOperations:
     """Tests the logic related to operations"""
@@ -139,6 +155,29 @@ class TestOperations:
         assert isinstance(call_history[2], qml.PauliZ)
         assert call_history[2].wires == [2]
 
+    def test_op_queue_is_filled_during_execution(
+        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
+    ):
+        """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
+           op_queue raises no error"""
+        queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
+
+        observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
+
+        circuit_graph = CircuitGraph(queue + observables, {})
+
+        call_history = []
+
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, "apply", lambda self, x, y: call_history.extend(x + y))
+            mock_qubit_device_with_paulis_and_methods.execute(circuit_graph)
+
+        assert call_history == queue
+
+        assert len(call_history) == 3
+        assert isinstance(call_history[0], qml.PauliX)
+        assert call_history[0].wires == [0]
+
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
         queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
@@ -150,6 +189,44 @@ class TestOperations:
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             mock_qubit_device_with_paulis_and_methods.execute(circuit_graph)
 
+    numeric_queues = [
+                        [
+                            qml.RX(0.3, wires=[0])
+                        ],
+                        [
+                            qml.RX(0.3, wires=[0]),
+                            qml.RX(0.4, wires=[1]),
+                            qml.RX(0.5, wires=[2]),
+                        ]
+                     ]
+
+    variable = Variable(1)
+    symbolic_queue = [
+                        [qml.RX(variable, wires=[0])],
+                    ]
+
+
+    observables = [
+                    [qml.PauliZ(0)],
+                    [qml.PauliX(0)],
+                    [qml.PauliY(0)]
+                 ]
+
+    @pytest.mark.parametrize("observables", observables)
+    @pytest.mark.parametrize("queue", numeric_queues + symbolic_queue)
+    def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods, monkeypatch, queue, observables):
+        """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
+        method"""
+        circuit_graph = CircuitGraph(queue + observables, {})
+
+        call_history = {}
+
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, "apply", lambda self, x, y, **kwargs: call_history.update(kwargs))
+            mock_qubit_device_with_paulis_rotations_and_methods.execute(circuit_graph, hash=circuit_graph.hash)
+
+        len(call_history.items()) == 1
+        call_history["hash"] = circuit_graph.hash
 
 class TestObservables:
     """Tests the logic related to observables"""
