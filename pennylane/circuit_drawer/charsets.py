@@ -22,19 +22,70 @@ class CharSet(abc.ABC):
 
     # pylint: disable=too-few-public-methods
 
-    WIRE = None
-    MEASUREMENT = None
-    TOP_MULTI_LINE_GATE_CONNECTOR = None
-    MIDDLE_MULTI_LINE_GATE_CONNECTOR = None
-    BOTTOM_MULTI_LINE_GATE_CONNECTOR = None
-    EMPTY_MULTI_LINE_GATE_CONNECTOR = None
-    CONTROL = None
-    LANGLE = None
-    RANGLE = None
-    VERTICAL_LINE = None
-    CROSSED_LINES = None
-    PIPE = None
-    OTIMES = None
+    @property
+    @abc.abstractmethod
+    def WIRE(self):
+        """The string used to represent a wire."""
+
+    @property
+    @abc.abstractmethod
+    def MEASUREMENT(self):
+        """The string used to represent a measurement at the end of a circuit."""
+
+    @property
+    @abc.abstractmethod
+    def TOP_MULTI_LINE_GATE_CONNECTOR(self):
+        """The string used to connect to the topmost wire of a multi-wire gate."""
+
+    @property
+    @abc.abstractmethod
+    def MIDDLE_MULTI_LINE_GATE_CONNECTOR(self):
+        """The string used to connect to the a wire of a multi-wire gate that is neither topmost nor bottommost."""
+
+    @property
+    @abc.abstractmethod
+    def BOTTOM_MULTI_LINE_GATE_CONNECTOR(self):
+        """The string used to connect to the bottommost wire of a multi-wire gate."""
+
+    @property
+    @abc.abstractmethod
+    def EMPTY_MULTI_LINE_GATE_CONNECTOR(self):
+        """The string used to symbolize unaffected wires when connecting multi-wire gates."""
+
+    @property
+    @abc.abstractmethod
+    def CONTROL(self):
+        """The string used to represent the controlling wires of an operation."""
+
+    @property
+    @abc.abstractmethod
+    def LANGLE(self):
+        """The string used to represent a left angle bracket."""
+
+    @property
+    @abc.abstractmethod
+    def RANGLE(self):
+        """The string used to represent a right angle bracket."""
+
+    @property
+    @abc.abstractmethod
+    def VERTICAL_LINE(self):
+        """The string used to represent a vertical line."""
+
+    @property
+    @abc.abstractmethod
+    def CROSSED_LINES(self):
+        """The string used to represent crossed lines."""
+
+    @property
+    @abc.abstractmethod
+    def PIPE(self):
+        """The string used to represent a vertical line of text height."""
+
+    @property
+    @abc.abstractmethod
+    def OTIMES(self):
+        """The string used to represent a tensor product operation."""
 
     @staticmethod
     @abc.abstractmethod
