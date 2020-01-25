@@ -55,6 +55,14 @@ class TestFunctions:
 class TestGrid:
     """Test the Grid helper class."""
 
+    def test_empty_init(self):
+        """Test that the Grid class is initialized correctly when no raw_grid is given."""
+        grid = Grid()
+
+        assert grid.num_layers == 0
+        assert grid.num_wires == 0
+        assert grid.raw_grid is None
+
     def test_init(self):
         """Test that the Grid class is initialized correctly."""
 
