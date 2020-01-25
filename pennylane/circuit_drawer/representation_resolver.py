@@ -28,6 +28,7 @@ class RepresentationResolver:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
+
     def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
         self.charset = charset
         self.show_variable_names = show_variable_names
