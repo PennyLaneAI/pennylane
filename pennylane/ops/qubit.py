@@ -16,7 +16,6 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -1111,8 +1110,8 @@ class Hermitian(Observable):
         return A
 
     @property
-    def eigendecomposition_of_permuted(self):
-        """Return the eigendecomposition of the (permuted) matrix specified by the Hermitian observable.
+    def eigendecomposition(self):
+        """Return the eigendecomposition of the matrix specified by the Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -1122,10 +1121,7 @@ class Hermitian(Observable):
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(self.wires))))
-        perm = np.ravel_multi_index(basis_states[:, np.argsort(np.argsort(self.wires))].T, [2] * len(self.wires))
-
-        Hmat = self.matrix[:, perm][perm]
+        Hmat = self.matrix
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
@@ -1144,7 +1140,7 @@ class Hermitian(Observable):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        return self.eigendecomposition_of_permuted["eigval"]
+        return self.eigendecomposition["eigval"]
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -1157,7 +1153,7 @@ class Hermitian(Observable):
             list: list containing the gates diagonalizing the Hermitian observable
         """
         return [
-            QubitUnitary(self.eigendecomposition_of_permuted["eigvec"].conj().T, wires=list(sorted(self.wires))),
+            QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires)),
         ]
 
 
