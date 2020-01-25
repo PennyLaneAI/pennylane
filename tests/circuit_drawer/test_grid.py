@@ -230,3 +230,11 @@ class TestGrid:
         grid = Grid(raw_grid)
 
         assert str(grid) == "[0 3]\n[1 4]\n[2 5]\n"
+
+    def test_replace_error_message(self):
+        """Test that an exception is raised when replacing layers in
+        an uninitialized Grid is attempted."""
+        grid = Grid()
+
+        with pytest.raises(AttributeError, match="Can't replace layer. The Grid has not yet been initialized."):
+            grid.replace_layer(1, [1, 2, 3])

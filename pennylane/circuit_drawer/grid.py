@@ -43,14 +43,16 @@ class Grid:
     """
 
     def __init__(self, raw_grid=None):
-        # Let initialization pend until first data is entered
         if raw_grid is None:
+            # Let initialization pend until first data is entered
             self.raw_grid = None
         else:
             self.raw_grid = np.array(raw_grid, dtype=object)
 
     def insert_layer(self, idx, layer):
         """Insert a layer into the Grid at the specified index.
+
+        If the Grid is empty, the index is ignored and the layer inserted.
 
         Args:
             idx (int): Index at which to insert the new layer
@@ -83,12 +85,17 @@ class Grid:
             idx (int): Index of the layer to be replaced
             layer (list): Layer that replaces the old layer
         """
-        self.raw_grid[:, idx] = np.array(layer, dtype=object)
+        if self.raw_grid is not None:
+            self.raw_grid[:, idx] = np.array(layer, dtype=object)
+        else:
+            raise AttributeError("Can't replace layer. The Grid has not yet been initialized.")
 
         return self
 
     def insert_wire(self, idx, wire):
         """Insert a wire into the Grid at the specified index.
+
+        If the Grid is empty, the index is ignored and the wire inserted.
 
         Args:
             idx (int): Index at which to insert the new wire
