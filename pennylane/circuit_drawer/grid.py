@@ -34,10 +34,6 @@ class Grid:
     The rows of the Grid are referred to as "wires",
     whereas the columns of the Grid are reffered to as "layers".
 
-    Simultaneous access to both layers and wires via indexing is provided
-    by keeping both the raw grid (wires are indexed) and the transposed raw grid
-    (layers are indexed).
-
     Args:
         raw_grid (list, optional): Raw grid from which the Grid instance is built.
     """
