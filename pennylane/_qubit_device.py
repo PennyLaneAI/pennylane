@@ -117,7 +117,7 @@ class QubitDevice(Device):
 
         Additional keyword arguments may be passed to the this method
         that can be utilised by :meth:`apply`. An example would be passing
-        the `QNode` hash that can be used later for parametric comiplation.
+        the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
             circuit (~.CircuitGraph): circuit to execute on the device
