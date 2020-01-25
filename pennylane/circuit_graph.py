@@ -379,7 +379,7 @@ class CircuitGraph:
     def greedy_layers(self):
         """Greedily collected layers of the circuit. Empty slots are filled with ``None``.
 
-        Layers are built by pushing back gates in the circuit as far as possible, so that 
+        Layers are built by pushing back gates in the circuit as far as possible, so that
         every Gate is at the lower possible layer.
 
         Returns:

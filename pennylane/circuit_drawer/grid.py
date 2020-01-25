@@ -127,8 +127,8 @@ class Grid:
         """
         if self.raw_grid is not None:
             return self.raw_grid.shape[1]
-        else:
-            return 0
+
+        return 0
 
     def layer(self, idx):
         """Return the layer at the specified index.
@@ -150,8 +150,8 @@ class Grid:
         """
         if self.raw_grid is not None:
             return self.raw_grid.shape[0]
-        else:
-            return 0
+
+        return 0
 
     def wire(self, idx):
         """Return the wire at the specified index.
