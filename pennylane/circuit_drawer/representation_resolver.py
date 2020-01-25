@@ -136,7 +136,15 @@ class RepresentationResolver:
 
     @staticmethod
     def _format_poly_term(coefficient, variable):
-        """Format a term of a polynomial."""
+        """Format a term in a polynomial.
+
+        Args:
+            coefficient (float): The polynomial term's coefficient
+            variable (str): The polynomial term's variable
+
+        Returns:
+            str: The formatted term
+        """
         if coefficient == 0:
             return ""
 
@@ -152,10 +160,10 @@ class RepresentationResolver:
         """Format a polynomial of x and p operators.
 
         Theses operators appear as observables in CV quantum computing.
-        
+
         Args:
             operation (~.PolyXP): The PolyXP observable that shall be formatted.
-        
+
         Returns:
             str: A string representing the polynomial
         """
