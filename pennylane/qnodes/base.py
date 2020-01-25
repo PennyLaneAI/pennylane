@@ -405,12 +405,12 @@ class BaseQNode:
 
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-            qfunc(3.4, [1.2, 3.4, 5.6])
-
         In this example, ``_make_variables`` will return the following :class:`~.variable.Variable` instances
 
         .. code-block:: python3
 
+            >>> qfunc(3.4, [1.2, 3.4, 5.6])
+            -0.031664133410566786
             >>> qfunc._make_variables([3.4, [1.2, 3.4, 5.6]], {})
             ["a", ["w[0]", "w[1]", "w[2]"]], {}
 
