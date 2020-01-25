@@ -122,6 +122,9 @@ class QubitDevice(Device):
         Args:
             circuit (~.CircuitGraph): circuit to execute on the device
 
+        Keyword args:
+            hash: the hash value of the circuit constructed by `CircuitGraph.hash`
+
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 
