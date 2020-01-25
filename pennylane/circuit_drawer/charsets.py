@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the different charsets supported by PennyLane's CircuitDrawer.
+This module contains the different character set classes supported by PennyLane's CircuitDrawer.
 """
 import abc
 
