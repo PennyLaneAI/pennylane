@@ -119,6 +119,16 @@ class RepresentationResolver:
 
     @staticmethod
     def _format_matrix_operation(operation, symbol, cache):
+        """Format an operation that corresponds to a single matrix.
+
+        Args:
+            operation (~.Operation): Operation that shall be formatted
+            symbol (str): The symbol that should be used to identify matrices
+            cache (List[numpy.ndarray]): The cache of already known matrices
+
+        Returns:
+            str: The formatted operation
+        """
         mat = operation.params[0]
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
