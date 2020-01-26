@@ -256,7 +256,7 @@ class QubitDevice(Device):
 
         ``self._samples`` has the shape ``(dev.shots, dev.num_wires)``.
 
-        Note that PennyLane uses the convention :math:`|q_0,q_1\dots,q_{N-1}\rangle` where
+        Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
         :math:`q_0` is the most significant bit.
 
         .. warning::
@@ -315,11 +315,11 @@ class QubitDevice(Device):
 
     @abc.abstractmethod
     def probability(self, wires=None):
-        r"""Return the (:meth:`marginal <marginal_prob>`) probability of each computational basis
+        r"""Return the (marginal) probability of each computational basis
         state from the last run of the device.
 
         PennyLane uses the convention
-        :math:`|q_0,q_1\dots,q_{N-1}\rangle` where :math:`q_0` is the most
+        :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where :math:`q_0` is the most
         significant bit.
 
         If no wires are specified, then all the basis states representable by
