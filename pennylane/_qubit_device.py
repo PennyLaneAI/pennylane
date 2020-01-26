@@ -133,6 +133,8 @@ class QubitDevice(Device):
         """
         self.check_validity(circuit.operations, circuit.observables)
 
+        self._circuit_hash = kwargs.pop("hash", None)
+
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
@@ -292,6 +294,14 @@ class QubitDevice(Device):
         powers_of_two = 1 << np.arange(num_wires)
         states_sampled_base_ten = samples[:, None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(int)[:, ::-1]
+
+    @property
+    def circuit_hash(self):
+        """The hash of the circuit upon the last execution.
+
+        This can be used by devices in :meth:`apply` for parametric compilation.
+        """
+        return self._circuit_hash
 
     @property
     def state(self):
