@@ -59,11 +59,6 @@ and subclassing it:
         version = '0.0.1'
         author = 'Ada Lovelace'
 
-.. warning::
-
-    The original :class:`~.Device` class has been **deprecated**, and all new plugin devices
-    should instead subclass :class:`~.QubitDevice`.
-
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
 
@@ -85,10 +80,10 @@ and use the device. These include:
 Defining all these attributes is mandatory.
 
 
-Supporting operators and observables
-------------------------------------
+Supporting operations
+---------------------
 
-You must further tell PennyLane about the operations and observables that your device supports
+You must further tell PennyLane about the operations that your device supports
 as well as potential further capabilities, by providing the following class attributes/properties:
 
 * :attr:`.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
@@ -97,35 +92,79 @@ as well as potential further capabilities, by providing the following class attr
 
     operations = {"CNOT", "PauliX"}
 
-  This is used to decide whether an operation is supported by your device in the
-  default implementation of the public method :meth:`.Device.supports_operation`.
-
-* :attr:`.Device.observables`: set of the supported PennyLane observables as strings, e.g.,
-
-  .. code-block:: python
-
-    observables = {"PauliX", "PauliZ", "Hadamard", "Hermitian"}
-
-  This is used to decide whether an observable is supported by your device in the
-  default implementation of the public method :meth:`.Device.supports_observable`.
+  See :doc:`/introduction/operations` for a full list of operations
+  supported by PennyLane.
 
 * :attr:`.Device._capabilities`: a dictionary containing information about the capabilities of
   the device. Keys currently supported include:
 
   * ``'model'`` (*str*): either ``'qubit'`` or ``'CV'``.
 
-  * ``'tensor_observables'`` (*bool*): ``True`` if the device supports measuring tensor products
-    of observables, ``False`` otherwise.
+  * ``"inverse_operations"`` (*bool*): ``True`` if the device supports
+    applying the inverse of operations. Operations which should be inverted
+    have ``operation.inverse == True``.
 
 .. note::
 
-    When writing a plugin device for PennyLane, make sure that your plugin
-    supports as many of the PennyLane built-in operations as possible.
+    If your device does not natively support an operation that has the
+    :meth:`~.Operation.decomposition` static method defined, PennyLane will
+    attempt to decompose the operation before calling the device. For example,
+    the :class:`~.Rot` `decomposition method <../_modules/pennylane/ops/qubit.html#Rot.decomposition>`_ will
+    decompose the single-qubit rotation gate to :class:`~.RZ` and :class:`~.RY` gates.
+
+
+.. note::
 
     If the convention differs between the built-in PennyLane operation
     and the corresponding operation in the targeted framework, ensure that the
     conversion between the two conventions takes place automatically
     by the plugin device.
+
+Adding arguments
+----------------
+
+Defining the ``__init__.py`` method of a custom device is not necessary; by default,
+the :class:`~.QubitDevice` initialization will be called, where the user can pass the
+following arguments:
+
+* ``wires`` (*int*): the number of wires on the device.
+
+* ``shots=1000`` (*int*): number of circuit evaluations/random samples used to estimate
+  expectation values of observables in non-analytic mode.
+
+* ``analytic=True`` (*bool*): If ``True``, the device calculates probability, expectation
+  values, and variances analytically. If ``False``, a finite number of samples
+  are used to estimate these quantities.
+
+To add your own device arguments, or to override any of the above defaults, simply
+overwrite the ``__init__.py`` method. For example, consider a device where the number
+of wires is fixed to ``12``, cannot be used in analytic mode, and can accept a dictionary
+of low-level hardware control options:
+
+.. code-block:: python3
+
+    class CustomDevice(QubitDevice):
+        name = 'My custom device'
+        short_name = 'example.mydevice'
+        pennylane_requires = '0.1.0'
+        version = '0.0.1'
+        author = 'Ada Lovelace'
+
+        operations = {"PauliX", "RX", "CNOT"}
+        observables = {"PauliZ", "PauliX", "PauliY"}
+
+    def __init__(self, shots=1024, hardware_options=None):
+        super().__init__(wires=24, shots=shots, analytic=False)
+        self.hardware_options = hardware_options or hardware_defaults
+
+Note that we have also overridden the default shot number.
+
+The user can now pass any of these arguments to the PennyLane device loader:
+
+>>> dev = qml.device("example.mydevice", hardware_options={"t2": 0.1})
+>>> dev.hardware_options
+{"t2": 0.1}
+
 
 Device execution
 ----------------
@@ -151,18 +190,22 @@ after execution, you need to overwrite the following method:
 
     generate_samples
 
-And thats it! The device has inherited :class:`~.QubitDevice.expval`, :class:`~.QubitDevice.var`,
-and :class:`~.QubitDevice.sample` methods, that accepts an observable (or tensor product of
+Note that ``self._samples`` has the shape ``(dev.shots, dev.num_wires)``.
+Furthermore, PennyLane uses the convention :math:`|q_0,q_1\dots,q_{N-1}\rangle` where
+:math:`q_0` is the most significant bit.
+
+And thats it! The device has inherited :meth:`~.QubitDevice.expval`, :meth:`~.QubitDevice.var`,
+and :meth:`~.QubitDevice.sample` methods, that accepts an observable (or tensor product of
 observables) and returns the corresponding measurement statistic.
 
 
-Advanced execution control
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:html:`<div class="caution admonition" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content1" class="collapsed"><p class="first admonition-title">Advanced execution control (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content1" class="collapse" data-parent="#aside1" style="height: 0px;">`
 
 Additional flexibility is sometimes required for interfacing with more
 complicated frameworks.
 
-When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.Device.execute` method of
+When PennyLane needs to evaluate a QNode, it accesses the :meth:`~.QubitDevice.execute` method of
 your plugin, which, by default performs the following process:
 
 .. code-block:: python
@@ -170,10 +213,7 @@ your plugin, which, by default performs the following process:
     self.check_validity(circuit.operations, circuit.observables)
 
     # apply all circuit operations
-    self.apply(circuit.operations, circuit.diagonalizing_gates)
-
-    # determine the wires that are measured by the circuit
-    self._wires_measured = QubitDevice.active_wires(circuit.observables)
+    self.apply(circuit.operations, rotations=circuit.diagonalizing_gates)
 
     # generate computational basis samples
     if (not self.analytic) or circuit.is_sampled:
@@ -198,15 +238,17 @@ where
   gates that rotate the circuit prior to measurement so that computational basis
   measurements are performed in the eigenbasis of the requested observables
 
-* :meth:`~.QubitDevice.active_wires` is a static method that accepts a list containing
-  :class:`~.Operator` objects, and returns the wires that are acted on.
+* :meth:`.QubitDevice.statistics` returns the results of :meth:`.QubitDevice.expval`,
+  :meth:`~.QubitDevice.var`, or :meth:`~.QubitDevice.sample` depending on the type
+  of observable.
 
-
-In advanced cases, the :meth:`.Device.execute` method may be overwritten directly.
+In advanced cases, the :meth:`.QubitDevice.execute` method, as well as
+:meth:`.QubitDevice.statistics`, may be overwritten directly.
 This provides full flexibility for handling the device execution yourself. However,
-this may have unintended side-effects and is not recommended — if possible, try implementing
-a suitable subset of the methods provided above.
+this may have unintended side-effects and is not recommended.
 
+
+:html:`</div></div>`
 
 .. _installing_plugin:
 
@@ -224,14 +266,9 @@ which allows the device to be initialized in the following way:
     dev1 = qml.device(short_name, wires=2)
 
 where ``short_name`` is a string that uniquely identifies the device. The ``short_name``
-has the following form: ``pluginname.devicename``. Examples include ``'default.qubit'``
-and ``'default.gaussian'`` which are provided as reference plugins by PennyLane, as well as
-``'strawberryfields.fock'``, ``'strawberryfields.gaussian'``, ``'qiskit.ibmq'``, and
-``'qiskit.aer'``, which are provided by the
-`PennyLane StrawberryFields <https://github.com/XanaduAI/pennylane-sf>`_ and
-`PennyLane Qiskit <https://github.com/XanaduAI/pennylane-qiskit>`_ plugins, respectively.
+should have the form ``pluginname.devicename``, using periods for delimitation.
 
-PennyLane uses a ``setuptools`` ``entry_points`` approach to plugin discovery/integration.
+PennyLane uses a setuptools ``entry_points`` approach to plugin discovery/integration.
 In order to make the devices of your plugin accessible to PennyLane, simply provide the
 following keyword argument to the ``setup()`` function in your ``setup.py`` file:
 
@@ -243,14 +280,17 @@ following keyword argument to the ``setup()`` function in your ``setup.py`` file
         ],
     setup(entry_points={'pennylane.plugins': devices_list})
 
-where ``devices_list`` is a list of devices you would like to register, ``example.mydevice1``
-is the short name of the device, and ``MyModule.MySubModule`` is the path to your Device class,
-``MyDevice1``.
+where
+
+* ``devices_list`` is a list of devices you would like to register,
+
+* ``example.mydevice1`` is the short name of the device, and
+
+* ``MyModule.MySubModule`` is the path to your Device class, ``MyDevice1``.
 
 To ensure your device is working as expected, you can install it in developer mode using
 ``pip install -e pluginpath``, where ``pluginpath`` is the location of the plugin. It will
 then be accessible via PennyLane.
-
 
 Testing
 -------
@@ -290,7 +330,15 @@ acts on. For example, to define a custom gate depending on parameter :math:`\phi
 
         @staticmethod
         def _matrix(*params):
+            """Returns the matrix representation of the operator for the
+            provided parameter values, in the computational basis."""
             return np.array([[params[0], 1], [1, -params[1]]]) / np.sqrt(2)
+
+        @staticmethod
+        def decomposition(*params, wires):
+            """(Optional) Returns a list of PennyLane operations that decompose
+            the custom gate."""
+            return [qml.RZ(params[0]/2, wires=wires[0]), qml.PauliX(params[1], wires=wires[0])]
 
 where
 
@@ -323,11 +371,8 @@ where
   which is the simple expectation value of the operator :math:`\hat{B}` evolved via the gate
   :math:`O(\phi_k)`.
 
-* :meth:`~.Operation._matrix`: returns the matrix representation of the operator for the
-  provided parameter values, in the computational basis.
-
-Note that if ``grad_recipe = None``, the default gradient recipe is
-:math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
+  Note that if ``grad_recipe = None``, the default gradient recipe is
+  :math:`(c_k, s_k)=(1/2, \pi/2)` for every parameter.
 
 The user can then import this operation directly from your plugin, and use it when defining a QNode:
 
@@ -339,13 +384,13 @@ The user can then import this operation directly from your plugin, and use it wh
     @qnode(dev1)
     def my_qfunc(phi):
         qml.Hadamard(wires=0)
-        CustomGate(phi, wires=[0,1])
+        CustomGate(phi, theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
 .. warning::
 
     If you are providing custom operations not natively supported by PennyLane, it is recommended
-    that the plugin unittests **do** provide tests to ensure that PennyLane returns the correct
+    that the plugin unit tests **do** provide tests to ensure that PennyLane returns the correct
     gradient for the custom operations.
 
 Supporting new observables
@@ -384,7 +429,7 @@ For example:
 
 
 Supporting new CV operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------
 
 For custom continuous-variable operations or observables, the :class:`~.CVOperation` or
 :class:`~.CVObservable` classes must be subclassed instead.
