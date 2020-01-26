@@ -520,10 +520,10 @@ class QNodeCollection(Sequence):
             list: the results from each QNode
         """
         results = []
-        _async = kwargs.pop("parallel", False)
+        parallel = kwargs.pop("parallel", False)
         _scheduler = kwargs.pop("scheduler", "threads")
 
-        if _async:
+        if parallel:
             try:
                 import dask
             except:
