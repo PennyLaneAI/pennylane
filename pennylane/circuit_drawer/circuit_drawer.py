@@ -117,6 +117,16 @@ class CircuitDrawer:
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def make_wire_conversion_dicts(self, raw_operation_grid, raw_observable_grid):
+        """Prepare the dictionaries used to convert between internal and device wires.
+
+        This conversion is necessary due to the fact that the circuit drawer internally uses
+        ascending wires that have to be matched to the actual wires of the Operations inside
+        the circuit.
+
+        Args:
+            raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
+            raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
+        """
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(qml.utils._flatten(raw_observable_grid))
         all_wires = [op.wires for op in all_operators if op is not None]
         device_wires = sorted(set(qml.utils._flatten(all_wires)))
@@ -126,12 +136,28 @@ class CircuitDrawer:
         self._internal_wire_to_device_wire = dict(zip(internal_wires, device_wires))
 
     def device_wires_to_internal_wires(self, wires):
+        """Convert one or multiple device wires to internal wires.
+
+        Args:
+            wires (Union[Iterable[int],int]): One or multiple device wires
+
+        Returns:
+            Union[Iterable[int],int]: The corresponding internal wires
+        """
         if isinstance(wires, Iterable):
             return [self._device_wire_to_internal_wire[wire] for wire in wires]
 
         return self._device_wire_to_internal_wire[wires]
 
     def internal_wires_to_device_wires(self, wires):
+        """Convert one or multiple internal wires to device wires.
+
+        Args:
+            wires (Union[Iterable[int],int]): One or multiple internal wires
+
+        Returns:
+            Union[Iterable[int],int]: The corresponding device wires
+        """
         if isinstance(wires, Iterable):
             return [self._internal_wire_to_device_wire[wire] for wire in wires]
 
