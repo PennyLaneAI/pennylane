@@ -183,8 +183,12 @@ To execute operations on the device, the following methods **must** be defined:
     probability
 
 (Click the name of each method to see more details and examples). The :class:`~.QubitDevice` class
-provides the methods :meth:`~.QubitDevice.active_wires` and
-:meth:`~.QubitDevice.marginal_prob` for convenience.
+provides the following convenience methods that may be used by the plugin:
+
+.. autosummary::
+
+    active_wires
+    marginal_prob
 
 In addition, if your device generates its own computational basis samples for measured modes
 after execution, you need to overwrite the following method:
