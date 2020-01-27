@@ -153,9 +153,9 @@ of low-level hardware control options:
         operations = {"PauliX", "RX", "CNOT"}
         observables = {"PauliZ", "PauliX", "PauliY"}
 
-    def __init__(self, shots=1024, hardware_options=None):
-        super().__init__(wires=24, shots=shots, analytic=False)
-        self.hardware_options = hardware_options or hardware_defaults
+            def __init__(self, shots=1024, hardware_options=None):
+                super().__init__(wires=24, shots=shots, analytic=False)
+                self.hardware_options = hardware_options or hardware_defaults
 
 Note that we have also overridden the default shot number.
 
