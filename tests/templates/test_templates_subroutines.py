@@ -19,7 +19,7 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.layers import (Interferometer)
+from pennylane.templates.subroutines import Interferometer
 
 
 class TestInterferometer:
