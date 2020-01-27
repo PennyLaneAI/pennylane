@@ -3,8 +3,8 @@
 
 .. _plugin_overview:
 
-Plugins and operations
-======================
+Building a plugin
+=================
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the
 automatic differentiation ability of PennyLane, is a simple and easy process. In this section,
