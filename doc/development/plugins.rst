@@ -134,7 +134,8 @@ following arguments:
 
 * ``analytic=True`` (*bool*): If ``True``, the device calculates probability, expectation
   values, and variances analytically. If ``False``, a finite number of samples
-  are used to estimate these quantities.
+  are used to estimate these quantities. Note that hardware devices should always set
+  ``analytic=False``.
 
 To add your own device arguments, or to override any of the above defaults, simply
 overwrite the ``__init__.py`` method. For example, consider a device where the number
