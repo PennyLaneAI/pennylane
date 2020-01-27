@@ -19,8 +19,8 @@ as circuit diagrams.
 .. autosummary::
     :toctree: api
 
-    default_qubit
-    default_gaussian
+    circuit_drawer
+    charsets
 """
 from .circuit_drawer import *
 from .charsets import *
