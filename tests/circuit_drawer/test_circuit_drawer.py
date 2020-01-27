@@ -154,25 +154,25 @@ class TestCircuitDrawer:
     )
 
     multiwire_and_single_wire_gate_grid = to_grid(
-        [[qml.Toffoli(wires=[0, 4, 5]), qml.PauliX(wires=[2]), qml.Hadamard(wires=[3])]], 6
+        [[qml.Toffoli(wires=[0, 3, 4]), qml.PauliX(wires=[1]), qml.Hadamard(wires=[2])]], 5
     )
     multiwire_and_single_wire_gate_representation_grid = Grid(
-        [["╭"], ["│"], ["│"], ["│"], ["├"], ["╰"]]
+        [["╭"], ["│"], ["│"], ["├"], ["╰"]]
     )
 
     all_wire_state_preparation_grid = to_grid(
-        [[qml.BasisState(np.array([0, 1, 0, 0, 1]), wires=[0, 1, 2, 3, 4, 5])]], 6
+        [[qml.BasisState(np.array([0, 1, 0, 0, 1, 1]), wires=[0, 1, 2, 3, 4, 5])]], 6
     )
     all_wire_state_preparation_representation_grid = Grid(
         [["╭"], ["├"], ["├"], ["├"], ["├"], ["╰"]]
     )
 
-    multiwire_gate_grid = to_grid([[qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[3, 4])]], 5)
+    multiwire_gate_grid = to_grid([[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 4])]], 5)
 
     multiwire_gate_representation_grid = Grid([["╭"], ["╰"], [""], ["╭"], ["╰"],])
 
     multi_and_single_wire_gate_grid = to_grid(
-        [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 5]), qml.Hadamard(6)]], 7
+        [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.PauliX(4), qml.CNOT(wires=[3, 5]), qml.Hadamard(6)]], 7
     )
 
     multi_and_single_wire_gate_representation_grid = Grid(
@@ -194,7 +194,7 @@ class TestCircuitDrawer:
     )
     def test_resolve_decorations(self, dummy_circuit_drawer, grid, target_representation_grid):
         """Test that decorations are properly resolved."""
-
+        dummy_circuit_drawer.make_wire_conversion_dicts(grid.raw_grid, [[]])
         representation_grid = Grid()
         dummy_circuit_drawer.resolve_decorations(grid, representation_grid)
 

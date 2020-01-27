@@ -14,7 +14,7 @@
 """
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 
 import pennylane as qml
 
@@ -60,7 +60,7 @@ class CircuitDrawer:
         self.charset = charset
         self.show_variable_names = show_variable_names
 
-        self.device_wire_to_internal_wire, self.internal_wire_to_device_wire = self.make_wire_conversion_dicts(raw_operation_grid, raw_observable_grid)
+        self.make_wire_conversion_dicts(raw_operation_grid, raw_observable_grid)
         self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
@@ -122,7 +122,20 @@ class CircuitDrawer:
         device_wires = sorted(set(qml.utils._flatten(all_wires)))
         internal_wires = list(range(len(device_wires)))
 
-        return dict(zip(device_wires, internal_wires)), dict(zip(internal_wires, device_wires))
+        self._device_wire_to_internal_wire = dict(zip(device_wires, internal_wires))
+        self._internal_wire_to_device_wire = dict(zip(internal_wires, device_wires))
+
+    def device_wires_to_internal_wires(self, wires):
+        if isinstance(wires, Iterable):
+            return [self._device_wire_to_internal_wire[wire] for wire in wires]
+
+        return self._device_wire_to_internal_wire[wires]
+
+    def internal_wires_to_device_wires(self, wires):
+        if isinstance(wires, Iterable):
+            return [self._internal_wire_to_device_wire[wire] for wire in wires]
+
+        return self._internal_wire_to_device_wire[wires]
 
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
@@ -136,25 +149,25 @@ class CircuitDrawer:
 
             for wire, operator in enumerate(grid.layer(i)):
                 representation_layer[wire] = self.representation_resolver.element_representation(
-                    operator, self.internal_wire_to_device_wire[wire]
+                    operator, self.internal_wires_to_device_wires(wire)
                 )
 
             representation_grid.append_layer(representation_layer)
 
-    def add_multi_wire_connectors_to_layer(self, wires, decoration_layer):
+    def add_multi_wire_connectors_to_layer(self, internal_wires, decoration_layer):
         """Add multi wire connectors for the given wires to a layer.
 
         Args:
-            wires (list[int]): The wires that are to be connected
+            internal_wires (list[int]): The internal wires that are to be connected
             decoration_layer (list[str]): The decoration layer to which the wires will be added
         """
-        min_wire = self.device_wire_to_internal_wire[min(wires)]
-        max_wire = self.device_wire_to_internal_wire[max(wires)]
+        min_wire = min(internal_wires)
+        max_wire = max(internal_wires)
 
         decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
 
         for k in range(min_wire + 1, max_wire):
-            if k in wires:
+            if k in internal_wires:
                 decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
             else:
                 decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
@@ -193,8 +206,9 @@ class CircuitDrawer:
                     wires = op.wires
 
                 if len(wires) > 1:
-                    min_wire = self.device_wire_to_internal_wire[min(wires)]
-                    max_wire = self.device_wire_to_internal_wire[max(wires)]
+                    internal_wires = self.device_wires_to_internal_wires(wires)
+                    min_wire = min(internal_wires)
+                    max_wire = max(internal_wires)
 
                     # If there is a conflict between decorations, we start a new decoration_layer
                     if any(
@@ -206,7 +220,7 @@ class CircuitDrawer:
 
                         decoration_layer = [""] * grid.num_wires
 
-                    self.add_multi_wire_connectors_to_layer(wires, decoration_layer)
+                    self.add_multi_wire_connectors_to_layer(internal_wires, decoration_layer)
 
             representation_grid.insert_layer(i + j, decoration_layer)
             inserted_indices.append(i + j)
@@ -313,7 +327,7 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            rendered_string += "{:2d}: {}".format(self.internal_wire_to_device_wire[i], 2 * self.charset.WIRE)
+            rendered_string += "{:2d}: {}".format(self.internal_wires_to_device_wires(i), 2 * self.charset.WIRE)
 
             for s in wire:
                 rendered_string += s
