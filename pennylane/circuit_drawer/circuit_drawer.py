@@ -38,7 +38,6 @@ def _remove_duplicates(input_list):
     """
     return list(OrderedDict.fromkeys(input_list))
 
-
 class CircuitDrawer:
     """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
 
@@ -61,6 +60,7 @@ class CircuitDrawer:
         self.charset = charset
         self.show_variable_names = show_variable_names
 
+        self.device_wire_to_internal_wire, self.internal_wire_to_device_wire = self.make_wire_conversion_dicts(raw_operation_grid, raw_observable_grid)
         self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
@@ -72,6 +72,11 @@ class CircuitDrawer:
         # Resolve operator names
         self.resolve_representation(self.operation_grid, self.operation_representation_grid)
         self.resolve_representation(self.observable_grid, self.observable_representation_grid)
+
+        print("device_wire_to_internal_wire = ", self.device_wire_to_internal_wire)
+        print("raw_operation_grid = ", raw_operation_grid)
+        print("self.operation_grid = ", self.operation_grid)
+        print("self.operation_representation_grid = ", self.operation_representation_grid)
 
         # Add multi-wire gate lines
         self.operation_decoration_indices = self.resolve_decorations(
@@ -116,6 +121,14 @@ class CircuitDrawer:
         self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
+    def make_wire_conversion_dicts(self, raw_operation_grid, raw_observable_grid):
+        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(qml.utils._flatten(raw_observable_grid))
+        all_wires = [op.wires for op in all_operators if op is not None]
+        device_wires = sorted(set(qml.utils._flatten(all_wires)))
+        internal_wires = list(range(len(device_wires)))
+
+        return dict(zip(device_wires, internal_wires)), dict(zip(internal_wires, device_wires))
+
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
 
@@ -128,7 +141,7 @@ class CircuitDrawer:
 
             for wire, operator in enumerate(grid.layer(i)):
                 representation_layer[wire] = self.representation_resolver.element_representation(
-                    operator, wire
+                    operator, self.internal_wire_to_device_wire[wire]
                 )
 
             representation_grid.append_layer(representation_layer)
@@ -140,8 +153,8 @@ class CircuitDrawer:
             wires (list[int]): The wires that are to be connected
             decoration_layer (list[str]): The decoration layer to which the wires will be added
         """
-        min_wire = min(wires)
-        max_wire = max(wires)
+        min_wire = self.device_wire_to_internal_wire[min(wires)]
+        max_wire = self.device_wire_to_internal_wire[max(wires)]
 
         decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
 
@@ -185,8 +198,8 @@ class CircuitDrawer:
                     wires = op.wires
 
                 if len(wires) > 1:
-                    min_wire = min(wires)
-                    max_wire = max(wires)
+                    min_wire = self.device_wire_to_internal_wire[min(wires)]
+                    max_wire = self.device_wire_to_internal_wire[max(wires)]
 
                     # If there is a conflict between decorations, we start a new decoration_layer
                     if any(
