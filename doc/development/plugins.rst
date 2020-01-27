@@ -182,7 +182,7 @@ To execute operations on the device, the following methods **must** be defined:
     apply
     probability
 
-(Click the name of each method to see more details and examples). The :class:`~.QubitDevice` class
+The :class:`~.QubitDevice` class
 provides the following convenience methods that may be used by the plugin:
 
 .. autosummary::
