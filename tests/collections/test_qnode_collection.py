@@ -123,7 +123,7 @@ class TestConstruction:
         with pytest.raises(ValueError, match="do not all use the same interface"):
             qc.extend(qnodes)
 
-    def test_extend_interface_mistmatch(self):
+    def test_extend_interface_mismatch(self):
         """Test that an error is returned if QNodes with a differing
         interface to the QNode collection are appended"""
         qc = qml.QNodeCollection()

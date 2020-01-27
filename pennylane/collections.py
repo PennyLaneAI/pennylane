@@ -444,7 +444,7 @@ class QNodeCollection(Sequence):
         >>> obs_list = [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, [qpu1, qpu2])
 
-        We can now creating some parameters and evaluate the collection:
+        We can now create some parameters and evaluate the collection:
 
         >>> params = qml.init.strong_ent_layers_normal(n_layers=4, n_wires=4)
         >>> qnodes(params)
@@ -472,7 +472,7 @@ class QNodeCollection(Sequence):
 
         You will find the best speedups when using asynchronous mode when QNodes are to
         be evaluated on external hardware devices or external simulators. **It is not
-        advised to use asynchronous mode with** ``default.qubit``**.**
+        advised at this point to use asynchronous mode with** ``default.qubit``**.**
     """
 
     def __init__(self, qnodes=None):
