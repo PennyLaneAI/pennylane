@@ -422,46 +422,15 @@ class QNodeCollection(Sequence):
     where the results from each QNode have been flattened and concatenated
     into a single one-dimensional list.
 
-    .. caution::
+    .. raw:: html
 
-        **Asynchronous evaluation**
+        <h2>Asynchronous evaluation</h2>
 
-        By default, the QNodes within the QNode cluster are executed sequentially.
+    .. warning::
 
-        However, experimental asynchronous support is now available using the
-        `Dask <https://dask.org/>`_ parallelism library. This can be activated
-        by passing the ``parallel=True`` keyword argument when evaluating the
-        QNodeCollection.
-
-        For example, let's create the following two QVM simulation devices:
-
-        >>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D")
-        >>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B")
-
-        We can create a collection of QNodes with different observables by mapping
-        an ansatz over these devices using :func:`~.map`:
-
-        >>> obs_list = [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, [qpu1, qpu2])
-
-        We can now create some parameters and evaluate the collection:
-
-        >>> params = qml.init.strong_ent_layers_normal(n_layers=4, n_wires=4)
-        >>> qnodes(params)
-        array([0.046875  , 0.93164062])
-
-        The above collection was executed sequentially. Executing it in parallel:
-
-        >>> qnodes(params, parallel=True)
-        array([0.0234375 , 0.92578125])
-
-        We can time both approaches from within IPython or a Jupyter notebook:
-
-        >>> %timeit qnodes(params)
-        5.16 s ± 162 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
-        >>> %timeit qnodes(params, parallel=True)
-        2.99 s ± 40.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
-
+        You will find the best speedups when using asynchronous mode when QNodes are to
+        be evaluated on external hardware devices or external simulators. **It is not
+        advised at this point to use asynchronous mode with** ``default.qubit`` **.**
 
     .. warning::
 
@@ -470,9 +439,41 @@ class QNodeCollection(Sequence):
         and gradient computation is limited to Autograd and PyTorch. **Quantum gradients
         using TensorFlow in asynchronous mode is currently not supported**.
 
-        You will find the best speedups when using asynchronous mode when QNodes are to
-        be evaluated on external hardware devices or external simulators. **It is not
-        advised at this point to use asynchronous mode with** ``default.qubit``**.**
+    By default, the QNodes within the QNode cluster are executed sequentially.
+
+    However, experimental asynchronous support is now available using the
+    `Dask <https://dask.org/>`_ parallelism library. This can be activated
+    by passing the ``parallel=True`` keyword argument when evaluating the
+    QNodeCollection.
+
+    For example, let's create the following two QVM simulation devices:
+
+    >>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D")
+    >>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B")
+
+    We can create a collection of QNodes with different observables by mapping
+    an ansatz over these devices using :func:`~.map`:
+
+    >>> obs_list = [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+    >>> qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, [qpu1, qpu2])
+
+    We can now create some parameters and evaluate the collection:
+
+    >>> params = qml.init.strong_ent_layers_normal(n_layers=4, n_wires=4)
+    >>> qnodes(params)
+    array([0.046875  , 0.93164062])
+
+    The above collection was executed sequentially. Executing it in parallel:
+
+    >>> qnodes(params, parallel=True)
+    array([0.0234375 , 0.92578125])
+
+    We can time both approaches from within IPython or a Jupyter notebook:
+
+    >>> %timeit qnodes(params)
+    5.16 s ± 162 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+    >>> %timeit qnodes(params, parallel=True)
+    2.99 s ± 40.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
     """
 
     def __init__(self, qnodes=None):
