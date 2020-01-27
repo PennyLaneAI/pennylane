@@ -100,9 +100,9 @@ as well as potential further capabilities, by providing the following class attr
 
   * ``'model'`` (*str*): either ``'qubit'`` or ``'CV'``.
 
-  * ``"inverse_operations"`` (*bool*): ``True`` if the device supports
+  * ``'inverse_operations'`` (*bool*): ``True`` if the device supports
     applying the inverse of operations. Operations which should be inverted
-    have ``operation.inverse == True``.
+    have the property ``operation.inverse == True``.
 
 .. note::
 
@@ -138,7 +138,7 @@ following arguments:
 
 To add your own device arguments, or to override any of the above defaults, simply
 overwrite the ``__init__.py`` method. For example, consider a device where the number
-of wires is fixed to ``12``, cannot be used in analytic mode, and can accept a dictionary
+of wires is fixed to ``24``, cannot be used in analytic mode, and can accept a dictionary
 of low-level hardware control options:
 
 .. code-block:: python3
