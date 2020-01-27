@@ -436,7 +436,7 @@ class QNodeCollection(Sequence):
         For example, let's create the following two QVM simulation devices:
 
         >>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D", shots=1000)
-        >>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B", shots=1000)
+        >>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B")
 
         We can create a collection of QNodes with different observables by mapping
         an ansatz over these devices using :func:`~.map`:
