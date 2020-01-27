@@ -190,7 +190,7 @@ provides the following convenience methods that may be used by the plugin:
     active_wires
     marginal_prob
 
-In addition, if your device generates its own computational basis samples for measured modes
+In addition, if your qubit device generates its own computational basis samples for measured modes
 after execution, you need to overwrite the following method:
 
 .. autosummary::
