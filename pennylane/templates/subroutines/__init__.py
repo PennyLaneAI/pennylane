@@ -16,7 +16,7 @@ Subroutines are the most basic template, consisting of a collection of quantum o
 to layers and embeddings, subroutines do not encode features, and they have no native option to be applied
 repeatedly.
 """
-from.interferometer import Interferometer
+from .interferometer import Interferometer
 
 subroutines = {"Interferometer"}
 
