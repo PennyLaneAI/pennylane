@@ -56,11 +56,12 @@ class CircuitDrawer:
         charset=UnicodeCharSet,
         show_variable_names=False,
     ):
-        self.charset = charset
-        self.show_variable_names = show_variable_names
-        self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
+        self.charset = charset
+        self.show_variable_names = show_variable_names
+        
+        self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []
