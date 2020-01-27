@@ -73,11 +73,6 @@ class CircuitDrawer:
         self.resolve_representation(self.operation_grid, self.operation_representation_grid)
         self.resolve_representation(self.observable_grid, self.observable_representation_grid)
 
-        print("device_wire_to_internal_wire = ", self.device_wire_to_internal_wire)
-        print("raw_operation_grid = ", raw_operation_grid)
-        print("self.operation_grid = ", self.operation_grid)
-        print("self.operation_representation_grid = ", self.operation_representation_grid)
-
         # Add multi-wire gate lines
         self.operation_decoration_indices = self.resolve_decorations(
             self.operation_grid, self.operation_representation_grid,
@@ -318,7 +313,7 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            rendered_string += "{:2d}: {}".format(i, 2 * self.charset.WIRE)
+            rendered_string += "{:2d}: {}".format(self.internal_wire_to_device_wire[i], 2 * self.charset.WIRE)
 
             for s in wire:
                 rendered_string += s

@@ -228,9 +228,6 @@ class TestCircuitDrawer:
         operator_grid = grid.copy()
         dummy_circuit_drawer.move_multi_wire_gates(operator_grid)
 
-        print(operator_grid)
-        print(target_grid)
-
         assert_nested_lists_equal(operator_grid.raw_grid, target_grid.raw_grid)
 
 
