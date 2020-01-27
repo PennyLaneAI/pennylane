@@ -127,6 +127,7 @@ class CircuitDrawer:
             raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
             raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
         """
+        # pylint: disable=protected-access
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(qml.utils._flatten(raw_observable_grid))
         all_wires = [op.wires for op in all_operators if op is not None]
         device_wires = sorted(set(qml.utils._flatten(all_wires)))
