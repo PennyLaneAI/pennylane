@@ -176,38 +176,41 @@ class RepresentationResolver:
 
         return "{:+.3g}{}".format(coefficient, variable)
 
-    def _format_polyxp(self, operation):
-        """Format a polynomial of x and p operators.
-
-        Theses operators appear as observables in CV quantum computing.
+    def _format_polyxp_order1(self, coefficients):
+        """Format a first-order polynmomial of x and p operators.
 
         Args:
-            operation (~.PolyXP): The PolyXP observable that shall be formatted.
+            coefficients (array[float]): The polynomial coefficients as a vector
 
         Returns:
             str: A string representing the polynomial
         """
-        coefficients = operation.params[0]
-        order = len(coefficients.shape)
+        poly_str = ""
 
-        if order == 1:
-            poly_str = ""
-            if coefficients[0] != 0:
-                poly_str += "{:.3g}".format(coefficients[0])
+        if coefficients[0] != 0:
+            poly_str += "{:.3g}".format(coefficients[0])
 
-            for idx in range(0, coefficients.shape[0] // 2):
-                x = 2 * idx + 1
-                y = 2 * idx + 2
-                poly_str += RepresentationResolver._format_poly_term(
-                    coefficients[x], "x{}".format(self.charset.to_subscript(idx))
-                )
-                poly_str += RepresentationResolver._format_poly_term(
-                    coefficients[y], "p{}".format(self.charset.to_subscript(idx))
-                )
+        for idx in range(0, coefficients.shape[0] // 2):
+            x = 2 * idx + 1
+            y = 2 * idx + 2
+            poly_str += RepresentationResolver._format_poly_term(
+                coefficients[x], "x{}".format(self.charset.to_subscript(idx))
+            )
+            poly_str += RepresentationResolver._format_poly_term(
+                coefficients[y], "p{}".format(self.charset.to_subscript(idx))
+            )
 
-            return poly_str
+        return poly_str
 
-        # order == 2
+    def _format_polyxp_order2(self, coefficients):
+        """Format a second-order polynmomial of x and p operators.
+
+        Args:
+            coefficients (array[float]): The polynomial coefficients as a matrix
+
+        Returns:
+            str: A string representing the polynomial
+        """
         poly_str = str(coefficients[0, 0])
 
         for idx in range(0, coefficients.shape[0] // 2):
@@ -278,6 +281,25 @@ class RepresentationResolver:
                     )
 
         return poly_str
+
+    def _format_polyxp(self, operation):
+        """Format a polynomial of x and p operators.
+
+        Theses operators appear as observables in CV quantum computing.
+
+        Args:
+            operation (~.PolyXP): The PolyXP observable that shall be formatted.
+
+        Returns:
+            str: A string representing the polynomial
+        """
+        coefficients = operation.params[0]
+        order = len(coefficients.shape)
+
+        if order == 1:
+            return self._format_polyxp_order1(coefficients)
+
+        return self._format_polyxp_order2(coefficients)
 
     # pylint: disable=too-many-return-statements
     def operator_representation(self, op, wire):
