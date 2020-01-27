@@ -520,6 +520,49 @@ def drawn_parameterized_cv_qnode_with_values():
         + " [0. 0. 0. 0. 0. 0. 0. 2.]]\n"
     )
 
+@pytest.fixture
+def qubit_circuit_with_unused_wires():
+    """A qubit ciruit with unused wires."""
+
+    def qfunc():
+        qml.PauliX(0)
+        qml.PauliX(5)
+        qml.Toffoli(wires=[5, 1, 0])
+
+        return [
+            qml.expval(qml.PauliY(0)),
+            qml.expval(qml.PauliY(1)),
+            qml.expval(qml.PauliY(5)),
+        ]
+
+    dev = qml.device("default.qubit", wires=6)
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+
+@pytest.fixture
+def drawn_qubit_circuit_with_unused_wires():
+    """The rendered circuit representation of the above qubit circuit."""
+    return (
+        " 0: ──RX(a)───────────────────────╭C────RX(angles[0])───────────────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP───╭SWAP───┤ ⟨Y⟩       \n"
+        + " 1: ──RX(b)────────Z──────────────╰X───╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│───────├SWAP───┤ Var[H]    \n"
+        + " 2: ──Rϕ(1.889*c)──RX(angles[2])───U0──│────────────────────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP───│───────┤ Sample[X] \n"
+        + " 3: ───────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────────────────────────────╰X───────RZ(b)──│──────╭┤ ⟨H0⟩      \n"
+        + " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
+        + "U0 =\n"
+        + "[[1. 0.]\n"
+        + " [0. 1.]]\n"
+        + "H0 =\n"
+        + "[[1. 0. 0. 0.]\n"
+        + " [0. 1. 0. 0.]\n"
+        + " [0. 0. 1. 0.]\n"
+        + " [0. 0. 0. 1.]]\n"
+    )
+
 
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
@@ -579,6 +622,12 @@ class TestCircuitDrawerIntegration:
         output = parameterized_cv_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_cv_qnode_with_values
+
+    def test_qubit_circuit_with_unused_wires(self, qubit_circuit_with_unused_wires, drawn_qubit_circuit_with_unused_wires):
+        """Test that a qubit circuit with unused wires renders correctly."""
+        output = qubit_circuit_with_unused_wires.draw()
+
+        assert output == drawn_qubit_circuit_with_unused_wires
 
     def test_direct_qnode_integration(self):
         """Test that a regular QNode renders correctly."""
