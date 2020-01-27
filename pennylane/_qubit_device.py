@@ -299,7 +299,7 @@ class QubitDevice(Device):
     def circuit_hash(self):
         """The hash of the circuit upon the last execution.
 
-        This can be used by devices in :meth:`apply` for parametric compilation.
+        This can be used by devices in :meth:`~.apply` for parametric compilation.
         """
         return self._circuit_hash
 
