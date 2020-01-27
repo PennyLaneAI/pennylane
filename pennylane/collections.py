@@ -102,7 +102,6 @@ def map(template, observables, device, measure="expval", interface="autograd", d
     if not isinstance(device, Sequence):
         # broadcast the single device over all observables
         device = [device] * len(observables)
-        # device = [copy.deepcopy(device) for _ in range(len(observables))]
 
     if not isinstance(measure, (list, tuple)):
         # broadcast the single measurement over all observables
