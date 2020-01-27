@@ -92,7 +92,7 @@ class QubitDevice(Device):
         * ``"tensor_observables" (*bool*): ``True`` if the device supports
           expectation values/variance/samples of :class:`~.Tensor` observables.
 
-        The qubit device class has in-built support for tensor observables. As a
+        The qubit device class has built-in support for tensor observables. As a
         result, devices that inherit from this class automatically
         have the following items in their capabilities
         dictionary:

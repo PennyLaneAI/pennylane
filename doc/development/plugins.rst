@@ -120,8 +120,8 @@ as well as potential further capabilities, by providing the following class attr
     conversion between the two conventions takes place automatically
     by the plugin device.
 
-Adding arguments
-----------------
+Adding arguments to your device
+--------------------------------
 
 Defining the ``__init__.py`` method of a custom device is not necessary; by default,
 the :class:`~.QubitDevice` initialization will be called, where the user can pass the
