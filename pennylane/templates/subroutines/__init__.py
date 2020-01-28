@@ -15,6 +15,7 @@ r"""
 Subroutines are the most basic template, consisting of a collection of quantum operations, and not fulfilling
 any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
+
 from .interferometer import Interferometer
 
 __all__ = ["Interferometer"]

@@ -17,12 +17,12 @@ They can optionally be repeated, and may contain trainable parameters. Embedding
 used at the beginning of a circuit.
 """
 
-from .angle_embedding import AngleEmbedding
-from .amplitude_embedding import AmplitudeEmbedding
-from .basis_embedding import BasisEmbedding
-from .displacement_embedding import DisplacementEmbedding
-from .qaoa_embedding import QAOAEmbedding
-from .squeezing_embedding import SqueezingEmbedding
+from .angle import AngleEmbedding
+from .amplitude import AmplitudeEmbedding
+from .basis import BasisEmbedding
+from .displacement import DisplacementEmbedding
+from .qaoa import QAOAEmbedding
+from .squeezing import SqueezingEmbedding
 
 __all__ = ["AngleEmbedding",
            "AmplitudeEmbedding",

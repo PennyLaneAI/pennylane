@@ -27,4 +27,4 @@ from .subroutines import __all__ as _subroutines__all__
 from .state_preparations import __all__ as _stateprep__all__
 
 
-__all__ = _embeddings__all__ + _layers__all__ + _subroutines__all__ + _stateprep__all__
+__all__ = _layers__all__ + _embeddings__all__ + _subroutines__all__ + _stateprep__all__
