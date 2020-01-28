@@ -95,6 +95,19 @@ as well as potential further capabilities, by providing the following class attr
   See :doc:`/introduction/operations` for a full list of operations
   supported by PennyLane.
 
+  If your device does not natively support an operation that has the
+  :meth:`~.Operation.decomposition` static method defined, PennyLane will
+  attempt to decompose the operation before calling the device. For example,
+  the :class:`~.Rot` `decomposition method <../_modules/pennylane/ops/qubit.html#Rot.decomposition>`_ will
+  decompose the single-qubit rotation gate to :class:`~.RZ` and :class:`~.RY` gates.
+
+  .. note::
+
+      If the convention differs between the built-in PennyLane operation
+      and the corresponding operation in the targeted framework, ensure that the
+      conversion between the two conventions takes place automatically
+      by the plugin device.
+
 * :attr:`.Device._capabilities`: a dictionary containing information about the capabilities of
   the device. Keys currently supported include:
 
@@ -104,31 +117,14 @@ as well as potential further capabilities, by providing the following class attr
     applying the inverse of operations. Operations which should be inverted
     have the property ``operation.inverse == True``.
 
-.. note::
-
-    If your device does not natively support an operation that has the
-    :meth:`~.Operation.decomposition` static method defined, PennyLane will
-    attempt to decompose the operation before calling the device. For example,
-    the :class:`~.Rot` `decomposition method <../_modules/pennylane/ops/qubit.html#Rot.decomposition>`_ will
-    decompose the single-qubit rotation gate to :class:`~.RZ` and :class:`~.RY` gates.
-
-
-.. note::
-
-    If the convention differs between the built-in PennyLane operation
-    and the corresponding operation in the targeted framework, ensure that the
-    conversion between the two conventions takes place automatically
-    by the plugin device.
+Adding arguments to your device
+--------------------------------
 
 .. important::
 
     PennyLane supports both qubit and continuous-variable (CV) devices. However, from
     here onwards, we will demonstrate plugin development focusing on qubit-based devices
     inheriting from the :class:`~.QubitDevice` class.
-
-
-Adding arguments to your device
---------------------------------
 
 Defining the ``__init__.py`` method of a custom device is not necessary; by default,
 the :class:`~.QubitDevice` initialization will be called, where the user can pass the
@@ -446,7 +442,7 @@ For example:
 
 **Note: CV devices currently subclass from the base** :class:`~.Device` **class. However, this
 class is deprecated, and a new** ``CVDevice`` **class will be available in the next major
-PennyLane release.
+PennyLane release.**
 
 For custom continuous-variable operations or observables, the :class:`~.CVOperation` or
 :class:`~.CVObservable` classes must be subclassed instead.
