@@ -29,9 +29,7 @@ except ImportError as e:
     raise ImportError("expt.tensornet.tf device requires TensorFlow>=2.0")
 
 from pennylane.variable import VariableRef
-from pennylane.plugins.default_qubit import I, X, Y, Z
-
-from pennylane.beta.plugins.expt_tensornet import TensorNetwork
+from pennylane.beta.plugins.expt_tensornet import TensorNetwork, I, X, Y, Z
 
 
 # tolerance for numerical errors
