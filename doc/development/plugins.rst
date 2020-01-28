@@ -120,6 +120,13 @@ as well as potential further capabilities, by providing the following class attr
     conversion between the two conventions takes place automatically
     by the plugin device.
 
+.. important::
+
+    PennyLane supports both qubit and continuous-variable (CV) devices. However, from
+    here onwards, we will demonstrate plugin development focusing on qubit-based devices
+    inheriting from the :class:`~.QubitDevice` class.
+
+
 Adding arguments to your device
 --------------------------------
 
@@ -435,8 +442,11 @@ For example:
             return np.array([[0, 1], [1, 0]]) / np.sqrt(2)
 
 
-Supporting new CV operations
-----------------------------
+:html:`<div class="note admonition" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content1" class="collapsed"><p class="first admonition-title">CV devices and operations (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content1" class="collapse" data-parent="#aside1" style="height: 0px;">`
+
+**Note: CV devices currently subclass from the base** :class:`~.Device` **class. However, this
+class is deprecated, and a new** ``CVDevice`` **class will be available in the next major
+PennyLane release.
 
 For custom continuous-variable operations or observables, the :class:`~.CVOperation` or
 :class:`~.CVObservable` classes must be subclassed instead.
@@ -474,3 +484,5 @@ its list of parameters:
 
 Non-Gaussian CV operations and observables are currently only supported via the finite difference
 method of gradient computation.
+
+:html:`</div></div>`

@@ -63,7 +63,7 @@ class QubitDevice(Device):
 
     # pylint: disable=too-many-public-methods
     _asarray = staticmethod(np.asarray)
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian, "Identity"}
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires=1, shots=1000, analytic=True):
         super().__init__(wires=wires, shots=shots)
