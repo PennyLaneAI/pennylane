@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Subroutines are the most basic template, consisting of a collection of quantum operations. As opposed
-to layers and embeddings, subroutines do not encode features, and they have no native option to be applied
-repeatedly.
+Subroutines are the most basic template, consisting of a collection of quantum operations, and not fulfilling
+any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
 from .interferometer import Interferometer
 
-subroutines = {"Interferometer"}
-
-__all__ = list(subroutines)
+__all__ = ["Interferometer"]

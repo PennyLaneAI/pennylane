@@ -19,6 +19,5 @@ by decomposing it into elementary operations.
 from .mottonen import MottonenStatePreparation
 from .basis import BasisStatePreparation
 
-state_preparations = {"BasisStatePreparation", "MottonenStatePreparation"}
-
-__all__ = list(state_preparations)
+__all__ = ["BasisStatePreparation",
+           "MottonenStatePreparation"]

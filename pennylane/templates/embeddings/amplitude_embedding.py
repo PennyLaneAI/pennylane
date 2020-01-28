@@ -17,13 +17,11 @@ Contains the ``AmplitudeEmbedding`` template.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 from pennylane.templates.decorator import template
-from pennylane.ops import RX, RY, RZ, CNOT, Hadamard, BasisState, Squeezing, Displacement, QubitStateVector
+from pennylane.ops import QubitStateVector
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
                                        _check_wires,
-                                       _check_is_in_options,
                                        _check_type,
-                                       _check_number_of_layers,
                                        _get_shape)
 from pennylane.variable import Variable
 

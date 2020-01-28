@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Embeddings are templates that take features and encode them into a quantum state.
+Embeddings are templates encode features (i.e., classical data) into a quantum state.
 They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
 used at the beginning of a circuit.
 """
@@ -24,7 +24,9 @@ from .displacement_embedding import DisplacementEmbedding
 from .qaoa_embedding import QAOAEmbedding
 from .squeezing_embedding import SqueezingEmbedding
 
-embeddings = {"AngleEmbedding", "AmplitudeEmbedding", "BasisEmbedding", "DisplacementEmbedding",
-              "QAOAEmbedding", "SqueezingEmbedding"}
-
-__all__ = list(embeddings)
+__all__ = ["AngleEmbedding",
+           "AmplitudeEmbedding",
+           "BasisEmbedding",
+           "DisplacementEmbedding",
+           "QAOAEmbedding",
+           "SqueezingEmbedding"]

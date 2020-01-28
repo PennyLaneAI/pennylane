@@ -19,6 +19,7 @@ from .strongly_entangling import StronglyEntanglingLayers
 from .random import RandomLayers
 from .cv_neural_net import CVNeuralNetLayers
 
-layers = {"StronglyEntanglingLayers", "RandomLayers", "CVNeuralNetLayers"}
+__all__ = ["StronglyEntanglingLayers",
+           "RandomLayers",
+           "CVNeuralNetLayers"]
 
-__all__ = list(layers)

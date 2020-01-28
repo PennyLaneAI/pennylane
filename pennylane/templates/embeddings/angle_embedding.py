@@ -15,7 +15,6 @@ r"""
 Contains the ``AngleEmbedding`` template.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ
 from pennylane.templates.utils import (_check_shape,
