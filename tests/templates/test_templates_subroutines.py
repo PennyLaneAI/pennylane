@@ -55,7 +55,6 @@ class TestInterferometer:
         """test the beamsplitter convention"""
         N = 2
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321]
         phi = [0.234]
@@ -243,14 +242,14 @@ class TestInterferometer:
             for w in wires:
                 qml.Squeezing(sq[w][0], sq[w][1], wires=w)
 
-            Interferometer(theta, phi, varphi, wires=wires)
+            Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
             return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
         res = circuit(theta, phi, varphi)
         expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
         assert np.allclose(res, expected, atol=tol)
 
-        # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
-        jac_F = circuit.jacobian((theta, phi, varphi), method="F")
-        assert jac_A == pytest.approx(jac_F, abs=tol)
+        # # compare the two methods of computing the Jacobian
+        # jac_A = circuit.jacobian((theta, phi, varphi), method="A")
+        # jac_F = circuit.jacobian((theta, phi, varphi), method="F")
+        # assert jac_A == pytest.approx(jac_F, abs=tol)
