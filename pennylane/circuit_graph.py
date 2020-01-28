@@ -21,7 +21,7 @@ import networkx as nx
 from pennylane.operation import Sample
 
 from .utils import _flatten
-from .variable import Variable
+from .variable import VariableRef
 
 
 def _by_idx(x):
@@ -137,7 +137,7 @@ class CircuitGraph:
             serialization_string += op.name
 
             for param in op.params:
-                if isinstance(param, Variable):
+                if isinstance(param, VariableRef):
                     serialization_string += delimiter
                     serialization_string += variable_delimiter
                     serialization_string += str(param.idx)

@@ -26,7 +26,7 @@ from pennylane.templates.utils import (_check_wires,
                                        _check_no_variable,
                                        _check_shape,
                                        _get_shape)
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order
@@ -302,7 +302,7 @@ def MottonenStatePreparation(state_vector, wires):
                                                    "".format(expected_shape, _get_shape(state_vector)))
 
     # check if state_vector is normalized
-    if isinstance(state_vector[0], Variable):
+    if isinstance(state_vector[0], VariableRef):
         state_vector_values = [s.val for s in state_vector]
         norm = np.sum(np.abs(state_vector_values)**2)
     else:
@@ -322,7 +322,7 @@ def MottonenStatePreparation(state_vector, wires):
     omega = sparse.dok_matrix(state_vector.shape)
 
     for (i, j), v in state_vector.items():
-        if isinstance(v, Variable):
+        if isinstance(v, VariableRef):
             a[i, j] = np.absolute(v.val)
             omega[i, j] = np.angle(v.val)
         else:

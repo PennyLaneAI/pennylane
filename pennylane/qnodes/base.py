@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 
 
 
@@ -35,7 +35,7 @@ ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 Args:
     op (Operator): operator depending on the positional parameter in question
     par_idx (int): flattened operator parameter index of the corresponding
-        :class:`~pennylane.variable.Variable` instance
+        :class:`~.VariableRef` instance
 """
 
 
@@ -165,18 +165,15 @@ class BaseQNode:
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
-        self.num_variables = (
-            None  #: int: number of flattened differentiable parameters in the circuit
-        )
-        self.ops = (
-            []
-        )  #: List[Operator]: quantum circuit, in the order the quantum function defines it
+        #: int: number of flattened differentiable parameters in the circuit
+        self.num_variables = None
+        #: List[Operator]: quantum circuit, in the order the quantum function defines it
+        self.ops = []
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: whether the circuit is mutable
-        self.properties = (
-            properties or {}
-        )  #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
+        #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
+        self.properties = properties or {}
 
         self.variable_deps = {}
         """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc positional parameter
@@ -234,17 +231,17 @@ class BaseQNode:
                 print("{}({}(wires={}))".format(return_type, op.name, op.wires))
 
     def _set_variables(self, args, kwargs):
-        """Store the current values of the quantum function parameters in the Variable class
+        """Store the current values of the quantum function parameters in the VariableRef class
         so the Operators may access them.
 
         Args:
             args (tuple[Any]): positional (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
-        Variable.positional_arg_values = np.array(list(_flatten(args)))
+        VariableRef.positional_arg_values = np.array(list(_flatten(args)))
         if not self.mutable:
-            # only immutable circuits access auxiliary arguments through Variables
-            Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
+            # only immutable circuits access auxiliary arguments through VariableRefs
+            VariableRef.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
 
     def _op_descendants(self, op, only):
         """Descendants of the given operator in the quantum circuit.
@@ -313,34 +310,34 @@ class BaseQNode:
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
 
-        For immutable nodes this method is called the first time :meth:`QNode.evaluate`
-        or :meth:`QNode.jacobian` is called, and for mutable nodes *each time*
+        For immutable nodes this method is called the first time :meth:`BaseQNode.evaluate`
+        or :meth:`.JacobianQNode.jacobian` is called, and for mutable nodes *each time*
         they are called. It executes the quantum function,
         stores the resulting sequence of :class:`.Operator` instances,
-        converts it into a circuit graph, and creates the Variable mapping.
+        converts it into a circuit graph, and creates the VariableRef mapping.
 
         .. note::
-           The Variables are only required for analytic differentiation,
+           The VariableRefs are only required for analytic differentiation,
            for evaluation we could simply reconstruct the circuit each time.
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
                 During the construction we are not concerned with the numerical values, but with
                 the nesting structure.
-                Each positional argument is replaced with a :class:`~.variable.Variable` instance.
+                Each positional argument is replaced with a :class:`~.VariableRef` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
 
         Raises:
-            QuantumFunctionError: if the :class:`pennylane.QNode`'s _current_context is attempted to be modified
+            QuantumFunctionError: if :data:`pennylane._current_context` is attempted to be modified
                 inside of this method, the quantum function returns incorrect values or if
                 both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches
 
-        # flatten the args, replace each argument with a Variable instance carrying a unique index
-        arg_vars = [Variable(idx) for idx, _ in enumerate(_flatten(args))]
+        # flatten the args, replace each argument with a VariableRef instance carrying a unique index
+        arg_vars = [VariableRef(idx) for idx, _ in enumerate(_flatten(args))]
         self.num_variables = len(arg_vars)
-        # arrange the newly created Variables in the nested structure of args
+        # arrange the newly created VariableRefs in the nested structure of args
         arg_vars = unflatten(arg_vars, args)
 
         # temporary queues for operations and observables
@@ -358,13 +355,13 @@ class BaseQNode:
             # generate the program queue by executing the quantum circuit function
             if self.mutable:
                 # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
-                # (positional args must be replaced because parameter-shift differentiation requires Variables)
+                # (positional args must be replaced because parameter-shift differentiation requires VariableRefs)
                 res = self.func(*arg_vars, **kwargs)
             else:
-                # must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
+                # must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
                 kwarg_vars = {}
                 for key, val in kwargs.items():
-                    temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
+                    temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
                     kwarg_vars[key] = unflatten(temp, val)
 
                 res = self.func(*arg_vars, **kwarg_vars)
@@ -378,7 +375,7 @@ class BaseQNode:
         self.variable_deps = {k: [] for k in range(self.num_variables)}
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
-                if isinstance(p, Variable):
+                if isinstance(p, VariableRef):
                     if p.name is None:  # ignore auxiliary arguments
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
@@ -501,7 +498,7 @@ class BaseQNode:
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.
 
-        Here we apply default values for the auxiliary parameters of :attr:`QNode.func`.
+        Here we apply default values for the auxiliary parameters of :attr:`BaseQNode.func`.
 
         Args:
             kwargs (dict[str, Any]): auxiliary arguments (given using the keyword syntax)
@@ -555,7 +552,7 @@ class BaseQNode:
         return kwargs
 
     def __call__(self, *args, **kwargs):
-        """Wrapper for :meth:`.BaseQNode.evaluate`.
+        """Wrapper for :meth:`BaseQNode.evaluate`.
         """
         return self.evaluate(args, kwargs)
 
@@ -570,8 +567,6 @@ class BaseQNode:
             float or array[float]: output measured value(s)
         """
         kwargs = self._default_args(kwargs)
-
-        # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
 
         if self.circuit is None or self.mutable:
@@ -585,6 +580,7 @@ class BaseQNode:
             ret = self.device.execute(
                 self.circuit.operations, self.circuit.observables, self.variable_deps
             )
+        return ret   # FIXME for passthruqnode!
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):
@@ -601,8 +597,6 @@ class BaseQNode:
             array[float]: measured values
         """
         kwargs = self._default_args(kwargs)
-
-        # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
 
         self.device.reset()

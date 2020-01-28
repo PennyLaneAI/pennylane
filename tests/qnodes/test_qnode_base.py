@@ -465,7 +465,7 @@ class TestQNodeExceptions:
         reason="Tests the auxiliary-equals-keyword-only syntax", raises=TypeError, strict=True
     )
     def test_simple_valid_call(self, operable_mock_device_2_wires):
-        """Old QNode gives an error here, "got multiple values for argument 'x'"
+        """BaseQNode gives an error here, "got multiple values for argument 'x'"
         """
 
         def circuit(x=0):

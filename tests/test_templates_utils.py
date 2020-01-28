@@ -17,7 +17,7 @@ Tests for the templates utility functions.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import numpy as np
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 from pennylane.templates.utils import (_check_wires,
                                        _check_shape,
                                        _check_shapes,
@@ -94,9 +94,9 @@ LAYERS_FAIL = [([1, 2, 3], None),
 NO_VARIABLES_PASS = [[[], np.array([1., 4.])],
                      [1, 'a']]
 
-NO_VARIABLES_FAIL = [[[Variable(0.1)], Variable([0.1])],
-                     np.array([Variable(0.3), Variable(4.)]),
-                     Variable(-1.)]
+NO_VARIABLES_FAIL = [[[VariableRef(0.1)], VariableRef([0.1])],
+                     np.array([VariableRef(0.3), VariableRef(4.)]),
+                     VariableRef(-1.)]
 
 OPTIONS_PASS = [("a", ["a", "b"])]
 
@@ -105,12 +105,12 @@ OPTIONS_FAIL = [("c", ["a", "b"])]
 TYPE_PASS = [(["a"], list, type(None)),
              (1, int, type(None)),
              ("a", int, str),
-             (Variable(1.), list, Variable)
+             (VariableRef(1.), list, VariableRef)
              ]
 
 TYPE_FAIL = [("a", list, type(None)),
-             (Variable(1.), int, list),
-             (1., Variable, type(None))
+             (VariableRef(1.), int, list),
+             (1., VariableRef, type(None))
              ]
 
 ##############################

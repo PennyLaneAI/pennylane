@@ -17,7 +17,7 @@ Unit tests for :mod:`pennylane.variable`.
 import pytest
 import numpy.random as nr
 
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 
 
 # make test deterministic
@@ -33,30 +33,30 @@ par_mults = [1, 0.4, -2.7]
 def par_positional():
     "QNode: positional parameters"
     temp = nr.randn(n)
-    Variable.free_param_values = temp  # set the values
+    VariableRef.positional_arg_values = temp  # set the values
     return temp
 
 @pytest.fixture(scope="function")
 def par_keyword():
     "QNode: keyword parameters"
     temp = {name: nr.randn(n) for name in keyword_par_names}
-    Variable.kwarg_values = temp  # set the values
+    VariableRef.kwarg_values = temp  # set the values
     return temp
 
 
 def test_variable_str():
     """variable: Tests the positional variable reference string."""
-    p = Variable(0)
-    assert str(p) == "Variable 0: name = None, "
-    assert str(-p) == "Variable 0: name = None,  * -1"
-    assert str(1.2 * p * 0.4) == "Variable 0: name = None,  * 0.48"
-    assert str(1.2 * p / 2.5) == "Variable 0: name = None,  * 0.48"
+    p = VariableRef(0)
+    assert str(p) == "<VariableRef(None:0)>"
+    assert str(-p) == "<VariableRef(None:0 * -1)>"
+    assert str(1.2 * p * 0.4) == "<VariableRef(None:0 * 0.48)>"
+    assert str(1.2 * p / 2.5) == "<VariableRef(None:0 * 0.48)>"
 
-    p = Variable(0, name="kw1")
-    assert str(p) == "Variable 0: name = kw1, "
-    assert str(-p) == "Variable 0: name = kw1,  * -1"
-    assert str(1.2 * p * 0.4) == "Variable 0: name = kw1,  * 0.48"
-    assert str(1.2 * p / 2.5) == "Variable 0: name = kw1,  * 0.48"
+    p = VariableRef(0, name="kw1")
+    assert str(p) == "<VariableRef(kw1:0)>"
+    assert str(-p) == "<VariableRef(kw1:0 * -1)>"
+    assert str(1.2 * p * 0.4) == "<VariableRef(kw1:0 * 0.48)>"
+    assert str(1.2 * p / 2.5) == "<VariableRef(kw1:0 * 0.48)>"
 
 
 def variable_eval_asserts(v, p, m, tol):
@@ -73,7 +73,7 @@ def variable_eval_asserts(v, p, m, tol):
 @pytest.mark.parametrize("mult", par_mults)
 def test_variable_val(par_positional, ind, mult, tol):
     """Positional variable evaluation."""
-    v = Variable(ind)
+    v = VariableRef(ind)
 
     assert v.name is None
     assert v.mult == 1
@@ -86,7 +86,7 @@ def test_variable_val(par_positional, ind, mult, tol):
 @pytest.mark.parametrize("name", keyword_par_names)
 def test_keyword_variable(par_keyword, name, ind, mult, tol):
     """Keyword variable evaluation."""
-    v = Variable(ind, name)
+    v = VariableRef(ind, name)
 
     assert v.name == name
     assert v.mult == 1

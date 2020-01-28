@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This package contains the new-style QNodes.
+This subpackage contains the new-style QNodes.
 
-.. currentmodule:: pennylane.beta.qnodes
+.. currentmodule:: pennylane.qnodes
 """
 from .base import BaseQNode, QuantumFunctionError
 from .cv import CVQNode
 from .decorator import qnode, QNode
 from .jacobian import JacobianQNode
 from .qubit import QubitQNode
+from .passthru import PassthruQNode

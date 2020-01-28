@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :class:`Variable` class, which is used to track
+This module contains the :class:`VariableRef` class, which is used to track
 and identify :class:`~pennylane.qnode.QNode` parameters.
 
 Description
@@ -22,10 +22,10 @@ The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
 method is called, which performs a 'just-in-time' circuit construction
 on the :mod:`~pennylane._device.Device`. As part of this construction, all arguments
-and keyword arguments are wrapped in a `Variable` as follows:
+and keyword arguments are wrapped in a `VariableRef` as follows:
 
 * All positional arguments in ``*args``, including those with multiple dimensions, are
-  flattened to a single list, and each element wrapped as a Variable instance,
+  flattened to a single list, and each element wrapped as a VariableRef instance,
   indexed by its position in the list.
 
   This allows PennyLane to inspect the shape and type of arguments
@@ -34,11 +34,11 @@ and keyword arguments are wrapped in a `Variable` as follows:
 
 
 * The same is done for each keyword argument in ``**kwargs``, the only
-  difference being that the name of each contained Variable corresponds
+  difference being that the name of each contained VariableRef corresponds
   with the keyword name.
 
 As a result, the device stores a list of operations and expectations, with all
-free parameters stored as Variable instances.
+free parameters stored as VariableRef instances.
 
 .. note::
     The QNode can be differentiated with respect to positional arguments,
@@ -49,21 +49,22 @@ free parameters stored as Variable instances.
     If the user defines a keyword argument, then they always have to pass the
     corresponding variable as a keyword argument, otherwise it won't register.
 
-For each successive QNode execution, the user-provided values for arguments and keyword
-arguments are stored in the :attr:`Variable.free_param_values` list and the
-:attr:`Variable.kwarg_values` dictionary respectively; these are
-then returned by :meth:`Variable.val`, using its ``idx`` value, and, for
+For each successive QNode execution, the user-provided values for the positional and keyword
+arguments are stored in :attr:`VariableRef.positional_arg_values` and
+:attr:`VariableRef.kwarg_values` respectively; the values are
+then returned by :meth:`VariableRef.val`, using the VariableRef's ``idx`` attribute, and, for
 keyword arguments, its ``name``, to return the correct value to the operation.
 
 .. note::
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
-    property automates the process of unpacking the Variable value.
-    The attribute :meth:`Variable.val` should not need to be accessed outside of advanced usage.
+    property automates the process of unpacking the VariableRef value.
+    The attribute :meth:`VariableRef.val` should not need to be accessed outside of advanced usage.
 """
 import copy
+import numbers
 
 
-class Variable:
+class VariableRef:
     """A reference to dynamically track and update circuit parameters.
 
     Represents a free quantum circuit parameter (with a non-fixed value),
@@ -71,35 +72,36 @@ class Variable:
 
     Each time the circuit is executed, it is given a vector of flattened positional argument values,
     and a dictionary mapping keyword-only argument names to vectors of their flattened values.
-    Each element of these vectors corresponds to a Variable instance.
-    Positional arguments are represented by nameless Variables, whereas for keyword-only
-    arguments :attr:`Variable.name` contains the argument name.
-    In both cases :attr:`Variable.idx` is an index into the argument value vector.
+    Each element of these vectors corresponds to a VariableRef instance.
+    Positional arguments are represented by nameless VariableRefs, whereas for keyword-only
+    arguments :attr:`VariableRef.name` contains the argument name.
+    In both cases :attr:`VariableRef.idx` is an index into the argument value vector.
 
-    The Variable has an optional scalar multiplier for the argument it represents.
+    The VariableRef has an optional scalar multiplier for the argument it represents.
 
-    .. note:: Variables currently do not implement any arithmetic
+    .. note:: VariableRefs currently do not implement any arithmetic
         operations other than scalar multiplication.
 
     Args:
         idx  (int): index into the value vector, >= 0
         name (None, str): name of the argument
     """
-
     # pylint: disable=too-few-public-methods
-    free_param_values = (
-        None  #: array[float]: current free parameter values, set in :meth:`~.QNode.evaluate`
-    )
-    kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
+
+    #: array[float]: current positional parameter values, set in :meth:`.BaseQNode._set_variables`
+    positional_arg_values = None
+
+    #: dict[str->array[float]]: current auxiliary parameter values, set in :meth:`.BaseQNode._set_variables`
+    kwarg_values = None
 
     def __init__(self, idx, name=None):
-        self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter name
+        self.idx = idx  #: int: parameter index
         self.mult = 1  #: int, float: parameter scalar multiplier
 
-    def __str__(self):
+    def __repr__(self):
         temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
-        return "Variable {}: name = {}, {}".format(self.idx, self.name, temp)
+        return "<VariableRef({}:{}{})>".format(self.name, self.idx, temp)
 
     def __neg__(self):
         """Unary negation."""
@@ -119,23 +121,20 @@ class Variable:
         temp.mult /= scalar
         return temp
 
-    __rmul__ = __mul__  # """Left multiplication by scalars."""
+    __rmul__ = __mul__  # Left multiplication by scalars.
 
     @property
     def val(self):
-        """Current numerical value of the Variable.
-
-        Raises:
-            TypeError: if the keyword arguments were not mapped to arrays
+        """Current numerical value of the VariableRef.
 
         Returns:
-            float: current value of the Variable
+            float: current value of the VariableRef
         """
         # pylint: disable=unsubscriptable-object
         if self.name is None:
             # The variable is a placeholder for a positional argument
-            return Variable.free_param_values[self.idx] * self.mult
+            return VariableRef.positional_arg_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
-        values = Variable.kwarg_values[self.name]
+        values = VariableRef.kwarg_values[self.name]
         return values[self.idx] * self.mult

@@ -28,7 +28,7 @@ try:
 except ImportError as e:
     raise ImportError("expt.tensornet.tf device requires TensorFlow>=2.0")
 
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 from pennylane.plugins.default_qubit import I, X, Y, Z
 
 from pennylane.beta.plugins.expt_tensornet import TensorNetwork
@@ -329,7 +329,7 @@ class TensorNetworkTF(TensorNetwork):
         # check that no Variables remain in the op_params dictionary
         values = [item for sublist in self.op_params.values() for item in sublist]
         assert not any(
-            isinstance(v, Variable) for v in values
+            isinstance(v, VariableRef) for v in values
         ), "A pennylane.Variable instance was not correctly converted to a tf.Variable"
 
         # flatten the variables list in case of nesting
