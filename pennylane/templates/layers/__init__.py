@@ -22,4 +22,3 @@ from .cv_neural_net import CVNeuralNetLayers
 __all__ = ["StronglyEntanglingLayers",
            "RandomLayers",
            "CVNeuralNetLayers"]
-
