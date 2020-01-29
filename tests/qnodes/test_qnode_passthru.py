@@ -67,7 +67,7 @@ class TestPassthruTF:
     """Test that TF objects can be successfully passed through to a TF simulator device, and back to user."""
 
     # real data type used by the expt.tensornet.tf plugin (TensorFlow is strict about types)
-    R_DTYPE = tf.float64
+    DTYPE = tf.float64 if tf else None
 
     def test_arraylike_args(self, tensornet_tf_device, tol):
         """Tests that PassthruQNode can use array-like TF objects as positional arguments."""
@@ -78,11 +78,11 @@ class TestPassthruTF:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = PassthruQNode(circuit, tensornet_tf_device)
-        x = tf.Variable([1.1, 1.4], dtype=R_DTYPE)
+        x = tf.Variable([1.1, 1.4], dtype=self.DTYPE)
         res = node(x)
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
-        assert res.dtype == R_DTYPE
+        assert res.dtype == self.DTYPE
 
     def test_arraylike_keywordargs(self, tensornet_tf_device, tol):
         """Tests that qnodes use array-like TF objects as keyword-only arguments."""
@@ -93,11 +93,11 @@ class TestPassthruTF:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = PassthruQNode(circuit, tensornet_tf_device)
-        x = tf.Variable([1.1, 1.4], dtype=R_DTYPE)
+        x = tf.Variable([1.1, 1.4], dtype=self.DTYPE)
         res = node(x=x)
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
-        assert res.dtype == R_DTYPE
+        assert res.dtype == self.DTYPE
 
     def test_tensor_operations(self, tensornet_tf_device, tol):
         """Tests the evaluation of a PassthruQNode involving algebraic operations between tensor parameters,
@@ -112,12 +112,12 @@ class TestPassthruTF:
 
         node = PassthruQNode(circuit, tensornet_tf_device)
 
-        phi = tf.Variable(np.array([0.7, -1.2]), dtype=R_DTYPE)
-        theta = tf.Variable(1.7, dtype=R_DTYPE)
+        phi = tf.Variable(np.array([0.7, -1.2]), dtype=self.DTYPE)
+        theta = tf.Variable(1.7, dtype=self.DTYPE)
         res = node(phi, theta)
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
-        assert res.dtype == R_DTYPE
+        assert res.dtype == self.DTYPE
 
     def test_evaluate(self, tensornet_tf_device, tol):
         """Tests the evaluation of a PassthruQNode."""
@@ -130,7 +130,7 @@ class TestPassthruTF:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         x = np.array([-1.4, 0.2, 2.1])
-        x_tf = tf.Variable(x, dtype=R_DTYPE)
+        x_tf = tf.Variable(x, dtype=self.DTYPE)
 
         node = PassthruQNode(circuit, tensornet_tf_device)
         res = node(x_tf)
@@ -142,7 +142,7 @@ class TestPassthruTF:
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
-        assert res.dtype == R_DTYPE
+        assert res.dtype == self.DTYPE
         assert res.numpy() == pytest.approx(ref_res, abs=tol)
 
     @pytest.mark.parametrize("vectorize_jacobian", [True, False])
@@ -158,8 +158,8 @@ class TestPassthruTF:
 
         ph = np.array([0.7, -1.2])
         th = 1.7
-        phi = tf.Variable(ph, dtype=R_DTYPE)
-        theta = tf.Variable(th, dtype=R_DTYPE)
+        phi = tf.Variable(ph, dtype=self.DTYPE)
+        theta = tf.Variable(th, dtype=self.DTYPE)
 
         node = PassthruQNode(circuit, tensornet_tf_device)
         # In TF 2, tf.GradientTape.jacobian comes with a vectorization option.
@@ -177,10 +177,10 @@ class TestPassthruTF:
 
         assert isinstance(phi_grad, tf.Tensor)
         assert phi_grad.shape == (2, 2)
-        assert phi_grad.dtype == R_DTYPE
+        assert phi_grad.dtype == self.DTYPE
         assert phi_grad.numpy() == pytest.approx(ref_jac[:, 0:2], abs=tol)
 
         assert isinstance(theta_grad, tf.Tensor)
         assert theta_grad.shape == (2,)
-        assert theta_grad.dtype == R_DTYPE
+        assert theta_grad.dtype == self.DTYPE
         assert theta_grad.numpy() == pytest.approx(ref_jac[:, 2], abs=tol)
