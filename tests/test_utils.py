@@ -877,12 +877,12 @@ class TestInv:
 
     def test_callable_argument_error(self):
         """Test that the proper error is raised when the argument is a function."""
+
         def func(x):
             return x
 
         with pytest.raises(
-            ValueError,
-            match="A function was passed as an argument to inv. ",
+            ValueError, match="A function was passed as an argument to inv. ",
         ):
             pu.inv(func)
 
