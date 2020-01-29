@@ -441,8 +441,7 @@ For example:
 :html:`<div class="note admonition" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content1" class="collapsed"><p class="first admonition-title">CV devices and operations (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content1" class="collapse" data-parent="#aside1" style="height: 0px;">`
 
 **Note: CV devices currently subclass from the base** :class:`~.Device` **class. However, this
-class is deprecated, and a new** ``CVDevice`` **class will be available in the next major
-PennyLane release.**
+class is deprecated, and a new** ``CVDevice`` **class will be available soon.**
 
 For custom continuous-variable operations or observables, the :class:`~.CVOperation` or
 :class:`~.CVObservable` classes must be subclassed instead.
