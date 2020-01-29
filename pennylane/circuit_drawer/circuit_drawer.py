@@ -130,13 +130,13 @@ class CircuitDrawer:
         # pylint: disable=protected-access
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(qml.utils._flatten(raw_observable_grid))
         all_wires = [op.wires for op in all_operators if op is not None]
-        device_wires = sorted(set(qml.utils._flatten(all_wires)))
-        internal_wires = list(range(len(device_wires)))
+        circuit_wires = sorted(set(qml.utils._flatten(all_wires)))
+        internal_wires = list(range(len(circuit_wires)))
 
-        self._device_wire_to_internal_wire = dict(zip(device_wires, internal_wires))
-        self._internal_wire_to_device_wire = dict(zip(internal_wires, device_wires))
+        self._cicuit_wire_to_internal_wire = dict(zip(circuit_wires, internal_wires))
+        self._internal_wire_to_circuit_wire = dict(zip(internal_wires, circuit_wires))
 
-    def device_wires_to_internal_wires(self, wires):
+    def circuit_wires_to_internal_wires(self, wires):
         """Convert one or multiple device wires to internal wires.
 
         Args:
@@ -146,11 +146,11 @@ class CircuitDrawer:
             Union[Iterable[int],int]: The corresponding internal wires
         """
         if isinstance(wires, Iterable):
-            return [self._device_wire_to_internal_wire[wire] for wire in wires]
+            return [self._cicuit_wire_to_internal_wire[wire] for wire in wires]
 
-        return self._device_wire_to_internal_wire[wires]
+        return self._cicuit_wire_to_internal_wire[wires]
 
-    def internal_wires_to_device_wires(self, wires):
+    def internal_wires_to_circuit_wires(self, wires):
         """Convert one or multiple internal wires to device wires.
 
         Args:
@@ -160,9 +160,9 @@ class CircuitDrawer:
             Union[Iterable[int],int]: The corresponding device wires
         """
         if isinstance(wires, Iterable):
-            return [self._internal_wire_to_device_wire[wire] for wire in wires]
+            return [self._internal_wire_to_circuit_wire[wire] for wire in wires]
 
-        return self._internal_wire_to_device_wire[wires]
+        return self._internal_wire_to_circuit_wire[wires]
 
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
@@ -176,7 +176,7 @@ class CircuitDrawer:
 
             for wire, operator in enumerate(grid.layer(i)):
                 representation_layer[wire] = self.representation_resolver.element_representation(
-                    operator, self.internal_wires_to_device_wires(wire)
+                    operator, self.internal_wires_to_circuit_wires(wire)
                 )
 
             representation_grid.append_layer(representation_layer)
@@ -233,7 +233,7 @@ class CircuitDrawer:
                     wires = op.wires
 
                 if len(wires) > 1:
-                    internal_wires = self.device_wires_to_internal_wires(wires)
+                    internal_wires = self.circuit_wires_to_internal_wires(wires)
                     min_wire = min(internal_wires)
                     max_wire = max(internal_wires)
 
@@ -354,7 +354,7 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            rendered_string += "{:2d}: {}".format(self.internal_wires_to_device_wires(i), 2 * self.charset.WIRE)
+            rendered_string += "{:2d}: {}".format(self.internal_wires_to_circuit_wires(i), 2 * self.charset.WIRE)
 
             for s in wire:
                 rendered_string += s
