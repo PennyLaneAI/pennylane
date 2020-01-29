@@ -170,6 +170,9 @@ class BaseQNode:
         self.num_variables = (
             None  #: int: number of flattened differentiable parameters in the circuit
         )
+        self.arg_vars = None
+        self.kwarg_vars = None
+
         self.ops = (
             []
         )  #: List[Operator]: quantum circuit, in the order the quantum function defines it
@@ -233,6 +236,53 @@ class BaseQNode:
                 print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
             else:
                 print("{}({}(wires={}))".format(return_type, op.name, op.wires))
+
+    def draw(self, charset="unicode", show_variable_names=False):
+        """Draw the QNode as a circuit diagram.
+
+        Consider the following circuit as an example:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def qfunc(a, w):
+                qml.Hadamard(0)
+                qml.CRX(a, wires=[0, 1])
+                qml.Rot(w[0], w[1], w[2], wires=[1])
+                qml.CRX(-a, wires=[0, 1])
+
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        We can draw the circuit after it has been executed:
+
+        .. code-block:: python
+
+            >>> result = qfunc(2.3, [1.2, 3.2, 0.7])
+            >>> print(qfunc.draw())
+            0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+            1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
+            >>> print(qfunc.draw(charset="ascii"))
+            0: --H--+C----------------------------+C---------+| <Z @ Z>
+            1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+            >>> print(qfunc.draw(show_variable_names=True))
+            0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
+            1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩
+
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
+            show_variable_names (bool, optional): Show variable names instead of values.
+
+        Raises:
+            ValueError: If the given charset is not supported
+            pennylane.QuantumFunctionError: Drawing is impossible because the underlying CircuitGraph has not yet been constructed
+
+        Returns:
+            str: The circuit representation of the QNode
+        """
+        if self.circuit:
+            return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
+
+        raise RuntimeError("The QNode can only be drawn after its CircuitGraph has been constructed.")
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
@@ -311,6 +361,115 @@ class BaseQNode:
                 )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
+    def _determine_structured_variable_name(self, parameter_value, prefix):
+        """Determine the variable names corresponding to a parameter.
+
+        This method unrolls the parameter value if it has an array
+        or list structure.
+
+        Args:
+            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
+
+        Returns:
+            Union[str,Sequence[str],array[str]]: The variable name(s) in the same structure as the parameter value
+        """
+        if isinstance(parameter_value, np.ndarray):
+            variable_name_string = np.empty_like(parameter_value, dtype=object)
+
+            for index in np.ndindex(*variable_name_string.shape):
+                variable_name_string[index] = "{}[{}]".format(prefix, ",".join([str(i) for i in index]))
+        elif isinstance(parameter_value, Sequence):
+            variable_name_string = []
+
+            for idx, val in enumerate(parameter_value):
+                variable_name_string.append(self._determine_structured_variable_name(val, "{}[{}]".format(prefix, idx)))
+        else:
+            variable_name_string = prefix
+
+        return variable_name_string
+
+    def _make_variables(self, args, kwargs):
+        """Create the :class:`~.variable.Variable` instances representing the QNode's arguments.
+
+        The created :class:`~.variable.Variable` instances are given in the same nested structure
+        as the original arguments. The :class:`~.variable.Variable` instances are named according
+        to the argument names given in the QNode definition. Consider the following example:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def qfunc(a, w):
+                qml.Hadamard(0)
+                qml.CRX(a, wires=[0, 1])
+                qml.Rot(w[0], w[1], w[2], wires=[1])
+                qml.CRX(-a, wires=[0, 1])
+
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        In this example, ``_make_variables`` will return the following :class:`~.variable.Variable` instances
+
+        .. code-block:: python3
+
+            >>> qfunc(3.4, [1.2, 3.4, 5.6])
+            -0.031664133410566786
+            >>> qfunc._make_variables([3.4, [1.2, 3.4, 5.6]], {})
+            ["a", ["w[0]", "w[1]", "w[2]"]], {}
+
+        where the Variable instances are replaced with their name for readability.
+
+        Args:
+            args (tuple[Any]): Positional arguments passed to the quantum function.
+                During the construction we are not concerned with the numerical values, but with
+                the nesting structure.
+                Each positional argument is replaced with a :class:`~.variable.Variable` instance.
+            kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
+        """
+        # Get the name of the qfunc's arguments
+        full_argspec = inspect.getfullargspec(self.func)
+
+        # args
+        variable_name_strings = []
+        for variable_name, variable_value in zip(full_argspec.args, args):
+            variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
+
+        # varargs
+        len_diff = len(args) - len(full_argspec.args)
+        if len_diff > 0:
+            for idx, variable_value in enumerate(args[-len_diff:]):
+                variable_name = "{}[{}]".format(full_argspec.varargs, idx)
+
+                variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
+
+        arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
+        self.num_variables = len(arg_vars)
+
+        # arrange the newly created Variables in the nested structure of args
+        arg_vars = unflatten(arg_vars, args)
+
+        # kwargs
+        variable_name_strings = {}
+        kwarg_vars = {}
+        for variable_name in full_argspec.kwonlyargs:
+            if variable_name in kwargs:
+                variable_value = kwargs[variable_name]
+            else:
+                variable_value = full_argspec.kwonlydefaults[variable_name]
+
+            if isinstance(variable_value, np.ndarray):
+                variable_name_string = np.empty_like(variable_value, dtype=object)
+
+                for index in np.ndindex(*variable_name_string.shape):
+                    variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
+
+                kwarg_variable = [Variable(idx, name=name, is_kwarg=True) for idx, name in enumerate(_flatten(variable_name_string))]
+            else:
+                kwarg_variable = Variable(0, name=variable_name, is_kwarg=True)
+
+            kwarg_vars[variable_name] = kwarg_variable
+
+        return arg_vars, kwarg_vars
+
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
 
@@ -336,13 +495,10 @@ class BaseQNode:
                 inside of this method, the quantum function returns incorrect values or if
                 both continuous and discrete operations are specified in the same quantum circuit
         """
-        # pylint: disable=attribute-defined-outside-init, too-many-branches
+        # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
-        # flatten the args, replace each argument with a Variable instance carrying a unique index
-        arg_vars = [Variable(idx) for idx, _ in enumerate(_flatten(args))]
-        self.num_variables = len(arg_vars)
-        # arrange the newly created Variables in the nested structure of args
-        arg_vars = unflatten(arg_vars, args)
+        if self.arg_vars is None or self.kwarg_vars is None:
+            self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -360,15 +516,17 @@ class BaseQNode:
             if self.mutable:
                 # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
                 # (positional args must be replaced because parameter-shift differentiation requires Variables)
-                res = self.func(*arg_vars, **kwargs)
+                res = self.func(*self.arg_vars, **kwargs)
             else:
-                # must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
-                kwarg_vars = {}
-                for key, val in kwargs.items():
-                    temp = [Variable(idx, name=key) for idx, _ in enumerate(_flatten(val))]
-                    kwarg_vars[key] = unflatten(temp, val)
+                # TODO: Maybe we should only convert the kwarg_vars that were actually given
+                res = self.func(*self.arg_vars, **self.kwarg_vars)
+        except:
+            # If there was an error in the function call it could be that the parameters were corrupted
+            # In this case we wipe our Variable cache
+            self.arg_vars = None
+            self.kwarg_vars = None
 
-                res = self.func(*arg_vars, **kwarg_vars)
+            raise
         finally:
             qml._current_context = None
 
@@ -380,7 +538,7 @@ class BaseQNode:
         for k, op in enumerate(self.ops):
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    if p.name is None:  # ignore auxiliary arguments
+                    if not p.is_kwarg:  # ignore auxiliary arguments
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
