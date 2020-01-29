@@ -97,7 +97,9 @@
     ```
 
 * Added the `QNodeCollection` container class, that allows independent
-  QNodes to be stored and evaluated simultaneously.
+  QNodes to be stored and evaluated simultaneously. Experimental support
+  for asynchronous evaluation of contained QNodes is provided with the
+  `parallel=True` keyword argument.
   [(#466)](https://github.com/XanaduAI/pennylane/pull/466)
 
 * Added a high level `qml.map` function, that maps a quantum

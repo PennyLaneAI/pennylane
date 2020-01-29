@@ -750,3 +750,23 @@ class TestQNodeCircuitHashDifferentHashIntegration:
 
         assert circuit_hash_1 != circuit_hash_2
 
+    def test_compiled_program_was_stored(self):
+        """Test that QVM device stores the compiled program correctly"""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(params, wires):
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+
+        obs = [qml.PauliZ(0) @ qml.PauliZ(1)]
+        obs_list = obs * 6
+
+        qnodes = qml.map(circuit, obs_list, dev)
+        qnodes([], parallel=True)
+
+        hashes = set()
+        for qnode in qnodes:
+            hashes.add(qnode.circuit.hash)
+
+        assert len(hashes) == 1
+
