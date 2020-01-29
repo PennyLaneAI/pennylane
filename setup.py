@@ -34,7 +34,7 @@ info = {
     'maintainer_email': 'nathan@xanadu.ai',
     'url': 'https://github.com/XanaduAI/pennylane',
     'license': 'Apache License 2.0',
-    'packages': find_packages(where="pennylane"),
+    'packages': find_packages(where="pennylane/"),
     'entry_points': {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
