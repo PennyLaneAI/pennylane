@@ -45,7 +45,7 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
-        self._shots = shots
+        self.shots = shots
 
         self._op_queue = None
         self._obs_queue = None
