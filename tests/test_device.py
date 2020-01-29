@@ -343,6 +343,10 @@ class TestInternalFunctions:
                 format(mock_device_supporting_paulis.short_name)):
             mock_device_supporting_paulis.check_validity([], [qml.PauliZ(0).inv()])
 
+    def test_args(self, mock_device):
+        """Test that the device requires correct arguments"""
+        with pytest.raises(qml.DeviceError, match="specified number of shots needs to be at least 1"):
+            Device(mock_device, shots=0)
 
 class TestClassmethods:
     """Test the classmethods of Device"""
