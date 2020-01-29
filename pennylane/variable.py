@@ -92,14 +92,26 @@ class Variable:
     )
     kwarg_values = None  #: dict[str->array[float]]: the keyword argument values, set in :meth:`~.QNode.evaluate`
 
-    def __init__(self, idx, name=None):
+    def __init__(self, idx, name=None, is_kwarg=False):
         self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter name
         self.mult = 1  #: int, float: parameter scalar multiplier
+        self.is_kwarg = is_kwarg
 
     def __str__(self):
         temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
         return "Variable {}: name = {}, {}".format(self.idx, self.name, temp)
+
+    def __eq__(self, other):
+        if not isinstance(other, Variable):
+            return False
+
+        return (
+            self.name == other.name
+            and self.idx == other.idx
+            and self.is_kwarg == other.is_kwarg
+            and self.mult == other.mult
+        )
 
     def __neg__(self):
         """Unary negation."""
@@ -132,10 +144,35 @@ class Variable:
             float: current value of the Variable
         """
         # pylint: disable=unsubscriptable-object
-        if self.name is None:
+        if not self.is_kwarg:
             # The variable is a placeholder for a positional argument
             return Variable.free_param_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
         values = Variable.kwarg_values[self.name]
         return values[self.idx] * self.mult
+
+    def render(self, show_name_only=False):
+        """Returns a string representation of the Variable.
+
+        Args:
+            show_name_only (bool, optional): Render the name instead of the value.
+
+        Returns:
+            str: A string representation of the Variable
+        """
+        if not show_name_only:
+            if self.is_kwarg and Variable.kwarg_values and self.name in Variable.kwarg_values:
+                return str(round(self.val, 3))
+
+            if (
+                not self.is_kwarg
+                and Variable.free_param_values is not None
+                and len(Variable.free_param_values) > self.idx
+            ):
+                return str(round(self.val, 3))
+
+        if self.mult != 1:
+            return "{}*{}".format(str(round(self.mult, 3)), self.name)
+
+        return self.name

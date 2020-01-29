@@ -24,7 +24,6 @@ from pennylane.operation import Expectation
 from pennylane.circuit_graph import CircuitGraph
 
 
-
 @pytest.fixture
 def queue():
     """A fixture of a complex example of operations that depend on previous operations."""
@@ -47,10 +46,12 @@ def obs():
         qml.expval(qml.Hermitian(np.identity(4), wires=[1, 2])),
     ]
 
+
 @pytest.fixture
 def ops(queue, obs):
     """Queue of Operations followed by Observables."""
     return queue + obs
+
 
 @pytest.fixture
 def circuit(ops):
@@ -77,7 +78,6 @@ def parameterized_circuit():
         ]
 
     return qfunc
-
 
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
@@ -110,17 +110,10 @@ class TestCircuitGraph:
             assert k is ops[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
-        assert set(graph.edges()) == set((ops[a], ops[b]) for a, b in [
-            (0, 3),
-            (1, 3),
-            (2, 4),
-            (3, 5),
-            (3, 6),
-            (4, 5),
-            (5, 7),
-            (5, 8),
-            (6, 8),
-        ])
+        assert set(graph.edges()) == set(
+            (ops[a], ops[b])
+            for a, b in [(0, 3), (1, 3), (2, 4), (3, 5), (3, 6), (4, 5), (5, 7), (5, 8), (6, 8),]
+        )
 
     def test_ancestors_and_descendants_example(self, ops):
         """
@@ -170,7 +163,7 @@ class TestCircuitGraph:
         qnode = qml.QNode(parameterized_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         circuit = qnode.circuit
-        layers = circuit.layers
+        layers = circuit.parametrized_layers
         ops = circuit.operations
 
         assert len(layers) == 3
@@ -188,22 +181,18 @@ class TestCircuitGraph:
         qnode = qml.QNode(parameterized_circuit, dev)
         qnode._construct((0.1, 0.2, 0.3, 0.4, 0.5, 0.6), {})
         circuit = qnode.circuit
-        result = list(circuit.iterate_layers())
+        result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
         assert set(result[0][0]) == set([])
         assert set(result[0][1]) == set(circuit.operations[:3])
         assert result[0][2] == (0, 1, 2)
-        assert set(result[0][3]) == set(
-            circuit.operations[3:] + circuit.observables
-        )
+        assert set(result[0][3]) == set(circuit.operations[3:] + circuit.observables)
 
         assert set(result[1][0]) == set(circuit.operations[:2])
         assert set(result[1][1]) == set([circuit.operations[3]])
         assert result[1][2] == (3,)
-        assert set(result[1][3]) == set(
-            circuit.operations[4:6] + circuit.observables[:2]
-        )
+        assert set(result[1][3]) == set(circuit.operations[4:6] + circuit.observables[:2])
 
         assert set(result[2][0]) == set(circuit.operations[:4])
         assert set(result[2][1]) == set(circuit.operations[5:])
