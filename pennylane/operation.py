@@ -111,7 +111,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 
-from .utils import _flatten, _unflatten, pauli_eigs
+from .utils import _flatten, pauli_eigs
 from .variable import VariableRef
 
 #=============================================================================

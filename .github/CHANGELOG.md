@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* Added the `qml.qnodes.PassthruQNode` class for simulated QNodes that appear as white boxes
+  to an external autodifferentiation (AD) framework, and hence can be directly differentiated
+  by it. Note that the simulator device executing the PassthruQNode has to be compatible with
+  the external AD framework. Currently the only such device supported by PennyLane is
+  `expt.tensornet.tf`, compatible with TensorFlow 2.
+  [#488](https://github.com/XanaduAI/pennylane/pull/488)
+
 * Added a quantum chemistry package, `pennylane.qchem`, which supports
   integration with OpenFermion, Psi4, PySCF, and OpenBabel.
   [(#453)](https://github.com/XanaduAI/pennylane/pull/453)

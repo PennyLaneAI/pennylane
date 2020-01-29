@@ -21,10 +21,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        print(tf.__version__)
-        import tensorflow.contrib.eager as tfe
-        tf.enable_eager_execution()
-        Variable = tfe.Variable
+        tf = None  # expt.tensornet.tf requires TF 2
     else:
         from tensorflow import Variable
 except ImportError:
