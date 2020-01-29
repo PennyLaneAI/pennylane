@@ -706,6 +706,4 @@ class TestRepresentationResolver:
 
         unicode_representation_resolver.element_representation(op, wire)
 
-        print()
-
         assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
