@@ -875,6 +875,17 @@ class TestInv:
         ):
             pu.inv(None)
 
+    def test_callable_argument_error(self):
+        """Test that the proper error is raised when the argument is a function."""
+
+        def func(x):
+            return x
+
+        with pytest.raises(
+            ValueError, match="A function was passed as an argument to inv. ",
+        ):
+            pu.inv(func)
+
     @pytest.mark.parametrize("arg", [[1, 2, 3], [qml.PauliX(0), qml.PauliY(1), "Test"], "Test",])
     def test_non_operations_in_list(self, arg):
         """Test that the proper error is raised when the argument does not only contain operations."""
