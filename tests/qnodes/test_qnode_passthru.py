@@ -32,10 +32,6 @@ from pennylane.qnodes import PassthruQNode, BaseQNode, JacobianQNode
 
 
 
-# real data type used by the expt.tensornet.tf plugin (TensorFlow is strict about types)
-R_DTYPE = tf.float64
-
-
 @pytest.fixture(scope="function")
 def mock_qnode(mock_device):
     """Simple PassthruQNode with default properties."""
@@ -66,9 +62,12 @@ def tensornet_tf_device():
     return qml.device('expt.tensornet.tf', wires=2)
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
+@pytest.mark.skipif(tf is None, reason="TensorFlow 2.0 not found.")
 class TestPassthruTF:
     """Test that TF objects can be successfully passed through to a TF simulator device, and back to user."""
+
+    # real data type used by the expt.tensornet.tf plugin (TensorFlow is strict about types)
+    R_DTYPE = tf.float64
 
     def test_arraylike_args(self, tensornet_tf_device, tol):
         """Tests that PassthruQNode can use array-like TF objects as positional arguments."""
