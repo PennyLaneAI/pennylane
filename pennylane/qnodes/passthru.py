@@ -99,6 +99,8 @@ class PassthruQNode(BaseQNode):
 
         # check the validity of the circuit
         self._check_circuit(res)
+        del self.queue
+        del self.obs_queue
 
         # no VariableRefs, self.variable_deps is empty!
         # generate the DAG
@@ -112,3 +114,32 @@ class PassthruQNode(BaseQNode):
                 raise QuantumFunctionError(
                     "The operations {} cannot affect the output of the circuit.".format(invisible)
                 )
+
+    def evaluate(self, args, kwargs):
+        """Evaluate the quantum function on the specified device.
+
+        Args:
+            args (tuple[Any]): positional arguments to the quantum function (differentiable)
+            kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
+
+        Returns:
+            float or array[float]: output measured value(s)
+        """
+        # exactly like BaseQNode.evaluate, but skips the output_conversion and
+        # makes the device return the result in its native type
+        kwargs = self._default_args(kwargs)
+        self._set_variables(args, kwargs)
+
+        if self.circuit is None or self.mutable:
+            self._construct(args, kwargs)
+
+        self.device.reset()
+
+        if isinstance(self.device, qml.QubitDevice):
+            ret = self.device.execute(self.circuit, return_native_type=True)
+        else:
+            ret = self.device.execute(
+                self.circuit.operations, self.circuit.observables, self.variable_deps,
+                return_native_type=True
+            )
+        return ret

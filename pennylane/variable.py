@@ -61,7 +61,7 @@ keyword arguments, its ``name``, to return the correct value to the operation.
     The attribute :meth:`VariableRef.val` should not need to be accessed outside of advanced usage.
 """
 import copy
-import numbers
+
 
 
 class VariableRef:

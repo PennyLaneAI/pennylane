@@ -345,7 +345,7 @@ class TensorNetworkTF(TensorNetwork):
         # individual operations are already applied inside self.pre_apply()
         pass
 
-    def execute(self, queue, observables, parameters=None):
+    def execute(self, queue, observables, parameters=None, **kwargs):
         # pylint: disable=bad-super-call
         results = super(TensorNetwork, self).execute(queue, observables, parameters=parameters)
 
@@ -353,6 +353,8 @@ class TensorNetworkTF(TensorNetwork):
             # convert the results list into a single tensor
             self.res = tf.stack(results)
 
+        if kwargs.get('return_native_type', False):
+            return self.res
         # return the results as a NumPy array
         return self.res.numpy()
 
@@ -372,6 +374,7 @@ class TensorNetworkTF(TensorNetwork):
         """
         self.execute(queue, observables, parameters=parameters)
         jac = self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False)
+        # TODO use unconnected_gradients=tf.UnconnectedGradients.ZERO instead of the following?
         jac = [i if i is not None else tf.zeros(self.res.shape, dtype=tf.float64) for i in jac]
         jac = tf.stack(jac)
         return jac.numpy().T

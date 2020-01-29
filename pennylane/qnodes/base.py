@@ -370,6 +370,8 @@ class BaseQNode:
 
         # check the validity of the circuit
         self._check_circuit(res)
+        del self.queue
+        del self.obs_queue
 
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
@@ -492,8 +494,6 @@ class BaseQNode:
             queue = decompose_queue(self.queue, self.device)
 
         self.ops = queue + list(res)
-        del self.queue
-        del self.obs_queue
 
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.
@@ -580,7 +580,6 @@ class BaseQNode:
             ret = self.device.execute(
                 self.circuit.operations, self.circuit.observables, self.variable_deps
             )
-        return ret   # FIXME for passthruqnode!
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):

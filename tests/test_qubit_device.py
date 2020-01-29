@@ -24,7 +24,7 @@ from pennylane.qnodes import QuantumFunctionError
 from pennylane import expval, var, sample
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -177,7 +177,7 @@ class TestOperations:
                         ]
                      ]
 
-    variable = Variable(1)
+    variable = VariableRef(1)
     symbolic_queue = [
                         [qml.RX(variable, wires=[0])],
                     ]

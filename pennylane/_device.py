@@ -135,7 +135,7 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    def execute(self, queue, observables, parameters={}):
+    def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -145,8 +145,12 @@ class Device(abc.ABC):
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
-            parameters (dict[int->list[ParameterDependency]]): Mapping from free parameter index to the list of
+            parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
+
+        Keyword Args:
+            return_native_type (bool): If True, return the result in whatever type the device uses
+                internally, otherwise convert it into array[float]. Default: False.
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported

@@ -227,7 +227,7 @@ class Operator(abc.ABC):
             applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
-    do_check_domain = True  #: bool: should we perform a domain check for the parameters?
+    do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
     @staticmethod
     def _matrix(*params):
@@ -419,16 +419,12 @@ class Operator(abc.ABC):
         Returns:
             list[Any]: parameter values
         """
-        # FIXME profiling, avoid flatten/unflatten calls when possible
-        #temp = list(_flatten(self.params))
-        #temp_val = [self.check_domain(x.val, True) if isinstance(x, VariableRef) else x for x in temp]
-        #return _unflatten(temp_val, self.params)[0]
+        # TODO profiling
         def evaluate(p):
+            """Evaluate a single parameter."""
             if isinstance(p, np.ndarray):
                 # object arrays may have VariableRefs inside them
                 if p.dtype == object:
-                    #if not isinstance(p, numbers.Real):
-                    #    raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
                     temp = np.array([x.val if isinstance(x, VariableRef) else x for x in p.flat])
                     return temp.reshape(p.shape)
                 return p
