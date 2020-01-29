@@ -63,6 +63,7 @@ class QubitDevice(Device):
 
     # pylint: disable=too-many-public-methods
     _asarray = staticmethod(np.asarray)
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires=1, shots=1000, analytic=True):
         super().__init__(wires=wires, shots=shots)
@@ -84,7 +85,19 @@ class QubitDevice(Device):
     def capabilities(cls):
         """Get the capabilities of the plugin.
 
-        Devices that inherit from this class automatically
+        Capabilities include:
+
+        * ``"model"`` (*str*): either ``"qubit"`` or ``"CV"``.
+
+        * ``"inverse_operations"`` (*bool*): ``True`` if the device supports
+          applying the inverse of operations. Operations which should be inverted
+          have ``operation.inverse == True``.
+
+        * ``"tensor_observables" (*bool*): ``True`` if the device supports
+          expectation values/variance/samples of :class:`~.Tensor` observables.
+
+        The qubit device class has built-in support for tensor observables. As a
+        result, devices that inherit from this class automatically
         have the following items in their capabilities
         dictionary:
 
@@ -172,7 +185,8 @@ class QubitDevice(Device):
 
         Both arguments are provided as lists of PennyLane :class:`~.Operation`
         instances. Useful properties include :attr:`~.Operation.name`,
-        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`,
+        and :attr:`~.Operation.inverse`:
 
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
@@ -181,6 +195,11 @@ class QubitDevice(Device):
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
+        >>> op.inverse # check if the operation should be inverted
+        False
+        >>> op = qml.RX(0.2, wires=[0]).inv
+        >>> op.inverse
+        True
 
         Args:
             operations (list[~.Operation]): operations to apply to the device
@@ -246,17 +265,19 @@ class QubitDevice(Device):
         return results
 
     def generate_samples(self):
-        """Generate computational basis samples.
+        r"""Generate computational basis samples for all wires and stores the results in
+        the attribute ``self._samples``.
 
-        If the device contains a sample return type, or the
-        device is running in non-analytic mode, ``dev.shots`` number of
-        computational basis samples are generated and stored within
-        the :attr:`~._samples` attribute.
+        ``self._samples`` has the shape ``(dev.shots, dev.num_wires)``.
+
+        Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
+        :math:`q_0` is the most significant bit.
 
         .. warning::
 
             This method should be overwritten on devices that
-            generate their own computational basis samples.
+            generate their own computational basis samples, with the resulting
+            computational basis samples stored as ``self._samples``.
         """
         number_of_states = 2 ** self.num_wires
         rotated_prob = self.probability()
@@ -316,11 +337,20 @@ class QubitDevice(Device):
 
     @abc.abstractmethod
     def probability(self, wires=None):
-        """Return the (marginal) probability of each computational basis
+        r"""Return the (marginal) probability of each computational basis
         state from the last run of the device.
+
+        PennyLane uses the convention
+        :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where :math:`q_0` is the most
+        significant bit.
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
+
+        .. note::
+
+            :meth:`marginal_prob` may be used as a utility method
+            to calculate the marginal probability distribution.
 
         Args:
             wires (Sequence[int]): Sequence of wires to return
