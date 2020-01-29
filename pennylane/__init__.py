@@ -40,6 +40,7 @@ from .ops import *
 from .optimize import *
 from .templates import *
 from .qnodes import qnode, QNode, QuantumFunctionError
+from .utils import inv
 from ._version import __version__
 from .io import *
 
