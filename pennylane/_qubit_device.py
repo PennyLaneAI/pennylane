@@ -155,7 +155,7 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         if (not self.analytic) or circuit.is_sampled:
-             self._samples = self.generate_samples()
+            self._samples = self.generate_samples()
 
         # compute the required statistics
         results = self.statistics(circuit.observables)
