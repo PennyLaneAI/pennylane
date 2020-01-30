@@ -98,8 +98,7 @@ simulators; additional devices can be installed as plugins (see
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
-Device options
-~~~~~~~~~~~~~~
+**Device options**
 
 When loading a device, the name of the device must always be specified.
 Further options can then be passed as keyword arguments; these options can differ based
@@ -136,6 +135,12 @@ function. It takes the same arguments as the original quantum function:
 >>> circuit(np.pi/4, 0.7)
 0.7648421872844883
 
+To view the quantum circuit after it has been executed, we can use the :meth:`~.BaseQNode.draw`
+method:
+
+>>> print(circuit.draw())
+0: ──RZ(0.785)──╭C───────────┤
+1: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩
 
 .. _intro_vcirc_decorator:
 
@@ -167,8 +172,58 @@ For example:
     result = circuit(0.543)
 
 
-Quantum circuits from other frameworks
---------------------------------------
+Collections of QNodes
+---------------------
+
+Sometimes you may need multiple QNodes in your variational algorithm. This is
+as simple as defining multiple QNodes as above, using the same or multiple
+devices, and composing them together.
+
+PennyLane also provides some high-level tools for creating and evaluating
+QNode 'collections'. For example, :func:`~.map` allows a single
+function of quantum operations (or :doc:`template <templates>`) to be mapped across
+multiple observables or devices.
+
+For example, consider the following quantum function ansatz:
+
+.. code-block:: python
+
+    def my_ansatz(params, **kwargs):
+        qml.RX(params[0], wires=0)
+        qml.RX(params[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+
+We can define a list of observables, and two devices:
+
+>>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
+>>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D") # requires PennyLane-Forest
+>>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B") # requires PennyLane-Forest
+
+Note that the two devices above require the `PennyLane-Forest plugin <https://pennylane-forest.rtfd.io>`_
+be installed, as well as the Forest QVM. You can also try replacing them with alternate devices.
+
+Mapping the template across the observables and devices creates a :class:`~.QNodeCollection`:
+
+>>> qnodes = qml.map(my_ansatz, obs_list, [qpu1, qpu2], measure="expval")
+>>> params = [0.54, 0.12]
+>>> qnodes(params)
+array([-0.02854835  0.99280864])
+
+Functions are available to process QNode collections, including :func:`~.dot`,
+:func:`~.sum`, and :func:`~.apply`:
+
+>>> cost_fn = qml.sum(qnodes)
+>>> cost_fn(params)
+0.906
+
+.. note::
+
+    QNode collections support an experimental parallel execution mode. See
+    the :class:`~.QNodeCollection` documentation for more details.
+
+
+Importing circuits from other frameworks
+----------------------------------------
 
 PennyLane supports creating customized PennyLane templates imported from other
 frameworks. By loading your existing quantum code as a PennyLane template, you
