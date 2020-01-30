@@ -28,7 +28,7 @@ This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
 
 Note that PennyLane supports inverting quantum opperations via the :code:`.inv` member method.
-Additionally, PennyLane provides a method :code:`qml.inv()` that can be used to invert sequences 
+Additionally, PennyLane provides a function :func:`~.pennylane.inv` that can be used to invert sequences
 of operations and :doc:`templates`.
 
 Below is a list of all quantum operations supported by PennyLane.
