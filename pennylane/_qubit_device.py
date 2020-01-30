@@ -155,7 +155,7 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         if (not self.analytic) or circuit.is_sampled:
-            self.generate_samples()
+             self._samples = self.generate_samples()
 
         # compute the required statistics
         results = self.statistics(circuit.observables)
@@ -282,7 +282,7 @@ class QubitDevice(Device):
         number_of_states = 2 ** self.num_wires
         rotated_prob = self.probability()
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        self._samples = QubitDevice.states_to_binary(samples, self.num_wires)
+        return QubitDevice.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
