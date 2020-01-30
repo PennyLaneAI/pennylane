@@ -19,7 +19,7 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.layers import (Interferometer)
+from pennylane.templates.subroutines import Interferometer
 
 
 class TestInterferometer:
@@ -55,7 +55,6 @@ class TestInterferometer:
         """test the beamsplitter convention"""
         N = 2
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321]
         phi = [0.234]
@@ -85,7 +84,6 @@ class TestInterferometer:
 
     def test_one_mode(self, tol):
         """Test that a one mode interferometer correctly gives a rotation gate"""
-        dev = qml.device('default.gaussian', wires=1)
         varphi = [0.42342]
 
         with qml.utils.OperationRecorder() as rec:
@@ -100,7 +98,6 @@ class TestInterferometer:
         correctly gives a beamsplitter+rotation gate"""
         N = 2
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321]
         phi = [0.234]
@@ -123,7 +120,6 @@ class TestInterferometer:
         correctly gives a beamsplitter+rotation gate"""
         N = 2
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321]
         phi = [0.234]
@@ -147,7 +143,6 @@ class TestInterferometer:
         """Test that a three mode interferometer using either mesh gives the correct gates"""
         N = 3
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321, 0.4523, 0.21321]
         phi = [0.234, 0.324, 0.234]
@@ -179,7 +174,6 @@ class TestInterferometer:
         """Test that a 4 mode interferometer using rectangular mesh gives the correct gates"""
         N = 4
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321, 0.4523, 0.21321, 0.123, 0.5234, 1.23]
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
@@ -206,7 +200,6 @@ class TestInterferometer:
         """Test that a 4 mode interferometer using triangular mesh gives the correct gates"""
         N = 4
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
 
         theta = [0.321, 0.4523, 0.21321, 0.123, 0.5234, 1.23]
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
@@ -249,7 +242,7 @@ class TestInterferometer:
             for w in wires:
                 qml.Squeezing(sq[w][0], sq[w][1], wires=w)
 
-            Interferometer(theta, phi, varphi, wires=wires)
+            Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
             return [qml.expval(qml.NumberOperator(w)) for w in wires]
 
         res = circuit(theta, phi, varphi)
