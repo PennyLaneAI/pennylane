@@ -22,9 +22,9 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import pennylane as qml
-from pennylane.templates.state_preparations import (gray_code,
-                                                    BasisStatePreparation,
+from pennylane.templates.state_preparations import (BasisStatePreparation,
                                                     MottonenStatePreparation)
+from pennylane.templates.state_preparations.mottonen import gray_code
 
 
 class TestHelperFunctions:

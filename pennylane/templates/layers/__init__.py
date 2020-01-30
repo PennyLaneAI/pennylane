@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
+r"""
+Layers are trainable templates that are typically repeated, using different adjustable parameters in each repetition.
+They implement a transformation from a quantum state to another quantum state.
 """
 
-from .decorator import *
-from .layers import *
-from .embeddings import *
-from .subroutines import *
-from .state_preparations import *
+from .strongly_entangling import StronglyEntanglingLayers
+from .random import RandomLayers
+from .cv_neural_net import CVNeuralNetLayers
