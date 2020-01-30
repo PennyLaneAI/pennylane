@@ -26,6 +26,7 @@ from semantic_version import Version, Spec
 import pennylane.operation
 
 import pennylane.init
+import pennylane.templates
 from pennylane.templates import template
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, VQECost
@@ -38,7 +39,6 @@ from ._qubit_device import QubitDevice
 from .measure import expval, var, sample, probs
 from .ops import *
 from .optimize import *
-from .templates import *
 from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__

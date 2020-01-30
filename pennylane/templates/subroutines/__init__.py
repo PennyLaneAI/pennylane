@@ -17,5 +17,3 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 """
 
 from .interferometer import Interferometer
-
-__all__ = ["Interferometer"]

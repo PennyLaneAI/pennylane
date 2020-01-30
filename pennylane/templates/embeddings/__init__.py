@@ -23,10 +23,3 @@ from .basis import BasisEmbedding
 from .displacement import DisplacementEmbedding
 from .qaoa import QAOAEmbedding
 from .squeezing import SqueezingEmbedding
-
-__all__ = ["AngleEmbedding",
-           "AmplitudeEmbedding",
-           "BasisEmbedding",
-           "DisplacementEmbedding",
-           "QAOAEmbedding",
-           "SqueezingEmbedding"]
