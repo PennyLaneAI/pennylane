@@ -263,7 +263,7 @@ class QNodeCollection(Sequence):
         if interface in ("autograd", "numpy"):
             from autograd import numpy as np
 
-            return np.vstack(results)
+            return np.stack(results)
 
         return results
 
