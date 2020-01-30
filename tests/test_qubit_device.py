@@ -336,7 +336,7 @@ class TestGenerateSamples:
             # Mock the auxiliary methods such that they return the expected values
             m.setattr(QubitDevice, "sample_basis_states", lambda self, wires, b: wires)
             m.setattr(QubitDevice, "states_to_binary", lambda a, b: (a, b))
-            mock_qubit_device.generate_samples()
+            mock_qubit_device._samples = mock_qubit_device.generate_samples()
 
         assert mock_qubit_device._samples == (number_of_states, mock_qubit_device.num_wires)
 
