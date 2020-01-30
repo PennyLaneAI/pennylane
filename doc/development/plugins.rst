@@ -200,7 +200,6 @@ after execution, you need to overwrite the following method:
 
     generate_samples
 
-Note that ``self._samples`` has the shape ``(dev.shots, dev.num_wires)``.
 Furthermore, PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
 :math:`q_0` is the most significant bit.
 
@@ -227,7 +226,7 @@ your plugin, which, by default performs the following process:
 
     # generate computational basis samples
     if (not self.analytic) or circuit.is_sampled:
-        self.generate_samples()
+        self._samples = self.generate_samples()
 
     # compute the required statistics
     results = self.statistics(circuit.observables)
