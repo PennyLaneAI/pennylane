@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-State preperations are templates that prepare a given quantum state,
-by decomposing it into elementary operations.
+Contains the ``MottonenStatePreparation`` template.
 """
 import math
 import numpy as np
@@ -23,7 +22,6 @@ import pennylane as qml
 
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (_check_wires,
-                                       _check_no_variable,
                                        _check_shape,
                                        _get_shape)
 from pennylane.variable import Variable
@@ -54,50 +52,6 @@ def gray_code(rank):
     gray_code_recurse(g, rank - 1)
 
     return g
-
-@template
-def BasisStatePreparation(basis_state, wires):
-    r"""
-    Prepares a basis state on the given wires using a sequence of Pauli X gates.
-
-    .. warning::
-
-        ``basis_state`` influences the circuit architecture and is therefore incompatible with
-        gradient computations. Ensure that ``basis_state`` is not passed to the qnode by positional
-        arguments.
-
-    Args:
-        basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
-            the state preparation acts on. ``N`` must be smaller or equal to the total
-            number of wires of the device.
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
-
-    Raises:
-        ValueError: if inputs do not have the correct format
-    """
-
-    ######################
-    # Input checks
-
-    wires = _check_wires(wires)
-
-    expected_shape = (len(wires),)
-    _check_shape(basis_state, expected_shape, msg=" 'basis_state' must be of shape {}; got {}."
-                                                  "".format(expected_shape, _get_shape(basis_state)))
-
-    # basis_state cannot be trainable
-    _check_no_variable(basis_state, msg="'basis_state' cannot be differentiable; must be passed as a keyword argument "
-                                        "to the quantum node")
-
-    # basis_state is guaranteed to be a list of binary values
-    if any([b not in [0, 1] for b in basis_state]):
-        raise ValueError("'basis_state' must only contain values of 0 and 1; got {}".format(basis_state))
-
-    ######################
-
-    for wire, state in zip(wires, basis_state):
-        if state == 1:
-            qml.PauliX(wire)
 
 
 def _matrix_M_entry(row, col):
@@ -345,8 +299,3 @@ def MottonenStatePreparation(state_vector, wires):
         target = wires[k - 1]
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)
-
-
-state_preparations = {"BasisStatePreparation", "MottonenStatePreparation"}
-
-__all__ = list(state_preparations)

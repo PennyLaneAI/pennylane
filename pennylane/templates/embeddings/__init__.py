@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
+r"""
+Embeddings are templates encode features (i.e., classical data) into a quantum state.
+They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
+used at the beginning of a circuit.
 """
 
-from .decorator import *
-from .layers import *
-from .embeddings import *
-from .subroutines import *
-from .state_preparations import *
+from .angle import AngleEmbedding
+from .amplitude import AmplitudeEmbedding
+from .basis import BasisEmbedding
+from .displacement import DisplacementEmbedding
+from .qaoa import QAOAEmbedding
+from .squeezing import SqueezingEmbedding

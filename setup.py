@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
@@ -34,18 +34,7 @@ info = {
     'maintainer_email': 'nathan@xanadu.ai',
     'url': 'https://github.com/XanaduAI/pennylane',
     'license': 'Apache License 2.0',
-    'packages': [
-                    'pennylane',
-                    'pennylane.beta',
-                    'pennylane.beta.plugins',
-                    'pennylane.interfaces',
-                    'pennylane.ops',
-                    'pennylane.optimize',
-                    'pennylane.plugins',
-                    'pennylane.qnodes',
-                    'pennylane.templates',
-                    'pennylane.vqe',
-                ],
+    'packages': find_packages(where="."),
     'entry_points': {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
