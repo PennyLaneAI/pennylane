@@ -29,7 +29,7 @@ This quantum function uses the :class:`RZ <pennylane.RZ>`,
 
 Note that PennyLane supports inverting quantum opperations via the :code:`.inv` member method.
 Additionally, PennyLane provides a method :code:`qml.inv()` that can be used to invert sequences 
-of operations and :ref:`templates <intro_ref_temp>`.
+of operations and :doc:`templates`.
 
 Below is a list of all quantum operations supported by PennyLane.
 
@@ -188,4 +188,3 @@ The only operation shared by both qubit and continouous-variable architectures i
     ~pennylane.Identity
 
 :html:`</div>`
-
