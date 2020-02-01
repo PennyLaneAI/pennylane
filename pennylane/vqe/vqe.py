@@ -211,7 +211,4 @@ class VQECost:
         self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
-        if self.qnodes.interface == "autograd":
-            return self.cost_fn(*args, **kwargs)[0]
-
         return self.cost_fn(*args, **kwargs)

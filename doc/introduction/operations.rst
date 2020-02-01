@@ -27,8 +27,9 @@ This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` as well as the
 :class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
 
-Note that PennyLane supports inverting quantum opperations via the :meth:`~.Operation.inv` method.
-Additionally, PennyLane provides a function :func:`~.pennylane.inv` that can be used to invert sequences
+Note that PennyLane supports inverting quantum opperations via the
+:meth:`Op(param, wires).inv() <.Operation.inv>` method. Additionally, PennyLane
+provides a function :func:`qml.inv <.pennylane.inv>` that can be used to invert sequences
 of operations and :doc:`templates`.
 
 Below is a list of all quantum operations supported by PennyLane.
