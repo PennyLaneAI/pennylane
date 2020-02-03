@@ -23,7 +23,7 @@ tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
 tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
-from pennylane.beta.plugins.expt_tensornet_tf import TensorNetworkTF
+from pennylane.beta.plugins.default_tensor_tf import DefaultTensorTF
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, CNOT, Toffoli, CSWAP
 from pennylane.qnodes import qnode, QNode
 from pennylane.qnodes.decorator import ALLOWED_INTERFACES, ALLOWED_DIFF_METHODS
@@ -102,7 +102,7 @@ class TestApply:
 
     def test_basis_state(self, tol):
         """Test basis state initialization"""
-        dev = TensorNetworkTF(wires=4)
+        dev = DefaultTensorTF(wires=4)
         state = np.array([0, 0, 1, 0])
 
         dev.execute([qml.BasisState(state, wires=[0, 1, 2, 3])], [], {})
@@ -115,7 +115,7 @@ class TestApply:
 
     def test_qubit_state_vector(self, init_state, tol):
         """Test qubit state vector application"""
-        dev = TensorNetworkTF(wires=1)
+        dev = DefaultTensorTF(wires=1)
         state = init_state(1)
 
         dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
@@ -127,7 +127,7 @@ class TestApply:
     def test_invalid_qubit_state_vector(self):
         """Test that an exception is raised if the state
         vector is the wrong size"""
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
         state = np.array([0, 123.432])
 
         with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
@@ -136,7 +136,7 @@ class TestApply:
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, init_state, op, mat, tol):
         """Test non-parametrized single qubit operations"""
-        dev = TensorNetworkTF(wires=1)
+        dev = DefaultTensorTF(wires=1)
         state = init_state(1)
 
         queue = [qml.QubitStateVector(state, wires=[0])]
@@ -151,7 +151,7 @@ class TestApply:
     @pytest.mark.parametrize("op,func", single_qubit_param)
     def test_single_qubit_parameters(self, init_state, op, func, theta, tol):
         """Test parametrized single qubit operations"""
-        dev = TensorNetworkTF(wires=1)
+        dev = DefaultTensorTF(wires=1)
         state = init_state(1)
 
         queue = [qml.QubitStateVector(state, wires=[0])]
@@ -164,7 +164,7 @@ class TestApply:
 
     def test_rotation(self, init_state, tol):
         """Test three axis rotation gate"""
-        dev = TensorNetworkTF(wires=1)
+        dev = DefaultTensorTF(wires=1)
         state = init_state(1)
 
         a = 0.542
@@ -182,7 +182,7 @@ class TestApply:
     @pytest.mark.parametrize("op,mat", two_qubit)
     def test_two_qubit_no_parameters(self, init_state, op, mat, tol):
         """Test non-parametrized two qubit operations"""
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
         state = init_state(2)
 
         queue = [qml.QubitStateVector(state, wires=[0, 1])]
@@ -197,7 +197,7 @@ class TestApply:
     def test_qubit_unitary(self, init_state, mat, tol):
         """Test application of arbitrary qubit unitaries"""
         N = int(np.log2(len(mat)))
-        dev = TensorNetworkTF(wires=N)
+        dev = DefaultTensorTF(wires=N)
         state = init_state(N)
 
         queue = [qml.QubitStateVector(state, wires=range(N))]
@@ -211,7 +211,7 @@ class TestApply:
     @pytest.mark.parametrize("op, mat", three_qubit)
     def test_three_qubit_no_parameters(self, init_state, op, mat, tol):
         """Test non-parametrized three qubit operations"""
-        dev = TensorNetworkTF(wires=3)
+        dev = DefaultTensorTF(wires=3)
         state = init_state(3)
 
         queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
@@ -226,7 +226,7 @@ class TestApply:
     @pytest.mark.parametrize("op,func", two_qubit_param)
     def test_two_qubit_parameters(self, init_state, op, func, theta, tol):
         """Test two qubit parametrized operations"""
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
         state = init_state(2)
 
         queue = [qml.QubitStateVector(state, wires=[0, 1])]
@@ -266,7 +266,7 @@ class TestExpval:
     @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
     def test_single_wire_expectation(self, gate, obs, expected, theta, phi, tol):
         """Test that identity expectation value (i.e. the trace) is 1"""
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
         queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [obs(wires=[i]) for i in range(2)]
 
@@ -278,7 +278,7 @@ class TestExpval:
 
     def test_hermitian_expectation(self, theta, phi, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
         queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [qml.Hermitian(A, wires=[i]) for i in range(2)]
 
@@ -307,7 +307,7 @@ class TestExpval:
             ]
         )
 
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
         queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [qml.Hermitian(A, wires=[0, 1])]
 
@@ -335,7 +335,7 @@ class TestVar:
 
     def test_var(self, theta, phi, tol):
         """Tests for variance calculation"""
-        dev = TensorNetworkTF(wires=1)
+        dev = DefaultTensorTF(wires=1)
         # test correct variance for <Z> of a rotated state
 
         queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
@@ -350,7 +350,7 @@ class TestVar:
 
     def test_var_hermitian(self, theta, phi, tol):
         """Tests for variance calculation using an arbitrary Hermitian observable"""
-        dev = TensorNetworkTF(wires=2)
+        dev = DefaultTensorTF(wires=2)
 
         # test correct variance for <H> of a rotated state
         H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
@@ -377,16 +377,16 @@ class TestVar:
 
 
 class TestQNodeIntegration:
-    """Integration tests for expt.tensornet.tf. This test ensures it integrates
+    """Integration tests for default.tensor.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
 
     def test_load_tensornet_tf_device(self):
         """Test that the tensor network plugin loads correctly"""
-        dev = qml.device("expt.tensornet.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == 1000
         assert dev.analytic
-        assert dev.short_name == "expt.tensornet.tf"
+        assert dev.short_name == "default.tensor.tf"
         assert dev.capabilities()["provides_jacobian"]
 
     @pytest.mark.parametrize("decorator", [qml.qnode, qnode])
@@ -396,7 +396,7 @@ class TestQNodeIntegration:
         This test is parametrized for both the new and old QNode decorator."""
         p = 0.543
 
-        dev = qml.device("expt.tensornet.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1)
 
         @decorator(dev)
         def circuit(x):
@@ -409,7 +409,7 @@ class TestQNodeIntegration:
 
     def test_cannot_overwrite_state(self):
         """Tests that _state is a property and cannot be overwritten."""
-        dev = qml.device("expt.tensornet.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2)
 
         with pytest.raises(AttributeError, match="can't set attribute"):
             dev._state = np.array([[1, 0], [0, 0]])
@@ -418,7 +418,7 @@ class TestQNodeIntegration:
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("expt.tensornet.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2)
 
         state = dev._state
 
@@ -447,7 +447,7 @@ class TestJacobianIntegration:
         y = 0.2162158
         z = 0.75110998
 
-        dev = qml.device("expt.tensornet.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1)
 
         @qnode(dev)
         def circuit(p):
@@ -478,7 +478,7 @@ class TestJacobianIntegration:
         y = 0.2162158
         z = 0.75110998
         p = np.array([x, y, z])
-        dev = qml.device("expt.tensornet.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1)
 
         @qnode(dev)
         def circuit(x):
@@ -510,7 +510,7 @@ class TestJacobianIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("expt.tensornet.tf", wires=3)
+        dev1 = qml.device("default.tensor.tf", wires=3)
         dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = QNode(circuit, dev1, diff_method=diff_method)
@@ -521,7 +521,7 @@ class TestJacobianIntegration:
 
 
 class TestInterfaceIntegration:
-    """Integration tests for expt.tensornet.tf. This test class ensures it integrates
+    """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
     interfaces."""
 
@@ -543,7 +543,7 @@ class TestInterfaceIntegration:
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
 
-        dev = qml.device("expt.tensornet.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2)
 
         @qnode(dev, diff_method="best", interface=interface)
         def circuit_fn(a, b):
@@ -599,7 +599,7 @@ class TestInterfaceIntegration:
 
 
 class TestHybridInterfaceIntegration:
-    """Integration tests for expt.tensornet.tf. This test class ensures it integrates
+    """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
     interfaces in the case of hybrid-classical computation."""
 
@@ -627,7 +627,7 @@ class TestHybridInterfaceIntegration:
     @pytest.fixture
     def cost(self, interface, torch_support):
         """Fixture to create cost function for the test class"""
-        dev = qml.device("expt.tensornet.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1)
 
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")

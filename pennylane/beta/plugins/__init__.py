@@ -16,5 +16,5 @@ This package contains experimental plugin devices for PennyLane.
 
 .. currentmodule:: pennylane.beta.plugins
 """
-from .expt_tensornet import TensorNetwork
-from .expt_tensornet_tf import TensorNetworkTF
+from .default_tensor import DefaultTensor
+from .default_tensor_tf import DefaultTensorTF
