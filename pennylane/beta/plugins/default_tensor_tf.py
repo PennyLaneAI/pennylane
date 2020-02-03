@@ -189,7 +189,7 @@ class DefaultTensorTF(DefaultTensor):
 
     **Short name:** ``default.tensor.tf``
 
-    This experimental device extends ``expt.tensornet`` by making use of
+    This experimental device extends ``default.tensor`` by making use of
     the TensorFlow backend of TensorNetwork. As a result, it supports
     classical backpropagation as a means to compute the Jacobian. This can
     be faster than the parameter-shift rule for analytic quantum gradients
