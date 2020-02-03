@@ -15,11 +15,14 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
-from collections import namedtuple
+from collections import Counter, OrderedDict, namedtuple
+
 import networkx as nx
 
+import pennylane as qml
 from pennylane.operation import Sample
 
+from .circuit_drawer import CHARSETS, CircuitDrawer
 from .utils import _flatten
 from .variable import VariableRef
 
@@ -49,6 +52,21 @@ def _is_observable(x):
     """
     return getattr(x, "return_type", None) is not None
 
+
+def _list_at_index_or_none(list, idx):
+    """Return the element of a list at the given index if it exists, return None otherwise.
+
+    Args:
+        list (list[object]): The target list
+        idx (int): The target index
+
+    Returns:
+        Union[object,NoneType]: The element at the target index or None
+    """
+    if len(list) > idx:
+        return list[idx]
+
+    return None
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
@@ -312,7 +330,7 @@ class CircuitGraph:
         return A & B
 
     @property
-    def layers(self):
+    def parametrized_layers(self):
         """Identify the parametrized layer structure of the circuit.
 
         Returns:
@@ -346,17 +364,82 @@ class CircuitGraph:
 
         return layers
 
-    def iterate_layers(self):
+    def iterate_parametrized_layers(self):
         """Parametrized layers of the circuit.
 
         Returns:
             Iterable[LayerData]: layers with extra metadata
         """
         # iterate through each layer
-        for ops, param_inds in self.layers:
+        for ops, param_inds in self.parametrized_layers:
             pre_queue = self.ancestors_in_order(ops)
             post_queue = self.descendants_in_order(ops)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
+
+    def greedy_layers(self):
+        """Greedily collected layers of the circuit. Empty slots are filled with ``None``.
+
+        Layers are built by pushing back gates in the circuit as far as possible, so that
+        every Gate is at the lower possible layer.
+
+        Returns:
+            Tuple[list[list[~.Operation]], list[list[~.Observable]]]:
+            Tuple of the circuits operations and the circuits observables, both indexed
+            by wires.
+        """
+        l = 0
+
+        operations = OrderedDict()
+        for key in sorted(self._grid):
+            operations[key] = self._grid[key]
+
+        for wire in operations:
+            operations[wire] = list(
+                filter(
+                    lambda op: not (
+                        isinstance(op, qml.operation.Observable) and op.return_type is not None
+                    ),
+                    operations[wire],
+                )
+            )
+
+        while True:
+            layer_ops = {
+                wire: _list_at_index_or_none(operations[wire], l) for wire in operations
+            }
+            num_ops = Counter(layer_ops.values())
+
+            if None in num_ops and num_ops[None] == len(operations):
+                break
+
+            for (wire, op) in layer_ops.items():
+                if op is None:
+                    operations[wire].append(None)
+                    continue
+
+                # push back to next layer if not all args wires are there yet
+                if len(op.wires) > num_ops[op]:
+                    operations[wire].insert(l, None)
+
+            l += 1
+
+        observables = OrderedDict()
+        for wire in sorted(self._grid):
+            observables[wire] = list(
+                filter(
+                    lambda op: isinstance(op, qml.operation.Observable)
+                    and op.return_type is not None,
+                    self._grid[wire],
+                )
+            )
+
+            if not observables[wire]:
+                observables[wire] = [None]
+
+        return (
+            [operations[wire] for wire in operations],
+            [observables[wire] for wire in observables],
+        )
 
     def update_node(self, old, new):
         """Replaces the given circuit graph node with a new one.
@@ -373,6 +456,34 @@ class CircuitGraph:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
         nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
+
+    def draw(self, charset="unicode", show_variable_names=False):
+        """Draw the CircuitGraph as a circuit diagram.
+
+        Args:
+            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
+            show_variable_names (bool, optional): Show variable names instead of variable values.
+
+        Raises:
+            ValueError: If the given charset is not supported
+
+        Returns:
+            str: The circuit diagram representation of the ``CircuitGraph``
+        """
+        grid, obs = self.greedy_layers()
+
+        if charset not in CHARSETS:
+            raise ValueError(
+                "Charset {} is not supported. Supported charsets: {}.".format(
+                    charset, ", ".join(CHARSETS.keys())
+                )
+            )
+
+        drawer = CircuitDrawer(
+            grid, obs, charset=CHARSETS[charset], show_variable_names=show_variable_names
+        )
+
+        return drawer.draw()
 
     @property
     def diagonalizing_gates(self):

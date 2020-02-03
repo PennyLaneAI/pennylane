@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Subroutines are the most basic template, consisting of a collection of quantum operations. As opposed
-to layers and embeddings, subroutines do not encode features, and they have no native option to be applied
-repeatedly.
+Contains the ``Interferometer`` template.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.ops import Beamsplitter, Rotation
 from pennylane.templates.decorator import template
+from pennylane.ops import Beamsplitter, Rotation
 from pennylane.templates.utils import (_check_shapes,
                                        _check_no_variable,
                                        _check_wires,
@@ -162,8 +160,3 @@ def Interferometer(theta, phi, varphi, wires, mesh='rectangular', beamsplitter='
     # apply the final local phase shifts to all modes
     for i, p in enumerate(varphi):
         Rotation(p, wires=[wires[i]])
-
-
-subroutines = {"Interferometer"}
-
-__all__ = list(subroutines)

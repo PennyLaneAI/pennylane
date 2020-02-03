@@ -601,21 +601,21 @@ class TestSample:
 
         qubit_device_2_wires.shots = 10
         qubit_device_2_wires._wires_measured = {0}
-        qubit_device_2_wires.generate_samples()
+        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
         s1 = qubit_device_2_wires.sample(qml.PauliZ(wires=[0]))
         assert np.array_equal(s1.shape, (10,))
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.shots = 12
         qubit_device_2_wires._wires_measured = {1}
-        qubit_device_2_wires.generate_samples()
+        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
         s2 = qubit_device_2_wires.sample(qml.PauliZ(wires=[1]))
         assert np.array_equal(s2.shape, (12,))
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.shots = 17
         qubit_device_2_wires._wires_measured = {0, 1}
-        qubit_device_2_wires.generate_samples()
+        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
         s3 = qubit_device_2_wires.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
 
@@ -631,7 +631,7 @@ class TestSample:
 
         qubit_device_2_wires.apply([qml.RX(1.5708, wires=[0])])
         qubit_device_2_wires._wires_measured = {0}
-        qubit_device_2_wires.generate_samples()
+        qubit_device_2_wires._samples = qubit_device_2_wires.generate_samples()
 
         s1 = qubit_device_2_wires.sample(qml.PauliZ(0))
 
@@ -1453,7 +1453,7 @@ class TestTensorSample:
         )
 
         dev._wires_measured = {0, 1, 2}
-        dev.generate_samples()
+        dev._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals
@@ -1493,7 +1493,7 @@ class TestTensorSample:
         )
 
         dev._wires_measured = {0, 1, 2}
-        dev.generate_samples()
+        dev._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals
@@ -1541,7 +1541,7 @@ class TestTensorSample:
         )
 
         dev._wires_measured = {0, 1, 2}
-        dev.generate_samples()
+        dev._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals

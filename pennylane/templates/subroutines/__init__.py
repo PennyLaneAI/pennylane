@@ -11,12 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
+r"""
+Subroutines are the most basic template, consisting of a collection of quantum operations, and not fulfilling
+any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
 
-from .decorator import *
-from .layers import *
-from .embeddings import *
-from .subroutines import *
-from .state_preparations import *
+from .interferometer import Interferometer

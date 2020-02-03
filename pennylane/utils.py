@@ -431,7 +431,13 @@ def inv(operation_list):
     elif operation_list is None:
         raise ValueError(
             "None was passed as an argument to inv. "
-            + "This could happen if inversion of a template without the template decorator is attempted."
+            "This could happen if inversion of a template without the template decorator is attempted."
+        )
+    elif callable(operation_list):
+        raise ValueError(
+            "A function was passed as an argument to inv. "
+            "This could happen if inversion of a template function is attempted. "
+            "Please use inv on the function including its arguments, as in inv(template(args))."
         )
     elif not isinstance(operation_list, Iterable):
         raise ValueError("The provided operation_list is not iterable.")

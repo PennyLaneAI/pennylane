@@ -62,7 +62,7 @@ with the :func:`~.template` decorator:
         qml.CNOT(wires=wires)
 
 This registers the template with PennyLane, making it compatible with
-functions that act on templates, such as :func:`~.inv`:
+functions that act on templates, such as :func:`~.pennylane.inv`:
 
 .. code-block:: python3
 
