@@ -24,7 +24,7 @@ from numpy.linalg import eigh
 try:
     import tensornetwork as tn
 except ImportError as e:
-    raise ImportError("expt.tensornet device requires TensorNetwork>=0.2")
+    raise ImportError("default.tensor device requires TensorNetwork>=0.2")
 
 from pennylane._device import Device
 
@@ -250,7 +250,7 @@ def identity(*_):
 # ========================================================
 
 
-class TensorNetwork(Device):
+class DefaultTensor(Device):
     """Experimental Tensor Network simulator device for PennyLane.
 
     Args:
@@ -258,7 +258,7 @@ class TensorNetwork(Device):
     """
 
     name = "PennyLane TensorNetwork simulator plugin"
-    short_name = "expt.tensornet"
+    short_name = "default.tensor"
     pennylane_requires = "0.8"
     version = "0.8.0"
     author = "Xanadu Inc."
@@ -389,7 +389,7 @@ class TensorNetwork(Device):
                 raise ValueError("State vector must be of length 2**wires.")
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError(
-                    "The expt.tensornet plugin can apply QubitStateVector only to all of the {} wires.".format(
+                    "The default.tensor plugin can apply QubitStateVector only to all of the {} wires.".format(
                         self.num_wires
                     )
                 )
@@ -404,7 +404,7 @@ class TensorNetwork(Device):
                 )
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError(
-                    "The expt.tensornet plugin can apply BasisState only to all of the {} wires.".format(
+                    "The default.tensor plugin can apply BasisState only to all of the {} wires.".format(
                         self.num_wires
                     )
                 )

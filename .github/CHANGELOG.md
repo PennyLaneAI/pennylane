@@ -224,7 +224,8 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
-Soran Jahangiri, Johannes Jakob Meyer, Zeyue Niu, Maria Schuld, Antal Száva
+Soran Jahangiri, Nathan Killoran, Johannes Jakob Meyer, Zeyue Niu, 
+Maria Schuld, Antal Száva
 
 # Release 0.7.0 (current release)
 

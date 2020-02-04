@@ -21,7 +21,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        tf = None  # expt.tensornet.tf requires TF 2
+        tf = None  # default.tensor.tf requires TF 2
     else:
         from tensorflow import Variable
 except ImportError:
@@ -59,14 +59,14 @@ class TestPassthruBasics:
 @pytest.mark.skipif(tf is None, reason="TensorFlow 2.0 not found.")
 @pytest.fixture(scope="function")
 def tensornet_tf_device():
-    return qml.device('expt.tensornet.tf', wires=2)
+    return qml.device('default.tensor.tf', wires=2)
 
 
 @pytest.mark.skipif(tf is None, reason="TensorFlow 2.0 not found.")
 class TestPassthruTF:
     """Test that TF objects can be successfully passed through to a TF simulator device, and back to user."""
 
-    # real data type used by the expt.tensornet.tf plugin (TensorFlow is strict about types)
+    # real data type used by the default.tensor.tf plugin (TensorFlow is strict about types)
     DTYPE = tf.float64 if tf else None
 
     def test_arraylike_args(self, tensornet_tf_device, tol):
