@@ -17,11 +17,13 @@ Contains the ``SqueezingEmbedding`` template.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing
+from pennylane.templates.base import Single
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
                                        _check_wires,
                                        _check_is_in_options,
-                                       _get_shape)
+                                       _get_shape,
+                                       _check_type)
 
 
 @template
@@ -59,6 +61,8 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     _check_no_variable(method, msg="'method' cannot be differentiable")
     _check_no_variable(c, msg="'c' cannot be differentiable")
 
+    _check_type(c, [float, int], msg="'c' must be of type float or integer; got {}".format(type(c)))
+
     wires = _check_wires(wires)
 
     expected_shape = (len(wires),)
@@ -67,10 +71,16 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
 
     _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognize option {} for 'method'".format(method))
 
-    #############
+    ##############
 
-    for idx, f in enumerate(features):
-        if method == 'amplitude':
-            Squeezing(f, c, wires=wires[idx])
-        elif method == 'phase':
-            Squeezing(c, f, wires=wires[idx])
+    constants = [c]*len(features)
+
+    if method == 'amplitude':
+        Single(unitary=Squeezing, wires=wires, parameters=list(zip(features, constants)))
+
+    elif method == 'phase':
+        Single(unitary=Squeezing, wires=wires, parameters=list(zip(constants, features)))
+
+
+
+

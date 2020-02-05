@@ -15,10 +15,8 @@ r"""
 Contains the ``Single`` base template.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Sequence
+from collections import Iterable
 
-from types import FunctionType
-from pennylane.operation import Operation
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (_check_wires,
                                        _check_type,
@@ -26,7 +24,7 @@ from pennylane.templates.utils import (_check_wires,
 
 
 @template
-def Single(unitary, wires, parameters=None, kwargs=None):
+def Single(unitary, wires, parameters=None, kwargs={}):
     """
     Applies ``unitary`` :math:`U` to each wire, feeding it values in ``parameters``.
 
@@ -121,8 +119,6 @@ def Single(unitary, wires, parameters=None, kwargs=None):
                 qml.RY(pars1, wires=wires)
                 qml.RX(pars2, wires=wires)
 
-            dev = qml.device('default.qubit', wires=3)
-
             @qml.qnode(dev)
             def circuit(pars):
                 Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
@@ -156,8 +152,6 @@ def Single(unitary, wires, parameters=None, kwargs=None):
                 qml.RY(pars[0], wires=wires)
                 qml.RX(pars[1], wires=wires)
 
-            dev = qml.device('default.qubit', wires=3)
-
             @qml.qnode(dev)
             def circuit(pars):
                 Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
@@ -175,10 +169,6 @@ def Single(unitary, wires, parameters=None, kwargs=None):
                 qml.RY(pars1, wires=wires)
                 qml.RX(pars2, wires=wires)
 
-
-            dev = qml.device('default.qubit', wires=3)
-
-
             @qml.qnode(dev)
             def circuit(pars):
                 Single(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
@@ -188,6 +178,24 @@ def Single(unitary, wires, parameters=None, kwargs=None):
     >>> circuit([1, 2, 3]))
     TypeError: mytemplate() missing 1 required positional argument: 'pars2'
 
+    **Keyword arguments**
+
+    The unitary can be a template that takes additional keyword arguments.
+
+    .. code-block:: python
+
+        @template
+        def mytemplate(wires, h=True):
+            if h:
+                qml.Hadamard(wires=wires)
+            qml.T(wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(hadamard=None):
+            Single(unitary=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(hadamard=False)
 
     """
 
@@ -196,8 +204,8 @@ def Single(unitary, wires, parameters=None, kwargs=None):
 
     wires = _check_wires(wires)
 
-    _check_type(parameters, [list, type(None)], msg="parameters must be either None or a list; "
-                                                    "got {}".format(type(parameters)))
+    _check_type(parameters, [Iterable, type(None)], msg="parameters must be either of type None or "
+                                                        "an Iterable; got {}".format(type(parameters)))
 #    _check_type(unitary, [list, FunctionType], msg="unitary must be a ``~.pennylane.operation.Operation`` "
 #                                                   "or a template function; got {}".format(type(unitary)))
 
@@ -213,7 +221,6 @@ def Single(unitary, wires, parameters=None, kwargs=None):
         parameters = [[] for _ in range(len(wires))]
 
     #########
-
 
     for w, p in zip(wires, parameters):
         unitary(*p, wires=w, **kwargs)

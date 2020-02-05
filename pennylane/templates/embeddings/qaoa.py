@@ -17,6 +17,7 @@ Contains the ``QAOAEmbedding`` template.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard
+from pennylane.templates.base import Single
 from pennylane.templates.utils import (_check_shape,
                                        _check_wires,
                                        _check_is_in_options,
@@ -24,20 +25,19 @@ from pennylane.templates.utils import (_check_shape,
                                        _get_shape)
 
 
-def qaoa_feature_encoding_hamiltonian(features, n_features, wires):
+def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
     Args:
         features (array): array of features to encode
         n_features (int): number of features to encode
     """
-    for idx, w in enumerate(wires):
-        # Either feed in feature
-        if idx < n_features:
-            RX(features[idx], wires=w)
-        # or a Hadamard
-        else:
-            Hadamard(wires=w)
+
+    feature_encoding_wires = wires[:len(features)]
+    remaining_wires = wires[len(features):]
+
+    Single(unitary=RX, wires=feature_encoding_wires, parameters=features)
+    Single(unitary=Hadamard, wires=remaining_wires)
 
 
 def qaoa_ising_hamiltonian(weights, wires, local_fields, l):
@@ -249,8 +249,6 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
 
     #####################
 
-    n_features = _get_shape(features)[0]
-
     if local_field == 'Z':
         local_fields = RZ
     elif local_field == 'X':
@@ -260,8 +258,8 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
 
     for l in range(repeat):
         # apply alternating Hamiltonians
-        qaoa_feature_encoding_hamiltonian(features, n_features, wires)
+        qaoa_feature_encoding_hamiltonian(features, wires)
         qaoa_ising_hamiltonian(weights, wires, local_fields, l)
 
     # repeat the feature encoding once more at the end
-    qaoa_feature_encoding_hamiltonian(features, n_features, wires)
+    qaoa_feature_encoding_hamiltonian(features, wires)
