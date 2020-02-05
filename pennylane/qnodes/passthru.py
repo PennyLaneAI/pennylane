@@ -20,6 +20,29 @@ import pennylane.circuit_graph
 from .base import BaseQNode, QuantumFunctionError
 
 
+"""
+Design notes
+------------
+
+PassthruQNode requires some changes to the way other PennyLane components work:
+
+1. :class:`Operator` must not do domain checking for its parameters, or it must let the ADT pass the check.
+2. The simulator device must return the result as the ADT instead of plain Python/NumPy types.
+3. Any output_conversion in :meth:`BaseQNode.evaluate` must be skipped.
+
+Additionally, any array-like ADT needs to be able to handle (1) scalar multiplication,
+(2) indexing/slicing, and possibly (3) iteration, as these are the things qfuncs expect of
+array-like parameters.
+
+PassthruQNode does not have a Jacobian method, so it does not HAVE to use VariableRefs or scalar linear indexing of input parameters.
+Two options:
+1. Use VariableRefs anyway, re-use most BaseQNode methods.
+   Problem: after evaluating the VariableRefs, stacking sliced/indexed Tensors in Operation.parameters should somehow result in a Tensor, not an object array.
+2. Do not use VariableRefs, call the qfunc each time :meth:`PassthruQNode.evaluate` is called (always mutable).
+   Problem: tensornet_tf requires variable_deps?
+
+TODO rethink output_conversion? should require device to return things in a fixed form, but either as arrays or as AD Tensors, do conversion in interface (if necessary...)
+"""
 
 class PassthruQNode(BaseQNode):
     """Differentiable quantum node that appears as a white box to an external autodiff framework.
@@ -34,23 +57,24 @@ class PassthruQNode(BaseQNode):
     In contrast, PassthruQNode works as a white box: it preserves the ADT
     throughout the computation. This requires that the quantum function is computed
     using a simulator device that is compatible with the AD framework used (typically
-    implemented using that same framework).
+    implemented using that same framework), and returns the result as the ADT instead
+    of plain Python/NumPy types.
 
-    The advantages of this approach is that the qfunc can be differentiated using its AD framework
+    The advantages of this approach are that the qfunc can be differentiated using its AD framework
     without requiring a separate method for computing the Jacobian, and that the internals
     of the simulation are visible in the computational graph.
 
-    PassthruQNode requires some changes to the way other PennyLane components work:
-
-    1. :class:`Operator` must not do domain checking for its parameters, or it must let the ADT pass the check.
-    2. The simulator device must return the result as the ADT instead of plain Python/NumPy types.
-    3. Any output_conversion in :meth:`BaseQNode.evaluate` must be skipped.
-
-    Additionally, any array-like ADT needs to be able to handle (1) scalar multiplication,
-    (2) indexing/slicing, and possibly (3) iteration, as these are the things qfuncs expect of
-    array-like parameters.
+    Args:
+        func (callable): The *quantum function* of the QNode.
+            A Python function containing :class:`~.operation.Operation` constructor calls,
+            and returning a tuple of measured :class:`~.operation.Observable` instances.
+        device (~pennylane._device.Device): computational device to execute the function on
+        properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
     """
     def __init__(self, func, device, properties=None):
+        # make the device return the result in its native type
+        properties = properties or {}
+        properties.setdefault('use_native_type', True)
         super().__init__(func, device, mutable=True, properties=properties)
 
     def __repr__(self):
@@ -66,16 +90,6 @@ class PassthruQNode(BaseQNode):
         """Construct the quantum circuit graph by calling the quantum function.
 
         Like :class:`.BaseQNode._construct`, but does not use VariableRefs.
-
-        PassthruQNode does not have a Jacobian method, so it does not HAVE to use VariableRefs or scalar linear indexing of input parameters.
-        Two options:
-        1. Use VariableRefs anyway, re-use most BaseQNode methods.
-           Problem: after evaluating the VariableRefs, stacking sliced/indexed Tensors in Operation.parameters should somehow result in a Tensor, not an object array.
-        2. Do not use VariableRefs, call the qfunc each time :meth:`PassthruQNode.evaluate` is called (always mutable).
-           Problem: tensornet_tf requires variable_deps?
-
-
-        TODO rethink output_conversion? should require device to return things in a fixed form, but either as arrays or as AD Tensors, do conversion in interface (if necessary...)
         """
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -102,44 +116,13 @@ class PassthruQNode(BaseQNode):
         del self.queue
         del self.obs_queue
 
+        # no output conversion
+        self.output_conversion = lambda x: x
+
         # no VariableRefs, self.variable_deps is empty!
         # generate the DAG
         self.circuit = pennylane.circuit_graph.CircuitGraph(self.ops, self.variable_deps)
 
         # check for operations that cannot affect the output
         if self.properties.get("vis_check", False):
-            visible = self.circuit.ancestors(self.circuit.observables)
-            invisible = set(self.circuit.operations) - visible
-            if invisible:
-                raise QuantumFunctionError(
-                    "The operations {} cannot affect the output of the circuit.".format(invisible)
-                )
-
-    def evaluate(self, args, kwargs):
-        """Evaluate the quantum function on the specified device.
-
-        Args:
-            args (tuple[Any]): positional arguments to the quantum function (differentiable)
-            kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
-
-        Returns:
-            float or array[float]: output measured value(s)
-        """
-        # exactly like BaseQNode.evaluate, but skips the output_conversion and
-        # makes the device return the result in its native type
-        kwargs = self._default_args(kwargs)
-        self._set_variables(args, kwargs)
-
-        if self.circuit is None or self.mutable:
-            self._construct(args, kwargs)
-
-        self.device.reset()
-
-        if isinstance(self.device, qml.QubitDevice):
-            ret = self.device.execute(self.circuit, return_native_type=True)
-        else:
-            ret = self.device.execute(
-                self.circuit.operations, self.circuit.observables, self.variable_deps,
-                return_native_type=True
-            )
-        return ret
+            self.check_visibility()

@@ -202,37 +202,11 @@ class BaseQNode:
 
     def print_applied(self):
         """Prints the most recently applied operations from the QNode.
-
-        FIXME what's the purpose of this? Could be a CircuitGraph method.
         """
         if self.circuit is None:
             print("QNode has not yet been executed.")
             return
-
-        print("Operations")
-        print("==========")
-        for op in self.circuit.operations:
-            if op.parameters:
-                params = ", ".join([str(p) for p in op.parameters])
-                print("{}({}, wires={})".format(op.name, params, op.wires))
-            else:
-                print("{}(wires={})".format(op.name, op.wires))
-
-        return_map = {
-            qml.operation.Expectation: "expval",
-            qml.operation.Variance: "var",
-            qml.operation.Sample: "sample",
-        }
-
-        print("\nObservables")
-        print("===========")
-        for op in self.circuit.observables:
-            return_type = return_map[op.return_type]
-            if op.parameters:
-                params = "".join([str(p) for p in op.parameters])
-                print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
-            else:
-                print("{}({}(wires={}))".format(return_type, op.name, op.wires))
+        self.circuit.print_contents()
 
     def draw(self, charset="unicode", show_variable_names=False):
         """Draw the QNode as a circuit diagram.
@@ -524,9 +498,7 @@ class BaseQNode:
                 # TODO: Maybe we should only convert the kwarg_vars that were actually given
                 res = self.func(*self.arg_vars, **self.kwarg_vars)
         except:
-            # If there was an error in the function call it could be that the parameters were corrupted
-            # In this case we wipe our VariableRef cache
-            # FIXME if this can happen that's a bug that needs to be fixed
+            # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created VariableRefs.
             self.arg_vars = None
             self.kwarg_vars = None
 
@@ -560,12 +532,7 @@ class BaseQNode:
 
         # check for operations that cannot affect the output
         if self.properties.get("vis_check", False):
-            visible = self.circuit.ancestors(self.circuit.observables)
-            invisible = set(self.circuit.operations) - visible
-            if invisible:
-                raise QuantumFunctionError(
-                    "The operations {} cannot affect the output of the circuit.".format(invisible)
-                )
+            self.check_visibility()
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.
@@ -661,6 +628,20 @@ class BaseQNode:
 
         self.ops = queue + list(res)
 
+    def check_visibility(self):
+        """Check for operations that cannot affect the QNode output.
+
+        Raises:
+            QuantumFunctionError: the quantum circuit contains operations that cannot affect
+                its output
+        """
+        visible = self.circuit.ancestors(self.circuit.observables)
+        invisible = set(self.circuit.operations) - visible
+        if invisible:
+            raise QuantumFunctionError(
+                "The operations {} cannot affect the output of the circuit.".format(invisible)
+            )
+
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.
 
@@ -740,11 +721,13 @@ class BaseQNode:
 
         self.device.reset()
 
+        temp = self.properties.get('use_native_type', False)
         if isinstance(self.device, qml.QubitDevice):
-            ret = self.device.execute(self.circuit)
+            ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
             ret = self.device.execute(
-                self.circuit.operations, self.circuit.observables, self.variable_deps
+                self.circuit.operations, self.circuit.observables, self.variable_deps,
+                return_native_type=temp
             )
         return self.output_conversion(ret)
 

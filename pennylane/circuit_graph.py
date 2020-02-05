@@ -137,6 +137,34 @@ class CircuitGraph:
                 # Create an edge between this and the previous operator
                 self._graph.add_edge(wire[i - 1], wire[i])
 
+    def print_contents(self):
+        """Prints the contents of the quantum circuit."""
+
+        print("Operations")
+        print("==========")
+        for op in self.operations:
+            if op.parameters:
+                params = ", ".join([str(p) for p in op.parameters])
+                print("{}({}, wires={})".format(op.name, params, op.wires))
+            else:
+                print("{}(wires={})".format(op.name, op.wires))
+
+        return_map = {
+            qml.operation.Expectation: "expval",
+            qml.operation.Variance: "var",
+            qml.operation.Sample: "sample",
+        }
+
+        print("\nObservables")
+        print("===========")
+        for op in self.observables:
+            return_type = return_map[op.return_type]
+            if op.parameters:
+                params = "".join([str(p) for p in op.parameters])
+                print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
+            else:
+                print("{}({}(wires={}))".format(return_type, op.name, op.wires))
+
     def serialize(self):
         """Serialize the quantum circuit graph based on the operations and
         observables in the circuit graph and the index of the variables
