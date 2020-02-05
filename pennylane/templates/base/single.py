@@ -26,31 +26,50 @@ from pennylane.templates.utils import (_check_wires,
 
 
 @template
-def Single(unitary, wires, parameters=None):
+def Single(unitary, wires, parameters=None, kwargs=None):
     """
-    Applies ``unitary`` to each wire, feeding it values in ``parameters``.
+    Applies ``unitary`` :math:`U` to each wire, feeding it values in ``parameters``.
 
-    The unitary is typically a ``~.pennylane.operation.Operation'' object representing a single qubit gate as
-    in the following example:
+    .. figure:: ../../_static/single_parametrized.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    If ``parameters`` is ``None``, the unitary is applied to each wire as it is:
+
+    .. figure:: ../../_static/single_constant.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    The unitary is typically a ``~.pennylane.operation.Operation'' object representing a single qubit gate, like
+    shown in the following example:
 
     .. code-block:: python
 
+        import pennylane as qml
+        from pennylane.templates import Single
 
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(pars):
+            Single(unitary=qml.RX, wires=[0,1,2], parameters=pars)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit([1, 1, 2])
 
 
     Alternatively, one can use a sequence of gates by creating a template, and feeding it into
 
     .. code-block:: python
 
-        import pennylane as qml
-        from pennylane.templates import template, Single
+        from pennylane.templates import template
 
         @template
         def mytemplate(pars, wires):
             qml.Hadamard(wires=wires)
-            qml.RY(pars[0], wires=wires)
-            qml.RX(pars[1], wires=wires)
-
+            qml.RY(pars, wires=wires)
 
         dev = qml.device('default.qubit', wires=3)
 
@@ -59,13 +78,7 @@ def Single(unitary, wires, parameters=None):
             Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
             return qml.expval(qml.PauliZ(0))
 
-        print(circuit([[1, 2], [2, 1], [0.1, 1]]))
-
-
-
-    If the unitary does not take any parameters, ``parameters`` is ``None`` or an empty list.
-
-    If the unit
+        print(circuit([1, 1, 0.1]))
 
     Args:
         unitary (qml.Operation):
@@ -74,6 +87,107 @@ def Single(unitary, wires, parameters=None):
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    UsageDetails::
+
+        **Constant unitaries**
+
+        If the ``unitary`` argument does not take parameters, no ``parameters`` argument is passed to the
+        ``Single`` template:
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit():
+                Single(unitary=qml.Hadamard, wires=[0,1,2])
+                return qml.expval(qml.PauliZ(0))
+
+            circuit()
+
+
+        **Multiple parameters in unitary**
+
+        A unitary, whether it is a gate or a template, can take multiple parameters. For example:
+
+        .. code-block:: python
+
+            from pennylane.templates import template
+
+            @template
+            def mytemplate(pars1, pars2, wires):
+                qml.Hadamard(wires=wires)
+                qml.RY(pars1, wires=wires)
+                qml.RX(pars2, wires=wires)
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(pars):
+                Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                return qml.expval(qml.PauliZ(0))
+
+            circuit([[1, 1], [2, 1], [0.1, 1]])
+
+        In more general, the unitary **must** have the following signature:
+
+        .. code-block:: python
+
+            unitary(parameter1, parameter2, ... parameterN, wires, **kwargs)
+
+        Note that if ``unitary`` does not depend on parameters (:math:`N=0`), the signature is
+
+        .. code-block:: python
+
+            unitary(wires, **kwargs)
+
+        Overall, ``parameters`` must be a list of length-:math:`N` lists.
+
+        If :math:`N` becomes large, the signature can be simplified by wrapping each entry in ``parameters``:
+
+        .. code-block:: python
+
+            from pennylane.templates import template
+
+            @template
+            def mytemplate(pars, wires):
+                qml.Hadamard(wires=wires)
+                qml.RY(pars[0], wires=wires)
+                qml.RX(pars[1], wires=wires)
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(pars):
+                Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                return qml.expval(qml.PauliZ(0))
+
+            print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
+
+    If the number of parameters for each wire does not match the template or gate, an error gets thrown:
+
+    .. code-block:: python
+
+            @template
+            def mytemplate(pars1, pars2, wires):
+                qml.Hadamard(wires=wires)
+                qml.RY(pars1, wires=wires)
+                qml.RX(pars2, wires=wires)
+
+
+            dev = qml.device('default.qubit', wires=3)
+
+
+            @qml.qnode(dev)
+            def circuit(pars):
+                Single(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
+                return qml.expval(qml.PauliZ(0))
+
+
+    >>> circuit([1, 2, 3]))
+    TypeError: mytemplate() missing 1 required positional argument: 'pars2'
+
 
     """
 
@@ -84,38 +198,24 @@ def Single(unitary, wires, parameters=None):
 
     _check_type(parameters, [list, type(None)], msg="parameters must be either None or a list; "
                                                     "got {}".format(type(parameters)))
-    _check_type(unitary, [list, FunctionType], msg="unitary must be a ``~.pennylane.operation.Operation`` "
-                                                   "or a template function; got {}".format(type(unitary)))
+#    _check_type(unitary, [list, FunctionType], msg="unitary must be a ``~.pennylane.operation.Operation`` "
+#                                                   "or a template function; got {}".format(type(unitary)))
 
     if parameters is not None:
-        if len(parameters) != len(wires):
-            raise ValueError("parameters must contain one entry for each wire; got shape {}"
-                             .format(_get_shape(parameters)))
-
-    # # turn operation into list of operations
-    # if isinstance(unitary, Operation):
-    #     unitary = [unitary]
-
-    # for gate in unitary:
-    #     if gate.num_wires != 1:
-    #         raise ValueError("gate must act on a single wire")
-
-    # TODO: check the number of parameters per gate?
-    # shape = _get_shape(parameters)
-    #
-    # if shape[0] != len(wires):
-    #     raise ValueError("number of parameters {} must be equal to number of wires; got {}"
-    #                      .format(len(parameters)), len(wires))
-    # if shape[1] != gate.num_params:
-    #     raise ValueError("gate {} takes {} parameters; got {}". format(gate, gate.num_params, shape[1]))
+        shape = _get_shape(parameters)
+        if shape[0] != len(wires):
+            raise ValueError("parameters must contain one entry for each of the {} wires; got shape {}"
+                             .format(len(wires), shape))
+        # repackage for consistent unpacking
+        if len(shape) == 1:
+            parameters = [[p] for p in parameters]
+    else:
+        parameters = [[] for _ in range(len(wires))]
 
     #########
 
-    if parameters is None:
-        for w in wires:
-            unitary(wires=w)
-    else:
-        for w, p in zip(wires, parameters):
-            unitary(p, wires=w)
+
+    for w, p in zip(wires, parameters):
+        unitary(*p, wires=w, **kwargs)
 
 
