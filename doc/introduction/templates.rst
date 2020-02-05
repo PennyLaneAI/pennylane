@@ -16,8 +16,11 @@ literature, such architectures are commonly known as an *ansatz*.
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :class:`~.QNode`.
 
-PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_ref_temp_lay>`
-and :ref:`input embeddings <intro_ref_temp_emb>`.
+PennyLane conceptually distinguishes different types of templates:
+
+* :ref:`layers <intro_ref_temp_lay>` are circuit sequences that depend on trainable parameters and are repeated
+  like the layers of a neural network
+* :ref:`embeddings <intro_ref_temp_emb>`.
 Most templates are complemented by functions that provide an array of
 random :ref:`initial parameters <intro_ref_temp_params>` .
 

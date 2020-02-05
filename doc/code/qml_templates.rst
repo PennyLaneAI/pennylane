@@ -7,6 +7,12 @@ evaluate, and train quantum nodes.
 
 .. currentmodule:: pennylane.templates
 
+Base Templates
+--------------
+
+.. automodapi:: pennylane.templates.base
+    :no-heading:
+    :include-all-objects:
 
 Embeddings
 ----------

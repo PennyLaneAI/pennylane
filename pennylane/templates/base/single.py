@@ -26,67 +26,81 @@ from pennylane.templates.utils import (_check_wires,
 @template
 def Single(unitary, wires, parameters=None, kwargs={}):
     """
-    Applies ``unitary`` :math:`U` to each wire, feeding it values in ``parameters``.
+    Applies a - potentially parametrized - single-qubit unitary to each wire.
 
-    .. figure:: ../../_static/single_parametrized.png
+    For every wire :math:`m = 1,\dots,N`, the unitary :math:`U` takes a parameter or set of parameters :math:`p_m`:
+
+    .. figure:: ../../_static/templates/base/single_parametrized.png
         :align: center
-        :width: 60%
+        :width: 20%
         :target: javascript:void(0);
 
-    If ``parameters`` is ``None``, the unitary is applied to each wire as it is:
 
-    .. figure:: ../../_static/single_constant.png
+    If ``parameters`` is ``None``, a constant unitary is applied to each wire:
+
+    .. figure:: ../../_static/templates/base/single_constant.png
         :align: center
-        :width: 60%
+        :width: 20%
         :target: javascript:void(0);
 
-    The unitary is typically a ``~.pennylane.operation.Operation'' object representing a single qubit gate, like
-    shown in the following example:
+    If not `None`, the number of parameters must be equal to the number of wires. The unitary can only act on a
+    single wire.
+
+    The unitary must be a valid operation inside a quantum function, which has the signature
 
     .. code-block:: python
 
-        import pennylane as qml
-        from pennylane.templates import Single
+        unitary(parameter1, parameter2, ... , wires, **kwargs)
 
-        dev = qml.device('default.qubit', wires=3)
-
-        @qml.qnode(dev)
-        def circuit(pars):
-            Single(unitary=qml.RX, wires=[0,1,2], parameters=pars)
-            return qml.expval(qml.PauliZ(0))
-
-        circuit([1, 1, 2])
-
-
-    Alternatively, one can use a sequence of gates by creating a template, and feeding it into
-
-    .. code-block:: python
-
-        from pennylane.templates import template
-
-        @template
-        def mytemplate(pars, wires):
-            qml.Hadamard(wires=wires)
-            qml.RY(pars, wires=wires)
-
-        dev = qml.device('default.qubit', wires=3)
-
-        @qml.qnode(dev)
-        def circuit(pars):
-            Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
-            return qml.expval(qml.PauliZ(0))
-
-        print(circuit([1, 1, 0.1]))
+    The number of parameters has to match the shape of the entries in ``parameters``, and can be zero.
 
     Args:
-        unitary (qml.Operation):
-        parameters (list or None):
-        wires (Sequence[int] or int):
+        unitary: quantum gate or template
+        parameters (iterable or None): sequence of parameters for each gate applied
+        wires (Sequence[int] or int): wire indices that the unitaries act upon
 
     Raises:
         ValueError: if inputs do not have the correct format
 
-    UsageDetails::
+    .. UsageDetails::
+
+        The unitary is typically an :meth:`~.pennylane.operation.Operation` object representing a single qubit gate.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import Single
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(pars):
+                Single(unitary=qml.RX, wires=[0,1,2], parameters=pars)
+                return qml.expval(qml.PauliZ(0))
+
+            circuit([1, 1, 2])
+
+
+        Alternatively, one can use a sequence of gates by creating a *template* using the
+        :meth:`~.pennylane.templates.template` decorator.
+
+        .. code-block:: python
+
+            from pennylane.templates import template
+
+            @template
+            def mytemplate(pars, wires):
+                qml.Hadamard(wires=wires)
+                qml.RY(pars, wires=wires)
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(pars):
+                Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                return qml.expval(qml.PauliZ(0))
+
+            print(circuit([1, 1, 0.1]))
 
         **Constant unitaries**
 
@@ -159,43 +173,43 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
 
-    If the number of parameters for each wire does not match the template or gate, an error gets thrown:
+        If the number of parameters for each wire does not match the template or gate, an error gets thrown:
 
-    .. code-block:: python
+        .. code-block:: python
+
+                @template
+                def mytemplate(pars1, pars2, wires):
+                    qml.Hadamard(wires=wires)
+                    qml.RY(pars1, wires=wires)
+                    qml.RX(pars2, wires=wires)
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    Single(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+
+        >>> circuit([1, 2, 3]))
+        TypeError: mytemplate() missing 1 required positional argument: 'pars2'
+
+        **Keyword arguments**
+
+        The unitary can be a template that takes additional keyword arguments.
+
+        .. code-block:: python
 
             @template
-            def mytemplate(pars1, pars2, wires):
-                qml.Hadamard(wires=wires)
-                qml.RY(pars1, wires=wires)
-                qml.RX(pars2, wires=wires)
+            def mytemplate(wires, h=True):
+                if h:
+                    qml.Hadamard(wires=wires)
+                qml.T(wires=wires)
 
             @qml.qnode(dev)
-            def circuit(pars):
-                Single(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
+            def circuit(hadamard=None):
+                Single(unitary=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
-
-    >>> circuit([1, 2, 3]))
-    TypeError: mytemplate() missing 1 required positional argument: 'pars2'
-
-    **Keyword arguments**
-
-    The unitary can be a template that takes additional keyword arguments.
-
-    .. code-block:: python
-
-        @template
-        def mytemplate(wires, h=True):
-            if h:
-                qml.Hadamard(wires=wires)
-            qml.T(wires=wires)
-
-        @qml.qnode(dev)
-        def circuit(hadamard=None):
-            Single(unitary=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
-            return qml.expval(qml.PauliZ(0))
-
-        circuit(hadamard=False)
+            circuit(hadamard=False)
 
     """
 

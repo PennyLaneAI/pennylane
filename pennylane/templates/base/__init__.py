@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Embeddings are templates encode features (i.e., classical data) into a quantum state.
-They can optionally be repeated, and may contain trainable parameters. Embeddings are typically
-used at the beginning of a circuit.
+Base templates serve as building blocks for other templates. They define a fundamental structure of how to arrange
+unitaries on wires. The unitary can be represented by a PennyLane :meth:`~.pennylane.operations.Operation`,
+or by a user-defined template that consists of a sequence of gates.
+It can also be parametrized, in which case the parameters are passed to the base template.
 """
 
 from .single import Single
