@@ -16,8 +16,12 @@ literature, such architectures are commonly known as an *ansatz*.
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :class:`~.QNode`.
 
-PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_ref_temp_lay>`
-and :ref:`input embeddings <intro_ref_temp_emb>`.
+PennyLane conceptually distinguishes different types of templates, such as
+
+* :ref:`layer architectures <intro_ref_temp_lay>`
+* :ref:`input embeddings <intro_ref_temp_emb>`.
+*
+
 Most templates are complemented by functions that provide an array of
 random :ref:`initial parameters <intro_ref_temp_params>` .
 
@@ -76,6 +80,13 @@ functions that act on templates, such as :func:`~.pennylane.inv`:
 
 See below for details on built-in templates provided by PennyLane.
 
+.. _intro_ref_temp_base:
+
+Base templates
+--------------
+
+.. currentmodule:: pennylane.templates.base
+
 
 .. _intro_ref_temp_lay:
 
@@ -86,18 +97,61 @@ Layer templates
 
 Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
 
-The following layer templates are available:
+.. raw:: html
 
-:html:`<div class="summary-table">`
+    <style>
+        #right-column.card {
+            box-shadow: none!important;
+        }
+        #right-column.card:hover {
+            box-shadow: none!important;
+        }
+        .breadcrumb {
+            display: none;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .footer-relations {
+            border-top: 0px;
+        }
+    </style>
 
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.layers.CVNeuralNetLayers
-    ~pennylane.templates.layers.RandomLayers
-    ~pennylane.templates.layers.StronglyEntanglingLayers
-
-:html:`</div>`
+    <div class="container mt-2 mb-2">
+        <div class="row mt-3">
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.layers.StronglyEntanglingLayers.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/layers/strongly_entangling.png" alt="StronglyEntanglingLayers">
+                      <div class="card-body">
+                        <p class="card-text">StronglyEntanglingLayers</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.layers.StronglyEntanglingLayers.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/layers/strongly_entangling.png" alt="StronglyEntanglingLayers">
+                      <div class="card-body">
+                        <p class="card-text">StronglyEntanglingLayers</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.layers.StronglyEntanglingLayers.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/layers/strongly_entangling.png" alt="StronglyEntanglingLayers">
+                      <div class="card-body">
+                        <p class="card-text">StronglyEntanglingLayers</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+      </div>
+    </div>
 
 
 
@@ -110,22 +164,93 @@ Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may consist of repeated layers.
 
-The following embedding templates are available:
+.. raw:: html
 
-:html:`<div class="summary-table">`
+    <style>
+        #right-column.card {
+            box-shadow: none!important;
+        }
+        #right-column.card:hover {
+            box-shadow: none!important;
+        }
+        .breadcrumb {
+            display: none;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .footer-relations {
+            border-top: 0px;
+        }
+    </style>
 
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.embeddings.AmplitudeEmbedding
-    ~pennylane.templates.embeddings.AngleEmbedding
-    ~pennylane.templates.embeddings.BasisEmbedding
-    ~pennylane.templates.embeddings.DisplacementEmbedding
-    ~pennylane.templates.embeddings.QAOAEmbedding
-    ~pennylane.templates.embeddings.SqueezingEmbedding
-
-
-:html:`</div>`
+    <div class="container mt-2 mb-2">
+        <div class="row mt-3">
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/embeddings/amplitude.png" alt="AmplitudeEmbedding">
+                      <div class="card-body">
+                        <p class="card-text">AmplitudeEmbedding</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.embeddings.AngleEmbedding.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/embeddings/angle.png" alt="AngleEmbedding">
+                      <div class="card-body">
+                        <p class="card-text">AngleEmbedding</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.embeddings.BasisEmbedding.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/embeddings/basis.png" alt="BasisEmbedding">
+                      <div class="card-body">
+                        <p class="card-text">BasisEmbedding</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.embeddings.DisplacementEmbedding.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/embeddings/displacement.png" alt="DisplacementEmbedding">
+                      <div class="card-body">
+                        <p class="card-text">DisplacementEmbedding</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.embeddings.QAOAEmbedding.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/embeddings/qaoa.png" alt="QAOAEmbedding">
+                      <div class="card-body">
+                        <p class="card-text">QAOAEmbedding</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-4 mb-2 align-items-stretch">
+                <a href="code/api/pennylane.templates.embeddings.SqueezingEmbedding.html">
+                    <div class="card" style="width: 15rem;">
+                      <img class="card-img-top" src="../_static/templates/embeddings/squeezing.png" alt="SqueezingEmbedding">
+                      <div class="card-body">
+                        <p class="card-text">SqueezingEmbedding</p>
+                      </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
 
 .. _intro_ref_temp_params:
 
