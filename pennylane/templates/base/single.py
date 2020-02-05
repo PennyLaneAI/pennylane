@@ -204,7 +204,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
     wires = _check_wires(wires)
 
-    _check_type(parameters, [Iterable, type(None)], msg="parameters must be either of type None or "
+    _check_type(parameters, [Iterable, type(None)], msg="'parameters' must be either of type None or "
                                                         "an Iterable; got {}".format(type(parameters)))
 #    _check_type(unitary, [list, FunctionType], msg="unitary must be a ``~.pennylane.operation.Operation`` "
 #                                                   "or a template function; got {}".format(type(unitary)))
@@ -212,7 +212,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
     if parameters is not None:
         shape = _get_shape(parameters)
         if shape[0] != len(wires):
-            raise ValueError("parameters must contain one entry for each of the {} wires; got shape {}"
+            raise ValueError("'parameters' must contain one entry for each of the {} wires; got shape {}"
                              .format(len(wires), shape))
         # repackage for consistent unpacking
         if len(shape) == 1:
