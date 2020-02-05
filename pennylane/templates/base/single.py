@@ -218,7 +218,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
     else:
-        parameters = []*len(wires)
+        parameters = [[] for _ in range(len(wires))]
 
     #########
 

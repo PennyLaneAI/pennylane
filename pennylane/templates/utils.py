@@ -77,11 +77,7 @@ def _get_shape(inpt):
         tuple: shape of ``inpt``
     """
 
-    if not isinstance(inpt, np.ndarray):
-        # turn generator to list (else shape is "()" )
-        inpt = list(inpt)
-        # turn list into array
-        inpt = np.array(inpt)
+    inpt = np.array(inpt)
 
     return inpt.shape
 

@@ -56,23 +56,9 @@ class TestBaseSingle:
                                         ([[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement,
                                          [0.2, 0.4, 0.6, 0.8], dev_4_qumodes, qml.X)]
 
-    MISMATCH_PARAMS_WIRES = [(np.array([0]), 2),
-                             ([0, 0, 0, 1, 0], 3)]
-
     GATE_PARAMETERS = [(RX, [[0.1], [0.2]]),
                        (Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
-                       (T, [[], []]),
-                       ]
-
-    TEMPLATE_GATES_PARAMETERS = [(ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1]]),
-                                 (ConstantTemplate, [T, S], [[], []])
-                                 ]
-
-    PARS1_PARS2_GATE = [([[], []], None, T),
-                        ([1, 2], [[1], [2]], RX)]
-
-    KWARG_TARGET = [(True, [T, RY, T, RY]),
-                    (False, [RY, RY])]
+                       (T, [[], []])]
 
     @pytest.mark.parametrize("unitary, parameters", GATE_PARAMETERS)
     def test_single_correct_queue_for_gate_unitary(self, unitary, parameters):
@@ -84,7 +70,8 @@ class TestBaseSingle:
         for gate in rec.queue:
             assert isinstance(gate, unitary)
 
-    @pytest.mark.parametrize("unitary, gates, parameters", TEMPLATE_GATES_PARAMETERS)
+    @pytest.mark.parametrize("unitary, gates, parameters", [(ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1]]),
+                                                            (ConstantTemplate, [T, S], [[], []])])
     def test_single_correct_queue_for_template_unitary(self, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'unitary' is a template."""
 
@@ -95,7 +82,8 @@ class TestBaseSingle:
             i = idx % 2
             assert isinstance(gate, gates[i])
 
-    @pytest.mark.parametrize("kwarg, target_queue", KWARG_TARGET)
+    @pytest.mark.parametrize("kwarg, target_queue", [(True, [T, RY, T, RY]),
+                                                     (False, [RY, RY])])
     def test_single_correct_queue_for_template_unitary_with_keyword(self, kwarg, target_queue):
         """Tests that correct gate queue is created when 'unitary' is a template that uses a keyword."""
 
@@ -115,7 +103,8 @@ class TestBaseSingle:
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
 
-    @pytest.mark.parametrize("pars1, pars2, gate", PARS1_PARS2_GATE)
+    @pytest.mark.parametrize("pars1, pars2, gate", [([[], []], None, T),
+                                                    ([1, 2], [[1], [2]], RX)])
     def test_single_correct_queue_for_gate_unitary(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
@@ -140,7 +129,8 @@ class TestBaseSingle:
         res = circuit()
         assert np.allclose(res, target)
 
-    @pytest.mark.parametrize("parameters, n_wires", MISMATCH_PARAMS_WIRES)
+    @pytest.mark.parametrize("parameters, n_wires", [(np.array([0]), 2),
+                                                     ([0, 0, 0, 1, 0], 3)])
     def test_single_throws_error_when_mismatch_params_wires(self, parameters, n_wires):
         """Tests that error thrown when 'parameters' does not contain one set
            of parameters for each wire."""

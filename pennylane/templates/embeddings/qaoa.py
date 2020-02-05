@@ -30,7 +30,7 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
 
     Args:
         features (array): array of features to encode
-        n_features (int): number of features to encode
+        wires (Sequence[int] or int): `n` qubit indices that the template acts on
     """
 
     feature_encoding_wires = wires[:len(features)]
