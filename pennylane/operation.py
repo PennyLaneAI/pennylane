@@ -900,6 +900,41 @@ class Tensor(Observable):
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
+    def prune(self):
+        """Returns a pruned tensor of observables based on the current Tensor.
+
+        If the Tensor only contained one observable, then this observable instance is
+        returned.
+
+        Note that this way this method might return an instance that is not a Tensor
+        instance.
+
+        **Example:**
+
+        1.
+
+        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+        >>> O.prune()
+        <pennylane.operation.Tensor at 0x7fc1642d1590
+        >>>> O.obs
+        [<pennylane.ops.qubit.PauliZ object at 0x7fc1b076afd0>, <pennylane.ops.qubit.PauliZ object at 0x7fc1b075bd90>]
+
+        2.
+        >>> O = qml.PauliZ(0) @ qml.Identity(1)
+        >>> O.prune()
+        <pennylane.ops.qubit.PauliZ at 0x7fc1642d1850>
+
+        Returns:
+            `~.Observable`: the pruned
+        """
+        non_identity_obs = [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+
+        print(non_identity_obs)
+        if len(non_identity_obs) == 1:
+            return non_identity_obs[0]
+
+        return Tensor(*non_identity_obs)
+
 #=============================================================================
 # CV Operations and observables
 #=============================================================================

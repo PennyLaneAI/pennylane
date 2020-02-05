@@ -852,6 +852,48 @@ class TestTensor:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    tensor_obs = [
+                    (
+                    qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+                    qml.PauliZ(0) @ qml.PauliZ(2)
+                    ),
+                    (
+                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4),
+                    qml.PauliX(1) @ qml.PauliZ(4)
+                    )
+                ]
+
+    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
+    def test_prune(self, tensor_observable, expected):
+        """Tests that the prune method returns a Tensor removing any Identities."""
+
+        O = tensor_observable
+        O_pruned = O.prune()
+        for idx, obs in enumerate(O_pruned.obs):
+            assert type(obs) == type(expected.obs[idx])
+            assert obs.wires == expected.obs[idx].wires
+
+    def test_prune_single_observable(self):
+        """Tests that the prune method returns a single observable when there is only one non-Identity in the list of observables for a Tensor."""
+    tensor_obs = [
+                    (
+                    qml.PauliZ(0) @ qml.Identity(1),
+                    qml.PauliZ(0)
+                    ),
+                    (
+                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
+                    qml.PauliX(1)
+                    )
+                ]
+
+    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
+    def test_prune(self, tensor_observable, expected):
+        """Tests that the prune method returns a Tensor removing any Identities."""
+
+        O = tensor_observable
+        O_pruned = O.prune()
+        assert type(O_pruned) == type(expected)
+        assert O_pruned.wires == expected.wires
 
 class TestDecomposition:
     """Test for operation decomposition"""
