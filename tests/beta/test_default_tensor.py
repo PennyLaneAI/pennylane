@@ -26,7 +26,7 @@ tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
 from pennylane import numpy as np, QuantumFunctionError
-from pennylane.beta.plugins.expt_tensornet import (
+from pennylane.beta.plugins.default_tensor import (
     CNOT,
     CSWAP,
     CZ,
@@ -331,18 +331,18 @@ class TestStateFunctions:
             hermitian(H2)
  
 
-class TestTensornetIntegration:
-    """Integration tests for expt.tensornet. This test ensures it integrates
+class TestDefaultTensorIntegration:
+    """Integration tests for default.tensor. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
     def test_load_tensornet_device(self):
         """Test that the tensor network plugin loads correctly"""
 
-        dev = qml.device("expt.tensornet", wires=2)
+        dev = qml.device("default.tensor", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == 1000
         assert dev.analytic
-        assert dev.short_name == "expt.tensornet"
+        assert dev.short_name == "default.tensor"
 
     def test_args(self):
         """Test that the plugin requires correct arguments"""
@@ -350,7 +350,7 @@ class TestTensornetIntegration:
         with pytest.raises(
             TypeError, match="missing 1 required positional argument: 'wires'"
         ):
-            qml.device("expt.tensornet")
+            qml.device("default.tensor")
 
     @pytest.mark.parametrize("gate", set(qml.ops.cv.ops))
     def test_unsupported_gate_error(self, tensornet_device_3_wires, gate):
@@ -371,7 +371,7 @@ class TestTensornetIntegration:
             return qml.expval(qml.X(0))
 
         with pytest.raises(
-            QuantumFunctionError, match="Device expt.tensornet is a qubit device; CV operations are not allowed."
+            QuantumFunctionError, match="Device default.tensor is a qubit device; CV operations are not allowed."
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
@@ -394,7 +394,7 @@ class TestTensornetIntegration:
             return qml.expval(op(*x, wires=wires))
 
         with pytest.raises(
-            QuantumFunctionError, match="Device expt.tensornet is a qubit device; CV operations are not allowed."
+            QuantumFunctionError, match="Device default.tensor is a qubit device; CV operations are not allowed."
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
@@ -652,7 +652,7 @@ class TestTensornetIntegration:
     def test_expval_warnings(self):
         """Tests that expval raises a warning if the given observable is complex."""
 
-        dev = qml.device("expt.tensornet", wires=1)
+        dev = qml.device("default.tensor", wires=1)
 
         A = np.array([[2j, 1j], [-3j, 1j]])
         obs_node = dev._add_node(A, wires=[0])
@@ -698,7 +698,7 @@ class TestTensorExpval:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
 
         dev.apply("RX", wires=[0], par=[theta])
@@ -714,7 +714,7 @@ class TestTensorExpval:
 
     def test_pauliz_identity(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -729,7 +729,7 @@ class TestTensorExpval:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -744,7 +744,7 @@ class TestTensorExpval:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -773,7 +773,7 @@ class TestTensorExpval:
 
     def test_hermitian_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -814,7 +814,7 @@ class TestTensorExpval:
 
     def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("expt.tensornet", wires=2)
+        dev = qml.device("default.tensor", wires=2)
         dev.reset()
         dev.apply("RY", wires=[0], par=[theta])
         dev.apply("RY", wires=[1], par=[phi])
@@ -838,7 +838,7 @@ class TestTensorVar:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -861,7 +861,7 @@ class TestTensorVar:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -882,7 +882,7 @@ class TestTensorVar:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -988,7 +988,7 @@ class TestTensorSample:
 
     def test_paulix_pauliy(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("expt.tensornet", wires=3, shots=10000)
+        dev = qml.device("default.tensor", wires=3, shots=10000)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -1020,7 +1020,7 @@ class TestTensorSample:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])
@@ -1050,7 +1050,7 @@ class TestTensorSample:
 
     def test_hermitian(self, theta, phi, varphi, monkeypatch, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("expt.tensornet", wires=3)
+        dev = qml.device("default.tensor", wires=3)
         dev.reset()
         dev.apply("RX", wires=[0], par=[theta])
         dev.apply("RX", wires=[1], par=[phi])

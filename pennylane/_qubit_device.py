@@ -155,7 +155,7 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         if (not self.analytic) or circuit.is_sampled:
-            self.generate_samples()
+            self._samples = self.generate_samples()
 
         # compute the required statistics
         results = self.statistics(circuit.observables)
@@ -265,10 +265,7 @@ class QubitDevice(Device):
         return results
 
     def generate_samples(self):
-        r"""Generate computational basis samples for all wires and stores the results in
-        the attribute ``self._samples``.
-
-        ``self._samples`` has the shape ``(dev.shots, dev.num_wires)``.
+        r"""Returns the computational basis samples generated for all wires.
 
         Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
         :math:`q_0` is the most significant bit.
@@ -278,11 +275,14 @@ class QubitDevice(Device):
             This method should be overwritten on devices that
             generate their own computational basis samples, with the resulting
             computational basis samples stored as ``self._samples``.
+
+        Returns:
+             array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
         number_of_states = 2 ** self.num_wires
         rotated_prob = self.probability()
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        self._samples = QubitDevice.states_to_binary(samples, self.num_wires)
+        return QubitDevice.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state

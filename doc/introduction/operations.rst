@@ -19,12 +19,18 @@ in the following example:
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
+        qml.T(wires=0).inv()
         return qml.expval(qml.PauliZ(1))
 
 This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :class:`CNOT <pennylane.CNOT>`,
 :class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` as well as the
 :class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
+
+Note that PennyLane supports inverting quantum opperations via the
+:meth:`Op(param, wires).inv() <.Operation.inv>` method. Additionally, PennyLane
+provides a function :func:`qml.inv <.pennylane.inv>` that can be used to invert sequences
+of operations and :doc:`templates`.
 
 Below is a list of all quantum operations supported by PennyLane.
 
@@ -183,4 +189,3 @@ The only operation shared by both qubit and continouous-variable architectures i
     ~pennylane.Identity
 
 :html:`</div>`
-
