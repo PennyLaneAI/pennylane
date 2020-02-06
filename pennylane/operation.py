@@ -770,10 +770,10 @@ class Tensor(Observable):
 
     @property
     def non_identity_obs(self):
-        """Returns the non-identity observables contained in the Tensor.
+        """Returns the non-identity observables contained in the tensor product.
 
         Returns:
-            list[`~.Observable`]: list containing the non-identity observables
+            list[:class:`~.Observable`]: list containing the non-identity observables
             in the tensor product
         """
         return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
@@ -911,13 +911,13 @@ class Tensor(Observable):
         return functools.reduce(np.kron, U_list)
 
     def prune(self):
-        """Returns a pruned tensor product of observables by removing Identity instances from
-        the observables building up the Tensor.
+        """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
+        the observables building up the :class:`~.Tensor`.
 
-        If the Tensor only contained one observable, then this observable instance is
+        If the tensor product only containes one observable, then this observable instance is
         returned.
 
-        Note that this way this method might return an instance that is not a Tensor
+        Note that this way this method might return an instance that is not a :class:`.Tensor`
         instance.
 
         **Example:**
@@ -925,18 +925,19 @@ class Tensor(Observable):
         1.
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.prune()
+        >>> pruned_obs = O.prune()
         <pennylane.operation.Tensor at 0x7fc1642d1590
-        >>>> O.obs
+        >>> pruned_obs.obs
         [<pennylane.ops.qubit.PauliZ object at 0x7fc1b076afd0>, <pennylane.ops.qubit.PauliZ object at 0x7fc1b075bd90>]
 
         2.
+
         >>> O = qml.PauliZ(0) @ qml.Identity(1)
         >>> O.prune()
         <pennylane.ops.qubit.PauliZ at 0x7fc1642d1850>
 
         Returns:
-            `~.Observable`: the pruned tensor product of observables
+            :class:`~.Observable`: the pruned tensor product of observables
         """
         if len(self.non_identity_obs) == 1:
             return self.non_identity_obs[0]
