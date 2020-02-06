@@ -530,6 +530,10 @@ class BaseQNode:
         finally:
             qml._current_context = None
 
+        # Prune all the Tensor objects that have been used in the circuit
+        res = self._prune_tensors(res)
+        self.obs_queue = self._prune_tensors(self.obs_queue)
+
         # check the validity of the circuit
         self._check_circuit(res)
 
@@ -560,6 +564,30 @@ class BaseQNode:
                 raise QuantumFunctionError(
                     "The operations {} cannot affect the output of the circuit.".format(invisible)
                 )
+
+    def _prune_tensors(self, res):
+        """Prune the tensors that have been passed by the quantum function.
+
+        .. note:: Check the :meth:`~Tensor.prune()` for further details.
+
+        Args:
+            res (Sequence[Observable], Observable): output returned by the quantum function
+
+        Returns:
+            res (Sequence[Observable], Observable): pruned output returned by the quantum function
+        """
+        if isinstance(res, Observable) and not isinstance(res, qml.operation.Tensor):
+            return res
+        elif isinstance(res, qml.operation.Tensor):
+            return res.prune()
+        elif isinstance(res, Sequence):
+            ops = []
+            for o in res:
+                if isinstance(o, qml.operation.Tensor):
+                    ops.append(o.prune())
+                else:
+                    ops.append(o)
+            return ops
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.
