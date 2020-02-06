@@ -565,7 +565,8 @@ class BaseQNode:
                     "The operations {} cannot affect the output of the circuit.".format(invisible)
                 )
 
-    def _prune_tensors(self, res):
+    @staticmethod
+    def _prune_tensors(res):
         """Prune the tensors that have been passed by the quantum function.
 
         .. note:: Check the :meth:`~Tensor.prune()` for further details.
@@ -576,11 +577,10 @@ class BaseQNode:
         Returns:
             res (Sequence[Observable], Observable): pruned output returned by the quantum function
         """
-        if isinstance(res, Observable) and not isinstance(res, qml.operation.Tensor):
-            return res
-        elif isinstance(res, qml.operation.Tensor):
+        if isinstance(res, qml.operation.Tensor):
             return res.prune()
-        elif isinstance(res, Sequence):
+
+        if isinstance(res, Sequence):
             ops = []
             for o in res:
                 if isinstance(o, qml.operation.Tensor):
@@ -588,6 +588,8 @@ class BaseQNode:
                 else:
                     ops.append(o)
             return ops
+
+        return res
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.
