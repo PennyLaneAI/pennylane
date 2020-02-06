@@ -855,40 +855,57 @@ class TestTensor:
     tensor_obs = [
                     (
                     qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
-                    qml.PauliZ(0) @ qml.PauliZ(2)
+                    [qml.PauliZ(0), qml.PauliZ(2)]
                     ),
                     (
-                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4),
-                    qml.PauliX(1) @ qml.PauliZ(4)
-                    )
-                ]
+                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
+                    [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)]
+                    ),
 
-    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
-    def test_prune(self, tensor_observable, expected):
-        """Tests that the prune method returns a Tensor removing any Identities."""
-
-        O = tensor_observable
-        O_pruned = O.prune()
-        for idx, obs in enumerate(O_pruned.obs):
-            assert type(obs) == type(expected.obs[idx])
-            assert obs.wires == expected.obs[idx].wires
-
-    def test_prune_single_observable(self):
-        """Tests that the prune method returns a single observable when there is only one non-Identity in the list of observables for a Tensor."""
-    tensor_obs = [
+                    # List containing single observable is returned
                     (
                     qml.PauliZ(0) @ qml.Identity(1),
-                    qml.PauliZ(0)
+                    [qml.PauliZ(0)]
                     ),
                     (
                     qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
-                    qml.PauliX(1)
+                    [qml.PauliX(1)]
                     )
                 ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
+    def test_non_identity_obs(self, tensor_observable, expected):
+        """Tests that the non_identity_obs property returns a list without any Identities."""
+
+        O = tensor_observable
+        for idx, obs in enumerate(O.non_identity_obs):
+            assert type(obs) == type(expected[idx])
+            assert obs.wires == expected[idx].wires
+
+    tensor_obs_pruning = [
+                            (
+                            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+                            qml.PauliZ(0) @ qml.PauliZ(2)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
+                            qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4)
+                            ),
+
+                            # Single observable is returned
+                            (
+                            qml.PauliZ(0) @ qml.Identity(1),
+                            qml.PauliZ(0)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
+                            qml.PauliX(1)
+                            )
+                         ]
+
+    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
     def test_prune(self, tensor_observable, expected):
-        """Tests that the prune method returns a Tensor removing any Identities."""
+        """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
 
         O = tensor_observable
         O_pruned = O.prune()

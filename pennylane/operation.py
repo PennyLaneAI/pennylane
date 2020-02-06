@@ -768,6 +768,16 @@ class Tensor(Observable):
         """
         return [o.parameters for o in self.obs]
 
+    @property
+    def non_identity_obs(self):
+        """Returns the non-identity observables contained in the Tensor.
+
+        Returns:
+            list[`~.Observable`]: list containing the non-identity observables
+            in the tensor product
+        """
+        return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+
     def __matmul__(self, other):
         if isinstance(other, Tensor):
             self.obs.extend(other.obs)
@@ -901,7 +911,8 @@ class Tensor(Observable):
         return functools.reduce(np.kron, U_list)
 
     def prune(self):
-        """Returns a pruned tensor of observables based on the current Tensor.
+        """Returns a pruned tensor of observables by removing Identity instances from
+        the observables building up the Tensor.
 
         If the Tensor only contained one observable, then this observable instance is
         returned.
@@ -925,15 +936,12 @@ class Tensor(Observable):
         <pennylane.ops.qubit.PauliZ at 0x7fc1642d1850>
 
         Returns:
-            `~.Observable`: the pruned
+            `~.Observable`: the pruned Tensor
         """
-        non_identity_obs = [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+        if len(self.non_identity_obs) == 1:
+            return self.non_identity_obs[0]
 
-        print(non_identity_obs)
-        if len(non_identity_obs) == 1:
-            return non_identity_obs[0]
-
-        return Tensor(*non_identity_obs)
+        return Tensor(*self.non_identity_obs)
 
 #=============================================================================
 # CV Operations and observables
