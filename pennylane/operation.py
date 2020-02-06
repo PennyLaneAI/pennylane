@@ -919,7 +919,7 @@ class Tensor(Observable):
         If the tensor product only contains one observable, then this observable instance is
         returned.
 
-        Note that this way this method might return an instance that is not a :class:`.Tensor`
+        Note that this way this method might return an instance that is not a :class:`~.Tensor`
         instance.
 
         **Example:**
@@ -939,9 +939,12 @@ class Tensor(Observable):
         <pennylane.ops.qubit.PauliZ at 0x7fc1642d1850>
 
         Returns:
-            :class:`~.Observable`: the pruned tensor product of observables
+            ~.Observable: the pruned tensor product of observables
         """
-        if len(self.non_identity_obs) == 1:
+        # Return one Identity in there in case the tensor only contains Identities
+        if len(self.non_identity_obs) == 0:
+            obs = qml.Identity(0)
+        elif len(self.non_identity_obs) == 1:
             obs = self.non_identity_obs[0]
         else:
             obs = Tensor(*self.non_identity_obs)

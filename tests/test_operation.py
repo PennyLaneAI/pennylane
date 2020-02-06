@@ -852,6 +852,13 @@ class TestTensor:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    herm_matrix = np.array([
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 1]
+                            ])
+
     tensor_obs = [
                     (
                     qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
@@ -870,6 +877,14 @@ class TestTensor:
                     (
                     qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
                     [qml.PauliX(1)]
+                    ),
+                    (
+                    qml.Identity(0) @ qml.Identity(1),
+                    [qml.Identity(0)]
+                    ),
+                    (
+                    qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2,3]),
+                    [qml.Hermitian(herm_matrix, wires=[2,3])]
                     )
                 ]
 
@@ -891,7 +906,6 @@ class TestTensor:
                             qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
                             qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4)
                             ),
-
                             # Single observable is returned
                             (
                             qml.PauliZ(0) @ qml.Identity(1),
@@ -900,6 +914,18 @@ class TestTensor:
                             (
                             qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
                             qml.PauliX(1)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.Identity(1),
+                            qml.Identity(0)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.Identity(1),
+                            qml.Identity(0)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2,3]),
+                            qml.Hermitian(herm_matrix, wires=[2,3])
                             )
                          ]
 
