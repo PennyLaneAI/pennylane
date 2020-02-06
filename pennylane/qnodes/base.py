@@ -534,7 +534,9 @@ class BaseQNode:
         if self.properties.get("vis_check", False):
             invisible = self.circuit.invisible_operations()
             if invisible:
-                print("The operations {} cannot affect the circuit output.".format(invisible))
+                raise QuantumFunctionError(
+                    "The operations {} cannot affect the circuit output.".format(invisible)
+                )
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.

@@ -384,7 +384,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"vis_check": True})
-        with pytest.raises(QuantumFunctionError, match="cannot affect the output"):
+        with pytest.raises(QuantumFunctionError, match="cannot affect the circuit output"):
             node(0.5)
 
     def test_operation_requiring_all_wires(self, operable_mock_device_2_wires):
