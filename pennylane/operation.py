@@ -919,7 +919,7 @@ class Tensor(Observable):
         If the tensor product only contains one observable, then this observable instance is
         returned.
 
-        Note that this way this method might return an instance that is not a :class:`~.Tensor`
+        Note that, as a result, this method can return observables that are not a :class:`~.Tensor`
         instance.
 
         **Example:**
