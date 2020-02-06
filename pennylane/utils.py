@@ -188,11 +188,8 @@ def expand(U, wires, num_wires):
 
 @functools.lru_cache()
 def pauli_eigs(n):
-    r"""Pauli operator eigenvalues.
-
-    Returns the eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
-    any operator that shares eigenvalues with the Pauli matrices ("standard
-    observables").
+    r"""Eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
+    Pauli operator, or shares its eigenvalues.
 
     As an example if n==2, then the eigenvalues of a tensor product consisting
     of two matrices sharing the eigenvalues with Pauli matrices is returned.

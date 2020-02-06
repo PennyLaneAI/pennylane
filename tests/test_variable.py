@@ -44,20 +44,29 @@ def par_keyword():
     return temp
 
 
-def test_variable_str():
-    """variable: Tests the positional variable reference string."""
+def test_variable_repr():
+    """Variable string rep."""
     p = VariableRef(0)
-    assert str(p) == "<VariableRef(None:0)>"
-    assert str(-p) == "<VariableRef(None:0 * -1)>"
-    assert str(1.2 * p * 0.4) == "<VariableRef(None:0 * 0.48)>"
-    assert str(1.2 * p / 2.5) == "<VariableRef(None:0 * 0.48)>"
+    assert repr(p) == "<VariableRef(None:0)>"
+    assert repr(-p) == "<VariableRef(None:0 * -1)>"
+    assert repr(1.2 * p * 0.4) == "<VariableRef(None:0 * 0.48)>"
+    assert repr(1.2 * p / 2.5) == "<VariableRef(None:0 * 0.48)>"
 
     p = VariableRef(0, name="kw1")
-    assert str(p) == "<VariableRef(kw1:0)>"
-    assert str(-p) == "<VariableRef(kw1:0 * -1)>"
-    assert str(1.2 * p * 0.4) == "<VariableRef(kw1:0 * 0.48)>"
-    assert str(1.2 * p / 2.5) == "<VariableRef(kw1:0 * 0.48)>"
+    assert repr(p) == "<VariableRef(kw1:0)>"
+    assert repr(-p) == "<VariableRef(kw1:0 * -1)>"
+    assert repr(1.2 * p * 0.4) == "<VariableRef(kw1:0 * 0.48)>"
+    assert repr(1.2 * p / 2.5) == "<VariableRef(kw1:0 * 0.48)>"
 
+def test_variable_str():
+    """Variable informal string rep."""
+    p = VariableRef(0)
+    assert str(p) == "VariableRef: name = None, idx = 0"
+    assert str(-p) == "VariableRef: name = None, idx = 0, * -1"
+
+    p = VariableRef(0, name="kw1")
+    assert str(p) == "VariableRef: name = kw1, idx = 0"
+    assert str(2.1 * p) == "VariableRef: name = kw1, idx = 0, * 2.1"
 
 def variable_eval_asserts(v, p, m, tol):
     """Check that variable evaluation (with scalar multiplication) yields the expected results."""

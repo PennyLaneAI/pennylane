@@ -105,6 +105,10 @@ class VariableRef:
         temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
         return "<VariableRef({}:{}{})>".format(self.name, self.idx, temp)
 
+    def __str__(self):
+        temp = ", * {}".format(self.mult) if self.mult != 1.0 else ""
+        return "VariableRef: name = {}, idx = {}{}".format(self.name, self.idx, temp)
+
     def __eq__(self, other):
         if not isinstance(other, VariableRef):
             return False
