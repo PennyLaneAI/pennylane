@@ -532,7 +532,9 @@ class BaseQNode:
 
         # check for operations that cannot affect the output
         if self.properties.get("vis_check", False):
-            self.check_visibility()
+            invisible = self.circuit.invisible_operations()
+            if invisible:
+                print("The operations {} cannot affect the circuit output.".format(invisible))
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.
@@ -627,20 +629,6 @@ class BaseQNode:
             queue = decompose_queue(self.queue, self.device)
 
         self.ops = queue + list(res)
-
-    def check_visibility(self):
-        """Check for operations that cannot affect the QNode output.
-
-        Raises:
-            QuantumFunctionError: the quantum circuit contains operations that cannot affect
-                its output
-        """
-        visible = self.circuit.ancestors(self.circuit.observables)
-        invisible = set(self.circuit.operations) - visible
-        if invisible:
-            raise QuantumFunctionError(
-                "The operations {} cannot affect the output of the circuit.".format(invisible)
-            )
 
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.

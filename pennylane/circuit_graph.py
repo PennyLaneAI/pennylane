@@ -357,6 +357,20 @@ class CircuitGraph:
         B.add(b)
         return A & B
 
+    def invisible_operations(self):
+        """Operations that cannot affect the circuit output.
+
+        An :class:`Operation` instance in a quantum circuit is *invisible* if is not an ancestor
+        of an observable. Such an operation cannot affect the circuit output, and usually indicates
+        there is something wrong with the circuit.
+
+        Returns:
+            set[Operator]: operations that cannot affect the output
+        """
+        visible = self.ancestors(self.observables)
+        invisible = set(self.operations) - visible
+        return invisible
+
     @property
     def parametrized_layers(self):
         """Identify the parametrized layer structure of the circuit.

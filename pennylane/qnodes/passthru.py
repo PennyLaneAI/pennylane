@@ -125,4 +125,6 @@ class PassthruQNode(BaseQNode):
 
         # check for operations that cannot affect the output
         if self.properties.get("vis_check", False):
-            self.check_visibility()
+            invisible = self.circuit.invisible_operations()
+            if invisible:
+                print("The operations {} cannot affect the circuit output.".format(invisible))
