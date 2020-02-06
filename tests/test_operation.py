@@ -875,7 +875,7 @@ class TestTensor:
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
     def test_non_identity_obs(self, tensor_observable, expected):
-        """Tests that the non_identity_obs property returns a list without any Identities."""
+        """Tests that the non_identity_obs property returns a list that contains no Identity instances."""
 
         O = tensor_observable
         for idx, obs in enumerate(O.non_identity_obs):

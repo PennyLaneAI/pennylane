@@ -911,7 +911,7 @@ class Tensor(Observable):
         return functools.reduce(np.kron, U_list)
 
     def prune(self):
-        """Returns a pruned tensor of observables by removing Identity instances from
+        """Returns a pruned tensor product of observables by removing Identity instances from
         the observables building up the Tensor.
 
         If the Tensor only contained one observable, then this observable instance is
@@ -936,7 +936,7 @@ class Tensor(Observable):
         <pennylane.ops.qubit.PauliZ at 0x7fc1642d1850>
 
         Returns:
-            `~.Observable`: the pruned Tensor
+            `~.Observable`: the pruned tensor product of observables
         """
         if len(self.non_identity_obs) == 1:
             return self.non_identity_obs[0]
