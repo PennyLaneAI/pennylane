@@ -723,6 +723,7 @@ class BaseQNode:
 
         temp = self.properties.get('use_native_type', False)
         if isinstance(self.device, qml.QubitDevice):
+            #TODO: remove this if statement once all devices are ported to the QubitDevice API
             ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
             ret = self.device.execute(
