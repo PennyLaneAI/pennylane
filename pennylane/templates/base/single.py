@@ -25,37 +25,37 @@ from pennylane.templates.utils import (_check_wires,
 
 @template
 def Single(unitary, wires, parameters=None, kwargs={}):
-    """
-    Applies a - potentially parametrized - single-qubit unitary to each wire.
+    r"""Applies a (potentially parametrized) single-qubit unitary to each wire.
 
-    For every wire :math:`m = 1,\dots,N`, the unitary :math:`U` takes a parameter or set of parameters :math:`p_m`:
-
-    .. figure:: ../../_static/templates/base/single_parametrized.png
+    .. figure:: ../../_static/templates/base/single.png
         :align: center
         :width: 20%
         :target: javascript:void(0);
 
+    If ``parameters`` is ``None``, the unitary is constant.
 
-    If ``parameters`` is ``None``, a constant unitary is applied to each wire:
+    If ``parameters`` is not ``None`` it contains sets of parameters
+    :math:`p_m = [\varphi^m_1, \varphi^m_2, ..., \varphi_D^m]`, one set for each wire :math:`m = 1, \dots , M`.
+    The unitary acting on the :math:`m` th wire is :math:`U(\varphi^m_1, \varphi^m_2, ..., \varphi_D^m)`. Hence,
+    ``parameters`` must be a list or array of length :math:`M`.
 
-    .. figure:: ../../_static/templates/base/single_constant.png
-        :align: center
-        :width: 20%
-        :target: javascript:void(0);
-
-    If not `None`, the number of parameters must be equal to the number of wires. The unitary can only act on a
-    single wire.
-
-    The unitary must be a valid operation inside a quantum function, which has the signature
+    The argument ``unitary`` must be a function of a specific signature. It is called
+    by :mod:`~.pennylane.templates.base.Single` as follows:
 
     .. code-block:: python
 
-        unitary(parameter1, parameter2, ... , wires, **kwargs)
+        unitary(parameter1, ... parameterD, wires, **kwargs)
 
-    The number of parameters has to match the shape of the entries in ``parameters``, and can be zero.
+    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters fed into
+    the unitary, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the unitary is not
+    parametrized), ``wires`` is the *only* positional argument. The ``unitary`` function
+    can take user-defined keyword arguments.
+
+    Typically, ``unitary`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
+    user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
 
     Args:
-        unitary: quantum gate or template
+        unitary (function): quantum gate or template
         parameters (iterable or None): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
 
@@ -140,25 +140,23 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
-        In more general, the unitary **must** have the following signature:
+        As mentioned above, in general the unitary **must** have the following signature:
 
         .. code-block:: python
 
-            unitary(parameter1, parameter2, ... parameterN, wires, **kwargs)
+            unitary(parameter1, parameter2, ... parameterD, wires, **kwargs)
 
-        Note that if ``unitary`` does not depend on parameters (:math:`N=0`), the signature is
+        If ``unitary`` does not depend on parameters (:math:`D=0`), the signature is
 
         .. code-block:: python
 
             unitary(wires, **kwargs)
 
-        Overall, ``parameters`` must be a list of length-:math:`N` lists.
+        As a result, ``parameters`` must be a list or array of length-:math:`D` lists or arrays.
 
-        If :math:`N` becomes large, the signature can be simplified by wrapping each entry in ``parameters``:
+        If :math:`D` becomes large, the signature can be simplified by wrapping each entry in ``parameters``:
 
         .. code-block:: python
-
-            from pennylane.templates import template
 
             @template
             def mytemplate(pars, wires):
