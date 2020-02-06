@@ -568,7 +568,7 @@ class BaseQNode:
     def _prune_tensors(res):
         """Prune the tensors that have been passed by the quantum function.
 
-        .. note:: Check the :meth:`~Tensor.prune()` for further details.
+        .. seealso:: :meth:`~.Tensor.prune`
 
         Args:
             res (Sequence[Observable], Observable): output returned by the quantum function
