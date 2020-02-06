@@ -136,9 +136,11 @@ class TestPassthruTF:
         res = node(x_tf)
 
         # compare to a reference node
-        ref_device = qml.device('default.qubit', wires=2)
-        ref_node = BaseQNode(circuit, ref_device)
-        ref_res = ref_node(x)
+        #ref_device = qml.device('default.qubit', wires=2)
+        #ref_node = BaseQNode(circuit, ref_device)
+        #ref_res = ref_node(x)
+        # analytic result
+        ref_res = np.cos(x[0]) * np.array([1.0, np.cos(x[1]) * np.cos(x[2])])
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -153,8 +155,8 @@ class TestPassthruTF:
             qml.RX(phi[0], wires=0)
             qml.RY(phi[1], wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         ph = np.array([0.7, -1.2])
         th = 1.7
@@ -171,9 +173,16 @@ class TestPassthruTF:
                                              experimental_use_pfor=vectorize_jacobian)
 
         # compare to a reference Jacobian computed using finite differences
-        ref_device = qml.device('default.qubit', wires=2)
-        ref_node = JacobianQNode(circuit, ref_device)
-        ref_jac = ref_node.jacobian([ph, th])
+        #ref_device = qml.device('default.qubit', wires=2)
+        #ref_node = JacobianQNode(circuit, ref_device)
+        #ref_jac = ref_node.jacobian([ph, th])
+        # analytic result
+        ref_jac = np.array([
+            [-np.sin(ph[0]), 0., 0.],
+            [-np.sin(ph[0]) * np.cos(ph[1]) * np.cos(th),
+             np.cos(ph[0]) * -np.sin(ph[1]) * np.cos(th),
+             np.cos(ph[0]) * np.cos(ph[1]) * -np.sin(th)]
+        ])
 
         assert isinstance(phi_grad, tf.Tensor)
         assert phi_grad.shape == (2, 2)
