@@ -914,7 +914,7 @@ class Tensor(Observable):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
         the observables building up the :class:`~.Tensor`.
 
-        The return_type attribute is preserved while pruning.
+        The ``return_type`` attribute is preserved while pruning.
 
         If the tensor product only contains one observable, then this observable instance is
         returned.
