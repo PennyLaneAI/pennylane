@@ -18,12 +18,14 @@ literature, such architectures are commonly known as an *ansatz*.
 
 PennyLane conceptually distinguishes different types of templates, such as
 
-* :ref:`layer architectures <intro_ref_temp_lay>`
-* :ref:`input embeddings <intro_ref_temp_emb>`.
-*
+* :ref:`Embeddings <intro_ref_temp_emb>`
+* :ref:`Layers <intro_ref_temp_lay>`
+* :ref:`State preparations <intro_ref_temp_stateprep>`
+* :ref:`Subroutines <intro_ref_temp_subroutines>`
+
 
 Most templates are complemented by functions that provide an array of
-random :ref:`initial parameters <intro_ref_temp_params>` .
+random :ref:`initial parameters <intro_ref_temp_init>` .
 
 An example of how to use templates is the following:
 
@@ -154,7 +156,7 @@ Layer architectures define sequences of trainable gates that are repeated like t
 
         <div style='clear:both'></div>
 
-.. _intro_ref_temp_params:
+.. _intro_ref_temp_stateprep:
 
 State Preparations
 ------------------
@@ -175,6 +177,8 @@ Subroutines are simply sequences of (possibly trainable) gates.
 
         <div style='clear:both'></div>
 
+.. _intro_ref_temp_subroutines:
+
 Subroutines
 -----------
 
@@ -190,6 +194,7 @@ of other templates.
 
         <div style='clear:both'></div>
 
+.. _intro_ref_temp_init:
 
 Parameter initializations
 -------------------------
