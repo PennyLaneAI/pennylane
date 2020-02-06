@@ -135,8 +135,6 @@ Layer templates
 
 Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
 
-:html:`<div>`
-
 .. customgalleryitem::
     :tooltip: CVNeuralNetLayers template
     :description: :doc:`CVNeuralNetLayers</code/api/pennylane.templates.layers.CVNeuralNetLayers>`
