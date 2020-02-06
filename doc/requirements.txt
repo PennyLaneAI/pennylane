@@ -11,7 +11,6 @@ sphinx==2.2.2
 sphinx-automodapi
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
-sphinx_gallery
 tensorflow==2.0.1
 tensornetwork==0.2
 toml
