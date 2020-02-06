@@ -530,12 +530,11 @@ class BaseQNode:
         finally:
             qml._current_context = None
 
-        # Prune all the Tensor objects that have been used in the circuit
-        res = self._prune_tensors(res)
-        self.obs_queue = self._prune_tensors(self.obs_queue)
-
         # check the validity of the circuit
         self._check_circuit(res)
+
+        # Prune all the Tensor objects that have been used in the circuit
+        self.ops = self._prune_tensors(self.ops)
 
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
