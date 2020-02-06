@@ -78,81 +78,7 @@ functions that act on templates, such as :func:`~.pennylane.inv`:
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-See below for details on built-in templates provided by PennyLane.
-
-.. _intro_ref_temp_base:
-
-Base templates
---------------
-
-.. currentmodule:: pennylane.templates.base
-
-
-.. _intro_ref_temp_lay:
-
-Layer templates
----------------
-
-.. currentmodule:: pennylane.templates.layers
-
-Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
-
-.. raw:: html
-
-    <style>
-        #right-column.card {
-            box-shadow: none!important;
-        }
-        #right-column.card:hover {
-            box-shadow: none!important;
-        }
-        .breadcrumb {
-            display: none;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .footer-relations {
-            border-top: 0px;
-        }
-    </style>
-
-    <div class="container mt-2 mb-2">
-        <div class="row mt-3">
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.layers.StronglyEntanglingLayers.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/layers/strongly_entangling.png" alt="StronglyEntanglingLayers">
-                      <div class="card-body">
-                        <p class="card-text">StronglyEntanglingLayers</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.layers.StronglyEntanglingLayers.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/layers/strongly_entangling.png" alt="StronglyEntanglingLayers">
-                      <div class="card-body">
-                        <p class="card-text">StronglyEntanglingLayers</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.layers.StronglyEntanglingLayers.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/layers/strongly_entangling.png" alt="StronglyEntanglingLayers">
-                      <div class="card-body">
-                        <p class="card-text">StronglyEntanglingLayers</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-      </div>
-    </div>
-
+The following is a gallery of built-in templates provided by PennyLane.
 
 
 .. _intro_ref_temp_emb:
@@ -164,111 +90,105 @@ Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may consist of repeated layers.
 
+.. customgalleryitem::
+    :tooltip: AmplitudeEmbedding template
+    :description: :doc:`AmplitudeEmbedding</code/api/pennylane.templates.embeddings.AmplitudeEmbedding>`
+    :figure: ../_static/templates/embeddings/amplitude.png
+
+.. customgalleryitem::
+    :tooltip: AngleEmbedding template
+    :description: :doc:`AngleEmbedding</code/api/pennylane.templates.embeddings.AngleEmbedding>`
+    :figure: ../_static/templates/embeddings/angle.png
+
+.. customgalleryitem::
+    :tooltip: BasisEmbedding template
+    :description: :doc:`BasisEmbedding</code/api/pennylane.templates.embeddings.BasisEmbedding>`
+    :figure: ../_static/templates/embeddings/basis.png
+
+.. customgalleryitem::
+    :tooltip: DisplacementEmbedding template
+    :description: :doc:`DisplacementEmbedding</code/api/pennylane.templates.embeddings.DisplacementEmbedding>`
+    :figure: ../_static/templates/embeddings/displacement.png
+
+.. customgalleryitem::
+    :tooltip: QAOAEmbedding template
+    :description: :doc:`QAOAEmbedding</code/api/pennylane.templates.embeddings.QAOAEmbedding>`
+    :figure: ../_static/templates/embeddings/qaoa.png
+
+.. customgalleryitem::
+    :tooltip: SqueezingEmbedding template
+    :description: :doc:`SqueezingEmbedding</code/api/pennylane.templates.embeddings.SqueezingEmbedding>`
+    :figure: ../_static/templates/embeddings/squeezing.png
+
 .. raw:: html
 
-    <style>
-        #right-column.card {
-            box-shadow: none!important;
-        }
-        #right-column.card:hover {
-            box-shadow: none!important;
-        }
-        .breadcrumb {
-            display: none;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .footer-relations {
-            border-top: 0px;
-        }
-    </style>
+        <div style='clear:both'></div>
 
-    <div class="container mt-2 mb-2">
-        <div class="row mt-3">
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/embeddings/amplitude.png" alt="AmplitudeEmbedding">
-                      <div class="card-body">
-                        <p class="card-text">AmplitudeEmbedding</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.embeddings.AngleEmbedding.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/embeddings/angle.png" alt="AngleEmbedding">
-                      <div class="card-body">
-                        <p class="card-text">AngleEmbedding</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.embeddings.BasisEmbedding.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/embeddings/basis.png" alt="BasisEmbedding">
-                      <div class="card-body">
-                        <p class="card-text">BasisEmbedding</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.embeddings.DisplacementEmbedding.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/embeddings/displacement.png" alt="DisplacementEmbedding">
-                      <div class="card-body">
-                        <p class="card-text">DisplacementEmbedding</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.embeddings.QAOAEmbedding.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/embeddings/qaoa.png" alt="QAOAEmbedding">
-                      <div class="card-body">
-                        <p class="card-text">QAOAEmbedding</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/api/pennylane.templates.embeddings.SqueezingEmbedding.html">
-                    <div class="card" style="width: 15rem;">
-                      <img class="card-img-top" src="../_static/templates/embeddings/squeezing.png" alt="SqueezingEmbedding">
-                      <div class="card-body">
-                        <p class="card-text">SqueezingEmbedding</p>
-                      </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
+.. _intro_ref_temp_lay:
+
+Layer templates
+---------------
+
+.. currentmodule:: pennylane.templates.layers
+
+Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
+
+:html:`<div>`
+
+.. customgalleryitem::
+    :tooltip: CVNeuralNetLayers template
+    :description: :doc:`CVNeuralNetLayers</code/api/pennylane.templates.layers.CVNeuralNetLayers>`
+    :figure: ../_static/templates/layers/cvqnn.png
+
+.. customgalleryitem::
+    :tooltip: RandomLayers template
+    :description: :doc:`RandomLayers</code/api/pennylane.templates.layers.RandomLayers>`
+    :figure: ../_static/templates/layers/random.png
+
+.. customgalleryitem::
+    :tooltip: StronglyEntanglingLayers template
+    :description: :doc:`StronglyEntanglingLayers</code/api/pennylane.templates.layers.StronglyEntanglingLayers>`
+    :figure: ../_static/templates/layers/strongly_entangling.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
 
 .. _intro_ref_temp_params:
+
+State Preparations
+------------------
+
+Subroutines are simply sequences of (possibly trainable) gates.
+
+.. customgalleryitem::
+    :tooltip: BasisStatePreparation template
+    :description: :doc:`BasisStatePreparation</code/api/pennylane.templates.state_preparations.BasisStatePreparation>`
+    :figure: ../_static/templates/state_preparations/basis.png
+
+.. customgalleryitem::
+    :tooltip: MottonenStatePreparation template
+    :description: :doc:`MottonnenStatePreparation</code/api/pennylane.templates.state_preparations.MottonenStatePreparation>`
+    :figure: ../_static/templates/state_preparations/mottonen.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
 
 Subroutines
 -----------
 
-Subroutines are simply a collection of (trainable) gates.
+Subroutines are sequences of (possibly trainable) gates that do not fulfill the conditions
+of other templates.
 
-The following subroutines are available:
+.. customgalleryitem::
+    :tooltip: Interferometer template
+    :description: :doc:`Interferometer</code/api/pennylane.templates.subroutines.Interferometer>`
+    :figure: ../_static/templates/subroutines/interferometer.png
 
-:html:`<div class="summary-table">`
+.. raw:: html
 
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.Interferometer
-
-:html:`</div>`
+        <div style='clear:both'></div>
 
 
 Parameter initializations
