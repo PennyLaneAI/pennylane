@@ -924,25 +924,26 @@ class Tensor(Observable):
 
         **Example:**
 
-        1.
+        Pruning that returns a :class:`~.Tensor`:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> pruned_obs = O.prune()
+        >>> O.prune()
         <pennylane.operation.Tensor at 0x7fc1642d1590
-        >>> pruned_obs.obs
-        [<pennylane.ops.qubit.PauliZ object at 0x7fc1b076afd0>, <pennylane.ops.qubit.PauliZ object at 0x7fc1b075bd90>]
+        >>> [(o.name, o.wires) for o in O.prune().obs]
+        [('PauliZ', [0]), ('PauliZ', [2])]
 
-        2.
+        Pruning that returns a single observable:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1)
-        >>> O.prune()
-        <pennylane.ops.qubit.PauliZ at 0x7fc1642d1850>
+        >>> O_pruned = O.prune()
+        >>> (O_pruned.name, O_pruned.wires)
+        ('PauliZ', [0])
 
         Returns:
             ~.Observable: the pruned tensor product of observables
         """
-        # Return one Identity in there in case the tensor only contains Identities
         if len(self.non_identity_obs) == 0:
+            # Return one Identity in there in case the tensor only contains Identities
             obs = qml.Identity(0)
         elif len(self.non_identity_obs) == 1:
             obs = self.non_identity_obs[0]

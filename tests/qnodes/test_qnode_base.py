@@ -240,6 +240,7 @@ class TestQNodeOperationQueue:
         assert qnode.ops[3].name == "PauliX"
 
     def test_prune_tensors(self, mock_device):
+        """Test that the _prune_tensors auxiliary method."""
         px = qml.PauliX(1)
         obs = qml.Identity(0) @ px
 
