@@ -111,6 +111,14 @@ class CircuitGraph:
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
         for k, op in enumerate(ops):
+
+            print('before', op)
+            # Extract the non-Identity observables from
+            # the Tensor object
+            if isinstance(op, qml.operation.Tensor):
+                op = op.prune()
+
+            print('after', op)
             op.queue_idx = k  # store the queue index in the Operator
             for w in set(
                 _flatten(op.wires)

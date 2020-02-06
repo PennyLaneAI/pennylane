@@ -914,7 +914,9 @@ class Tensor(Observable):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
         the observables building up the :class:`~.Tensor`.
 
-        If the tensor product only containes one observable, then this observable instance is
+        The return_type attribute is preserved while pruning.
+
+        If the tensor product only contains one observable, then this observable instance is
         returned.
 
         Note that this way this method might return an instance that is not a :class:`.Tensor`
@@ -940,9 +942,12 @@ class Tensor(Observable):
             :class:`~.Observable`: the pruned tensor product of observables
         """
         if len(self.non_identity_obs) == 1:
-            return self.non_identity_obs[0]
+            obs = self.non_identity_obs[0]
+        else:
+            obs = Tensor(*self.non_identity_obs)
 
-        return Tensor(*self.non_identity_obs)
+        obs.return_type = self.return_type
+        return obs
 
 #=============================================================================
 # CV Operations and observables

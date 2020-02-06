@@ -904,13 +904,16 @@ class TestTensor:
                          ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
-    def test_prune(self, tensor_observable, expected):
+    @pytest.mark.parametrize("statistics", [qml.expval, qml.var, qml.sample])
+    def test_prune(self, tensor_observable, expected, statistics):
         """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
+        O = statistics(tensor_observable)
+        O_expected = statistics(expected)
 
-        O = tensor_observable
         O_pruned = O.prune()
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
+        assert O_pruned.return_type == O_expected.return_type
 
 class TestDecomposition:
     """Test for operation decomposition"""
