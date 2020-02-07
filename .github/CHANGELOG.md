@@ -1,4 +1,4 @@
-# Release 0.8.0-dev (development version)
+# Release 0.8.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -96,7 +96,8 @@
 
 * Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and
   ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
-  templates. This feature requires the latest version of the PennyLane-Forest plugin.
+  templates. This feature requires version 0.8 or above of the PennyLane-Forest
+  plugin.
   [#459](https://github.com/XanaduAI/pennylane/pull/459)
 
 * Added a `qml.inv` method that inverts templates and sequences of Operations.
@@ -172,6 +173,17 @@
 
 <h3>Improvements</h3>
 
+* Added the ``Tensor.prune`` method and the ``Tensor.non_identity_obs`` property for extracting
+  non-Identity instances from the observables making up a ``Tensor`` instance.
+  [(#498)](https://github.com/XanaduAI/pennylane/pull/498)
+
+* Renamed the ``expt.tensornet`` and ``expt.tensornet.tf`` devices to ``default.tensor`` and
+  ``default.tensor.tf``.
+  [(#495)](https://github.com/XanaduAI/pennylane/pull/495)
+
+* Moved the collections module to its own subpackage.
+  [(#492)](https://github.com/XanaduAI/pennylane/pull/492)
+
 * Added a serialization method to the `CircuitGraph` class that is used to create a unique
   hash for each quantum circuit graph.
   [(#470)](https://github.com/XanaduAI/pennylane/pull/470)
@@ -205,6 +217,11 @@
   copying examples.
   [(#437)](https://github.com/XanaduAI/pennylane/pull/437)
 
+<h3>Documentation</h3>
+
+* Update the developers plugin guide to use QubitDevice.
+  [(#482)](https://github.com/XanaduAI/pennylane/pull/483)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug in `CVQNode._pd_analytic`, where non-descendant observables were not
@@ -220,7 +237,7 @@ Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
 Soran Jahangiri, Nathan Killoran, Johannes Jakob Meyer, Zeyue Niu, 
 Maria Schuld, Antal Száva
 
-# Release 0.7.0 (current release)
+# Release 0.7.0
 
 <h3>New features since last release</h3>
 
