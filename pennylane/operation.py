@@ -943,7 +943,7 @@ class Tensor(Observable):
             ~.Observable: the pruned tensor product of observables
         """
         if len(self.non_identity_obs) == 0:
-            # Return one Identity in there in case the tensor only contains Identities
+            # Return a single Identity as the tensor only contains Identities
             obs = qml.Identity(0)
         elif len(self.non_identity_obs) == 1:
             obs = self.non_identity_obs[0]
