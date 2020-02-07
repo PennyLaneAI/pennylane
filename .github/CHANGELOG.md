@@ -178,7 +178,7 @@
   [(#498)](https://github.com/XanaduAI/pennylane/pull/498)
 
 * Renamed the `expt.tensornet` and `expt.tensornet.tf` devices to `default.tensor` and
-  ``default.tensor.tf``.
+  `default.tensor.tf`.
   [(#495)](https://github.com/XanaduAI/pennylane/pull/495)
 
 * Moved the collections module to its own subpackage.
