@@ -1994,7 +1994,7 @@ footer.page-footer .footer-copyright {
 .navbar {
   background-color: white;
   z-index: 10000;
-  box-shadow: -1px 14px 30px -20px rgba(0,0,0,0.61);
+  box-shadow: -1px 14px 30px -20px rgba(0,0,0,0.3);
 }
 
 .navbar-brand {
