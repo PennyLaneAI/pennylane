@@ -190,6 +190,7 @@ def to_torch(qnode):
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
+        _qnode = qnode
 
     @qnode_str
     def custom_apply(*args, **kwargs):
