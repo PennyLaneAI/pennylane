@@ -220,7 +220,7 @@
 <h3>Documentation</h3>
 
 * Update the developers plugin guide to use QubitDevice.
-  [(#482)](https://github.com/XanaduAI/pennylane/pull/483)
+  [(#483)](https://github.com/XanaduAI/pennylane/pull/483)
 
 <h3>Bug fixes</h3>
 
