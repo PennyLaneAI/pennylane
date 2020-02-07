@@ -174,7 +174,7 @@
 <h3>Improvements</h3>
 
 * Added the `Tensor.prune()` method and the `Tensor.non_identity_obs` property for extracting
-  non-Identity instances from the observables making up a ``Tensor`` instance.
+  non-identity instances from the observables making up a `Tensor` instance.
   [(#498)](https://github.com/XanaduAI/pennylane/pull/498)
 
 * Renamed the ``expt.tensornet`` and ``expt.tensornet.tf`` devices to ``default.tensor`` and
