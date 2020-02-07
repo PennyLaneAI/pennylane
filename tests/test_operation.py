@@ -852,6 +852,94 @@ class TestTensor:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    herm_matrix = np.array([
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 1]
+                            ])
+
+    tensor_obs = [
+                    (
+                    qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+                    [qml.PauliZ(0), qml.PauliZ(2)]
+                    ),
+                    (
+                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
+                    [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)]
+                    ),
+
+                    # List containing single observable is returned
+                    (
+                    qml.PauliZ(0) @ qml.Identity(1),
+                    [qml.PauliZ(0)]
+                    ),
+                    (
+                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
+                    [qml.PauliX(1)]
+                    ),
+                    (
+                    qml.Identity(0) @ qml.Identity(1),
+                    [qml.Identity(0)]
+                    ),
+                    (
+                    qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2,3]),
+                    [qml.Hermitian(herm_matrix, wires=[2,3])]
+                    )
+                ]
+
+    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
+    def test_non_identity_obs(self, tensor_observable, expected):
+        """Tests that the non_identity_obs property returns a list that contains no Identity instances."""
+
+        O = tensor_observable
+        for idx, obs in enumerate(O.non_identity_obs):
+            assert type(obs) == type(expected[idx])
+            assert obs.wires == expected[idx].wires
+
+    tensor_obs_pruning = [
+                            (
+                            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
+                            qml.PauliZ(0) @ qml.PauliZ(2)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
+                            qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4)
+                            ),
+                            # Single observable is returned
+                            (
+                            qml.PauliZ(0) @ qml.Identity(1),
+                            qml.PauliZ(0)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
+                            qml.PauliX(1)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.Identity(1),
+                            qml.Identity(0)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.Identity(1),
+                            qml.Identity(0)
+                            ),
+                            (
+                            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2,3]),
+                            qml.Hermitian(herm_matrix, wires=[2,3])
+                            )
+                         ]
+
+    @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
+    @pytest.mark.parametrize("statistics", [qml.expval, qml.var, qml.sample])
+    def test_prune(self, tensor_observable, expected, statistics):
+        """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
+        O = statistics(tensor_observable)
+        O_expected = statistics(expected)
+
+        O_pruned = O.prune()
+        assert type(O_pruned) == type(expected)
+        assert O_pruned.wires == expected.wires
+        assert O_pruned.return_type == O_expected.return_type
 
 class TestDecomposition:
     """Test for operation decomposition"""
