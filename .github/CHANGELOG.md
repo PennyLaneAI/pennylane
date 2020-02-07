@@ -177,7 +177,7 @@
   non-identity instances from the observables making up a `Tensor` instance.
   [(#498)](https://github.com/XanaduAI/pennylane/pull/498)
 
-* Renamed the ``expt.tensornet`` and ``expt.tensornet.tf`` devices to ``default.tensor`` and
+* Renamed the `expt.tensornet` and `expt.tensornet.tf` devices to `default.tensor` and
   ``default.tensor.tf``.
   [(#495)](https://github.com/XanaduAI/pennylane/pull/495)
 
