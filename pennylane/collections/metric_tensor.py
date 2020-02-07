@@ -93,6 +93,8 @@ class MetricTensor:
 
             self.np = np
         else:
+            import numpy as np
+
             self.np = np
 
         self.dot = _get_dot_func(self.interface)[0]
@@ -258,7 +260,7 @@ class MetricTensor:
                     # generator is an existing PennyLane operation
                     obs_list[-1].append(gen(w))
 
-            @qml.qnode(self.dev, interface=self.interface)
+            @qml.qnode(self.dev, interface=self.interface, mutable=False)
             def qn(weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev, _params=params):
                 counter = 0
                 p_idx = np.argsort([item for sublist in _params for item in sublist])
