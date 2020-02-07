@@ -95,7 +95,7 @@
   QNodes that return probabilities fully support autodifferentiation.
 
 * Added the convenience load functions `qml.from_pyquil`, `qml.from_quil` and
-  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
+  `qml.from_quil_file` that convert pyQuil objects and Quil code to PennyLane
   templates. This feature requires version 0.8 or above of the PennyLane-Forest
   plugin.
   [#459](https://github.com/XanaduAI/pennylane/pull/459)
