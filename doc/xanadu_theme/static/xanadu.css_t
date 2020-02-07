@@ -39,7 +39,8 @@ body {
   min-height: calc(100% - 50px);
   width: 300px;
   overflow: hidden;
-  box-shadow: 0 0px 0px 0 rgba(0,0,0,.05),0 30px 40px 0px rgba(0,0,0,.2) !important;
+  /*box-shadow: 0 0px 0px 0 rgba(0,0,0,.05),0 30px 40px 0px rgba(0,0,0,.2) !important;*/
+  border-right: 1px #ddd solid;
   background-color: #fff;
   z-index: 2000;
 }
@@ -1999,7 +2000,8 @@ footer.page-footer .footer-copyright {
 
 .navbar {
   background-color: white;
-  box-shadow: -1px 14px 30px -20px rgba(0,0,0,0.61);
+  z-index: 10000;
+  box-shadow: -1px 14px 30px -20px rgba(0,0,0,0.3);
 }
 
 .navbar-brand {
