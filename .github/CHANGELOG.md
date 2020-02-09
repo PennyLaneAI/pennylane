@@ -13,6 +13,10 @@
 
 <h3>Improvements</h3>
 
+* Beginning of support for Python 3.8, with the test suite
+  now being run in a Python 3.8 environment.
+  [(#501)](https://github.com/XanaduAI/pennylane/pull/501)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
