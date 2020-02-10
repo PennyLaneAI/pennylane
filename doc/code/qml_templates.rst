@@ -7,10 +7,10 @@ evaluate, and train quantum nodes.
 
 .. currentmodule:: pennylane.templates
 
-Base Templates
---------------
+Template Constructors
+---------------------
 
-.. automodapi:: pennylane.templates.base
+.. automodapi:: pennylane.templates.constructors
     :no-heading:
     :include-all-objects:
 

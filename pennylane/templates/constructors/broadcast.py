@@ -27,28 +27,28 @@ from pennylane.templates.utils import (_check_wires,
 def broadcast(template, wires, parameters=None, kwargs={}):
     r"""Applies a (potentially parametrized) single-qubit unitary to each wire.
 
-    .. figure:: ../../_static/templates/constructors/single.png
+    .. figure:: ../../_static/templates/constructors/broadcast.png
         :align: center
         :width: 20%
         :target: javascript:void(0);
 
-    If ``parameters`` is ``None``, the unitary is constant.
+    If the input template does not depend on parameters, ``parameters`` is set to ``None``.
 
-    If ``parameters`` is not ``None`` it contains sets of parameters
+    If ``parameters`` is not ``None``, it represents sets of parameters
     :math:`p_m = [\varphi^m_1, \varphi^m_2, ..., \varphi_D^m]`, one set for each wire :math:`m = 1, \dots , M`.
-    The unitary acting on the :math:`m` th wire is :math:`U(\varphi^m_1, \varphi^m_2, ..., \varphi_D^m)`. Hence,
+    The input template acting on the :math:`m` th wire is :math:`U(\varphi^m_1, \varphi^m_2, ..., \varphi_D^m)`. Hence,
     ``parameters`` must be a list or array of length :math:`M`.
 
-    The argument ``unitary`` must be a function of a specific signature. It is called
+    The input template must be a function of a specific signature. It is called
     by :mod:`~.pennylane.templates.constructors.broadcast` as follows:
 
     .. code-block:: python
 
-        unitary(parameter1, ... parameterD, wires, **kwargs)
+        template(parameter1, ... parameterD, wires, **kwargs)
 
-    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters fed into
-    the unitary, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the unitary is not
-    parametrized), ``wires`` is the *only* positional argument. The ``unitary`` function
+    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters that are fed into
+    the input template, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the input
+    template is not parametrized), ``wires`` is the *only* positional argument. The ``template`` function
     can take user-defined keyword arguments.
 
     Typically, ``unitary`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
@@ -64,7 +64,8 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
     .. UsageDetails::
 
-        The unitary is typically an :meth:`~.pennylane.operation.Operation` object representing a single qubit gate.
+        In the simplest case the input template is typically an :meth:`~.pennylane.operation.Operation` object
+        implementing a single qubit gate.
 
         .. code-block:: python
 
@@ -75,13 +76,13 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(unitary=qml.RX, wires=[0,1,2], parameters=pars)
+                broadcast(template=qml.RX, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
 
 
-        Alternatively, one can use a sequence of gates by creating a *template* using the
+        Alternatively, one can use a sequence of gates by creating a template using the
         :meth:`~.pennylane.templates.template` decorator.
 
         .. code-block:: python
@@ -97,15 +98,15 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(template=mytemplate, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([1, 1, 0.1]))
 
         **Constant unitaries**
 
-        If the ``unitary`` argument does not take parameters, no ``parameters`` argument is passed to the
-        ``broadcast`` template:
+        If the ``template`` argument does not take parameters, no ``parameters`` argument is passed to
+        :mod:`~.pennylane.templates.constructors.broadcast`:
 
         .. code-block:: python
 
@@ -113,15 +114,16 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit():
-                broadcast(unitary=qml.Hadamard, wires=[0,1,2])
+                broadcast(template=qml.Hadamard, wires=[0,1,2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
 
 
-        **Multiple parameters in unitary**
+        **Multiple parameters in input template**
 
-        A unitary, whether it is a gate or a template, can take multiple parameters. For example:
+        The input template, whether it is a single gate or a user-defined template,
+        can take multiple parameters. For example:
 
         .. code-block:: python
 
@@ -135,22 +137,22 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(template=mytemplate, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
-        As mentioned above, in general the unitary **must** have the following signature:
+        As mentioned above, in general the input template **must** have the following signature:
 
         .. code-block:: python
 
-            unitary(parameter1, parameter2, ... parameterD, wires, **kwargs)
+            template(parameter1, parameter2, ... parameterD, wires, **kwargs)
 
-        If ``unitary`` does not depend on parameters (:math:`D=0`), the signature is
+        If ``template`` does not depend on parameters (:math:`D=0`), the signature is
 
         .. code-block:: python
 
-            unitary(wires, **kwargs)
+            template(wires, **kwargs)
 
         As a result, ``parameters`` must be a list or array of length-:math:`D` lists or arrays.
 
@@ -166,12 +168,12 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(template=mytemplate, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
 
-        If the number of parameters for each wire does not match the template or gate, an error gets thrown:
+        If the number of parameters for each wire does not match the input template, an error gets thrown:
 
         .. code-block:: python
 
@@ -183,7 +185,7 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
+                    broadcast(template=mytemplate, wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
 
@@ -204,7 +206,7 @@ def broadcast(template, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(hadamard=None):
-                broadcast(unitary=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
+                broadcast(template=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
             circuit(hadamard=False)
