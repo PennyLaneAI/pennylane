@@ -12,6 +12,10 @@
 
 <h3>Documentation</h3>
 
+* Present templates as a gallery of thumbnails showing the 
+  basic circuit architecture.
+  [(#499)](https://github.com/XanaduAI/pennylane/pull/499)
+
 <h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
