@@ -17,7 +17,7 @@ Contains the ``QAOAEmbedding`` template.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard
-from pennylane.templates.base import Single
+from pennylane.templates.constructors import broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_wires,
                                        _check_is_in_options,
@@ -36,8 +36,8 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
     feature_encoding_wires = wires[:len(features)]
     remaining_wires = wires[len(features):]
 
-    Single(unitary=RX, wires=feature_encoding_wires, parameters=features)
-    Single(unitary=Hadamard, wires=remaining_wires)
+    broadcast(template=RX, wires=feature_encoding_wires, parameters=features)
+    broadcast(template=Hadamard, wires=remaining_wires)
 
 
 def qaoa_ising_hamiltonian(weights, wires, local_fields, l):

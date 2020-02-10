@@ -15,9 +15,9 @@ r"""
 Base templates serve as building blocks for other templates. They define a fundamental structure of how to arrange
 a unitary on a set of wires. The unitary can be represented by a PennyLane :meth:`~.pennylane.operations.Operation`,
 or by a user-defined template that consists of a sequence of gates.
-It can also be parametrized, in which case the parameters are passed to the base template, which feeds them into
+It can also be parametrized, in which case the parameters are passed to the constructors template, which feeds them into
 the unitary.
 """
 
-from .single import Single
+from .broadcast import broadcast
 

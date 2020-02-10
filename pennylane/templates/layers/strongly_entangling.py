@@ -17,7 +17,7 @@ Contains the ``StronglyEntanglingLayers`` template.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
-from pennylane.templates.base import Single
+from pennylane.templates.constructors import broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
                                        _check_wires,
@@ -36,7 +36,7 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
 
-    Single(unitary=Rot, wires=wires, parameters=weights)
+    broadcast(template=Rot, wires=wires, parameters=weights)
 
     n_wires = len(wires)
     if n_wires > 1:

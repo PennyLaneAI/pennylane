@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``Single`` base template.
+Contains the ``broadcast`` template constructor.
 """
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
@@ -24,10 +24,10 @@ from pennylane.templates.utils import (_check_wires,
 
 
 @template
-def Single(unitary, wires, parameters=None, kwargs={}):
+def broadcast(template, wires, parameters=None, kwargs={}):
     r"""Applies a (potentially parametrized) single-qubit unitary to each wire.
 
-    .. figure:: ../../_static/templates/base/single.png
+    .. figure:: ../../_static/templates/constructors/single.png
         :align: center
         :width: 20%
         :target: javascript:void(0);
@@ -40,7 +40,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
     ``parameters`` must be a list or array of length :math:`M`.
 
     The argument ``unitary`` must be a function of a specific signature. It is called
-    by :mod:`~.pennylane.templates.base.Single` as follows:
+    by :mod:`~.pennylane.templates.constructors.broadcast` as follows:
 
     .. code-block:: python
 
@@ -55,7 +55,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
     user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
 
     Args:
-        unitary (function): quantum gate or template
+        template (function): quantum gate or template
         parameters (iterable or None): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
 
@@ -69,13 +69,13 @@ def Single(unitary, wires, parameters=None, kwargs={}):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import Single
+            from pennylane.templates import broadcast
 
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
             def circuit(pars):
-                Single(unitary=qml.RX, wires=[0,1,2], parameters=pars)
+                broadcast(unitary=qml.RX, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
@@ -97,7 +97,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(unitary=mytemplate, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([1, 1, 0.1]))
@@ -105,7 +105,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
         **Constant unitaries**
 
         If the ``unitary`` argument does not take parameters, no ``parameters`` argument is passed to the
-        ``Single`` template:
+        ``broadcast`` template:
 
         .. code-block:: python
 
@@ -113,7 +113,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit():
-                Single(unitary=qml.Hadamard, wires=[0,1,2])
+                broadcast(unitary=qml.Hadamard, wires=[0,1,2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
@@ -135,7 +135,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(unitary=mytemplate, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
@@ -166,7 +166,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                Single(unitary=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(unitary=mytemplate, wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
@@ -183,7 +183,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    Single(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
+                    broadcast(unitary=mytemplate, wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
 
@@ -204,7 +204,7 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(hadamard=None):
-                Single(unitary=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
+                broadcast(unitary=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
             circuit(hadamard=False)
@@ -218,8 +218,8 @@ def Single(unitary, wires, parameters=None, kwargs={}):
 
     _check_type(parameters, [Iterable, type(None)], msg="'parameters' must be either of type None or "
                                                         "Iterable; got {}".format(type(parameters)))
-#    _check_type(unitary, [list, FunctionType], msg="unitary must be a ``~.pennylane.operation.Operation`` "
-#                                                   "or a template function; got {}".format(type(unitary)))
+#    _check_type(template, [list, FunctionType], msg="template must be a ``~.pennylane.operation.Operation`` "
+#                                                   "or a template function; got {}".format(type(template)))
 
     if parameters is not None:
         shape = _get_shape(parameters)
@@ -235,6 +235,6 @@ def Single(unitary, wires, parameters=None, kwargs={}):
     #########
 
     for w, p in zip(wires, parameters):
-        unitary(*p, wires=w, **kwargs)
+        template(*p, wires=w, **kwargs)
 
 

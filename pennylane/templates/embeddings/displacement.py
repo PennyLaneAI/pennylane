@@ -17,7 +17,7 @@ Contains the ``DisplacementEmbedding`` template.
 #pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Displacement
-from pennylane.templates.base import Single
+from pennylane.templates.constructors import broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
                                        _check_wires,
@@ -72,7 +72,7 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
     constants = [c]*len(features)
 
     if method == 'amplitude':
-        Single(unitary=Displacement, wires=wires, parameters=list(zip(features, constants)))
+        broadcast(template=Displacement, wires=wires, parameters=list(zip(features, constants)))
 
     elif method == 'phase':
-        Single(unitary=Displacement, wires=wires, parameters=list(zip(constants, features)))
+        broadcast(template=Displacement, wires=wires, parameters=list(zip(constants, features)))
