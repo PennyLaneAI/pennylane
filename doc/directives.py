@@ -57,17 +57,13 @@ class UsageDetails(Directive):
 
 GALLERY_TEMPLATE = """
 .. raw:: html
-
-    <div class="sphx-glr-thumbcontainer">
-    
-.. only:: html
-
-    .. figure:: /{thumbnail}
-    
-        {description}
-        
-.. raw:: html
-
+    <div class="card" style="width: 13rem; float:left">
+        <a href={link}>
+            <img class="card-img-top" src={thumbnail} alt="image not found">
+            <div class="card-body">
+                <p class="card-text"> {description} </p>
+            </div>
+        </a>
     </div>
 """
 
@@ -80,17 +76,20 @@ class CustomGalleryItemDirective(Directive):
 
     .. customgalleryitem::
         :figure: /_static/img/thumbnails/babel.jpg
-        :description: :doc:`/beginner/deep_learning_nlp_tutorial`
+        :description: This is a tutorial
+        :link: /beginner/deep_learning_nlp_tutorial
 
     If figure is specified, a thumbnail will be made out of it and stored in
     _static/thumbs. Therefore, consider _static/thumbs as a 'built' directory.
     """
 
     required_arguments = 0
-    optional_arguments = 1
+    optional_arguments = 4
     final_argument_whitespace = True
     option_spec = {'figure': directives.unchanged,
-                   'description': directives.unchanged}
+                   'description': directives.unchanged,
+                   'width': directives.unchanged,
+                   'link': directives.unchanged}
 
     has_content = False
     add_index = False
@@ -98,17 +97,7 @@ class CustomGalleryItemDirective(Directive):
     def run(self):
         try:
             if 'figure' in self.options:
-                env = self.state.document.settings.env
-                rel_figname, figname = env.relfn2path(self.options['figure'])
-                thumbnail = os.path.join('_static/thumbs/', os.path.basename(figname))
-
-                try:
-                    os.makedirs('_static/thumbs')
-                except FileExistsError:
-                    pass
-
-                # x, y = (300, 500)
-                # gen_rst.scale_image(figname, thumbnail, int(x), int(y))
+                thumbnail = self.options['figure']
             else:
                 thumbnail = '_static/thumbs/code.png'
 
@@ -116,6 +105,16 @@ class CustomGalleryItemDirective(Directive):
                 description = self.options['description']
             else:
                 raise ValueError('description not found')
+
+            if 'width' in self.options:
+                width = self.options['width']
+            else:
+                width = "18rem"
+
+            if 'link' in self.options:
+                link = self.options['link']
+            else:
+                link = "code/qml_templates"
 
         except FileNotFoundError as e:
             print(e)
@@ -126,7 +125,9 @@ class CustomGalleryItemDirective(Directive):
             return []
 
         thumbnail_rst = GALLERY_TEMPLATE.format(thumbnail=thumbnail,
-                                                description=description)
+                                                description=description,
+                                                width=width,
+                                                link=link)
         thumbnail = StringList(thumbnail_rst.split('\n'))
         thumb = nodes.paragraph()
         self.state.nested_parse(thumbnail, self.content_offset, thumb)

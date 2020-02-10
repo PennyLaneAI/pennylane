@@ -89,28 +89,36 @@ Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may consist of repeated layers.
 
+.. raw:: html
+
 .. customgalleryitem::
-    :description: :doc:`AmplitudeEmbedding</code/api/pennylane.templates.embeddings.AmplitudeEmbedding>`
+    :link: ../code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html
+    :description: AmplitudeEmbedding
     :figure: ../_static/templates/embeddings/amplitude.png
 
 .. customgalleryitem::
-    :description: :doc:`AngleEmbedding</code/api/pennylane.templates.embeddings.AngleEmbedding>`
+    :link: ../code/api/pennylane.templates.embeddings.AngleEmbedding.html
+    :description: AngleEmbedding
     :figure: ../_static/templates/embeddings/angle.png
 
 .. customgalleryitem::
-    :description: :doc:`BasisEmbedding</code/api/pennylane.templates.embeddings.BasisEmbedding>`
+    :link: ../code/api/pennylane.templates.embeddings.BasisEmbedding.html
+    :description: BasisEmbedding
     :figure: ../_static/templates/embeddings/basis.png
 
 .. customgalleryitem::
-    :description: :doc:`DisplacementEmbedding</code/api/pennylane.templates.embeddings.DisplacementEmbedding>`
+    :link: ../code/api/pennylane.templates.embeddings.DisplacementEmbedding.html
+    :description: DisplacementEmbedding
     :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
-    :description: :doc:`QAOAEmbedding</code/api/pennylane.templates.embeddings.QAOAEmbedding>`
+    :link: ../code/api/pennylane.templates.embeddings.QAOAEmbedding.html
+    :description: QAOAEmbedding
     :figure: ../_static/templates/embeddings/qaoa.png
 
 .. customgalleryitem::
-    :description: :doc:`SqueezingEmbedding</code/api/pennylane.templates.embeddings.SqueezingEmbedding>`
+    :link: ../code/api/pennylane.templates.embeddings.SqueezingEmbedding.html
+    :description: SqueezingEmbedding
     :figure: ../_static/templates/embeddings/squeezing.png
 
 .. raw:: html
@@ -127,15 +135,18 @@ Layer templates
 Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
 
 .. customgalleryitem::
-    :description: :doc:`CVNeuralNetLayers</code/api/pennylane.templates.layers.CVNeuralNetLayers>`
+    :link: ../code/api/pennylane.templates.layers.CVNeuralNetLayers.html
+    :description: CVNeuralNetLayers
     :figure: ../_static/templates/layers/cvqnn.png
 
 .. customgalleryitem::
-    :description: :doc:`RandomLayers</code/api/pennylane.templates.layers.RandomLayers>`
+    :link: ../code/api/pennylane.templates.layers.RandomLayers.html
+    :description: RandomLayers
     :figure: ../_static/templates/layers/random.png
 
 .. customgalleryitem::
-    :description: :doc:`StronglyEntanglingLayers</code/api/pennylane.templates.layers.StronglyEntanglingLayers>`
+    :link: ../code/api/pennylane.templates.layers.StronglyEntanglingLayers.html
+    :description: StronglyEntanglingLayers
     :figure: ../_static/templates/layers/strongly_entangling.png
 
 .. raw:: html
@@ -150,11 +161,13 @@ State Preparations
 State preparation templates transform a given state into a sequence of gates preparing that state.
 
 .. customgalleryitem::
-    :description: :doc:`BasisStatePreparation</code/api/pennylane.templates.state_preparations.BasisStatePreparation>`
+    :link: ../code/api/pennylane.templates.state_preparations.BasisStatePreparation.html
+    :description: BasisStatePreparation
     :figure: ../_static/templates/state_preparations/basis.png
 
 .. customgalleryitem::
-    :description: :doc:`MottonnenStatePreparation</code/api/pennylane.templates.state_preparations.MottonenStatePreparation>`
+    :link: ../code/api/pennylane.templates.state_preparations.MottonenStatePreparation.html
+    :description: MottonnenStatePreparationation
     :figure: ../_static/templates/state_preparations/mottonen.png
 
 .. raw:: html
@@ -170,7 +183,8 @@ Subroutines are sequences of (possibly trainable) gates that do not fulfill the 
 of other templates.
 
 .. customgalleryitem::
-    :description: :doc:`Interferometer</code/api/pennylane.templates.subroutines.Interferometer>`
+    :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
+    :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
 
 .. raw:: html
