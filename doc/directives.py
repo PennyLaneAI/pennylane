@@ -17,6 +17,8 @@ Custom sphinx directives
 from docutils.parsers.rst import Directive, directives
 from docutils.statemachine import StringList
 from docutils import nodes
+import os
+from sphinx_gallery import gen_rst
 
 USAGE_DETAILS_TEMPLATE = """
 .. raw:: html
@@ -80,7 +82,6 @@ class CustomGalleryItemDirective(Directive):
     .. customgalleryitem::
         :figure: /_static/img/thumbnails/babel.jpg
         :description: :doc:`/beginner/deep_learning_nlp_tutorial`
-        :size: put image size here
 
     If figure is specified, a thumbnail will be made out of it and stored in
     _static/thumbs. Therefore, consider _static/thumbs as a 'built' directory.
@@ -98,7 +99,17 @@ class CustomGalleryItemDirective(Directive):
     def run(self):
         try:
             if 'figure' in self.options:
-                thumbnail = self.options['figure']
+                env = self.state.document.settings.env
+                rel_figname, figname = env.relfn2path(self.options['figure'])
+                thumbnail = os.path.join('_static/thumbs/', os.path.basename(figname))
+
+                try:
+                    os.makedirs('_static/thumbs')
+                except FileExistsError:
+                    pass
+
+                # x, y = (300, 500)
+                # gen_rst.scale_image(figname, thumbnail, int(x), int(y))
             else:
                 thumbnail = '_static/thumbs/code.png'
 
