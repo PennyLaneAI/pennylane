@@ -14,7 +14,6 @@
 r"""
 Custom sphinx directives
 """
-import os
 from docutils.parsers.rst import Directive, directives
 from docutils.statemachine import StringList
 from docutils import nodes
@@ -82,6 +81,7 @@ class CustomGalleryItemDirective(Directive):
 
     If figure is specified, a thumbnail will be made out of it and stored in
     _static/thumbs. Therefore, consider _static/thumbs as a 'built' directory.
+
     """
 
     required_arguments = 0
