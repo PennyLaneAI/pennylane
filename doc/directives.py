@@ -59,13 +59,13 @@ GALLERY_TEMPLATE = """
 .. raw:: html
 
     <div class="sphx-glr-thumbcontainer">
-    
+
 .. only:: html
 
     .. figure:: /{thumbnail}
-    
+
         {description}
-        
+
 .. raw:: html
 
     </div>
@@ -81,9 +81,6 @@ class CustomGalleryItemDirective(Directive):
     .. customgalleryitem::
         :figure: /_static/img/thumbnails/babel.jpg
         :description: :doc:`/beginner/deep_learning_nlp_tutorial`
-
-    If figure is specified, a thumbnail will be made out of it and stored in
-    _static/thumbs. Therefore, consider _static/thumbs as a 'built' directory.
     """
 
     required_arguments = 0
@@ -100,17 +97,6 @@ class CustomGalleryItemDirective(Directive):
             if 'figure' in self.options:
                 env = self.state.document.settings.env
                 rel_figname, figname = env.relfn2path(self.options['figure'])
-                thumbnail = os.path.join('_static/thumbs/', os.path.basename(figname))
-
-                try:
-                    os.makedirs('_static/thumbs')
-                except FileExistsError:
-                    pass
-
-                # x, y = (300, 500)
-                # gen_rst.scale_image(figname, thumbnail, int(x), int(y))
-            else:
-                thumbnail = '_static/thumbs/code.png'
 
             if 'description' in self.options:
                 description = self.options['description']
@@ -125,7 +111,7 @@ class CustomGalleryItemDirective(Directive):
             raise
             return []
 
-        thumbnail_rst = GALLERY_TEMPLATE.format(thumbnail=thumbnail,
+        thumbnail_rst = GALLERY_TEMPLATE.format(thumbnail=figname,
                                                 description=description)
         thumbnail = StringList(thumbnail_rst.split('\n'))
         thumb = nodes.paragraph()
