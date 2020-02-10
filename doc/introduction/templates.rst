@@ -91,27 +91,27 @@ trainable parameters, and they may consist of repeated layers.
 
 .. customgalleryitem::
     :description: :doc:`AmplitudeEmbedding</code/api/pennylane.templates.embeddings.AmplitudeEmbedding>`
-    :figure: /_static/templates/embeddings/amplitude.png
+    :figure: ../_static/templates/embeddings/amplitude.png
 
 .. customgalleryitem::
     :description: :doc:`AngleEmbedding</code/api/pennylane.templates.embeddings.AngleEmbedding>`
-    :figure: /_static/templates/embeddings/angle.png
+    :figure: ../_static/templates/embeddings/angle.png
 
 .. customgalleryitem::
     :description: :doc:`BasisEmbedding</code/api/pennylane.templates.embeddings.BasisEmbedding>`
-    :figure: /_static/templates/embeddings/basis.png
+    :figure: ../_static/templates/embeddings/basis.png
 
 .. customgalleryitem::
     :description: :doc:`DisplacementEmbedding</code/api/pennylane.templates.embeddings.DisplacementEmbedding>`
-    :figure: /_static/templates/embeddings/displacement.png
+    :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
     :description: :doc:`QAOAEmbedding</code/api/pennylane.templates.embeddings.QAOAEmbedding>`
-    :figure: /_static/templates/embeddings/qaoa.png
+    :figure: ../_static/templates/embeddings/qaoa.png
 
 .. customgalleryitem::
     :description: :doc:`SqueezingEmbedding</code/api/pennylane.templates.embeddings.SqueezingEmbedding>`
-    :figure: /_static/templates/embeddings/squeezing.png
+    :figure: ../_static/templates/embeddings/squeezing.png
 
 .. raw:: html
 
@@ -128,15 +128,15 @@ Layer architectures define sequences of trainable gates that are repeated like t
 
 .. customgalleryitem::
     :description: :doc:`CVNeuralNetLayers</code/api/pennylane.templates.layers.CVNeuralNetLayers>`
-    :figure: /_static/templates/layers/cvqnn.png
+    :figure: ../_static/templates/layers/cvqnn.png
 
 .. customgalleryitem::
     :description: :doc:`RandomLayers</code/api/pennylane.templates.layers.RandomLayers>`
-    :figure: /_static/templates/layers/random.png
+    :figure: ../_static/templates/layers/random.png
 
 .. customgalleryitem::
     :description: :doc:`StronglyEntanglingLayers</code/api/pennylane.templates.layers.StronglyEntanglingLayers>`
-    :figure: /_static/templates/layers/strongly_entangling.png
+    :figure: ../_static/templates/layers/strongly_entangling.png
 
 .. raw:: html
 
@@ -151,11 +151,11 @@ State preparation templates transform a given state into a sequence of gates pre
 
 .. customgalleryitem::
     :description: :doc:`BasisStatePreparation</code/api/pennylane.templates.state_preparations.BasisStatePreparation>`
-    :figure: /_static/templates/state_preparations/basis.png
+    :figure: ../_static/templates/state_preparations/basis.png
 
 .. customgalleryitem::
     :description: :doc:`MottonnenStatePreparation</code/api/pennylane.templates.state_preparations.MottonenStatePreparation>`
-    :figure: /_static/templates/state_preparations/mottonen.png
+    :figure: ../_static/templates/state_preparations/mottonen.png
 
 .. raw:: html
 
@@ -171,7 +171,7 @@ of other templates.
 
 .. customgalleryitem::
     :description: :doc:`Interferometer</code/api/pennylane.templates.subroutines.Interferometer>`
-    :figure: /_static/templates/subroutines/interferometer.png
+    :figure: ../_static/templates/subroutines/interferometer.png
 
 .. raw:: html
 

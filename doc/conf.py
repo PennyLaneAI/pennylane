@@ -41,7 +41,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
     'edit_on_github',
-    # 'sphinx_gallery.gen_gallery',
+    #'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     'sphinx_copybutton',
@@ -66,13 +66,11 @@ import warnings
 
 # sphinx_gallery_conf = {
 #     # path to your example scripts
-#     'examples_dirs': '../examples',
+#     'examples_dirs': '../gall_examples',
 #     # path where to save gallery generated examples
-#     'gallery_dirs': 'tutorials',
+#     'gallery_dirs': 'gall_templates',
 #     # build files that start 'pennylane_run'
 #     'filename_pattern': r'pennylane_run',
-#     # first notebook cell in generated Jupyter notebooks
-#     'first_notebook_cell': "%matplotlib inline",
 #     # thumbnail size
 #     'thumbnail_size': (400, 400),
 # }

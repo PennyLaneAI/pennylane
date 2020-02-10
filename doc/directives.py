@@ -14,12 +14,9 @@
 r"""
 Custom sphinx directives
 """
-import re
-import os
 from docutils.parsers.rst import Directive, directives
 from docutils.statemachine import StringList
 from docutils import nodes
-
 
 USAGE_DETAILS_TEMPLATE = """
 .. raw:: html
@@ -79,10 +76,12 @@ class CustomGalleryItemDirective(Directive):
     tooltip and figure are self explanatory. Description could be a link to
     a document like in below example.
     Example usage:
+
     .. customgalleryitem::
         :figure: /_static/img/thumbnails/babel.jpg
         :description: :doc:`/beginner/deep_learning_nlp_tutorial`
         :size: put image size here
+
     If figure is specified, a thumbnail will be made out of it and stored in
     _static/thumbs. Therefore, consider _static/thumbs as a 'built' directory.
     """
@@ -91,8 +90,7 @@ class CustomGalleryItemDirective(Directive):
     optional_arguments = 1
     final_argument_whitespace = True
     option_spec = {'figure': directives.unchanged,
-                   'description': directives.unchanged,
-                   'size': directives.unchanged}
+                   'description': directives.unchanged}
 
     has_content = False
     add_index = False
@@ -100,16 +98,14 @@ class CustomGalleryItemDirective(Directive):
     def run(self):
         try:
             if 'figure' in self.options:
-                env = self.state.document.settings.env
                 thumbnail = self.options['figure']
-
             else:
                 thumbnail = '_static/thumbs/code.png'
 
             if 'description' in self.options:
                 description = self.options['description']
             else:
-                raise ValueError('description not doc found')
+                raise ValueError('description not found')
 
         except FileNotFoundError as e:
             print(e)

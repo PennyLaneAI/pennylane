@@ -13,7 +13,8 @@ Tested for Read the Docs theme 0.1.7 */
   box-shadow: 0 2px 5px 0 rgba(0,0,0,.04),0 2px 25px 2px rgba(0,0,0,.04);
   float: left;
   margin: 5px;
-  min-height: 230px;
+  min-width: 250px;
+  min-height: 200px;
   padding-top: 5px;
   position: relative;
   text-align: center;
