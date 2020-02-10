@@ -6,22 +6,31 @@ scrolls, agogo, traditional, nature, haiku, pyramid
 Tested for Read the Docs theme 0.1.7 */
 .sphx-glr-thumbcontainer {
   background: #fff;
-  border: solid #dedede 1px;
+  border: solid #dedede 0px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   border-radius: 5px;
-  box-shadow: none;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,.04),0 2px 25px 2px rgba(0,0,0,.04);
   float: left;
   margin: 5px;
   min-height: 230px;
   padding-top: 5px;
   position: relative;
   text-align: center;
+  border-radius: 10px;
+  transition: 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .sphx-glr-thumbcontainer:hover {
-  border: solid #b4ddfc 1px;
-  box-shadow: 0 0 15px rgba(142, 176, 202, 0.5);
+  border: solid #b4ddfc 0px;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,.09),0 2px 40px 2px rgba(0,0,0,.09);
+  transition: 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
+/*.sphx-glr-thumbcontainer:hover > .figure > img {*/
+  /*transform: scale(1.08);*/
+  /*transition: 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);*/
+/*}*/
+
+
 .sphx-glr-thumbcontainer a.internal {
   bottom: 0;
   display: block;
@@ -30,12 +39,15 @@ Tested for Read the Docs theme 0.1.7 */
   position: absolute;
   right: 0;
   top: 0;
+  color: #575757;
 }
 
 /* Next one is to avoid Sphinx traditional theme to cover all the
 thumbnail with its default link Background color */
 .sphx-glr-thumbcontainer a.internal:hover {
   background-color: transparent;
+  color: #575757;
+  text-decoration: none;
 }
 
 .sphx-glr-thumbcontainer p {
@@ -63,6 +75,7 @@ thumbnail with its default link Background color */
   z-index: 98;
   width: 220px;
   bottom: 52%;
+  display: none;
 }
 .sphx-glr-thumbcontainer[tooltip]:hover:before {
   border: solid;
@@ -73,6 +86,7 @@ thumbnail with its default link Background color */
   left: 85%;
   position: absolute;
   z-index: 99;
+  display: none;
 }
 
 .highlight-pytb pre {
@@ -211,55 +225,15 @@ p.sphx-glr-signature a.reference.external {
   display: none;
 }
 
-.pennylane-call-to-action-links {
-  padding-top: 25px;
-  display: flex;
-  align-items: end;
-/*   justify-content: center; */
-}
-
-@media (min-width: 1100px) and (max-width: 1239px) {
-  .pennylane-call-to-action-links {
-    padding-top: rem(40px);
-  }
- }
-
-.pennylane-call-to-action-links #tutorial-type {
-    display: none;
-  }
-
-.pennylane-call-to-action-links a {
-    padding-right: 20px;
-    color: #000;
-    cursor: pointer;
-}
-
-.pennylane-call-to-action-links a:hover {
-  color: #fdb104;
-  text-decoration: none;
-}
-
-#download-python-link,
-#download-notebook-link,
-#github-view-link {
-  padding-bottom: 10px;
-  /*border-bottom: 1px solid #c3c3c3;*/
-  padding-right: 40px;
-  display: flex;
-  align-items: center;
-  color: #747474;
-}
-
-#download-python-link:hover,
-#download-notebook-link:hover,
-#github-view-link:hover {
-  /*border-bottom-color: #19b37b;*/
-  color: #19b37b;
-}
 
 .sphx-glr-download-link-note.admonition.note,
-.reference.download.internal,
 .sphx-glr-signature {
   display: none;
 }
 
+.sphx-glr-timing {
+  margin-bottom: 40px;
+  margin-top: 20px;
+  text-align: center;
+  font-size: small;
+}
