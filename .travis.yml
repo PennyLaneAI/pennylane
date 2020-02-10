@@ -3,6 +3,9 @@ language: python
 cache: pip
 matrix:
   include:
+  - python: 3.8
+    dist: xenial
+    env: TF=0
   - python: 3.7
     dist: xenial
     env: TF=2
