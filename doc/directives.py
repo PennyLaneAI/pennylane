@@ -133,7 +133,7 @@ class GalleryItemDirective(Directive):
 GALLERY_TEMPLATE = """
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="{tooltip}">
+    <div class="sphx-glr-thumbcontainer">
     
 .. only:: html
 
@@ -153,7 +153,6 @@ class CustomGalleryItemDirective(Directive):
     a document like in below example.
     Example usage:
     .. customgalleryitem::
-        :tooltip: I am writing this tutorial to focus specifically on NLP for people who have never written code in any deep learning framework
         :figure: /_static/img/thumbnails/babel.jpg
         :description: :doc:`/beginner/deep_learning_nlp_tutorial`
         :size: put image size here
@@ -164,8 +163,7 @@ class CustomGalleryItemDirective(Directive):
     required_arguments = 0
     optional_arguments = 1
     final_argument_whitespace = True
-    option_spec = {'tooltip': directives.unchanged,
-                   'figure': directives.unchanged,
+    option_spec = {'figure': directives.unchanged,
                    'description': directives.unchanged,
                    'size': directives.unchanged}
 
@@ -174,11 +172,6 @@ class CustomGalleryItemDirective(Directive):
 
     def run(self):
         try:
-            if 'tooltip' in self.options:
-                tooltip = self.options['tooltip'][:195]
-            else:
-                raise ValueError('tooltip not found')
-
             if 'figure' in self.options:
                 env = self.state.document.settings.env
                 thumbnail = self.options['figure']
@@ -199,8 +192,7 @@ class CustomGalleryItemDirective(Directive):
             raise
             return []
 
-        thumbnail_rst = GALLERY_TEMPLATE.format(tooltip=tooltip,
-                                                thumbnail=thumbnail,
+        thumbnail_rst = GALLERY_TEMPLATE.format(thumbnail=thumbnail,
                                                 description=description)
         thumbnail = StringList(thumbnail_rst.split('\n'))
         thumb = nodes.paragraph()
