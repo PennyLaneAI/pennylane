@@ -16,16 +16,13 @@ literature, such architectures are commonly known as an *ansatz*.
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :class:`~.QNode`.
 
-PennyLane conceptually distinguishes different types of templates, such as
-
-* :ref:`Embeddings <intro_ref_temp_emb>`
-* :ref:`Layers <intro_ref_temp_lay>`
-* :ref:`State preparations <intro_ref_temp_stateprep>`
-* :ref:`Subroutines <intro_ref_temp_subroutines>`
+PennyLane conceptually distinguishes different types of templates, such as :ref:`Embeddings <intro_ref_temp_emb>`,
+:ref:`Layers <intro_ref_temp_lay>`, :ref:`State preparations <intro_ref_temp_stateprep>` and
+:ref:`Subroutines <intro_ref_temp_subroutines>`.
 
 
 Most templates are complemented by functions that provide an array of
-random :ref:`initial parameters <intro_ref_temp_init>` .
+random :ref:`initial parameters <intro_ref_temp_init>`.
 
 An example of how to use templates is the following:
 
@@ -93,34 +90,28 @@ Hence, they take a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may consist of repeated layers.
 
 .. customgalleryitem::
-    :tooltip: AmplitudeEmbedding template
     :description: :doc:`AmplitudeEmbedding</code/api/pennylane.templates.embeddings.AmplitudeEmbedding>`
-    :figure: ../_static/templates/embeddings/amplitude.png
+    :figure: /_static/templates/embeddings/amplitude.png
 
 .. customgalleryitem::
-    :tooltip: AngleEmbedding template
     :description: :doc:`AngleEmbedding</code/api/pennylane.templates.embeddings.AngleEmbedding>`
-    :figure: ../_static/templates/embeddings/angle.png
+    :figure: /_static/templates/embeddings/angle.png
 
 .. customgalleryitem::
-    :tooltip: BasisEmbedding template
     :description: :doc:`BasisEmbedding</code/api/pennylane.templates.embeddings.BasisEmbedding>`
-    :figure: ../_static/templates/embeddings/basis.png
+    :figure: /_static/templates/embeddings/basis.png
 
 .. customgalleryitem::
-    :tooltip: DisplacementEmbedding template
     :description: :doc:`DisplacementEmbedding</code/api/pennylane.templates.embeddings.DisplacementEmbedding>`
-    :figure: ../_static/templates/embeddings/displacement.png
+    :figure: /_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
-    :tooltip: QAOAEmbedding template
     :description: :doc:`QAOAEmbedding</code/api/pennylane.templates.embeddings.QAOAEmbedding>`
-    :figure: ../_static/templates/embeddings/qaoa.png
+    :figure: /_static/templates/embeddings/qaoa.png
 
 .. customgalleryitem::
-    :tooltip: SqueezingEmbedding template
     :description: :doc:`SqueezingEmbedding</code/api/pennylane.templates.embeddings.SqueezingEmbedding>`
-    :figure: ../_static/templates/embeddings/squeezing.png
+    :figure: /_static/templates/embeddings/squeezing.png
 
 .. raw:: html
 
@@ -136,19 +127,16 @@ Layer templates
 Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
 
 .. customgalleryitem::
-    :tooltip: CVNeuralNetLayers template
     :description: :doc:`CVNeuralNetLayers</code/api/pennylane.templates.layers.CVNeuralNetLayers>`
-    :figure: ../_static/templates/layers/cvqnn.png
+    :figure: /_static/templates/layers/cvqnn.png
 
 .. customgalleryitem::
-    :tooltip: RandomLayers template
     :description: :doc:`RandomLayers</code/api/pennylane.templates.layers.RandomLayers>`
-    :figure: ../_static/templates/layers/random.png
+    :figure: /_static/templates/layers/random.png
 
 .. customgalleryitem::
-    :tooltip: StronglyEntanglingLayers template
     :description: :doc:`StronglyEntanglingLayers</code/api/pennylane.templates.layers.StronglyEntanglingLayers>`
-    :figure: ../_static/templates/layers/strongly_entangling.png
+    :figure: /_static/templates/layers/strongly_entangling.png
 
 .. raw:: html
 
@@ -162,14 +150,12 @@ State Preparations
 State preparation templates transform a given state into a sequence of gates preparing that state.
 
 .. customgalleryitem::
-    :tooltip: BasisStatePreparation template
     :description: :doc:`BasisStatePreparation</code/api/pennylane.templates.state_preparations.BasisStatePreparation>`
-    :figure: ../_static/templates/state_preparations/basis.png
+    :figure: /_static/templates/state_preparations/basis.png
 
 .. customgalleryitem::
-    :tooltip: MottonenStatePreparation template
     :description: :doc:`MottonnenStatePreparation</code/api/pennylane.templates.state_preparations.MottonenStatePreparation>`
-    :figure: ../_static/templates/state_preparations/mottonen.png
+    :figure: /_static/templates/state_preparations/mottonen.png
 
 .. raw:: html
 
@@ -184,9 +170,8 @@ Subroutines are sequences of (possibly trainable) gates that do not fulfill the 
 of other templates.
 
 .. customgalleryitem::
-    :tooltip: Interferometer template
     :description: :doc:`Interferometer</code/api/pennylane.templates.subroutines.Interferometer>`
-    :figure: ../_static/templates/subroutines/interferometer.png
+    :figure: /_static/templates/subroutines/interferometer.png
 
 .. raw:: html
 
