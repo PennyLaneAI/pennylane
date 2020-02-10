@@ -57,7 +57,8 @@ class UsageDetails(Directive):
 
 GALLERY_TEMPLATE = """
 .. raw:: html
-    <div class="card" style="width: 13rem; float:left">
+
+    <div class="card" style="width: 13rem; float:left; margin: 10px">
         <a href={link}>
             <img class="card-img-top" src={thumbnail} alt="image not found">
             <div class="card-body">

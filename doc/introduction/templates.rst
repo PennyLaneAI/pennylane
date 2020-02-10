@@ -89,8 +89,6 @@ Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may consist of repeated layers.
 
-.. raw:: html
-
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html
     :description: AmplitudeEmbedding
@@ -167,7 +165,7 @@ State preparation templates transform a given state into a sequence of gates pre
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.state_preparations.MottonenStatePreparation.html
-    :description: MottonnenStatePreparationation
+    :description: MottonnenStatePrep
     :figure: ../_static/templates/state_preparations/mottonen.png
 
 .. raw:: html
