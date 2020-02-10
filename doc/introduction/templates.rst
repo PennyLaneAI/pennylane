@@ -159,7 +159,7 @@ Layer architectures define sequences of trainable gates that are repeated like t
 State Preparations
 ------------------
 
-Subroutines are simply sequences of (possibly trainable) gates.
+State preparation templates transform a given state into a sequence of gates preparing that state.
 
 .. customgalleryitem::
     :tooltip: BasisStatePreparation template
@@ -356,4 +356,3 @@ The following initialization functions are available:
     ~pennylane.init.strong_ent_layers_normal
 
 :html:`</div>`
-
