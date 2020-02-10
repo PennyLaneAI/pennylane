@@ -130,7 +130,6 @@ class GalleryItemDirective(Directive):
             return []
 
 
-
 GALLERY_TEMPLATE = """
 .. raw:: html
 
@@ -182,20 +181,8 @@ class CustomGalleryItemDirective(Directive):
 
             if 'figure' in self.options:
                 env = self.state.document.settings.env
-                rel_figname, figname = env.relfn2path(self.options['figure'])
                 thumbnail = self.options['figure']
-                # thumbnail = os.path.join('_static/thumbs/', os.path.basename(figname))
 
-                # try:
-                #     os.makedirs('_static/thumbs')
-                # except FileExistsError:
-                #     pass
-
-                # x, y = (400, 280)
-                # if 'size' in self.options:
-                #     x, y = self.options['size'].split(" ")
-
-                # sphinx_gallery.gen_rst.scale_image(figname, thumbnail, int(x), int(y))
             else:
                 thumbnail = '_static/thumbs/code.png'
 
