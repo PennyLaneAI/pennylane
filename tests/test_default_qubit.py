@@ -1095,7 +1095,10 @@ class TestDefaultQubitIntegration:
         assert np.array_equal(outcomes[0], outcomes[1])
 
     @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
-    def test_mutable_qnode_mutate_based_on_keyword_arg(self, theta, phi, varphi, tol):
+    def test_mutable_qnode(self, theta, phi, varphi, tol):
+        """Test that a mutable QNode evaluated multiple times mutates well and produces
+        the desired result.
+        """
         dev = qml.device('default.qubit', wires=3)
         dev.reset()
 
