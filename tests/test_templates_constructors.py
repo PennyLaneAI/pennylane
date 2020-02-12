@@ -47,7 +47,7 @@ def KwargTemplate(par, wires, a=True):
     RY(par, wires=wires)
 
 
-class TestBaseSingle:
+class TestConstructorBroadcast:
     """ Tests the broadcast constructors template."""
 
     PARAMS_UNITARY_TARGET_DEVICE_OBS = [([pi, pi, pi / 2, 0], RX, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
@@ -61,8 +61,8 @@ class TestBaseSingle:
                        (T, [[], []])]
 
     @pytest.mark.parametrize("unitary, parameters", GATE_PARAMETERS)
-    def test_single_correct_queue_for_gate_unitary(self, unitary, parameters):
-        """Tests that correct gate queue is created when 'unitary' is a single gate."""
+    def test_broadcast_correct_queue_for_gate_unitary(self, unitary, parameters):
+        """Tests that correct gate queue is created when 'block' is a single gate."""
 
         with qml.utils.OperationRecorder() as rec:
             Broadcast(block=unitary, wires=range(2), parameters=parameters)
@@ -72,8 +72,8 @@ class TestBaseSingle:
 
     @pytest.mark.parametrize("unitary, gates, parameters", [(ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1]]),
                                                             (ConstantTemplate, [T, S], [[], []])])
-    def test_single_correct_queue_for_template_unitary(self, unitary, gates, parameters):
-        """Tests that correct gate queue is created when 'unitary' is a template."""
+    def test_broadcast_correct_queue_for_template_unitary(self, unitary, gates, parameters):
+        """Tests that correct gate queue is created when 'block' is a template."""
 
         with qml.utils.OperationRecorder() as rec:
             Broadcast(block=unitary, wires=range(2), parameters=parameters)
@@ -84,8 +84,8 @@ class TestBaseSingle:
 
     @pytest.mark.parametrize("kwarg, target_queue", [(True, [T, RY, T, RY]),
                                                      (False, [RY, RY])])
-    def test_single_correct_queue_for_template_unitary_with_keyword(self, kwarg, target_queue):
-        """Tests that correct gate queue is created when 'unitary' is a template that uses a keyword."""
+    def test_broadcast_correct_queue_for_template_unitary_with_keyword(self, kwarg, target_queue):
+        """Tests that correct gate queue is created when 'block' is a template that uses a keyword."""
 
         with qml.utils.OperationRecorder() as rec:
             Broadcast(block=KwargTemplate, wires=range(2), parameters=[[1], [2]], kwargs={'a': kwarg})
@@ -94,7 +94,7 @@ class TestBaseSingle:
             assert isinstance(gate, target_gate)
 
     @pytest.mark.parametrize("gate, parameters", GATE_PARAMETERS)
-    def test_single_correct_parameters_in_queue(self, gate, parameters):
+    def test_broadcast_correct_parameters_in_queue(self, gate, parameters):
         """Tests that gate queue has correct parameters."""
 
         with qml.utils.OperationRecorder() as rec:
@@ -105,7 +105,7 @@ class TestBaseSingle:
 
     @pytest.mark.parametrize("pars1, pars2, gate", [([[], []], None, T),
                                                     ([1, 2], [[1], [2]], RX)])
-    def test_single_correct_queue_for_gate_unitary(self, pars1, pars2, gate):
+    def test_broadcast_correct_queue_for_gate_unitary(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
@@ -118,7 +118,7 @@ class TestBaseSingle:
             assert g1.parameters == g2.parameters
 
     @pytest.mark.parametrize("parameters, unitary, target, dev, observable", PARAMS_UNITARY_TARGET_DEVICE_OBS)
-    def test_single_prepares_state(self, parameters, unitary, target, dev, observable):
+    def test_broadcast_prepares_state(self, parameters, unitary, target, dev, observable):
         """Tests the state produced by different unitaries."""
 
         @qml.qnode(dev)
@@ -131,7 +131,7 @@ class TestBaseSingle:
 
     @pytest.mark.parametrize("parameters, n_wires", [(np.array([0]), 2),
                                                      ([0, 0, 0, 1, 0], 3)])
-    def test_single_throws_error_when_mismatch_params_wires(self, parameters, n_wires):
+    def test_broadcast_throws_error_when_mismatch_params_wires(self, parameters, n_wires):
         """Tests that error thrown when 'parameters' does not contain one set
            of parameters for each wire."""
 
@@ -145,7 +145,7 @@ class TestBaseSingle:
         with pytest.raises(ValueError, match="'parameters' must contain one entry for each"):
             circuit()
 
-    def test_single_exception_wires_not_valid(self):
+    def test_broadcast_exception_wires_not_valid(self):
         """Tests that an exception is raised if 'wires' argument has invalid format."""
 
         dev = qml.device('default.qubit', wires=2)
@@ -158,7 +158,7 @@ class TestBaseSingle:
         with pytest.raises(ValueError, match="wires must be a positive"):
             circuit()
 
-    def test_single_exception_parameters_not_valid(self):
+    def test_broadcast_exception_parameters_not_valid(self):
         """Tests that an exception is raised if 'parameters' argument has invalid format."""
 
         dev = qml.device('default.qubit', wires=2)
