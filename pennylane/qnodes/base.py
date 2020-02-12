@@ -496,7 +496,12 @@ class BaseQNode:
                 both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
-        if self.arg_vars is None or self.kwarg_vars is None:
+        first_construction = self.arg_vars is None or self.kwarg_vars is None
+
+        # TODO: add a check for kwargs as well (need to adjust _make_variables method)
+        # TODO: add a more sophisticated check here without using the inspect module
+        args_changed = not first_construction and (np.array(args).shape != np.array(self.arg_vars).shape)
+        if first_construction or args_changed:
             self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
