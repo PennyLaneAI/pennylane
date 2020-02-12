@@ -76,6 +76,7 @@ def _get_shape(inpt):
     Returns:
         tuple: shape of ``inpt``
     """
+
     inpt = np.array(inpt)
 
     return inpt.shape

@@ -18,6 +18,7 @@ Contains the ``CVNeuralNetLayers`` template.
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
+from pennylane.templates.constructors import Broadcast
 from pennylane.templates.utils import (_check_wires,
                                        _check_number_of_layers,
                                        _check_shapes)
@@ -48,16 +49,14 @@ def cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varp
         wires (Sequence[int]): sequence of mode indices that the template acts on
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
-    for i, wire in enumerate(wires):
-        Squeezing(r[i], phi_r[i], wires=wire)
+
+    Broadcast(block=Squeezing, wires=wires, parameters=list(zip(r, phi_r)))
 
     Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
 
-    for i, wire in enumerate(wires):
-        Displacement(a[i], phi_a[i], wires=wire)
+    Broadcast(block=Displacement, wires=wires, parameters=list(zip(a, phi_a)))
 
-    for i, wire in enumerate(wires):
-        Kerr(k[i], wires=wire)
+    Broadcast(block=Kerr, wires=wires, parameters=k)
 
 
 @template
