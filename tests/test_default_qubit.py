@@ -1094,28 +1094,34 @@ class TestDefaultQubitIntegration:
 
         assert np.array_equal(outcomes[0], outcomes[1])
 
-    def test_mutable_qnode(self, tol):
+    @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
+    def test_mutable_qnode_mutate_based_on_keyword_arg(self, theta, phi, varphi, tol):
         dev = qml.device('default.qubit', wires=3)
         dev.reset()
 
         def template(weights):
             qml.RX(weights[0], wires=[0])
-            qml.RY(weights[1], wires=[0])
 
         @qml.qnode(dev)
         def circuit(weights, n_layers=1):
             for idx in range(n_layers):
                 template(weights[idx])
-            return qml.expval(qml.PauliX(0))
+            return qml.expval(qml.PauliZ(0))
 
-        weights = np.array([[np.pi/2, np.pi/2]])
+        weights = np.array([[phi]])
         res = circuit(weights, n_layers=1)
-        assert np.allclose(res, 0, atol=tol, rtol=0)
+        exp = np.cos(phi)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        weights = np.array([[0.3, 0.5], [0.7, 0.9]])
+        weights = np.array([[phi], [theta]])
         res = circuit(weights, n_layers=2)
-        assert np.allclose(res, 0, atol=tol, rtol=0)
+        exp = np.cos(phi+theta)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
+        weights = np.array([[phi], [theta], [varphi]])
+        res = circuit(weights, n_layers=3)
+        exp = np.cos(phi+theta+varphi)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
