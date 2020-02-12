@@ -93,7 +93,7 @@ QUBIT_PARAMS_KWARGS = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 
                        (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {}),
                        (AngleEmbedding, [[1., 2.]], {}),
                        (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {}),
-                       (Broadcast, [], {'template': qml.RX, 'wires': [0, 1], 'parameters': [[1.], [1.]]})
+                       (Broadcast, [], {'block': qml.RX, 'wires': [0, 1], 'parameters': [[1.], [1.]]})
                        ]
 
 # cv templates, constant args and kwargs for 2 wires
