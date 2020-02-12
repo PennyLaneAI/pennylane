@@ -16,5 +16,5 @@ Template constructors take other templates or single operations to construct cir
 They may depend on parameters that are fed to the input circuits.
 """
 
-from .broadcast import broadcast
+from .broadcast import Broadcast
 

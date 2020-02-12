@@ -21,7 +21,7 @@ from math import pi
 import numpy as np
 import pennylane as qml
 from pennylane.templates import template
-from pennylane.templates.constructors import broadcast
+from pennylane.templates.constructors import Broadcast
 from pennylane.ops import RX, RY, RZ, Displacement, T, S, Rot
 
 dev_4_qubits = qml.device('default.qubit', wires=4)
@@ -65,7 +65,7 @@ class TestBaseSingle:
         """Tests that correct gate queue is created when 'unitary' is a single gate."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(template=unitary, wires=range(2), parameters=parameters)
+            Broadcast(block=unitary, wires=range(2), parameters=parameters)
 
         for gate in rec.queue:
             assert isinstance(gate, unitary)
@@ -76,7 +76,7 @@ class TestBaseSingle:
         """Tests that correct gate queue is created when 'unitary' is a template."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(template=unitary, wires=range(2), parameters=parameters)
+            Broadcast(block=unitary, wires=range(2), parameters=parameters)
 
         for idx, gate in enumerate(rec.queue):
             i = idx % 2
@@ -88,7 +88,7 @@ class TestBaseSingle:
         """Tests that correct gate queue is created when 'unitary' is a template that uses a keyword."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(template=KwargTemplate, wires=range(2), parameters=[[1], [2]], kwargs={'a': kwarg})
+            Broadcast(block=KwargTemplate, wires=range(2), parameters=[[1], [2]], kwargs={'a': kwarg})
 
         for gate, target_gate in zip(rec.queue, target_queue):
             assert isinstance(gate, target_gate)
@@ -98,7 +98,7 @@ class TestBaseSingle:
         """Tests that gate queue has correct parameters."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(template=gate, wires=range(2), parameters=parameters)
+            Broadcast(block=gate, wires=range(2), parameters=parameters)
 
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
@@ -109,10 +109,10 @@ class TestBaseSingle:
         """Tests that specific parameter inputs have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
-            broadcast(template=gate, wires=range(2), parameters=pars1)
+            Broadcast(block=gate, wires=range(2), parameters=pars1)
 
         with qml.utils.OperationRecorder() as rec2:
-            broadcast(template=gate, wires=range(2), parameters=pars2)
+            Broadcast(block=gate, wires=range(2), parameters=pars2)
 
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
@@ -123,7 +123,7 @@ class TestBaseSingle:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(template=unitary, wires=range(4), parameters=parameters)
+            Broadcast(block=unitary, wires=range(4), parameters=parameters)
             return [qml.expval(observable(wires=w)) for w in range(4)]
 
         res = circuit()
@@ -139,7 +139,7 @@ class TestBaseSingle:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(template=RX, wires=range(n_wires), parameters=parameters)
+            Broadcast(block=RX, wires=range(n_wires), parameters=parameters)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must contain one entry for each"):
@@ -152,7 +152,7 @@ class TestBaseSingle:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(template=RX, wires='a', parameters=[[1], [2]])
+            Broadcast(block=RX, wires='a', parameters=[[1], [2]])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="wires must be a positive"):
@@ -165,7 +165,7 @@ class TestBaseSingle:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(template=RX, wires=[0, 1], parameters=RX)
+            Broadcast(block=RX, wires=[0, 1], parameters=RX)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
