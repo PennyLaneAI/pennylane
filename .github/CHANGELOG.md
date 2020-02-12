@@ -1,6 +1,58 @@
-# Release 0.8.0-dev (development version)
+# Release 0.9.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+<h3>Breaking changes</h3>
+
+<h3>Improvements</h3>
+
+* Beginning of support for Python 3.8, with the test suite
+  now being run in a Python 3.8 environment.
+  [(#501)](https://github.com/XanaduAI/pennylane/pull/501)
+
+<h3>Documentation</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+
+# Release 0.8.0 (current release)
+
+<h3>New features since last release</h3>
+
+* Added a quantum chemistry package, `pennylane.qchem`, which supports
+  integration with OpenFermion, Psi4, PySCF, and OpenBabel.
+  [(#453)](https://github.com/XanaduAI/pennylane/pull/453)
+
+  Features include:
+
+  - Generate the qubit Hamiltonians directly starting with the atomic structure of the molecule.
+  - Calculate the mean-field (Hartree-Fock) electronic structure of molecules.
+  - Allow to define an active space based on the number of active electrons and active orbitals.
+  - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
+    using different functions implemented in OpenFermion.
+  - Convert OpenFermion's QubitOperator to a Pennylane `Hamiltonian` class.
+  - Perform a Variational Quantum Eigensolver (VQE) computation with this Hamiltonian in PennyLane.
+
+  Check out the [quantum chemistry quickstart](https://pennylane.readthedocs.io/en/latest/introduction/chemistry.html), as well the quantum chemistry and VQE tutorials.
+
+* PennyLane now has some functions and classes for creating and solving VQE
+  problems. [(#467)](https://github.com/XanaduAI/pennylane/pull/467)
+
+  - `qml.Hamiltonian`: a lightweight class for representing qubit Hamiltonians
+  - `qml.VQECost`: a class for quickly constructing a differentiable cost function
+    given a circuit ansatz, Hamiltonian, and one or more devices
+
+    ```python
+    >>> H = qml.vqe.Hamiltonian(coeffs, obs)
+    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> params = torch.rand([4, 3])
+    >>> cost(params)
+    tensor(0.0245, dtype=torch.float64)
+    ```
 
 * Added a circuit drawing feature that provides a text-based representation
   of a QNode instance. It can be invoked via `qnode.draw()`. The user can specify
@@ -35,37 +87,6 @@
    1: ─────╰RX(a)──Rot(w[0], w[1], w[2])──╰RX(-1*a)──╰┤ ⟨Z ⊗ Z⟩
   ```
 
-* Added a quantum chemistry package, `pennylane.qchem`, which supports
-  integration with OpenFermion, Psi4, PySCF, and OpenBabel.
-  [(#453)](https://github.com/XanaduAI/pennylane/pull/453)
-
-  Features include:
-
-  - Generate the qubit Hamiltonians directly starting with the atomic structure of the molecule.
-  - Calculate the mean-field (Hartree-Fock) electronic structure of molecules.
-  - Allow to define an active space based on the number of active electrons and active orbitals.
-  - Perform the fermionic-to-qubit transformation of the electronic Hamiltonian by
-    using different functions implemented in OpenFermion.
-  - Convert OpenFermion's QubitOperator to a Pennylane `Hamiltonian` class.
-  - Perform a Variational Quantum Eigensolver (VQE) computation with this Hamiltonian in PennyLane.
-
-  Check out the [quantum chemistry quickstart](https://pennylane.readthedocs.io/en/latest/introduction/chemistry.html), as well the quantum chemistry and VQE tutorials.
-
-* PennyLane now has some functions and classes for creating and solving VQE
-  problems. [(#467)](https://github.com/XanaduAI/pennylane/pull/467)
-
-  - ``qml.Hamiltonian``: a lightweight class for representing qubit Hamiltonians
-  - ``qml.VQECost``: a class for quickly constructing a differentiable cost function
-    given a circuit ansatz, Hamiltonian, and one or more devices
-
-    ```python
-    >>> H = qml.vqe.Hamiltonian(coeffs, obs)
-    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
-    >>> params = torch.rand([4, 3])
-    >>> cost(params)
-    tensor(0.0245, dtype=torch.float64)
-    ```
-
 * Added `QAOAEmbedding` and its parameter initialization
   as a new trainable template.
   [(#442)](https://github.com/XanaduAI/pennylane/pull/442)
@@ -94,14 +115,15 @@
   ```
   QNodes that return probabilities fully support autodifferentiation.
 
-* Added the covenience load functions ``qml.from_pyquil``, ``qml.from_quil`` and
-  ``qml.from_quil_file`` that convert pyquil objects and Quil code to PennyLane
-  templates. This feature requires the latest version of the PennyLane-Forest plugin.
-  [#459](https://github.com/XanaduAI/pennylane/pull/459)
+* Added the convenience load functions `qml.from_pyquil`, `qml.from_quil` and
+  `qml.from_quil_file` that convert pyQuil objects and Quil code to PennyLane
+  templates. This feature requires version 0.8 or above of the PennyLane-Forest
+  plugin.
+  [(#459)](https://github.com/XanaduAI/pennylane/pull/459)
 
 * Added a `qml.inv` method that inverts templates and sequences of Operations.
   Added a `@qml.template` decorator that makes templates return the queued Operations.
-  [#462](https://github.com/XanaduAI/pennylane/pull/462)
+  [(#462)](https://github.com/XanaduAI/pennylane/pull/462)
 
   For example, using this function to invert a template inside a QNode:
 
@@ -172,28 +194,33 @@
 
 <h3>Improvements</h3>
 
+* Added the `Tensor.prune()` method and the `Tensor.non_identity_obs` property for extracting
+  non-identity instances from the observables making up a `Tensor` instance.
+  [(#498)](https://github.com/XanaduAI/pennylane/pull/498)
+
+* Renamed the `expt.tensornet` and `expt.tensornet.tf` devices to `default.tensor` and
+  `default.tensor.tf`.
+  [(#495)](https://github.com/XanaduAI/pennylane/pull/495)
+
 * Added a serialization method to the `CircuitGraph` class that is used to create a unique
   hash for each quantum circuit graph.
   [(#470)](https://github.com/XanaduAI/pennylane/pull/470)
 
-* Unified the way samples are generated on qubit based devices by refactoring the `QubitDevice`
-  class and adding the `sample` and further auxiliary methods.
-  [(#461)](https://github.com/XanaduAI/pennylane/pull/461)
-
-* Added the ``Observable.eigvals`` method to return the eigenvalues of observables.
+* Added the `Observable.eigvals` method to return the eigenvalues of observables.
   [(#449)](https://github.com/XanaduAI/pennylane/pull/449)
 
-* Added the ``Observable.diagonalizing_gates`` method to return the gates
+* Added the `Observable.diagonalizing_gates` method to return the gates
   that diagonalize an observable in the computational basis.
   [(#454)](https://github.com/XanaduAI/pennylane/pull/454)
 
-* Added the ``Operator.matrix`` method to return the matrix representation
+* Added the `Operator.matrix` method to return the matrix representation
   of an operator in the computational basis.
   [(#454)](https://github.com/XanaduAI/pennylane/pull/454)
 
 * Added a `QubitDevice` class which implements common functionalities of plugin devices such that
   plugin devices can rely on these implementations. The new `QubitDevice` also includes
-  a new execute method, which allows for more convenient plugin design.
+  a new `execute` method, which allows for more convenient plugin design. In addition, `QubitDevice`
+  also unifies the way samples are generated on qubit-based devices.
   [(#452)](https://github.com/XanaduAI/pennylane/pull/452)
   [(#473)](https://github.com/XanaduAI/pennylane/pull/473)
 
@@ -204,6 +231,11 @@
 * Codeblocks in the documentation now have a 'copy' button for easily
   copying examples.
   [(#437)](https://github.com/XanaduAI/pennylane/pull/437)
+
+<h3>Documentation</h3>
+
+* Update the developers plugin guide to use QubitDevice.
+  [(#483)](https://github.com/XanaduAI/pennylane/pull/483)
 
 <h3>Bug fixes</h3>
 
@@ -216,11 +248,11 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Josh Izaac,
-Soran Jahangiri, Nathan Killoran, Johannes Jakob Meyer, Zeyue Niu, 
-Maria Schuld, Antal Száva
+Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Olivia Di Matteo,
+Theodor Isacsson, Josh Izaac, Soran Jahangiri, Nathan Killoran, Johannes Jakob Meyer,
+Zeyue Niu, Maria Schuld, Antal Száva.
 
-# Release 0.7.0 (current release)
+# Release 0.7.0
 
 <h3>New features since last release</h3>
 
@@ -265,7 +297,7 @@ Maria Schuld, Antal Száva
 
 <h3>Breaking changes</h3>
 
-* The `pad` parameter in `AmplitudeEmbedding()`` is now either `None` (no automatic padding), or a
+* The `pad` parameter in `AmplitudeEmbedding()` is now either `None` (no automatic padding), or a
   number that is used as the padding constant.
   [(#419)](https://github.com/XanaduAI/pennylane/pull/419)
 
