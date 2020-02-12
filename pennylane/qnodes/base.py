@@ -500,7 +500,19 @@ class BaseQNode:
 
         # TODO: add a check for kwargs as well (need to adjust _make_variables method)
         # TODO: add a more sophisticated check here without using the inspect module
-        args_changed = not first_construction and (np.array(args).shape != np.array(self.arg_vars).shape)
+        if not first_construction:
+            try:
+                arg_shape = np.squeeze(np.array(args)).shape
+                args_changed = not first_construction and (arg_shape != np.squeeze(np.array(self.arg_vars)).shape)
+            except ValueError as e:
+
+                # Case of when we have a Sequence with numpy arrays that differ in there shapes
+                assert 'could not broadcast input array from shape' in str(e)
+
+                arg_shapes = [np.squeeze(elem).shape for elem in args]
+                arg_vars_shapes = [np.squeeze(elem).shape for elem in self.arg_vars]
+                args_changed = not first_construction and arg_shapes != arg_vars_shapes
+
         if first_construction or args_changed:
             self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
