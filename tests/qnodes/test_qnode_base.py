@@ -1125,3 +1125,33 @@ class TestQNodeDraw:
 
         with pytest.raises(RuntimeError, match="The QNode can only be drawn after its CircuitGraph has been constructed"):
             circuit.draw()
+
+class TestIntegration:
+
+    def test_mutable_qnode(self, mock_device):
+        """Test that array arguments are properly converted to Variable instances."""
+
+        dev = qml.device('default.qubit', wires=
+        def template(weights):
+            qml.RX(weights[0], wires=[0])
+            qml.RY(weights[1], wires=[0])
+
+        def circuit(weights, n_layers=1):
+            for idx in n_layers:
+                template(weights[idx])
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        weights = np.array([[1, 2], [3, 4]])
+        arg_vars, kwarg_vars = node._make_variables([weights], {})
+
+        expected_arg_vars = [
+            Variable(0, "weights[0,0]"),
+            Variable(1, "weights[0,1]"),
+            Variable(2, "weights[1,0]"),
+            Variable(3, "weights[1,1]"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+

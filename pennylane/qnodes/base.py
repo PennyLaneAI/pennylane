@@ -496,9 +496,15 @@ class BaseQNode:
                 both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
+        first_call = self.arg_vars is None or self.kwarg_vars is None
+        variables_changed = True
+        print(args, kwargs)
 
-        if self.arg_vars is None or self.kwarg_vars is None:
-            self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
+        #TODO: separate the Variable creation from keyword argument creation here
+        # currently cannot do that as both depend on inspected properties
+        #if first_call or variables_changed:
+        self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
+        #    self.kwarg_entries = kwargs.keys()
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
