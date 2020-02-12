@@ -25,7 +25,7 @@ from pennylane.templates.utils import (_check_wires,
 
 @template
 def Broadcast(block, wires, parameters=None, kwargs={}):
-    r"""Applies a (potentially parametrized) single-qubit unitary to each wire.
+    r"""Applies a (potentially parametrized) single-qubit unitary ``block`` to each wire.
 
     .. figure:: ../../_static/templates/constructors/broadcast.png
         :align: center
@@ -51,7 +51,7 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
     is not parametrized), ``wires`` is the *only* positional argument. The ``block`` function
     can take user-defined keyword arguments.
 
-    Typically, ``unitary`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
+    Typically, ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
     user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
 
     Args:
