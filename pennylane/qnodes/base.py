@@ -473,25 +473,13 @@ class BaseQNode:
                 both continuous and discrete operations are specified in the same quantum circuit
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
-        first_construction = self.arg_vars is None or self.kwarg_vars is None
 
-        # TODO: add a check for kwargs as well (need to adjust _make_variables method)
-        # TODO: add a more sophisticated check here without using the inspect module
-        if not first_construction:
-            try:
-                arg_shape = np.squeeze(np.array(args)).shape
-                args_changed = not first_construction and (arg_shape != np.squeeze(np.array(self.arg_vars)).shape)
-            except ValueError as e:
+        # flatten the args, replace each argument with a VariableRef instance carrying a unique index
+        arg_vars = [VariableRef(idx) for idx, _ in enumerate(_flatten(args))]
+        self.num_variables = len(arg_vars)
 
-                # Case of when we have a Sequence with numpy arrays that differ in there shapes
-                assert 'could not broadcast input array from shape' in str(e)
-
-                arg_shapes = [np.squeeze(elem).shape for elem in args]
-                arg_vars_shapes = [np.squeeze(elem).shape for elem in self.arg_vars]
-                args_changed = not first_construction and arg_shapes != arg_vars_shapes
-
-        if first_construction or args_changed:
-            self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
+        # arrange the newly created Variables in the nested structure of args
+        self.arg_vars = unflatten(arg_vars, args)
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -512,6 +500,14 @@ class BaseQNode:
                 res = self.func(*self.arg_vars, **kwargs)
             else:
                 # TODO: Maybe we should only convert the kwarg_vars that were actually given
+
+                # must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
+                kwarg_vars = {}
+                for key, val in kwargs.items():
+                    temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
+                    kwarg_vars[key] = unflatten(temp, val)
+
+                self.kwarg_vars = kwarg_vars
                 res = self.func(*self.arg_vars, **self.kwarg_vars)
         except:
             # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created VariableRefs.

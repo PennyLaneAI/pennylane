@@ -1094,32 +1094,6 @@ class TestDefaultQubitIntegration:
 
         assert np.array_equal(outcomes[0], outcomes[1])
 
-    @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
-    def test_mutable_qnode(self, theta, phi, varphi, tol):
-        """Test that a mutable QNode evaluated multiple times mutates well and produces
-        the desired result.
-        """
-        dev = qml.device('default.qubit', wires=1)
-        dev.reset()
-
-        @qml.qnode(dev)
-        def circuit(weights, n_layers=1):
-            for idx in range(n_layers):
-                qml.RX(weights[idx], wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        res = circuit([phi], n_layers=1)
-        exp = np.cos(phi)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
-
-        res = circuit([phi, theta], n_layers=2)
-        exp = np.cos(phi + theta)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
-
-        res = circuit([phi, theta, varphi], n_layers=3)
-        exp = np.cos(phi + theta + varphi)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
-
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
