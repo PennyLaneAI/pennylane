@@ -619,7 +619,6 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_qubit_circuit_with_unused_wires
 
-    @pytest.mark.xfail
     def test_direct_qnode_integration(self):
         """Test that a regular QNode renders correctly."""
         dev = qml.device("default.qubit", wires=2)
@@ -644,6 +643,22 @@ class TestCircuitDrawerIntegration:
             " 0: --H--+C----------------------------+C---------+| <Z @ Z> \n"
             + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
         )
+
+    @pytest.mark.xfail
+    def test_direct_qnode_integration_show_variable_names(self):
+        """Test that a regular QNode renders correctly."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def qfunc(a, w):
+            qml.Hadamard(0)
+            qml.CRX(a, wires=[0, 1])
+            qml.Rot(w[0], w[1], w[2], wires=[1])
+            qml.CRX(-a, wires=[0, 1])
+
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        res = qfunc(2.3, [1.2, 3.2, 0.7])
 
         assert qfunc.draw(show_variable_names=True) == (
             " 0: ──H──╭C─────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"

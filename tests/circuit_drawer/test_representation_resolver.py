@@ -34,11 +34,12 @@ def ascii_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
     return RepresentationResolver(charset=qml.circuit_drawer.AsciiCharSet)
 
-
-@pytest.fixture
-def unicode_representation_resolver_varnames():
-    """An instance of a RepresentationResolver with unicode charset and show_variable_names=True."""
-    return RepresentationResolver(show_variable_names=True)
+# TODO: re-add the following fixture, once the string representation of VariableRefs
+# is re-enabled
+# @pytest.fixture
+#def unicode_representation_resolver_varnames():
+#    """An instance of a RepresentationResolver with unicode charset and show_variable_names=True."""
+#    return RepresentationResolver(show_variable_names=True)
 
 
 @pytest.fixture
@@ -93,6 +94,9 @@ class TestRepresentationResolver:
             unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
         )
 
+    # TODO: re-add the following tests, once the string representation of VariableRefs
+    # is re-enabled
+    '''
     @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.236"),])
     def test_single_parameter_representation_varnames(
         self, unicode_representation_resolver_varnames, par, expected
@@ -251,6 +255,7 @@ class TestRepresentationResolver:
     ):
         """Test that an Operator instance is properly resolved."""
         assert unicode_representation_resolver.operator_representation(op, wire) == target
+    '''
 
     @pytest.mark.parametrize(
         "op,wire,target",

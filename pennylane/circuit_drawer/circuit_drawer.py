@@ -61,7 +61,8 @@ class CircuitDrawer:
         self.show_variable_names = show_variable_names
 
         self.make_wire_conversion_dicts(raw_operation_grid, raw_observable_grid)
-        self.representation_resolver = RepresentationResolver(charset, show_variable_names)
+
+        self.representation_resolver = RepresentationResolver(charset)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []

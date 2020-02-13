@@ -29,9 +29,12 @@ class RepresentationResolver:
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
 
-    def __init__(self, charset=UnicodeCharSet, show_variable_names=False):
+    def __init__(self, charset=UnicodeCharSet):
         self.charset = charset
-        self.show_variable_names = show_variable_names
+
+        # TODO: re-add the following attribute, once the string representation of VariableRefs
+        # is re-enabled
+        # self.show_variable_names = show_variable_names
         self.matrix_cache = []
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
@@ -113,7 +116,7 @@ class RepresentationResolver:
             str: String representation of the parameter
         """
         if isinstance(par, qml.variable.VariableRef):
-            return par.render(self.show_variable_names)
+            return par.render()
 
         return str(round(par, 3))
 
