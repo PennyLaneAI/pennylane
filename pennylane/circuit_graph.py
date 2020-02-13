@@ -24,7 +24,7 @@ from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
 from .utils import _flatten
-from .variable import Variable
+from .variable import VariableRef
 
 
 def _by_idx(x):
@@ -137,6 +137,34 @@ class CircuitGraph:
                 # Create an edge between this and the previous operator
                 self._graph.add_edge(wire[i - 1], wire[i])
 
+    def print_contents(self):
+        """Prints the contents of the quantum circuit."""
+
+        print("Operations")
+        print("==========")
+        for op in self.operations:
+            if op.parameters:
+                params = ", ".join([str(p) for p in op.parameters])
+                print("{}({}, wires={})".format(op.name, params, op.wires))
+            else:
+                print("{}(wires={})".format(op.name, op.wires))
+
+        return_map = {
+            qml.operation.Expectation: "expval",
+            qml.operation.Variance: "var",
+            qml.operation.Sample: "sample",
+        }
+
+        print("\nObservables")
+        print("===========")
+        for op in self.observables:
+            return_type = return_map[op.return_type]
+            if op.parameters:
+                params = "".join([str(p) for p in op.parameters])
+                print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
+            else:
+                print("{}({}(wires={}))".format(return_type, op.name, op.wires))
+
     def serialize(self):
         """Serialize the quantum circuit graph based on the operations and
         observables in the circuit graph and the index of the variables
@@ -155,7 +183,7 @@ class CircuitGraph:
             serialization_string += op.name
 
             for param in op.params:
-                if isinstance(param, Variable):
+                if isinstance(param, VariableRef):
                     serialization_string += delimiter
                     serialization_string += variable_delimiter
                     serialization_string += str(param.idx)
@@ -328,6 +356,20 @@ class CircuitGraph:
         B = self.ancestors([b])
         B.add(b)
         return A & B
+
+    def invisible_operations(self):
+        """Operations that cannot affect the circuit output.
+
+        An :class:`Operation` instance in a quantum circuit is *invisible* if is not an ancestor
+        of an observable. Such an operation cannot affect the circuit output, and usually indicates
+        there is something wrong with the circuit.
+
+        Returns:
+            set[Operator]: operations that cannot affect the output
+        """
+        visible = self.ancestors(self.observables)
+        invisible = set(self.operations) - visible
+        return invisible
 
     @property
     def parametrized_layers(self):

@@ -111,8 +111,8 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 
-from .utils import _flatten, _unflatten, pauli_eigs
-from .variable import Variable
+from .utils import _flatten, pauli_eigs
+from .variable import VariableRef
 
 #=============================================================================
 # Wire types
@@ -216,7 +216,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): operator parameters
+        params (tuple[float, int, array, VariableRef]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -227,6 +227,8 @@ class Operator(abc.ABC):
             applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
+    do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
+
     @staticmethod
     def _matrix(*params):
         """Matrix representation of the operator
@@ -314,8 +316,9 @@ class Operator(abc.ABC):
                              "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
 
         # check the validity of the params
-        for p in params:
-            self.check_domain(p)
+        if self.do_check_domain:
+            for p in params:
+                self.check_domain(p)
         self.params = list(params)  #: list[Any]: parameters of the operator
 
         # apply the operator on the given wires
@@ -357,25 +360,25 @@ class Operator(abc.ABC):
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
-        :class:`Variable` instances can represent any real scalars (but not arrays).
+        :class:`.VariableRef` instances can represent any real scalars (but not arrays).
 
         Args:
-            p (Number, array, Variable): parameter to check
+            p (Number, array, VariableRef): parameter to check
             flattened (bool): True means p is an element of a flattened parameter
                 sequence (affects the handling of 'A' parameters)
         Raises:
             TypeError: parameter is not an element of the expected domain
             ValueError: parameter is an element of an unknown domain
         Returns:
-            Number, array, Variable: p
+            Number, array, VariableRef: p
         """
-        if isinstance(p, Variable):
+        if isinstance(p, VariableRef):
             if self.par_domain == 'A':
-                raise TypeError('{}: Array parameter expected, got a Variable,'
+                raise TypeError('{}: Array parameter expected, got a VariableRef,'
                                 'which can only represent real scalars.'.format(self.name))
             return p
 
-        # p is not a Variable
+        # p is not a VariableRef
         if self.par_domain == 'A':
             if flattened:
                 if isinstance(p, np.ndarray):
@@ -410,15 +413,26 @@ class Operator(abc.ABC):
         """Current parameter values.
 
         Fixed parameters are returned as is, free parameters represented by
-        :class:`~.variable.Variable` instances are replaced by their
+        :class:`.VariableRef` instances are replaced by their
         current numerical value.
 
         Returns:
-            list[float]: parameter values
+            list[Any]: parameter values
         """
-        temp = list(_flatten(self.params))
-        temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
-        return _unflatten(temp_val, self.params)[0]
+        # TODO profiling
+        def evaluate(p):
+            """Evaluate a single parameter."""
+            if isinstance(p, np.ndarray):
+                # object arrays may have VariableRefs inside them
+                if p.dtype == object:
+                    temp = np.array([x.val if isinstance(x, VariableRef) else x for x in p.flat])
+                    return temp.reshape(p.shape)
+                return p
+            if isinstance(p, VariableRef):
+                p = self.check_domain(p.val)
+            return p
+
+        return [evaluate(p) for p in self.params]
 
     def queue(self):
         """Append the operator to a BaseQNode queue."""
@@ -453,7 +467,7 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array, Variable]): operation parameters
+        params (tuple[float, int, array, VariableRef]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -502,7 +516,7 @@ class Operation(Operator):
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
-        # internal multiplier in the Variable
+        # internal multiplier in the VariableRef
         var_mult = self.params[idx].mult
 
         multiplier = 0.5 if recipe is None else recipe[0]
@@ -628,7 +642,7 @@ class Observable(Operator):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): observable parameters
+        params (tuple[float, int, array, VariableRef]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.

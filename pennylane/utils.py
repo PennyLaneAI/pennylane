@@ -27,17 +27,16 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 
 
 def _flatten(x):
-    """Iterate through an arbitrarily nested structure, flattening it in depth-first order.
+    """Iterate recursively through an arbitrarily nested structure in depth-first order.
 
     See also :func:`_unflatten`.
 
     Args:
-        x (array, Iterable, Any): each element of an array or an Iterable may itself be an object
-            that can be flattened
+        x (array, Iterable, Any): each element of an array or an Iterable may itself be any of these types
 
     Yields:
         Any: elements of x in depth-first order
@@ -67,7 +66,7 @@ def _unflatten(flat, model):
         Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
-    if isinstance(model, (numbers.Number, Variable, str)):
+    if isinstance(model, (numbers.Number, VariableRef, str)):
         return flat[0], flat[1:]
 
     if isinstance(model, np.ndarray):
@@ -189,9 +188,8 @@ def expand(U, wires, num_wires):
 
 @functools.lru_cache()
 def pauli_eigs(n):
-    """Returns the eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
-    any operator that shares eigenvalues with the Pauli matrices ("standard
-    observables").
+    r"""Eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
+    Pauli operator, or shares its eigenvalues.
 
     As an example if n==2, then the eigenvalues of a tensor product consisting
     of two matrices sharing the eigenvalues with Pauli matrices is returned.
