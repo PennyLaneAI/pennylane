@@ -140,13 +140,16 @@ subsystem. It is equivalent to an integer with value -1."""
 #=============================================================================
 
 class ObservableReturnTypes(Enum):
-    """Enumeration class to
-    represent the type of
-    return types of an observable."""
-    Sample = 1
-    Variance = 2
-    Expectation = 3
-    Probability = 4
+    """Enumeration class to represent the return types of an observable."""
+
+    Sample = "sample"
+    Variance = "var"
+    Expectation = "expval"
+    Probability = "probs"
+
+    def __repr__(self):
+        """String representation of the return types."""
+        return self.value
 
 
 Sample = ObservableReturnTypes.Sample
@@ -164,11 +167,6 @@ Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
 
-_measurement_type_map = {
-    Expectation: "expval",
-    Variance: "var",
-    Sample: "sample",
-}
 
 #=============================================================================
 # Class property
@@ -685,7 +683,7 @@ class Observable(Operator):
         temp = super().__repr__()
         if self.return_type is None:
             return temp
-        return _measurement_type_map[self.return_type] + "(" + temp + ")"
+        return repr(self.return_type) + "(" + temp + ")"
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
