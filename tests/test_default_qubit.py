@@ -1099,31 +1099,25 @@ class TestDefaultQubitIntegration:
         """Test that a mutable QNode evaluated multiple times mutates well and produces
         the desired result.
         """
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device('default.qubit', wires=1)
         dev.reset()
-
-        def template(weights):
-            qml.RX(weights[0], wires=[0])
 
         @qml.qnode(dev)
         def circuit(weights, n_layers=1):
             for idx in range(n_layers):
-                template(weights[idx])
+                qml.RX(weights[idx], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        weights = np.array([[phi]])
-        res = circuit(weights, n_layers=1)
+        res = circuit([phi], n_layers=1)
         exp = np.cos(phi)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        weights = np.array([[phi], [theta]])
-        res = circuit(weights, n_layers=2)
-        exp = np.cos(phi+theta)
+        res = circuit([phi, theta], n_layers=2)
+        exp = np.cos(phi + theta)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        weights = np.array([[phi], [theta], [varphi]])
-        res = circuit(weights, n_layers=3)
-        exp = np.cos(phi+theta+varphi)
+        res = circuit([phi, theta, varphi], n_layers=3)
+        exp = np.cos(phi + theta + varphi)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
