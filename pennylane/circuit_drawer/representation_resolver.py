@@ -106,7 +106,11 @@ class RepresentationResolver:
 
         return len(target_list) - 1
 
-    def single_parameter_representation(self, par):
+    # TODO: make this method non-static, once the string representation of VariableRefs
+    # is re-enabled
+    # self.show_variable_names = show_variable_names
+    @staticmethod
+    def single_parameter_representation(par):
         """Resolve the representation of an Operator's parameter.
 
         Args:

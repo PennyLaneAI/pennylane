@@ -164,17 +164,19 @@ class VariableRef:
         """
         # TODO: re-enable the string representation of the VariableRer and
         # add the show_name_only parameter
+        '''
+        if not show_name_only:
+            if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values or
+            (
+                not self.is_kwarg
+                and VariableRef.positional_arg_values is not None
+                and len(VariableRef.positional_arg_values) > self.idx
+            ):
+                return str(round(self.val, 3))
 
-        # if not show_name_only:
-        if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values:
-            return str(round(self.val, 3))
-
-        if (
-            not self.is_kwarg
-            and VariableRef.positional_arg_values is not None
-            and len(VariableRef.positional_arg_values) > self.idx
-        ):
-            return str(round(self.val, 3))
+            if :
+        '''
+        return str(round(self.val, 3))
 
         #if self.mult != 1:
         #    return "{}*{}".format(str(round(self.mult, 3)), self.name)
