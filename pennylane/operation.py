@@ -164,6 +164,12 @@ Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
 
+_measurement_type_map = {
+    Expectation: "expval",
+    Variance: "var",
+    Sample: "sample",
+}
+
 #=============================================================================
 # Class property
 #=============================================================================
@@ -331,8 +337,18 @@ class Operator(abc.ABC):
             self.queue()
 
     def __str__(self):
-        """Print the operator name and some information."""
+        """Operator name and some information."""
         return  "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
+
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        # FIXME using self.parameters here instead of self.params is dangerous, it assumes the params can be evaluated
+        # which is only true if something suitable happens to remain in VariableRef.positional_arg_values etc. after
+        # the last evaluation.
+        if self.parameters:
+            params = ", ".join([repr(p) for p in self.parameters])
+            return "{}({}, wires={})".format(self.name, params, self.wires)
+        return "{}(wires={})".format(self.name, self.wires)
 
     def _check_wires(self, wires):
         """Check the validity of the operator wires.
@@ -664,6 +680,13 @@ class Observable(Operator):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        temp = super().__repr__()
+        if self.return_type is None:
+            return temp
+        return _measurement_type_map[self.return_type] + "(" + temp + ")"
+
     def __matmul__(self, other):
         if isinstance(other, Tensor):
             return other.__rmatmul__(self)
@@ -725,6 +748,10 @@ class Tensor(Observable):
     def __str__(self):
         """Print the tensor product and some information."""
         return 'Tensor product {}: {} params, wires {}'.format([i.name for i in self.obs], len(self.params), self.wires)
+
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        return "Tensor(" +", ".join([repr(o) for o in self.obs]) +")"
 
     @property
     def name(self):
