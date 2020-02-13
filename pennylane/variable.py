@@ -86,7 +86,7 @@ class VariableRef:
         idx  (int): index into the value vector, >= 0
         name (None, str): name of the argument
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, pointless-string-statement
 
     #: array[float]: current positional parameter values, set in :meth:`.BaseQNode._set_variables`
     positional_arg_values = None
@@ -164,6 +164,7 @@ class VariableRef:
         """
         # TODO: re-enable the string representation of the VariableRer and
         # add the show_name_only parameter
+
         '''
         if not show_name_only:
             if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values or
@@ -174,8 +175,9 @@ class VariableRef:
             ):
                 return str(round(self.val, 3))
 
-            if :
+        if :
         '''
+
         return str(round(self.val, 3))
 
         #if self.mult != 1:
