@@ -19,7 +19,6 @@ across the PennyLane submodules.
 from collections.abc import Iterable
 from collections import OrderedDict
 import copy
-import numbers
 import functools
 import inspect
 import itertools
@@ -27,7 +26,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.variable import VariableRef
+
 
 
 def _flatten(x):
