@@ -57,9 +57,9 @@ class UsageDetails(Directive):
 GALLERY_TEMPLATE = """
 .. raw:: html
 
-    <div class="card" style="width: 13rem; float:left; margin: 10px">
+    <div class="card" style="width: 13rem; float:left; margin: 10px;">
         <a href={link}>
-            <img class="card-img-top" src={thumbnail} alt="image not found">
+            <img class="card-img-top" src={thumbnail} alt="image not found" style="width: 13rem; height: 6rem;">
             <div class="card-body">
                 <p class="card-text"> {description} </p>
             </div>
@@ -89,7 +89,6 @@ class CustomGalleryItemDirective(Directive):
     final_argument_whitespace = True
     option_spec = {'figure': directives.unchanged,
                    'description': directives.unchanged,
-                   'width': directives.unchanged,
                    'link': directives.unchanged}
 
     has_content = False
@@ -107,11 +106,6 @@ class CustomGalleryItemDirective(Directive):
             else:
                 raise ValueError('description not found')
 
-            if 'width' in self.options:
-                width = self.options['width']
-            else:
-                width = "18rem"
-
             if 'link' in self.options:
                 link = self.options['link']
             else:
@@ -127,7 +121,6 @@ class CustomGalleryItemDirective(Directive):
 
         thumbnail_rst = GALLERY_TEMPLATE.format(thumbnail=thumbnail,
                                                 description=description,
-                                                width=width,
                                                 link=link)
         thumbnail = StringList(thumbnail_rst.split('\n'))
         thumb = nodes.paragraph()
