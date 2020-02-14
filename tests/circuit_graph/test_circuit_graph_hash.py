@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.qnodes import BaseQNode
-from pennylane.variable import Variable
+from pennylane.variable import VariableRef
 
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""
@@ -53,7 +53,7 @@ class TestCircuitGraphHash:
         assert expected_string == circuit_graph_1.serialize()
 
 
-    variable = Variable(1)
+    variable = VariableRef(1)
 
     symbolic_queue = [
                         ([qml.RX(variable, wires=[0])],
@@ -74,7 +74,7 @@ class TestCircuitGraphHash:
         assert expected_string == circuit_graph_1.serialize()
 
 
-    variable = Variable(1)
+    variable = VariableRef(1)
 
     symbolic_queue = [
                         ([
@@ -99,7 +99,7 @@ class TestCircuitGraphHash:
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
 
-    variable = Variable(1)
+    variable = VariableRef(1)
 
     many_symbolic_queue = [
                         ([
@@ -124,8 +124,8 @@ class TestCircuitGraphHash:
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
 
-    variable1 = Variable(1)
-    variable2 = Variable(2)
+    variable1 = VariableRef(1)
+    variable2 = VariableRef(2)
 
     multiple_symbolic_queue = [
                         ([

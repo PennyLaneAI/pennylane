@@ -49,8 +49,6 @@ class JacobianQNode(BaseQNode):
             self.device.short_name, self.func.__name__, self.num_wires, self.interface
         )
 
-    __str__ = __repr__
-
     def _construct(self, args, kwargs):
         """Constructs the quantum circuit graph by calling the quantum function.
 

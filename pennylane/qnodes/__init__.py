@@ -11,13 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-This package contains the new-style QNodes.
+"""
+This subpackage contains the supported types of QNodes.
 
-.. currentmodule:: pennylane.beta.qnodes
+.. currentmodule:: pennylane.qnodes
 """
 from .base import BaseQNode, QuantumFunctionError
 from .cv import CVQNode
 from .decorator import qnode, QNode
 from .jacobian import JacobianQNode
 from .qubit import QubitQNode
+from .passthru import PassthruQNode
