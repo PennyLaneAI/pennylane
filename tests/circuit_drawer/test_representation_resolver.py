@@ -52,7 +52,7 @@ def variable(monkeypatch):
 def kwarg_variable(monkeypatch):
     """A mocked VariableRef instance for a keyword variable."""
     monkeypatch.setattr(VariableRef, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
-    yield VariableRef(1, "kwarg_test", True)
+    yield VariableRef(1, "kwarg_test", basename="kwarg_test")
 
 
 class TestRepresentationResolver:

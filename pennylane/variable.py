@@ -67,15 +67,13 @@ import copy
 class VariableRef:
     """A reference to dynamically track and update circuit parameters.
 
-    Represents a free quantum circuit parameter (with a non-fixed value),
-    or a placeholder for data/other hard-coded data.
+    Represents a real scalar quantum circuit parameter (with a non-fixed value).
+    or data placeholder.
 
     Each time the circuit is executed, it is given a vector of flattened positional argument values,
-    and a dictionary mapping keyword-only argument names to vectors of their flattened values.
+    and a dictionary mapping auxiliary argument names to vectors of their flattened values.
     Each element of these vectors corresponds to a VariableRef instance.
-    Positional arguments are represented by nameless VariableRefs, whereas for keyword-only
-    arguments :attr:`VariableRef.name` contains the argument name.
-    In both cases :attr:`VariableRef.idx` is an index into the argument value vector.
+    :attr:`VariableRef.idx` is an index into the argument value vector.
 
     The VariableRef has an optional scalar multiplier for the argument it represents.
 
@@ -84,7 +82,7 @@ class VariableRef:
 
     Args:
         idx  (int): index into the value vector, >= 0
-        name (None, str): name of the argument
+        name (str): name of the parameter
     """
     # pylint: disable=too-few-public-methods
 
@@ -94,12 +92,12 @@ class VariableRef:
     #: dict[str->array[float]]: current auxiliary parameter values, set in :meth:`.BaseQNode._set_variables`
     kwarg_values = None
 
-    def __init__(self, idx, name=None, is_kwarg=False):
+    def __init__(self, idx, name=None, basename=None):
         self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter name
-        self.idx = idx  #: int: parameter index
+        self.basename = basename  #: str: for auxiliary parameters the key for the kwarg_values dict
+        self.is_kwarg = basename is not None
         self.mult = 1  #: int, float: parameter scalar multiplier
-        self.is_kwarg = is_kwarg
 
     def __repr__(self):
         temp = " * {}".format(self.mult) if self.mult != 1.0 else ""
@@ -153,7 +151,7 @@ class VariableRef:
             return VariableRef.positional_arg_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
-        values = VariableRef.kwarg_values[self.name]
+        values = VariableRef.kwarg_values[self.basename]
         return values[self.idx] * self.mult
 
     def render(self, show_name_only=False):
@@ -166,15 +164,7 @@ class VariableRef:
             str: string representation of the VariableRef
         """
         if not show_name_only:
-            if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values:
-                return str(round(self.val, 3))
-
-            if (
-                not self.is_kwarg
-                and VariableRef.positional_arg_values is not None
-                and len(VariableRef.positional_arg_values) > self.idx
-            ):
-                return str(round(self.val, 3))
+            return str(round(self.val, 3))
 
         if self.mult != 1:
             return "{}*{}".format(str(round(self.mult, 3)), self.name)

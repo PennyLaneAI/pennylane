@@ -421,13 +421,11 @@ class BaseQNode:
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
-                During the construction we are not concerned with the numerical values, but with
-                the nesting structure.
-                Each positional argument is replaced with a :class:`~.variable.VariableRef` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
+                They are only represented with VariableRefs if the circuit is immutable.
 
         Returns:
-            ssss: aaaa
+            nested list[VariableRef], Union[nested list[VariableRef], None]: references for args, references for kwargs
         """
         # positional args
         variable_names = []
@@ -457,7 +455,7 @@ class BaseQNode:
         kwarg_vars = {}
         for prefix, a in kwargs.items():
             variable_names = self._determine_structured_variable_name(a, prefix)
-            temp = [VariableRef(idx, name, is_kwarg=True)
+            temp = [VariableRef(idx, name, basename=prefix)
                     for idx, name in enumerate(_flatten(variable_names))]
             kwarg_vars[prefix] = unflatten(temp, a)
 
@@ -473,14 +471,15 @@ class BaseQNode:
         converts it into a circuit graph, and creates the VariableRef mapping.
 
         .. note::
-           In mutable circuits the VariableRefs are only used to speed up analytic differentiation,
-           for evaluation we reconstruct the circuit each time anyway.
+           In mutable circuits the VariableRefs only represent positional args,
+           we reconstruct the circuit each time the auxiliary args change.
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
                 During the construction we are not concerned with the numerical values, but with
                 the nesting structure.
-                Each positional argument is replaced with a :class:`~.VariableRef` instance.
+                Each scalar within a positional argument is replaced with a
+                :class:`~.VariableRef` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
 
         Raises:
@@ -504,10 +503,10 @@ class BaseQNode:
             return True
 
         if equal_dicts(kwargs, self.last_aux_args):
-            return  # no need to reconstruct
+            return
 
-        # Auxiliary args have changed (or this is the first call),
-        # hence we must (re)construct the circuit and the VariableRefs.
+        # If the auxiliary args have changed (or this is the first call),
+        # we must (re)construct the circuit and the VariableRefs.
 
         # make the VariableRefs
         arg_vars, kwarg_vars = self._make_variables(args, kwargs)
@@ -526,11 +525,12 @@ class BaseQNode:
         try:
             # generate the program queue by executing the quantum circuit function
             if self.mutable:
-                # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
-                # (positional args must be replaced because parameter-shift differentiation requires VariableRefs)
+                # It's ok to directly pass auxiliary args since the circuit is re-constructed
+                # each time they change. Positional args must be replaced because parameter-shift
+                # differentiation requires VariableRefs.
                 res = self.func(*arg_vars, **kwargs)
             else:
-                # TODO: Maybe we should only convert the kwarg_vars that were actually given
+                # immutable circuits are only constructed once, hence we must use VariableRefs
                 res = self.func(*arg_vars, **kwarg_vars)
         finally:
             qml._current_context = None

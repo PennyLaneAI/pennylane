@@ -1061,10 +1061,10 @@ class TestQNodeVariableMap:
         arg_vars, kwarg_vars = node._make_variables([], kwargs)
 
         expected_kwarg_vars = {
-            "a" : [VariableRef(0, "a", is_kwarg=True)],
-            "b" : [VariableRef(0, "b", is_kwarg=True)],
-            "c" : [VariableRef(0, "c", is_kwarg=True)],
-            "d" : [VariableRef(0, "d", is_kwarg=True)],
+            "a" : [VariableRef(0, "a", "a")],
+            "b" : [VariableRef(0, "b", "b")],
+            "c" : [VariableRef(0, "c", "c")],
+            "d" : [VariableRef(0, "d", "d")],
         }
 
         assert not arg_vars
@@ -1092,16 +1092,16 @@ class TestQNodeVariableMap:
 
         expected_kwarg_vars = {
             "a" : [
-                VariableRef(0, "a[0,0]", is_kwarg=True),
-                VariableRef(1, "a[0,1]", is_kwarg=True),
-                VariableRef(2, "a[1,0]", is_kwarg=True),
-                VariableRef(3, "a[1,1]", is_kwarg=True),
+                VariableRef(0, "a[0,0]", "a"),
+                VariableRef(1, "a[0,1]", "a"),
+                VariableRef(2, "a[1,0]", "a"),
+                VariableRef(3, "a[1,1]", "a"),
             ],
             "b" : [
-                VariableRef(0, "b[0]", is_kwarg=True),
-                VariableRef(1, "b[1]", is_kwarg=True),
-                VariableRef(2, "b[2]", is_kwarg=True),
-                VariableRef(3, "b[3]", is_kwarg=True),
+                VariableRef(0, "b[0]", "b"),
+                VariableRef(1, "b[1]", "b"),
+                VariableRef(2, "b[2]", "b"),
+                VariableRef(3, "b[3]", "b"),
             ],
         }
 
@@ -1160,3 +1160,29 @@ class TestQNodeDraw:
 
         with pytest.raises(RuntimeError, match="The QNode can only be drawn after its CircuitGraph has been constructed"):
             circuit.draw()
+
+
+    @pytest.mark.xfail(reason="FIXME bug in BaseQNode.draw", raises=IndexError, strict=True)
+    def test_delayed_drawing(self, operable_mock_device_2_wires):
+        """Drawing currently has a bug where it implicitly assumes that the qfunc args stored
+        in the VariableRef class remain unchanged."""
+        def circuit1(x):
+            qml.RX(x[0], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        def circuit2(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        node1 = BaseQNode(circuit1, operable_mock_device_2_wires)
+        node2 = BaseQNode(circuit2, operable_mock_device_2_wires)
+        node2([0.1, 0.2])
+        node2.draw()  # works fine
+
+        node1([1.1])
+        node1.draw()  # works fine
+
+        # VariableRef.positional_arg_values was last set by node1.
+        # Here node2.draw tries to evaluate the node2 parameters but there is one value too few.
+        node2.draw()
