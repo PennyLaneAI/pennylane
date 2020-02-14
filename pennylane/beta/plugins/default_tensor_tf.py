@@ -28,9 +28,9 @@ try:
 except ImportError as e:
     raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
 
-from pennylane.variable import Variable
-
+from pennylane.variable import VariableRef
 from pennylane.beta.plugins.default_tensor import DefaultTensor, I, X, Y, Z
+
 
 
 # tolerance for numerical errors
@@ -328,7 +328,7 @@ class DefaultTensorTF(DefaultTensor):
         # check that no Variables remain in the op_params dictionary
         values = [item for sublist in self.op_params.values() for item in sublist]
         assert not any(
-            isinstance(v, Variable) for v in values
+            isinstance(v, VariableRef) for v in values
         ), "A pennylane.Variable instance was not correctly converted to a tf.Variable"
 
         # flatten the variables list in case of nesting
@@ -346,7 +346,7 @@ class DefaultTensorTF(DefaultTensor):
         # individual operations are already applied inside self.pre_apply()
         pass
 
-    def execute(self, queue, observables, parameters=None):
+    def execute(self, queue, observables, parameters=None, **kwargs):
         # pylint: disable=bad-super-call
         results = super(DefaultTensor, self).execute(queue, observables, parameters=parameters)
 
@@ -354,6 +354,8 @@ class DefaultTensorTF(DefaultTensor):
             # convert the results list into a single tensor
             self.res = tf.stack(results)
 
+        if kwargs.get('return_native_type', False):
+            return self.res
         # return the results as a NumPy array
         return self.res.numpy()
 
@@ -373,6 +375,7 @@ class DefaultTensorTF(DefaultTensor):
         """
         self.execute(queue, observables, parameters=parameters)
         jac = self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False)
+        # TODO use unconnected_gradients=tf.UnconnectedGradients.ZERO instead of the following?
         jac = [i if i is not None else tf.zeros(self.res.shape, dtype=tf.float64) for i in jac]
         jac = tf.stack(jac)
         return jac.numpy().T
