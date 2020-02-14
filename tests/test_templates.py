@@ -23,8 +23,10 @@ New tests are added as follows:
   gradient computation to the TestGradientIntegration tests.
 
 * When adding a new template, extend the fixtures ``QUBIT_DIFFABLE_NONDIFFABLE`` or ``CV_DIFFABLE_NONDIFFABLE``
-  by a *list* of arguments to the
-  template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
+  by a tuple of three entries: an instance of the template, a *dict* of arguments that are differentiable,
+  as well as a dict of arguments that are not differentiable. The tests will pass the differentiable arguments
+  as positional AND keyword arguments to a qnode, while the nondifferentiable arguments are only passed as
+  keyword arguments.
 
 * When adding a new parameter initialization function, extend the fixtures ``QUBIT_INIT`` or
 ``CV_INIT``.
