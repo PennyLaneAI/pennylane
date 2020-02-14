@@ -781,6 +781,39 @@ class TestQNodeArgs:
         c = node(1.0, x=np.pi, y=10)
         assert c == pytest.approx(-1.0, abs=tol)
 
+    def test_mutable_node_variable_number_of_args(self, qubit_device_1_wire):
+        """Tests a mutable circuit that expects a variable number of
+        positional arguments based on the values of its auxiliary arguments.
+        """
+        def circuit(x, n=1):
+            for k in range(n):
+                qml.RX(x[k], wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        node = BaseQNode(circuit, qubit_device_1_wire, mutable=True)
+
+        # first evaluation creates VariableRefs for the positional args
+        node([0.1], n=1)
+        # new VariableRefs must be created since the auxiliary args have changed
+        node([0.1, 0.2], n=2)
+
+    def test_mutable_node_variable_number_of_args_nested(self, qubit_device_1_wire):
+        """Tests a mutable circuit that expects a variable number of
+        positional arguments based on the values of its auxiliary arguments,
+        in a nested structure.
+        """
+        def circuit(x, n=1):
+            for k in range(2):
+                for j in range(min(n, k+1)):
+                    qml.RX(x[k][j], wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        node = BaseQNode(circuit, qubit_device_1_wire, mutable=True)
+
+        node([[0.1], [0.2]], n=1)
+        node([[0.1], [0.2, 0.3]], n=2)
+
+
 
 class TestQNodeCaching:
     """Tests for the QNode construction caching"""
@@ -1023,8 +1056,9 @@ class TestQNodeVariableMap:
 
             return qml.expval(qml.PauliX(0))
 
-        node = BaseQNode(circuit, mock_device)
-        arg_vars, kwarg_vars = node._make_variables([], {"b" : 3})
+        node = BaseQNode(circuit, mock_device, mutable=False)
+        kwargs = node._default_args({"b" : 3})
+        arg_vars, kwarg_vars = node._make_variables([], kwargs)
 
         expected_kwarg_vars = {
             "a" : [VariableRef(0, "a", is_kwarg=True)],
@@ -1052,8 +1086,9 @@ class TestQNodeVariableMap:
 
             return qml.expval(qml.PauliX(0))
 
-        node = BaseQNode(circuit, mock_device)
-        arg_vars, kwarg_vars = node._make_variables([], {"b" : np.array([6,7,8,9])})
+        node = BaseQNode(circuit, mock_device, mutable=False)
+        kwargs = node._default_args({"b": np.array([6, 7, 8, 9])})
+        arg_vars, kwarg_vars = node._make_variables([], kwargs)
 
         expected_kwarg_vars = {
             "a" : [

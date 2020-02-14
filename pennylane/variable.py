@@ -157,13 +157,13 @@ class VariableRef:
         return values[self.idx] * self.mult
 
     def render(self, show_name_only=False):
-        """Returns a string representation of the VariableRef.
+        """String representation of the VariableRef for CircuitDrawer.
 
         Args:
             show_name_only (bool, optional): Render the name instead of the value.
 
         Returns:
-            str: A string representation of the VariableRef
+            str: string representation of the VariableRef
         """
         if not show_name_only:
             if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values:

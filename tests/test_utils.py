@@ -86,6 +86,7 @@ class TestFlatten:
         assert unflattened.shape == reshaped.shape
         assert np.array_equal(unflattened, reshaped)
 
+    @pytest.mark.skip('New behavior has no unsupported types')
     def test_unflatten_error_unsupported_model(self):
         """Tests that unflatten raises an error if the given model is not supported"""
 

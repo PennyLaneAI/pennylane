@@ -14,8 +14,9 @@
 """
 Base QNode class and utilities
 """
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 from collections import namedtuple, OrderedDict
+import copy
 import inspect
 import itertools
 
@@ -58,9 +59,10 @@ def _get_signature(func):
     Adds the following attributes to func:
 
     * :attr:`func.sig`: OrderedDict[str, SignatureParameter]: mapping from parameters' names to their descriptions
-    * :attr:`func.n_pos`: int: number of required positional arguments
-    * :attr:`func.var_pos`: bool: can take a variable number of positional arguments (``*args``)
-    * :attr:`func.var_keyword`: bool: can take a variable number of keyword arguments (``**kwargs``)
+    * :attr:`func.n_pos`: int: number of positional arguments
+    * :attr:`func.n_pos_nd`: int: number of positional arguments without default value
+    * :attr:`func.var_pos`: None, str: name of the var-positional argument (``*args``), or None if there isn't one
+    * :attr:`func.var_keyword`: None, str: name of the var-keyword argument (``**kwargs``), or None if there isn't one
 
     Args:
         func (callable): function to introspect
@@ -68,20 +70,25 @@ def _get_signature(func):
     sig = inspect.signature(func)
     # count positional args, see if VAR_ args are present
     n_pos = 0
-    func.var_pos = False
-    func.var_keyword = False
+    n_pos_nd = 0  # count positional params without default value
+    func.var_pos = None
+    func.var_keyword = None
     for p in sig.parameters.values():
         if p.kind <= inspect.Parameter.POSITIONAL_OR_KEYWORD:
             n_pos += 1
+            if p.default is inspect.Parameter.empty:
+                # positional parameter with no default value
+                n_pos_nd += 1
         elif p.kind == inspect.Parameter.VAR_POSITIONAL:
-            func.var_pos = True
+            func.var_pos = p.name
         elif p.kind == inspect.Parameter.VAR_KEYWORD:
-            func.var_keyword = True
+            func.var_keyword = p.name
 
     func.sig = OrderedDict(
         [(p.name, SignatureParameter(idx, p)) for idx, p in enumerate(sig.parameters.values())]
     )
     func.n_pos = n_pos
+    func.n_pos_nd = n_pos_nd
 
 
 def _decompose_queue(ops, device):
@@ -134,6 +141,24 @@ class BaseQNode:
     (corresponding to a :ref:`variational circuit <varcirc>`)
     and the computational device it is executed on.
 
+    The quantum function can take two kinds of classical input parameters:
+    *positional* and *auxiliary*.
+    Parameters that have default values in the quantum function signature are interpreted as
+    auxiliary parameters. All other parameters are positional.
+
+    * The quantum function can *only* be differentiated with respect to its positional parameters.
+      The positional parameters should be only used as the parameters of the
+      :class:`quantum operations <.Operator>` in the function,
+      and they must be real numbers, or nested ``Iterables`` of real numbers
+      (note that this includes NumPy arrays).
+      Classical processing of positional parameters, either by arithmetic operations
+      or external functions, is not allowed. One current exception is simple scalar multiplication.
+      Positional parameters *must* be given using the positional syntax.
+
+    * The auxiliary parameters can *not* be differentiated with respect to.
+      They are useful for providing data or 'placeholders' to the quantum function.
+      Auxiliary parameters *must* be given using the keyword syntax.
+
     The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance represeting
     the quantum circuit. The circuit can be either
 
@@ -141,12 +166,15 @@ class BaseQNode:
     * *immutable*, which means the quantum function is called only once, on first evaluation,
       to construct the circuit representation.
 
-    If the circuit is mutable, its **auxiliary** parameters can undergo any kind of classical
-    processing inside the quantum function. It can also contain classical flow control structures
-    that depend on the auxiliary parameters, potentially resulting in a different circuit
-    on each call. The auxiliary parameters may also determine the wires on which operators act.
+    Iff the circuit is mutable, its **auxiliary** parameters can
 
-    For immutable circuits the quantum function must build the same circuit graph consisting of the same
+    * undergo any kind of classical processing inside the quantum function,
+    * be used in classical flow control structures (such as ``if`` statements and ``for`` loops),
+    * determine the wires on which operators act.
+
+    The last two uses can potentially result in a different circuit structure on each call, hence
+    the term mutable. On the other hand,
+    for immutable circuits the quantum function must build the same circuit graph consisting of the same
     :class:`.Operator` instances regardless of its parameters; they can only appear as the
     arguments of the Operators in the circuit. Immutable circuits are slightly faster to execute, and
     can be optimized, but require that the layout of the circuit is fixed.
@@ -167,8 +195,7 @@ class BaseQNode:
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
         #: int: number of flattened differentiable parameters in the circuit
         self.num_variables = None
-        self.arg_vars = None
-        self.kwarg_vars = None
+        self.last_aux_args = None
 
         #: List[Operator]: quantum circuit, in the order the quantum function defines it
         self.ops = []
@@ -332,40 +359,43 @@ class BaseQNode:
                 )
             self.queue.append(op)  # TODO rename self.queue to self.op_queue
 
-    def _determine_structured_variable_name(self, parameter_value, prefix):
+    def _determine_structured_variable_name(self, arg, prefix):
         """Determine the variable names corresponding to a parameter.
 
         This method unrolls the parameter value if it has an array
         or list structure.
 
         Args:
-            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            arg (Union[Number, Sequence[Any], array[Any]]): The value of the parameter.
+                This will be used as a blueprint for the returned variable name(s).
             prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
 
         Returns:
-            Union[str,Sequence[str],array[str]]: The variable name(s) in the same structure as the parameter value
+            Union[str, Sequence[str], array[str]]: variable name(s) in the same nested structure
+                as the parameter value
         """
-        if isinstance(parameter_value, np.ndarray):
-            variable_name_string = np.empty_like(parameter_value, dtype=object)
+        if isinstance(arg, np.ndarray):
+            variable_names = np.empty_like(arg, dtype=object)
 
-            for index in np.ndindex(*variable_name_string.shape):
-                variable_name_string[index] = "{}[{}]".format(prefix, ",".join([str(i) for i in index]))
-        elif isinstance(parameter_value, Sequence):
-            variable_name_string = []
+            for index in np.ndindex(*variable_names.shape):
+                variable_names[index] = "{}[{}]".format(prefix, ",".join([str(i) for i in index]))
+        elif isinstance(arg, Iterable) and not isinstance(arg, (str, bytes)):
+            # recurse into the nested Iterable
+            variable_names = []
 
-            for idx, val in enumerate(parameter_value):
-                variable_name_string.append(self._determine_structured_variable_name(val, "{}[{}]".format(prefix, idx)))
+            for idx, val in enumerate(arg):
+                variable_names.append(self._determine_structured_variable_name(val, "{}[{}]".format(prefix, idx)))
         else:
-            variable_name_string = prefix
+            variable_names = prefix
 
-        return variable_name_string
+        return variable_names
 
     def _make_variables(self, args, kwargs):
         """Create the :class:`~.variable.VariableRef` instances representing the QNode's arguments.
 
         The created :class:`~.variable.VariableRef` instances are given in the same nested structure
-        as the original arguments. The :class:`~.variable.VariableRef` instances are named according
-        to the argument names given in the QNode definition. Consider the following example:
+        as the original arguments, and they are named according
+        to the parameter names in the qfunc signature. Consider the following example:
 
         .. code-block:: python3
 
@@ -395,55 +425,41 @@ class BaseQNode:
                 the nesting structure.
                 Each positional argument is replaced with a :class:`~.variable.VariableRef` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
+
+        Returns:
+            ssss: aaaa
         """
-        # Get the name of the qfunc's arguments
-        full_argspec = inspect.getfullargspec(self.func)
+        # positional args
+        variable_names = []
+        # the positional args must come first in the signature
+        for prefix, a in zip(self.func.sig, args[:self.func.n_pos_nd]):
+            variable_names.append(self._determine_structured_variable_name(a, prefix))
 
-        # args
-        variable_name_strings = []
-        for variable_name, variable_value in zip(full_argspec.args, args):
-            variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
+        # var-positional args come next
+        n_var_pos = len(args) - self.func.n_pos_nd
+        if n_var_pos > 0:
+            variable_names.append(
+                self._determine_structured_variable_name(args[-n_var_pos:], self.func.var_pos)
+            )
 
-        # varargs
-        len_diff = len(args) - len(full_argspec.args)
-        if len_diff > 0:
-            for idx, variable_value in enumerate(args[-len_diff:]):
-                variable_name = "{}[{}]".format(full_argspec.varargs, idx)
-
-                variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
-
-        arg_vars = [VariableRef(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
+        # create the VariableRefs
+        arg_vars = [VariableRef(idx, name) for idx, name in enumerate(_flatten(variable_names))]
         self.num_variables = len(arg_vars)
 
-        # arrange the newly created VariableRefs in the nested structure of args
+        # arrange the VariableRefs in the nested structure of args
         arg_vars = unflatten(arg_vars, args)
 
-        # kwargs
-        # if not mutable: must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
-        #kwarg_vars = {}
-        #for key, val in kwargs.items():
-        #    temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
-        #    kwarg_vars[key] = unflatten(temp, val)
+        if self.mutable:
+            # only immutable circuits use VariableRefs for auxiliary args
+            return arg_vars, None
 
-        variable_name_strings = {}
+        # auxiliary args
         kwarg_vars = {}
-        for variable_name in full_argspec.kwonlyargs:
-            if variable_name in kwargs:
-                variable_value = kwargs[variable_name]
-            else:
-                variable_value = full_argspec.kwonlydefaults[variable_name]
-
-            if isinstance(variable_value, np.ndarray):
-                variable_name_string = np.empty_like(variable_value, dtype=object)
-
-                for index in np.ndindex(*variable_name_string.shape):
-                    variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
-
-                kwarg_variable = [VariableRef(idx, name=name, is_kwarg=True) for idx, name in enumerate(_flatten(variable_name_string))]
-            else:
-                kwarg_variable = VariableRef(0, name=variable_name, is_kwarg=True)
-
-            kwarg_vars[variable_name] = kwarg_variable
+        for prefix, a in kwargs.items():
+            variable_names = self._determine_structured_variable_name(a, prefix)
+            temp = [VariableRef(idx, name, is_kwarg=True)
+                    for idx, name in enumerate(_flatten(variable_names))]
+            kwarg_vars[prefix] = unflatten(temp, a)
 
         return arg_vars, kwarg_vars
 
@@ -457,8 +473,8 @@ class BaseQNode:
         converts it into a circuit graph, and creates the VariableRef mapping.
 
         .. note::
-           The VariableRefs are only required for analytic differentiation,
-           for evaluation we could simply reconstruct the circuit each time.
+           In mutable circuits the VariableRefs are only used to speed up analytic differentiation,
+           for evaluation we reconstruct the circuit each time anyway.
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
@@ -474,8 +490,27 @@ class BaseQNode:
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
-        if self.arg_vars is None or self.kwarg_vars is None:
-            self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
+        def equal_dicts(a, b):
+            """Return True iff a and b are equal dicts."""
+            if b is None:
+                return False
+
+            if len(a) != len(b):
+                return False
+
+            for key, val in a.items():
+                if np.any(b[key] != val):
+                    return False
+            return True
+
+        if equal_dicts(kwargs, self.last_aux_args):
+            return  # no need to reconstruct
+
+        # Auxiliary args have changed (or this is the first call),
+        # hence we must (re)construct the circuit and the VariableRefs.
+
+        # make the VariableRefs
+        arg_vars, kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -493,16 +528,10 @@ class BaseQNode:
             if self.mutable:
                 # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
                 # (positional args must be replaced because parameter-shift differentiation requires VariableRefs)
-                res = self.func(*self.arg_vars, **kwargs)
+                res = self.func(*arg_vars, **kwargs)
             else:
                 # TODO: Maybe we should only convert the kwarg_vars that were actually given
-                res = self.func(*self.arg_vars, **self.kwarg_vars)
-        except:
-            # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created VariableRefs.
-            self.arg_vars = None
-            self.kwarg_vars = None
-
-            raise
+                res = self.func(*arg_vars, **kwarg_vars)
         finally:
             qml._current_context = None
 
@@ -524,6 +553,10 @@ class BaseQNode:
 
         # generate the DAG
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
+
+        # The qfunc call may fail for various reasons.
+        # We only update the aux args here to ensure that they represent the current circuit.
+        self.last_aux_args = copy.deepcopy(kwargs)
 
         # check for unused positional params
         if self.properties.get("par_check", False):
@@ -689,15 +722,7 @@ class BaseQNode:
                     continue  # unknown parameter, but **kwargs will take it TODO should it?
                 raise QuantumFunctionError("Unknown quantum function parameter '{}'.".format(name))
 
-            default_parameter = s.par.default
-
-            # The following is a check of the default parameter which works for numpy
-            # arrays as well (if it is a numpy array, each element is checked separately).
-            # FIXME why are numpy array default values not good automatically?
-            correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
-                                        if isinstance(default_parameter, np.ndarray)\
-                                        else default_parameter == inspect.Parameter.empty
-            if s.par.kind in forbidden_kinds or correct_default_parameter:
+            if s.par.kind in forbidden_kinds or s.par.default is inspect.Parameter.empty:
                 raise QuantumFunctionError(
                     "Quantum function parameter '{}' cannot be given using the keyword syntax.".format(
                         name
@@ -707,11 +732,7 @@ class BaseQNode:
         # apply defaults
         for name, s in self.func.sig.items():
             default = s.par.default
-            correct_default = all(d != inspect.Parameter.empty for d in default)\
-                              if isinstance(default, np.ndarray)\
-                              else default != inspect.Parameter.empty
-
-            if correct_default:
+            if default is not inspect.Parameter.empty:
                 # meant to be given using keyword syntax
                 kwargs.setdefault(name, default)
 

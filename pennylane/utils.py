@@ -35,8 +35,12 @@ def _flatten(x):
 
     See also :func:`_unflatten`.
 
+    :class:`np.ndarray` is an Iterable, but it is treated as a special case for efficiency.
+    ``str`` and ``bytes`` are also Iterables, but they are considered atomic for the purposes
+    of this function.
+
     Args:
-        x (array, Iterable, Any): each element of an array or an Iterable may itself be any of these types
+        x (Iterable, Any): Nested structure. Each element of an Iterable may itself be an Iterable.
 
     Yields:
         Any: elements of x in depth-first order
@@ -47,6 +51,7 @@ def _flatten(x):
         for item in x:
             yield from _flatten(item)
     else:
+        # other types are considered atomic
         yield x
 
 
@@ -56,32 +61,30 @@ def _unflatten(flat, model):
     See also :func:`_flatten`.
 
     Args:
-        flat (array): 1D array of items
-        model (array, Iterable, Number): model nested structure
+        flat (array[Any]): 1D array of items
+        model (Iterable, Any): model nested structure
 
     Raises:
         TypeError: if ``model`` contains an object of unsupported type
 
     Returns:
-        Union[array, list, Any], array: first elements of flat arranged into the nested
+        Union[array, list, Any], array: first elements of `flat` arranged into the nested
         structure of model, unused elements of flat
     """
-    if isinstance(model, (numbers.Number, VariableRef, str)):
-        return flat[0], flat[1:]
-
     if isinstance(model, np.ndarray):
         idx = model.size
         res = np.array(flat)[:idx].reshape(model.shape)
         return res, flat[idx:]
 
-    if isinstance(model, Iterable):
+    if isinstance(model, Iterable) and not isinstance(model, (str, bytes)):
         res = []
         for x in model:
             val, flat = _unflatten(flat, x)
             res.append(val)
         return res, flat
 
-    raise TypeError("Unsupported type in the model: {}".format(type(model)))
+    # other types are considered atomic
+    return flat[0], flat[1:]
 
 
 def unflatten(flat, model):
