@@ -160,7 +160,8 @@ CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
 def qnode_qubit_args(dev, interface, template1, template2, n_args1):
     """Qubit qnode factory passing differentiable parameters as positional arguments"""
 
-    # Signature juggling to pass diffable as single positional arg, but keep track of input names
+    # Signature to pass diffable arguments as single positional arg, but keep track of input names
+    # in the 'keys_diffable' arguments
     @qml.qnode(dev, interface=interface)
     def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
         # Separate differentiable arguments

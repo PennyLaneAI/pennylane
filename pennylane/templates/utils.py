@@ -18,7 +18,6 @@ Utility functions used in the templates.
 from collections.abc import Iterable
 
 import numpy as np
-from copy import deepcopy
 from pennylane.variable import Variable
 
 
@@ -77,8 +76,6 @@ def _get_shape(inpt):
     Returns:
         tuple: shape of ``inpt``
     """
-
-    inpt = deepcopy(inpt)
 
     if isinstance(inpt, (float, int, complex)):
         shape = ()
