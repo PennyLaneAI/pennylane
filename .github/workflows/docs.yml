@@ -7,9 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - uses: josh146/sphinx-action@master
+    - uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "doc/"
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
         pre-build-command: "pip3 install -r requirements.txt && pip3 install . && pip3 install -r qchem/requirements.txt && pip3 install ./qchem"
-        build-command: "sphinx-build -b html . _build -w /tmp/sphinx-log"

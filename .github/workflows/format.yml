@@ -3,7 +3,7 @@ on:
 - pull_request
 
 jobs:
-  docs:
+  black:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
