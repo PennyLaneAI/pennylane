@@ -18,7 +18,6 @@ Utility functions used in the templates.
 from collections.abc import Iterable
 
 import numpy as np
-
 from pennylane.variable import VariableRef
 
 
@@ -45,10 +44,11 @@ def _check_wires(wires):
     """Standard checks for the wires argument.
 
     Args:
-        wires (int or list): (subset of) wires of a quantum node, can be list or a single integer
+        wires (int or list): (subset of) wires of a quantum node, a list of positive integers
+                             or a single positive integer
 
     Return:
-        list: list of wires
+        list: list of wire indices
 
     Raises:
         ValueError: if the wires argument is invalid
@@ -62,7 +62,7 @@ def _check_wires(wires):
         raise ValueError(msg)
     if not all([isinstance(w, int) for w in wires]):
         raise ValueError(msg)
-    if not all([w >= 0 for w in wires]):
+    if any([w < 0 for w in wires]):
         raise ValueError(msg)
     return wires
 
@@ -76,9 +76,24 @@ def _get_shape(inpt):
     Returns:
         tuple: shape of ``inpt``
     """
-    inpt = np.array(inpt)
 
-    return inpt.shape
+    if isinstance(inpt, (float, int, complex)):
+        shape = ()
+
+    else:
+        # turn lists into array to get shape
+        if isinstance(inpt, list):
+            inpt = np.array(inpt)
+
+        try:
+            shape = inpt.shape
+        except AttributeError:
+            raise ValueError("could not extract shape of object of type {}".format(type(inpt)))
+
+        # turn result into tuple to avoid type TensorShape
+        shape = tuple(shape)
+
+    return shape
 
 
 def _check_shape(inpt, target_shape, msg, bound=None):
