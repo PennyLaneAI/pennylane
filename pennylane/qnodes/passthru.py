@@ -14,7 +14,6 @@
 """
 PassthruQNode class
 """
-import pennylane as qml
 import pennylane.operation
 import pennylane.circuit_graph
 from .base import BaseQNode, QuantumFunctionError
@@ -96,20 +95,14 @@ class PassthruQNode(BaseQNode):
         self.obs_queue = []  #: list[Observable]: applied observables
 
         # set up the context for Operator entry
-        if qml._current_context is None:
-            qml._current_context = self
-        else:
-            raise QuantumFunctionError(
-                "qml._current_context must not be modified outside this method."
-            )
-        try:
-            # turn off domain checking since PassthruQNode qfuncs can take any class as input
-            pennylane.operation.Operator.do_check_domain = False
-            # generate the program queue by executing the quantum circuit function
-            res = self.func(*args, **kwargs)
-        finally:
-            qml._current_context = None
-            pennylane.operation.Operator.do_check_domain = True
+        with self:
+            try:
+                # turn off domain checking since PassthruQNode qfuncs can take any class as input
+                pennylane.operation.Operator.do_check_domain = False
+                # generate the program queue by executing the quantum circuit function
+                res = self.func(*args, **kwargs)
+            finally:
+                pennylane.operation.Operator.do_check_domain = True
 
         # check the validity of the circuit
         self._check_circuit(res)
