@@ -109,6 +109,10 @@ Features
   devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
   **Microsoft QDK**, and **ProjectQ**.
 
+.. whoops:: mistake
+
+    hellow
+
 
 Getting started
 ---------------
