@@ -1,4 +1,4 @@
-name: "Pull Request Docs Check"
+name: "Documentation check"
 on:
 - pull_request
 
@@ -12,3 +12,4 @@ jobs:
         docs-folder: "doc/"
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
         pre-build-command: "pip3 install -r requirements.txt && pip3 install . && pip3 install -r qchem/requirements.txt && pip3 install ./qchem"
+        build-command: "sphinx-build -b html . _build -W --keep-going -n"
