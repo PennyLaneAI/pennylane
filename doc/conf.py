@@ -41,6 +41,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
     'edit_on_github',
+    'sphinx.ext.graphviz',
     # 'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
