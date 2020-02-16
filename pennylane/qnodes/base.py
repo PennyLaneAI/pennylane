@@ -200,6 +200,20 @@ class BaseQNode:
         detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
+    def __enter__(self):
+        """Make this node the current execution context for quantum functions.
+        """
+        if qml._current_context is None:
+            qml._current_context = self
+        else:
+            raise QuantumFunctionError("qml._current_context must not be modified outside this method.")
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Reset the quantum function execution context to None.
+        """
+        qml._current_context = None
+
     def print_applied(self):
         """Prints the most recently applied operations from the QNode.
         """
@@ -486,37 +500,28 @@ class BaseQNode:
         self.obs_queue = []  #: list[Observable]: applied observables
 
         # set up the context for Operator entry
-        if qml._current_context is None:
-            qml._current_context = self
-        else:
-            raise QuantumFunctionError(
-                "qml._current_context must not be modified outside this method."
-            )
-        try:
-            # generate the program queue by executing the quantum circuit function
-            if self.mutable:
-                # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
-                # (positional args must be replaced because parameter-shift differentiation requires VariableRefs)
-                res = self.func(*self.arg_vars, **kwargs)
-            else:
-                # TODO: Maybe we should only convert the kwarg_vars that were actually given
+        with self:
+            try:
+                # generate the program queue by executing the quantum circuit function
+                if self.mutable:
+                    # it's ok to directly pass auxiliary arguments since the circuit is re-constructed each time
+                    # (positional args must be replaced because parameter-shift differentiation requires VariableRefs)
+                    res = self.func(*self.arg_vars, **kwargs)
+                else:
+                    # TODO: Maybe we should only convert the kwarg_vars that were actually given                    
+                    # must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
+                    kwarg_vars = {}
+                    for key, val in kwargs.items():
+                        temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
+                        kwarg_vars[key] = unflatten(temp, val)
 
-                # must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
-                kwarg_vars = {}
-                for key, val in kwargs.items():
-                    temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
-                    kwarg_vars[key] = unflatten(temp, val)
-
-                self.kwarg_vars = kwarg_vars
-                res = self.func(*self.arg_vars, **self.kwarg_vars)
-        except:
-            # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created VariableRefs.
-            self.arg_vars = None
-            self.kwarg_vars = None
-
-            raise
-        finally:
-            qml._current_context = None
+                    self.kwarg_vars = kwarg_vars
+                    res = self.func(*self.arg_vars, **self.kwarg_vars)
+            except:
+                # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created VariableRefs.
+                self.arg_vars = None
+                self.kwarg_vars = None
+                raise
 
         # check the validity of the circuit
         self._check_circuit(res)
