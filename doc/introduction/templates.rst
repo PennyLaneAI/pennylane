@@ -16,10 +16,13 @@ literature, such architectures are commonly known as an *ansatz*.
     provided by PennyLane. This means that **template functions can only be used within a
     valid** :class:`~.QNode`.
 
-PennyLane conceptually distinguishes two types of templates, :ref:`layer architectures <intro_ref_temp_lay>`
-and :ref:`input embeddings <intro_ref_temp_emb>`.
+PennyLane conceptually distinguishes different types of templates, such as :ref:`Embeddings <intro_ref_temp_emb>`,
+:ref:`Layers <intro_ref_temp_lay>`, :ref:`State preparations <intro_ref_temp_stateprep>` and
+:ref:`Subroutines <intro_ref_temp_subroutines>`.
+
+
 Most templates are complemented by functions that provide an array of
-random :ref:`initial parameters <intro_ref_temp_params>` .
+random :ref:`initial parameters <intro_ref_temp_init>`.
 
 An example of how to use templates is the following:
 
@@ -74,31 +77,7 @@ functions that act on templates, such as :func:`~.pennylane.inv`:
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-See below for details on built-in templates provided by PennyLane.
-
-
-.. _intro_ref_temp_lay:
-
-Layer templates
----------------
-
-.. currentmodule:: pennylane.templates.layers
-
-Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
-
-The following layer templates are available:
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.templates.layers.CVNeuralNetLayers
-    ~pennylane.templates.layers.RandomLayers
-    ~pennylane.templates.layers.StronglyEntanglingLayers
-
-:html:`</div>`
-
+The following is a gallery of built-in templates provided by PennyLane.
 
 
 .. _intro_ref_temp_emb:
@@ -110,41 +89,107 @@ Embeddings encode input features into the quantum state of the circuit.
 Hence, they take a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may consist of repeated layers.
 
-The following embedding templates are available:
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.AmplitudeEmbedding.html
+    :description: AmplitudeEmbedding
+    :figure: ../_static/templates/embeddings/amplitude.png
 
-:html:`<div class="summary-table">`
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.AngleEmbedding.html
+    :description: AngleEmbedding
+    :figure: ../_static/templates/embeddings/angle.png
 
-.. autosummary::
-    :nosignatures:
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.BasisEmbedding.html
+    :description: BasisEmbedding
+    :figure: ../_static/templates/embeddings/basis.png
 
-    ~pennylane.templates.embeddings.AmplitudeEmbedding
-    ~pennylane.templates.embeddings.AngleEmbedding
-    ~pennylane.templates.embeddings.BasisEmbedding
-    ~pennylane.templates.embeddings.DisplacementEmbedding
-    ~pennylane.templates.embeddings.QAOAEmbedding
-    ~pennylane.templates.embeddings.SqueezingEmbedding
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.DisplacementEmbedding.html
+    :description: DisplacementEmbedding
+    :figure: ../_static/templates/embeddings/displacement.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.QAOAEmbedding.html
+    :description: QAOAEmbedding
+    :figure: ../_static/templates/embeddings/qaoa.png
 
-:html:`</div>`
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.SqueezingEmbedding.html
+    :description: SqueezingEmbedding
+    :figure: ../_static/templates/embeddings/squeezing.png
 
-.. _intro_ref_temp_params:
+.. raw:: html
+
+        <div style='clear:both'></div>
+
+.. _intro_ref_temp_lay:
+
+Layer templates
+---------------
+
+.. currentmodule:: pennylane.templates.layers
+
+Layer architectures define sequences of trainable gates that are repeated like the layers in a neural network.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.CVNeuralNetLayers.html
+    :description: CVNeuralNetLayers
+    :figure: ../_static/templates/layers/cvqnn.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.RandomLayers.html
+    :description: RandomLayers
+    :figure: ../_static/templates/layers/random.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.StronglyEntanglingLayers.html
+    :description: StronglyEntanglingLayers
+    :figure: ../_static/templates/layers/strongly_entangling.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
+.. _intro_ref_temp_stateprep:
+
+State Preparations
+------------------
+
+State preparation templates transform a given state into a sequence of gates preparing that state.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.state_preparations.BasisStatePreparation.html
+    :description: BasisStatePreparation
+    :figure: ../_static/templates/state_preparations/basis.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.state_preparations.MottonenStatePreparation.html
+    :description: MottonnenStatePrep
+    :figure: ../_static/templates/state_preparations/mottonen.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
+.. _intro_ref_temp_subroutines:
 
 Subroutines
 -----------
 
-Subroutines are simply a collection of (trainable) gates.
+Subroutines are sequences of (possibly trainable) gates that do not fulfill the conditions
+of other templates.
 
-The following subroutines are available:
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
+    :description: Interferometer
+    :figure: ../_static/templates/subroutines/interferometer.png
 
-:html:`<div class="summary-table">`
+.. raw:: html
 
-.. autosummary::
-    :nosignatures:
+        <div style='clear:both'></div>
 
-    ~pennylane.templates.Interferometer
-
-:html:`</div>`
-
+.. _intro_ref_temp_init:
 
 Parameter initializations
 -------------------------
@@ -308,4 +353,3 @@ The following initialization functions are available:
     ~pennylane.init.strong_ent_layers_normal
 
 :html:`</div>`
-
