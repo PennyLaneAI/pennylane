@@ -17,15 +17,7 @@ Contains the ``SqueezingEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing
-<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
-from pennylane.templates.utils import (_check_shape,
-                                       _check_no_variable,
-                                       _check_wires,
-                                       _check_is_in_options,
-                                       _get_shape,
-                                       _check_type)
-=======
 from pennylane.templates.utils import (
     _check_shape,
     _check_no_variable,
@@ -33,8 +25,6 @@ from pennylane.templates.utils import (
     _check_is_in_options,
     _get_shape,
 )
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
-
 
 @template
 def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
