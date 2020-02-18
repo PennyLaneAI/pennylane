@@ -76,10 +76,10 @@ class CircuitDrawer:
 
         # Add multi-wire gate lines
         self.operation_decoration_indices = self.resolve_decorations(
-            self.operation_grid, self.operation_representation_grid,
+            self.operation_grid, self.operation_representation_grid
         )
         self.observable_decoration_indices = self.resolve_decorations(
-            self.observable_grid, self.observable_representation_grid,
+            self.observable_grid, self.observable_representation_grid
         )
 
         CircuitDrawer.pad_representation(
@@ -259,9 +259,7 @@ class CircuitDrawer:
         return inserted_indices
 
     @staticmethod
-    def pad_representation(
-        representation_grid, pad_str, prepend_str, suffix_str, skip_indices,
-    ):
+    def pad_representation(representation_grid, pad_str, prepend_str, suffix_str, skip_indices):
         """Pads the given representation so that width inside layers is constant.
 
         Args:
@@ -285,8 +283,7 @@ class CircuitDrawer:
                 i,
                 list(
                     map(
-                        lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str,
-                        layer,
+                        lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str, layer
                     )
                 ),
             )
