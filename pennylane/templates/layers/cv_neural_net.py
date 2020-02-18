@@ -18,14 +18,8 @@ Contains the ``CVNeuralNetLayers`` template.
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
-<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
-from pennylane.templates.utils import (_check_wires,
-                                       _check_number_of_layers,
-                                       _check_shapes)
-=======
 from pennylane.templates.utils import _check_wires, _check_number_of_layers, _check_shapes
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 def cv_neural_net_layer(
