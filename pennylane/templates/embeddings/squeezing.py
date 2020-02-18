@@ -88,15 +88,3 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
 
     elif method == 'phase':
         Broadcast(block=Squeezing, wires=wires, parameters=list(zip(constants, features)))
-
-
-
-
-<<<<<<< HEAD
-=======
-    for idx, f in enumerate(features):
-        if method == "amplitude":
-            Squeezing(f, c, wires=wires[idx])
-        elif method == "phase":
-            Squeezing(c, f, wires=wires[idx])
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
