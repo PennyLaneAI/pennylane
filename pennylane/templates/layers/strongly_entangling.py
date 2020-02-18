@@ -17,15 +17,7 @@ Contains the ``StronglyEntanglingLayers`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
-<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
-from pennylane.templates.utils import (_check_shape,
-                                       _check_no_variable,
-                                       _check_wires,
-                                       _check_type,
-                                       _check_number_of_layers,
-                                       _get_shape)
-=======
 from pennylane.templates.utils import (
     _check_shape,
     _check_no_variable,
@@ -34,7 +26,6 @@ from pennylane.templates.utils import (
     _check_number_of_layers,
     _get_shape,
 )
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 def strongly_entangling_layer(weights, wires, r, imprimitive):
