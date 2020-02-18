@@ -19,13 +19,21 @@
 
 <h3>Documentation</h3>
 
+* Present templates as a gallery of thumbnails showing the
+  basic circuit architecture.
+  [(#499)](https://github.com/XanaduAI/pennylane/pull/499)
+
 <h3>Bug fixes</h3>
+
+* Fixed a bug where multiplying a QNode parameter by 0 caused a divide
+  by zero error when calculating the parameter shift formula.
+  [(#512)](https://github.com/XanaduAI/pennylane/pull/512)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm
+Ville Bergholm, Josh Izaac, Maria Schuld
 
 # Release 0.8.0 (current release)
 
