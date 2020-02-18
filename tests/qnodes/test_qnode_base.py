@@ -830,6 +830,56 @@ class TestQNodeCaching:
         assert len(node.circuit.operations) == 2
         node.ops[0] is temp  # it's the same circuit with the same objects
 
+    THETA = np.linspace(0.11, 1, 3)
+    PHI = np.linspace(0.32, 1, 3)
+    VARPHI = np.linspace(0.02, 1, 3)
+
+    @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
+    def test_mutable_qnode(self, theta, phi, varphi, tol):
+        """Test that a mutable QNode evaluated multiple times mutates well and produces
+        the desired result.
+        """
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(weights, n_layers=1):
+            for idx in range(n_layers):
+                qml.RX(weights[idx], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit([phi], n_layers=1)
+        exp = np.cos(phi)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
+
+        res = circuit([phi, theta], n_layers=2)
+        exp = np.cos(phi + theta)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
+
+        res = circuit([phi, theta, varphi], n_layers=3)
+        exp = np.cos(phi + theta + varphi)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
+
+    def test_mutable_qnode_for_loop_varying_executions(self, tol):
+        """Test that a mutable QNode containing a for loop correctly mutates
+        when called with different auxiliary arguments and different shaped positional
+        arguments.
+        """
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def node(x, n=1):
+            for k in range(2):
+                for j in range(min(n, k+1)):
+                    qml.RX(x[k][j], wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = node([[0.1], [0.2]], n=1)
+        exp = np.cos(sum([0.1] + [0.2]))
+        assert np.allclose(res, exp, atol=tol, rtol=0)
+
+        res = node([[0.1], [0.2, 0.3]], n=2)
+        exp = np.cos(sum([0.1] + [0.2, 0.3]))
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
 class TestQNodeEvaluate:
     """Test for observable statistic evaluation"""
