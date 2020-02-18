@@ -45,17 +45,11 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum node.
 
 
-    .. note::
+    .. warning::
 
         ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
         features. The ``features`` argument is therefore **not differentiable** when using the template, and
         gradients with respect to the features cannot be computed by PennyLane.
-
-    .. warning::
-
-        ``AmplitudeEmbedding`` calls a circuit that involves non-trivial classical processing of the
-        features. The `features` argument is therefore not differentiable when using the template, and
-        gradients with respect to the argument cannot be computed by PennyLane.
 
     Args:
         features (array): input array of shape ``(2^n,)``
