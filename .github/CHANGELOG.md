@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* Added the `qml.qnodes.PassthruQNode` class for simulated QNodes that appear as white boxes
+  to an external autodifferentiation (AD) framework, and hence can be directly differentiated
+  by it. Note that the simulator device executing the PassthruQNode has to be compatible with
+  the external AD framework. Currently the only such device supported by PennyLane is
+  `default.tensor.tf`, compatible with TensorFlow 2.
+  [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
+
 <h3>Breaking changes</h3>
 
 <h3>Improvements</h3>
@@ -12,12 +19,26 @@
 
 <h3>Documentation</h3>
 
+* Present templates as a gallery of thumbnails showing the
+  basic circuit architecture.
+  [(#499)](https://github.com/XanaduAI/pennylane/pull/499)
+
 <h3>Bug fixes</h3>
+
+* Fixed a bug where multiplying a QNode parameter by 0 caused a divide
+  by zero error when calculating the parameter shift formula.
+  [(#512)](https://github.com/XanaduAI/pennylane/pull/512)
+
+* Fixed a bug where the shape of differentiable QNode arguments
+  was being cached on the first construction, leading to indexing
+  errors if the QNode was re-evaluated if the argument changed shape.
+  [(#505)](https://github.com/XanaduAI/pennylane/pull/505)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva.
 
 # Release 0.8.0 (current release)
 

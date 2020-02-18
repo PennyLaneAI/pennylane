@@ -41,6 +41,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
     'edit_on_github',
+    'sphinx.ext.graphviz',
     # 'sphinx_gallery.gen_gallery',
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
@@ -405,8 +406,9 @@ autodoc_member_order = 'bysource'
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
-from directives import UsageDetails
-
+from directives import UsageDetails, CustomGalleryItemDirective
 
 def setup(app):
+    app.add_directive('customgalleryitem', CustomGalleryItemDirective)
     app.add_directive("usagedetails", UsageDetails)
+    app.add_stylesheet('xanadu_gallery.css')

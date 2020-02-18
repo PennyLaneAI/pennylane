@@ -14,19 +14,29 @@
 r"""
 Contains the ``DisplacementEmbedding`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Displacement
+<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
                                        _check_wires,
                                        _check_is_in_options,
                                        _get_shape)
+=======
+from pennylane.templates.utils import (
+    _check_shape,
+    _check_no_variable,
+    _check_wires,
+    _check_is_in_options,
+    _get_shape,
+)
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 @template
-def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
+def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
     r"""Encodes :math:`N` features into the displacement amplitudes :math:`r` or phases :math:`\phi` of :math:`M` modes,
      where :math:`N\leq M`.
 
@@ -61,14 +71,23 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
     wires = _check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}."
-                                                            "".format(expected_shape, _get_shape(features)))
+    _check_shape(
+        features,
+        expected_shape,
+        bound="max",
+        msg="'features' must be of shape {} or smaller; got {}."
+        "".format(expected_shape, _get_shape(features)),
+    )
 
-    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognize option {} for 'method'"
-                                                             "".format(method))
+    _check_is_in_options(
+        method,
+        ["amplitude", "phase"],
+        msg="did not recognize option {} for 'method'" "".format(method),
+    )
 
     #############
 
+<<<<<<< HEAD
     constants = [c]*len(features)
 
     if method == 'amplitude':
@@ -76,3 +95,10 @@ def DisplacementEmbedding(features, wires, method='amplitude', c=0.1):
 
     elif method == 'phase':
         Broadcast(block=Displacement, wires=wires, parameters=list(zip(constants, features)))
+=======
+    for idx, f in enumerate(features):
+        if method == "amplitude":
+            Displacement(f, c, wires=wires[idx])
+        elif method == "phase":
+            Displacement(c, f, wires=wires[idx])
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5

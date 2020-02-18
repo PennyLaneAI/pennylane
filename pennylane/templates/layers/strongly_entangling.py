@@ -14,9 +14,10 @@
 r"""
 Contains the ``StronglyEntanglingLayers`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
+<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
@@ -24,6 +25,16 @@ from pennylane.templates.utils import (_check_shape,
                                        _check_type,
                                        _check_number_of_layers,
                                        _get_shape)
+=======
+from pennylane.templates.utils import (
+    _check_shape,
+    _check_no_variable,
+    _check_wires,
+    _check_type,
+    _check_number_of_layers,
+    _get_shape,
+)
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 def strongly_entangling_layer(weights, wires, r, imprimitive):
@@ -88,28 +99,36 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     repeat = _check_number_of_layers([weights])
 
     expected_shape = (repeat, len(wires), 3)
-    _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
-                                              "".format(expected_shape, _get_shape(weights)))
+    _check_shape(
+        weights,
+        expected_shape,
+        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, _get_shape(weights)),
+    )
 
     if ranges is None:
         # tile ranges with iterations of range(1, n_wires)
-        ranges = [(l % (len(wires)-1)) + 1 for l in range(repeat)]
+        ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
 
     expected_shape = (repeat,)
-    _check_shape(ranges, expected_shape, msg="'ranges' must be of shape {}; got {}"
-                                             "".format(expected_shape, _get_shape(weights)))
+    _check_shape(
+        ranges,
+        expected_shape,
+        msg="'ranges' must be of shape {}; got {}" "".format(expected_shape, _get_shape(weights)),
+    )
 
-    _check_type(ranges, [list], msg="'ranges' must be a list; got {}"
-                                    "".format(ranges))
+    _check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
     for r in ranges:
-        _check_type(r, [int], msg="'ranges' must be a list of integers; got {}"
-                                  "".format(ranges))
+        _check_type(r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges))
     if any((r >= len(wires) or r == 0) for r in ranges):
-        raise ValueError("the range for all layers needs to be smaller than the number of "
-                         "qubits; got ranges {}.".format(ranges))
+        raise ValueError(
+            "the range for all layers needs to be smaller than the number of "
+            "qubits; got ranges {}.".format(ranges)
+        )
 
     ###############
 
     for l in range(repeat):
 
-        strongly_entangling_layer(weights=weights[l], wires=wires, r=ranges[l], imprimitive=imprimitive)
+        strongly_entangling_layer(
+            weights=weights[l], wires=wires, r=ranges[l], imprimitive=imprimitive
+        )

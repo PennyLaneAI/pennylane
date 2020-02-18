@@ -14,9 +14,10 @@
 r"""
 Contains the ``SqueezingEmbedding`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing
+<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_no_variable,
@@ -24,10 +25,19 @@ from pennylane.templates.utils import (_check_shape,
                                        _check_is_in_options,
                                        _get_shape,
                                        _check_type)
+=======
+from pennylane.templates.utils import (
+    _check_shape,
+    _check_no_variable,
+    _check_wires,
+    _check_is_in_options,
+    _get_shape,
+)
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 @template
-def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
+def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
     r"""Encodes :math:`N` features into the squeezing amplitudes :math:`r \geq 0` or phases :math:`\phi \in [0, 2\pi)`
     of :math:`M` modes, where :math:`N\leq M`.
 
@@ -54,7 +64,6 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
         ValueError: if inputs do not have the correct format
     """
 
-
     #############
     # Input checks
 
@@ -66,10 +75,19 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
     wires = _check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}"
-                                                            "".format(expected_shape, _get_shape(features)))
+    _check_shape(
+        features,
+        expected_shape,
+        bound="max",
+        msg="'features' must be of shape {} or smaller; got {}"
+        "".format(expected_shape, _get_shape(features)),
+    )
 
-    _check_is_in_options(method, ['amplitude', 'phase'], msg="did not recognize option {} for 'method'".format(method))
+    _check_is_in_options(
+        method,
+        ["amplitude", "phase"],
+        msg="did not recognize option {} for 'method'".format(method),
+    )
 
     ##############
 
@@ -84,3 +102,11 @@ def SqueezingEmbedding(features, wires, method='amplitude', c=0.1):
 
 
 
+<<<<<<< HEAD
+=======
+    for idx, f in enumerate(features):
+        if method == "amplitude":
+            Squeezing(f, c, wires=wires[idx])
+        elif method == "phase":
+            Squeezing(c, f, wires=wires[idx])
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5

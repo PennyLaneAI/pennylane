@@ -14,15 +14,25 @@
 r"""
 Contains the ``QAOAEmbedding`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard
+<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
 from pennylane.templates.utils import (_check_shape,
                                        _check_wires,
                                        _check_is_in_options,
                                        _check_number_of_layers,
                                        _get_shape)
+=======
+from pennylane.templates.utils import (
+    _check_shape,
+    _check_wires,
+    _check_is_in_options,
+    _check_number_of_layers,
+    _get_shape,
+)
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
@@ -81,7 +91,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields, l):
 
 
 @template
-def QAOAEmbedding(features, weights, wires, local_field='Y'):
+def QAOAEmbedding(features, weights, wires, local_field="Y"):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
     circuit that is inspired by the QAOA ansatz.
@@ -226,32 +236,58 @@ def QAOAEmbedding(features, weights, wires, local_field='Y'):
     wires = _check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller; got {}"
-                                                            "".format((len(wires),), _get_shape(features)))
+    _check_shape(
+        features,
+        expected_shape,
+        bound="max",
+        msg="'features' must be of shape {} or smaller; got {}"
+        "".format((len(wires),), _get_shape(features)),
+    )
 
-    _check_is_in_options(local_field, ['X', 'Y', 'Z'], msg="did not recognize option {} for 'local_field'"
-                                                           "".format(local_field))
+    _check_is_in_options(
+        local_field,
+        ["X", "Y", "Z"],
+        msg="did not recognize option {} for 'local_field'" "".format(local_field),
+    )
 
     repeat = _check_number_of_layers([weights])
 
     if len(wires) == 1:
         expected_shape = (repeat, 1)
-        _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
-                                                  "".format(expected_shape, _get_shape(features)))
+        _check_shape(
+            weights,
+            expected_shape,
+            msg="'weights' must be of shape {}; got {}"
+            "".format(expected_shape, _get_shape(features)),
+        )
     elif len(wires) == 2:
         expected_shape = (repeat, 3)
-        _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
-                                                  "".format(expected_shape, _get_shape(features)))
+        _check_shape(
+            weights,
+            expected_shape,
+            msg="'weights' must be of shape {}; got {}"
+            "".format(expected_shape, _get_shape(features)),
+        )
     else:
-        expected_shape = (repeat, 2*len(wires))
-        _check_shape(weights, expected_shape, msg="'weights' must be of shape {}; got {}"
-                                                  "".format(expected_shape, _get_shape(features)))
+        expected_shape = (repeat, 2 * len(wires))
+        _check_shape(
+            weights,
+            expected_shape,
+            msg="'weights' must be of shape {}; got {}"
+            "".format(expected_shape, _get_shape(features)),
+        )
 
     #####################
 
+<<<<<<< HEAD
     if local_field == 'Z':
+=======
+    n_features = _get_shape(features)[0]
+
+    if local_field == "Z":
+>>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
         local_fields = RZ
-    elif local_field == 'X':
+    elif local_field == "X":
         local_fields = RX
     else:
         local_fields = RY

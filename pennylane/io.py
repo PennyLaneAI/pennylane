@@ -20,6 +20,7 @@ from pkg_resources import iter_entry_points
 # get list of installed plugin converters
 plugin_converters = {entry.name: entry for entry in iter_entry_points("pennylane.io")}
 
+
 def load(quantum_circuit_object, format: str):
     """Load external quantum assembly and quantum circuits from supported frameworks
     into PennyLane templates.
@@ -97,7 +98,7 @@ def from_qiskit(quantum_circuit):
         function: the PennyLane template created based on the QuantumCircuit
         object
     """
-    return load(quantum_circuit, format='qiskit')
+    return load(quantum_circuit, format="qiskit")
 
 
 def from_qasm(quantum_circuit: str):
@@ -129,7 +130,7 @@ def from_qasm(quantum_circuit: str):
     Returns:
         function: the PennyLane template created based on the QASM string
     """
-    return load(quantum_circuit, format='qasm')
+    return load(quantum_circuit, format="qasm")
 
 
 def from_qasm_file(qasm_filename: str):
@@ -155,7 +156,7 @@ def from_qasm_file(qasm_filename: str):
     Returns:
         function: the PennyLane template created based on the QASM file
     """
-    return load(qasm_filename, format='qasm_file')
+    return load(qasm_filename, format="qasm_file")
 
 
 def from_pyquil(pyquil_program):
@@ -185,7 +186,7 @@ def from_pyquil(pyquil_program):
         pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
         be used like a PennyLane template and that contains additional inspection properties
     """
-    return load(pyquil_program, format='pyquil_program')
+    return load(pyquil_program, format="pyquil_program")
 
 
 def from_quil(quil: str):
@@ -216,7 +217,7 @@ def from_quil(quil: str):
         pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
         be used like a PennyLane template and that contains additional inspection properties
     """
-    return load(quil, format='quil')
+    return load(quil, format="quil")
 
 
 def from_quil_file(quil_filename: str):
@@ -243,4 +244,4 @@ def from_quil_file(quil_filename: str):
         pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
         be used like a PennyLane template and that contains additional inspection properties
     """
-    return load(quil_filename, format='quil_file')
+    return load(quil_filename, format="quil_file")
