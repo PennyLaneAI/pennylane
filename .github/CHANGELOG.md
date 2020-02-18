@@ -7,7 +7,7 @@
   by it. Note that the simulator device executing the PassthruQNode has to be compatible with
   the external AD framework. Currently the only such device supported by PennyLane is
   `default.tensor.tf`, compatible with TensorFlow 2.
-  [#488](https://github.com/XanaduAI/pennylane/pull/488)
+  [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
 
 <h3>Breaking changes</h3>
 

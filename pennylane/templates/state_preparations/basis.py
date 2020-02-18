@@ -18,10 +18,7 @@ Contains the ``BasisStatePreparation`` template.
 import pennylane as qml
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import (_check_wires,
-                                       _check_no_variable,
-                                       _check_shape,
-                                       _get_shape)
+from pennylane.templates.utils import _check_wires, _check_no_variable, _check_shape, _get_shape
 
 
 @template
@@ -51,16 +48,25 @@ def BasisStatePreparation(basis_state, wires):
     wires = _check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(basis_state, expected_shape, msg=" 'basis_state' must be of shape {}; got {}."
-                                                  "".format(expected_shape, _get_shape(basis_state)))
+    _check_shape(
+        basis_state,
+        expected_shape,
+        msg=" 'basis_state' must be of shape {}; got {}."
+        "".format(expected_shape, _get_shape(basis_state)),
+    )
 
     # basis_state cannot be trainable
-    _check_no_variable(basis_state, msg="'basis_state' cannot be differentiable; must be passed as a keyword argument "
-                                        "to the quantum node")
+    _check_no_variable(
+        basis_state,
+        msg="'basis_state' cannot be differentiable; must be passed as a keyword argument "
+        "to the quantum node",
+    )
 
     # basis_state is guaranteed to be a list of binary values
     if any([b not in [0, 1] for b in basis_state]):
-        raise ValueError("'basis_state' must only contain values of 0 and 1; got {}".format(basis_state))
+        raise ValueError(
+            "'basis_state' must only contain values of 0 and 1; got {}".format(basis_state)
+        )
 
     ######################
 

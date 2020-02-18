@@ -38,6 +38,7 @@ def _remove_duplicates(input_list):
     """
     return list(OrderedDict.fromkeys(input_list))
 
+
 class CircuitDrawer:
     """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
 
@@ -75,10 +76,10 @@ class CircuitDrawer:
 
         # Add multi-wire gate lines
         self.operation_decoration_indices = self.resolve_decorations(
-            self.operation_grid, self.operation_representation_grid,
+            self.operation_grid, self.operation_representation_grid
         )
         self.observable_decoration_indices = self.resolve_decorations(
-            self.observable_grid, self.observable_representation_grid,
+            self.observable_grid, self.observable_representation_grid
         )
 
         CircuitDrawer.pad_representation(
@@ -128,7 +129,9 @@ class CircuitDrawer:
             raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
         """
         # pylint: disable=protected-access
-        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(qml.utils._flatten(raw_observable_grid))
+        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
+            qml.utils._flatten(raw_observable_grid)
+        )
         all_wires = [op.wires for op in all_operators if op is not None]
         circuit_wires = sorted(set(qml.utils._flatten(all_wires)))
         internal_wires = list(range(len(circuit_wires)))
@@ -256,9 +259,7 @@ class CircuitDrawer:
         return inserted_indices
 
     @staticmethod
-    def pad_representation(
-        representation_grid, pad_str, prepend_str, suffix_str, skip_indices,
-    ):
+    def pad_representation(representation_grid, pad_str, prepend_str, suffix_str, skip_indices):
         """Pads the given representation so that width inside layers is constant.
 
         Args:
@@ -282,8 +283,7 @@ class CircuitDrawer:
                 i,
                 list(
                     map(
-                        lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str,
-                        layer,
+                        lambda x: prepend_str + str.ljust(x, max_width, pad_str) + suffix_str, layer
                     )
                 ),
             )
@@ -354,7 +354,9 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            rendered_string += "{:2d}: {}".format(self.internal_wires_to_circuit_wires(i), 2 * self.charset.WIRE)
+            rendered_string += "{:2d}: {}".format(
+                self.internal_wires_to_circuit_wires(i), 2 * self.charset.WIRE
+            )
 
             for s in wire:
                 rendered_string += s

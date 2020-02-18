@@ -1,0 +1,13 @@
+name: Formatting check
+on:
+- pull_request
+
+jobs:
+  black:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Black Code Formatter
+      uses: lgeiger/black-action@v1.0.1
+      with:
+        args: "-l 100 pennylane/ --check"
