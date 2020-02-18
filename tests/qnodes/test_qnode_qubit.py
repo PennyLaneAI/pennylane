@@ -84,6 +84,29 @@ class TestBestMethod:
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
+    @pytest.mark.parametrize("mult", [1, -2, 1.623, -0.051, 0])  # intergers, floats, zero
+    def test_parameter_multipliers(self, mult, tol):
+        """Test that various types and values of scalar multipliers for differentiable
+        qfunc parameters yield the correct gradients."""
+
+        def circuit(x):
+            qml.RY(mult * x, wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        q = QubitQNode(circuit, dev)
+
+        par = [0.1]
+
+        # gradients
+        exact = mult * np.cos(mult * np.array([par]))
+        grad_F = q.jacobian(par, method="F")
+        grad_A = q.jacobian(par, method="A")
+
+        # different methods must agree
+        assert grad_F == pytest.approx(exact, abs=tol)
+        assert grad_A == pytest.approx(exact, abs=tol)
+
     @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
     @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
     def test_fanout_multiple_params(self, reused_p, other_p, tol):

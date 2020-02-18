@@ -14,14 +14,12 @@
 r"""
 Contains the ``BasisEmbedding`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
 from pennylane.templates.decorator import template
 from pennylane.ops import BasisState
-from pennylane.templates.utils import (_check_shape,
-                                       _check_wires,
-                                       _get_shape)
+from pennylane.templates.utils import _check_shape, _check_wires, _get_shape
 
 
 @template
@@ -51,8 +49,12 @@ def BasisEmbedding(features, wires):
     wires = _check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(features, expected_shape, msg="'features' must be of shape {}; got {}"
-                                               "".format(expected_shape, _get_shape(features)))
+    _check_shape(
+        features,
+        expected_shape,
+        msg="'features' must be of shape {}; got {}"
+        "".format(expected_shape, _get_shape(features)),
+    )
 
     if any([b not in [0, 1] for b in features]):
         raise ValueError("'basis_state' must only consist of 0s and 1s; got {}".format(features))

@@ -111,17 +111,19 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 
-from .utils import _flatten, _unflatten, pauli_eigs
-from .variable import Variable
+from .utils import _flatten, pauli_eigs
+from .variable import VariableRef
 
-#=============================================================================
+# =============================================================================
 # Wire types
-#=============================================================================
+# =============================================================================
+
 
 class Wires(IntEnum):
     """Integer enumeration class
     to represent the number of wires
     an operation acts on"""
+
     Any = -1
     All = 0
 
@@ -135,14 +137,16 @@ Any = Wires.Any
 subsystem. It is equivalent to an integer with value -1."""
 
 
-#=============================================================================
+# =============================================================================
 # ObservableReturnTypes types
-#=============================================================================
+# =============================================================================
+
 
 class ObservableReturnTypes(Enum):
     """Enumeration class to
     represent the type of
     return types of an observable."""
+
     Sample = 1
     Variance = 2
     Expectation = 3
@@ -164,13 +168,14 @@ Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
 
-#=============================================================================
+# =============================================================================
 # Class property
-#=============================================================================
+# =============================================================================
 
 
-class ClassPropertyDescriptor: # pragma: no cover
+class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
+
     # pylint: disable=too-few-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
@@ -194,6 +199,7 @@ class ClassPropertyDescriptor: # pragma: no cover
         self.fset = func
         return self
 
+
 def classproperty(func):
     """The class property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
@@ -202,9 +208,10 @@ def classproperty(func):
     return ClassPropertyDescriptor(func)
 
 
-#=============================================================================
+# =============================================================================
 # Base Operator class
-#=============================================================================
+# =============================================================================
+
 
 class Operator(abc.ABC):
     r"""Base class for quantum operators supported by a device.
@@ -216,7 +223,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): operator parameters
+        params (tuple[float, int, array, VariableRef]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -227,6 +234,8 @@ class Operator(abc.ABC):
             applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
+    do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
+
     @staticmethod
     def _matrix(*params):
         """Matrix representation of the operator
@@ -303,19 +312,22 @@ class Operator(abc.ABC):
 
     def __init__(self, *params, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
-        self._name = self.__class__.__name__   #: str: name of the operator
+        self._name = self.__class__.__name__  #: str: name of the operator
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
         if len(params) != self.num_params:
-            raise ValueError("{}: wrong number of parameters. "
-                             "{} parameters passed, {} expected.".format(self.name, params, self.num_params))
+            raise ValueError(
+                "{}: wrong number of parameters. "
+                "{} parameters passed, {} expected.".format(self.name, params, self.num_params)
+            )
 
         # check the validity of the params
-        for p in params:
-            self.check_domain(p)
+        if self.do_check_domain:
+            for p in params:
+                self.check_domain(p)
         self.params = list(params)  #: list[Any]: parameters of the operator
 
         # apply the operator on the given wires
@@ -329,7 +341,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Print the operator name and some information."""
-        return  "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
+        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
 
     def _check_wires(self, wires):
         """Check the validity of the operator wires.
@@ -343,57 +355,77 @@ class Operator(abc.ABC):
         """
         for w in wires:
             if not isinstance(w, numbers.Integral):
-                raise TypeError('{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.'.format(self.name))
+                raise TypeError(
+                    "{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.".format(
+                        self.name
+                    )
+                )
 
         if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
-            raise ValueError("{}: wrong number of wires. "
-                             "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires))
+            raise ValueError(
+                "{}: wrong number of wires. "
+                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
+            )
 
         if len(set(wires)) != len(wires):
-            raise ValueError('{}: wires must be unique, got {}.'.format(self.name, wires))
+            raise ValueError("{}: wires must be unique, got {}.".format(self.name, wires))
 
         return tuple(int(w) for w in wires)
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
-        :class:`Variable` instances can represent any real scalars (but not arrays).
+        :class:`.VariableRef` instances can represent any real scalars (but not arrays).
 
         Args:
-            p (Number, array, Variable): parameter to check
+            p (Number, array, VariableRef): parameter to check
             flattened (bool): True means p is an element of a flattened parameter
                 sequence (affects the handling of 'A' parameters)
         Raises:
             TypeError: parameter is not an element of the expected domain
             ValueError: parameter is an element of an unknown domain
         Returns:
-            Number, array, Variable: p
+            Number, array, VariableRef: p
         """
-        if isinstance(p, Variable):
-            if self.par_domain == 'A':
-                raise TypeError('{}: Array parameter expected, got a Variable,'
-                                'which can only represent real scalars.'.format(self.name))
+        if isinstance(p, VariableRef):
+            if self.par_domain == "A":
+                raise TypeError(
+                    "{}: Array parameter expected, got a VariableRef,"
+                    "which can only represent real scalars.".format(self.name)
+                )
             return p
 
-        # p is not a Variable
-        if self.par_domain == 'A':
+        # p is not a VariableRef
+        if self.par_domain == "A":
             if flattened:
                 if isinstance(p, np.ndarray):
-                    raise TypeError('{}: Flattened array parameter expected, got {}.'.format(self.name, type(p)))
+                    raise TypeError(
+                        "{}: Flattened array parameter expected, got {}.".format(self.name, type(p))
+                    )
             else:
                 if not isinstance(p, np.ndarray):
-                    raise TypeError('{}: Array parameter expected, got {}.'.format(self.name, type(p)))
-        elif self.par_domain in ('R', 'N'):
+                    raise TypeError(
+                        "{}: Array parameter expected, got {}.".format(self.name, type(p))
+                    )
+        elif self.par_domain in ("R", "N"):
             if not isinstance(p, numbers.Real):
-                raise TypeError('{}: Real scalar parameter expected, got {}.'.format(self.name, type(p)))
+                raise TypeError(
+                    "{}: Real scalar parameter expected, got {}.".format(self.name, type(p))
+                )
 
-            if self.par_domain == 'N':
+            if self.par_domain == "N":
                 if not isinstance(p, numbers.Integral):
-                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, type(p)))
+                    raise TypeError(
+                        "{}: Natural number parameter expected, got {}.".format(self.name, type(p))
+                    )
                 if p < 0:
-                    raise TypeError('{}: Natural number parameter expected, got {}.'.format(self.name, p))
+                    raise TypeError(
+                        "{}: Natural number parameter expected, got {}.".format(self.name, p)
+                    )
         else:
-            raise ValueError('{}: Unknown parameter domain \'{}\'.'.format(self.name, self.par_domain))
+            raise ValueError(
+                "{}: Unknown parameter domain '{}'.".format(self.name, self.par_domain)
+            )
         return p
 
     @property
@@ -410,15 +442,26 @@ class Operator(abc.ABC):
         """Current parameter values.
 
         Fixed parameters are returned as is, free parameters represented by
-        :class:`~.variable.Variable` instances are replaced by their
+        :class:`.VariableRef` instances are replaced by their
         current numerical value.
 
         Returns:
-            list[float]: parameter values
+            list[Any]: parameter values
         """
-        temp = list(_flatten(self.params))
-        temp_val = [self.check_domain(x.val, True) if isinstance(x, Variable) else x for x in temp]
-        return _unflatten(temp_val, self.params)[0]
+        # TODO profiling
+        def evaluate(p):
+            """Evaluate a single parameter."""
+            if isinstance(p, np.ndarray):
+                # object arrays may have VariableRefs inside them
+                if p.dtype == object:
+                    temp = np.array([x.val if isinstance(x, VariableRef) else x for x in p.flat])
+                    return temp.reshape(p.shape)
+                return p
+            if isinstance(p, VariableRef):
+                p = self.check_domain(p.val)
+            return p
+
+        return [evaluate(p) for p in self.params]
 
     def queue(self):
         """Append the operator to a BaseQNode queue."""
@@ -426,9 +469,11 @@ class Operator(abc.ABC):
         qml._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-#=============================================================================
+
+# =============================================================================
 # Base Operation class
-#=============================================================================
+# =============================================================================
+
 
 class Operation(Operator):
     r"""Base class for quantum operations supported by a device.
@@ -453,7 +498,7 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array, Variable]): operation parameters
+        params (tuple[float, int, array, VariableRef]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -476,7 +521,7 @@ class Operation(Operator):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        return None if self.num_params == 0 else 'F'
+        return None if self.num_params == 0 else "F"
 
     grad_recipe = None
     r"""list[tuple[float]] or None: Gradient recipe for the parameter-shift method.
@@ -502,13 +547,15 @@ class Operation(Operator):
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
-        # internal multiplier in the Variable
+        multiplier, shift = (0.5, np.pi / 2) if recipe is None else recipe
+
+        # internal multiplier in the VariableRef
         var_mult = self.params[idx].mult
 
-        multiplier = 0.5 if recipe is None else recipe[0]
         multiplier *= var_mult
-        shift = np.pi / 2 if recipe is None else recipe[1]
-        shift /= var_mult
+        if var_mult != 0:
+            # zero multiplier means the shift is unimportant
+            shift /= var_mult
         return multiplier, shift
 
     @property
@@ -592,27 +639,34 @@ class Operation(Operator):
         self._inverse = False
 
         # check the grad_method validity
-        if self.par_domain == 'N':
-            assert self.grad_method is None, 'An operation may only be differentiated with respect to real scalar parameters.'
-        elif self.par_domain == 'A':
-            assert self.grad_method in (None, 'F'), 'Operations that depend on arrays containing free variables may only be differentiated using the F method.'
+        if self.par_domain == "N":
+            assert (
+                self.grad_method is None
+            ), "An operation may only be differentiated with respect to real scalar parameters."
+        elif self.par_domain == "A":
+            assert self.grad_method in (
+                None,
+                "F",
+            ), "Operations that depend on arrays containing free variables may only be differentiated using the F method."
 
         # check the grad_recipe validity
-        if self.grad_method == 'A':
+        if self.grad_method == "A":
             if self.grad_recipe is None:
                 # default recipe for every parameter
                 self.grad_recipe = [None] * self.num_params
             else:
-                assert len(self.grad_recipe) == self.num_params, 'Gradient recipe must have one entry for each parameter!'
+                assert (
+                    len(self.grad_recipe) == self.num_params
+                ), "Gradient recipe must have one entry for each parameter!"
         else:
-            assert self.grad_recipe is None, 'Gradient recipe is only used by the A method!'
+            assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
-#=============================================================================
+# =============================================================================
 # Base Observable class
-#=============================================================================
+# =============================================================================
 
 
 class Observable(Operator):
@@ -628,7 +682,7 @@ class Observable(Operator):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): observable parameters
+        params (tuple[float, int, array, VariableRef]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.
@@ -639,6 +693,7 @@ class Observable(Operator):
             applicable `qml._current_context`. If no context is
             available, this argument is ignored.
     """
+
     # pylint: disable=abstract-method
     return_type = None
 
@@ -690,12 +745,13 @@ class Tensor(Observable):
 
     >>> T = qml.PauliX(0) @ qml.Hadamard(2)
     """
+
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
     par_domain = None
 
-    def __init__(self, *args): #pylint: disable=super-init-not-called
+    def __init__(self, *args):  # pylint: disable=super-init-not-called
 
         self._eigvals = None
         self.obs = []
@@ -710,7 +766,9 @@ class Tensor(Observable):
 
     def __str__(self):
         """Print the tensor product and some information."""
-        return 'Tensor product {}: {} params, wires {}'.format([i.name for i in self.obs], len(self.params), self.wires)
+        return "Tensor product {}: {} params, wires {}".format(
+            [i.name for i in self.obs], len(self.params), self.wires
+        )
 
     @property
     def name(self):
@@ -767,6 +825,16 @@ class Tensor(Observable):
             in the tensor product
         """
         return [o.parameters for o in self.obs]
+
+    @property
+    def non_identity_obs(self):
+        """Returns the non-identity observables contained in the tensor product.
+
+        Returns:
+            list[:class:`~.Observable`]: list containing the non-identity observables
+            in the tensor product
+        """
+        return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
@@ -900,13 +968,58 @@ class Tensor(Observable):
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
-#=============================================================================
+    def prune(self):
+        """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
+        the observables building up the :class:`~.Tensor`.
+
+        The ``return_type`` attribute is preserved while pruning.
+
+        If the tensor product only contains one observable, then this observable instance is
+        returned.
+
+        Note that, as a result, this method can return observables that are not a :class:`~.Tensor`
+        instance.
+
+        **Example:**
+
+        Pruning that returns a :class:`~.Tensor`:
+
+        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
+        >>> O.prune()
+        <pennylane.operation.Tensor at 0x7fc1642d1590
+        >>> [(o.name, o.wires) for o in O.prune().obs]
+        [('PauliZ', [0]), ('PauliZ', [2])]
+
+        Pruning that returns a single observable:
+
+        >>> O = qml.PauliZ(0) @ qml.Identity(1)
+        >>> O_pruned = O.prune()
+        >>> (O_pruned.name, O_pruned.wires)
+        ('PauliZ', [0])
+
+        Returns:
+            ~.Observable: the pruned tensor product of observables
+        """
+        if len(self.non_identity_obs) == 0:
+            # Return a single Identity as the tensor only contains Identities
+            obs = qml.Identity(0)
+        elif len(self.non_identity_obs) == 1:
+            obs = self.non_identity_obs[0]
+        else:
+            obs = Tensor(*self.non_identity_obs)
+
+        obs.return_type = self.return_type
+        return obs
+
+
+# =============================================================================
 # CV Operations and observables
-#=============================================================================
+# =============================================================================
 
 
 class CV:
     """A mixin base class denoting a continuous-variable operation."""
+
     # pylint: disable=no-member
 
     def heisenberg_expand(self, U, num_wires):
@@ -925,26 +1038,30 @@ class CV:
         U_dim = len(U)
         nw = len(self.wires)
 
-
         if U.ndim > 2:
-            raise ValueError('Only order-1 and order-2 arrays supported.')
+            raise ValueError("Only order-1 and order-2 arrays supported.")
 
-        if U_dim != 1+2*nw:
-            raise ValueError('{}: Heisenberg matrix is the wrong size {}.'.format(self.name, U_dim))
+        if U_dim != 1 + 2 * nw:
+            raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
         if num_wires == 0 or list(self.wires) == list(range(num_wires)):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
         if num_wires < len(self.wires):
-            raise ValueError('{}: Number of wires {} is too small to fit Heisenberg matrix'.format(self.name, num_wires))
+            raise ValueError(
+                "{}: Number of wires {} is too small to fit Heisenberg matrix".format(
+                    self.name, num_wires
+                )
+            )
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
-        dim = 1 + num_wires*2
+        dim = 1 + num_wires * 2
+
         def loc(w):
             "Returns the slice denoting the location of (x_w, p_w) in the basis."
-            ind = 2*w+1
-            return slice(ind, ind+2)
+            ind = 2 * w + 1
+            return slice(ind, ind + 2)
 
         if U.ndim == 1:
             W = np.zeros(dim)
@@ -1015,6 +1132,7 @@ class CV:
 
 class CVOperation(CV, Operation):
     """Base class for continuous-variable quantum operations."""
+
     # pylint: disable=abstract-method
 
     @classproperty
@@ -1023,7 +1141,7 @@ class CVOperation(CV, Operation):
         This means that it has ``grad_method='A'`` and
         has overridden the :meth:`~.CV._heisenberg_rep` static method.
         """
-        return self.grad_method == 'A' and self.supports_heisenberg
+        return self.grad_method == "A" and self.supports_heisenberg
 
     def heisenberg_pd(self, idx):
         """Partial derivative of the Heisenberg picture transform matrix.
@@ -1044,10 +1162,10 @@ class CVOperation(CV, Operation):
         p = self.parameters
         # evaluate the transform at the shifted parameter values
         p[idx] += shift
-        U2 = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
-        p[idx] -= 2*shift
-        U1 = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
-        return (U2-U1) * multiplier  # partial derivative of the transformation
+        U2 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        p[idx] -= 2 * shift
+        U1 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        return (U2 - U1) * multiplier  # partial derivative of the transformation
 
     def heisenberg_tr(self, num_wires, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried
@@ -1078,16 +1196,20 @@ class CVOperation(CV, Operation):
         """
         p = self.parameters
         if inverse:
-            if self.par_domain == 'A':
+            if self.par_domain == "A":
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
                 p[0] = np.linalg.inv(p[0])
             else:
                 p[0] = -p[0]  # negate first parameter
-        U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
 
         # not defined?
         if U is None:
-            raise RuntimeError('{} is not a Gaussian operation, or is missing the _heisenberg_rep method.'.format(self.name))
+            raise RuntimeError(
+                "{} is not a Gaussian operation, or is missing the _heisenberg_rep method.".format(
+                    self.name
+                )
+            )
 
         return self.heisenberg_expand(U, num_wires)
 
@@ -1130,5 +1252,5 @@ class CVObservable(CV, Observable):
             array[float]: :math:`q`
         """
         p = self.parameters
-        U = self._heisenberg_rep(p) # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, num_wires)

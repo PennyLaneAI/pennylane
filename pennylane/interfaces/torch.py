@@ -56,7 +56,7 @@ def args_to_numpy(args):
 
     for i in args:
         if isinstance(i, torch.Tensor):
-            if i.is_cuda: # pragma: no cover
+            if i.is_cuda:  # pragma: no cover
                 res.append(i.cpu().detach().numpy())
             else:
                 res.append(i.detach().numpy())
@@ -82,7 +82,7 @@ def kwargs_to_numpy(kwargs):
 
     for key, val in kwargs.items():
         if isinstance(val, torch.Tensor):
-            if val.is_cuda: # pragma: no cover
+            if val.is_cuda:  # pragma: no cover
                 res[key] = val.cpu().detach().numpy()
             else:
                 res[key] = val.detach().numpy()
@@ -90,7 +90,9 @@ def kwargs_to_numpy(kwargs):
             res[key] = val
 
     # if NumPy array is scalar, convert to a Python float
-    res = {k:v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v for k, v in res.items()}
+    res = {
+        k: v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v for k, v in res.items()
+    }
 
     return res
 
@@ -104,6 +106,7 @@ def to_torch(qnode):
     Returns:
         torch.autograd.Function: the QNode as a PyTorch autograd function
     """
+
     class _TorchQNode(torch.autograd.Function):
         """The TorchQNode"""
 
@@ -125,14 +128,14 @@ def to_torch(qnode):
             # if any input tensor uses the GPU, the output should as well
             for i in input_:
                 if isinstance(i, torch.Tensor):
-                    if i.is_cuda: # pragma: no cover
+                    if i.is_cuda:  # pragma: no cover
                         cuda_device = i.get_device()
                         return torch.as_tensor(torch.from_numpy(res), device=cuda_device)
 
             return torch.from_numpy(res)
 
         @staticmethod
-        def backward(ctx, grad_output): #pragma: no cover
+        def backward(ctx, grad_output):  # pragma: no cover
             """Implements the backwards pass QNode vector-Jacobian product"""
             # NOTE: This method is definitely tested by the `test_torch.py` test suite,
             # however does not show up in the coverage. This is likely due to
@@ -142,7 +145,7 @@ def to_torch(qnode):
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
 
-            if grad_output.is_cuda: # pragma: no cover
+            if grad_output.is_cuda:  # pragma: no cover
                 grad_output_np = grad_output.cpu().detach().numpy()
             else:
                 grad_output_np = grad_output.detach().numpy()
@@ -154,14 +157,17 @@ def to_torch(qnode):
                 temp = grad_output_np.T @ jacobian
 
             # restore the nested structure of the input args
-            temp = [np.array(i) if not isinstance(i, np.ndarray) else i for i in unflatten(temp.flat, ctx.args)]
+            temp = [
+                np.array(i) if not isinstance(i, np.ndarray) else i
+                for i in unflatten(temp.flat, ctx.args)
+            ]
 
             # convert the result to torch tensors, matching
             # the type of the input tensors
             grad_input = []
             for i, j in zip(temp, ctx.saved_tensors):
                 res = torch.as_tensor(torch.from_numpy(i), dtype=j.dtype)
-                if j.is_cuda: # pragma: no cover
+                if j.is_cuda:  # pragma: no cover
                     cuda_device = j.get_device()
                     res = torch.as_tensor(res, device=cuda_device)
                 grad_input.append(res)
@@ -170,6 +176,7 @@ def to_torch(qnode):
 
     class qnode_str(partial):
         """Torch QNode"""
+
         # pylint: disable=too-few-public-methods
 
         @property
@@ -180,7 +187,9 @@ def to_torch(qnode):
         def __str__(self):
             """String representation"""
             detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
-            return detail.format(qnode.device.short_name, qnode.func.__name__, qnode.num_wires, self.interface)
+            return detail.format(
+                qnode.device.short_name, qnode.func.__name__, qnode.num_wires, self.interface
+            )
 
         def __repr__(self):
             """REPL representation"""

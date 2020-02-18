@@ -371,7 +371,13 @@ class QubitQNode(JacobianQNode):
                     circuit_graph = qml.CircuitGraph(ops, self.variable_deps)
                     self.device.execute(circuit_graph)
                 else:
-                    self.device.execute(circuit["queue"] + [unitary_op], [qml.expval(qml.PauliZ(wire)) for wire in list(range(self.device.num_wires))])
+                    self.device.execute(
+                        circuit["queue"] + [unitary_op],
+                        [
+                            qml.expval(qml.PauliZ(wire))
+                            for wire in list(range(self.device.num_wires))
+                        ],
+                    )
 
                 probs = list(self.device.probability())
 
@@ -409,7 +415,9 @@ class QubitQNode(JacobianQNode):
             else:
                 # diagonal approximation
                 if isinstance(self.device, qml.QubitDevice):
-                    circuit_graph = qml.CircuitGraph(circuit["queue"] + circuit["observable"], self.variable_deps)
+                    circuit_graph = qml.CircuitGraph(
+                        circuit["queue"] + circuit["observable"], self.variable_deps
+                    )
                     variances = self.device.execute(circuit_graph)
                 else:
                     variances = self.device.execute(circuit["queue"], circuit["observable"])
