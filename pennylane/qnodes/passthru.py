@@ -43,6 +43,7 @@ Two options:
 TODO rethink output_conversion? should require device to return things in a fixed form, but either as arrays or as AD Tensors, do conversion in interface (if necessary...)
 """
 
+
 class PassthruQNode(BaseQNode):
     """Differentiable quantum node that appears as a white box to an external autodiff framework.
 
@@ -70,10 +71,11 @@ class PassthruQNode(BaseQNode):
         device (~pennylane._device.Device): computational device to execute the function on
         properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
     """
+
     def __init__(self, func, device, properties=None):
         # make the device return the result in its native type
         properties = properties or {}
-        properties.setdefault('use_native_type', True)
+        properties.setdefault("use_native_type", True)
         super().__init__(func, device, mutable=True, properties=properties)
 
     def __repr__(self):

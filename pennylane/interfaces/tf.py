@@ -25,10 +25,11 @@ from pennylane.utils import unflatten
 
 
 if tf.__version__[0] == "1":
-    import tensorflow.contrib.eager as tfe # pylint: disable=unused-import,ungrouped-imports
+    import tensorflow.contrib.eager as tfe  # pylint: disable=unused-import,ungrouped-imports
+
     Variable = tfe.Variable
 else:
-    from tensorflow import Variable # pylint: disable=unused-import,ungrouped-imports
+    from tensorflow import Variable  # pylint: disable=unused-import,ungrouped-imports
 
 
 def to_tf(qnode):
@@ -40,8 +41,10 @@ def to_tf(qnode):
     Returns:
         function: the QNode as a TensorFlow function
     """
+
     class qnode_str(partial):
         """TensorFlow QNode"""
+
         # pylint: disable=too-few-public-methods
 
         @property
@@ -52,7 +55,9 @@ def to_tf(qnode):
         def __str__(self):
             """String representation"""
             detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
-            return detail.format(qnode.device.short_name, qnode.func.__name__, qnode.num_wires, self.interface)
+            return detail.format(
+                qnode.device.short_name, qnode.func.__name__, qnode.num_wires, self.interface
+            )
 
         def __repr__(self):
             """REPL representation"""
@@ -68,11 +73,17 @@ def to_tf(qnode):
     def _TFQNode(*input_, **input_kwargs):
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
-        kwargs = {k:v.numpy() if isinstance(v, (Variable, tf.Tensor)) else v for k, v in input_kwargs.items()}
+        kwargs = {
+            k: v.numpy() if isinstance(v, (Variable, tf.Tensor)) else v
+            for k, v in input_kwargs.items()
+        }
 
         # if NumPy array is scalar, convert to a Python float
         args = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in args]
-        kwargs = {k:v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v for k, v in kwargs.items()}
+        kwargs = {
+            k: v.tolist() if (isinstance(v, np.ndarray) and not v.shape) else v
+            for k, v in kwargs.items()
+        }
 
         # evaluate the QNode
         res = qnode(*args, **kwargs)
@@ -84,7 +95,7 @@ def to_tf(qnode):
         def grad(grad_output, **tfkwargs):
             """Returns the vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
-            variables = tfkwargs.get('variables', None)
+            variables = tfkwargs.get("variables", None)
 
             jacobian = qnode.jacobian(args, kwargs)
             grad_output_np = grad_output.numpy()

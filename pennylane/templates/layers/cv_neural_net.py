@@ -14,17 +14,17 @@
 r"""
 Contains the ``CVNeuralNetLayers`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates.constructors import Broadcast
-from pennylane.templates.utils import (_check_wires,
-                                       _check_number_of_layers,
-                                       _check_shapes)
+from pennylane.templates.utils import _check_wires, _check_number_of_layers, _check_shapes
 
 
-def cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
+def cv_neural_net_layer(
+    theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
+):
     r"""A single continuous-variable neural network layer.
 
     The layer acts on the :math:`M` wires modes specified in ``wires``, and includes interferometers
@@ -60,7 +60,9 @@ def cv_neural_net_layer(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varp
 
 
 @template
-def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires):
+def CVNeuralNetLayers(
+    theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
+):
     r"""A sequence of layers of a continuous-variable quantum neural network,
     as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
 
@@ -112,19 +114,39 @@ def CVNeuralNetLayers(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi
     wires = _check_wires(wires)
 
     n_wires = len(wires)
-    n_if = n_wires*(n_wires-1)//2
+    n_if = n_wires * (n_wires - 1) // 2
     weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
     repeat = _check_number_of_layers(weights_list)
 
-    expected_shapes = [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                       (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                       (repeat, n_wires)]
+    expected_shapes = [
+        (repeat, n_if),
+        (repeat, n_if),
+        (repeat, n_wires),
+        (repeat, n_wires),
+        (repeat, n_wires),
+        (repeat, n_if),
+        (repeat, n_if),
+        (repeat, n_wires),
+        (repeat, n_wires),
+        (repeat, n_wires),
+        (repeat, n_wires),
+    ]
     _check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
 
     ###############
 
     for l in range(repeat):
-        cv_neural_net_layer(theta_1=theta_1[l], phi_1=phi_1[l], varphi_1=varphi_1[l],
-                            r=r[l], phi_r=phi_r[l],
-                            theta_2=theta_2[l], phi_2=phi_2[l], varphi_2=varphi_2[l],
-                            a=a[l], phi_a=phi_a[l], k=k[l], wires=wires)
+        cv_neural_net_layer(
+            theta_1=theta_1[l],
+            phi_1=phi_1[l],
+            varphi_1=varphi_1[l],
+            r=r[l],
+            phi_r=phi_r[l],
+            theta_2=theta_2[l],
+            phi_2=phi_2[l],
+            varphi_2=varphi_2[l],
+            a=a[l],
+            phi_a=phi_a[l],
+            k=k[l],
+            wires=wires,
+        )

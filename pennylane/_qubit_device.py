@@ -410,7 +410,9 @@ class QubitDevice(Device):
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
         basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
-        perm = np.ravel_multi_index(basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires))
+        perm = np.ravel_multi_index(
+            basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
+        )
         return prob[perm]
 
     def expval(self, observable):

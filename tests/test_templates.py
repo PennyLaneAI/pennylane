@@ -110,7 +110,7 @@ except ImportError as e:
 #########################################
 # Parameters shared between test classes
 
-# qubit templates, dict of differentiable inputs, dict of non-differentiable inputs
+# qubit templates, dict of differentiable arguments, dict of non-differentiable arguments
 QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                             [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
@@ -136,7 +136,7 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                 'wires': [0, 1]})
                               ]
 
-# cv templates, dict of differentiable inputs, dict of non-differentiable inputs
+# cv templates, dict of differentiable arguments, dict of non-differentiable arguments
 CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
                             {'features': [1., 2.]},
                             {}),
@@ -162,7 +162,6 @@ CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
                              'varphi': [0.98, 1.54]},
                             {})
                            ]
-
 
 #########################################
 # Circuits shared by test classes
