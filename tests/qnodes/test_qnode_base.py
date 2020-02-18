@@ -823,21 +823,26 @@ class TestQNodeCaching:
 
         dev = qml.device("default.qubit", wires=2)
 
-        def mutable_circuit(x, *, c=None):
+        def mutable_circuit(x, *, n=None):
             qml.RX(x, wires=0)
-            for i in range(c):
+            for i in range(n):
                 qml.RX(x, wires=i)
             return qml.expval(qml.PauliZ(0))
 
         node = BaseQNode(mutable_circuit, dev, mutable=True)
 
         # first evaluation
-        node(0, c=0)
+        node(0, n=0)
         assert len(node.circuit.operations) == 1
         temp = node.ops[0]
 
-        # second evaluation
-        node(0, c=1)
+        # second evaluation, same auxiliary args, different positional args
+        node(0.1, n=0)
+        assert len(node.circuit.operations) == 1
+        node.ops[0] is temp  # same circuit, same ops
+
+        # third evaluation, different auxiliary args, same positional args
+        node(0.1, n=1)
         assert len(node.circuit.operations) == 2
         node.ops[0] is not temp  # all Operations in the circuit are generated anew
 
@@ -859,7 +864,7 @@ class TestQNodeCaching:
         temp = node.ops[0]
 
         # second evaluation
-        node(0, c=1)
+        node(0.1, c=1)
         assert len(node.circuit.operations) == 2
         node.ops[0] is temp  # it's the same circuit with the same objects
 
@@ -875,20 +880,20 @@ class TestQNodeCaching:
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
-        def circuit(weights, n_layers=1):
-            for idx in range(n_layers):
+        def circuit(weights, n=1):
+            for idx in range(n):
                 qml.RX(weights[idx], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        res = circuit([phi], n_layers=1)
+        res = circuit([phi], n=1)
         exp = np.cos(phi)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        res = circuit([phi, theta], n_layers=2)
+        res = circuit([phi, theta], n=2)
         exp = np.cos(phi + theta)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        res = circuit([phi, theta, varphi], n_layers=3)
+        res = circuit([phi, theta, varphi], n=3)
         exp = np.cos(phi + theta + varphi)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
@@ -913,6 +918,38 @@ class TestQNodeCaching:
         res = node([[0.1], [0.2, 0.3]], n=2)
         exp = np.cos(sum([0.1] + [0.2, 0.3]))
         assert np.allclose(res, exp, atol=tol, rtol=0)
+
+    def test_mutable_qnode_nested_auxiliary_args(self, tol):
+        """Test that a mutable QNode can handle nested auxiliary args whose
+        nested structure changes between evaluations.
+        """
+        dev = qml.device('default.qubit', wires=1)
+
+        def circuit(x, *, n=1):
+            for p in n:
+                qml.RX(p, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        node = BaseQNode(circuit, dev, mutable=True)
+
+        # one auxiliary arg
+        n = [0.1]
+        res = node([1.0], n=n)
+        exp = np.cos(np.sum(n))
+        assert res == pytest.approx(exp, abs=tol)
+
+        # two auxiliary args
+        n = [0.1, 0.2]
+        res = node([1.0], n=n)
+        exp = np.cos(np.sum(n))
+        assert res == pytest.approx(exp, abs=tol)
+
+        # again one auxiliary arg
+        n = [0.5]
+        res = node([1.0], n=n)
+        exp = np.cos(np.sum(n))
+        assert res == pytest.approx(exp, abs=tol)
+
 
 class TestQNodeEvaluate:
     """Test for observable statistic evaluation"""

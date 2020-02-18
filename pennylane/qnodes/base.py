@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import _flatten, unflatten, equal_nested
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import VariableRef
 
@@ -494,15 +494,15 @@ class BaseQNode:
         converts it into a circuit graph, and creates the VariableRef mapping.
 
         .. note::
-           In mutable circuits the VariableRefs only represent positional args,
-           we reconstruct the circuit each time the auxiliary args change.
+           In mutable circuits the VariableRefs are only used to represent the nested elements of
+           the positional args. We reconstruct the circuit each time the auxiliary args change.
 
         Args:
             args (tuple[Any]): Positional arguments passed to the quantum function.
                 During the construction we are not concerned with the numerical values, but with
                 the nesting structure.
-                Each scalar within a positional argument is replaced with a
-                :class:`~.VariableRef` instance.
+                Each atomic element ("scalar") within a nested positional argument is replaced with
+                a :class:`~.VariableRef` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
 
         Raises:
@@ -517,13 +517,9 @@ class BaseQNode:
             if b is None:
                 return False
 
-            if len(a) != len(b):
-                return False
-
-            for key, val in a.items():
-                if np.any(b[key] != val):
-                    return False
-            return True
+            # Defaults have been applied, a and b have the same keys.
+            # Check that they have same nested values.
+            return all(equal_nested(val, b[key]) for key, val in a.items())
 
         if equal_dicts(kwargs, self.last_aux_args):
             return

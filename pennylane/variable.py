@@ -66,7 +66,7 @@ import copy
 class VariableRef:
     """A reference to dynamically track and update circuit parameters.
 
-    Represents a real scalar quantum circuit parameter (with a non-fixed value).
+    Represents an atomic ("scalar") quantum circuit parameter (with a non-fixed value),
     or data placeholder.
 
     Each time the circuit is executed, it is given a vector of flattened positional argument values,
@@ -81,7 +81,8 @@ class VariableRef:
 
     Args:
         idx  (int): index into the value vector, >= 0
-        name (str): name of the parameter
+        name (str): structured name of the parameter
+        basename (None, str): for auxiliary parameters the name of the base parameter, otherwise None
     """
 
     # pylint: disable=too-few-public-methods
@@ -94,9 +95,8 @@ class VariableRef:
 
     def __init__(self, idx, name=None, basename=None):
         self.idx = idx  #: int: parameter index
-        self.name = name  #: str: parameter name
-        self.basename = basename  #: str: for auxiliary parameters the key for the kwarg_values dict
-        self.is_kwarg = basename is not None
+        self.name = name  #: str: parameter structured name
+        self.basename = basename  #: str, None: for auxiliary parameters the key for the kwarg_values dict
         self.mult = 1  #: int, float: parameter scalar multiplier
 
     def __repr__(self):
@@ -137,6 +137,15 @@ class VariableRef:
         return temp
 
     __rmul__ = __mul__  # Left multiplication by scalars.
+
+    @property
+    def is_kwarg(self):
+        """Type of the parameter the VariableRef represents.
+
+        Returns:
+            bool: True iff the VariableRef represents (an element of) an auxiliary parameter
+        """
+        return self.basename is not None
 
     @property
     def val(self):

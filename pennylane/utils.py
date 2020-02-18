@@ -28,6 +28,41 @@ import numpy as np
 import pennylane as qml
 
 
+def is_iterable(x):
+    """Predicate for deciding if an object is iterable, in the sense of :func:`_flatten`.
+
+    `str` and `bytes` are not considered iterable here.
+
+    Args:
+        x (Any): object
+    Returns:
+        bool: True iff x is iterable
+    """
+    return isinstance(x, Iterable) and not isinstance(x, (str, bytes))
+
+
+_sentinel = object()  # singleton sentinel object not normally found in the nested structures
+
+
+def equal_nested(a, b):
+    """Equality comparison for nested structures.
+
+    Args:
+        a, b (Iterable, Any): Nested structures. Each element of an Iterable may itself be an Iterable.
+
+    Returns:
+        bool: True iff a and b are equal
+    """
+    # TODO what about arrays/object arrays? should the latter be allowed? now they are subsumed to Iterables.
+    if is_iterable(a):
+        if is_iterable(b):
+            return all(equal_nested(x, y) for x, y in itertools.zip_longest(a, b, fillvalue=_sentinel))
+        return False
+    if is_iterable(b):
+        return False
+    return a == b
+
+
 def _flatten(x):
     """Iterate recursively through an arbitrarily nested structure in depth-first order.
 
