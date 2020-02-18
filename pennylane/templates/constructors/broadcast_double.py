@@ -25,37 +25,22 @@ from pennylane.templates.utils import (_check_wires,
 
 @template
 def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
-    r"""Applies a (potentially parametrized) two-qubit unitary ``block`` to pairs of wires.
+    r"""Applies a two-qubit unitary to pairs of wires.
 
     If ``even`` is ``True``, start with the wire pair ``[0, 1]``, else with the pair ``[1, 2]``.
 
     .. figure:: ../../_static/templates/constructors/broadcast_double.png
         :align: center
-        :width: 20%
+        :width: 40%
         :target: javascript:void(0);
 
-    If the block does not depend on parameters, ``parameters`` is set to ``None``.
+    Each unitary ``block`` applied to a pair of wires may depend on parameters. These are passed as a list
+    by the ``parameters`` argument. For :math:`M` wires and ``even=True``, parameters for
+    :math:`\lfloor \frac{M}{2} \rfloor` unitaries must be supplied, while for ``even=False``
+    there are :math:`\lfloor \frac{M-1}{2} \rfloor` unitaries.
 
-    If ``parameters`` is not ``None``, it is a list or array of sets of parameters
-    :math:`p_{\gamma} = [\varphi^{\gamma}_1, \varphi^{\gamma}_2, ..., \varphi_D^{\gamma}]`,
-    one set for each pair of wires :math:`\gamma = 1,...,G`.
-    If ``even=True``, ``parameters`` must contain :math:`G = \lfloor \frac{M}{2} \rfloor` sets of parameters,
-    while for ``even=False`` it must contain :math:`G = \lfloor \frac{M-1}{2} \rfloor` sets.
-
-    The block must be a function of a specific signature. It is called
-    by :mod:`~.pennylane.templates.constructors.broadcast` as follows:
-
-    .. code-block:: python
-
-        block(parameter1, ... parameterD, wires, **kwargs)
-
-    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters that are fed into
-    the block, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the block
-    is not parametrized), ``wires`` is the *only* positional argument. The ``block`` function
-    can take user-defined keyword arguments passed to the template as ``kwargs``.
-
-    Typically, ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.CNOT`), or a
-    user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
+    Typically, ``block`` is either a two-qubit quantum operation (such as :meth:`~.pennylane.ops.CNOT`), or a
+    user-supplied template acting on two qubits. For more details, see *UsageDetails* below.
 
     Args:
         block (function): quantum gate or template
@@ -70,7 +55,7 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
     .. UsageDetails::
 
         In the simplest case the block is typically an :meth:`~.pennylane.operation.Operation` object
-        implementing a single qubit gate.
+        implementing a two-qubit gate. For example, for 4 wires and an ``CRot`` gate, we need 2 sets of 3 parameters:
 
         .. code-block:: python
 
@@ -84,9 +69,11 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
                 broadcast_double(block=qml.CRot, wires=[0,1,2,3], even=True, parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
-            circuit([[1, 2, 3], [-1, 4, 2]])
+            parameters_1 = [1, 2, 3]
+            parameters_2 = [-1, 4, 2]
+            circuit([parameters_1, parameters_2])
 
-        If ``even=False``, this example would require :math:`\floor \frac{4-1}{2} \floor = 1` parameter set.
+        If ``even=False``, the same example requires :math:`\lfloor \frac{4-1}{2} \rfloor = 1` parameter sets.
 
         .. code-block:: python
 
@@ -95,7 +82,8 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
                 broadcast_double(block=qml.CRot, wires=[0,1,2,3], even=False, parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
-            circuit([[1, 2, 3]])
+            parameters_1 = [1, 2, 3]
+            circuit([parameters_1])
 
         Alternatively, one can use a sequence of gates by creating a template using the
         :meth:`~.pennylane.templates.template` decorator.
@@ -116,7 +104,9 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
                 broadcast_double(block=mytemplate, wires=[0,1,2,3], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
-            circuit([1, -1])
+            parameters_1 = 1
+            parameters_2 = -1
+            circuit([parameters_1, parameters_2])
 
         **Constant unitaries**
 
@@ -133,11 +123,11 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
             circuit()
 
 
-        As mentioned above, in general the block **must** have the following signature:
+        In general, a block taking D trainable parameters **must** have the following signature:
 
         .. code-block:: python
 
-            block(parameter1, parameter2, ... parameterD, wires, **kwargs)
+            block(p1, p2, ... pD, wires, **kwargs)
 
         If ``block`` does not depend on parameters (:math:`D=0`), the signature is
 
@@ -145,7 +135,7 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
 
             block(wires, **kwargs)
 
-        As a result, ``parameters`` must be a list or array of length-:math:`D` lists or arrays.
+        As a result, ``parameters`` must be a list of length-:math:`D` lists.
 
         If :math:`D` becomes large, the signature can be simplified by wrapping each entry in ``parameters``:
 
@@ -162,9 +152,11 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
                 broadcast_double(block=mytemplate, wires=[0,1,2,3], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
-            circuit([[[1, 1]], [[2, 1]]])
+            parameters_1 = [[1, 1]]
+            parameters_2 = [[2, 1]]
+            circuit([parameters_1, parameters_2])
 
-        If the number of parameters for each wire does not match the block, an error gets thrown:
+        If the number of parameters for a wire pair does not match the block's requirements, an error gets thrown:
 
         .. code-block:: python
 

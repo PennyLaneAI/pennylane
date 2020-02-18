@@ -50,7 +50,7 @@ def KwargTemplate(par, wires, a=True):
 
 
 class TestConstructorBroadcast:
-    """ Tests the broadcast constructor template."""
+    """ Tests the broadcast template constructor."""
 
     PARAMS_UNITARY_TARGET_DEVICE_OBS = [([pi, pi, pi / 2, 0], RX, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
                                         ([pi, pi, pi / 2, 0], RY, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
@@ -196,7 +196,7 @@ def KwargTemplateDouble(par, wires, a=True):
 
 
 class TestConstructorBroadcastDouble:
-    """ Tests the broadcast_double constructor template."""
+    """ Tests the broadcast_double template constructor."""
 
     EVEN_GATE_PARAMETERS = [(CRX, [[0.1], [0.2]]),
                             (CRot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
