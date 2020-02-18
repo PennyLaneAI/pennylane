@@ -23,34 +23,18 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape
 
 @template
 def broadcast(block, wires, parameters=None, kwargs={}):
-    r"""Applies a (potentially parametrized) single-qubit unitary ``block`` to each wire.
+    r"""Applies a single-qubit unitary to each wire.
 
     .. figure:: ../../_static/templates/constructors/broadcast.png
         :align: center
-        :width: 20%
+        :width: 40%
         :target: javascript:void(0);
 
-    If the block does not depend on parameters, ``parameters`` is set to ``None``.
+    Each unitary ``block`` applied to a wire may depend on parameters. These are passed as a list
+    by the ``parameters`` argument. The length of the list is the same as the number of wires.
 
-    If ``parameters`` is not ``None``, it represents sets of parameters
-    :math:`p_m = [\varphi^m_1, \varphi^m_2, ..., \varphi_D^m]`, one set for each wire :math:`m = 1, \dots , M`.
-    The block acting on the :math:`m` th wire is :math:`U(\varphi^m_1, \varphi^m_2, ..., \varphi_D^m)`. Hence,
-    ``parameters`` must be a list or array of length :math:`M`.
-
-    The block must be a function of a specific signature. It is called
-    by :mod:`~.pennylane.templates.constructors.broadcast` as follows:
-
-    .. code-block:: python
-
-        block(parameter1, ... parameterD, wires, **kwargs)
-
-    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters that are fed into
-    the block, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the block
-    is not parametrized), ``wires`` is the *only* positional argument. The ``block`` function
-    can take user-defined keyword arguments.
-
-    Typically, ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
+    Typically, ``block`` is either a single-qubit quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
+    user-supplied template acting on a single qubits. For more details, see *UsageDetails* below.
 
     Args:
         block (function): quantum gate or template
@@ -140,7 +124,7 @@ def broadcast(block, wires, parameters=None, kwargs={}):
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
-        As mentioned above, in general the block **must** have the following signature:
+        In general, the block takes D parameters and **must** have the following signature:
 
         .. code-block:: python
 
