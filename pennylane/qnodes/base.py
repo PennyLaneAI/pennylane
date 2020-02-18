@@ -508,8 +508,7 @@ class BaseQNode:
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
-        if self.arg_vars is None or self.kwarg_vars is None:
-            self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
+        self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations

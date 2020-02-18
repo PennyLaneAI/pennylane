@@ -560,13 +560,15 @@ class Operation(Operator):
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
+        multiplier, shift = (0.5, np.pi / 2) if recipe is None else recipe
+
         # internal multiplier in the VariableRef
         var_mult = self.params[idx].mult
 
-        multiplier = 0.5 if recipe is None else recipe[0]
         multiplier *= var_mult
-        shift = np.pi / 2 if recipe is None else recipe[1]
-        shift /= var_mult
+        if var_mult != 0:
+            # zero multiplier means the shift is unimportant
+            shift /= var_mult
         return multiplier, shift
 
     @property
