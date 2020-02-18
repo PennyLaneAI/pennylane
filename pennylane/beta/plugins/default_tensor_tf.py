@@ -32,7 +32,6 @@ from pennylane.variable import VariableRef
 from pennylane.beta.plugins.default_tensor import DefaultTensor, I, X, Y, Z
 
 
-
 # tolerance for numerical errors
 tolerance = 1e-10
 C_DTYPE = tf.complex128
@@ -354,7 +353,7 @@ class DefaultTensorTF(DefaultTensor):
             # convert the results list into a single tensor
             self.res = tf.stack(results)
 
-        if kwargs.get('return_native_type', False):
+        if kwargs.get("return_native_type", False):
             return self.res
         # return the results as a NumPy array
         return self.res.numpy()

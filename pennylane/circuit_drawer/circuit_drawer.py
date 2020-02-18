@@ -38,6 +38,7 @@ def _remove_duplicates(input_list):
     """
     return list(OrderedDict.fromkeys(input_list))
 
+
 class CircuitDrawer:
     """Creates a circuit diagram from the operators of a CircuitGraph in grid form.
 
@@ -128,7 +129,9 @@ class CircuitDrawer:
             raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
         """
         # pylint: disable=protected-access
-        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(qml.utils._flatten(raw_observable_grid))
+        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
+            qml.utils._flatten(raw_observable_grid)
+        )
         all_wires = [op.wires for op in all_operators if op is not None]
         circuit_wires = sorted(set(qml.utils._flatten(all_wires)))
         internal_wires = list(range(len(circuit_wires)))
@@ -354,7 +357,9 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             wire = self.full_representation_grid.wire(i)
 
-            rendered_string += "{:2d}: {}".format(self.internal_wires_to_circuit_wires(i), 2 * self.charset.WIRE)
+            rendered_string += "{:2d}: {}".format(
+                self.internal_wires_to_circuit_wires(i), 2 * self.charset.WIRE
+            )
 
             for s in wire:
                 rendered_string += s

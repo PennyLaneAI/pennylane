@@ -14,18 +14,21 @@
 r"""
 Contains the ``AngleEmbedding`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ
-from pennylane.templates.utils import (_check_shape,
-                                       _check_no_variable,
-                                       _check_wires,
-                                       _check_is_in_options,
-                                       _check_type, _get_shape)
+from pennylane.templates.utils import (
+    _check_shape,
+    _check_no_variable,
+    _check_wires,
+    _check_is_in_options,
+    _check_type,
+    _get_shape,
+)
 
 
 @template
-def AngleEmbedding(features, wires, rotation='X'):
+def AngleEmbedding(features, wires, rotation="X"):
     r"""
     Encodes :math:`N` features into the rotation angles of :math:`n` qubits, where :math:`N \leq n`.
 
@@ -58,20 +61,29 @@ def AngleEmbedding(features, wires, rotation='X'):
 
     wires = _check_wires(wires)
 
-    _check_shape(features, (len(wires),), bound='max', msg="'features' must be of shape {} or smaller; "
-                                                           "got {}.".format((len(wires),), _get_shape(features)))
+    _check_shape(
+        features,
+        (len(wires),),
+        bound="max",
+        msg="'features' must be of shape {} or smaller; "
+        "got {}.".format((len(wires),), _get_shape(features)),
+    )
     _check_type(rotation, [str], msg="'rotation' must be a string; got {}".format(rotation))
 
-    _check_is_in_options(rotation, ['X', 'Y', 'Z'], msg="did not recognize option {} for 'rotation'.".format(rotation))
+    _check_is_in_options(
+        rotation,
+        ["X", "Y", "Z"],
+        msg="did not recognize option {} for 'rotation'.".format(rotation),
+    )
 
     ###############
 
-    if rotation == 'X':
+    if rotation == "X":
         for f, w in zip(features, wires):
             RX(f, wires=w)
-    elif rotation == 'Y':
+    elif rotation == "Y":
         for f, w in zip(features, wires):
             RY(f, wires=w)
-    elif rotation == 'Z':
+    elif rotation == "Z":
         for f, w in zip(features, wires):
             RZ(f, wires=w)

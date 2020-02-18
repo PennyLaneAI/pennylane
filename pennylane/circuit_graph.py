@@ -68,6 +68,7 @@ def _list_at_index_or_none(list, idx):
 
     return None
 
+
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
 
@@ -431,9 +432,7 @@ class CircuitGraph:
             )
 
         while True:
-            layer_ops = {
-                wire: _list_at_index_or_none(operations[wire], l) for wire in operations
-            }
+            layer_ops = {wire: _list_at_index_or_none(operations[wire], l) for wire in operations}
             num_ops = Counter(layer_ops.values())
 
             if None in num_ops and num_ops[None] == len(operations):
