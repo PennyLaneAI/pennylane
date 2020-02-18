@@ -24,8 +24,9 @@ from pennylane.templates.utils import (
     _check_wires,
     _check_is_in_options,
     _get_shape,
-    _check_type
+    _check_type,
 )
+
 
 @template
 def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
@@ -82,10 +83,10 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
 
     ##############
 
-    constants = [c]*len(features)
+    constants = [c] * len(features)
 
-    if method == 'amplitude':
+    if method == "amplitude":
         Broadcast(block=Squeezing, wires=wires, parameters=list(zip(features, constants)))
 
-    elif method == 'phase':
+    elif method == "phase":
         Broadcast(block=Squeezing, wires=wires, parameters=list(zip(constants, features)))

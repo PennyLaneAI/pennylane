@@ -17,4 +17,3 @@ They may depend on parameters that are fed to the input circuits.
 """
 
 from .broadcast import Broadcast
-
