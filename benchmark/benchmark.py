@@ -1,4 +1,6 @@
-# Benchmarking utility for PennyLane
+"""Benchmarking utility for PennyLane.
+"""
+# pylint: disable=import-outside-toplevel,invalid-name
 import functools
 import importlib
 import subprocess
@@ -41,12 +43,13 @@ def plot(title, kernels, n_range):
 
 def profile(func):
     "Profile the given function."
-    import cProfile, pstats
+    import cProfile
+    import pstats
 
     pr = cProfile.Profile()
     pr.enable()
 
-    for k in range(20):
+    for _ in range(20):
         func()
 
     pr.disable()
@@ -55,7 +58,8 @@ def profile(func):
     ps.print_stats()
 
 
-if __name__ == "__main__":
+def cli():
+    "Read the commandline parameters, perform the requested action."
     # import pdb; pdb.set_trace()
 
     n = len(sys.argv)
@@ -63,8 +67,10 @@ if __name__ == "__main__":
         print("Usage: benchmark.py {time,plot,profile} benchmark_module")
         sys.exit(0)
 
-    res = subprocess.run(["git", "log", "-1", "--pretty=%h %s"], stdout=subprocess.PIPE)
-    title = res.stdout.decode("utf-8")
+    res = subprocess.run(
+        ["git", "log", "-1", "--pretty=%h %s"], stdout=subprocess.PIPE, encoding="utf-8", check=True
+    )
+    title = res.stdout
     print("Benchmarking PennyLane", qml.version())
     print("Commit:", title)
     # qml.about()
@@ -82,3 +88,7 @@ if __name__ == "__main__":
         profile(functools.partial(bm.benchmark, bm.n))
     else:
         raise ValueError("Unknown command.")
+
+
+if __name__ == "__main__":
+    cli()

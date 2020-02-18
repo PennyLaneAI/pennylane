@@ -1,6 +1,8 @@
 """Entangling layers benchmark.
 Creates an immutable QNode using the StronglyEntanglingLayers template,
-then evaluates it and its Jacobian."""
+then evaluates it and its Jacobian.
+"""
+# pylint: disable=invalid-name
 import numpy as np
 
 import pennylane as qml
@@ -19,6 +21,7 @@ dev = qml.device("default.qubit", wires=n_wires)
 
 
 def circuit(weights, features=None):
+    """Quantum circuit."""
     AngleEmbedding(features, range(n_wires))
     StronglyEntanglingLayers(weights, wires=range(n_wires))
     return qml.expval(qml.PauliZ(0))
@@ -33,8 +36,8 @@ def benchmark(n_layers=3):
 
     node = qml.qnodes.QubitQNode(circuit, dev, mutable=False)
 
-    res = node(init_weights, features=features)
+    node(init_weights, features=features)
     # print(node.draw())
 
-    jac = node.jacobian(init_weights, {"features": features})
+    node.jacobian(init_weights, {"features": features})
     return True
