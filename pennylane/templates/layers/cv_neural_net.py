@@ -19,11 +19,7 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates.constructors import Broadcast
-from pennylane.templates.utils import (
-    _check_wires,
-    _check_number_of_layers,
-    _check_shapes,
-)
+from pennylane.templates.utils import _check_wires, _check_number_of_layers, _check_shapes
 
 
 def cv_neural_net_layer(
@@ -119,19 +115,7 @@ def CVNeuralNetLayers(
 
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2
-    weights_list = [
-        theta_1,
-        phi_1,
-        varphi_1,
-        r,
-        phi_r,
-        theta_2,
-        phi_2,
-        varphi_2,
-        a,
-        phi_a,
-        k,
-    ]
+    weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
     repeat = _check_number_of_layers(weights_list)
 
     expected_shapes = [

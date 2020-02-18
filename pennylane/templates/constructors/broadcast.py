@@ -14,11 +14,13 @@
 r"""
 Contains the ``broadcast`` template constructor.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import _check_wires, _check_type, _get_shape
+from pennylane.templates.utils import (_check_wires,
+                                       _check_type,
+                                       _get_shape)
 
 
 @template
@@ -216,21 +218,14 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
     wires = _check_wires(wires)
 
-    _check_type(
-        parameters,
-        [Iterable, type(None)],
-        msg="'parameters' must be either of type None or "
-        "Iterable; got {}".format(type(parameters)),
-    )
+    _check_type(parameters, [Iterable, type(None)], msg="'parameters' must be either of type None or "
+                                                        "Iterable; got {}".format(type(parameters)))
 
     if parameters is not None:
         shape = _get_shape(parameters)
         if shape[0] != len(wires):
-            raise ValueError(
-                "'parameters' must contain one entry for each of the {} wires; got shape {}".format(
-                    len(wires), shape
-                )
-            )
+            raise ValueError("'parameters' must contain one entry for each of the {} wires; got shape {}"
+                             .format(len(wires), shape))
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
@@ -241,3 +236,5 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
     for w, p in zip(wires, parameters):
         block(*p, wires=w, **kwargs)
+
+

@@ -135,9 +135,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         [float, type(None)],
         msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
     )
-    _check_type(
-        n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots),
-    )
+    _check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
     # TODO: Check that 'rotations' contains operations
     _check_type(
         rotations,

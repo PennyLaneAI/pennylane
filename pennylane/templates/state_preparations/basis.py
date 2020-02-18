@@ -18,12 +18,7 @@ Contains the ``BasisStatePreparation`` template.
 import pennylane as qml
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import (
-    _check_wires,
-    _check_no_variable,
-    _check_shape,
-    _get_shape,
-)
+from pennylane.templates.utils import _check_wires, _check_no_variable, _check_shape, _get_shape
 
 
 @template

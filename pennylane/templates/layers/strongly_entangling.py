@@ -109,9 +109,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     _check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
     for r in ranges:
-        _check_type(
-            r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges),
-        )
+        _check_type(r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges))
     if any((r >= len(wires) or r == 0) for r in ranges):
         raise ValueError(
             "the range for all layers needs to be smaller than the number of "

@@ -79,10 +79,10 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     #############
 
-    constants = [c] * len(features)
+    constants = [c]*len(features)
 
-    if method == "amplitude":
+    if method == 'amplitude':
         Broadcast(block=Displacement, wires=wires, parameters=list(zip(features, constants)))
 
-    elif method == "phase":
+    elif method == 'phase':
         Broadcast(block=Displacement, wires=wires, parameters=list(zip(constants, features)))
