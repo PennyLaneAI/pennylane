@@ -860,7 +860,9 @@ class TestQNodeCaching:
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_mutable_qnode_for_loop_varying_executions(self, tol):
-        """
+        """Test that a mutable QNode containing a for loop correctly mutates
+        when called with different auxiliary arguments and different shaped positional
+        arguments.
         """
         dev = qml.device('default.qubit', wires=1)
 
