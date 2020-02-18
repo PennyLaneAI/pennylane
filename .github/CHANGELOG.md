@@ -29,11 +29,16 @@
   by zero error when calculating the parameter shift formula.
   [(#512)](https://github.com/XanaduAI/pennylane/pull/512)
 
+* Fixed a bug where the shape of differentiable QNode arguments
+  was being cached on the first construction, leading to indexing
+  errors if the QNode was re-evaluated if the argument changed shape.
+  [(#505)](https://github.com/XanaduAI/pennylane/pull/505)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Maria Schuld
+Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva.
 
 # Release 0.8.0 (current release)
 
