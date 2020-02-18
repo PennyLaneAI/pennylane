@@ -189,6 +189,25 @@ of other templates.
 
         <div style='clear:both'></div>
 
+.. _intro_ref_temp_constr:
+
+Template constructors
+---------------------
+
+Template constructors are a special type of template that takes other templates (or single quantum operations)
+to construct circuits. These input templates may also depend on parameters.
+Constructors are handy as a building block for custom circuits. As a convention, their names start with a
+lower case.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.constructors.broadcast.html
+    :description: broadcast
+    :figure: ../_static/templates/constructors/broadcast.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
 .. _intro_ref_temp_init:
 
 Parameter initializations
@@ -271,85 +290,4 @@ respective interfaces.
     init_torch = torch.tensor(init_pars)
     init_tf = tf.Variable(init_pars)
 
-The following initialization functions are available:
-
-.. rubric:: Continuous-variable quantum neural network
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.cvqnn_layers_all
-    ~pennylane.init.cvqnn_layers_theta_uniform
-    ~pennylane.init.cvqnn_layers_theta_normal
-    ~pennylane.init.cvqnn_layers_phi_uniform
-    ~pennylane.init.cvqnn_layers_phi_normal
-    ~pennylane.init.cvqnn_layers_varphi_uniform
-    ~pennylane.init.cvqnn_layers_varphi_normal
-    ~pennylane.init.cvqnn_layers_r_uniform
-    ~pennylane.init.cvqnn_layers_r_normal
-    ~pennylane.init.cvqnn_layers_phi_r_uniform
-    ~pennylane.init.cvqnn_layers_phi_r_normal
-    ~pennylane.init.cvqnn_layers_a_uniform
-    ~pennylane.init.cvqnn_layers_a_normal
-    ~pennylane.init.cvqnn_layers_phi_a_uniform
-    ~pennylane.init.cvqnn_layers_phi_a_normal
-    ~pennylane.init.cvqnn_layers_kappa_uniform
-    ~pennylane.init.cvqnn_layers_kappa_normal
-
-
-:html:`</div>`
-
-.. rubric:: Interferometer
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.interferometer_all
-    ~pennylane.init.interferometer_theta_uniform
-    ~pennylane.init.interferometer_theta_normal
-    ~pennylane.init.interferometer_phi_uniform
-    ~pennylane.init.interferometer_phi_normal
-    ~pennylane.init.interferometer_varphi_uniform
-    ~pennylane.init.interferometer_varphi_normal
-
-:html:`</div>`
-
-.. rubric:: QAOA embedding
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.qaoa_embedding_uniform
-    ~pennylane.init.qaoa_embedding_normal
-
-:html:`</div>`
-
-.. rubric:: Random layers
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.random_layers_uniform
-    ~pennylane.init.random_layers_normal
-
-:html:`</div>`
-
-.. rubric:: Strongly entangling layers
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.init.strong_ent_layers_uniform
-    ~pennylane.init.strong_ent_layers_normal
-
-:html:`</div>`
+The initialization functions can be found in the :mod:`~.pennylane.init` module.
