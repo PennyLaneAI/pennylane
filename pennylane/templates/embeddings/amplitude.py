@@ -210,7 +210,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     n_features = shape[0]
     if pad is not None and n_amplitudes > n_features:
         features = np.pad(
-            features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad
+            features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad,
         )
 
     # normalize

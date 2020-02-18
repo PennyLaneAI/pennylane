@@ -27,7 +27,7 @@ class TestInterferometer:
 
     def test_invalid_mesh_exception(self):
         """Test that Interferometer() raises correct exception when mesh not recognized."""
-        dev = qml.device('default.gaussian', wires=1)
+        dev = qml.device("default.gaussian", wires=1)
         varphi = [0.42342]
 
         @qml.qnode(dev)
@@ -36,11 +36,11 @@ class TestInterferometer:
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="Mesh option"):
-            circuit(varphi, mesh='a')
+            circuit(varphi, mesh="a")
 
     def test_invalid_mesh_exception(self):
         """Test that Interferometer() raises correct exception when beamsplitter not recognized."""
-        dev = qml.device('default.gaussian', wires=1)
+        dev = qml.device("default.gaussian", wires=1)
         varphi = [0.42342]
 
         @qml.qnode(dev)
@@ -49,7 +49,7 @@ class TestInterferometer:
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(ValueError, match="did not recognize option"):
-            circuit(varphi, bs='a')
+            circuit(varphi, bs="a")
 
     def test_clements_beamsplitter_convention(self, tol):
         """test the beamsplitter convention"""
@@ -61,10 +61,14 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         with qml.utils.OperationRecorder() as rec_rect:
-            Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
+            Interferometer(
+                theta, phi, varphi, mesh="rectangular", beamsplitter="clements", wires=wires,
+            )
 
         with qml.utils.OperationRecorder() as rec_tria:
-            Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
+            Interferometer(
+                theta, phi, varphi, mesh="triangular", beamsplitter="clements", wires=wires,
+            )
 
         for rec in [rec_rect, rec_tria]:
 
@@ -107,7 +111,7 @@ class TestInterferometer:
             Interferometer(theta, phi, varphi, wires=wires)
 
         isinstance(rec.queue[0], qml.Beamsplitter)
-        assert rec.queue[0].parameters == theta+phi
+        assert rec.queue[0].parameters == theta + phi
 
         assert isinstance(rec.queue[1], qml.Rotation)
         assert rec.queue[1].parameters == [varphi[0]]
@@ -126,12 +130,12 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         with qml.utils.OperationRecorder() as rec:
-            Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
+            Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
 
         assert len(rec.queue) == 3
 
         assert isinstance(rec.queue[0], qml.Beamsplitter)
-        assert rec.queue[0].parameters == theta+phi
+        assert rec.queue[0].parameters == theta + phi
 
         assert isinstance(rec.queue[1], qml.Rotation)
         assert rec.queue[1].parameters == [varphi[0]]
@@ -206,7 +210,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         with qml.utils.OperationRecorder() as rec:
-            Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
+            Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
 
         assert len(rec.queue) == 10
 
@@ -226,12 +230,16 @@ class TestInterferometer:
         """test integration with PennyLane and gradient calculations"""
         N = 4
         wires = range(N)
-        dev = qml.device('default.gaussian', wires=N)
+        dev = qml.device("default.gaussian", wires=N)
 
-        sq = np.array([[0.8734294, 0.96854066],
-                       [0.86919454, 0.53085569],
-                       [0.23272833, 0.0113988 ],
-                       [0.43046882, 0.40235136]])
+        sq = np.array(
+            [
+                [0.8734294, 0.96854066],
+                [0.86919454, 0.53085569],
+                [0.23272833, 0.0113988],
+                [0.43046882, 0.40235136],
+            ]
+        )
 
         theta = np.array([3.28406182, 3.0058243, 3.48940764, 3.41419504, 4.7808479, 4.47598146])
         phi = np.array([3.89357744, 2.67721355, 1.81631197, 6.11891294, 2.09716418, 1.37476761])

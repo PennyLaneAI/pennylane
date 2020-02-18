@@ -18,103 +18,108 @@ Tests for the templates utility functions.
 import pytest
 import numpy as np
 from pennylane.variable import VariableRef
-from pennylane.templates.utils import (_check_wires,
-                                       _check_shape,
-                                       _check_shapes,
-                                       _get_shape,
-                                       _check_number_of_layers,
-                                       _check_no_variable,
-                                       _check_is_in_options,
-                                       _check_type)
+from pennylane.templates.utils import (
+    _check_wires,
+    _check_shape,
+    _check_shapes,
+    _get_shape,
+    _check_number_of_layers,
+    _check_no_variable,
+    _check_is_in_options,
+    _check_type,
+)
 
 #########################################
 # Inputs
 
-WIRES_PASS = [(0, [0]),
-              ([4], [4]),
-              ([1, 2], [1, 2])]
-WIRES_FAIL = [[-1],
-              ['a'],
-              lambda x: x,
-              None
-              ]
+WIRES_PASS = [(0, [0]), ([4], [4]), ([1, 2], [1, 2])]
+WIRES_FAIL = [[-1], ["a"], lambda x: x, None]
 
-SHAPE_PASS = [(0.231, (), None),
-              ([[1., 2.], [3., 4.]], (2, 2), None),
-              ([-2.3], (1,), None),
-              ([-2.3, 3.4], (4,), 'max'),
-              ([-2.3, 3.4], (1,), 'min'),
-              ([-2.3], (1,), 'max'),
-              ([-2.3], (1,), 'min'),
-              ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'max'),
-              ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'min'),
-              ]
+SHAPE_PASS = [
+    (0.231, (), None),
+    ([[1.0, 2.0], [3.0, 4.0]], (2, 2), None),
+    ([-2.3], (1,), None),
+    ([-2.3, 3.4], (4,), "max"),
+    ([-2.3, 3.4], (1,), "min"),
+    ([-2.3], (1,), "max"),
+    ([-2.3], (1,), "min"),
+    ([[-2.3, 3.4], [1.0, 0.2]], (3, 3), "max"),
+    ([[-2.3, 3.4, 1.0], [1.0, 0.2, 1.0]], (1, 2), "min"),
+]
 
-SHAPE_LST_PASS = [([0.231, 0.1], [(), ()], None),
-                  ([[1., 2.], [4.]], [(2,), (1,)], None),
-                  ([[-2.3], -1.], [(1,), ()], None),
-                  ([[-2.3, 0.1], -1.], [(1,), ()], 'min'),
-                  ([[-2.3, 0.1], -1.], [(3,), ()], 'max')
-                  ]
+SHAPE_LST_PASS = [
+    ([0.231, 0.1], [(), ()], None),
+    ([[1.0, 2.0], [4.0]], [(2,), (1,)], None),
+    ([[-2.3], -1.0], [(1,), ()], None),
+    ([[-2.3, 0.1], -1.0], [(1,), ()], "min"),
+    ([[-2.3, 0.1], -1.0], [(3,), ()], "max"),
+]
 
-SHAPE_FAIL = [(0.231, (1,), None),
-              ([[1., 2.], [3., 4.]], (2,), None),
-              ([-2.3], (4, 5), None),
-              ([-2.3, 3.4], (4,), 'min'),
-              ([-2.3, 3.4], (1,), 'max'),
-              ([[-2.3, 3.4], [1., 0.2]], (3, 3), 'min'),
-              ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (1, 2), 'max'),
-              ]
+SHAPE_FAIL = [
+    (0.231, (1,), None),
+    ([[1.0, 2.0], [3.0, 4.0]], (2,), None),
+    ([-2.3], (4, 5), None),
+    ([-2.3, 3.4], (4,), "min"),
+    ([-2.3, 3.4], (1,), "max"),
+    ([[-2.3, 3.4], [1.0, 0.2]], (3, 3), "min"),
+    ([[-2.3, 3.4, 1.0], [1.0, 0.2, 1.0]], (1, 2), "max"),
+]
 
-GET_SHAPE_PASS = [(0.231, ()),
-                  (complex(1, 0), ()),
-                  (1, ()),
-                  ([[1., 2.], [3., 4.]], (2, 2)),
-                  ([-2.3], (1,)),
-                  ([-2.3, 3.4], (2,)),
-                  ([-2.3], (1,)),
-                  ([[-2.3, 3.4, 1.], [1., 0.2, 1.]], (2, 3)),
-                  ]
+GET_SHAPE_PASS = [
+    (0.231, ()),
+    (complex(1, 0), ()),
+    (1, ()),
+    ([[1.0, 2.0], [3.0, 4.0]], (2, 2)),
+    ([-2.3], (1,)),
+    ([-2.3, 3.4], (2,)),
+    ([-2.3], (1,)),
+    ([[-2.3, 3.4, 1.0], [1.0, 0.2, 1.0]], (2, 3)),
+]
 
-GET_SHAPE_FAIL = [("a",),
-                  (None,)]
+GET_SHAPE_FAIL = [("a",), (None,)]
 
-SHAPE_LST_FAIL = [([[0.231, 0.1]], [[()], [(3, 4)]], None),
-                  ([[1., 2.], [4.]], [(1,), (1,)], None),
-                  ([[-2.3], -1.], [(1, 2), (1,)], None),
-                  ([[-2.3, 0.1], -1.], [(1,), ()], 'max'),
-                  ([[-2.3, 0.1], -1.], [(3,), ()], 'min')
-                  ]
+SHAPE_LST_FAIL = [
+    ([[0.231, 0.1]], [[()], [(3, 4)]], None),
+    ([[1.0, 2.0], [4.0]], [(1,), (1,)], None),
+    ([[-2.3], -1.0], [(1, 2), (1,)], None),
+    ([[-2.3, 0.1], -1.0], [(1,), ()], "max"),
+    ([[-2.3, 0.1], -1.0], [(3,), ()], "min"),
+]
 
-LAYERS_PASS = [([[1], [2], [3]], 1),
-               ([[[1], [2], [3]], [[1], [2], [3]]], 3),
-               ]
+LAYERS_PASS = [
+    ([[1], [2], [3]], 1),
+    ([[[1], [2], [3]], [[1], [2], [3]]], 3),
+]
 
-LAYERS_FAIL = [([[[1], [2], [3]], 1], 5),
-               ([[[1], [2], [3]], [[1], [2]]], 4),
-               ]
+LAYERS_FAIL = [
+    ([[[1], [2], [3]], 1], 5),
+    ([[[1], [2], [3]], [[1], [2]]], 4),
+]
 
-NO_VARIABLES_PASS = [[[], np.array([1., 4.])],
-                     [1, 'a']]
+NO_VARIABLES_PASS = [[[], np.array([1.0, 4.0])], [1, "a"]]
 
-NO_VARIABLES_FAIL = [[[VariableRef(0.1)], VariableRef([0.1])],
-                     np.array([VariableRef(0.3), VariableRef(4.)]),
-                     VariableRef(-1.)]
+NO_VARIABLES_FAIL = [
+    [[VariableRef(0.1)], VariableRef([0.1])],
+    np.array([VariableRef(0.3), VariableRef(4.0)]),
+    VariableRef(-1.0),
+]
 
 OPTIONS_PASS = [("a", ["a", "b"])]
 
 OPTIONS_FAIL = [("c", ["a", "b"])]
 
-TYPE_PASS = [(["a"], list, type(None)),
-             (1, int, type(None)),
-             ("a", int, str),
-             (VariableRef(1.), list, VariableRef)
-             ]
+TYPE_PASS = [
+    (["a"], list, type(None)),
+    (1, int, type(None)),
+    ("a", int, str),
+    (VariableRef(1.0), list, VariableRef),
+]
 
-TYPE_FAIL = [("a", list, type(None)),
-             (VariableRef(1.), int, list),
-             (1., VariableRef, type(None))
-             ]
+TYPE_FAIL = [
+    ("a", list, type(None)),
+    (VariableRef(1.0), int, list),
+    (1.0, VariableRef, type(None)),
+]
 
 
 ##############################

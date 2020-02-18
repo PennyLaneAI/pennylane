@@ -22,13 +22,26 @@ import numpy as np
 import pennylane as qml
 from pennylane.templates import template
 from pennylane.templates.constructors import Broadcast, broadcast_double
-from pennylane.ops import RX, RY, RZ, Displacement, Beamsplitter, T, S, Rot, CRX, CRot, CNOT
+from pennylane.ops import (
+    RX,
+    RY,
+    RZ,
+    Displacement,
+    Beamsplitter,
+    T,
+    S,
+    Rot,
+    CRX,
+    CRot,
+    CNOT,
+)
 
-dev_4_qubits = qml.device('default.qubit', wires=4)
-dev_4_qumodes = qml.device('default.gaussian', wires=4)
+dev_4_qubits = qml.device("default.qubit", wires=4)
+dev_4_qumodes = qml.device("default.gaussian", wires=4)
 
 
 # templates for TestConstructorBroadcast
+
 
 @template
 def ConstantTemplate(wires):
@@ -52,15 +65,24 @@ def KwargTemplate(par, wires, a=True):
 class TestConstructorBroadcast:
     """ Tests the broadcast template constructor."""
 
-    PARAMS_UNITARY_TARGET_DEVICE_OBS = [([pi, pi, pi / 2, 0], RX, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
-                                        ([pi, pi, pi / 2, 0], RY, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
-                                        ([pi / 2, pi / 2, pi / 4, 0], RZ, [1, 1, 1, 1], dev_4_qubits, qml.PauliZ),
-                                        ([[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement,
-                                         [0.2, 0.4, 0.6, 0.8], dev_4_qumodes, qml.X)]
+    PARAMS_UNITARY_TARGET_DEVICE_OBS = [
+        ([pi, pi, pi / 2, 0], RX, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
+        ([pi, pi, pi / 2, 0], RY, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
+        ([pi / 2, pi / 2, pi / 4, 0], RZ, [1, 1, 1, 1], dev_4_qubits, qml.PauliZ),
+        (
+            [[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]],
+            Displacement,
+            [0.2, 0.4, 0.6, 0.8],
+            dev_4_qumodes,
+            qml.X,
+        ),
+    ]
 
-    GATE_PARAMETERS = [(RX, [[0.1], [0.2]]),
-                       (Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
-                       (T, [[], []])]
+    GATE_PARAMETERS = [
+        (RX, [[0.1], [0.2]]),
+        (Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
+        (T, [[], []]),
+    ]
 
     @pytest.mark.parametrize("unitary, parameters", GATE_PARAMETERS)
     def test_broadcast_correct_queue_for_gate_unitary(self, unitary, parameters):
@@ -72,8 +94,13 @@ class TestConstructorBroadcast:
         for gate in rec.queue:
             assert isinstance(gate, unitary)
 
-    @pytest.mark.parametrize("unitary, gates, parameters", [(ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1]]),
-                                                            (ConstantTemplate, [T, S], [[], []])])
+    @pytest.mark.parametrize(
+        "unitary, gates, parameters",
+        [
+            (ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1]]),
+            (ConstantTemplate, [T, S], [[], []]),
+        ],
+    )
     def test_broadcast_correct_queue_for_template_unitary(self, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'block' is a template."""
 
@@ -84,13 +111,14 @@ class TestConstructorBroadcast:
             i = idx % 2
             assert isinstance(gate, gates[i])
 
-    @pytest.mark.parametrize("kwarg, target_queue", [(True, [T, RY, T, RY]),
-                                                     (False, [RY, RY])])
+    @pytest.mark.parametrize("kwarg, target_queue", [(True, [T, RY, T, RY]), (False, [RY, RY])])
     def test_broadcast_correct_queue_for_template_unitary_with_keyword(self, kwarg, target_queue):
         """Tests that correct gate queue is created when 'block' is a template that uses a keyword."""
 
         with qml.utils.OperationRecorder() as rec:
-            Broadcast(block=KwargTemplate, wires=range(2), parameters=[[1], [2]], kwargs={'a': kwarg})
+            Broadcast(
+                block=KwargTemplate, wires=range(2), parameters=[[1], [2]], kwargs={"a": kwarg},
+            )
 
         for gate, target_gate in zip(rec.queue, target_queue):
             assert isinstance(gate, target_gate)
@@ -105,8 +133,7 @@ class TestConstructorBroadcast:
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
 
-    @pytest.mark.parametrize("pars1, pars2, gate", [([[], []], None, T),
-                                                    ([1, 2], [[1], [2]], RX)])
+    @pytest.mark.parametrize("pars1, pars2, gate", [([[], []], None, T), ([1, 2], [[1], [2]], RX)])
     def test_broadcast_correct_queue_for_gate_unitary(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
@@ -119,7 +146,9 @@ class TestConstructorBroadcast:
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
 
-    @pytest.mark.parametrize("parameters, unitary, target, dev, observable", PARAMS_UNITARY_TARGET_DEVICE_OBS)
+    @pytest.mark.parametrize(
+        "parameters, unitary, target, dev, observable", PARAMS_UNITARY_TARGET_DEVICE_OBS
+    )
     def test_broadcast_prepares_state(self, parameters, unitary, target, dev, observable):
         """Tests the state produced by different unitaries."""
 
@@ -131,13 +160,12 @@ class TestConstructorBroadcast:
         res = circuit()
         assert np.allclose(res, target)
 
-    @pytest.mark.parametrize("parameters, n_wires", [(np.array([0]), 2),
-                                                     ([0, 0, 0, 1, 0], 3)])
+    @pytest.mark.parametrize("parameters, n_wires", [(np.array([0]), 2), ([0, 0, 0, 1, 0], 3)])
     def test_broadcast_throws_error_when_mismatch_params_wires(self, parameters, n_wires):
         """Tests that error thrown when 'parameters' does not contain one set
            of parameters for each wire."""
 
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -150,11 +178,11 @@ class TestConstructorBroadcast:
     def test_broadcast_exception_wires_not_valid(self):
         """Tests that an exception is raised if 'wires' argument has invalid format."""
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
-            Broadcast(block=RX, wires='a', parameters=[[1], [2]])
+            Broadcast(block=RX, wires="a", parameters=[[1], [2]])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="wires must be a positive"):
@@ -163,7 +191,7 @@ class TestConstructorBroadcast:
     def test_broadcast_exception_parameters_not_valid(self):
         """Tests that an exception is raised if 'parameters' argument has invalid format."""
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -175,6 +203,7 @@ class TestConstructorBroadcast:
 
 
 # Templates for TestConstructorBroadcastDouble
+
 
 @template
 def ConstantTemplateDouble(wires):
@@ -198,13 +227,13 @@ def KwargTemplateDouble(par, wires, a=True):
 class TestConstructorBroadcastDouble:
     """ Tests the broadcast_double template constructor."""
 
-    EVEN_GATE_PARAMETERS = [(CRX, [[0.1], [0.2]]),
-                            (CRot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
-                            (CNOT, [[], []])]
+    EVEN_GATE_PARAMETERS = [
+        (CRX, [[0.1], [0.2]]),
+        (CRot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
+        (CNOT, [[], []]),
+    ]
 
-    ODD_GATE_PARAMETERS = [(CRX, [[0.1]]),
-                           (CRot, [[0.3, 0.2, 0.1]]),
-                           (CNOT, [[]])]
+    ODD_GATE_PARAMETERS = [(CRX, [[0.1]]), (CRot, [[0.3, 0.2, 0.1]]), (CNOT, [[]])]
 
     @pytest.mark.parametrize("unitary, parameters", EVEN_GATE_PARAMETERS)
     def test_broadcast_double_correct_queue_for_gate_unitary(self, unitary, parameters):
@@ -236,9 +265,13 @@ class TestConstructorBroadcastDouble:
         for gate in rec.queue:
             assert isinstance(gate, unitary)
 
-    @pytest.mark.parametrize("unitary, gates, parameters", [(ParametrizedTemplateDouble, [CRX, RY],
-                                                             [[0.1, 1], [0.2, 1]]),
-                                                            (ConstantTemplateDouble, [T, CNOT], [[], []])])
+    @pytest.mark.parametrize(
+        "unitary, gates, parameters",
+        [
+            (ParametrizedTemplateDouble, [CRX, RY], [[0.1, 1], [0.2, 1]]),
+            (ConstantTemplateDouble, [T, CNOT], [[], []]),
+        ],
+    )
     def test_broadcast_double_correct_queue_for_template_unitary(self, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'block' is a template."""
 
@@ -249,14 +282,20 @@ class TestConstructorBroadcastDouble:
             i = idx % 2
             assert isinstance(gate, gates[i])
 
-    @pytest.mark.parametrize("kwarg, target_queue", [(True, [T, CRX, T, CRX]),
-                                                     (False, [CRX, CRX])])
-    def test_broadcast_double_correct_queue_for_template_unitary_with_keyword(self, kwarg, target_queue):
+    @pytest.mark.parametrize("kwarg, target_queue", [(True, [T, CRX, T, CRX]), (False, [CRX, CRX])])
+    def test_broadcast_double_correct_queue_for_template_unitary_with_keyword(
+        self, kwarg, target_queue
+    ):
         """Tests that correct gate queue is created when 'block' is a template that uses a keyword."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast_double(block=KwargTemplateDouble, wires=range(4), even=True,
-                             parameters=[[1], [2]], kwargs={'a': kwarg})
+            broadcast_double(
+                block=KwargTemplateDouble,
+                wires=range(4),
+                even=True,
+                parameters=[[1], [2]],
+                kwargs={"a": kwarg},
+            )
 
         for gate, target_gate in zip(rec.queue, target_queue):
             assert isinstance(gate, target_gate)
@@ -281,9 +320,12 @@ class TestConstructorBroadcastDouble:
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
 
-    @pytest.mark.parametrize("pars1, pars2, gate", [([[], []], None, CNOT),
-                                                    ([1, 2], [[1], [2]], CRX)])
-    def test_broadcast_double_correct_queue_for_different_parameter_formats(self, pars1, pars2, gate):
+    @pytest.mark.parametrize(
+        "pars1, pars2, gate", [([[], []], None, CNOT), ([1, 2], [[1], [2]], CRX)]
+    )
+    def test_broadcast_double_correct_queue_for_different_parameter_formats(
+        self, pars1, pars2, gate
+    ):
         """Tests that specific parameter formats have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
@@ -295,9 +337,14 @@ class TestConstructorBroadcastDouble:
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
 
-    @pytest.mark.parametrize("parameters, unitary, even, target", [([pi/2, pi/2], CRX, True, [-1, 0, -1, 0]),
-                                                                   ([pi / 2], CRX, False, [-1, -1, 0, -1]),
-                                                                   (None, CNOT, True, [-1, 1, -1, 1])])
+    @pytest.mark.parametrize(
+        "parameters, unitary, even, target",
+        [
+            ([pi / 2, pi / 2], CRX, True, [-1, 0, -1, 0]),
+            ([pi / 2], CRX, False, [-1, -1, 0, -1]),
+            (None, CNOT, True, [-1, 1, -1, 1]),
+        ],
+    )
     def test_broadcast_double_prepares_state(self, parameters, unitary, even, target):
         """Tests the state produced by different unitaries for a qubit device."""
 
@@ -311,11 +358,14 @@ class TestConstructorBroadcastDouble:
         res = circuit()
         assert np.allclose(res, target)
 
-    @pytest.mark.parametrize("parameters, unitary, even, target", [([[pi/4, 0.0], [pi/4, 0.0]], Beamsplitter, True,
-                                                                    [0, 2, 0, 2]),
-                                                                   #([[pi / 4, 0.0]], Beamsplitter, False,
-                                                                   # [0, 0, 2, 0])
-                                                                   ])
+    @pytest.mark.parametrize(
+        "parameters, unitary, even, target",
+        [
+            ([[pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, True, [0, 2, 0, 2]),
+            # ([[pi / 4, 0.0]], Beamsplitter, False,
+            # [0, 0, 2, 0])
+        ],
+    )
     def test_broadcast_double_prepares_state_cv(self, parameters, unitary, even, target):
         """Tests the state produced by different unitaries for a cv device."""
 
@@ -329,14 +379,17 @@ class TestConstructorBroadcastDouble:
         res = circuit()
         assert np.allclose(res, target)
 
-    @pytest.mark.parametrize("parameters, even, n_wires", [([0, 0], True, 6),
-                                                           ([0, 0, 0], False, 6),
-                                                           ([0, 0, 0], True, 4)])
-    def test_broadcast_double_throws_error_when_mismatch_params_wires(self, parameters, even, n_wires):
+    @pytest.mark.parametrize(
+        "parameters, even, n_wires",
+        [([0, 0], True, 6), ([0, 0, 0], False, 6), ([0, 0, 0], True, 4)],
+    )
+    def test_broadcast_double_throws_error_when_mismatch_params_wires(
+        self, parameters, even, n_wires
+    ):
         """Tests that error thrown when 'parameters' does not contain one set
            of parameters for each wire."""
 
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -349,11 +402,11 @@ class TestConstructorBroadcastDouble:
     def test_broadcast_double_exception_wires_not_valid(self):
         """Tests that an exception is raised if 'wires' argument has invalid format."""
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
-            broadcast_double(block=RX, wires='a', parameters=[[1], [2]])
+            broadcast_double(block=RX, wires="a", parameters=[[1], [2]])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="wires must be a positive"):
@@ -362,7 +415,7 @@ class TestConstructorBroadcastDouble:
     def test_broadcast_double_exception_parameters_not_valid(self):
         """Tests that an exception is raised if 'parameters' argument has invalid format."""
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():

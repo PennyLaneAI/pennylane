@@ -36,59 +36,63 @@ New tests are added as follows:
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates import (Interferometer,
-                                 CVNeuralNetLayers,
-                                 StronglyEntanglingLayers,
-                                 RandomLayers,
-                                 AmplitudeEmbedding,
-                                 BasisEmbedding,
-                                 AngleEmbedding,
-                                 SqueezingEmbedding,
-                                 DisplacementEmbedding,
-                                 BasisStatePreparation,
-                                 MottonenStatePreparation,
-                                 QAOAEmbedding,
-                                 Broadcast,
-                                 broadcast_double)
-from pennylane.init import (strong_ent_layers_uniform,
-                            strong_ent_layers_normal,
-                            random_layers_uniform,
-                            random_layers_normal,
-                            cvqnn_layers_a_normal,
-                            cvqnn_layers_a_uniform,
-                            cvqnn_layers_kappa_normal,
-                            cvqnn_layers_kappa_uniform,
-                            cvqnn_layers_phi_a_normal,
-                            cvqnn_layers_phi_a_uniform,
-                            cvqnn_layers_phi_normal,
-                            cvqnn_layers_phi_r_normal,
-                            cvqnn_layers_phi_r_uniform,
-                            cvqnn_layers_phi_uniform,
-                            cvqnn_layers_r_normal,
-                            cvqnn_layers_r_uniform,
-                            cvqnn_layers_theta_normal,
-                            cvqnn_layers_theta_uniform,
-                            cvqnn_layers_varphi_normal,
-                            cvqnn_layers_varphi_uniform,
-                            interferometer_phi_normal,
-                            interferometer_phi_uniform,
-                            interferometer_varphi_normal,
-                            interferometer_varphi_uniform,
-                            interferometer_theta_normal,
-                            interferometer_theta_uniform,
-                            qaoa_embedding_uniform,
-                            qaoa_embedding_normal)
+from pennylane.templates import (
+    Interferometer,
+    CVNeuralNetLayers,
+    StronglyEntanglingLayers,
+    RandomLayers,
+    AmplitudeEmbedding,
+    BasisEmbedding,
+    AngleEmbedding,
+    SqueezingEmbedding,
+    DisplacementEmbedding,
+    BasisStatePreparation,
+    MottonenStatePreparation,
+    QAOAEmbedding,
+    Broadcast,
+    broadcast_double,
+)
+from pennylane.init import (
+    strong_ent_layers_uniform,
+    strong_ent_layers_normal,
+    random_layers_uniform,
+    random_layers_normal,
+    cvqnn_layers_a_normal,
+    cvqnn_layers_a_uniform,
+    cvqnn_layers_kappa_normal,
+    cvqnn_layers_kappa_uniform,
+    cvqnn_layers_phi_a_normal,
+    cvqnn_layers_phi_a_uniform,
+    cvqnn_layers_phi_normal,
+    cvqnn_layers_phi_r_normal,
+    cvqnn_layers_phi_r_uniform,
+    cvqnn_layers_phi_uniform,
+    cvqnn_layers_r_normal,
+    cvqnn_layers_r_uniform,
+    cvqnn_layers_theta_normal,
+    cvqnn_layers_theta_uniform,
+    cvqnn_layers_varphi_normal,
+    cvqnn_layers_varphi_uniform,
+    interferometer_phi_normal,
+    interferometer_phi_uniform,
+    interferometer_varphi_normal,
+    interferometer_varphi_uniform,
+    interferometer_theta_normal,
+    interferometer_theta_uniform,
+    qaoa_embedding_uniform,
+    qaoa_embedding_normal,
+)
 
 #######################################
 # Interfaces
 
-INTERFACES = [('numpy', np.array)]
+INTERFACES = [("numpy", np.array)]
 
 try:
     import torch
     from torch.autograd import Variable as TorchVariable
 
-    INTERFACES.append(('torch', torch.tensor))
+    INTERFACES.append(("torch", torch.tensor))
 except ImportError as e:
     pass
 
@@ -102,7 +106,7 @@ try:
         TFVariable = tfe.Variable
     else:
         from tensorflow import Variable as TFVariable
-    INTERFACES.append(('tf', TFVariable))
+    INTERFACES.append(("tf", TFVariable))
 
 except ImportError as e:
     pass
@@ -111,57 +115,51 @@ except ImportError as e:
 # Parameters shared between test classes
 
 # qubit templates, dict of differentiable arguments, dict of non-differentiable arguments
-QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
-                               {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
-                               {}),
-                              (RandomLayers,
-                               {'weights': [[0.56, 5.14], [2.21, 4.27]]},
-                               {}),
-                              (AngleEmbedding,
-                               {'features': [1., 2.]},
-                               {}),
-                              (QAOAEmbedding,
-                               {'features': [1., 2.],
-                                'weights': [[0.1, 0.1, 0.1]]},
-                               {}),
-                              (Broadcast,
-                               {'parameters': [[1.], [1.]]},
-                               {'block': qml.RX,
-                                'wires': [0, 1]}),
-                              (broadcast_double,
-                               {'parameters': [[1., 1., 1.]]},
-                               {'block': qml.CRot,
-                                'even': True,
-                                'wires': [0, 1]})
-                              ]
+QUBIT_DIFFABLE_NONDIFFABLE = [
+    (
+        StronglyEntanglingLayers,
+        {
+            "weights": [
+                [[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]],
+            ]
+        },
+        {},
+    ),
+    (RandomLayers, {"weights": [[0.56, 5.14], [2.21, 4.27]]}, {}),
+    (AngleEmbedding, {"features": [1.0, 2.0]}, {}),
+    (QAOAEmbedding, {"features": [1.0, 2.0], "weights": [[0.1, 0.1, 0.1]]}, {}),
+    (Broadcast, {"parameters": [[1.0], [1.0]]}, {"block": qml.RX, "wires": [0, 1]}),
+    (
+        broadcast_double,
+        {"parameters": [[1.0, 1.0, 1.0]]},
+        {"block": qml.CRot, "even": True, "wires": [0, 1]},
+    ),
+]
 
 # cv templates, dict of differentiable arguments, dict of non-differentiable arguments
-CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
-                            {'features': [1., 2.]},
-                            {}),
-                           (SqueezingEmbedding,
-                            {'features': [1., 2.]},
-                            {}),
-                           (CVNeuralNetLayers,
-                            {'theta_1': [[2.31], [1.22]],
-                             'phi_1': [[3.47], [2.01]],
-                             'varphi_1': [[0.93, 1.58], [5.07, 4.82]],
-                             'r': [[0.21, 0.12], [-0.09, 0.04]],
-                             'phi_r': [[4.76, 6.08], [6.09, 6.22]],
-                             'theta_2': [[4.83], [1.70]],
-                             'phi_2': [[4.74], [5.39]],
-                             'varphi_2': [[0.88, 0.62], [1.09, 3.02]],
-                             'a': [[-0.01, -0.05], [0.08, -0.19]],
-                             'phi_a': [[1.89, 3.59], [1.49, 3.71]],
-                             'k': [[0.09, 0.03], [-0.14, 0.04]]},
-                            {}),
-                           (Interferometer,
-                            {'theta': [2.31],
-                             'phi': [3.49],
-                             'varphi': [0.98, 1.54]},
-                            {})
-                           ]
+CV_DIFFABLE_NONDIFFABLE = [
+    (DisplacementEmbedding, {"features": [1.0, 2.0]}, {}),
+    (SqueezingEmbedding, {"features": [1.0, 2.0]}, {}),
+    (
+        CVNeuralNetLayers,
+        {
+            "theta_1": [[2.31], [1.22]],
+            "phi_1": [[3.47], [2.01]],
+            "varphi_1": [[0.93, 1.58], [5.07, 4.82]],
+            "r": [[0.21, 0.12], [-0.09, 0.04]],
+            "phi_r": [[4.76, 6.08], [6.09, 6.22]],
+            "theta_2": [[4.83], [1.70]],
+            "phi_2": [[4.74], [5.39]],
+            "varphi_2": [[0.88, 0.62], [1.09, 3.02]],
+            "a": [[-0.01, -0.05], [0.08, -0.19]],
+            "phi_a": [[1.89, 3.59], [1.49, 3.71]],
+            "k": [[0.09, 0.03], [-0.14, 0.04]],
+        },
+        {},
+    ),
+    (Interferometer, {"theta": [2.31], "phi": [3.49], "varphi": [0.98, 1.54]}, {}),
+]
 
 #########################################
 # Circuits shared by test classes
@@ -173,7 +171,9 @@ def qnode_qubit_args(dev, interface, template1, template2, n_args1):
     # Signature to pass diffable arguments as single positional arg, but keep track of input names
     # in the 'keys_diffable' arguments
     @qml.qnode(dev, interface=interface)
-    def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
+    def circuit(
+        *diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None
+    ):
         # Separate differentiable arguments
         diffable1 = diffable[:n_args1]
         diffable2 = diffable[n_args1:]
@@ -187,8 +187,8 @@ def qnode_qubit_args(dev, interface, template1, template2, n_args1):
         dict2.update(nondiffable2)
 
         # Add number of wires
-        dict1['wires'] = range(2)
-        dict2['wires'] = range(2)
+        dict1["wires"] = range(2)
+        dict2["wires"] = range(2)
 
         # Actual circuit
         qml.PauliX(wires=0)
@@ -206,7 +206,9 @@ def qnode_cv_args(dev, interface, template1, template2, n_args1):
     # Signature juggling to pass diffable as single positional arg, but keep track of input names
 
     @qml.qnode(dev, interface=interface)
-    def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
+    def circuit(
+        *diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None
+    ):
         # Separate differentiable arguments
         diffable1 = diffable[:n_args1]
         diffable2 = diffable[n_args1:]
@@ -220,14 +222,14 @@ def qnode_cv_args(dev, interface, template1, template2, n_args1):
         dict2.update(nondiffable2)
 
         # Add number of wires
-        dict1['wires'] = range(2)
-        dict2['wires'] = range(2)
+        dict1["wires"] = range(2)
+        dict2["wires"] = range(2)
 
         # Actual circuit
-        qml.Displacement(1., 1., wires=0)
+        qml.Displacement(1.0, 1.0, wires=0)
         template1(**dict1)
         template2(**dict2)
-        qml.Displacement(1., 1., wires=1)
+        qml.Displacement(1.0, 1.0, wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
     return circuit
@@ -239,8 +241,8 @@ def qnode_qubit_kwargs(dev, interface, template1, template2):
     @qml.qnode(dev, interface=interface)
     def circuit(nondiffable1=None, nondiffable2=None):
         # Add wires
-        nondiffable1['wires'] = range(2)
-        nondiffable2['wires'] = range(2)
+        nondiffable1["wires"] = range(2)
+        nondiffable2["wires"] = range(2)
 
         # Circuit
         qml.PauliX(wires=0)
@@ -258,14 +260,14 @@ def qnode_cv_kwargs(dev, interface, template1, template2):
     @qml.qnode(dev, interface=interface)
     def circuit(nondiffable1=None, nondiffable2=None):
         # Add wires
-        nondiffable1['wires'] = range(2)
-        nondiffable2['wires'] = range(2)
+        nondiffable1["wires"] = range(2)
+        nondiffable2["wires"] = range(2)
 
         # Circuit
-        qml.Displacement(1., 1., wires=0)
+        qml.Displacement(1.0, 1.0, wires=0)
         template1(**nondiffable1)
         template2(**nondiffable2)
-        qml.Displacement(1., 1., wires=1)
+        qml.Displacement(1.0, 1.0, wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
     return circuit
@@ -280,9 +282,17 @@ class TestIntegrationCircuit:
     @pytest.mark.parametrize("template1, diffable1, nondiffable1", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_qubit_diffable(self, template1, diffable1, nondiffable1,
-                                        template2, diffable2, nondiffable2,
-                                        interface, to_var):
+    def test_integration_qubit_diffable(
+        self,
+        template1,
+        diffable1,
+        nondiffable1,
+        template2,
+        diffable2,
+        nondiffable2,
+        interface,
+        to_var,
+    ):
         """Tests integration of qubit templates passing differentiable arguments as positional arguments to qnode."""
 
         # Extract keys and items
@@ -298,19 +308,33 @@ class TestIntegrationCircuit:
         diffable = [to_var(i) for i in diffable]
 
         # Generate qnode
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         circuit = qnode_qubit_args(dev, interface, template1, template2, len(diffable1))
 
         # Check that execution does not throw error
-        circuit(*diffable, keys_diffable1=keys_diffable1, keys_diffable2=keys_diffable2,
-                nondiffable1=nondiffable1, nondiffable2=nondiffable2)
+        circuit(
+            *diffable,
+            keys_diffable1=keys_diffable1,
+            keys_diffable2=keys_diffable2,
+            nondiffable1=nondiffable1,
+            nondiffable2=nondiffable2
+        )
 
     @pytest.mark.parametrize("template1, diffable1, nondiffable1", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("template2, diffable2, nondiffable2", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_cv_diffable(self, template1, diffable1, nondiffable1,
-                                     template2, diffable2, nondiffable2,
-                                     interface, to_var, gaussian_device_2_wires):
+    def test_integration_cv_diffable(
+        self,
+        template1,
+        diffable1,
+        nondiffable1,
+        template2,
+        diffable2,
+        nondiffable2,
+        interface,
+        to_var,
+        gaussian_device_2_wires,
+    ):
         """Tests integration of cv templates passing differentiable arguments as positional arguments to qnode."""
 
         # Extract keys and items
@@ -326,18 +350,33 @@ class TestIntegrationCircuit:
         diffable = [to_var(i) for i in diffable]
 
         # Generate qnode
-        circuit = qnode_cv_args(gaussian_device_2_wires, interface, template1, template2, len(diffable1))
+        circuit = qnode_cv_args(
+            gaussian_device_2_wires, interface, template1, template2, len(diffable1)
+        )
 
         # Check that execution does not throw error
-        circuit(*diffable, keys_diffable1=keys_diffable1, keys_diffable2=keys_diffable2,
-                nondiffable1=nondiffable1, nondiffable2=nondiffable2)
+        circuit(
+            *diffable,
+            keys_diffable1=keys_diffable1,
+            keys_diffable2=keys_diffable2,
+            nondiffable1=nondiffable1,
+            nondiffable2=nondiffable2
+        )
 
     @pytest.mark.parametrize("template1, diffable1, nondiffable1", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_qubit_nondiffable(self, template1, diffable1, nondiffable1,
-                                           template2, diffable2, nondiffable2,
-                                           interface, to_var):
+    def test_integration_qubit_nondiffable(
+        self,
+        template1,
+        diffable1,
+        nondiffable1,
+        template2,
+        diffable2,
+        nondiffable2,
+        interface,
+        to_var,
+    ):
         """Tests integration of qubit templates passing differentiable arguments as keyword arguments to qnode."""
 
         # Change type of differentiable arguments
@@ -350,7 +389,7 @@ class TestIntegrationCircuit:
         nondiffable2.update(diffable2)
 
         # Generate qnode
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         circuit = qnode_qubit_kwargs(dev, interface, template1, template2)
 
         # Check that execution does not throw error
@@ -359,9 +398,18 @@ class TestIntegrationCircuit:
     @pytest.mark.parametrize("template1, diffable1, nondiffable1", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("template2, diffable2, nondiffable2", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_cv_nondiffable(self, template1, diffable1, nondiffable1,
-                                        template2, diffable2, nondiffable2,
-                                        interface, to_var, gaussian_device_2_wires):
+    def test_integration_cv_nondiffable(
+        self,
+        template1,
+        diffable1,
+        nondiffable1,
+        template2,
+        diffable2,
+        nondiffable2,
+        interface,
+        to_var,
+        gaussian_device_2_wires,
+    ):
         """Tests integration of cv templates passing differentiable arguments as keyword arguments to qnode."""
 
         # Change type of differentiable arguments
@@ -383,21 +431,13 @@ class TestIntegrationCircuit:
 class TestIntegrationCircuitSpecialCases:
     """Tests the integration of templates with special requirements into circuits. """
 
-    FIRST_QUBIT_DIFFABLE_NONDIFFABLE = [(AmplitudeEmbedding,
-                                         {'features': [1 / 2, 1 / 2, 1 / 2, 1 / 2]},
-                                         {'normalize': False}),
-                                        (AmplitudeEmbedding,
-                                         {'features': [1 / 2, 1 / 2, 1 / 2, 1 / 2]},
-                                         {'normalize': True}),
-                                        (BasisEmbedding,
-                                         {},
-                                         {'features': [1, 0]}),
-                                        (MottonenStatePreparation,
-                                         {'state_vector': np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])},
-                                         {}),
-                                        (BasisStatePreparation,
-                                         {},
-                                         {'basis_state': np.array([1, 0])})]
+    FIRST_QUBIT_DIFFABLE_NONDIFFABLE = [
+        (AmplitudeEmbedding, {"features": [1 / 2, 1 / 2, 1 / 2, 1 / 2]}, {"normalize": False},),
+        (AmplitudeEmbedding, {"features": [1 / 2, 1 / 2, 1 / 2, 1 / 2]}, {"normalize": True},),
+        (BasisEmbedding, {}, {"features": [1, 0]}),
+        (MottonenStatePreparation, {"state_vector": np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])}, {},),
+        (BasisStatePreparation, {}, {"basis_state": np.array([1, 0])}),
+    ]
 
     def qnode_first_qubit_args(self, dev, interface, template1, template2, n_args1):
         """Qubit qnode factory passing differentiable parameters as positional arguments, and using
@@ -405,7 +445,13 @@ class TestIntegrationCircuitSpecialCases:
 
         # Signature juggling to pass diffable as single positional arg, but keep track of input names
         @qml.qnode(dev, interface=interface)
-        def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
+        def circuit(
+            *diffable,
+            keys_diffable1=None,
+            keys_diffable2=None,
+            nondiffable1=None,
+            nondiffable2=None
+        ):
             # Separate differentiable arguments
             diffable1 = diffable[:n_args1]
             diffable2 = diffable[n_args1:]
@@ -419,8 +465,8 @@ class TestIntegrationCircuitSpecialCases:
             dict2.update(nondiffable2)
 
             # Add number of wires
-            dict1['wires'] = range(2)
-            dict2['wires'] = range(2)
+            dict1["wires"] = range(2)
+            dict2["wires"] = range(2)
 
             # Actual circuit
             template1(**dict1)
@@ -436,8 +482,8 @@ class TestIntegrationCircuitSpecialCases:
         @qml.qnode(dev, interface=interface)
         def circuit(nondiffable1=None, nondiffable2=None):
             # Add wires
-            nondiffable1['wires'] = range(2)
-            nondiffable2['wires'] = range(2)
+            nondiffable1["wires"] = range(2)
+            nondiffable2["wires"] = range(2)
 
             # Circuit
             template1(**nondiffable1)
@@ -450,9 +496,17 @@ class TestIntegrationCircuitSpecialCases:
     @pytest.mark.parametrize("template1, diffable1, nondiffable1", FIRST_QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_qubit_diffable(self, template1, diffable1, nondiffable1,
-                                        template2, diffable2, nondiffable2,
-                                        interface, to_var):
+    def test_integration_qubit_diffable(
+        self,
+        template1,
+        diffable1,
+        nondiffable1,
+        template2,
+        diffable2,
+        nondiffable2,
+        interface,
+        to_var,
+    ):
         """Tests integration of qubit templates passing differentiable arguments as positional arguments to qnode."""
 
         # Extract keys and items
@@ -468,19 +522,32 @@ class TestIntegrationCircuitSpecialCases:
         diffable = [to_var(i) for i in diffable]
 
         # Generate qnode
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         circuit = self.qnode_first_qubit_args(dev, interface, template1, template2, len(diffable1))
 
         # Check that execution does not throw error
-        circuit(*diffable, keys_diffable1=keys_diffable1, keys_diffable2=keys_diffable2,
-                nondiffable1=nondiffable1, nondiffable2=nondiffable2)
+        circuit(
+            *diffable,
+            keys_diffable1=keys_diffable1,
+            keys_diffable2=keys_diffable2,
+            nondiffable1=nondiffable1,
+            nondiffable2=nondiffable2
+        )
 
     @pytest.mark.parametrize("template1, diffable1, nondiffable1", FIRST_QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_qubit_nondiffable(self, template1, diffable1, nondiffable1,
-                                           template2, diffable2, nondiffable2,
-                                           interface, to_var):
+    def test_integration_qubit_nondiffable(
+        self,
+        template1,
+        diffable1,
+        nondiffable1,
+        template2,
+        diffable2,
+        nondiffable2,
+        interface,
+        to_var,
+    ):
         """Tests integration of qubit templates passing differentiable arguments as keyword arguments to qnode."""
 
         # Change type of differentiable arguments
@@ -493,7 +560,7 @@ class TestIntegrationCircuitSpecialCases:
         nondiffable2.update(diffable2)
 
         # Generate qnode
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
         circuit = self.qnode_first_qubit_kwargs(dev, interface, template1, template2)
 
         # Check that execution does not throw error
@@ -510,82 +577,168 @@ class TestInitializationIntegration:
         as many features as number of wires."""
         return [i for i in range(n)]
 
-    QUBIT_INIT = [(StronglyEntanglingLayers,
-                   {'weights': strong_ent_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
-                  (StronglyEntanglingLayers,
-                   {'weights': strong_ent_layers_uniform(n_layers=2, n_wires=3), 'wires': range(3)}),
-                  (StronglyEntanglingLayers,
-                   {'weights': strong_ent_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
-                  (StronglyEntanglingLayers,
-                   {'weights': strong_ent_layers_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
-                  (RandomLayers,
-                   {'weights': random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), 'wires': range(2)}),
-                  (RandomLayers,
-                   {'weights': random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), 'wires': range(2)}),
-                  (RandomLayers,
-                   {'weights': random_layers_normal(n_layers=2, n_rots=2, n_wires=3), 'wires': range(3)}),
-                  (RandomLayers,
-                   {'weights': random_layers_normal(n_layers=2, n_rots=2, n_wires=3), 'wires': range(3)}),
-                  (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
-                  (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
-                  (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
-                  (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
-                  (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=1), 'wires': range(1)}),
-                  (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)})
-                  ]
+    QUBIT_INIT = [
+        (
+            StronglyEntanglingLayers,
+            {"weights": strong_ent_layers_uniform(n_layers=3, n_wires=2), "wires": range(2),},
+        ),
+        (
+            StronglyEntanglingLayers,
+            {"weights": strong_ent_layers_uniform(n_layers=2, n_wires=3), "wires": range(3),},
+        ),
+        (
+            StronglyEntanglingLayers,
+            {"weights": strong_ent_layers_normal(n_layers=3, n_wires=2), "wires": range(2),},
+        ),
+        (
+            StronglyEntanglingLayers,
+            {"weights": strong_ent_layers_normal(n_layers=2, n_wires=3), "wires": range(3),},
+        ),
+        (
+            RandomLayers,
+            {"weights": random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), "wires": range(2),},
+        ),
+        (
+            RandomLayers,
+            {"weights": random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), "wires": range(2),},
+        ),
+        (
+            RandomLayers,
+            {"weights": random_layers_normal(n_layers=2, n_rots=2, n_wires=3), "wires": range(3),},
+        ),
+        (
+            RandomLayers,
+            {"weights": random_layers_normal(n_layers=2, n_rots=2, n_wires=3), "wires": range(3),},
+        ),
+        (
+            QAOAEmbedding,
+            {
+                "features": [1.0, 2.0],
+                "weights": qaoa_embedding_uniform(n_layers=3, n_wires=2),
+                "wires": range(2),
+            },
+        ),
+        (
+            QAOAEmbedding,
+            {
+                "features": [1.0, 2.0],
+                "weights": qaoa_embedding_uniform(n_layers=3, n_wires=2),
+                "wires": range(2),
+            },
+        ),
+        (
+            QAOAEmbedding,
+            {
+                "features": [1.0, 2.0],
+                "weights": qaoa_embedding_normal(n_layers=2, n_wires=3),
+                "wires": range(3),
+            },
+        ),
+        (
+            QAOAEmbedding,
+            {
+                "features": [1.0, 2.0],
+                "weights": qaoa_embedding_normal(n_layers=2, n_wires=3),
+                "wires": range(3),
+            },
+        ),
+        (
+            QAOAEmbedding,
+            {
+                "features": [1.0, 2.0],
+                "weights": qaoa_embedding_normal(n_layers=2, n_wires=1),
+                "wires": range(1),
+            },
+        ),
+        (
+            QAOAEmbedding,
+            {
+                "features": [1.0, 2.0],
+                "weights": qaoa_embedding_uniform(n_layers=2, n_wires=1),
+                "wires": range(1),
+            },
+        ),
+    ]
 
-    CV_INIT = [(CVNeuralNetLayers,
-                {'theta_1': cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
-                 'phi_1': cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
-                 'varphi_1': cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
-                 'r': cvqnn_layers_r_uniform(n_layers=3, n_wires=2),
-                 'phi_r': cvqnn_layers_phi_r_uniform(n_layers=3, n_wires=2),
-                 'theta_2': cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
-                 'phi_2': cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
-                 'varphi_2': cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
-                 'a': cvqnn_layers_a_uniform(n_layers=3, n_wires=2),
-                 'phi_a': cvqnn_layers_phi_a_uniform(n_layers=3, n_wires=2),
-                 'k': cvqnn_layers_kappa_uniform(n_layers=3, n_wires=2),
-                 'wires': range(2)}),
-               (CVNeuralNetLayers,
-                {'theta_1': cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
-                 'phi_1': cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
-                 'varphi_1': cvqnn_layers_varphi_normal(n_layers=3, n_wires=2),
-                 'r': cvqnn_layers_r_normal(n_layers=3, n_wires=2),
-                 'phi_r': cvqnn_layers_phi_r_normal(n_layers=3, n_wires=2),
-                 'theta_2': cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
-                 'phi_2': cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
-                 'varphi_2': cvqnn_layers_varphi_normal(n_layers=3, n_wires=2),
-                 'a': cvqnn_layers_a_normal(n_layers=3, n_wires=2),
-                 'phi_a': cvqnn_layers_phi_a_normal(n_layers=3, n_wires=2),
-                 'k': cvqnn_layers_kappa_normal(n_layers=3, n_wires=2),
-                 'wires': range(2)}),
-               (Interferometer,
-                {'phi': interferometer_phi_uniform(n_wires=2), 'varphi': interferometer_varphi_uniform(n_wires=2),
-                 'theta': interferometer_theta_uniform(n_wires=2), 'wires': range(2)}),
-               (Interferometer,
-                {'phi': interferometer_phi_normal(n_wires=2), 'varphi': interferometer_varphi_normal(n_wires=2),
-                 'theta': interferometer_theta_normal(n_wires=2), 'wires': range(2)}),
-               (Interferometer,
-                {'phi': interferometer_phi_uniform(n_wires=3), 'varphi': interferometer_varphi_uniform(n_wires=3),
-                 'theta': interferometer_theta_uniform(n_wires=3), 'wires': range(3)}),
-               (Interferometer,
-                {'phi': interferometer_phi_normal(n_wires=3), 'varphi': interferometer_varphi_normal(n_wires=3),
-                 'theta': interferometer_theta_normal(n_wires=3), 'wires': range(3)})
-               ]
+    CV_INIT = [
+        (
+            CVNeuralNetLayers,
+            {
+                "theta_1": cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
+                "phi_1": cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
+                "varphi_1": cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
+                "r": cvqnn_layers_r_uniform(n_layers=3, n_wires=2),
+                "phi_r": cvqnn_layers_phi_r_uniform(n_layers=3, n_wires=2),
+                "theta_2": cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
+                "phi_2": cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
+                "varphi_2": cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
+                "a": cvqnn_layers_a_uniform(n_layers=3, n_wires=2),
+                "phi_a": cvqnn_layers_phi_a_uniform(n_layers=3, n_wires=2),
+                "k": cvqnn_layers_kappa_uniform(n_layers=3, n_wires=2),
+                "wires": range(2),
+            },
+        ),
+        (
+            CVNeuralNetLayers,
+            {
+                "theta_1": cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
+                "phi_1": cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
+                "varphi_1": cvqnn_layers_varphi_normal(n_layers=3, n_wires=2),
+                "r": cvqnn_layers_r_normal(n_layers=3, n_wires=2),
+                "phi_r": cvqnn_layers_phi_r_normal(n_layers=3, n_wires=2),
+                "theta_2": cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
+                "phi_2": cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
+                "varphi_2": cvqnn_layers_varphi_normal(n_layers=3, n_wires=2),
+                "a": cvqnn_layers_a_normal(n_layers=3, n_wires=2),
+                "phi_a": cvqnn_layers_phi_a_normal(n_layers=3, n_wires=2),
+                "k": cvqnn_layers_kappa_normal(n_layers=3, n_wires=2),
+                "wires": range(2),
+            },
+        ),
+        (
+            Interferometer,
+            {
+                "phi": interferometer_phi_uniform(n_wires=2),
+                "varphi": interferometer_varphi_uniform(n_wires=2),
+                "theta": interferometer_theta_uniform(n_wires=2),
+                "wires": range(2),
+            },
+        ),
+        (
+            Interferometer,
+            {
+                "phi": interferometer_phi_normal(n_wires=2),
+                "varphi": interferometer_varphi_normal(n_wires=2),
+                "theta": interferometer_theta_normal(n_wires=2),
+                "wires": range(2),
+            },
+        ),
+        (
+            Interferometer,
+            {
+                "phi": interferometer_phi_uniform(n_wires=3),
+                "varphi": interferometer_varphi_uniform(n_wires=3),
+                "theta": interferometer_theta_uniform(n_wires=3),
+                "wires": range(3),
+            },
+        ),
+        (
+            Interferometer,
+            {
+                "phi": interferometer_phi_normal(n_wires=3),
+                "varphi": interferometer_varphi_normal(n_wires=3),
+                "theta": interferometer_theta_normal(n_wires=3),
+                "wires": range(3),
+            },
+        ),
+    ]
 
     @pytest.mark.parametrize("template, dict", QUBIT_INIT)
     def test_integration_qubit_init(self, template, dict):
         """Checks parameter initialization compatible with qubit templates."""
 
-        n_wires = len(dict['wires'])
-        dev = qml.device('default.qubit', wires=n_wires)
+        n_wires = len(dict["wires"])
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -599,7 +752,7 @@ class TestInitializationIntegration:
     def test_integration_qubit_init(self, template, dict, gaussian_dummy):
         """Checks parameter initialization compatible with qubit templates."""
 
-        n_wires = len(dict['wires'])
+        n_wires = len(dict["wires"])
         dev = gaussian_dummy(n_wires)
 
         @qml.qnode(dev)
@@ -614,73 +767,77 @@ class TestInitializationIntegration:
 class TestGradientIntegration:
     """Tests that gradients of circuits with templates can be computed."""
 
-    QUBIT_DIFFABLE_NONDIFFABLE_ARGNUM = [(StronglyEntanglingLayers,
-                                          {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                                       [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
-                                          {'wires': range(2)},
-                                          [0]),
-                                         (RandomLayers,
-                                          {'weights': [[0.56, 5.14], [2.21, 4.27]]},
-                                          {'wires': range(2)},
-                                          [0]),
-                                         (AngleEmbedding,
-                                          {'features': [1., 2.]},
-                                          {'wires': range(2)},
-                                          [0]),
-                                         (QAOAEmbedding,
-                                          {'features': [1., 2.], 'weights': [[0.1, 0.1, 0.1]]},
-                                          {'wires': range(2)},
-                                          [0]),
-                                         (QAOAEmbedding,
-                                          {'features': [1., 2.], 'weights': [[0.1, 0.1, 0.1]]},
-                                          {'wires': range(2)},
-                                          [1]),
-                                         (Broadcast,
-                                          {'parameters': [[1.], [1.]]},
-                                          {'block': qml.RX,
-                                           'wires': [0, 1]},
-                                          [0]),
-                                         (broadcast_double,
-                                          {'parameters': [[1., 1., 1.]]},
-                                          {'block': qml.CRot,
-                                           'even': True,
-                                           'wires': [0, 1]},
-                                          [0])
-                                         ]
+    QUBIT_DIFFABLE_NONDIFFABLE_ARGNUM = [
+        (
+            StronglyEntanglingLayers,
+            {
+                "weights": [
+                    [[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                    [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]],
+                ]
+            },
+            {"wires": range(2)},
+            [0],
+        ),
+        (RandomLayers, {"weights": [[0.56, 5.14], [2.21, 4.27]]}, {"wires": range(2)}, [0],),
+        (AngleEmbedding, {"features": [1.0, 2.0]}, {"wires": range(2)}, [0]),
+        (
+            QAOAEmbedding,
+            {"features": [1.0, 2.0], "weights": [[0.1, 0.1, 0.1]]},
+            {"wires": range(2)},
+            [0],
+        ),
+        (
+            QAOAEmbedding,
+            {"features": [1.0, 2.0], "weights": [[0.1, 0.1, 0.1]]},
+            {"wires": range(2)},
+            [1],
+        ),
+        (Broadcast, {"parameters": [[1.0], [1.0]]}, {"block": qml.RX, "wires": [0, 1]}, [0],),
+        (
+            broadcast_double,
+            {"parameters": [[1.0, 1.0, 1.0]]},
+            {"block": qml.CRot, "even": True, "wires": [0, 1]},
+            [0],
+        ),
+    ]
 
-    CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,
-                                       {'features': [1., 2.]},
-                                       {'wires': range(2)},
-                                       [0]),
-                                      (SqueezingEmbedding,
-                                       {'features': [1., 2.]},
-                                       {'wires': range(2)},
-                                       [0]),
-                                      (CVNeuralNetLayers,
-                                       {'theta_1': [[2.31], [1.22]],
-                                        'phi_1': [[3.47], [2.01]],
-                                        'varphi_1': [[0.93, 1.58], [5.07, 4.82]],
-                                        'r': [[0.21, 0.12], [-0.09, 0.04]],
-                                        'phi_r': [[4.76, 6.08], [6.09, 6.22]],
-                                        'theta_2': [[4.83], [1.70]],
-                                        'phi_2': [[4.74], [5.39]],
-                                        'varphi_2': [[0.88, 0.62], [1.09, 3.02]],
-                                        'a': [[-0.01, -0.05], [0.08, -0.19]],
-                                        'phi_a': [[1.89, 3.59], [1.49, 3.71]],
-                                        'k': [[0.09, 0.03], [-0.14, 0.04]]},
-                                       {'wires': range(2)},
-                                       list(range(11))),
-                                      (Interferometer,
-                                       {'theta': [2.31],
-                                        'phi': [3.49],
-                                        'varphi': [0.98, 1.54]},
-                                       {'wires': range(2)},
-                                       [0, 1, 2])
-                                      ]
+    CV_DIFFABLE_NONDIFFABLE_ARGNUM = [
+        (DisplacementEmbedding, {"features": [1.0, 2.0]}, {"wires": range(2)}, [0]),
+        (SqueezingEmbedding, {"features": [1.0, 2.0]}, {"wires": range(2)}, [0]),
+        (
+            CVNeuralNetLayers,
+            {
+                "theta_1": [[2.31], [1.22]],
+                "phi_1": [[3.47], [2.01]],
+                "varphi_1": [[0.93, 1.58], [5.07, 4.82]],
+                "r": [[0.21, 0.12], [-0.09, 0.04]],
+                "phi_r": [[4.76, 6.08], [6.09, 6.22]],
+                "theta_2": [[4.83], [1.70]],
+                "phi_2": [[4.74], [5.39]],
+                "varphi_2": [[0.88, 0.62], [1.09, 3.02]],
+                "a": [[-0.01, -0.05], [0.08, -0.19]],
+                "phi_a": [[1.89, 3.59], [1.49, 3.71]],
+                "k": [[0.09, 0.03], [-0.14, 0.04]],
+            },
+            {"wires": range(2)},
+            list(range(11)),
+        ),
+        (
+            Interferometer,
+            {"theta": [2.31], "phi": [3.49], "varphi": [0.98, 1.54]},
+            {"wires": range(2)},
+            [0, 1, 2],
+        ),
+    ]
 
-    @pytest.mark.parametrize("template, diffable, nondiffable, argnum", QUBIT_DIFFABLE_NONDIFFABLE_ARGNUM)
+    @pytest.mark.parametrize(
+        "template, diffable, nondiffable, argnum", QUBIT_DIFFABLE_NONDIFFABLE_ARGNUM
+    )
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_qubit_grad(self, template, diffable, nondiffable, argnum, interface, to_var):
+    def test_integration_qubit_grad(
+        self, template, diffable, nondiffable, argnum, interface, to_var
+    ):
         """Tests that gradient calculations of qubit templates execute without error."""
 
         # Extract keys and items
@@ -691,8 +848,8 @@ class TestGradientIntegration:
         diffable = [to_var(i) for i in diffable]
 
         # Make qnode
-        n_wires = len(nondiffable['wires'])
-        dev = qml.device('default.qubit', wires=n_wires)
+        n_wires = len(nondiffable["wires"])
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev, interface=interface)
         def circuit(*diffable):
@@ -708,12 +865,12 @@ class TestGradientIntegration:
             return qml.expval(qml.Identity(0))
 
         # Check gradients in numpy interface
-        if interface == 'numpy':
+        if interface == "numpy":
             grd = qml.grad(circuit, argnum=argnum)
             grd(*diffable)
 
         # Check gradients in torch interface
-        if interface == 'torch':
+        if interface == "torch":
             for a in argnum:
                 diffable[a] = TorchVariable(diffable[a], requires_grad=True)
             res = circuit(*diffable)
@@ -722,15 +879,19 @@ class TestGradientIntegration:
                 diffable[a].grad.numpy()
 
         # Check gradients in tf interface
-        if interface == 'tf':
+        if interface == "tf":
             grad_inpts = [diffable[a] for a in argnum]
             with tf.GradientTape() as tape:
                 loss = circuit(*diffable)
                 tape.gradient(loss, grad_inpts)
 
-    @pytest.mark.parametrize("template, diffable, nondiffable, argnum", CV_DIFFABLE_NONDIFFABLE_ARGNUM)
+    @pytest.mark.parametrize(
+        "template, diffable, nondiffable, argnum", CV_DIFFABLE_NONDIFFABLE_ARGNUM
+    )
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_cv_grad(self, template, diffable, nondiffable, argnum, interface, to_var, gaussian_dummy):
+    def test_integration_cv_grad(
+        self, template, diffable, nondiffable, argnum, interface, to_var, gaussian_dummy
+    ):
         """Tests that gradient calculations of cv templates execute without error."""
 
         # Extract keys and items
@@ -741,7 +902,7 @@ class TestGradientIntegration:
         diffable = [to_var(i) for i in diffable]
 
         # Make qnode
-        n_wires = len(nondiffable['wires'])
+        n_wires = len(nondiffable["wires"])
         dev = gaussian_dummy(n_wires)
 
         @qml.qnode(dev, interface=interface)
@@ -758,12 +919,12 @@ class TestGradientIntegration:
             return qml.expval(qml.Identity(0))
 
         # Check gradients in numpy interface
-        if interface == 'numpy':
+        if interface == "numpy":
             grd = qml.grad(circuit, argnum=argnum)
             grd(*diffable)
 
         # Check gradients in torch interface
-        if interface == 'torch':
+        if interface == "torch":
             for a in argnum:
                 diffable[a] = TorchVariable(diffable[a], requires_grad=True)
             res = circuit(*diffable)
@@ -772,7 +933,7 @@ class TestGradientIntegration:
                 diffable[a].grad.numpy()
 
         # Check gradients in tf interface
-        if interface == 'tf':
+        if interface == "tf":
             grad_inpts = [diffable[a] for a in argnum]
             with tf.GradientTape() as tape:
                 loss = circuit(*diffable)
