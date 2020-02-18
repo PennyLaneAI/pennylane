@@ -77,11 +77,6 @@ def _get_shape(inpt):
     Returns:
         tuple: shape of ``inpt``
     """
-<<<<<<< HEAD
-
-    inpt = np.array(inpt)
-=======
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
     if isinstance(inpt, (float, int, complex)):
         shape = ()
