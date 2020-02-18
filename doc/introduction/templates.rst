@@ -188,7 +188,6 @@ of other templates.
 
         <div style='clear:both'></div>
 
-
 .. _intro_ref_temp_constr:
 
 Template constructors
@@ -207,8 +206,6 @@ lower case.
 .. raw:: html
 
         <div style='clear:both'></div>
-
-
 
 .. _intro_ref_temp_init:
 
