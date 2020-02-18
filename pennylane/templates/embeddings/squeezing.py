@@ -24,6 +24,7 @@ from pennylane.templates.utils import (
     _check_wires,
     _check_is_in_options,
     _get_shape,
+    _check_type
 )
 
 @template
