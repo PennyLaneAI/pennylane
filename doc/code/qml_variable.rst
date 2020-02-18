@@ -6,7 +6,7 @@ qml.variable
 .. warning::
 
     Unless you are a PennyLane or plugin developer, you likely do not need
-    to use the ``Variable`` class.
+    to use the ``VariableRef`` class.
 
 .. automodapi:: pennylane.variable
     :no-heading:

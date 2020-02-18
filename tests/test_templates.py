@@ -22,12 +22,14 @@ New tests are added as follows:
 * When adding a new interface, try to import it and extend the fixture ``interfaces``. Also add the interface
   gradient computation to the TestGradientIntegration tests.
 
-* When adding a new template, extend the fixtures ``QUBIT_PARAMS_KWARGS`` or ``CV_PARAMS_KWARGS``
-  by a *list* of arguments to the
-  template. Note: Even if the template takes only one argument, it has to be wrapped in a list (i.e. [weights]).
+* When adding a new template, extend the fixtures ``QUBIT_DIFFABLE_NONDIFFABLE`` or ``CV_DIFFABLE_NONDIFFABLE``
+  by a tuple of three entries: an instance of the template, a *dict* of arguments that are differentiable,
+  as well as a dict of arguments that are not differentiable. The tests will pass the differentiable arguments
+  as positional AND keyword arguments to a qnode, while the nondifferentiable arguments are only passed as
+  keyword arguments.
 
-* When adding a new parameter initialization function, extend the fixtures ``qubit_func`` or
-``cv_func``.
+* When adding a new parameter initialization function, extend the fixtures ``QUBIT_INIT`` or
+``CV_INIT``.
 
 """
 # pylint: disable=protected-access,cell-var-from-loop
@@ -51,8 +53,28 @@ from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
                             random_layers_normal,
-                            cvqnn_layers_all,
-                            interferometer_all,
+                            cvqnn_layers_a_normal,
+                            cvqnn_layers_a_uniform,
+                            cvqnn_layers_kappa_normal,
+                            cvqnn_layers_kappa_uniform,
+                            cvqnn_layers_phi_a_normal,
+                            cvqnn_layers_phi_a_uniform,
+                            cvqnn_layers_phi_normal,
+                            cvqnn_layers_phi_r_normal,
+                            cvqnn_layers_phi_r_uniform,
+                            cvqnn_layers_phi_uniform,
+                            cvqnn_layers_r_normal,
+                            cvqnn_layers_r_uniform,
+                            cvqnn_layers_theta_normal,
+                            cvqnn_layers_theta_uniform,
+                            cvqnn_layers_varphi_normal,
+                            cvqnn_layers_varphi_uniform,
+                            interferometer_phi_normal,
+                            interferometer_phi_uniform,
+                            interferometer_varphi_normal,
+                            interferometer_varphi_uniform,
+                            interferometer_theta_normal,
+                            interferometer_theta_uniform,
                             qaoa_embedding_uniform,
                             qaoa_embedding_normal)
 
@@ -87,118 +109,157 @@ except ImportError as e:
 #########################################
 # Parameters shared between test classes
 
-# qubit templates, constant args and kwargs for 2 wires
-QUBIT_PARAMS_KWARGS = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                                    [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]], {}),
-                       (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {}),
-                       (AngleEmbedding, [[1., 2.]], {}),
-                       (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {}),
-                       (Broadcast, [], {'block': qml.RX, 'wires': [0, 1], 'parameters': [[1.], [1.]]})
-                       ]
+# qubit templates, dict of differentiable inputs, dict of non-differentiable inputs
+QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
+                               {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                                            [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
+                               {}),
+                              (RandomLayers,
+                               {'weights': [[0.56, 5.14], [2.21, 4.27]]},
+                               {}),
+                              (AngleEmbedding,
+                               {'features': [1., 2.]},
+                               {}),
+                              (QAOAEmbedding,
+                               {'features': [1., 2.],
+                                'weights': [[0.1, 0.1, 0.1]]},
+                               {}),
+                              (Broadcast,
+                               {'parameters': [[1.], [1.]]},
+                               {'block': qml.RX,
+                                'wires': [0, 1]})
+                              ]
 
-# cv templates, constant args and kwargs for 2 wires
-CV_PARAMS_KWARGS = [(DisplacementEmbedding, [[1., 2.]], {}),
-                    (SqueezingEmbedding, [[1., 2.]], {}),
-                    (CVNeuralNetLayers, [[[2.31], [1.22]],
-                                         [[3.47], [2.01]],
-                                         [[0.93, 1.58], [5.07, 4.82]],
-                                         [[0.21, 0.12], [-0.09, 0.04]],
-                                         [[4.76, 6.08], [6.09, 6.22]],
-                                         [[4.83], [1.70]],
-                                         [[4.74], [5.39]],
-                                         [[0.88, 0.62], [1.09, 3.02]],
-                                         [[-0.01, -0.05], [0.08, -0.19]],
-                                         [[1.89, 3.59], [1.49, 3.71]],
-                                         [[0.09, 0.03], [-0.14, 0.04]]
-                                         ], {}),
-                    (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {})
-                    ]
+# cv templates, dict of differentiable inputs, dict of non-differentiable inputs
+CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
+                            {'features': [1., 2.]},
+                            {}),
+                           (SqueezingEmbedding,
+                            {'features': [1., 2.]},
+                            {}),
+                           (CVNeuralNetLayers,
+                            {'theta_1': [[2.31], [1.22]],
+                             'phi_1': [[3.47], [2.01]],
+                             'varphi_1': [[0.93, 1.58], [5.07, 4.82]],
+                             'r': [[0.21, 0.12], [-0.09, 0.04]],
+                             'phi_r': [[4.76, 6.08], [6.09, 6.22]],
+                             'theta_2': [[4.83], [1.70]],
+                             'phi_2': [[4.74], [5.39]],
+                             'varphi_2': [[0.88, 0.62], [1.09, 3.02]],
+                             'a': [[-0.01, -0.05], [0.08, -0.19]],
+                             'phi_a': [[1.89, 3.59], [1.49, 3.71]],
+                             'k': [[0.09, 0.03], [-0.14, 0.04]]},
+                            {}),
+                           (Interferometer,
+                            {'theta': [2.31],
+                             'phi': [3.49],
+                             'varphi': [0.98, 1.54]},
+                            {})
+                           ]
 
 
 #########################################
 # Circuits shared by test classes
 
 
-def qnode_qubit_args(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
-    """QNode for qubit integration circuit using positional arguments"""
-    hyperp1['wires'] = range(2)
-    hyperp2['wires'] = range(2)
+def qnode_qubit_args(dev, interface, template1, template2, n_args1):
+    """Qubit qnode factory passing differentiable parameters as positional arguments"""
 
-    @qml.qnode(dev, interface=intrfc)
-    def circuit(*inp):
-        # Split inputs again
-        inp1 = inp[:n]
-        inp2 = inp[n:]
-        # Circuit
+    # Signature to pass diffable arguments as single positional arg, but keep track of input names
+    # in the 'keys_diffable' arguments
+    @qml.qnode(dev, interface=interface)
+    def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
+        # Separate differentiable arguments
+        diffable1 = diffable[:n_args1]
+        diffable2 = diffable[n_args1:]
+
+        # Turn diffables back into dictionaries
+        dict1 = {key: item for key, item in zip(keys_diffable1, diffable1)}
+        dict2 = {key: item for key, item in zip(keys_diffable2, diffable2)}
+
+        # Merge with nondiffables
+        dict1.update(nondiffable1)
+        dict2.update(nondiffable2)
+
+        # Add number of wires
+        dict1['wires'] = range(2)
+        dict2['wires'] = range(2)
+
+        # Actual circuit
         qml.PauliX(wires=0)
-        templ1(*inp1, **hyperp1)
-        templ2(*inp2, **hyperp2)
+        template1(**dict1)
+        template2(**dict2)
         qml.PauliX(wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
 
     return circuit
 
 
-def qnode_qubit_kwargs(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
-    """QNode for qubit integration circuit using keyword arguments"""
-    hyperp1['wires'] = range(2)
-    hyperp2['wires'] = range(2)
+def qnode_cv_args(dev, interface, template1, template2, n_args1):
+    """CV qnode factory passing differentiable parameters as positional arguments"""
 
-    @qml.qnode(dev, interface=intrfc)
-    def circuit(**inp):
-        # Split inputs again
-        ks = [int(k) for k in inp.keys()]
-        vs = inp.values()
-        inp = [x for _, x in sorted(zip(ks, vs))]
-        inp1 = inp[:n]
-        inp2 = inp[n:]
-        # Circuit
-        qml.PauliX(wires=0)
-        templ1(*inp1, **hyperp1)
-        templ2(*inp2, **hyperp2)
-        qml.PauliX(wires=1)
-        return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+    # Signature juggling to pass diffable as single positional arg, but keep track of input names
 
-    return circuit
+    @qml.qnode(dev, interface=interface)
+    def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
+        # Separate differentiable arguments
+        diffable1 = diffable[:n_args1]
+        diffable2 = diffable[n_args1:]
 
+        # Turn diffables back into dictionaries
+        dict1 = {key: item for key, item in zip(keys_diffable1, diffable1)}
+        dict2 = {key: item for key, item in zip(keys_diffable2, diffable2)}
 
-def qnode_cv_args(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
-    """QNode for CV integration circuit using positional arguments"""
-    hyperp1['wires'] = range(2)
-    hyperp2['wires'] = range(2)
+        # Merge with nondiffables
+        dict1.update(nondiffable1)
+        dict2.update(nondiffable2)
 
-    @qml.qnode(dev, interface=intrfc)
-    def circuit(*inp):
-        # Split inputs again
-        inp1 = inp[:n]
-        inp2 = inp[n:]
-        # Circuit
+        # Add number of wires
+        dict1['wires'] = range(2)
+        dict2['wires'] = range(2)
+
+        # Actual circuit
         qml.Displacement(1., 1., wires=0)
-        templ1(*inp1, **hyperp1)
-        templ2(*inp2, **hyperp2)
+        template1(**dict1)
+        template2(**dict2)
         qml.Displacement(1., 1., wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
     return circuit
 
 
-def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
-    """QNode for CV integration circuit using keyword arguments"""
-    hyperp1['wires'] = range(2)
-    hyperp2['wires'] = range(2)
+def qnode_qubit_kwargs(dev, interface, template1, template2):
+    """Qubit qnode factory passing differentiable parameters as keyword arguments"""
 
-    @qml.qnode(dev, interface=intrfc)
-    def circuit(**inp_):
-        # Split inputs again
-        ks = [int(k) for k in inp_.keys()]
-        vs = inp_.values()
-        inp = [x for _, x in sorted(zip(ks, vs))]
-        inp1 = inp[:n]
-        inp2 = inp[n:]
+    @qml.qnode(dev, interface=interface)
+    def circuit(nondiffable1=None, nondiffable2=None):
+        # Add wires
+        nondiffable1['wires'] = range(2)
+        nondiffable2['wires'] = range(2)
+
+        # Circuit
+        qml.PauliX(wires=0)
+        template1(**nondiffable1)
+        template2(**nondiffable2)
+        qml.PauliX(wires=1)
+        return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
+    return circuit
+
+
+def qnode_cv_kwargs(dev, interface, template1, template2):
+    """CV qnode factory passing differentiable parameters as keyword arguments"""
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(nondiffable1=None, nondiffable2=None):
+        # Add wires
+        nondiffable1['wires'] = range(2)
+        nondiffable2['wires'] = range(2)
+
         # Circuit
         qml.Displacement(1., 1., wires=0)
-        templ1(*inp1, **hyperp1)
-        templ2(*inp2, **hyperp2)
+        template1(**nondiffable1)
+        template2(**nondiffable2)
         qml.Displacement(1., 1., wires=1)
         return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 
@@ -211,142 +272,227 @@ def qnode_cv_kwargs(dev, intrfc, templ1, templ2, n, hyperp1, hyperp2):
 class TestIntegrationCircuit:
     """Tests the integration of templates into circuits using different interfaces. """
 
-    @pytest.mark.parametrize("template1, inpts1, hyperp1", QUBIT_PARAMS_KWARGS)
-    @pytest.mark.parametrize("template2, inpts2, hyperp2", QUBIT_PARAMS_KWARGS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_qubit_args(self, template1, inpts1, template2, inpts2,
-                                    intrfc, to_var, hyperp1, hyperp2):
-        """Checks integration of qubit templates passing parameters as positional arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
-        inpts = [to_var(i) for i in inpts]
+    @pytest.mark.parametrize("template1, diffable1, nondiffable1", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_qubit_diffable(self, template1, diffable1, nondiffable1,
+                                        template2, diffable2, nondiffable2,
+                                        interface, to_var):
+        """Tests integration of qubit templates passing differentiable arguments as positional arguments to qnode."""
+
+        # Extract keys and items
+        keys_diffable1 = [*diffable1]
+        diffable1 = list(diffable1.values())
+        keys_diffable2 = [*diffable2]
+        diffable2 = list(diffable2.values())
+
+        # Combine diffable inputs to allow passing with *
+        diffable = diffable1 + diffable2
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Generate qnode
         dev = qml.device('default.qubit', wires=2)
-        circuit = qnode_qubit_args(dev, intrfc, template1, template2, len(inpts1), hyperp1, hyperp2)
-        # Check that execution does not throw error
-        circuit(*inpts)
+        circuit = qnode_qubit_args(dev, interface, template1, template2, len(diffable1))
 
-    @pytest.mark.parametrize("template1, inpts1, hyperp1", QUBIT_PARAMS_KWARGS)
-    @pytest.mark.parametrize("template2, inpts2, hyperp2", QUBIT_PARAMS_KWARGS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_qubit_kwargs(self, template1, inpts1, template2, inpts2,
-                                      intrfc, to_var, hyperp1, hyperp2):
-        """Checks integration of qubit templates passing parameters as keyword arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        # Check that execution does not throw error
+        circuit(*diffable, keys_diffable1=keys_diffable1, keys_diffable2=keys_diffable2,
+                nondiffable1=nondiffable1, nondiffable2=nondiffable2)
+
+    @pytest.mark.parametrize("template1, diffable1, nondiffable1", CV_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("template2, diffable2, nondiffable2", CV_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_cv_diffable(self, template1, diffable1, nondiffable1,
+                                     template2, diffable2, nondiffable2,
+                                     interface, to_var, gaussian_device_2_wires):
+        """Tests integration of cv templates passing differentiable arguments as positional arguments to qnode."""
+
+        # Extract keys and items
+        keys_diffable1 = [*diffable1]
+        diffable1 = list(diffable1.values())
+        keys_diffable2 = [*diffable2]
+        diffable2 = list(diffable2.values())
+
+        # Combine diffable inputs to allow passing with *
+        diffable = diffable1 + diffable2
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Generate qnode
+        circuit = qnode_cv_args(gaussian_device_2_wires, interface, template1, template2, len(diffable1))
+
+        # Check that execution does not throw error
+        circuit(*diffable, keys_diffable1=keys_diffable1, keys_diffable2=keys_diffable2,
+                nondiffable1=nondiffable1, nondiffable2=nondiffable2)
+
+    @pytest.mark.parametrize("template1, diffable1, nondiffable1", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_qubit_nondiffable(self, template1, diffable1, nondiffable1,
+                                           template2, diffable2, nondiffable2,
+                                           interface, to_var):
+        """Tests integration of qubit templates passing differentiable arguments as keyword arguments to qnode."""
+
+        # Change type of differentiable arguments
+        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        diffable1 = {k: np.array(v) for k, v in diffable1.items()}
+        diffable2 = {k: np.array(v) for k, v in diffable2.items()}
+
+        # Merge differentiable and non-differentiable arguments
+        nondiffable1.update(diffable1)
+        nondiffable2.update(diffable2)
+
+        # Generate qnode
         dev = qml.device('default.qubit', wires=2)
-        circuit = qnode_qubit_kwargs(dev, intrfc, template1, template2, len(inpts1), hyperp1, hyperp2)
-        # Check that execution does not throw error
-        circuit(**inpts)
+        circuit = qnode_qubit_kwargs(dev, interface, template1, template2)
 
-    @pytest.mark.parametrize("template1, inpts1, hyperp1", CV_PARAMS_KWARGS)
-    @pytest.mark.parametrize("template2, inpts2, hyperp2", CV_PARAMS_KWARGS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_cv_args(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2,
-                                 intrfc, to_var, hyperp1, hyperp2):
-        """Checks integration of continuous-variable templates passing parameters as positional arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with *
-        inpts = [to_var(i) for i in inpts]
-        dev = gaussian_device_2_wires
-        circuit = qnode_cv_args(dev, intrfc, template1, template2, len(inpts1), hyperp1, hyperp2)
         # Check that execution does not throw error
-        circuit(*inpts)
+        circuit(nondiffable1=nondiffable1, nondiffable2=nondiffable2)
 
-    @pytest.mark.parametrize("template1, inpts1, hyperp1", CV_PARAMS_KWARGS)
-    @pytest.mark.parametrize("template2, inpts2, hyperp2", CV_PARAMS_KWARGS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_cv_kwargs(self, gaussian_device_2_wires, template1, inpts1, template2, inpts2,
-                                   intrfc, to_var, hyperp1, hyperp2):
-        """Checks integration of continuous-variable templates passing parameters as keyword arguments."""
-        inpts = inpts1 + inpts2  # Combine inputs to allow passing with **
-        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
-        dev = gaussian_device_2_wires
-        circuit = qnode_cv_kwargs(dev, intrfc, template1, template2, len(inpts1), hyperp1, hyperp2)
+    @pytest.mark.parametrize("template1, diffable1, nondiffable1", CV_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("template2, diffable2, nondiffable2", CV_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_cv_nondiffable(self, template1, diffable1, nondiffable1,
+                                        template2, diffable2, nondiffable2,
+                                        interface, to_var, gaussian_device_2_wires):
+        """Tests integration of cv templates passing differentiable arguments as keyword arguments to qnode."""
+
+        # Change type of differentiable arguments
+        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        diffable1 = {k: np.array(v) for k, v in diffable1.items()}
+        diffable2 = {k: np.array(v) for k, v in diffable2.items()}
+
+        # Merge differentiable and non-differentiable arguments
+        nondiffable1.update(diffable1)
+        nondiffable2.update(diffable2)
+
+        # Generate qnode
+        circuit = qnode_cv_kwargs(gaussian_device_2_wires, interface, template1, template2)
+
         # Check that execution does not throw error
-        circuit(**inpts)
+        circuit(nondiffable1=nondiffable1, nondiffable2=nondiffable2)
 
 
 class TestIntegrationCircuitSpecialCases:
     """Tests the integration of templates with special requirements into circuits. """
 
-    REQUIRE_FIRST_USING_ARGS = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': False}),
-                                (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': True}),
-                                (MottonenStatePreparation, [np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])], {})]
+    FIRST_QUBIT_DIFFABLE_NONDIFFABLE = [(AmplitudeEmbedding,
+                                         {'features': [1 / 2, 1 / 2, 1 / 2, 1 / 2]},
+                                         {'normalize': False}),
+                                        (AmplitudeEmbedding,
+                                         {'features': [1 / 2, 1 / 2, 1 / 2, 1 / 2]},
+                                         {'normalize': True}),
+                                        (BasisEmbedding,
+                                         {},
+                                         {'features': [1, 0]}),
+                                        (MottonenStatePreparation,
+                                         {'state_vector': np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])},
+                                         {}),
+                                        (BasisStatePreparation,
+                                         {},
+                                         {'basis_state': np.array([1, 0])})]
 
-    REQUIRE_FIRST_USING_KWARGS = [(AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': False}),
-                                  (AmplitudeEmbedding, [[1 / 2, 1 / 2, 1 / 2, 1 / 2]], {'normalize': True}),
-                                  (BasisEmbedding, [[1, 0]], {}),
-                                  (MottonenStatePreparation, [np.array([1 / 2, 1 / 2, 1 / 2, 1 / 2])], {}),
-                                  (BasisStatePreparation, [np.array([1, 0])], {})]
+    def qnode_first_qubit_args(self, dev, interface, template1, template2, n_args1):
+        """Qubit qnode factory passing differentiable parameters as positional arguments, and using
+        the template on"""
 
-    def qnode_first_op_args(self, dev, intrfc, templ1, templ2, hyperparameters1, hyperparameters2, n):
-        """QNode for qubit integration circuit without gates before the first template,
-         and using positional arguments"""
-        hyperparameters1['wires'] = range(2)
-        hyperparameters2['wires'] = range(2)
+        # Signature juggling to pass diffable as single positional arg, but keep track of input names
+        @qml.qnode(dev, interface=interface)
+        def circuit(*diffable, keys_diffable1=None, keys_diffable2=None, nondiffable1=None, nondiffable2=None):
+            # Separate differentiable arguments
+            diffable1 = diffable[:n_args1]
+            diffable2 = diffable[n_args1:]
 
-        @qml.qnode(dev, interface=intrfc)
-        def circuit(*inp):
-            # Split inputs again
-            inp1 = inp[:n]
-            inp2 = inp[n:]
-            # Circuit
-            templ1(*inp1, **hyperparameters1)
-            templ2(*inp2, **hyperparameters2)
+            # Turn diffables back into dictionaries
+            dict1 = {key: item for key, item in zip(keys_diffable1, diffable1)}
+            dict2 = {key: item for key, item in zip(keys_diffable2, diffable2)}
+
+            # Merge with nondiffables
+            dict1.update(nondiffable1)
+            dict2.update(nondiffable2)
+
+            # Add number of wires
+            dict1['wires'] = range(2)
+            dict2['wires'] = range(2)
+
+            # Actual circuit
+            template1(**dict1)
+            template2(**dict2)
             qml.PauliX(wires=1)
             return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
 
         return circuit
 
-    def qnode_first_op_kwargs(self, dev, intrfc, templ1, templ2, hyperparameters1, hyperparameters2, n):
-        """QNode for qubit integration circuit without gates before the first template,
-         and using keyword arguments"""
-        hyperparameters1['wires'] = range(2)
-        hyperparameters2['wires'] = range(2)
+    def qnode_first_qubit_kwargs(self, dev, interface, template1, template2):
+        """Qubit qnode factory passing differentiable parameters as keyword arguments"""
 
-        @qml.qnode(dev, interface=intrfc)
-        def circuit(**inp):
-            # Split inputs again
-            ks = [int(k) for k in inp.keys()]
-            vs = inp.values()
-            inp = [x for _, x in sorted(zip(ks, vs))]
-            inp1 = inp[:n]
-            inp2 = inp[n:]
+        @qml.qnode(dev, interface=interface)
+        def circuit(nondiffable1=None, nondiffable2=None):
+            # Add wires
+            nondiffable1['wires'] = range(2)
+            nondiffable2['wires'] = range(2)
+
             # Circuit
-            templ1(*inp1, **hyperparameters1)
-            templ2(*inp2, **hyperparameters2)
+            template1(**nondiffable1)
+            template2(**nondiffable2)
             qml.PauliX(wires=1)
             return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
 
         return circuit
 
-    @pytest.mark.parametrize("first_tmpl, first_inpts, first_hyperparams", REQUIRE_FIRST_USING_ARGS)
-    @pytest.mark.parametrize("template, inpts, hyperparams", QUBIT_PARAMS_KWARGS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_first_template_args(self, first_tmpl, first_inpts, first_hyperparams,
-                                             template, inpts, hyperparams, intrfc, to_var):
-        """Checks integration of templates that must be the first operation in the circuit while
-        using positional arguments."""
-        inpts = first_inpts + inpts  # Combine inputs to allow passing with *
-        inpts = [to_var(inp) for inp in inpts]
-        dev = qml.device('default.qubit', wires=2)
-        circuit = self.qnode_first_op_args(dev, intrfc, first_tmpl, template, first_hyperparams, hyperparams,
-                                           len(first_inpts))
-        # Check that execution does not throw error
-        circuit(*inpts)
+    @pytest.mark.parametrize("template1, diffable1, nondiffable1", FIRST_QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_qubit_diffable(self, template1, diffable1, nondiffable1,
+                                        template2, diffable2, nondiffable2,
+                                        interface, to_var):
+        """Tests integration of qubit templates passing differentiable arguments as positional arguments to qnode."""
 
-    @pytest.mark.parametrize("first_tmpl, first_inpts, first_hyperparams", REQUIRE_FIRST_USING_KWARGS)
-    @pytest.mark.parametrize("template, inpts, hyperparams", QUBIT_PARAMS_KWARGS)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_first_template_kwargs(self, first_tmpl, first_inpts, first_hyperparams,
-                                               template, inpts, hyperparams, intrfc, to_var):
-        """Checks integration of templates that must be the first operation in the circuit while
-        using keyword arguments."""
-        inpts = first_inpts + inpts  # Combine inputs to allow passing with *
-        inpts = {str(i): to_var(inp) for i, inp in enumerate(inpts)}
+        # Extract keys and items
+        keys_diffable1 = [*diffable1]
+        diffable1 = list(diffable1.values())
+        keys_diffable2 = [*diffable2]
+        diffable2 = list(diffable2.values())
+
+        # Combine diffable inputs to allow passing with *
+        diffable = diffable1 + diffable2
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Generate qnode
         dev = qml.device('default.qubit', wires=2)
-        circuit = self.qnode_first_op_kwargs(dev, intrfc, first_tmpl, template, first_hyperparams, hyperparams,
-                                             len(first_inpts))
+        circuit = self.qnode_first_qubit_args(dev, interface, template1, template2, len(diffable1))
+
         # Check that execution does not throw error
-        circuit(**inpts)
+        circuit(*diffable, keys_diffable1=keys_diffable1, keys_diffable2=keys_diffable2,
+                nondiffable1=nondiffable1, nondiffable2=nondiffable2)
+
+    @pytest.mark.parametrize("template1, diffable1, nondiffable1", FIRST_QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("template2, diffable2, nondiffable2", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_qubit_nondiffable(self, template1, diffable1, nondiffable1,
+                                           template2, diffable2, nondiffable2,
+                                           interface, to_var):
+        """Tests integration of qubit templates passing differentiable arguments as keyword arguments to qnode."""
+
+        # Change type of differentiable arguments
+        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        diffable1 = {k: np.array(v) for k, v in diffable1.items()}
+        diffable2 = {k: np.array(v) for k, v in diffable2.items()}
+
+        # Merge differentiable and non-differentiable arguments
+        nondiffable1.update(diffable1)
+        nondiffable2.update(diffable2)
+
+        # Generate qnode
+        dev = qml.device('default.qubit', wires=2)
+        circuit = self.qnode_first_qubit_kwargs(dev, interface, template1, template2)
+
+        # Check that execution does not throw error
+        circuit(nondiffable1=nondiffable1, nondiffable2=nondiffable2)
 
 
 class TestInitializationIntegration:
@@ -359,59 +505,101 @@ class TestInitializationIntegration:
         as many features as number of wires."""
         return [i for i in range(n)]
 
-    # qubit templates, template args, template kwargs, intialization functions, init kwargs
-    qubit_func = [(StronglyEntanglingLayers, [], {'wires': range(2)}, strong_ent_layers_uniform, {'n_layers': 3}),
-                  (StronglyEntanglingLayers, [], {'wires': range(2)}, strong_ent_layers_normal, {'n_layers': 3}),
-                  (RandomLayers, [], {'wires': range(2)}, random_layers_uniform, {'n_layers': 3, 'n_rots': 2}),
-                  (RandomLayers, [], {'wires': range(2)}, random_layers_normal, {'n_layers': 3, 'n_rots': 2}),
-                  (QAOAEmbedding, [[1., 2.]], {'wires': range(2)}, qaoa_embedding_uniform, {'n_layers': 3}),
-                  (QAOAEmbedding, [[1., 2.]], {'wires': range(2)}, qaoa_embedding_normal, {'n_layers': 3})]
+    QUBIT_INIT = [(StronglyEntanglingLayers,
+                   {'weights': strong_ent_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (StronglyEntanglingLayers,
+                   {'weights': strong_ent_layers_uniform(n_layers=2, n_wires=3), 'wires': range(3)}),
+                  (StronglyEntanglingLayers,
+                   {'weights': strong_ent_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (StronglyEntanglingLayers,
+                   {'weights': strong_ent_layers_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
+                  (RandomLayers,
+                   {'weights': random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), 'wires': range(2)}),
+                  (RandomLayers,
+                   {'weights': random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), 'wires': range(2)}),
+                  (RandomLayers,
+                   {'weights': random_layers_normal(n_layers=2, n_rots=2, n_wires=3), 'wires': range(3)}),
+                  (RandomLayers,
+                   {'weights': random_layers_normal(n_layers=2, n_rots=2, n_wires=3), 'wires': range(3)}),
+                  (QAOAEmbedding,
+                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (QAOAEmbedding,
+                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (QAOAEmbedding,
+                   {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
+                  (QAOAEmbedding,
+                   {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
+                  (QAOAEmbedding,
+                   {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=1), 'wires': range(1)}),
+                  (QAOAEmbedding,
+                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)})
+                  ]
 
-    # cv templates, template args, template kwargs, intialization functions, init kwargs
-    cv_func = [(CVNeuralNetLayers, [], {'wires': range(2)}, cvqnn_layers_all, {'n_layers': 3}),
-               (Interferometer, [], {'wires': range(2)}, interferometer_all, {})]
+    CV_INIT = [(CVNeuralNetLayers,
+                {'theta_1': cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
+                 'phi_1': cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
+                 'varphi_1': cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
+                 'r': cvqnn_layers_r_uniform(n_layers=3, n_wires=2),
+                 'phi_r': cvqnn_layers_phi_r_uniform(n_layers=3, n_wires=2),
+                 'theta_2': cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
+                 'phi_2': cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
+                 'varphi_2': cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
+                 'a': cvqnn_layers_a_uniform(n_layers=3, n_wires=2),
+                 'phi_a': cvqnn_layers_phi_a_uniform(n_layers=3, n_wires=2),
+                 'k': cvqnn_layers_kappa_uniform(n_layers=3, n_wires=2),
+                 'wires': range(2)}),
+               (CVNeuralNetLayers,
+                {'theta_1': cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
+                 'phi_1': cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
+                 'varphi_1': cvqnn_layers_varphi_normal(n_layers=3, n_wires=2),
+                 'r': cvqnn_layers_r_normal(n_layers=3, n_wires=2),
+                 'phi_r': cvqnn_layers_phi_r_normal(n_layers=3, n_wires=2),
+                 'theta_2': cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
+                 'phi_2': cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
+                 'varphi_2': cvqnn_layers_varphi_normal(n_layers=3, n_wires=2),
+                 'a': cvqnn_layers_a_normal(n_layers=3, n_wires=2),
+                 'phi_a': cvqnn_layers_phi_a_normal(n_layers=3, n_wires=2),
+                 'k': cvqnn_layers_kappa_normal(n_layers=3, n_wires=2),
+                 'wires': range(2)}),
+               (Interferometer,
+                {'phi': interferometer_phi_uniform(n_wires=2), 'varphi': interferometer_varphi_uniform(n_wires=2),
+                 'theta': interferometer_theta_uniform(n_wires=2), 'wires': range(2)}),
+               (Interferometer,
+                {'phi': interferometer_phi_normal(n_wires=2), 'varphi': interferometer_varphi_normal(n_wires=2),
+                 'theta': interferometer_theta_normal(n_wires=2), 'wires': range(2)}),
+               (Interferometer,
+                {'phi': interferometer_phi_uniform(n_wires=3), 'varphi': interferometer_varphi_uniform(n_wires=3),
+                 'theta': interferometer_theta_uniform(n_wires=3), 'wires': range(3)}),
+               (Interferometer,
+                {'phi': interferometer_phi_normal(n_wires=3), 'varphi': interferometer_varphi_normal(n_wires=3),
+                 'theta': interferometer_theta_normal(n_wires=3), 'wires': range(3)})
+               ]
 
-    @pytest.mark.parametrize("template, args, kwargs, init, kwargs_init", qubit_func)
-    def test_integration_qubit_init(self, template, args, kwargs, init, kwargs_init):
+    @pytest.mark.parametrize("template, dict", QUBIT_INIT)
+    def test_integration_qubit_init(self, template, dict):
         """Checks parameter initialization compatible with qubit templates."""
-        wires = kwargs['wires']
-        # choose n_wires for init function same as in template
-        kwargs_init['n_wires'] = len(wires)
-        inp = init(**kwargs_init)
-        if not isinstance(inp, list):
-            # Wrap single outputs for consistent unpacking
-            inp = [inp]
-        # set init function's output as weights
-        for i in inp:
-            args.append(i)  # TODO: This strategy only works when the init function produces the last of the args
-        dev = qml.device('default.qubit', wires=len(wires))
+
+        n_wires = len(dict['wires'])
+        dev = qml.device('default.qubit', wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            template(*args, **kwargs)
+            template(**dict)
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
         circuit()
 
-    @pytest.mark.parametrize("template, args, kwargs, init, kwargs_init", cv_func)
-    def test_integration_cv_init(self, gaussian_dummy, template, args, kwargs, init, kwargs_init):
-        """Checks parameter initialization compatible with continuous-variable templates."""
-        wires = kwargs['wires']
-        # choose n_wires for init function same as in template
-        kwargs_init['n_wires'] = len(wires)
-        inp = init(**kwargs_init)
-        if not isinstance(inp, list):
-            # Wrap single outputs for consistent unpacking
-            inp = [inp]
-        # set init function's output as weights
-        for i in inp:
-            args.append(i)  # TODO: This strategy only works when the init function produces the last of the args
-        dev = gaussian_dummy(len(wires))
+    @pytest.mark.parametrize("template, dict", CV_INIT)
+    def test_integration_qubit_init(self, template, dict, gaussian_dummy):
+        """Checks parameter initialization compatible with qubit templates."""
+
+        n_wires = len(dict['wires'])
+        dev = gaussian_dummy(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            template(*args, **kwargs)
+            template(**dict)
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
@@ -421,98 +609,155 @@ class TestInitializationIntegration:
 class TestGradientIntegration:
     """Tests that gradients of circuits with templates can be computed."""
 
-    # qubit templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
-    QUBIT_GRADIENT_INPUT = [(StronglyEntanglingLayers, [[[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
-                                                         [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]],
-                             {'wires': range(2)}, [0]),
-                            (RandomLayers, [[[0.56, 5.14], [2.21, 4.27]]], {'wires': range(2)}, [0]),
-                            (AngleEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
-                            (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {'wires': range(2)}, [0]),
-                            (QAOAEmbedding, [[1., 2.], [[0.1, 0.1, 0.1]]], {'wires': range(2)}, [1])
-                            ]
+    QUBIT_DIFFABLE_NONDIFFABLE_ARGNUM = [(StronglyEntanglingLayers,
+                                          {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
+                                                       [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
+                                          {'wires': range(2)},
+                                          [0]),
+                                         (RandomLayers,
+                                          {'weights': [[0.56, 5.14], [2.21, 4.27]]},
+                                          {'wires': range(2)},
+                                          [0]),
+                                         (AngleEmbedding,
+                                          {'features': [1., 2.]},
+                                          {'wires': range(2)},
+                                          [0]),
+                                         (QAOAEmbedding,
+                                          {'features': [1., 2.], 'weights': [[0.1, 0.1, 0.1]]},
+                                          {'wires': range(2)},
+                                          [0]),
+                                         (QAOAEmbedding,
+                                          {'features': [1., 2.], 'weights': [[0.1, 0.1, 0.1]]},
+                                          {'wires': range(2)},
+                                          [1])
+                                         ]
 
-    # cv templates, constant inputs, kwargs, and ``argnum`` argument of qml.grad
-    CV_GRADIENT_INPUT = [(DisplacementEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
-                         (SqueezingEmbedding, [[1., 2.]], {'wires': range(2)}, [0]),
-                         (CVNeuralNetLayers, [[[2.31], [1.22]],
-                                              [[3.47], [2.01]],
-                                              [[0.93, 1.58], [5.07, 4.82]],
-                                              [[0.21, 0.12], [-0.09, 0.04]],
-                                              [[4.76, 6.08], [6.09, 6.22]],
-                                              [[4.83], [1.70]],
-                                              [[4.74], [5.39]],
-                                              [[0.88, 0.62], [1.09, 3.02]],
-                                              [[-0.01, -0.05], [0.08, -0.19]],
-                                              [[1.89, 3.59], [1.49, 3.71]],
-                                              [[0.09, 0.03], [-0.14, 0.04]]
-                                              ], {'wires': range(2)}, list(range(11))),
-                         (Interferometer, [[2.31], [3.49], [0.98, 1.54]], {'wires': range(2)}, [0, 1, 2])
-                         ]
+    CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,
+                                       {'features': [1., 2.]},
+                                       {'wires': range(2)},
+                                       [0]),
+                                      (SqueezingEmbedding,
+                                       {'features': [1., 2.]},
+                                       {'wires': range(2)},
+                                       [0]),
+                                      (CVNeuralNetLayers,
+                                       {'theta_1': [[2.31], [1.22]],
+                                        'phi_1': [[3.47], [2.01]],
+                                        'varphi_1': [[0.93, 1.58], [5.07, 4.82]],
+                                        'r': [[0.21, 0.12], [-0.09, 0.04]],
+                                        'phi_r': [[4.76, 6.08], [6.09, 6.22]],
+                                        'theta_2': [[4.83], [1.70]],
+                                        'phi_2': [[4.74], [5.39]],
+                                        'varphi_2': [[0.88, 0.62], [1.09, 3.02]],
+                                        'a': [[-0.01, -0.05], [0.08, -0.19]],
+                                        'phi_a': [[1.89, 3.59], [1.49, 3.71]],
+                                        'k': [[0.09, 0.03], [-0.14, 0.04]]},
+                                       {'wires': range(2)},
+                                       list(range(11))),
+                                      (Interferometer,
+                                       {'theta': [2.31],
+                                        'phi': [3.49],
+                                        'varphi': [0.98, 1.54]},
+                                       {'wires': range(2)},
+                                       [0, 1, 2])
+                                      ]
 
-    @pytest.mark.parametrize("template, inpts, hyperp, argnm", QUBIT_GRADIENT_INPUT)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_qubit_grad(self, template, inpts, hyperp, argnm, intrfc, to_var):
-        """Checks that gradient calculations of qubit templates execute without error."""
-        inpts = [to_var(i) for i in inpts]
-        n_wires = len(hyperp['wires'])
+    @pytest.mark.parametrize("template, diffable, nondiffable, argnum", QUBIT_DIFFABLE_NONDIFFABLE_ARGNUM)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_qubit_grad(self, template, diffable, nondiffable, argnum, interface, to_var):
+        """Tests that gradient calculations of qubit templates execute without error."""
+
+        # Extract keys and items
+        keys_diffable = [*diffable]
+        diffable = list(diffable.values())
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Make qnode
+        n_wires = len(nondiffable['wires'])
         dev = qml.device('default.qubit', wires=n_wires)
 
-        @qml.qnode(dev, interface=intrfc)
-        def circuit(*inp):
-            template(*inp, **hyperp)
+        @qml.qnode(dev, interface=interface)
+        def circuit(*diffable):
+
+            # Turn diffables back into dictionaries
+            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+
+            # Merge diffables and nondiffables
+            dict.update(nondiffable)
+
+            # Circuit
+            template(**dict)
             return qml.expval(qml.Identity(0))
 
         # Check gradients in numpy interface
-        if intrfc == 'numpy':
-            grd = qml.grad(circuit, argnum=argnm)
-            grd(*inpts)
+        if interface == 'numpy':
+            grd = qml.grad(circuit, argnum=argnum)
+            grd(*diffable)
 
         # Check gradients in torch interface
-        if intrfc == 'torch':
-            for a in argnm:
-                inpts[a] = TorchVariable(inpts[a], requires_grad=True)
-            res = circuit(*inpts)
+        if interface == 'torch':
+            for a in argnum:
+                diffable[a] = TorchVariable(diffable[a], requires_grad=True)
+            res = circuit(*diffable)
             res.backward()
-            for a in argnm:
-                inpts[a].grad.numpy()
+            for a in argnum:
+                diffable[a].grad.numpy()
 
         # Check gradients in tf interface
-        if intrfc == 'tf':
-            grad_inpts = [inpts[a] for a in argnm]
+        if interface == 'tf':
+            grad_inpts = [diffable[a] for a in argnum]
             with tf.GradientTape() as tape:
-                loss = circuit(*inpts)
+                loss = circuit(*diffable)
                 tape.gradient(loss, grad_inpts)
 
-    @pytest.mark.parametrize("template, inpts, hyperp, argnm", CV_GRADIENT_INPUT)
-    @pytest.mark.parametrize("intrfc, to_var", INTERFACES)
-    def test_integration_cv_grad(self, gaussian_dummy, template, inpts, hyperp, argnm, intrfc, to_var):
-        """Checks that gradient calculations of cv templates execute without error."""
-        inpts = [to_var(i) for i in inpts]
-        n_wires = len(hyperp['wires'])
+    @pytest.mark.parametrize("template, diffable, nondiffable, argnum", CV_DIFFABLE_NONDIFFABLE_ARGNUM)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_cv_grad(self, template, diffable, nondiffable, argnum, interface, to_var, gaussian_dummy):
+        """Tests that gradient calculations of cv templates execute without error."""
+
+        # Extract keys and items
+        keys_diffable = [*diffable]
+        diffable = list(diffable.values())
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Make qnode
+        n_wires = len(nondiffable['wires'])
         dev = gaussian_dummy(n_wires)
 
-        @qml.qnode(dev, interface=intrfc)
-        def circuit(*inp):
-            template(*inp, **hyperp)
+        @qml.qnode(dev, interface=interface)
+        def circuit(*diffable):
+
+            # Turn diffables back into dictionaries
+            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+
+            # Merge diffables and nondiffables
+            dict.update(nondiffable)
+
+            # Circuit
+            template(**dict)
             return qml.expval(qml.Identity(0))
 
         # Check gradients in numpy interface
-        if intrfc == 'numpy':
-            grd = qml.grad(circuit, argnum=argnm)
-            assert grd(*inpts) is not None
+        if interface == 'numpy':
+            grd = qml.grad(circuit, argnum=argnum)
+            grd(*diffable)
 
         # Check gradients in torch interface
-        if intrfc == 'torch':
-            for a in argnm:
-                inpts[a] = TorchVariable(inpts[a], requires_grad=True)
-            res = circuit(*inpts)
+        if interface == 'torch':
+            for a in argnum:
+                diffable[a] = TorchVariable(diffable[a], requires_grad=True)
+            res = circuit(*diffable)
             res.backward()
-            for a in argnm:
-                assert inpts[a].grad.numpy() is not None
+            for a in argnum:
+                diffable[a].grad.numpy()
 
         # Check gradients in tf interface
-        if intrfc == 'tf':
-            grad_inpts = [inpts[a] for a in argnm]
+        if interface == 'tf':
+            grad_inpts = [diffable[a] for a in argnum]
             with tf.GradientTape() as tape:
-                loss = circuit(*inpts)
-                assert tape.gradient(loss, grad_inpts) is not None
+                loss = circuit(*diffable)
+                tape.gradient(loss, grad_inpts)
