@@ -488,12 +488,7 @@ class BaseQNode:
         """
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
-        # flatten the args, replace each argument with a VariableRef instance carrying a unique index
-        arg_vars = [VariableRef(idx) for idx, _ in enumerate(_flatten(args))]
-        self.num_variables = len(arg_vars)
-
-        # arrange the newly created Variables in the nested structure of args
-        self.arg_vars = unflatten(arg_vars, args)
+        self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -508,14 +503,7 @@ class BaseQNode:
                     # (positional args must be replaced because parameter-shift differentiation requires VariableRefs)
                     res = self.func(*self.arg_vars, **kwargs)
                 else:
-                    # TODO: Maybe we should only convert the kwarg_vars that were actually given                    
-                    # must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
-                    kwarg_vars = {}
-                    for key, val in kwargs.items():
-                        temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
-                        kwarg_vars[key] = unflatten(temp, val)
-
-                    self.kwarg_vars = kwarg_vars
+                    # TODO: Maybe we should only convert the kwarg_vars that were actually given
                     res = self.func(*self.arg_vars, **self.kwarg_vars)
             except:
                 # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created VariableRefs.

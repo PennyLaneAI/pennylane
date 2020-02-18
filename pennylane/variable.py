@@ -86,7 +86,7 @@ class VariableRef:
         idx  (int): index into the value vector, >= 0
         name (None, str): name of the argument
     """
-    # pylint: disable=too-few-public-methods, pointless-string-statement
+    # pylint: disable=too-few-public-methods
 
     #: array[float]: current positional parameter values, set in :meth:`.BaseQNode._set_variables`
     positional_arg_values = None
@@ -156,31 +156,27 @@ class VariableRef:
         values = VariableRef.kwarg_values[self.name]
         return values[self.idx] * self.mult
 
-    def render(self):
+    def render(self, show_name_only=False):
         """Returns a string representation of the VariableRef.
+
+        Args:
+            show_name_only (bool, optional): Render the name instead of the value.
 
         Returns:
             str: A string representation of the VariableRef
         """
-        # TODO: re-enable the string representation of the VariableRer and
-        # add the show_name_only parameter
-
-        '''
         if not show_name_only:
-            if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values or
-            (
+            if self.is_kwarg and VariableRef.kwarg_values and self.name in VariableRef.kwarg_values:
+                return str(round(self.val, 3))
+
+            if (
                 not self.is_kwarg
                 and VariableRef.positional_arg_values is not None
                 and len(VariableRef.positional_arg_values) > self.idx
             ):
                 return str(round(self.val, 3))
 
-        if :
-        '''
+        if self.mult != 1:
+            return "{}*{}".format(str(round(self.mult, 3)), self.name)
 
-        return str(round(self.val, 3))
-
-        #if self.mult != 1:
-        #    return "{}*{}".format(str(round(self.mult, 3)), self.name)
-
-        #return self.name
+        return self.name
