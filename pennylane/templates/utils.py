@@ -14,7 +14,7 @@
 r"""
 Utility functions used in the templates.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 
 import numpy as np
@@ -56,8 +56,9 @@ def _check_wires(wires):
     if isinstance(wires, int):
         wires = [wires]
 
-    msg = "wires must be a positive integer or a " \
-          "list of positive integers; got {}.".format(wires)
+    msg = "wires must be a positive integer or a " "list of positive integers; got {}.".format(
+        wires
+    )
     if not isinstance(wires, Iterable):
         raise ValueError(msg)
     if not all([isinstance(w, int) for w in wires]):
@@ -111,10 +112,10 @@ def _check_shape(inpt, target_shape, msg, bound=None):
 
     shape = _get_shape(inpt)
 
-    if bound == 'max':
+    if bound == "max":
         if shape > target_shape:
             raise ValueError(msg)
-    elif bound == 'min':
+    elif bound == "min":
         if shape < target_shape:
             raise ValueError(msg)
     else:
@@ -142,7 +143,9 @@ def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
     if bounds is None:
         bounds = [None] * len(inpt_list)
 
-    shape_list = [_check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)]
+    shape_list = [
+        _check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)
+    ]
     return shape_list
 
 
@@ -189,15 +192,19 @@ def _check_number_of_layers(list_of_weights):
     shapes = [_get_shape(weight) for weight in list_of_weights]
 
     if any(len(s) == 0 for s in shapes):
-        raise ValueError("the first dimension of the weight parameters must be the number of layers in the "
-                         "template; got scalar weights.")
+        raise ValueError(
+            "the first dimension of the weight parameters must be the number of layers in the "
+            "template; got scalar weights."
+        )
 
     first_dimensions = [s[0] for s in shapes]
     different_first_dims = set(first_dimensions)
     n_different_first_dims = len(different_first_dims)
 
     if n_different_first_dims > 1:
-        raise ValueError("the first dimension of the weight parameters must be the number of layers in the "
-                         "template; got differing first dimensions: {}.".format(*different_first_dims))
+        raise ValueError(
+            "the first dimension of the weight parameters must be the number of layers in the "
+            "template; got differing first dimensions: {}.".format(*different_first_dims)
+        )
 
     return first_dimensions[0]

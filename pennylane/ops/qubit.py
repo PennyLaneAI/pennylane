@@ -64,7 +64,7 @@ class Hadamard(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize Hadamard in
             the computational basis.
         """
-        return [RY(-np.pi/4, wires=self.wires)]
+        return [RY(-np.pi / 4, wires=self.wires)]
 
 
 class PauliX(Observable, Operation):
@@ -221,7 +221,7 @@ class T(Operation):
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0], [0, np.exp(1j*np.pi/4)]])
+        return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
 
 
 class CNOT(Operation):
@@ -343,14 +343,18 @@ class CSWAP(Operation):
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 1, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 1, 0],
-                        [0, 0, 0, 0, 0, 1, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 1]])
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
 
 
 class Toffoli(Operation):
@@ -419,7 +423,7 @@ class RX(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta/2) * np.eye(2) + 1j * np.sin(-theta/2) * PauliX._matrix()
+        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliX._matrix()
 
 
 class RY(Operation):
@@ -451,7 +455,7 @@ class RY(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta/2) * np.eye(2) + 1j * np.sin(-theta/2) * PauliY._matrix()
+        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
 
 
 class RZ(Operation):
@@ -483,7 +487,7 @@ class RZ(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta/2) * np.eye(2) + 1j * np.sin(-theta/2) * PauliZ._matrix()
+        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliZ._matrix()
 
 
 class PhaseShift(Operation):
@@ -515,7 +519,7 @@ class PhaseShift(Operation):
     @staticmethod
     def _matrix(*params):
         phi = params[0]
-        return np.array([[1, 0], [0, np.exp(1j*phi)]])
+        return np.array([[1, 0], [0, np.exp(1j * phi)]])
 
 
 class Rot(Operation):
@@ -883,7 +887,7 @@ class U2(Operation):
     @staticmethod
     def _matrix(*params):
         phi, lam = params
-        return PhaseShift._matrix(phi+lam) @ Rot._matrix(lam, np.pi/2, -lam)
+        return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, np.pi / 2, -lam)
 
     @staticmethod
     def decomposition(phi, lam, wires):
@@ -935,11 +939,10 @@ class U3(Operation):
     par_domain = "R"
     grad_method = "A"
 
-
     @staticmethod
     def _matrix(*params):
         theta, phi, lam = params
-        return PhaseShift._matrix(phi+lam) @ Rot._matrix(lam, theta, -lam)
+        return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, theta, -lam)
 
     @staticmethod
     def decomposition(theta, phi, lam, wires):

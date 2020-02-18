@@ -19,7 +19,15 @@ import abc
 
 import numpy as np
 
-from pennylane.operation import Operation, Observable, Sample, Variance, Expectation, Probability, Tensor
+from pennylane.operation import (
+    Operation,
+    Observable,
+    Sample,
+    Variance,
+    Expectation,
+    Probability,
+    Tensor,
+)
 from pennylane.qnodes import QuantumFunctionError
 
 
@@ -38,9 +46,10 @@ class Device(abc.ABC):
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
-    #pylint: disable=too-many-public-methods
-    _capabilities = {} #: dict[str->*]: plugin capabilities
-    _circuits = {}     #: dict[str->Circuit]: circuit templates associated with this API class
+
+    # pylint: disable=too-many-public-methods
+    _capabilities = {}  #: dict[str->*]: plugin capabilities
+    _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000):
@@ -57,7 +66,9 @@ class Device(abc.ABC):
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(self.name, self.pennylane_requires, self.version, self.author)
+        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(
+            self.name, self.pennylane_requires, self.version, self.author
+        )
 
     @property
     @abc.abstractmethod
@@ -120,7 +131,9 @@ class Device(abc.ABC):
             DeviceError: if number of shots is less than 1
         """
         if shots < 1:
-            raise DeviceError("The specified number of shots needs to be at least 1. Got {}.".format(shots))
+            raise DeviceError(
+                "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+            )
 
         self._shots = int(shots)
 
@@ -190,7 +203,9 @@ class Device(abc.ABC):
                     results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif obs.return_type is not None:
-                    raise QuantumFunctionError("Unsupported return type specified for observable {}".format(obs.name))
+                    raise QuantumFunctionError(
+                        "Unsupported return type specified for observable {}".format(obs.name)
+                    )
 
             self.post_measure()
 
@@ -239,7 +254,9 @@ class Device(abc.ABC):
             list[~.operation.Observable]
         """
         if self._obs_queue is None:
-            raise ValueError("Cannot access the observable value queue outside of the execution context!")
+            raise ValueError(
+                "Cannot access the observable value queue outside of the execution context!"
+            )
 
         return self._obs_queue
 
@@ -258,7 +275,9 @@ class Device(abc.ABC):
             dict[int->list[ParameterDependency]]: the mapping
         """
         if self._parameters is None:
-            raise ValueError("Cannot access the free parameter mapping outside of the execution context!")
+            raise ValueError(
+                "Cannot access the free parameter mapping outside of the execution context!"
+            )
 
         return self._parameters
 
@@ -284,10 +303,12 @@ class Device(abc.ABC):
         source of :meth:`.Device.execute` for more details).
         """
         # pylint: disable=no-self-use
-        class MockContext: # pylint: disable=too-few-public-methods
+        class MockContext:  # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
+
             def __enter__(self):
                 pass
+
             def __exit__(self, type, value, traceback):
                 pass
 
@@ -310,12 +331,15 @@ class Device(abc.ABC):
         if isinstance(operation, str):
 
             if operation.endswith(Operation.string_for_inverse):
-                return operation[:-len(Operation.string_for_inverse)] in self.operations\
-                       and self.capabilities().get("inverse_operations", False)
+                return operation[
+                    : -len(Operation.string_for_inverse)
+                ] in self.operations and self.capabilities().get("inverse_operations", False)
 
             return operation in self.operations
 
-        raise ValueError("The given operation must either be a pennylane.Operation class or a string.")
+        raise ValueError(
+            "The given operation must either be a pennylane.Operation class or a string."
+        )
 
     def supports_observable(self, observable):
         """Checks if an observable is supported by this device. Raises a ValueError,
@@ -336,11 +360,13 @@ class Device(abc.ABC):
 
             # This check regards observables that are also operations
             if observable.endswith(Operation.string_for_inverse):
-                return self.supports_operation(observable[:-len(Operation.string_for_inverse)])
+                return self.supports_operation(observable[: -len(Operation.string_for_inverse)])
 
             return observable in self.observables
 
-        raise ValueError("The given observable must either be a pennylane.Observable class or a string.")
+        raise ValueError(
+            "The given observable must either be a pennylane.Observable class or a string."
+        )
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
@@ -363,33 +389,52 @@ class Device(abc.ABC):
 
             if o.inverse:
                 if not self.capabilities().get("inverse_operations", False):
-                    raise DeviceError("The inverse of gates are not supported on device {}".format(self.short_name))
+                    raise DeviceError(
+                        "The inverse of gates are not supported on device {}".format(
+                            self.short_name
+                        )
+                    )
                 operation_name = o.base_name
 
             if not self.supports_operation(operation_name):
-                raise DeviceError("Gate {} not supported on device {}".format(operation_name, self.short_name))
+                raise DeviceError(
+                    "Gate {} not supported on device {}".format(operation_name, self.short_name)
+                )
 
         for o in observables:
 
             if isinstance(o, Tensor):
                 if not self.capabilities().get("tensor_observables", False):
-                    raise DeviceError("Tensor observables not supported on device {}".format(self.short_name))
+                    raise DeviceError(
+                        "Tensor observables not supported on device {}".format(self.short_name)
+                    )
 
                 for i in o.obs:
                     if not self.supports_observable(i.name):
-                        raise DeviceError("Observable {} not supported on device {}".format(i.name, self.short_name))
+                        raise DeviceError(
+                            "Observable {} not supported on device {}".format(
+                                i.name, self.short_name
+                            )
+                        )
             else:
 
                 observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:
                     if not self.capabilities().get("inverse_operations", False):
-                        raise DeviceError("The inverse of gates are not supported on device {}".format(self.short_name))
+                        raise DeviceError(
+                            "The inverse of gates are not supported on device {}".format(
+                                self.short_name
+                            )
+                        )
                     observable_name = o.base_name
 
                 if not self.supports_observable(observable_name):
-                    raise DeviceError("Observable {} not supported on device {}".format(observable_name,
-                                                                                        self.short_name))
+                    raise DeviceError(
+                        "Observable {} not supported on device {}".format(
+                            observable_name, self.short_name
+                        )
+                    )
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
@@ -436,7 +481,9 @@ class Device(abc.ABC):
         Returns:
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
         """
-        raise NotImplementedError("Returning variances from QNodes not currently supported by {}".format(self.short_name))
+        raise NotImplementedError(
+            "Returning variances from QNodes not currently supported by {}".format(self.short_name)
+        )
 
     def sample(self, observable, wires, par):
         """Return a sample of an observable.
@@ -458,7 +505,9 @@ class Device(abc.ABC):
         Returns:
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
-        raise NotImplementedError("Returning samples from QNodes not currently supported by {}".format(self.short_name))
+        raise NotImplementedError(
+            "Returning samples from QNodes not currently supported by {}".format(self.short_name)
+        )
 
     def probability(self, wires=None):
         """Return the (marginal) probability of each computational basis
@@ -474,7 +523,9 @@ class Device(abc.ABC):
             to the resulting probability. The dictionary should be sorted such that the
             state tuples are in lexicographical order.
         """
-        raise NotImplementedError("Returning probability not currently supported by {}".format(self.short_name))
+        raise NotImplementedError(
+            "Returning probability not currently supported by {}".format(self.short_name)
+        )
 
     @abc.abstractmethod
     def reset(self):

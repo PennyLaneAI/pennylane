@@ -28,7 +28,6 @@ import numpy as np
 import pennylane as qml
 
 
-
 def _flatten(x):
     """Iterate recursively through an arbitrarily nested structure in depth-first order.
 

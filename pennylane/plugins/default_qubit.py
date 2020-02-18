@@ -43,53 +43,47 @@ class DefaultQubit(QubitDevice):
         analytic (bool): indicates if the device should calculate expectations
             and variances analytically
     """
-    name = 'Default qubit PennyLane plugin'
-    short_name = 'default.qubit'
-    pennylane_requires = '0.9'
-    version = '0.9.0'
-    author = 'Xanadu Inc.'
+
+    name = "Default qubit PennyLane plugin"
+    short_name = "default.qubit"
+    pennylane_requires = "0.9"
+    version = "0.9.0"
+    author = "Xanadu Inc."
     _capabilities = {"inverse_operations": True}
 
     operations = {
-        'BasisState',
-        'QubitStateVector',
-        'QubitUnitary',
-        'PauliX',
-        'PauliY',
-        'PauliZ',
-        'Hadamard',
-        'S',
-        'T',
-        'CNOT',
-        'SWAP',
-        'CSWAP',
-        'Toffoli',
-        'CZ',
-        'PhaseShift',
-        'RX',
-        'RY',
-        'RZ',
-        'Rot',
-        'CRX',
-        'CRY',
-        'CRZ',
-        'CRot'
+        "BasisState",
+        "QubitStateVector",
+        "QubitUnitary",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "S",
+        "T",
+        "CNOT",
+        "SWAP",
+        "CSWAP",
+        "Toffoli",
+        "CZ",
+        "PhaseShift",
+        "RX",
+        "RY",
+        "RZ",
+        "Rot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
     }
 
-    observables = {
-        'PauliX',
-        'PauliY',
-        'PauliZ',
-        'Hadamard',
-        'Hermitian',
-        'Identity'
-    }
+    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         self.eng = None
         self.analytic = analytic
 
-        self._state = np.zeros(2**wires, dtype=complex)
+        self._state = np.zeros(2 ** wires, dtype=complex)
         self._state[0] = 1
         self._pre_rotated_state = self._state
 
@@ -105,8 +99,10 @@ class DefaultQubit(QubitDevice):
             par = operation.parameters
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
-                raise DeviceError("Operation {} cannot be used after other Operations have already been applied "
-                                  "on a {} device.".format(operation.name, self.short_name))
+                raise DeviceError(
+                    "Operation {} cannot be used after other Operations have already been applied "
+                    "on a {} device.".format(operation.name, self.short_name)
+                )
 
             if isinstance(operation, QubitStateVector):
                 input_state = np.asarray(par[0], dtype=np.complex128)
@@ -146,7 +142,7 @@ class DefaultQubit(QubitDevice):
 
         n_state_vector = input_state.shape[0]
 
-        if input_state.ndim == 1 and n_state_vector == 2**len(wires):
+        if input_state.ndim == 1 and n_state_vector == 2 ** len(wires):
             # generate basis states on subset of qubits via the cartesian product
             basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
 
@@ -180,11 +176,11 @@ class DefaultQubit(QubitDevice):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
-        basis_states = 2**(self.num_wires - 1 - np.array(wires))
+        basis_states = 2 ** (self.num_wires - 1 - np.array(wires))
         num = int(np.dot(state, basis_states))
 
         self._state = np.zeros_like(self._state)
-        self._state[num] = 1.
+        self._state[num] = 1.0
 
     def mat_vec_product(self, mat, vec, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
@@ -210,7 +206,7 @@ class DefaultQubit(QubitDevice):
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
         perm = wires + unused_idxs
-        inv_perm = np.argsort(perm) # argsort gives inverse permutation
+        inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
@@ -218,7 +214,7 @@ class DefaultQubit(QubitDevice):
         """Reset the device"""
         # init the state vector to |00..0>
         super().reset()
-        self._state = np.zeros(2**self.num_wires, dtype=complex)
+        self._state = np.zeros(2 ** self.num_wires, dtype=complex)
         self._state[0] = 1
         self._pre_rotated_state = self._state
 

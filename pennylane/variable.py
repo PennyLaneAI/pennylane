@@ -63,7 +63,6 @@ keyword arguments, its ``name``, to return the correct value to the operation.
 import copy
 
 
-
 class VariableRef:
     """A reference to dynamically track and update circuit parameters.
 
@@ -84,6 +83,7 @@ class VariableRef:
         idx  (int): index into the value vector, >= 0
         name (str): name of the parameter
     """
+
     # pylint: disable=too-few-public-methods
 
     #: array[float]: current positional parameter values, set in :meth:`.BaseQNode._set_variables`
