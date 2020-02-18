@@ -81,5 +81,5 @@ def sum(x):
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
     interface = getattr(x, "interface", None)
-    sum_fn = _get_sum_func(x.interface)
+    sum_fn = _get_sum_func(interface)
     return apply(sum_fn, x)

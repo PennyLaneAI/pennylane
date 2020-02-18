@@ -44,7 +44,7 @@ def _get_dot_func(interface, x=None):
         import torch
 
         if x is not None and not isinstance(x, torch.Tensor):
-            x = torch.tensor(x, dtype=torch.float64)
+            x = torch.tensor(x, dtype=torch.float64) # pylint disable=not-callable
 
         return torch.matmul, x
 

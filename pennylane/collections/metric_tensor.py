@@ -14,6 +14,7 @@
 """
 Contains an implementation of the metric tensor using QNode collections.
 """
+# pylint: disable=protected-access,import-outside-toplevel
 
 import itertools
 
@@ -69,6 +70,7 @@ class MetricTensor:
             metric tensor should be executed. This can either be a single device, or a list
             of devices of length corresponding to the number of parametric layers in ``qnode``.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, qnode, device):
         self.qnode = qnode
@@ -79,6 +81,7 @@ class MetricTensor:
         self.qnodes = None
         self.obs = None
         self.coeffs = None
+        self.params = None
 
         if self.interface == "tf":
             import tensorflow as tf
@@ -89,12 +92,10 @@ class MetricTensor:
 
             self.np = torch
         elif self.interface == "autograd":
-            from autograd import numpy as np
+            from autograd import numpy as np # pylint: disable=redefined-outer-name
 
             self.np = np
         else:
-            import numpy as np
-
             self.np = np
 
         self.dot = _get_dot_func(self.interface)[0]
@@ -111,12 +112,12 @@ class MetricTensor:
 
         gs = []
 
-        for prob, obs, coeffs, param_idx in zip(probs, self.obs, self.coeffs, self.params):
+        for prob, obs, coeffs in zip(probs, self.obs, self.coeffs):
             # calculate the covariance matrix of this layer
             scale = np.outer(coeffs, coeffs)
 
             if self.interface == "torch":
-                scale = self.np.tensor(scale)
+                scale = self.np.tensor(scale) # pylint: disable=not-callable
 
             g = scale * self.cov_matrix(prob, obs, diag_approx=diag_approx)
             gs.append(g)
@@ -239,7 +240,7 @@ class MetricTensor:
             obs_list.append([])
 
             # for each operation in the layer, get the generator
-            for n, op in enumerate(curr_ops):
+            for op in curr_ops:
                 gen, s = op.generator
                 w = op.wires
 
@@ -261,15 +262,15 @@ class MetricTensor:
                     obs_list[-1].append(gen(w))
 
             @qml.qnode(self.dev, interface=self.interface, mutable=False)
-            def qn(weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev, _params=params):
+            def qn(weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev, _params=params): #pylint: disable=dangerous-default-value
                 counter = 0
                 p_idx = np.argsort([item for sublist in _params for item in sublist])
 
                 for op in _queue:
                     p = []
 
-                    for i, x in enumerate(op.params):
-                        if not isinstance(x, qml.variable.Variable):
+                    for x in op.params:
+                        if not isinstance(x, qml.variable.VariableRef):
                             p.append(x)
                         else:
                             p.append(weights[p_idx[counter]])
