@@ -14,13 +14,11 @@
 r"""
 Contains the ``broadcast`` template constructor.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import (_check_wires,
-                                       _check_type,
-                                       _get_shape)
+from pennylane.templates.utils import _check_wires, _check_type, _get_shape
 
 
 @template
@@ -200,18 +198,25 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
 
     wires = _check_wires(wires)
 
-    _check_type(parameters, [Iterable, type(None)], msg="'parameters' must be either of type None or "
-                                                        "Iterable; got {}".format(type(parameters)))
+    _check_type(
+        parameters,
+        [Iterable, type(None)],
+        msg="'parameters' must be either of type None or "
+        "Iterable; got {}".format(type(parameters)),
+    )
 
     if even:
-        n_pars = len(wires)//2
+        n_pars = len(wires) // 2
     else:
-        n_pars = (len(wires)-1)//2
+        n_pars = (len(wires) - 1) // 2
     if parameters is not None:
         shape = _get_shape(parameters)
         if shape[0] != n_pars:
-            raise ValueError("'parameters' must contain one entry for each of the {} wire pairs; got shape {}"
-                             .format(n_pars, shape))
+            raise ValueError(
+                "'parameters' must contain one entry for each of the {} wire pairs; got shape {}".format(
+                    n_pars, shape
+                )
+            )
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
@@ -226,9 +231,7 @@ def broadcast_double(block, wires, parameters=None, even=True, kwargs={}):
         start_with = 1
 
     # extract the pairs of wires that the block acts on
-    wire_pairs = [[wires[i], wires[i+1]] for i in range(start_with, len(wires)-1, 2)]
+    wire_pairs = [[wires[i], wires[i + 1]] for i in range(start_with, len(wires) - 1, 2)]
 
     for w, p in zip(wire_pairs, parameters):
         block(*p, wires=w, **kwargs)
-
-

@@ -35,8 +35,8 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (Sequence[int] or int): `n` qubit indices that the template acts on
     """
 
-    feature_encoding_wires = wires[:len(features)]
-    remaining_wires = wires[len(features):]
+    feature_encoding_wires = wires[: len(features)]
+    remaining_wires = wires[len(features) :]
 
     Broadcast(block=RX, wires=feature_encoding_wires, parameters=features)
     Broadcast(block=Hadamard, wires=remaining_wires)
@@ -271,7 +271,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
 
     #####################
 
-    if local_field == 'Z':
+    if local_field == "Z":
         local_fields = RZ
     elif local_field == "X":
         local_fields = RX
