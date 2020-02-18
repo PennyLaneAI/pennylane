@@ -50,7 +50,7 @@ def KwargTemplate(par, wires, a=True):
 
 
 class TestConstructorBroadcast:
-    """ Tests the broadcast constructors template."""
+    """ Tests the broadcast constructor template."""
 
     PARAMS_UNITARY_TARGET_DEVICE_OBS = [([pi, pi, pi / 2, 0], RX, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
                                         ([pi, pi, pi / 2, 0], RY, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
@@ -173,16 +173,20 @@ class TestConstructorBroadcast:
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
             circuit()
 
+
 # Templates for TestConstructorBroadcastDouble
+
 @template
 def ConstantTemplateDouble(wires):
     T(wires=wires[0])
     CNOT(wires=wires)
 
+
 @template
 def ParametrizedTemplateDouble(par1, par2, wires):
     CRX(par1, wires=wires)
     RY(par2, wires=wires[0])
+
 
 @template
 def KwargTemplateDouble(par, wires, a=True):
@@ -192,8 +196,7 @@ def KwargTemplateDouble(par, wires, a=True):
 
 
 class TestConstructorBroadcastDouble:
-    """ Tests the broadcast_double constructors template."""
-
+    """ Tests the broadcast_double constructor template."""
 
     EVEN_GATE_PARAMETERS = [(CRX, [[0.1], [0.2]]),
                             (CRot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
