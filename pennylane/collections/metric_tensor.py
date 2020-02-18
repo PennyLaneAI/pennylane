@@ -59,7 +59,6 @@ def _marginal_prob(prob, wires, interface):
     return prob.flatten()
 
 
-
 class MetricTensor:
     """Construct a QNode collection that computes the metric tensor of a given
     QNode.
@@ -70,6 +69,7 @@ class MetricTensor:
             metric tensor should be executed. This can either be a single device, or a list
             of devices of length corresponding to the number of parametric layers in ``qnode``.
     """
+
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, qnode, device):
@@ -92,7 +92,7 @@ class MetricTensor:
 
             self.np = torch
         elif self.interface == "autograd":
-            from autograd import numpy as np # pylint: disable=redefined-outer-name
+            from autograd import numpy as np  # pylint: disable=redefined-outer-name
 
             self.np = np
         else:
@@ -117,7 +117,7 @@ class MetricTensor:
             scale = np.outer(coeffs, coeffs)
 
             if self.interface == "torch":
-                scale = self.np.tensor(scale) # pylint: disable=not-callable
+                scale = self.np.tensor(scale)  # pylint: disable=not-callable
 
             g = scale * self.cov_matrix(prob, obs, diag_approx=diag_approx)
             gs.append(g)
@@ -179,7 +179,7 @@ class MetricTensor:
         for i, o in enumerate(obs):
             dot_fn, l = _get_dot_func(self.interface, o.eigvals)
             p = _marginal_prob(prob, o.wires, self.interface)
-            res = dot_fn(l**2, p) - (dot_fn(l, p))**2
+            res = dot_fn(l ** 2, p) - (dot_fn(l, p)) ** 2
             diag.append(res)
 
         if self.interface == "tf":
@@ -209,8 +209,8 @@ class MetricTensor:
 
             p1 = _marginal_prob(prob, o1.wires, self.interface)
             p2 = _marginal_prob(prob, o2.wires, self.interface)
-            p12 = _marginal_prob(prob, o1.wires+o2.wires, self.interface)
-            off_diag[i][j] = off_diag[j][i] = dot_fn(l12, p12) - dot_fn(l1, p1)*dot_fn(l2, p2)
+            p12 = _marginal_prob(prob, o1.wires + o2.wires, self.interface)
+            off_diag[i][j] = off_diag[j][i] = dot_fn(l12, p12) - dot_fn(l1, p1) * dot_fn(l2, p2)
 
         if self.interface == "tf":
             return diag + self.np.cast(self.np.stack(off_diag), dtype=self.np.float64)
@@ -226,7 +226,9 @@ class MetricTensor:
         else:
             self.qnode(*args, **kwargs)
 
-        circuit = getattr(self.qnode, "circuit", None) or getattr(self.qnode._qnode, "circuit", None)
+        circuit = getattr(self.qnode, "circuit", None) or getattr(
+            self.qnode._qnode, "circuit", None
+        )
 
         qnodes = qml.QNodeCollection()
 
@@ -262,7 +264,9 @@ class MetricTensor:
                     obs_list[-1].append(gen(w))
 
             @qml.qnode(self.dev, interface=self.interface, mutable=False)
-            def qn(weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev, _params=params): #pylint: disable=dangerous-default-value
+            def qn(
+                weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev, _params=params
+            ):  # pylint: disable=dangerous-default-value
                 counter = 0
                 p_idx = np.argsort([item for sublist in _params for item in sublist])
 
