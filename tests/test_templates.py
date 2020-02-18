@@ -48,7 +48,8 @@ from pennylane.templates import (Interferometer,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
                                  QAOAEmbedding,
-                                 Broadcast)
+                                 Broadcast,
+                                 broadcast_double)
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
@@ -127,6 +128,11 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                               (Broadcast,
                                {'parameters': [[1.], [1.]]},
                                {'block': qml.RX,
+                                'wires': [0, 1]}),
+                              (broadcast_double,
+                               {'parameters': [[1., 1., 1.]]},
+                               {'block': qml.CRot,
+                                'even': True,
                                 'wires': [0, 1]})
                               ]
 
@@ -629,7 +635,18 @@ class TestGradientIntegration:
                                          (QAOAEmbedding,
                                           {'features': [1., 2.], 'weights': [[0.1, 0.1, 0.1]]},
                                           {'wires': range(2)},
-                                          [1])
+                                          [1]),
+                                         (Broadcast,
+                                          {'parameters': [[1.], [1.]]},
+                                          {'block': qml.RX,
+                                           'wires': [0, 1]},
+                                          [0]),
+                                         (broadcast_double,
+                                          {'parameters': [[1., 1., 1.]]},
+                                          {'block': qml.CRot,
+                                           'even': True,
+                                           'wires': [0, 1]},
+                                          [0])
                                          ]
 
     CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,
