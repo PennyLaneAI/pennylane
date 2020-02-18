@@ -14,15 +14,17 @@
 r"""
 Contains the ``AmplitudeEmbedding`` template.
 """
-#pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
-from pennylane.templates.utils import (_check_shape,
-                                       _check_no_variable,
-                                       _check_wires,
-                                       _check_type,
-                                       _get_shape)
+from pennylane.templates.utils import (
+    _check_shape,
+    _check_no_variable,
+    _check_wires,
+    _check_type,
+    _get_shape,
+)
 from pennylane.variable import VariableRef
 
 TOLERANCE = 1e-3
@@ -172,18 +174,31 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     wires = _check_wires(wires)
 
-    n_amplitudes = 2**len(wires)
+    n_amplitudes = 2 ** len(wires)
     expected_shape = (n_amplitudes,)
     if pad is None:
-        shape = _check_shape(features, expected_shape, msg="'features' must be of shape {}; got {}. Use the 'pad' "
-                                                           "argument for automated padding."
-                                                           "".format(expected_shape, _get_shape(features)))
+        shape = _check_shape(
+            features,
+            expected_shape,
+            msg="'features' must be of shape {}; got {}. Use the 'pad' "
+            "argument for automated padding."
+            "".format(expected_shape, _get_shape(features)),
+        )
     else:
-        shape = _check_shape(features, expected_shape, bound='max', msg="'features' must be of shape {} or smaller "
-                                                                      "to be padded; got {}"
-                                                                      "".format(expected_shape, _get_shape(features)))
+        shape = _check_shape(
+            features,
+            expected_shape,
+            bound="max",
+            msg="'features' must be of shape {} or smaller "
+            "to be padded; got {}"
+            "".format(expected_shape, _get_shape(features)),
+        )
 
-    _check_type(pad, [float, complex, type(None)], msg="'pad' must be a float or complex; got {}".format(pad))
+    _check_type(
+        pad,
+        [float, complex, type(None)],
+        msg="'pad' must be a float or complex; got {}".format(pad),
+    )
     _check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
 
     ###############
@@ -194,21 +209,25 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # pad
     n_features = shape[0]
     if pad is not None and n_amplitudes > n_features:
-        features = np.pad(features, (0, n_amplitudes-n_features), mode='constant', constant_values=pad)
+        features = np.pad(
+            features, (0, n_amplitudes - n_features), mode="constant", constant_values=pad
+        )
 
     # normalize
     if isinstance(features[0], VariableRef):
         feature_values = [s.val for s in features]
-        norm = np.sum(np.abs(feature_values)**2)
+        norm = np.sum(np.abs(feature_values) ** 2)
     else:
-        norm = np.sum(np.abs(features)**2)
+        norm = np.sum(np.abs(features) ** 2)
 
     if not np.isclose(norm, 1.0, atol=TOLERANCE, rtol=0):
         if normalize or pad:
-            features = features/np.sqrt(norm)
+            features = features / np.sqrt(norm)
         else:
-            raise ValueError("'features' must be a vector of length 1.0; got length {}."
-                             "Use 'normalization=True' to automatically normalize.".format(norm))
+            raise ValueError(
+                "'features' must be a vector of length 1.0; got length {}."
+                "Use 'normalization=True' to automatically normalize.".format(norm)
+            )
 
     ###############
 

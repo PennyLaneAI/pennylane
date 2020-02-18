@@ -192,8 +192,5 @@ class AsciiCharSet(CharSet):
         return "_" + str(num)
 
 
-CHARSETS = {
-    "unicode": UnicodeCharSet,
-    "ascii": AsciiCharSet,
-}
+CHARSETS = {"unicode": UnicodeCharSet, "ascii": AsciiCharSet}
 """Dict[str, CharSet]: Dictionary mapping character sets to all available :class:`~.CharSet` classes."""

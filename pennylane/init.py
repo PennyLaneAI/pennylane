@@ -46,7 +46,7 @@ def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     elif n_wires == 2:
         shp = (n_layers, 3)
     else:
-        shp = (n_layers, 2*n_wires)
+        shp = (n_layers, 2 * n_wires)
 
     params = np.random.uniform(low=low, high=high, size=shp)
     return params
@@ -221,7 +221,7 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
-    kwargs = {'n_layers': n_layers, 'n_wires': n_wires, 'seed': seed}
+    kwargs = {"n_layers": n_layers, "n_wires": n_wires, "seed": seed}
 
     theta_1 = cvqnn_layers_theta_uniform(**kwargs)
     phi_1 = cvqnn_layers_phi_uniform(**kwargs)
@@ -238,7 +238,7 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
     return [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
 
 
-def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
+def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a uniform distribution.
@@ -292,7 +292,7 @@ def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     return theta
 
 
-def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2*pi, seed=None):
+def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
         The parameters are drawn from a uniform distribution.
@@ -680,7 +680,7 @@ def interferometer_all(n_wires, seed=None):
     if seed is not None:
         np.random.seed(seed)
 
-    kwargs = {'n_wires': n_wires, 'seed': seed}
+    kwargs = {"n_wires": n_wires, "seed": seed}
 
     theta = interferometer_theta_uniform(**kwargs)
     phi = interferometer_phi_uniform(**kwargs)
@@ -689,7 +689,7 @@ def interferometer_all(n_wires, seed=None):
     return [theta, phi, varphi]
 
 
-def interferometer_theta_uniform(n_wires, low=0, high=2*pi, seed=None):
+def interferometer_theta_uniform(n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``theta`` input of :func:`Interferometer`, drawn from a uniform
     distribution.
 
@@ -714,7 +714,7 @@ def interferometer_theta_uniform(n_wires, low=0, high=2*pi, seed=None):
     return theta
 
 
-def interferometer_phi_uniform(n_wires, low=0, high=2*pi, seed=None):
+def interferometer_phi_uniform(n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``phi`` input of :func:`Interferometer`, drawn from a uniform
     distribution.
 
@@ -739,7 +739,7 @@ def interferometer_phi_uniform(n_wires, low=0, high=2*pi, seed=None):
     return phi
 
 
-def interferometer_varphi_uniform(n_wires, low=0, high=2*pi, seed=None):
+def interferometer_varphi_uniform(n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``varphi`` input of :func:`Interferometer`, drawn from a uniform
     distribution.
 

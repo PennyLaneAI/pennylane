@@ -54,6 +54,7 @@ def template(func):
     Returns:
         callable: The wrapper function
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         with OperationRecorder() as rec:

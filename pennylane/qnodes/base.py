@@ -28,7 +28,6 @@ from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import VariableRef
 
 
-
 ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 """Represents the dependence of an Operator on a positional parameter of the quantum function.
 
@@ -122,7 +121,9 @@ def decompose_queue(ops, device):
         try:
             new_ops.extend(_decompose_queue([op], device))
         except NotImplementedError:
-            raise qml.DeviceError("Gate {} not supported on device {}".format(op.name, device.short_name))
+            raise qml.DeviceError(
+                "Gate {} not supported on device {}".format(op.name, device.short_name)
+            )
 
     return new_ops
 
@@ -191,7 +192,9 @@ class BaseQNode:
         # introspect the quantum function signature
         _get_signature(self.func)
 
-        self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
+        self.output_conversion = (
+            None
+        )  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
@@ -206,7 +209,9 @@ class BaseQNode:
         if qml._current_context is None:
             qml._current_context = self
         else:
-            raise QuantumFunctionError("qml._current_context must not be modified outside this method.")
+            raise QuantumFunctionError(
+                "qml._current_context must not be modified outside this method."
+            )
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -267,7 +272,9 @@ class BaseQNode:
         if self.circuit:
             return self.circuit.draw(charset=charset, show_variable_names=show_variable_names)
 
-        raise RuntimeError("The QNode can only be drawn after its CircuitGraph has been constructed.")
+        raise RuntimeError(
+            "The QNode can only be drawn after its CircuitGraph has been constructed."
+        )
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the VariableRef class
@@ -363,12 +370,16 @@ class BaseQNode:
             variable_name_string = np.empty_like(parameter_value, dtype=object)
 
             for index in np.ndindex(*variable_name_string.shape):
-                variable_name_string[index] = "{}[{}]".format(prefix, ",".join([str(i) for i in index]))
+                variable_name_string[index] = "{}[{}]".format(
+                    prefix, ",".join([str(i) for i in index])
+                )
         elif isinstance(parameter_value, Sequence):
             variable_name_string = []
 
             for idx, val in enumerate(parameter_value):
-                variable_name_string.append(self._determine_structured_variable_name(val, "{}[{}]".format(prefix, idx)))
+                variable_name_string.append(
+                    self._determine_structured_variable_name(val, "{}[{}]".format(prefix, idx))
+                )
         else:
             variable_name_string = prefix
 
@@ -416,7 +427,9 @@ class BaseQNode:
         # args
         variable_name_strings = []
         for variable_name, variable_value in zip(full_argspec.args, args):
-            variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
+            variable_name_strings.append(
+                self._determine_structured_variable_name(variable_value, variable_name)
+            )
 
         # varargs
         len_diff = len(args) - len(full_argspec.args)
@@ -424,9 +437,13 @@ class BaseQNode:
             for idx, variable_value in enumerate(args[-len_diff:]):
                 variable_name = "{}[{}]".format(full_argspec.varargs, idx)
 
-                variable_name_strings.append(self._determine_structured_variable_name(variable_value, variable_name))
+                variable_name_strings.append(
+                    self._determine_structured_variable_name(variable_value, variable_name)
+                )
 
-        arg_vars = [VariableRef(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
+        arg_vars = [
+            VariableRef(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))
+        ]
         self.num_variables = len(arg_vars)
 
         # arrange the newly created VariableRefs in the nested structure of args
@@ -434,8 +451,8 @@ class BaseQNode:
 
         # kwargs
         # if not mutable: must convert auxiliary arguments to named VariableRefs so they can be updated without re-constructing the circuit
-        #kwarg_vars = {}
-        #for key, val in kwargs.items():
+        # kwarg_vars = {}
+        # for key, val in kwargs.items():
         #    temp = [VariableRef(idx, name=key) for idx, _ in enumerate(_flatten(val))]
         #    kwarg_vars[key] = unflatten(temp, val)
 
@@ -451,9 +468,14 @@ class BaseQNode:
                 variable_name_string = np.empty_like(variable_value, dtype=object)
 
                 for index in np.ndindex(*variable_name_string.shape):
-                    variable_name_string[index] = "{}[{}]".format(variable_name, ",".join([str(i) for i in index]))
+                    variable_name_string[index] = "{}[{}]".format(
+                        variable_name, ",".join([str(i) for i in index])
+                    )
 
-                kwarg_variable = [VariableRef(idx, name=name, is_kwarg=True) for idx, name in enumerate(_flatten(variable_name_string))]
+                kwarg_variable = [
+                    VariableRef(idx, name=name, is_kwarg=True)
+                    for idx, name in enumerate(_flatten(variable_name_string))
+                ]
             else:
                 kwarg_variable = VariableRef(0, name=variable_name, is_kwarg=True)
 
@@ -595,7 +617,7 @@ class BaseQNode:
                 self.output_conversion = np.squeeze
             elif res.return_type is ObservableReturnTypes.Probability:
                 self.output_conversion = np.squeeze
-                self.output_dim = 2**len(res.wires)
+                self.output_dim = 2 ** len(res.wires)
             else:
                 self.output_conversion = float
 
@@ -699,9 +721,11 @@ class BaseQNode:
             # The following is a check of the default parameter which works for numpy
             # arrays as well (if it is a numpy array, each element is checked separately).
             # FIXME why are numpy array default values not good automatically?
-            correct_default_parameter = any(d == inspect.Parameter.empty for d in default_parameter)\
-                                        if isinstance(default_parameter, np.ndarray)\
-                                        else default_parameter == inspect.Parameter.empty
+            correct_default_parameter = (
+                any(d == inspect.Parameter.empty for d in default_parameter)
+                if isinstance(default_parameter, np.ndarray)
+                else default_parameter == inspect.Parameter.empty
+            )
             if s.par.kind in forbidden_kinds or correct_default_parameter:
                 raise QuantumFunctionError(
                     "Quantum function parameter '{}' cannot be given using the keyword syntax.".format(
@@ -712,9 +736,11 @@ class BaseQNode:
         # apply defaults
         for name, s in self.func.sig.items():
             default = s.par.default
-            correct_default = all(d != inspect.Parameter.empty for d in default)\
-                              if isinstance(default, np.ndarray)\
-                              else default != inspect.Parameter.empty
+            correct_default = (
+                all(d != inspect.Parameter.empty for d in default)
+                if isinstance(default, np.ndarray)
+                else default != inspect.Parameter.empty
+            )
 
             if correct_default:
                 # meant to be given using keyword syntax
@@ -745,14 +771,16 @@ class BaseQNode:
 
         self.device.reset()
 
-        temp = self.properties.get('use_native_type', False)
+        temp = self.properties.get("use_native_type", False)
         if isinstance(self.device, qml.QubitDevice):
-            #TODO: remove this if statement once all devices are ported to the QubitDevice API
+            # TODO: remove this if statement once all devices are ported to the QubitDevice API
             ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
             ret = self.device.execute(
-                self.circuit.operations, self.circuit.observables, self.variable_deps,
-                return_native_type=temp
+                self.circuit.operations,
+                self.circuit.observables,
+                self.variable_deps,
+                return_native_type=temp,
             )
         return self.output_conversion(ret)
 
@@ -777,8 +805,9 @@ class BaseQNode:
         if isinstance(self.device, qml.QubitDevice):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
-            circuit_graph = CircuitGraph(self.circuit.operations + list(obs),
-                                         self.circuit.variable_deps)
+            circuit_graph = CircuitGraph(
+                self.circuit.operations + list(obs), self.circuit.variable_deps
+            )
             ret = self.device.execute(circuit_graph)
         else:
             ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
