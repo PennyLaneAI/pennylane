@@ -17,14 +17,7 @@ Contains the ``QAOAEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard
-<<<<<<< HEAD
 from pennylane.templates.constructors import Broadcast
-from pennylane.templates.utils import (_check_shape,
-                                       _check_wires,
-                                       _check_is_in_options,
-                                       _check_number_of_layers,
-                                       _get_shape)
-=======
 from pennylane.templates.utils import (
     _check_shape,
     _check_wires,
@@ -32,7 +25,6 @@ from pennylane.templates.utils import (
     _check_number_of_layers,
     _get_shape,
 )
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
@@ -279,13 +271,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
 
     #####################
 
-<<<<<<< HEAD
     if local_field == 'Z':
-=======
-    n_features = _get_shape(features)[0]
-
-    if local_field == "Z":
->>>>>>> a776dbecfb0c1d32bb04012a69ee0e559d58c3b5
         local_fields = RZ
     elif local_field == "X":
         local_fields = RX
