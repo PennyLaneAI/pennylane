@@ -17,7 +17,7 @@ Contains the ``AngleEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ
-from pennylane.templates.constructors import Broadcast
+from pennylane.templates.constructors import broadcast
 from pennylane.templates.utils import (
     _check_shape,
     _check_no_variable,
@@ -80,10 +80,10 @@ def AngleEmbedding(features, wires, rotation="X"):
     ###############
 
     if rotation == "X":
-        Broadcast(block=RX, wires=wires, parameters=features)
+        broadcast(block=RX, wires=wires, parameters=features)
 
     elif rotation == "Y":
-        Broadcast(block=RY, wires=wires, parameters=features)
+        broadcast(block=RY, wires=wires, parameters=features)
 
     elif rotation == "Z":
-        Broadcast(block=RZ, wires=wires, parameters=features)
+        broadcast(block=RZ, wires=wires, parameters=features)

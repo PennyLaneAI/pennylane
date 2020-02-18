@@ -22,7 +22,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape
 
 
 @template
-def Broadcast(block, wires, parameters=None, kwargs={}):
+def broadcast(block, wires, parameters=None, kwargs={}):
     r"""Applies a (potentially parametrized) single-qubit unitary ``block`` to each wire.
 
     .. figure:: ../../_static/templates/constructors/broadcast.png

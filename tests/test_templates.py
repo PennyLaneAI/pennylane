@@ -48,7 +48,7 @@ from pennylane.templates import (Interferometer,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
                                  QAOAEmbedding,
-                                 Broadcast)
+                                 broadcast)
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
