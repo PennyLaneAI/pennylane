@@ -20,4 +20,5 @@ from .qnode_collection import QNodeCollection
 from .apply import apply
 from .dot import dot
 from .map import map
+from .metric_tensor import MetricTensor
 from .sum import sum

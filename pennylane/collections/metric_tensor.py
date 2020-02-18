@@ -107,7 +107,10 @@ class MetricTensor:
         if self.qnodes is None:
             self.qnodes, self.obs, self.coeffs, self.params = self._make_qnodes(args, kwargs)
 
-        probs = self.qnodes(*args, parallel=parallel)
+        if len(args) == 1:
+            args = args[0]
+
+        probs = self.qnodes(args, parallel=parallel)
         self.np.reshape(probs, [len(self.qnodes), -1])
 
         gs = []
@@ -262,6 +265,12 @@ class MetricTensor:
                 elif issubclass(gen, qml.operation.Observable):
                     # generator is an existing PennyLane operation
                     obs_list[-1].append(gen(w))
+
+                else:
+                    raise qml.qnodes.QuantumFunctionError(
+                        "Can't generate metric tensor, generator {}"
+                        "has no corresponding observable".format(gen)
+                    )
 
             @qml.qnode(self.dev, interface=self.interface, mutable=False)
             def qn(

@@ -34,7 +34,7 @@ from pennylane.vqe import Hamiltonian, VQECost
 from .circuit_graph import CircuitGraph
 from .configuration import Configuration
 from ._device import Device, DeviceError
-from .collections import apply, map, sum, dot, QNodeCollection
+from .collections import apply, map, sum, dot, QNodeCollection, MetricTensor
 from ._qubit_device import QubitDevice
 from .measure import expval, var, sample, probs
 from .ops import *
