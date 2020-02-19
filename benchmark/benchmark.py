@@ -6,15 +6,18 @@ import importlib
 import subprocess
 import sys
 
+import numpy as np
+
 import pennylane as qml
 
 
-def timing(func):
+def timing(func, *, number=10, repeat=5):
     "Time the given function."
     import timeit
 
-    res = timeit.repeat(func, number=10, repeat=5, globals=globals())
-    print("Timing:", res)
+    print('{} loops, {} runs'.format(number, repeat))
+    res = timeit.repeat(func, number=number, repeat=repeat, globals=globals())
+    print("Timing per loop:", np.array(res) / number)
 
 
 def plot(title, kernels, n_range):
@@ -81,6 +84,7 @@ def cli():
     cmd = sys.argv[1]
     if cmd == "time":
         print("Timing ", bm.benchmark.__doc__)
+        print("n =", bm.n)
         timing(functools.partial(bm.benchmark, bm.n))
     elif cmd == "plot":
         plot(title, [bm.benchmark], range(bm.n_min, bm.n_max, bm.n_step))
