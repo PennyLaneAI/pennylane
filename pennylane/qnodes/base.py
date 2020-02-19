@@ -153,10 +153,10 @@ class BaseQNode:
       and they must be real numbers, or nested ``Iterables`` of real numbers
       (note that this includes NumPy arrays).
       Classical processing of positional parameters, either by arithmetic operations
-      or external functions, is not allowed. One current exception is simple scalar multiplication.
+      or external functions, is not allowed. One current exception is simple scalar multiplication or division.
       Positional parameters *must* be given using the positional syntax.
 
-    * The auxiliary parameters can *not* be differentiated with respect to.
+    * The quantum function can *not* be differentiated with respect to auxiliary parameters.
       They are useful for providing data or 'placeholders' to the quantum function.
       Auxiliary parameters *must* be given using the keyword syntax.
 
