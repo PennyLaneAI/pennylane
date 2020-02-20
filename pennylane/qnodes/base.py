@@ -58,36 +58,41 @@ def _get_signature(func):
     Adds the following attributes to func:
 
     * :attr:`func.sig`: OrderedDict[str, SignatureParameter]: mapping from parameters' names to their descriptions
-    * :attr:`func.n_pos`: int: number of positional arguments
-    * :attr:`func.n_pos_nd`: int: number of positional arguments without default value
-    * :attr:`func.var_pos`: None, str: name of the var-positional argument (``*args``), or None if there isn't one
-    * :attr:`func.var_keyword`: None, str: name of the var-keyword argument (``**kwargs``), or None if there isn't one
+    * :attr:`func.n_pos`: int: number of positional parameters
+    * :attr:`func.n_pos_nd`: int: number of positional parameters without default value
+    * :attr:`func.var_pos`: None, str: name of the var-positional parameter (``*args``), or None if there isn't one
+    * :attr:`func.var_keyword`: None, str: name of the var-keyword parameter (``**kwargs``), or None if there isn't one
+    * :attr:`func.aux_defaults`: dict[str, Any]: default values for the auxiliary parameters
 
     Args:
         func (callable): function to introspect
     """
     sig = inspect.signature(func)
     # count positional args, see if VAR_ args are present
-    n_pos = 0
-    n_pos_nd = 0  # count positional params without default value
+    func.n_pos = 0
+    func.n_pos_nd = 0
     func.var_pos = None
     func.var_keyword = None
+    func.aux_defaults = {}
     for p in sig.parameters.values():
         if p.kind <= inspect.Parameter.POSITIONAL_OR_KEYWORD:
-            n_pos += 1
+            func.n_pos += 1
             if p.default is inspect.Parameter.empty:
                 # positional parameter with no default value
-                n_pos_nd += 1
+                func.n_pos_nd += 1
         elif p.kind == inspect.Parameter.VAR_POSITIONAL:
             func.var_pos = p.name
         elif p.kind == inspect.Parameter.VAR_KEYWORD:
             func.var_keyword = p.name
 
+        # record the default values for auxiliary parameters in a dict
+        if p.default is not inspect.Parameter.empty:
+            # default value => auxiliary parameter
+            func.aux_defaults[p.name] = p.default
+
     func.sig = OrderedDict(
         [(p.name, SignatureParameter(idx, p)) for idx, p in enumerate(sig.parameters.values())]
     )
-    func.n_pos = n_pos
-    func.n_pos_nd = n_pos_nd
 
 
 def _decompose_queue(ops, device):
@@ -746,14 +751,8 @@ class BaseQNode:
                     )
                 )
 
-        # apply defaults
-        for name, s in self.func.sig.items():
-            default = s.par.default
-            if default is not inspect.Parameter.empty:
-                # meant to be given using keyword syntax
-                kwargs.setdefault(name, default)
-
-        return kwargs
+        # apply default values
+        return {**self.func.aux_defaults, **kwargs}
 
     def __call__(self, *args, **kwargs):
         """Wrapper for :meth:`BaseQNode.evaluate`.

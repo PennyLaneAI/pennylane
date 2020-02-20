@@ -56,7 +56,9 @@ def equal_nested(a, b):
     # TODO what about arrays/object arrays? should the latter be allowed? now they are subsumed to Iterables.
     if is_iterable(a):
         if is_iterable(b):
-            return all(equal_nested(x, y) for x, y in itertools.zip_longest(a, b, fillvalue=_sentinel))
+            return all(
+                equal_nested(x, y) for x, y in itertools.zip_longest(a, b, fillvalue=_sentinel)
+            )
         return False
     if is_iterable(b):
         return False

@@ -96,7 +96,8 @@ class VariableRef:
     def __init__(self, idx, name=None, basename=None):
         self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter structured name
-        self.basename = basename  #: str, None: for auxiliary parameters the key for the kwarg_values dict
+        self.basename = basename
+        """str, None: for auxiliary parameters the key for the kwarg_values dict"""
         self.mult = 1  #: int, float: parameter scalar multiplier
 
     def __repr__(self):
