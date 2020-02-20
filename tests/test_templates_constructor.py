@@ -20,8 +20,7 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-from pennylane.templates import template
-from pennylane.templates.constructors import broadcast
+from pennylane.templates import template, broadcast
 from pennylane.ops import RX, RY, RZ, Displacement, Beamsplitter, T, S, Rot, CRX, CRot, CNOT
 
 dev_4_qubits = qml.device('default.qubit', wires=4)
