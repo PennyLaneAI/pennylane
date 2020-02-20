@@ -80,10 +80,10 @@ def AngleEmbedding(features, wires, rotation="X"):
     ###############
 
     if rotation == "X":
-        broadcast(block=RX, structure='single', wires=wires, parameters=features)
+        broadcast(block=RX, structure="single", wires=wires, parameters=features)
 
     elif rotation == "Y":
-        broadcast(block=RY, structure='single', wires=wires, parameters=features)
+        broadcast(block=RY, structure="single", wires=wires, parameters=features)
 
     elif rotation == "Z":
-        broadcast(block=RZ, structure='single', wires=wires, parameters=features)
+        broadcast(block=RZ, structure="single", wires=wires, parameters=features)

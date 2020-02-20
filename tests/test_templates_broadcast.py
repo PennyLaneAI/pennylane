@@ -65,24 +65,24 @@ def KwargTemplateDouble(par, wires, a=True):
     CRX(par, wires=wires)
 
 
-TARGET_OUTPUTS = [("single", [pi, pi, pi / 2, 0], RX, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
-                  ("single", [pi, pi, pi / 2, 0], RY, [-1, -1, 0, 1], dev_4_qubits, qml.PauliZ),
-                  ("single", [pi / 2, pi / 2, pi / 4, 0], RZ, [1, 1, 1, 1], dev_4_qubits, qml.PauliZ),
-                  ("single", [[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement, [0.2, 0.4, 0.6, 0.8],
-                   dev_4_qumodes, qml.X),
-                  ("double", [pi / 2, pi / 2], CRX, [-1, 0, -1, 0], dev_4_qubits, qml.PauliZ),
-                  ("double", None, CNOT, True, [-1, 1, -1, 1], dev_4_qubits, qml.PauliZ),
-                  ("double", [[pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
-                   dev_4_qumodes, qml.NumberOperator),
-                  ("double_odd", [pi / 2], CRX, [-1, -1, 0, -1], dev_4_qubits, qml.PauliZ),
+TARGET_OUTPUTS = [("single", [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
+                  ("double", [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
+                  ("double", None, CNOT, [-1, 1, -1, 1]),
+                  ("double_odd", [pi / 2], CRX, [-1, -1, 0, -1]),
                   ]
 
-GATE_PARAMETERS = [("single", RX, [[0.1], [0.2]]),
-                   ("single", Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
-                   ("single", T, [[], []]),
-                   ("double", CRX, [[0.1], [0.2]]),
-                   ("double", CRot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]),
-                   ("double", CNOT, [[], []]),
+CV_TARGET_OUTPUTS = [("single", [[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement, [2.2, 2.4, 2.6, 2.8],
+                      qml.X),
+                     ("double", [[pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
+                      qml.NumberOperator),
+                     ]
+
+GATE_PARAMETERS = [("single", RX, [[0.1], [0.2], [0.3]]),
+                   ("single", Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1], [0.3, 0.2, -0.1]]),
+                   ("single", T, [[], [], []]),
+                   ("double", CRX, [[0.1]]),
+                   ("double", CRot, [[0.1, 0.2, 0.3]]),
+                   ("double", CNOT, [[]]),
                    ("double_odd", CRX, [[0.1]]),
                    ("double_odd", CRot, [[0.3, 0.2, 0.1]]),
                    ("double_odd", CNOT, [[]]),
@@ -97,53 +97,53 @@ class TestConstructorBroadcast:
         """Tests that correct gate queue is created when 'block' is a single gate."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(block=unitary, structure=structure, wires=range(2), parameters=parameters)
+            broadcast(block=unitary, structure=structure, wires=range(3), parameters=parameters)
 
         for gate in rec.queue:
             assert isinstance(gate, unitary)
 
     @pytest.mark.parametrize("structure, unitary, gates, parameters",
-                             [("single", ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1]]),
-                              ("single", ConstantTemplate, [T, S], [[], []]),
-                              ("double", ParametrizedTemplateDouble, [CRX, RY],
-                               [[0.1, 1], [0.2, 1]]),
-                              ("double", ConstantTemplateDouble, [T, CNOT], [[], []]),
+                             [("single", ParametrizedTemplate, [RX, RY], [[0.1, 1], [0.2, 1], [0.1, 1]]),
+                              ("single", ConstantTemplate, [T, S], [[], [], []]),
+                              ("double", ParametrizedTemplateDouble, [CRX, RY], [[0.1, 1]]),
+                              ("double", ConstantTemplateDouble, [T, CNOT], [[]]),
                               ])
     def test_correct_queue_for_template_block(self, structure, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'block' is a template."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(block=unitary, structure=structure, wires=range(2), parameters=parameters)
+            broadcast(block=unitary, structure=structure, wires=range(3), parameters=parameters)
 
         for idx, gate in enumerate(rec.queue):
             i = idx % 2
             assert isinstance(gate, gates[i])
 
-    @pytest.mark.parametrize("structure, template, kwarg, target_queue",
-                             [("single", KwargTemplate, True, [T, RY, T, RY]),
-                              ("single", KwargTemplate, False, [RY, RY]),
-                              ("double", KwargTemplateDouble, True, [T, CRX, T, CRX]),
-                              ("double", KwargTemplateDouble, False, [CRX, CRX])])
-    def test_correct_queue_for_template_block_with_keyword(self, structure, template, kwarg, target_queue):
+    @pytest.mark.parametrize("structure, template, kwarg, target_queue, parameters",
+                             [("single", KwargTemplate, True, [T, RY, T, RY], [[1], [2]]),
+                              ("single", KwargTemplate, False, [RY, RY], [[1], [2]]),
+                              ("double", KwargTemplateDouble, True, [T, CRX], [[1]]),
+                              ("double", KwargTemplateDouble, False, [CRX], [[1]])])
+    def test_correct_queue_for_template_block_with_keyword(self, structure, template, kwarg, target_queue, parameters):
         """Tests that correct gate queue is created when 'block' is a template that uses a keyword."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(block=template, structure=structure, wires=range(2), parameters=[[1], [2]], kwargs={'a': kwarg})
+            broadcast(block=template, structure=structure, wires=range(2),
+                      parameters=parameters, kwargs={'a': kwarg})
 
         for gate, target_gate in zip(rec.queue, target_queue):
             assert isinstance(gate, target_gate)
 
-    @pytest.mark.parametrize("structure, pars1, pars2, gate", [("single", [[], []], None, T),
-                                                               ("single", [1, 2], [[1], [2]], RX),
+    @pytest.mark.parametrize("structure, pars1, pars2, gate", [("single", [[], [], []], None, T),
+                                                               ("single", [1, 2, 3], [[1], [2], [3]], RX),
                                                                ])
     def test_correct_queue_for_gate_block(self, structure, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
-            broadcast(block=gate, structure=structure, wires=range(2), parameters=pars1)
+            broadcast(block=gate, structure=structure, wires=range(3), parameters=pars1)
 
         with qml.utils.OperationRecorder() as rec2:
-            broadcast(block=gate, structure=structure, wires=range(2), parameters=pars2)
+            broadcast(block=gate, structure=structure, wires=range(3), parameters=pars2)
 
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
@@ -153,7 +153,7 @@ class TestConstructorBroadcast:
         """Tests that gate queue has correct parameters."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(block=gate, structure=structure, wires=range(2), parameters=parameters)
+            broadcast(block=gate, structure=structure, wires=range(3), parameters=parameters)
 
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
@@ -164,20 +164,36 @@ class TestConstructorBroadcast:
         """Tests that specific parameter formats have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
-            broadcast(block=gate, structure=structure, wires=range(4), even=True, parameters=pars1)
+            broadcast(block=gate, structure=structure, wires=range(4), parameters=pars1)
 
         with qml.utils.OperationRecorder() as rec2:
-            broadcast(block=gate, structure=structure, wires=range(4), even=True, parameters=pars2)
+            broadcast(block=gate, structure=structure, wires=range(4), parameters=pars2)
 
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
 
-    @pytest.mark.parametrize("structure, parameters, unitary, target, dev, observable", TARGET_OUTPUTS)
-    def test_prepares_correct_state(self, structure, parameters, unitary, target, dev, observable):
+    @pytest.mark.parametrize("structure, parameters, unitary, target", TARGET_OUTPUTS)
+    def test_prepares_correct_state(self, structure, parameters, unitary, target):
         """Tests the state produced by different unitaries."""
 
-        @qml.qnode(dev)
+        @qml.qnode(dev_4_qubits)
         def circuit():
+            for w in range(4):
+                qml.PauliX(wires=w)
+            broadcast(block=unitary, structure=structure, wires=range(4), parameters=parameters)
+            return [qml.expval(qml.PauliZ(wires=w)) for w in range(4)]
+
+        res = circuit()
+        assert np.allclose(res, target)
+
+    @pytest.mark.parametrize("structure, parameters, unitary, target, observable", CV_TARGET_OUTPUTS)
+    def test_prepares_correct_state_cv(self, structure, parameters, unitary, target, observable):
+        """Tests the state produced by different unitaries."""
+
+        @qml.qnode(dev_4_qumodes)
+        def circuit():
+            for w in range(4):
+                Displacement(1, 0, wires=w)
             broadcast(block=unitary, structure=structure, wires=range(4), parameters=parameters)
             return [qml.expval(observable(wires=w)) for w in range(4)]
 
@@ -197,7 +213,7 @@ class TestConstructorBroadcast:
             broadcast(block=RX, wires=range(n_wires), parameters=parameters)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="'parameters' must contain one entry for each"):
+        with pytest.raises(ValueError, match="'parameters' must contain entries for"):
             circuit()
 
     def test_exception_wires_not_valid(self):

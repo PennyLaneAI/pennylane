@@ -1,4 +1,4 @@
-# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,31 +26,33 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 @template
-def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
-    r"""Applies a unitary multiple times in a certain pattern specified by the ``structure`` argument.
+def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
+    r"""Applies a unitary multiple times in a pattern specified by the ``structure`` argument.
 
-    .. figure:: ../../_static/templates/constructors/broadcast.png
+    .. figure:: ../../_static/templates/broadcast.png
         :align: center
         :width: 40%
         :target: javascript:void(0);
 
-    The unitary ``block`` is either a single-qubit quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template acting on a single qubits.
+    The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
+    user-supplied template. Depending on the chosen structure, ``block`` is applied to a wire or a subset of wires.
 
-    Each ``block`` applied to a wire or a pair of wires may depend on a different set of parameters.
+    Each ``block`` may depend on a different set of parameters.
     These are passed as a list by the ``parameters`` argument.
     The required length of the list is defined by the number of wires :math:`M` as well as the structure:
 
     * :math:`M` parameters for ``structure= 'single'`` (default case)
-    * :math:`\lfloor \frac{M}{2} \rfloor` parameters for ``structure= 'single'``
-    * :math:`\lfloor \frac{M-1}{2} \rfloor` parameters for ``structure= 'single'``
+    * :math:`\lfloor \frac{M}{2} \rfloor` parameters for ``structure= 'double'``
+    * :math:`\lfloor \frac{M-1}{2} \rfloor` parameters for ``structure= 'double'``
 
     For more details, see *UsageDetails* below.
 
     Args:
-        block (function): quantum gate or template
-        parameters (iterable or None): sequence of parameters for each gate applied
+        block (func): quantum gate or template
+        structure (str): specifies the pattern of the broadcast
+        parameters (list or None): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
+        kwargs (dict): dictionary of auxilliary parameters for ``block``
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -244,7 +246,7 @@ def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
                 circuit([parameters_1])
     """
 
-    OPTIONS = ['single', 'double', 'double_odd']
+    OPTIONS = ["single", "double", "double_odd"]
 
     #########
     # Input checks
@@ -259,28 +261,32 @@ def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
     )
 
     _check_type(
-        structure,
-        [str],
-        msg="'structure' must be a string; got {}".format(type(structure)),
+        structure, [str], msg="'structure' must be a string; got {}".format(type(structure)),
     )
 
     _check_is_in_options(
-        structure,
-        OPTIONS,
-        msg="did not recognize option {} for 'structure'".format(structure),
+        structure, OPTIONS, msg="did not recognize option {} for 'structure'".format(structure),
     )
 
     n_parameters = {
-        'single': len(wires),
-        'double': len(wires) // 2,
-        'double_odd': (len(wires) - 1) // 2
+        "single": len(wires),
+        "double": len(wires) // 2,
+        "double_odd": (len(wires) - 1) // 2,
     }
 
+    # check that enough wires for two-wire structure
+    if structure in ["double", "double_odd"]:
+        if len(wires) < 2:
+            raise ValueError(
+                "cannot broadcast 2-wire block over less than two wires; got {}".format(len(wires))
+            )
+
+    # check that enough parameters for structure
     if parameters is not None:
         shape = _get_shape(parameters)
-        if shape[0] != n_parameters:
+        if shape[0] != n_parameters[structure]:
             raise ValueError(
-                "'parameters' must contain one entry for each of the {} blocks; got {}".format(
+                "'parameters' must contain entries for {} blocks; got {} entries".format(
                     n_parameters[structure], shape[0]
                 )
             )
@@ -293,9 +299,9 @@ def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
     #########
 
     wire_sequence = {
-        'single': wires,
-        'double': [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
-        'double_odd': [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)]
+        "single": wires,
+        "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
     }
 
     # broadcast the block
