@@ -7,13 +7,6 @@ evaluate, and train quantum nodes.
 
 .. currentmodule:: pennylane.templates
 
-Template Constructors
----------------------
-
-.. automodapi:: pennylane.templates.constructors
-    :no-heading:
-    :include-all-objects:
-
 Embeddings
 ----------
 
@@ -41,3 +34,16 @@ State preperations
 .. automodapi:: pennylane.templates.state_preparations
     :no-heading:
     :include-all-objects:
+
+Custom Templates
+-----------------
+
+The templates module offers a few functions to support the construction of custom templates.
+
+.. autosummary::
+    :toctree:
+
+    ~pennylane.templates.broadcast
+    ~pennylane.templates.template
+
+

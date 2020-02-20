@@ -292,8 +292,5 @@ respective interfaces.
     init_torch = torch.tensor(init_pars)
     init_tf = tf.Variable(init_pars)
 
-<<<<<<< HEAD
-The initialization functions can be found in the API of the :mod:`~.pennylane.init` module.
-=======
 The initialization functions can be found in the :mod:`~.pennylane.init` module.
->>>>>>> base_templates_update_broadcast
+

@@ -27,23 +27,36 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 @template
 def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
-    r"""Applies a unitary multiple times in a pattern specified by the ``structure`` argument.
-
-    .. figure:: ../../_static/templates/broadcast.png
-        :align: center
-        :width: 40%
-        :target: javascript:void(0);
+    r"""Applies a unitary multiple times to a specific pattern of wires.
 
     The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template. Depending on the chosen structure, ``block`` is applied to a wire or a subset of wires.
+    user-supplied template. Depending on the chosen structure, ``block`` is applied to a wire or a subset of wires:
 
-    Each ``block`` may depend on a different set of parameters.
-    These are passed as a list by the ``parameters`` argument.
-    The required length of the list is defined by the number of wires :math:`M` as well as the structure:
+    * ``structure= 'single'`` (the default case) applies a single-wire block to each one of the :math:`M` wires:
 
-    * :math:`M` parameters for ``structure= 'single'`` (default case)
-    * :math:`\lfloor \frac{M}{2} \rfloor` parameters for ``structure= 'double'``
-    * :math:`\lfloor \frac{M-1}{2} \rfloor` parameters for ``structure= 'double'``
+      .. figure:: ../_static/templates/broadcast_single.png
+            :align: center
+            :width: 20%
+            :target: javascript:void(0);
+
+    * ``structure= 'double'`` applies a two-wire block to :math:`\lfloor \frac{M}{2} \rfloor`
+      subsequent pairs of wires:
+
+      .. figure:: ../_static/templates/broadcast_double.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
+    * ``structure= 'double_odd'`` applies a two-wire block to :math:`\lfloor \frac{M-1}{2} \rfloor`
+      subsequent pairs of wires, starting with the second wire:
+
+      .. figure:: ../_static/templates/broadcast_double_odd.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
+
+    Each ``block`` may depend on a different set of parameters. These are passed as a list by the ``parameters`` argument.
 
     For more details, see *UsageDetails* below.
 
@@ -101,7 +114,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
         **Constant unitaries**
 
         If the ``block`` argument does not take parameters, no ``parameters`` argument is passed to
-        :mod:`~.pennylane.templates.constructors.broadcast`:
+        :func:`~.pennylane.templates.broadcast`:
 
         .. code-block:: python
 
@@ -208,12 +221,9 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
 
         **Different structures**
 
-        * Double structure
+        The basic usage of the different structures works as follows:
 
-            .. figure:: ../../_static/templates/constructors/broadcast_double.png
-                :align: center
-                :width: 40%
-                :target: javascript:void(0);
+        * Double structure with four wires (applying 2 blocks)
 
             .. code-block:: python
 
@@ -221,29 +231,26 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast_double(block=qml.CRot, structure='double' wires=[0,1,2,3], even=True, parameters=pars)
+                    broadcast(block=qml.CRot, structure='double',
+                              wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                parameters_1 = [1, 2, 3]
-                parameters_2 = [-1, 4, 2]
-                circuit([parameters_1, parameters_2])
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 4, 2]
+                circuit([pars1, pars2])
 
-        * Double-odd structure
-
-            .. figure:: ../../_static/templates/constructors/broadcast_double_odd.png
-                :align: center
-                :width: 40%
-                :target: javascript:void(0);
+        * Double-odd structure with four wires (applying 1 block)
 
             .. code-block:: python
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast_double(block=qml.CRot, wires=[0,1,2,3], even=False, parameters=pars)
+                    broadcast(block=qml.CRot, structure='double_odd',
+                              wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                parameters_1 = [1, 2, 3]
-                circuit([parameters_1])
+                pars1 = [1, 2, 3]
+                circuit([pars1])
     """
 
     OPTIONS = ["single", "double", "double_odd"]
@@ -273,13 +280,6 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
         "double": len(wires) // 2,
         "double_odd": (len(wires) - 1) // 2,
     }
-
-    # check that enough wires for two-wire structure
-    if structure in ["double", "double_odd"]:
-        if len(wires) < 2:
-            raise ValueError(
-                "cannot broadcast 2-wire block over less than two wires; got {}".format(len(wires))
-            )
 
     # check that enough parameters for structure
     if parameters is not None:

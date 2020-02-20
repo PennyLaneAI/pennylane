@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.template.constructors` module.
+Unit tests for the :func:`pennylane.template.broadcast` function.
 Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
@@ -21,7 +21,7 @@ from math import pi
 import numpy as np
 import pennylane as qml
 from pennylane.templates import template, broadcast
-from pennylane.ops import RX, RY, RZ, Displacement, Beamsplitter, T, S, Rot, CRX, CRot, CNOT
+from pennylane.ops import RX, RY, Displacement, Beamsplitter, T, S, Rot, CRX, CRot, CNOT
 
 dev_4_qubits = qml.device('default.qubit', wires=4)
 dev_4_qumodes = qml.device('default.gaussian', wires=4)
