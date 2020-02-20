@@ -794,8 +794,10 @@ class TestQNodeArgs:
 
         # first evaluation creates VariableRefs for the positional args
         node([0.1], n=1)
+        assert node.num_variables == 1
         # new VariableRefs must be created since the auxiliary args have changed
         node([0.1, 0.2], n=2)
+        assert node.num_variables == 2
 
     def test_mutable_node_variable_number_of_args_nested(self, qubit_device_1_wire):
         """Tests a mutable circuit that expects a variable number of
@@ -811,7 +813,9 @@ class TestQNodeArgs:
         node = BaseQNode(circuit, qubit_device_1_wire, mutable=True)
 
         node([[0.1], [0.2]], n=1)
+        assert node.num_variables == 2
         node([[0.1], [0.2, 0.3]], n=2)
+        assert node.num_variables == 3
 
 
 

@@ -201,7 +201,8 @@ class BaseQNode:
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
         #: int: number of flattened differentiable parameters in the circuit
         self.num_variables = None
-        self.last_aux_args = None
+        #: dict[str, Any]: deepcopy of the auxiliary arguments the qnode was passed on last call
+        self.last_auxiliary_args = None
 
         #: List[Operator]: quantum circuit, in the order the quantum function defines it
         self.ops = []
@@ -526,7 +527,7 @@ class BaseQNode:
             # Check that they have same nested values.
             return all(equal_nested(val, b[key]) for key, val in a.items())
 
-        if equal_dicts(kwargs, self.last_aux_args):
+        if equal_dicts(kwargs, self.last_auxiliary_args):
             return
 
         # If the auxiliary args have changed (or this is the first call),
@@ -578,7 +579,7 @@ class BaseQNode:
 
         # The qfunc call may fail for various reasons.
         # We only update the aux args here to ensure that they represent the current circuit.
-        self.last_aux_args = copy.deepcopy(kwargs)
+        self.last_auxiliary_args = copy.deepcopy(kwargs)
 
         # check for unused positional params
         if self.properties.get("par_check", False):
