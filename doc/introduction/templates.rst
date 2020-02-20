@@ -209,7 +209,7 @@ takes other templates (or single quantum operations) and applies them to wires i
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.broadcast.html
     :description: broadcast (double_odd)
-    :figure: ../_static/templates/broadcast_double.png
+    :figure: ../_static/templates/broadcast_double_odd.png
 
 .. raw:: html
 
