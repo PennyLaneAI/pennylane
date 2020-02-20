@@ -190,8 +190,8 @@ of other templates.
 
 .. _intro_ref_temp_constr:
 
-Template constructor
---------------------
+Broadcasting function
+---------------------
 
 PennyLane offers a broadcasting function to easily construct templates. :func:`~.pennylane.templates.broadcast`
 takes other templates (or single quantum operations) and applies them to wires in a specific structure.
