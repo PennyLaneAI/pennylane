@@ -22,35 +22,26 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape
 
 
 @template
-def Broadcast(block, wires, parameters=None, kwargs={}):
-    r"""Applies a (potentially parametrized) single-qubit unitary ``block`` to each wire.
+def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
+    r"""Applies a unitary multiple times in a certain pattern specified by the ``structure`` argument.
 
     .. figure:: ../../_static/templates/constructors/broadcast.png
         :align: center
-        :width: 20%
+        :width: 40%
         :target: javascript:void(0);
 
-    If the block does not depend on parameters, ``parameters`` is set to ``None``.
+    The unitary ``block`` is either a single-qubit quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
+    user-supplied template acting on a single qubits.
 
-    If ``parameters`` is not ``None``, it represents sets of parameters
-    :math:`p_m = [\varphi^m_1, \varphi^m_2, ..., \varphi_D^m]`, one set for each wire :math:`m = 1, \dots , M`.
-    The block acting on the :math:`m` th wire is :math:`U(\varphi^m_1, \varphi^m_2, ..., \varphi_D^m)`. Hence,
-    ``parameters`` must be a list or array of length :math:`M`.
+    Each ``block`` applied to a wire or a pair of wires may depend on a different set of parameters.
+    These are passed as a list by the ``parameters`` argument.
+    The required length of the list is defined by the number of wires :math:`M` as well as the structure:
 
-    The block must be a function of a specific signature. It is called
-    by :mod:`~.pennylane.templates.constructors.broadcast` as follows:
+    * :math:`M` parameters for ``structure= 'single'`` (default case)
+    * :math:`\lfloor \frac{M}{2} \rfloor` parameters for ``structure= 'single'``
+    * :math:`\lfloor \frac{M-1}{2} \rfloor` parameters for ``structure= 'single'``
 
-    .. code-block:: python
-
-        block(parameter1, ... parameterD, wires, **kwargs)
-
-    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters that are fed into
-    the block, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the block
-    is not parametrized), ``wires`` is the *only* positional argument. The ``block`` function
-    can take user-defined keyword arguments.
-
-    Typically, ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
+    For more details, see *UsageDetails* below.
 
     Args:
         block (function): quantum gate or template
@@ -140,7 +131,7 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
-        As mentioned above, in general the block **must** have the following signature:
+        In general, the block takes D parameters and **must** have the following signature:
 
         .. code-block:: python
 
@@ -209,6 +200,44 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
             circuit(hadamard=False)
 
+        **Different structures**
+
+        * Double structure
+
+            .. figure:: ../../_static/templates/constructors/broadcast_double.png
+                :align: center
+                :width: 40%
+                :target: javascript:void(0);
+
+            .. code-block:: python
+
+                dev = qml.device('default.qubit', wires=4)
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast_double(block=qml.CRot, structure='double' wires=[0,1,2,3], even=True, parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                parameters_1 = [1, 2, 3]
+                parameters_2 = [-1, 4, 2]
+                circuit([parameters_1, parameters_2])
+
+        * Double-odd structure
+
+            .. figure:: ../../_static/templates/constructors/broadcast_double_odd.png
+                :align: center
+                :width: 40%
+                :target: javascript:void(0);
+
+            .. code-block:: python
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast_double(block=qml.CRot, wires=[0,1,2,3], even=False, parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                parameters_1 = [1, 2, 3]
+                circuit([parameters_1])
     """
 
     #########
@@ -223,14 +252,30 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
         "Iterable; got {}".format(type(parameters)),
     )
 
+    _check_type(
+        structure,
+        [str],
+        msg="'structure' must be a string; got {}".format(type(structure)),
+    )
+
+    if structure == 'single':
+        n_pars = len(wires)
+    elif structure == 'double':
+        n_pars = len(wires) // 2
+    elif structure == 'double_odd':
+        n_pars = (len(wires) - 1) // 2
+    else:
+        raise ValueError("did not recognize option for structure; got {}".format(structure))
     if parameters is not None:
         shape = _get_shape(parameters)
-        if shape[0] != len(wires):
+        if shape[0] != n_pars:
             raise ValueError(
-                "'parameters' must contain one entry for each of the {} wires; got shape {}".format(
-                    len(wires), shape
+                "'parameters' must contain one entry for each block; got shape {}".format(
+                    n_pars, shape
                 )
             )
+    if parameters is not None:
+        shape = _get_shape(parameters)
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
@@ -239,5 +284,13 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
     #########
 
-    for w, p in zip(wires, parameters):
+    if structure == 'single':
+        wire_sequence = wires
+    elif structure == 'double':
+        wire_sequence = [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)]
+    elif structure == 'double_odd':
+        wire_sequence = [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)]
+
+    # broadcase the block
+    for w, p in zip(wire_sequence, parameters):
         block(*p, wires=w, **kwargs)

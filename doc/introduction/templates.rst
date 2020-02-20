@@ -190,18 +190,21 @@ of other templates.
 
 .. _intro_ref_temp_constr:
 
-Template constructors
----------------------
+Template constructor
+--------------------
 
-Template constructors are a special type of template that takes other templates (or single quantum operations)
-to construct circuits. These input templates may also depend on parameters.
-Constructors are handy as a building block for custom circuits. As a convention, their names start with a
-lower case.
+PennyLane offers a broadcasting function to easily construct templates. :func:`~.pennylane.templates.broadcast`
+takes other templates (or single quantum operations) and applies them to wires in a specific structure.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.constructors.broadcast_double.html
-    :description: broadcast_double
-    :figure: ../_static/templates/constructors/broadcast_double.png
+    :link: ../code/api/pennylane.templates.broadcast.html
+    :description: broadcast ``(structure=single)``
+    :figure: ../_static/templates/broadcast_single.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.broadcast.html
+    :description: broadcast ``(structure=double)``
+    :figure: ../_static/templates/broadcast_double.png
 
 .. raw:: html
 
@@ -289,4 +292,8 @@ respective interfaces.
     init_torch = torch.tensor(init_pars)
     init_tf = tf.Variable(init_pars)
 
+<<<<<<< HEAD
 The initialization functions can be found in the API of the :mod:`~.pennylane.init` module.
+=======
+The initialization functions can be found in the :mod:`~.pennylane.init` module.
+>>>>>>> base_templates_update_broadcast
