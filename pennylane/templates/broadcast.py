@@ -13,12 +13,16 @@
 # limitations under the License.
 r"""
 Contains the ``broadcast`` template constructor.
+
+To add a new structure, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
+update the list of parameter numbers in the docstring. Optionally add a usage example at the end of the
+``UsageDetails`` directive.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import _check_wires, _check_type, _get_shape
+from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _check_is_in_options
 
 
 @template
@@ -240,6 +244,8 @@ def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
                 circuit([parameters_1])
     """
 
+    OPTIONS = ['single', 'double', 'double_odd']
+
     #########
     # Input checks
 
@@ -258,39 +264,40 @@ def broadcast(block,  wires, structure='single', parameters=None, kwargs={}):
         msg="'structure' must be a string; got {}".format(type(structure)),
     )
 
-    if structure == 'single':
-        n_pars = len(wires)
-    elif structure == 'double':
-        n_pars = len(wires) // 2
-    elif structure == 'double_odd':
-        n_pars = (len(wires) - 1) // 2
-    else:
-        raise ValueError("did not recognize option for structure; got {}".format(structure))
+    _check_is_in_options(
+        structure,
+        OPTIONS,
+        msg="did not recognize option {} for 'structure'".format(structure),
+    )
+
+    n_parameters = {
+        'single': len(wires),
+        'double': len(wires) // 2,
+        'double_odd': (len(wires) - 1) // 2
+    }
+
     if parameters is not None:
         shape = _get_shape(parameters)
-        if shape[0] != n_pars:
+        if shape[0] != n_parameters:
             raise ValueError(
-                "'parameters' must contain one entry for each block; got shape {}".format(
-                    n_pars, shape
+                "'parameters' must contain one entry for each of the {} blocks; got {}".format(
+                    n_parameters[structure], shape[0]
                 )
             )
-    if parameters is not None:
-        shape = _get_shape(parameters)
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
     else:
-        parameters = [[] for _ in range(len(wires))]
+        parameters = [[] for _ in range(n_parameters[structure])]
 
     #########
 
-    if structure == 'single':
-        wire_sequence = wires
-    elif structure == 'double':
-        wire_sequence = [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)]
-    elif structure == 'double_odd':
-        wire_sequence = [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)]
+    wire_sequence = {
+        'single': wires,
+        'double': [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
+        'double_odd': [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)]
+    }
 
-    # broadcase the block
-    for w, p in zip(wire_sequence, parameters):
+    # broadcast the block
+    for w, p in zip(wire_sequence[structure], parameters):
         block(*p, wires=w, **kwargs)
