@@ -198,12 +198,17 @@ takes other templates (or single quantum operations) and applies them to wires i
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.broadcast.html
-    :description: broadcast ``(structure=single)``
+    :description: broadcast (single)
     :figure: ../_static/templates/broadcast_single.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.broadcast.html
-    :description: broadcast ``(structure=double)``
+    :description: broadcast (double)
+    :figure: ../_static/templates/broadcast_double.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.broadcast.html
+    :description: broadcast (double_odd)
     :figure: ../_static/templates/broadcast_double.png
 
 .. raw:: html

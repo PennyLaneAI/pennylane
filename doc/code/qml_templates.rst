@@ -45,5 +45,3 @@ The templates module offers a few functions to support the construction of custo
 
     ~pennylane.templates.broadcast
     ~pennylane.templates.template
-
-
