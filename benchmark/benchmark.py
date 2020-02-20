@@ -12,7 +12,13 @@ import pennylane as qml
 
 
 def timing(func, *, number=10, repeat=5):
-    "Time the given function."
+    """Time the given function.
+
+    Args:
+        func (callable[None, Any]): function to time
+        number (int): number of loops per test
+        repeat (int): the number the timing test is run
+    """
     import timeit
 
     print('{} loops, {} runs'.format(number, repeat))
@@ -21,7 +27,13 @@ def timing(func, *, number=10, repeat=5):
 
 
 def plot(title, kernels, n_range):
-    "Plot timings as a function of the parameter n."
+    """Plot timings as a function of the parameter n.
+
+    Args:
+        title (str): plot title
+        kernels (Sequence[callable[Any, Any]]): parametrized benchmarks to time
+        n_range (Sequence[Any]): values the benchmark parameter n takes
+    """
     import perfplot
 
     labels = [k.__doc__ for k in kernels]
@@ -44,8 +56,13 @@ def plot(title, kernels, n_range):
     )
 
 
-def profile(func):
-    "Profile the given function."
+def profile(func, identifier):
+    """Profile the given function.
+
+    Args:
+        func (callable[None, Any]): function to profile
+        identifier (str): identifying part of the name of the file containing the results
+    """
     import cProfile
     import pstats
 
@@ -56,7 +73,7 @@ def profile(func):
         func()
 
     pr.disable()
-    pr.dump_stats("pennylane_{}.pstats".format(qml.version()))
+    pr.dump_stats("pennylane_{}.pstats".format(identifier))
     ps = pstats.Stats(pr).strip_dirs().sort_stats("tottime")  # "cumulative")
     ps.print_stats()
 
@@ -74,6 +91,8 @@ def cli():
         ["git", "log", "-1", "--pretty=%h %s"], stdout=subprocess.PIPE, encoding="utf-8", check=True
     )
     title = res.stdout
+    short_hash = title.split(" ", maxsplit=1)[0]
+
     print("Benchmarking PennyLane", qml.version())
     print("Commit:", title)
     # qml.about()
@@ -89,7 +108,7 @@ def cli():
     elif cmd == "plot":
         plot(title, [bm.benchmark], range(bm.n_min, bm.n_max, bm.n_step))
     elif cmd == "profile":
-        profile(functools.partial(bm.benchmark, bm.n))
+        profile(functools.partial(bm.benchmark, bm.n), identifier=short_hash)
     else:
         raise ValueError("Unknown command.")
 
