@@ -378,4 +378,3 @@ The following initialization functions are available:
     ~pennylane.init.strong_ent_layers_normal
 
 :html:`</div>`
-
