@@ -207,7 +207,7 @@ takes other templates (or single quantum operations) and applies them to wires i
     :figure: ../_static/templates/broadcast_double.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.broadcast.html
+    :link: ../code/pennylane.templates.broadcast.html
     :description: broadcast (double_odd)
     :figure: ../_static/templates/broadcast_double_odd.png
 
