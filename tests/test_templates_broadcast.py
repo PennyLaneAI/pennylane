@@ -69,11 +69,14 @@ TARGET_OUTPUTS = [("single", [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
                   ("double", [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
                   ("double", None, CNOT, [-1, 1, -1, 1]),
                   ("double_odd", [pi / 2], CRX, [-1, -1, 0, -1]),
+                  ("chain", [pi, pi, pi/2, 0], CRX, [1, -1, -1, -1])
                   ]
 
 CV_TARGET_OUTPUTS = [("single", [[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement, [2.2, 2.4, 2.6, 2.8],
                       qml.X),
                      ("double", [[pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
+                      qml.NumberOperator),
+                     ("chain", [[pi / 4, 0.0], [pi / 4, 0.0], [pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
                       qml.NumberOperator),
                      ]
 
@@ -86,6 +89,9 @@ GATE_PARAMETERS = [("single", RX, [[0.1], [0.2], [0.3]]),
                    ("double_odd", CRX, [[0.1]]),
                    ("double_odd", CRot, [[0.3, 0.2, 0.1]]),
                    ("double_odd", CNOT, [[]]),
+                   ("chain", CRX, [[0.1], [0.1], [0.1]]),
+                   ("chain", CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("chain", CNOT, [[], [], []]),
                    ]
 
 

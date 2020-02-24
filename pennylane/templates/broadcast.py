@@ -55,6 +55,13 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
+    * ``structure= 'chain'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires of a
+      1-d chain (where the last wire is considered to be a neighbour of the first one):
+
+      .. figure:: ../_static/templates/broadcast_chain.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
 
     Each ``block`` may depend on a different set of parameters. These are passed as a list by the ``parameters`` argument.
 
@@ -251,9 +258,26 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
                 pars1 = [1, 2, 3]
                 circuit([pars1])
+
+        * Chain structure with four wires (applying 4 blocks)
+
+            .. code-block:: python
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(block=qml.CRot, structure='chain',
+                              wires=[0,1,2,3], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 3, 1]
+                pars3 = [2, 1, 4]
+                pars4 = [-1, -2, -3]
+
+                circuit([pars1, pars2, pars3, pars4])
     """
 
-    OPTIONS = ["single", "double", "double_odd"]
+    OPTIONS = ["single", "double", "double_odd", "chain"]
 
     #########
     # Input checks
@@ -286,6 +310,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
         "single": len(wires),
         "double": len(wires) // 2,
         "double_odd": (len(wires) - 1) // 2,
+        "chain": len(wires),
     }
 
     # check that enough parameters for structure
@@ -309,6 +334,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
         "single": wires,
         "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
         "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
+        "chain": wires + wires[0],
     }
 
     # broadcast the block
