@@ -58,7 +58,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
 
     Each ``block`` may depend on a different set of parameters. These are passed as a list by the ``parameters`` argument.
 
-    For more details, see *UsageDetails* below.
+    For more details, see *Usage Details* below.
 
     Args:
         block (func): quantum gate or template
