@@ -28,7 +28,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="4.9771719"
-     inkscape:cx="916.2917"
+     inkscape:cx="890.03499"
      inkscape:cy="267.47514"
      inkscape:document-units="mm"
      inkscape:current-layer="g3688-0-6"
@@ -4681,6 +4681,101 @@
            height="3.6876872"
            x="218.58405"
            y="124.38461"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.94009,142.01072 h 16.09624"
+           id="path834-5-03-9-9-6-8-4"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-ydpi="200"
+           inkscape:export-xdpi="200"
+           y="130.19571"
+           x="207.16788"
+           height="13.648219"
+           width="19.863295"
+           id="rect3282-2-4-5-0-5"
+           style="opacity:1;fill:#cccccc;fill-opacity:0.50909089;fill-rule:nonzero;stroke:none;stroke-width:0.09999999;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.94009,132.53923 h 16.09624"
+           id="path834-3-1-1-6-2"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.94009,134.9071 h 16.09623"
+           id="path834-1-11-2-1-2-4"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.94009,139.64285 h 16.09624"
+           id="path834-5-03-9-0-6-7"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.94009,137.27497 h 16.09624"
+           id="path834-54-4-3-8-1-4"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522488;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="rect871-03-9-5-7-4"
+           width="2.023082"
+           height="3.6876872"
+           x="212.00246"
+           y="131.81477"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522488;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="rect871-03-9-5-7-7-3"
+           width="2.023082"
+           height="3.6876872"
+           x="215.01263"
+           y="134.32542"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522488;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="rect871-03-9-5-7-9-0"
+           width="2.023082"
+           height="3.6876872"
+           x="217.93639"
+           y="136.66441"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522488;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="rect871-03-9-5-7-1-7"
+           width="2.023082"
+           height="3.6876872"
+           x="220.75385"
+           y="138.89713"
            inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
            inkscape:export-xdpi="200"
            inkscape:export-ydpi="200" />

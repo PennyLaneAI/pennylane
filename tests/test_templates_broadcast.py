@@ -69,14 +69,17 @@ TARGET_OUTPUTS = [("single", [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
                   ("double", [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
                   ("double", None, CNOT, [-1, 1, -1, 1]),
                   ("double_odd", [pi / 2], CRX, [-1, -1, 0, -1]),
-                  ("chain", [pi, pi, pi/2, 0], CRX, [1, -1, -1, -1])
+                  ("chain", [pi, pi, pi/2], CRX, [-1, 1, -1, 0]),
+                  ("ring", [pi, pi, pi/2, pi], CRX, [0, 1, -1, 0]),
                   ]
 
 CV_TARGET_OUTPUTS = [("single", [[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement, [2.2, 2.4, 2.6, 2.8],
                       qml.X),
                      ("double", [[pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
                       qml.NumberOperator),
-                     ("chain", [[pi / 4, 0.0], [pi / 4, 0.0], [pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
+                     ("chain", [[pi / 4, 0.0], [0, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
+                      qml.NumberOperator),
+                     ("ring", [[pi / 4, 0.0], [0, 0.0], [pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [1, 2, 0, 1],
                       qml.NumberOperator),
                      ]
 
@@ -89,9 +92,12 @@ GATE_PARAMETERS = [("single", RX, [[0.1], [0.2], [0.3]]),
                    ("double_odd", CRX, [[0.1]]),
                    ("double_odd", CRot, [[0.3, 0.2, 0.1]]),
                    ("double_odd", CNOT, [[]]),
-                   ("chain", CRX, [[0.1], [0.1], [0.1]]),
-                   ("chain", CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ("chain", CNOT, [[], [], []]),
+                   ("chain", CRX, [[0.1], [0.1]]),
+                   ("chain", CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("chain", CNOT, [[], []]),
+                   ("ring", CRX, [[0.1], [0.1], [0.1]]),
+                   ("ring", CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("ring", CNOT, [[], [], []]),
                    ]
 
 
@@ -113,6 +119,8 @@ class TestConstructorBroadcast:
                               ("single", ConstantTemplate, [T, S], [[], [], []]),
                               ("double", ParametrizedTemplateDouble, [CRX, RY], [[0.1, 1]]),
                               ("double", ConstantTemplateDouble, [T, CNOT], [[]]),
+                              ("ring", ParametrizedTemplateDouble, [CRX, RY], [[0.1, 1], [0.1, 1], [0.1, 1]]),
+                              ("ring", ConstantTemplateDouble, [T, CNOT], [[], [], []]),
                               ])
     def test_correct_queue_for_template_block(self, structure, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'block' is a template."""
@@ -132,7 +140,10 @@ class TestConstructorBroadcast:
                              [("single", KwargTemplate, True, [T, RY, T, RY], [[1], [2]]),
                               ("single", KwargTemplate, False, [RY, RY], [[1], [2]]),
                               ("double", KwargTemplateDouble, True, [T, CRX], [[1]]),
-                              ("double", KwargTemplateDouble, False, [CRX], [[1]])])
+                              ("double", KwargTemplateDouble, False, [CRX], [[1]]),
+                              ("ring", KwargTemplateDouble, True, [T, CRX], [[1], [1]]),
+                              ("ring", KwargTemplateDouble, False, [CRX], [[1], [1]]),
+                              ])
     def test_correct_queue_for_template_block_with_keyword(self, structure, template, kwarg, target_queue, parameters):
         """Tests that correct gate queue is created when 'block' is a template that uses a keyword."""
 
@@ -146,7 +157,7 @@ class TestConstructorBroadcast:
     @pytest.mark.parametrize("structure, pars1, pars2, gate", [("single", [[], [], []], None, T),
                                                                ("single", [1, 2, 3], [[1], [2], [3]], RX),
                                                                ])
-    def test_correct_queue_for_gate_block(self, structure, pars1, pars2, gate):
+    def test_single_correct_queue_for_different_parameter_formats(self, structure, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:

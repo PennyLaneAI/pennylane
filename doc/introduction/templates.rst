@@ -210,6 +210,16 @@ takes other templates (or single quantum operations) and applies them to wires i
     :description: broadcast (double_odd)
     :figure: ../_static/templates/broadcast_double_odd.png
 
+.. customgalleryitem::
+    :link: ../code/pennylane.templates.broadcast.html
+    :description: broadcast (chain)
+    :figure: ../_static/templates/broadcast_chain.png
+
+.. customgalleryitem::
+    :link: ../code/pennylane.templates.broadcast.html
+    :description: broadcast (ring)
+    :figure: ../_static/templates/broadcast_ring.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
