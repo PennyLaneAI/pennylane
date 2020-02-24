@@ -27,8 +27,8 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.759696"
-     inkscape:cx="537.83582"
+     inkscape:zoom="4.9771719"
+     inkscape:cx="817.03855"
      inkscape:cy="275.51183"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -4344,8 +4344,8 @@
          id="rect3282-2-4"
          width="19.863295"
          height="13.648219"
-         x="207.16788"
-         y="115.78951"
+         x="207.11472"
+         y="115.6832"
          inkscape:export-xdpi="200"
          inkscape:export-ydpi="200"
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png" />
@@ -4355,7 +4355,7 @@
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
          inkscape:connector-curvature="0"
          id="path834-3-1"
-         d="m 209.04833,118.02672 h 16.09624"
+         d="m 208.88693,118.02672 h 16.09624"
          style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:nodetypes="cc" />
       <path
@@ -4364,7 +4364,7 @@
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
          inkscape:connector-curvature="0"
          id="path834-1-11-2"
-         d="m 209.04833,121.1158 h 16.09623"
+         d="m 208.88693,120.39459 h 16.09623"
          style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:nodetypes="cc" />
       <path
@@ -4373,7 +4373,7 @@
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
          inkscape:connector-curvature="0"
          id="path834-5-03-9"
-         d="m 209.04833,127.29395 h 16.09624"
+         d="m 208.88693,125.13034 h 16.09624"
          style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:nodetypes="cc" />
       <path
@@ -4382,91 +4382,38 @@
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
          inkscape:connector-curvature="0"
          id="path834-54-4-3"
-         d="m 209.04833,124.20487 h 16.09624"
+         d="m 208.88693,122.76246 h 16.09624"
          style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:nodetypes="cc" />
       <rect
          inkscape:export-ydpi="200"
          inkscape:export-xdpi="200"
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
-         y="116.83353"
-         x="214.88524"
-         height="5.2824688"
+         y="117.41828"
+         x="214.72575"
+         height="3.6876874"
          width="3.7773414"
          id="rect871-03-9"
-         style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522488;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+         style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522487;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
       <rect
          inkscape:export-ydpi="200"
          inkscape:export-xdpi="200"
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
-         y="122.99034"
-         x="214.88524"
-         height="5.4418292"
+         y="122.13979"
+         x="214.72575"
+         height="3.4749324"
          width="3.7773414"
          id="rect871-8-1-8"
          style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522487;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-    </g>
-    <g
-       id="g3696"
-       transform="translate(17.441459,-15.378319)"
-       inkscape:export-xdpi="200"
-       inkscape:export-ydpi="200">
-      <rect
-         style="opacity:1;fill:#cccccc;fill-opacity:0.50909089;fill-rule:nonzero;stroke:none;stroke-width:0.09999999;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-         id="rect3282-2-4-6"
-         width="19.863295"
-         height="13.648219"
-         x="207.40692"
-         y="131.16783"
-         inkscape:export-xdpi="200"
-         inkscape:export-ydpi="200"
-         inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png" />
       <path
          inkscape:export-ydpi="200"
          inkscape:export-xdpi="200"
          inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
          inkscape:connector-curvature="0"
-         id="path834-3-1-8"
-         d="m 209.28737,133.40505 h 16.09624"
+         id="path834-5-03-9-9"
+         d="m 208.88693,127.49821 h 16.09624"
          style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          sodipodi:nodetypes="cc" />
-      <path
-         inkscape:export-ydpi="200"
-         inkscape:export-xdpi="200"
-         inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
-         inkscape:connector-curvature="0"
-         id="path834-1-11-2-0"
-         d="M 209.28737,136.49412 H 225.3836"
-         style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         sodipodi:nodetypes="cc" />
-      <path
-         inkscape:export-ydpi="200"
-         inkscape:export-xdpi="200"
-         inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
-         inkscape:connector-curvature="0"
-         id="path834-5-03-9-2"
-         d="m 209.28737,142.67228 h 16.09624"
-         style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         sodipodi:nodetypes="cc" />
-      <path
-         inkscape:export-ydpi="200"
-         inkscape:export-xdpi="200"
-         inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
-         inkscape:connector-curvature="0"
-         id="path834-54-4-3-1"
-         d="m 209.28737,139.58319 h 16.09624"
-         style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         sodipodi:nodetypes="cc" />
-      <rect
-         inkscape:export-ydpi="200"
-         inkscape:export-xdpi="200"
-         inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
-         y="135.2397"
-         x="214.96492"
-         height="5.2824688"
-         width="3.7773414"
-         id="rect871-03-9-0"
-         style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522488;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     </g>
     <g
        transform="matrix(0.299037,0.000000,0.000000,0.299037,163.889820,73.476428)"
@@ -4534,6 +4481,92 @@
             </g>
           </g>
         </g>
+      </g>
+    </g>
+    <g
+       id="g1453"
+       inkscape:export-xdpi="200"
+       inkscape:export-ydpi="200">
+      <g
+         inkscape:export-ydpi="200"
+         inkscape:export-xdpi="200"
+         transform="translate(18.291865,-0.0060795)"
+         id="g3688-0">
+        <rect
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-ydpi="200"
+           inkscape:export-xdpi="200"
+           y="115.6832"
+           x="207.11472"
+           height="13.648219"
+           width="19.863295"
+           id="rect3282-2-4-5"
+           style="opacity:1;fill:#cccccc;fill-opacity:0.50909089;fill-rule:nonzero;stroke:none;stroke-width:0.09999999;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.88693,118.02672 h 16.09624"
+           id="path834-3-1-1"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.88693,120.39459 h 16.09623"
+           id="path834-1-11-2-1"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.88693,125.13034 h 16.09624"
+           id="path834-5-03-9-0"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.88693,122.76246 h 16.09624"
+           id="path834-54-4-3-8"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <path
+           sodipodi:nodetypes="cc"
+           style="fill:#333333;stroke:#333333;stroke-width:0.09999999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 208.88693,127.49821 h 16.09624"
+           id="path834-5-03-9-9-6"
+           inkscape:connector-curvature="0"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522487;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="rect871-03-9-5"
+           width="3.7773414"
+           height="3.6876874"
+           x="214.77892"
+           y="119.74761"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
+        <rect
+           style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#333333;stroke-width:0.07522487;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+           id="rect871-8-1-8-0"
+           width="3.7773414"
+           height="3.4749324"
+           x="214.77892"
+           y="124.46908"
+           inkscape:export-filename="/home/maria/Desktop/XANADU/pennylane/doc/_static/templates/base/single.png"
+           inkscape:export-xdpi="200"
+           inkscape:export-ydpi="200" />
       </g>
     </g>
   </g>

@@ -114,9 +114,13 @@ class TestConstructorBroadcast:
         with qml.utils.OperationRecorder() as rec:
             broadcast(block=unitary, structure=structure, wires=range(3), parameters=parameters)
 
+        first_gate = gates[0]
+        second_gate = gates[1]
         for idx, gate in enumerate(rec.queue):
-            i = idx % 2
-            assert isinstance(gate, gates[i])
+            if idx % 2 == 0:
+                assert isinstance(gate, first_gate)
+            else:
+                assert isinstance(gate, second_gate)
 
     @pytest.mark.parametrize("structure, template, kwarg, target_queue, parameters",
                              [("single", KwargTemplate, True, [T, RY, T, RY], [[1], [2]]),

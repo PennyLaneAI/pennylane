@@ -44,7 +44,6 @@ An example of how to use templates is the following:
     init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=2)
     print(circuit(init_weights, x=[1., 2.]))
 
-
 Here, we used the embedding template :func:`~.AngleEmbedding`
 together with the layer template :func:`~.StronglyEntanglingLayers`,
 and the uniform parameter initialization strategy
@@ -55,7 +54,7 @@ Custom templates
 
 In addition, custom templates can be created; simply
 decorate a Python function that applies quantum gates
-with the :func:`~.template` decorator:
+with the :func:`pennylane.template` decorator:
 
 .. code-block:: python3
 
@@ -197,17 +196,17 @@ PennyLane offers a broadcasting function to easily construct templates. :func:`~
 takes other templates (or single quantum operations) and applies them to wires in a specific structure.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.broadcast.html
+    :link: ../code/pennylane.templates.broadcast.html
     :description: broadcast (single)
     :figure: ../_static/templates/broadcast_single.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.broadcast.html
+    :link: ../code/pennylane.templates.broadcast.html
     :description: broadcast (double)
     :figure: ../_static/templates/broadcast_double.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.broadcast.html
+    :link: ../code/pennylane.templates.broadcast.html
     :description: broadcast (double_odd)
     :figure: ../_static/templates/broadcast_double_odd.png
 
@@ -297,5 +296,86 @@ respective interfaces.
     init_torch = torch.tensor(init_pars)
     init_tf = tf.Variable(init_pars)
 
-The initialization functions can be found in the :mod:`~.pennylane.init` module.
+The following initialization functions are available:
+
+.. rubric:: Continuous-variable quantum neural network
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.cvqnn_layers_all
+    ~pennylane.init.cvqnn_layers_theta_uniform
+    ~pennylane.init.cvqnn_layers_theta_normal
+    ~pennylane.init.cvqnn_layers_phi_uniform
+    ~pennylane.init.cvqnn_layers_phi_normal
+    ~pennylane.init.cvqnn_layers_varphi_uniform
+    ~pennylane.init.cvqnn_layers_varphi_normal
+    ~pennylane.init.cvqnn_layers_r_uniform
+    ~pennylane.init.cvqnn_layers_r_normal
+    ~pennylane.init.cvqnn_layers_phi_r_uniform
+    ~pennylane.init.cvqnn_layers_phi_r_normal
+    ~pennylane.init.cvqnn_layers_a_uniform
+    ~pennylane.init.cvqnn_layers_a_normal
+    ~pennylane.init.cvqnn_layers_phi_a_uniform
+    ~pennylane.init.cvqnn_layers_phi_a_normal
+    ~pennylane.init.cvqnn_layers_kappa_uniform
+    ~pennylane.init.cvqnn_layers_kappa_normal
+
+
+:html:`</div>`
+
+.. rubric:: Interferometer
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.interferometer_all
+    ~pennylane.init.interferometer_theta_uniform
+    ~pennylane.init.interferometer_theta_normal
+    ~pennylane.init.interferometer_phi_uniform
+    ~pennylane.init.interferometer_phi_normal
+    ~pennylane.init.interferometer_varphi_uniform
+    ~pennylane.init.interferometer_varphi_normal
+
+:html:`</div>`
+
+.. rubric:: QAOA embedding
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.qaoa_embedding_uniform
+    ~pennylane.init.qaoa_embedding_normal
+
+:html:`</div>`
+
+.. rubric:: Random layers
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.random_layers_uniform
+    ~pennylane.init.random_layers_normal
+
+:html:`</div>`
+
+.. rubric:: Strongly entangling layers
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.init.strong_ent_layers_uniform
+    ~pennylane.init.strong_ent_layers_normal
+
+:html:`</div>`
 

@@ -26,7 +26,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 @template
-def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
+def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
     The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
@@ -269,6 +269,13 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs={}):
 
     _check_type(
         structure, [str], msg="'structure' must be a string; got {}".format(type(structure)),
+    )
+
+    if kwargs is None:
+        kwargs = {}
+
+    _check_type(
+        kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
     )
 
     _check_is_in_options(
