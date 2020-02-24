@@ -197,7 +197,7 @@ PennyLane offers a broadcasting function to easily construct templates. :func:`~
 takes other templates (or single quantum operations) and applies them to wires in a specific structure.
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.broadcast.html
+    :link: ../code/pennylane.templates.broadcast.html
     :description: broadcast (single)
     :figure: ../_static/templates/broadcast_single.png
 
@@ -298,4 +298,3 @@ respective interfaces.
     init_tf = tf.Variable(init_pars)
 
 The initialization functions can be found in the :mod:`~.pennylane.init` module.
-
