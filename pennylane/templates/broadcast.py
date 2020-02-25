@@ -26,13 +26,13 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 @template
-def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
+def broadcast(block, wires, structure, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
     The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
     user-supplied template. Depending on the chosen structure, ``block`` is applied to a wire or a subset of wires:
 
-    * ``structure= 'single'`` (the default case) applies a single-wire block to each one of the :math:`M` wires:
+    * ``structure= 'single'`` applies a single-wire block to each one of the :math:`M` wires:
 
       .. figure:: ../../_static/templates/broadcast_single.png
             :align: center
@@ -62,8 +62,8 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
     Args:
         block (func): quantum gate or template
-        structure (str): specifies the pattern of the broadcast
-        parameters (list or None): sequence of parameters for each gate applied
+        structure (str): specifies the wire pattern of the broadcast
+        parameters (list): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
         kwargs (dict): dictionary of auxilliary parameters for ``block``
 
@@ -84,7 +84,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=qml.RX, wires=[0,1,2], parameters=pars)
+                broadcast(block=qml.RX, structure="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
@@ -106,7 +106,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, structure="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([1, 1, 0.1]))
@@ -122,7 +122,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit():
-                broadcast(block=qml.Hadamard, wires=[0,1,2])
+                broadcast(block=qml.Hadamard, structure="single", wires=[0,1,2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
@@ -145,7 +145,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, structure="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
@@ -176,7 +176,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, structure="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
@@ -193,7 +193,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=mytemplate, wires=[0, 1, 2], parameters=pars)
+                    broadcast(block=mytemplate, structure="single", wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
 
@@ -214,7 +214,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(hadamard=None):
-                broadcast(block=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
+                broadcast(block=mytemplate, structure="single", wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
             circuit(hadamard=False)

@@ -245,3 +245,23 @@ class TestConstructorBroadcast:
 
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
             circuit()
+
+    def test_exception_default_case_not_valid(self):
+        """Tests that an exception is raised if 'structure=None' for a 'block' acting on more than
+        two wires."""
+
+        @template
+        def ThreeWireTemplate(wires):
+            qml.Hadamard(wires[0])
+            qml.Hadamard(wires[1])
+            qml.Hadamard(wires[2])
+
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            broadcast(block=ThreeWireTemplate, wires=range(3))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="if block acts on more than 2 wires, a valid "):
+            circuit()
