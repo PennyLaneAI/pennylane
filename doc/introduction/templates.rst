@@ -192,21 +192,21 @@ of other templates.
 Broadcasting function
 ---------------------
 
-PennyLane offers a broadcasting function to easily construct templates. :func:`~.pennylane.templates.broadcast`
+PennyLane offers a broadcasting function to easily construct templates. :func:`~.broadcast`
 takes other templates (or single quantum operations) and applies them to wires in a specific structure.
 
 .. customgalleryitem::
-    :link: ../code/pennylane.templates.broadcast.html
+    :link: ../code/api/pennylane.broadcast.html
     :description: broadcast (single)
     :figure: ../_static/templates/broadcast_single.png
 
 .. customgalleryitem::
-    :link: ../code/pennylane.templates.broadcast.html
+    :link: ../code/api/pennylane.broadcast.html
     :description: broadcast (double)
     :figure: ../_static/templates/broadcast_double.png
 
 .. customgalleryitem::
-    :link: ../code/pennylane.templates.broadcast.html
+    :link: ../code/api/pennylane.broadcast.html
     :description: broadcast (double_odd)
     :figure: ../_static/templates/broadcast_double_odd.png
 
