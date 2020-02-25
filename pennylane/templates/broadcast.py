@@ -34,7 +34,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
     * ``structure= 'single'`` (the default case) applies a single-wire block to each one of the :math:`M` wires:
 
-      .. figure:: ../_static/templates/broadcast_single.png
+      .. figure:: ../../_static/templates/broadcast_single.png
             :align: center
             :width: 20%
             :target: javascript:void(0);
@@ -42,7 +42,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
     * ``structure= 'double'`` applies a two-wire block to :math:`\lfloor \frac{M}{2} \rfloor`
       subsequent pairs of wires:
 
-      .. figure:: ../_static/templates/broadcast_double.png
+      .. figure:: ../../_static/templates/broadcast_double.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -50,7 +50,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
     * ``structure= 'double_odd'`` applies a two-wire block to :math:`\lfloor \frac{M-1}{2} \rfloor`
       subsequent pairs of wires, starting with the second wire:
 
-      .. figure:: ../_static/templates/broadcast_double_odd.png
+      .. figure:: ../../_static/templates/broadcast_double_odd.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -78,7 +78,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import broadcast
+            from pennylane import broadcast
 
             dev = qml.device('default.qubit', wires=3)
 
@@ -114,7 +114,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
         **Constant unitaries**
 
         If the ``block`` argument does not take parameters, no ``parameters`` argument is passed to
-        :func:`~.pennylane.templates.broadcast`:
+        :func:`~.pennylane.broadcast`:
 
         .. code-block:: python
 

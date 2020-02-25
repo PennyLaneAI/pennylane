@@ -5,8 +5,6 @@ This module provides a growing library of templates of common variational
 circuit architectures that can be used to easily build,
 evaluate, and train quantum nodes.
 
-.. currentmodule:: pennylane.templates
-
 Embeddings
 ----------
 
@@ -35,13 +33,12 @@ State preperations
     :no-heading:
     :include-all-objects:
 
-Custom Templates
------------------
+Custom templates
+----------------
 
-The templates module offers a few functions to support the construction of custom templates.
+Custom templates can be constructed using the template decorator.
 
 .. autosummary::
     :toctree:
 
-    ~pennylane.templates.broadcast
-    ~pennylane.templates.template
+    pennylane.templates.template

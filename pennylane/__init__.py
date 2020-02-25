@@ -27,7 +27,7 @@ import pennylane.operation
 
 import pennylane.init
 import pennylane.templates
-from pennylane.templates import template
+from pennylane.templates import template, broadcast
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, VQECost
 
