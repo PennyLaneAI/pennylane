@@ -260,7 +260,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=ThreeWireTemplate, wires=range(3))
+            broadcast(block=ThreeWireTemplate, wires=range(3), structure="double")
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="if block acts on more than 2 wires, a valid "):
