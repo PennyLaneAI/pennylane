@@ -21,7 +21,6 @@ To add a new pattern:
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
-from math import factorial
 
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _check_is_in_options
