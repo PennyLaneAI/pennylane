@@ -214,7 +214,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=RX, wires=range(n_wires), parameters=parameters)
+            broadcast(block=RX, wires=range(n_wires), structure="single", parameters=parameters)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must contain entries for"):
