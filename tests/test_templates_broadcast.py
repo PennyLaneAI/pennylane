@@ -140,7 +140,7 @@ class TestConstructorBroadcast:
     @pytest.mark.parametrize("structure, pars1, pars2, gate", [("single", [[], [], []], None, T),
                                                                ("single", [1, 2, 3], [[1], [2], [3]], RX),
                                                                ])
-    def test_correct_queue_for_gate_block(self, structure, pars1, pars2, gate):
+    def est_correct_queue_same_gate_block_different_parameter_formats(self, structure, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
@@ -161,20 +161,6 @@ class TestConstructorBroadcast:
 
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
-
-    @pytest.mark.parametrize("structure, pars1, pars2, gate", [("double", [[], []], None, CNOT),
-                                                               ("double", [1, 2], [[1], [2]], CRX)])
-    def test_double_correct_queue_for_different_parameter_formats(self, structure, pars1, pars2, gate):
-        """Tests that specific parameter formats have the same output."""
-
-        with qml.utils.OperationRecorder() as rec1:
-            broadcast(block=gate, structure=structure, wires=range(4), parameters=pars1)
-
-        with qml.utils.OperationRecorder() as rec2:
-            broadcast(block=gate, structure=structure, wires=range(4), parameters=pars2)
-
-        for g1, g2 in zip(rec1.queue, rec2.queue):
-            assert g1.parameters == g2.parameters
 
     @pytest.mark.parametrize("structure, parameters, unitary, target", TARGET_OUTPUTS)
     def test_prepares_correct_state(self, structure, parameters, unitary, target):
@@ -244,24 +230,4 @@ class TestConstructorBroadcast:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
-            circuit()
-
-    def test_exception_default_case_not_valid(self):
-        """Tests that an exception is raised if 'structure=None' for a 'block' acting on more than
-        two wires."""
-
-        @template
-        def ThreeWireTemplate(wires):
-            qml.Hadamard(wires[0])
-            qml.Hadamard(wires[1])
-            qml.Hadamard(wires[2])
-
-        dev = qml.device('default.qubit', wires=3)
-
-        @qml.qnode(dev)
-        def circuit():
-            broadcast(block=ThreeWireTemplate, wires=range(3))
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="if block acts on more than 2 wires, a valid "):
             circuit()
