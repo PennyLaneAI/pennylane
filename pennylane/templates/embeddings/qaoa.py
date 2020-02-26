@@ -38,8 +38,8 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
     feature_encoding_wires = wires[: len(features)]
     remaining_wires = wires[len(features) :]
 
-    broadcast(block=RX, structure="single", wires=feature_encoding_wires, parameters=features)
-    broadcast(block=Hadamard, structure="single", wires=remaining_wires)
+    broadcast(block=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
+    broadcast(block=Hadamard, pattern="single", wires=remaining_wires)
 
 
 def qaoa_ising_hamiltonian(weights, wires, local_fields, l):

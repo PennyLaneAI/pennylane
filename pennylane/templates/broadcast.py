@@ -14,7 +14,7 @@
 r"""
 Contains the ``broadcast`` template constructor.
 
-To add a new structure, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
+To add a new pattern, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
 update the list of parameter numbers in the docstring. Optionally add a usage example at the end of the
 ``UsageDetails`` directive.
 """
@@ -26,7 +26,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 @template
-def broadcast(block, wires, structure, parameters=None, kwargs=None):
+def broadcast(block, wires, pattern, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
     The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
@@ -62,7 +62,7 @@ def broadcast(block, wires, structure, parameters=None, kwargs=None):
 
     Args:
         block (func): quantum gate or template
-        structure (str): specifies the wire pattern of the broadcast
+        pattern (str): specifies the wire pattern of the broadcast
         parameters (list): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
         kwargs (dict): dictionary of auxilliary parameters for ``block``
@@ -268,7 +268,7 @@ def broadcast(block, wires, structure, parameters=None, kwargs=None):
     )
 
     _check_type(
-        structure, [str], msg="'structure' must be a string; got {}".format(type(structure)),
+        pattern, [str], msg="'pattern' must be a string; got {}".format(type(pattern)),
     )
 
     if kwargs is None:
@@ -279,7 +279,7 @@ def broadcast(block, wires, structure, parameters=None, kwargs=None):
     )
 
     _check_is_in_options(
-        structure, OPTIONS, msg="did not recognize option {} for 'structure'".format(structure),
+        pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
     )
 
     n_parameters = {
@@ -288,20 +288,20 @@ def broadcast(block, wires, structure, parameters=None, kwargs=None):
         "double_odd": (len(wires) - 1) // 2,
     }
 
-    # check that enough parameters for structure
+    # check that enough parameters for pattern
     if parameters is not None:
         shape = _get_shape(parameters)
-        if shape[0] != n_parameters[structure]:
+        if shape[0] != n_parameters[pattern]:
             raise ValueError(
                 "'parameters' must contain entries for {} blocks; got {} entries".format(
-                    n_parameters[structure], shape[0]
+                    n_parameters[pattern], shape[0]
                 )
             )
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
     else:
-        parameters = [[] for _ in range(n_parameters[structure])]
+        parameters = [[] for _ in range(n_parameters[pattern])]
 
     #########
 
@@ -312,5 +312,5 @@ def broadcast(block, wires, structure, parameters=None, kwargs=None):
     }
 
     # broadcast the block
-    for w, p in zip(wire_sequence[structure], parameters):
+    for w, p in zip(wire_sequence[pattern], parameters):
         block(*p, wires=w, **kwargs)
