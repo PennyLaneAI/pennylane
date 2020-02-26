@@ -130,7 +130,7 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'parameters': [[1.], [1.]]},
                                {'block': qml.RX,
                                 'wires': [0, 1],
-                                'structure': 'single'}),
+                                'pattern': 'single'}),
                               ]
 
 # cv templates, dict of differentiable arguments, dict of non-differentiable arguments

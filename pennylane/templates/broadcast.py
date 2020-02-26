@@ -14,15 +14,46 @@
 r"""
 Contains the ``broadcast`` template constructor.
 
-To add a new pattern, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
-update the list of parameter numbers in the docstring. Optionally add a usage example at the end of the
-``UsageDetails`` directive.
+To add a new pattern:
+
+* extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``,
+* update the list in the docstring and add a usage example at the end of the docstring's
+  ``UsageDetails`` section,
+* add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
+from math import factorial
 
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _check_is_in_options
+
+# helpers to define pattern wire sequences
+
+
+def wires_ring(wires):
+    """wire sequence for ring pattern"""
+    ring = list(wires) + list(wires[0:1])
+    sequence = [[ring[i], ring[i + 1]] for i in range(len(wires))]
+    return sequence
+
+
+def wires_pyramid(wires):
+    """wire sequence for pyramid pattern"""
+    sequence = []
+    for layer in range(len(wires) // 2):
+        temp = wires[layer: len(wires) - layer]
+        sequence += [[temp[i], temp[i + 1]] for i in range(0, len(temp) - 1, 2)]
+    return sequence
+
+
+def wires_alltoall(wires):
+    """wire sequence for all-to-all pattern"""
+    sequence = []
+    for i in range(len(wires)):
+        for j in range(i + 1, len(wires)):
+            sequence += [[wires[i], wires[j]]]
+    return sequence
 
 
 @template
@@ -66,6 +97,20 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
       where the last wire is considered to be neighbour to the first one:
 
       .. figure:: ../_static/templates/broadcast_ring.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
+    * ``pattern= 'pyramid'`` applies a two-wire block to wire pairs shaped in a pyramid declining to the right:
+
+      .. figure:: ../_static/templates/broadcast_pyramid.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
+    * ``pattern= 'all_to_all'`` applies a two-wire block to wire pairs that connect all wires to each other:
+
+      .. figure:: ../_static/templates/broadcast_alltoall.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -297,9 +342,43 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                 pars3 = [2, 1, 4]
                 pars4 = [-1, -2, -3]
                 circuit([pars1, pars2, pars3, pars4])
+
+        * Pyramid pattern with four wires (applying 3 blocks)
+
+            .. code-block:: python
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(block=qml.CRot, pattern='pyramid',
+                              wires=[0,1,2,3], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 3, 1]
+                pars3 = [2, 1, 4]
+                circuit([pars1, pars2, pars3])
+
+        * All-to-all pattern with four wires (applying 6 blocks)
+
+            .. code-block:: python
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(block=qml.CRot, pattern='ring',
+                              wires=[0,1,2,3], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 3, 1]
+                pars3 = [2, 1, 4]
+                pars4 = [-1, -2, -3]
+                pars5 = [2, 1, 4]
+                pars6 = [3, -2, -3]
+                circuit([pars1, pars2, pars3, pars4, pars5, pars6])
+
     """
 
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring"]
+    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
 
     #########
     # Input checks
@@ -334,6 +413,8 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         "double_odd": (len(wires) - 1) // 2,
         "chain": len(wires)-1,
         "ring": len(wires),
+        "pyramid": sum(i+1 for i in range(len(wires) // 2)),
+        "all_to_all": len(wires)*(len(wires)-1)//2,
     }
 
     # check that enough parameters for pattern
@@ -353,16 +434,15 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
     #########
 
-    # helpers to define wire sequences
-    wires_ring = list(wires) + list(wires[0:1])
-
     # define wire sequence for patterns
     wire_sequence = {
         "single": wires,
         "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
         "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
         "chain": [[wires[i], wires[i + 1]] for i in range(len(wires)-1)],
-        "ring": [[wires_ring[i], wires_ring[i + 1]] for i in range(len(wires))],
+        "ring": wires_ring(wires),
+        "pyramid": wires_pyramid(wires),
+        "all_to_all": wires_alltoall(wires)
     }
 
     # broadcast the block

@@ -23,9 +23,6 @@ import pennylane as qml
 from pennylane.templates import template, broadcast
 from pennylane.ops import RX, RY, Displacement, Beamsplitter, T, S, Rot, CRX, CRot, CNOT
 
-dev_4_qubits = qml.device('default.qubit', wires=4)
-dev_4_qumodes = qml.device('default.gaussian', wires=4)
-
 
 @template
 def ConstantTemplate(wires):
@@ -65,51 +62,52 @@ def KwargTemplateDouble(par, wires, a=True):
     CRX(par, wires=wires)
 
 
-TARGET_OUTPUTS = [("single", [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
-                  ("double", [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
-                  ("double", None, CNOT, [-1, 1, -1, 1]),
-                  ("double_odd", [pi / 2], CRX, [-1, -1, 0, -1]),
-                  ("chain", [pi, pi, pi/2], CRX, [-1, 1, -1, 0]),
-                  ("ring", [pi, pi, pi/2, pi], CRX, [0, 1, -1, 0]),
+TARGET_OUTPUTS = [("single", 4, [pi, pi, pi / 2, 0], RX, [1, 1, 0, -1]),
+                  ("double", 4, [pi / 2, pi / 2], CRX, [-1, 0, -1, 0]),
+                  ("double", 4, None, CNOT, [-1, 1, -1, 1]),
+                  ("double_odd", 4, [pi / 2], CRX, [-1, -1, 0, -1]),
+                  ("chain", 4, [pi, pi, pi / 2], CRX, [-1, 1, -1, 0]),
+                  ("ring", 4, [pi, pi, pi / 2, pi], CRX, [0, 1, -1, 0]),
+                  ("pyramid", 4, [0, pi, pi / 2], CRX, [-1, -1, 0, 1]),
+                  ("all_to_all", 4, [pi/2, pi/2, pi/2, pi/2, pi/2, pi/2], CRX, [-1, 0, 1/2, 3/4])
                   ]
 
-CV_TARGET_OUTPUTS = [("single", [[0.1, 0.0], [0.2, 0.0], [0.3, 0.0], [0.4, 0.0]], Displacement, [2.2, 2.4, 2.6, 2.8],
-                      qml.X),
-                     ("double", [[pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
-                      qml.NumberOperator),
-                     ("chain", [[pi / 4, 0.0], [0, 0.0], [pi / 4, 0.0]], Beamsplitter, [0, 2, 0, 2],
-                      qml.NumberOperator),
-                     ("ring", [[pi / 4, 0.0], [0, 0.0], [pi / 4, 0.0], [pi / 4, 0.0]], Beamsplitter, [1, 2, 0, 1],
-                      qml.NumberOperator),
-                     ]
-
-GATE_PARAMETERS = [("single", RX, [[0.1], [0.2], [0.3]]),
-                   ("single", Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1], [0.3, 0.2, -0.1]]),
-                   ("single", T, [[], [], []]),
-                   ("double", CRX, [[0.1]]),
-                   ("double", CRot, [[0.1, 0.2, 0.3]]),
-                   ("double", CNOT, [[]]),
-                   ("double_odd", CRX, [[0.1]]),
-                   ("double_odd", CRot, [[0.3, 0.2, 0.1]]),
-                   ("double_odd", CNOT, [[]]),
-                   ("chain", CRX, [[0.1], [0.1]]),
-                   ("chain", CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ("chain", CNOT, [[], []]),
-                   ("ring", CRX, [[0.1], [0.1], [0.1]]),
-                   ("ring", CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
-                   ("ring", CNOT, [[], [], []]),
+GATE_PARAMETERS = [("single", 3, RX, [[0.1], [0.2], [0.3]]),
+                   ("single", 3, Rot, [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1], [0.3, 0.2, -0.1]]),
+                   ("single", 3, T, [[], [], []]),
+                   ("double", 3, CRX, [[0.1]]),
+                   ("double", 3, CRot, [[0.1, 0.2, 0.3]]),
+                   ("double", 3, CNOT, [[]]),
+                   ("double_odd", 3, CRX, [[0.1]]),
+                   ("double_odd", 3, CRot, [[0.3, 0.2, 0.1]]),
+                   ("double_odd", 3, CNOT, [[]]),
+                   ("chain", 3, CRX, [[0.1], [0.1]]),
+                   ("chain", 3, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("chain", 3, CNOT, [[], []]),
+                   ("ring", 3, CRX, [[0.1], [0.1], [0.1]]),
+                   ("ring", 3, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("ring", 3, CNOT, [[], [], []]),
+                   ("pyramid", 3, CRX, [[0.1]]),
+                   ("pyramid", 4, CRX, [[0.1], [0.1], [0.1]]),
+                   ("pyramid", 4, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("pyramid", 4, CNOT, [[], [], []]),
+                   ("all_to_all", 3, CRX, [[0.1], [0.1], [0.1]]),
+                   ("all_to_all", 4, CRX, [[0.1], [0.1], [0.1], [0.1], [0.1], [0.1]]),
+                   ("all_to_all", 4, CRot, [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1],
+                                            [0.3, 0.2, 0.1], [0.3, 0.2, 0.1], [0.3, 0.2, 0.1]]),
+                   ("all_to_all", 4, CNOT, [[], [], [], [], [], []]),
                    ]
 
 
 class TestConstructorBroadcast:
     """Tests the broadcast template constructor."""
 
-    @pytest.mark.parametrize("pattern, unitary, parameters", GATE_PARAMETERS)
-    def test_correct_queue_for_gate_unitary(self, pattern, unitary, parameters):
+    @pytest.mark.parametrize("pattern, n_wires, unitary, parameters", GATE_PARAMETERS)
+    def test_correct_queue_for_gate_unitary(self, pattern, n_wires, unitary, parameters):
         """Tests that correct gate queue is created when 'block' is a single gate."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(block=unitary, pattern=pattern, wires=range(3), parameters=parameters)
+            broadcast(block=unitary, pattern=pattern, wires=range(n_wires), parameters=parameters)
 
         for gate in rec.queue:
             assert isinstance(gate, unitary)
@@ -155,8 +153,8 @@ class TestConstructorBroadcast:
             assert isinstance(gate, target_gate)
 
     @pytest.mark.parametrize("pattern, pars1, pars2, gate", [("single", [[], [], []], None, T),
-                                                               ("single", [1, 2, 3], [[1], [2], [3]], RX),
-                                                               ])
+                                                             ("single", [1, 2, 3], [[1], [2], [3]], RX),
+                                                             ])
     def test_correct_queue_same_gate_block_different_parameter_formats(self, pattern, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
@@ -169,40 +167,28 @@ class TestConstructorBroadcast:
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
 
-    @pytest.mark.parametrize("pattern, gate, parameters", GATE_PARAMETERS)
-    def test_correct_parameters_in_queue(self, pattern, gate, parameters):
+    @pytest.mark.parametrize("pattern, n_wires, gate, parameters", GATE_PARAMETERS)
+    def test_correct_parameters_in_queue(self, pattern, n_wires, gate, parameters):
         """Tests that gate queue has correct parameters."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(block=gate, pattern=pattern, wires=range(3), parameters=parameters)
+            broadcast(block=gate, pattern=pattern, wires=range(n_wires), parameters=parameters)
 
         for target_par, g in zip(parameters, rec.queue):
             assert g.parameters == target_par
 
-    @pytest.mark.parametrize("pattern, parameters, unitary, target", TARGET_OUTPUTS)
-    def test_prepares_correct_state(self, pattern, parameters, unitary, target):
+    @pytest.mark.parametrize("pattern, n_wires, parameters, unitary, target", TARGET_OUTPUTS)
+    def test_prepares_correct_state(self, pattern, n_wires, parameters, unitary, target):
         """Tests the state produced by different unitaries."""
 
-        @qml.qnode(dev_4_qubits)
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
         def circuit():
             for w in range(4):
                 qml.PauliX(wires=w)
             broadcast(block=unitary, pattern=pattern, wires=range(4), parameters=parameters)
             return [qml.expval(qml.PauliZ(wires=w)) for w in range(4)]
-
-        res = circuit()
-        assert np.allclose(res, target)
-
-    @pytest.mark.parametrize("pattern, parameters, unitary, target, observable", CV_TARGET_OUTPUTS)
-    def test_prepares_correct_state_cv(self, pattern, parameters, unitary, target, observable):
-        """Tests the state produced by different unitaries."""
-
-        @qml.qnode(dev_4_qumodes)
-        def circuit():
-            for w in range(4):
-                Displacement(1, 0, wires=w)
-            broadcast(block=unitary, pattern=pattern, wires=range(4), parameters=parameters)
-            return [qml.expval(observable(wires=w)) for w in range(4)]
 
         res = circuit()
         assert np.allclose(res, target)
