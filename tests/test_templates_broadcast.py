@@ -227,7 +227,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=RX, wires='a', parameters=[[1], [2]])
+            broadcast(block=RX, wires='a', structure="single", parameters=[[1], [2]])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="wires must be a positive"):
