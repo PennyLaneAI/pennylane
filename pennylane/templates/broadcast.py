@@ -1,4 +1,4 @@
-# Copyright 2018-2019 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,49 +13,59 @@
 # limitations under the License.
 r"""
 Contains the ``broadcast`` template constructor.
+
+To add a new pattern, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
+update the list of parameter numbers in the docstring. Optionally add a usage example at the end of the
+``UsageDetails`` directive.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import _check_wires, _check_type, _get_shape
+from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _check_is_in_options
 
 
 @template
-def Broadcast(block, wires, parameters=None, kwargs={}):
-    r"""Applies a (potentially parametrized) single-qubit unitary ``block`` to each wire.
+def broadcast(block, wires, pattern, parameters=None, kwargs=None):
+    r"""Applies a unitary multiple times to a specific pattern of wires.
 
-    .. figure:: ../../_static/templates/constructors/broadcast.png
-        :align: center
-        :width: 20%
-        :target: javascript:void(0);
+    The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
+    user-supplied template. Depending on the chosen pattern, ``block`` is applied to a wire or a subset of wires:
 
-    If the block does not depend on parameters, ``parameters`` is set to ``None``.
+    * ``pattern= 'single'`` applies a single-wire block to each one of the :math:`M` wires:
 
-    If ``parameters`` is not ``None``, it represents sets of parameters
-    :math:`p_m = [\varphi^m_1, \varphi^m_2, ..., \varphi_D^m]`, one set for each wire :math:`m = 1, \dots , M`.
-    The block acting on the :math:`m` th wire is :math:`U(\varphi^m_1, \varphi^m_2, ..., \varphi_D^m)`. Hence,
-    ``parameters`` must be a list or array of length :math:`M`.
+      .. figure:: ../../_static/templates/broadcast_single.png
+            :align: center
+            :width: 20%
+            :target: javascript:void(0);
 
-    The block must be a function of a specific signature. It is called
-    by :mod:`~.pennylane.templates.constructors.broadcast` as follows:
+    * ``pattern= 'double'`` applies a two-wire block to :math:`\lfloor \frac{M}{2} \rfloor`
+      subsequent pairs of wires:
 
-    .. code-block:: python
+      .. figure:: ../../_static/templates/broadcast_double.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
 
-        block(parameter1, ... parameterD, wires, **kwargs)
+    * ``pattern= 'double_odd'`` applies a two-wire block to :math:`\lfloor \frac{M-1}{2} \rfloor`
+      subsequent pairs of wires, starting with the second wire:
 
-    Therefore, the first :math:`D` positional arguments must be the :math:`D` parameters that are fed into
-    the block, and the last positional argument must be ``wires``. If :math:`D=0` (i.e., the block
-    is not parametrized), ``wires`` is the *only* positional argument. The ``block`` function
-    can take user-defined keyword arguments.
+      .. figure:: ../../_static/templates/broadcast_double_odd.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
 
-    Typically, ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template (i.e., a sequence of quantum operations). For more details, see *UsageDetails* below.
+
+    Each ``block`` may depend on a different set of parameters. These are passed as a list by the ``parameters`` argument.
+
+    For more details, see *Usage Details* below.
 
     Args:
-        block (function): quantum gate or template
-        parameters (iterable or None): sequence of parameters for each gate applied
+        block (func): quantum gate or template
+        pattern (str): specifies the wire pattern of the broadcast
+        parameters (list): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
+        kwargs (dict): dictionary of auxilliary parameters for ``block``
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -68,13 +78,13 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import broadcast
+            from pennylane import broadcast
 
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=qml.RX, wires=[0,1,2], parameters=pars)
+                broadcast(block=qml.RX, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
@@ -92,27 +102,23 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars, wires=wires)
 
-            dev = qml.device('default.qubit', wires=3)
-
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
-            print(circuit([1, 1, 0.1]))
+            circuit([1, 1, 0.1])
 
         **Constant unitaries**
 
         If the ``block`` argument does not take parameters, no ``parameters`` argument is passed to
-        :mod:`~.pennylane.templates.constructors.broadcast`:
+        :func:`~.pennylane.broadcast`:
 
         .. code-block:: python
 
-            dev = qml.device('default.qubit', wires=3)
-
             @qml.qnode(dev)
             def circuit():
-                broadcast(block=qml.Hadamard, wires=[0,1,2])
+                broadcast(block=qml.Hadamard, pattern="single", wires=[0,1,2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
@@ -125,8 +131,6 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
         .. code-block:: python
 
-            from pennylane.templates import template
-
             @template
             def mytemplate(pars1, pars2, wires):
                 qml.Hadamard(wires=wires)
@@ -135,12 +139,12 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
-        As mentioned above, in general the block **must** have the following signature:
+        In general, the block takes D parameters and **must** have the following signature:
 
         .. code-block:: python
 
@@ -166,10 +170,10 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
-            print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
+            circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]])
 
         If the number of parameters for each wire does not match the block, an error gets thrown:
 
@@ -183,7 +187,7 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=mytemplate, wires=[0, 1, 2], parameters=pars)
+                    broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
 
@@ -204,12 +208,46 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
 
             @qml.qnode(dev)
             def circuit(hadamard=None):
-                broadcast(block=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
+                broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
             circuit(hadamard=False)
 
+        **Different patterns**
+
+        The basic usage of the different patterns works as follows:
+
+        * Double pattern with four wires (applying 2 blocks)
+
+            .. code-block:: python
+
+                dev = qml.device('default.qubit', wires=4)
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(block=qml.CRot, pattern='double',
+                              wires=[0,1,2,3], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 4, 2]
+                circuit([pars1, pars2])
+
+        * Double-odd pattern with four wires (applying 1 block)
+
+            .. code-block:: python
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(block=qml.CRot, pattern='double_odd',
+                              wires=[0,1,2,3], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                circuit([pars1])
     """
+
+    OPTIONS = ["single", "double", "double_odd"]
 
     #########
     # Input checks
@@ -223,21 +261,50 @@ def Broadcast(block, wires, parameters=None, kwargs={}):
         "Iterable; got {}".format(type(parameters)),
     )
 
+    _check_type(
+        pattern, [str], msg="'pattern' must be a string; got {}".format(type(pattern)),
+    )
+
+    if kwargs is None:
+        kwargs = {}
+
+    _check_type(
+        kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
+    )
+
+    _check_is_in_options(
+        pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
+    )
+
+    n_parameters = {
+        "single": len(wires),
+        "double": len(wires) // 2,
+        "double_odd": (len(wires) - 1) // 2,
+    }
+
+    # check that enough parameters for pattern
     if parameters is not None:
         shape = _get_shape(parameters)
-        if shape[0] != len(wires):
+        if shape[0] != n_parameters[pattern]:
             raise ValueError(
-                "'parameters' must contain one entry for each of the {} wires; got shape {}".format(
-                    len(wires), shape
+                "'parameters' must contain entries for {} blocks; got {} entries".format(
+                    n_parameters[pattern], shape[0]
                 )
             )
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
     else:
-        parameters = [[] for _ in range(len(wires))]
+        parameters = [[] for _ in range(n_parameters[pattern])]
 
     #########
 
-    for w, p in zip(wires, parameters):
+    wire_sequence = {
+        "single": wires,
+        "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
+    }
+
+    # broadcast the block
+    for w, p in zip(wire_sequence[pattern], parameters):
         block(*p, wires=w, **kwargs)

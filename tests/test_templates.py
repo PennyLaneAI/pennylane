@@ -47,8 +47,10 @@ from pennylane.templates import (Interferometer,
                                  DisplacementEmbedding,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
-                                 QAOAEmbedding,
-                                 Broadcast)
+                                 QAOAEmbedding)
+
+from pennylane.templates import broadcast
+
 from pennylane.init import (strong_ent_layers_uniform,
                             strong_ent_layers_normal,
                             random_layers_uniform,
@@ -123,7 +125,17 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                               (QAOAEmbedding,
                                {'features': [1., 2.],
                                 'weights': [[0.1, 0.1, 0.1]]},
-                               {})
+                               {}),
+                              (broadcast,
+                               {'parameters': [[1.], [1.]]},
+                               {'block': qml.RX,
+                                'wires': [0, 1],
+                                'pattern': 'single'}),
+                              (broadcast,
+                               {'parameters': [[1., 1., 1.]]},
+                               {'block': qml.CRot,
+                                'wires': [0, 1],
+                                'pattern': 'double'})
                               ]
 
 # cv templates, dict of differentiable arguments, dict of non-differentiable arguments
@@ -150,7 +162,7 @@ CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
                             {'theta': [2.31],
                              'phi': [3.49],
                              'varphi': [0.98, 1.54]},
-                            {})
+                            {}),
                            ]
 
 #########################################
@@ -624,7 +636,19 @@ class TestGradientIntegration:
                                          (QAOAEmbedding,
                                           {'features': [1., 2.], 'weights': [[0.1, 0.1, 0.1]]},
                                           {'wires': range(2)},
-                                          [1])
+                                          [1]),
+                                         (broadcast,
+                                          {'parameters': [[1.], [1.]]},
+                                          {'block': qml.RX,
+                                           'pattern': 'single',
+                                           'wires': [0, 1]},
+                                          [0]),
+                                         (broadcast,
+                                          {'parameters': [[1., 1., 1.]]},
+                                          {'block': qml.CRot,
+                                           'pattern': 'double',
+                                           'wires': [0, 1]},
+                                          [0])
                                          ]
 
     CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,
