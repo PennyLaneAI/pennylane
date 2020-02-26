@@ -50,8 +50,8 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
     feature_encoding_wires = wires[:len(features)]
     remaining_wires = wires[len(features):]
 
-    broadcast(block=RX, structure="single", wires=feature_encoding_wires, parameters=features)
-    broadcast(block=Hadamard, structure="single", wires=remaining_wires)
+    broadcast(block=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
+    broadcast(block=Hadamard, pattern="single", wires=remaining_wires)
 
 
 def qaoa_ising_hamiltonian(weights, wires, local_fields):
@@ -64,7 +64,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """
 
     if len(wires) == 1:
-        broadcast(block=local_fields, structure="single", wires=wires, parameters=weights)
+        broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights)
 
     elif len(wires) == 2:
         # exception to optimize code: template for 2 wires does not have periodic boundary conditions
@@ -74,18 +74,18 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
         weights_fields = weights[1:]
 
         # zz couplings
-        broadcast(block=zz, structure="chain", wires=wires, parameters=weights_zz)
+        broadcast(block=zz, pattern="chain", wires=wires, parameters=weights_zz)
         # local fields
-        broadcast(block=local_fields, structure="single", wires=wires, parameters=weights_fields)
+        broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 
     else:
         weights_zz = weights[:len(wires)]
         weights_fields = weights[len(wires):]
 
         # zz couplings
-        broadcast(block=zz, structure="ring", wires=wires, parameters=weights_zz)
+        broadcast(block=zz, pattern="ring", wires=wires, parameters=weights_zz)
         # local fields
-        broadcast(block=local_fields, structure="single", wires=wires, parameters=weights_fields)
+        broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 
 
 

@@ -14,7 +14,7 @@
 r"""
 Contains the ``broadcast`` template constructor.
 
-To add a new structure, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
+To add a new pattern, extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``, and
 update the list of parameter numbers in the docstring. Optionally add a usage example at the end of the
 ``UsageDetails`` directive.
 """
@@ -26,20 +26,20 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 @template
-def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
+def broadcast(block, wires, pattern, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
     The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template. Depending on the chosen structure, ``block`` is applied to a wire or a subset of wires:
+    user-supplied template. Depending on the chosen pattern, ``block`` is applied to a wire or a subset of wires:
 
-    * ``structure= 'single'`` (the default case) applies a single-wire block to each one of the :math:`M` wires:
+    * ``pattern= 'single'`` applies a single-wire block to each one of the :math:`M` wires:
 
       .. figure:: ../../_static/templates/broadcast_single.png
             :align: center
             :width: 20%
             :target: javascript:void(0);
 
-    * ``structure= 'double'`` applies a two-wire block to :math:`\lfloor \frac{M}{2} \rfloor`
+    * ``pattern= 'double'`` applies a two-wire block to :math:`\lfloor \frac{M}{2} \rfloor`
       subsequent pairs of wires:
 
       .. figure:: ../../_static/templates/broadcast_double.png
@@ -47,7 +47,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * ``structure= 'double_odd'`` applies a two-wire block to :math:`\lfloor \frac{M-1}{2} \rfloor`
+    * ``pattern= 'double_odd'`` applies a two-wire block to :math:`\lfloor \frac{M-1}{2} \rfloor`
       subsequent pairs of wires, starting with the second wire:
 
       .. figure:: ../../_static/templates/broadcast_double_odd.png
@@ -55,14 +55,14 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * ``structure= 'chain'`` applies a two-wire block to all :math:`M-1` neighbouring pairs of wires:
+    * ``pattern= 'chain'`` applies a two-wire block to all :math:`M-1` neighbouring pairs of wires:
 
       .. figure:: ../_static/templates/broadcast_chain.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
-    * ``structure= 'ring'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires,
+    * ``pattern= 'ring'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires,
       where the last wire is considered to be neighbour to the first one:
 
       .. figure:: ../_static/templates/broadcast_ring.png
@@ -77,8 +77,8 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
     Args:
         block (func): quantum gate or template
-        structure (str): specifies the pattern of the broadcast
-        parameters (list or None): sequence of parameters for each gate applied
+        pattern (str): specifies the wire pattern of the broadcast
+        parameters (list): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
         kwargs (dict): dictionary of auxilliary parameters for ``block``
 
@@ -99,7 +99,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=qml.RX, wires=[0,1,2], parameters=pars)
+                broadcast(block=qml.RX, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
@@ -121,7 +121,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([1, 1, 0.1]))
@@ -137,7 +137,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit():
-                broadcast(block=qml.Hadamard, wires=[0,1,2])
+                broadcast(block=qml.Hadamard, pattern="single", wires=[0,1,2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
@@ -160,7 +160,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
@@ -191,7 +191,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, wires=[0,1,2], parameters=pars)
+                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
@@ -208,7 +208,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=mytemplate, wires=[0, 1, 2], parameters=pars)
+                    broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
 
@@ -229,16 +229,16 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(hadamard=None):
-                broadcast(block=mytemplate, wires=[0, 1, 2], kwargs={'h': hadamard})
+                broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
             circuit(hadamard=False)
 
-        **Different structures**
+        **Different patterns**
 
-        The basic usage of the different structures works as follows:
+        The basic usage of the different patterns works as follows:
 
-        * Double structure with four wires (applying 2 blocks)
+        * Double pattern with four wires (applying 2 blocks)
 
             .. code-block:: python
 
@@ -246,7 +246,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, structure='double',
+                    broadcast(block=qml.CRot, pattern='double',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -254,26 +254,26 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
                 pars2 = [-1, 4, 2]
                 circuit([pars1, pars2])
 
-        * Double-odd structure with four wires (applying 1 block)
+        * Double-odd pattern with four wires (applying 1 block)
 
             .. code-block:: python
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, structure='double_odd',
+                    broadcast(block=qml.CRot, pattern='double_odd',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
                 pars1 = [1, 2, 3]
                 circuit([pars1])
 
-        * Chain structure with four wires (applying 3 blocks)
+        * Chain pattern with four wires (applying 3 blocks)
 
             .. code-block:: python
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, structure='chain',
+                    broadcast(block=qml.CRot, pattern='chain',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -282,13 +282,13 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
                 pars3 = [2, 1, 4]
                 circuit([pars1, pars2, pars3])
 
-        * Ring structure with four wires (applying 4 blocks)
+        * Ring pattern with four wires (applying 4 blocks)
 
             .. code-block:: python
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, structure='ring',
+                    broadcast(block=qml.CRot, pattern='ring',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -314,7 +314,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
     )
 
     _check_type(
-        structure, [str], msg="'structure' must be a string; got {}".format(type(structure)),
+        pattern, [str], msg="'pattern' must be a string; got {}".format(type(pattern)),
     )
 
     if kwargs is None:
@@ -325,7 +325,7 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
     )
 
     _check_is_in_options(
-        structure, OPTIONS, msg="did not recognize option {} for 'structure'".format(structure),
+        pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
     )
 
     n_parameters = {
@@ -336,25 +336,27 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
         "ring": len(wires),
     }
 
-    # check that enough parameters for structure
+    # check that enough parameters for pattern
     if parameters is not None:
         shape = _get_shape(parameters)
-        if shape[0] != n_parameters[structure]:
+        if shape[0] != n_parameters[pattern]:
             raise ValueError(
                 "'parameters' must contain entries for {} blocks; got {} entries".format(
-                    n_parameters[structure], shape[0]
+                    n_parameters[pattern], shape[0]
                 )
             )
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
     else:
-        parameters = [[] for _ in range(n_parameters[structure])]
+        parameters = [[] for _ in range(n_parameters[pattern])]
 
     #########
 
+    # helpers to define wire sequences
     wires_ring = list(wires) + list(wires[0:1])
 
+    # define wire sequence for patterns
     wire_sequence = {
         "single": wires,
         "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
@@ -364,5 +366,5 @@ def broadcast(block, wires, structure="single", parameters=None, kwargs=None):
     }
 
     # broadcast the block
-    for w, p in zip(wire_sequence[structure], parameters):
+    for w, p in zip(wire_sequence[pattern], parameters):
         block(*p, wires=w, **kwargs)

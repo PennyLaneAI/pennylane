@@ -635,7 +635,7 @@ class TestGradientIntegration:
                                          (broadcast,
                                           {'parameters': [[1.], [1.]]},
                                           {'block': qml.RX,
-                                           'structure': 'single',
+                                           'pattern': 'single',
                                            'wires': [0, 1]},
                                           [0]),
                                          ]
