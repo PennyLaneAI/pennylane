@@ -240,7 +240,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=RX, wires=[0, 1], parameters=RX)
+            broadcast(block=RX, wires=[0, 1], structure="single", parameters=RX)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
