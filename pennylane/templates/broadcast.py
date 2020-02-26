@@ -13,9 +13,7 @@
 # limitations under the License.
 r"""
 Contains the ``broadcast`` template constructor.
-
 To add a new pattern:
-
 * extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``,
 * update the list in the docstring and add a usage example at the end of the docstring's
   ``UsageDetails`` section,
@@ -88,7 +86,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
     * ``pattern= 'chain'`` applies a two-wire block to all :math:`M-1` neighbouring pairs of wires:
 
-      .. figure:: ../_static/templates/broadcast_chain.png
+      .. figure:: ../../_static/templates/broadcast_chain.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -96,21 +94,21 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
     * ``pattern= 'ring'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires,
       where the last wire is considered to be neighbour to the first one:
 
-      .. figure:: ../_static/templates/broadcast_ring.png
+      .. figure:: ../../_static/templates/broadcast_ring.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
     * ``pattern= 'pyramid'`` applies a two-wire block to wire pairs shaped in a pyramid declining to the right:
 
-      .. figure:: ../_static/templates/broadcast_pyramid.png
+      .. figure:: ../../_static/templates/broadcast_pyramid.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
     * ``pattern= 'all_to_all'`` applies a two-wire block to wire pairs that connect all wires to each other:
 
-      .. figure:: ../_static/templates/broadcast_alltoall.png
+      .. figure:: ../../_static/templates/broadcast_alltoall.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -149,7 +147,6 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             circuit([1, 1, 2])
 
-
         Alternatively, one can use a sequence of gates by creating a template using the
         :meth:`~.pennylane.templates.template` decorator.
 
@@ -186,7 +183,6 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
-
 
         **Multiple parameters in block**
 
@@ -256,7 +252,6 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                     broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-
         >>> circuit([1, 2, 3]))
         TypeError: mytemplate() missing 1 required positional argument: 'pars2'
 
@@ -297,6 +292,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 pars1 = [1, 2, 3]
                 pars2 = [-1, 4, 2]
+
                 circuit([pars1, pars2])
 
         * Double-odd pattern with four wires (applying 1 block)
@@ -310,6 +306,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                     return qml.expval(qml.PauliZ(0))
 
                 pars1 = [1, 2, 3]
+
                 circuit([pars1])
 
         * Chain pattern with four wires (applying 3 blocks)
@@ -325,6 +322,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                 pars1 = [1, 2, 3]
                 pars2 = [-1, 3, 1]
                 pars3 = [2, 1, 4]
+
                 circuit([pars1, pars2, pars3])
 
         * Ring pattern with four wires (applying 4 blocks)
@@ -341,6 +339,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                 pars2 = [-1, 3, 1]
                 pars3 = [2, 1, 4]
                 pars4 = [-1, -2, -3]
+
                 circuit([pars1, pars2, pars3, pars4])
 
         * Pyramid pattern with four wires (applying 3 blocks)
@@ -356,6 +355,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                 pars1 = [1, 2, 3]
                 pars2 = [-1, 3, 1]
                 pars3 = [2, 1, 4]
+
                 circuit([pars1, pars2, pars3])
 
         * All-to-all pattern with four wires (applying 6 blocks)
@@ -374,8 +374,8 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                 pars4 = [-1, -2, -3]
                 pars5 = [2, 1, 4]
                 pars6 = [3, -2, -3]
-                circuit([pars1, pars2, pars3, pars4, pars5, pars6])
 
+                circuit([pars1, pars2, pars3, pars4, pars5, pars6])
     """
 
     OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
