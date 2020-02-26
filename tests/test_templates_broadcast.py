@@ -200,7 +200,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=RX, wires=range(n_wires), parameters=parameters)
+            broadcast(block=RX, wires=range(n_wires), structure="single", parameters=parameters)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must contain entries for"):
@@ -213,7 +213,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=RX, wires='a', parameters=[[1], [2]])
+            broadcast(block=RX, wires='a', structure="single", parameters=[[1], [2]])
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="wires must be a positive"):
@@ -226,7 +226,7 @@ class TestConstructorBroadcast:
 
         @qml.qnode(dev)
         def circuit():
-            broadcast(block=RX, wires=[0, 1], parameters=RX)
+            broadcast(block=RX, wires=[0, 1], structure="single", parameters=RX)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
