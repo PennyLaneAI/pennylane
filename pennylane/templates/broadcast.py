@@ -140,6 +140,8 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
     .. UsageDetails::
 
+        **Broadcasting single gates**
+
         In the simplest case the block is typically an :meth:`~.pennylane.operation.Operation` object
         implementing a single qubit gate.
 
@@ -157,8 +159,22 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             circuit([1, 1, 2])
 
-        Alternatively, one can use a sequence of gates by creating a template using the
-        :meth:`~.pennylane.templates.template` decorator.
+        This is equivalent to the following circuit:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(pars):
+                qml.RX(pars[0])
+                qml.RX(pars[1])
+                qml.RX(pars[2])
+                return qml.expval(qml.PauliZ(0))
+
+            circuit([1, 1, 2])
+
+        **Broadcasting templates**
+
+        Alternatively, one can broadcast a built-in or user-defined template:
 
         .. code-block:: python
 
