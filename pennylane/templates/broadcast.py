@@ -91,7 +91,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :target: javascript:void(0);
 
     * ``pattern= 'ring'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires,
-      where the last wire is considered to be neighbour to the first one:
+      where the last wire is considered to be a neighbour to the first one:
 
       .. figure:: ../../_static/templates/broadcast_ring.png
           :align: center
