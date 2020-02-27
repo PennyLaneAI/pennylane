@@ -29,7 +29,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 def wires_ring(wires):
-    """wire sequence for ring pattern"""
+    """Wire sequence for the ring pattern."""
     ring = list(wires) + list(wires[0:1])
     sequence = [[ring[i], ring[i + 1]] for i in range(len(wires))]
     return sequence
