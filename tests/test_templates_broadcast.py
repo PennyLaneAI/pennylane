@@ -124,17 +124,17 @@ GATE_PARAMETERS = [("single", 0, T, []),
 class TestConstructorBroadcast:
     """Tests the broadcast template constructor."""
 
-    @pytest.mark.parametrize("pattern, unitary, parameters", [("single", RX, [[0.1], [0.2], [0.3]]),
-                                                              ("single", Rot,
-                                                               [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1],
-                                                                [0.3, 0.2, -0.1]]),
-                                                              ("single", T, [[], [], []]),
-                                                              ])
-    def test_correct_queue_for_gate_unitary(self, pattern, unitary, parameters):
+    @pytest.mark.parametrize("unitary, parameters", [(RX, [[0.1], [0.2], [0.3]]),
+                                                     (Rot,
+                                                      [[0.1, 0.2, 0.3], [0.3, 0.2, 0.1],
+                                                       [0.3, 0.2, -0.1]]),
+                                                     (T, [[], [], []]),
+                                                     ])
+    def test_correct_queue_for_gate_unitary(self, unitary, parameters):
         """Tests that correct gate queue is created when 'unitary' is a single gate."""
 
         with qml.utils.OperationRecorder() as rec:
-            broadcast(unitary=unitary, pattern=pattern, wires=range(3), parameters=parameters)
+            broadcast(unitary=unitary, pattern="single", wires=range(3), parameters=parameters)
 
         for gate in rec.queue:
             assert isinstance(gate, unitary)
@@ -171,17 +171,17 @@ class TestConstructorBroadcast:
         for gate, target_gate in zip(rec.queue, target_queue):
             assert isinstance(gate, target_gate)
 
-    @pytest.mark.parametrize("pattern, pars1, pars2, gate", [("single", [[], [], []], None, T),
-                                                             ("single", [1, 2, 3], [[1], [2], [3]], RX),
-                                                             ])
-    def test_correct_queue_same_gate_unitary_different_parameter_formats(self, pattern, pars1, pars2, gate):
+    @pytest.mark.parametrize("pars1, pars2, gate", [([[], [], []], None, T),
+                                                    ([1, 2, 3], [[1], [2], [3]], RX),
+                                                    ])
+    def test_correct_queue_same_gate_unitary_different_parameter_formats(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
         with qml.utils.OperationRecorder() as rec1:
-            broadcast(unitary=gate, pattern=pattern, wires=range(3), parameters=pars1)
+            broadcast(unitary=gate, pattern="single", wires=range(3), parameters=pars1)
 
         with qml.utils.OperationRecorder() as rec2:
-            broadcast(unitary=gate, pattern=pattern, wires=range(3), parameters=pars2)
+            broadcast(unitary=gate, pattern="single", wires=range(3), parameters=pars2)
 
         for g1, g2 in zip(rec1.queue, rec2.queue):
             assert g1.parameters == g2.parameters
