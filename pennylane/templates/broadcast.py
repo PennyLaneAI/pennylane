@@ -144,7 +144,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         **Broadcasting single gates**
 
         In the simplest case the block is typically an :meth:`~.pennylane.operation.Operation` object
-        implementing a single qubit gate.
+        implementing a quantum gate.
 
         .. code-block:: python
 
