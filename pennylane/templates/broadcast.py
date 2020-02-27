@@ -36,7 +36,7 @@ def wires_ring(wires):
 
 
 def wires_pyramid(wires):
-    """wire sequence for pyramid pattern"""
+    """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
         temp = wires[layer: len(wires) - layer]
