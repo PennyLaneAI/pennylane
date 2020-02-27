@@ -63,20 +63,21 @@ def wires_all_to_all(wires):
 
 
 @template
-def broadcast(block, wires, pattern, parameters=None, kwargs=None):
+def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
-    The unitary ``block`` is either a quantum operation (such as :meth:`~.pennylane.ops.RX`), or a
-    user-supplied template. Depending on the chosen pattern, ``block`` is applied to a wire or a subset of wires:
+    The unitary, defined by the argument ``unitary``, is either a quantum operation
+    (such as :meth:`~.pennylane.ops.RX`), or a
+    user-supplied template. Depending on the chosen pattern, ``unitary`` is applied to a wire or a subset of wires:
 
-    * ``pattern= 'single'`` applies a single-wire block to each one of the :math:`M` wires:
+    * ``pattern= 'single'`` applies a single-wire unitary to each one of the :math:`M` wires:
 
       .. figure:: ../../_static/templates/broadcast_single.png
             :align: center
             :width: 20%
             :target: javascript:void(0);
 
-    * ``pattern= 'double'`` applies a two-wire block to :math:`\lfloor \frac{M}{2} \rfloor`
+    * ``pattern= 'double'`` applies a two-wire unitary to :math:`\lfloor \frac{M}{2} \rfloor`
       subsequent pairs of wires:
 
       .. figure:: ../../_static/templates/broadcast_double.png
@@ -84,7 +85,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'double_odd'`` applies a two-wire block to :math:`\lfloor \frac{M-1}{2} \rfloor`
+    * ``pattern= 'double_odd'`` applies a two-wire unitary to :math:`\lfloor \frac{M-1}{2} \rfloor`
       subsequent pairs of wires, starting with the second wire:
 
       .. figure:: ../../_static/templates/broadcast_double_odd.png
@@ -92,14 +93,14 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'chain'`` applies a two-wire block to all :math:`M-1` neighbouring pairs of wires:
+    * ``pattern= 'chain'`` applies a two-wire unitary to all :math:`M-1` neighbouring pairs of wires:
 
       .. figure:: ../../_static/templates/broadcast_chain.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'ring'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires,
+    * ``pattern= 'ring'`` applies a two-wire unitary to all :math:`M` neighbouring pairs of wires,
       where the last wire is considered to be a neighbour to the first one:
 
       .. figure:: ../../_static/templates/broadcast_ring.png
@@ -108,33 +109,33 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :target: javascript:void(0);
 
       .. note:: For 2 wires, the ring pattern is automatically replaced by ``pattern = 'chain'`` to avoid
-                a mere repetition of the block.
+                a mere repetition of the unitary.
 
-    * ``pattern= 'pyramid'`` applies a two-wire block to wire pairs shaped in a pyramid declining to the right:
+    * ``pattern= 'pyramid'`` applies a two-wire unitary to wire pairs shaped in a pyramid declining to the right:
 
       .. figure:: ../../_static/templates/broadcast_pyramid.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'all_to_all'`` applies a two-wire block to wire pairs that connect all wires to each other:
+    * ``pattern= 'all_to_all'`` applies a two-wire unitary to wire pairs that connect all wires to each other:
 
       .. figure:: ../../_static/templates/broadcast_alltoall.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
-    Each ``block`` may depend on a different set of parameters. These are passed as a list by the ``parameters``
+    Each ``unitary`` may depend on a different set of parameters. These are passed as a list by the ``parameters``
     argument.
 
     For more details, see *Usage Details* below.
 
     Args:
-        block (func): quantum gate or template
+        unitary (func): quantum gate or template
         pattern (str): specifies the wire pattern of the broadcast
         parameters (list): sequence of parameters for each gate applied
         wires (Sequence[int] or int): wire indices that the unitaries act upon
-        kwargs (dict): dictionary of auxilliary parameters for ``block``
+        kwargs (dict): dictionary of auxilliary parameters for ``unitary``
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -143,7 +144,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
         **Broadcasting single gates**
 
-        In the simplest case the block is typically an :meth:`~.pennylane.operation.Operation` object
+        In the simplest case the unitary is typically an :meth:`~.pennylane.operation.Operation` object
         implementing a quantum gate.
 
         .. code-block:: python
@@ -155,7 +156,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=qml.RX, pattern="single", wires=[0,1,2], parameters=pars)
+                broadcast(unitary=qml.RX, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
@@ -190,14 +191,14 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
+                broadcast(unitary=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([1, 1, 0.1]))
 
         **Constant unitaries**
 
-        If the ``block`` argument does not take parameters, no ``parameters`` argument is passed to
+        If the ``unitary`` argument does not take parameters, no ``parameters`` argument is passed to
         :func:`~.pennylane.broadcast`:
 
         .. code-block:: python
@@ -206,14 +207,14 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit():
-                broadcast(block=qml.Hadamard, pattern="single", wires=[0,1,2])
+                broadcast(unitary=qml.Hadamard, pattern="single", wires=[0,1,2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit()
 
-        **Multiple parameters in block**
+        **Multiple parameters in unitary**
 
-        The block, whether it is a single gate or a user-defined template,
+        The unitary, whether it is a single gate or a user-defined template,
         can take multiple parameters. For example:
 
         .. code-block:: python
@@ -228,22 +229,22 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
+                broadcast(unitary=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             circuit([[1, 1], [2, 1], [0.1, 1]])
 
-        In general, the block takes D parameters and **must** have the following signature:
+        In general, the unitary takes D parameters and **must** have the following signature:
 
         .. code-block:: python
 
-            block(parameter1, parameter2, ... parameterD, wires, **kwargs)
+            unitary(parameter1, parameter2, ... parameterD, wires, **kwargs)
 
-        If ``block`` does not depend on parameters (:math:`D=0`), the signature is
+        If ``unitary`` does not depend on parameters (:math:`D=0`), the signature is
 
         .. code-block:: python
 
-            block(wires, **kwargs)
+            unitary(wires, **kwargs)
 
         As a result, ``parameters`` must be a list or array of length-:math:`D` lists or arrays.
 
@@ -259,12 +260,12 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                broadcast(block=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
+                broadcast(unitary=mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
                 return qml.expval(qml.PauliZ(0))
 
             print(circuit([[[1, 1]], [[2, 1]], [[0.1, 1]]]))
 
-        If the number of parameters for each wire does not match the block, an error gets thrown:
+        If the number of parameters for each wire does not match the unitary, an error gets thrown:
 
         .. code-block:: python
 
@@ -276,7 +277,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
+                    broadcast(unitary=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
         >>> circuit([1, 2, 3]))
@@ -284,7 +285,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
         **Keyword arguments**
 
-        The block can be a template that takes additional keyword arguments.
+        The unitary can be a template that takes additional keyword arguments.
 
         .. code-block:: python
 
@@ -296,7 +297,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(hadamard=None):
-                broadcast(block=mytemplate, pattern="single", wires=[0, 1, 2], kwargs={'h': hadamard})
+                broadcast(unitary=mytemplate, pattern="single", wires=[0, 1, 2], kwargs={'h': hadamard})
                 return qml.expval(qml.PauliZ(0))
 
             circuit(hadamard=False)
@@ -313,7 +314,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='double',
+                    broadcast(unitary=qml.CRot, pattern='double',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -330,7 +331,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='double_odd',
+                    broadcast(unitary=qml.CRot, pattern='double_odd',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -346,7 +347,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='chain',
+                    broadcast(unitary=qml.CRot, pattern='chain',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -367,7 +368,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='ring',
+                    broadcast(unitary=qml.CRot, pattern='ring',
                               wires=[0,1,2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -388,7 +389,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='ring',
+                    broadcast(unitary=qml.CRot, pattern='ring',
                               wires=[0,1], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -402,7 +403,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='pyramid',
+                    broadcast(unitary=qml.CRot, pattern='pyramid',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -412,13 +413,13 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
                 circuit([pars1, pars2, pars3])
 
-        * All-to-all pattern with four wires (applying 6 blocks)
+        * All-to-all pattern
 
             .. code-block:: python
 
                 @qml.qnode(dev)
                 def circuit(pars):
-                    broadcast(block=qml.CRot, pattern='ring',
+                    broadcast(unitary=qml.CRot, pattern='ring',
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
@@ -478,12 +479,12 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         # specific error message for ring edge case of 2 wires
         if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
             raise ValueError(
-                "the ring pattern with 2 wires is an exception and only applies one block"
+                "the ring pattern with 2 wires is an exception and only applies one unitary"
             )
 
         if shape[0] != n_parameters[pattern]:
             raise ValueError(
-                "'parameters' must contain entries for {} blocks; got {} entries".format(
+                "'parameters' must contain entries for {} unitaries; got {} entries".format(
                     n_parameters[pattern], shape[0]
                 )
             )
@@ -507,6 +508,6 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         "all_to_all": wires_all_to_all(wires),
     }
 
-    # broadcast the block
+    # broadcast the unitary
     for w, p in zip(wire_sequence[pattern], parameters):
-        block(*p, wires=w, **kwargs)
+        unitary(*p, wires=w, **kwargs)
