@@ -25,7 +25,7 @@ from pennylane.templates.utils import (
     _check_type,
     _get_shape,
 )
-from pennylane.variable import VariableRef
+from pennylane.variable import Variable
 
 # tolerance for normalization
 TOLERANCE = 1e-10
@@ -215,7 +215,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         )
 
     # normalize
-    if isinstance(features[0], VariableRef):
+    if isinstance(features[0], Variable):
         feature_values = [s.val for s in features]
         norm = np.sum(np.abs(feature_values) ** 2)
     else:
