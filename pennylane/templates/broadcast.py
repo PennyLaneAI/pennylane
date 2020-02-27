@@ -166,9 +166,9 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit(pars):
-                qml.RX(pars[0])
-                qml.RX(pars[1])
-                qml.RX(pars[2])
+                qml.RX(pars[0], wires=[0])
+                qml.RX(pars[1], wires=[1])
+                qml.RX(pars[2], wires=[2])
                 return qml.expval(qml.PauliZ(0))
 
             circuit([1, 1, 2])
