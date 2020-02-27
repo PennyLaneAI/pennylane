@@ -45,7 +45,7 @@ def wires_pyramid(wires):
 
 
 def wires_alltoall(wires):
-    """wire sequence for all-to-all pattern"""
+    """Wire sequence for the all-to-all pattern."""
     sequence = []
     for i in range(len(wires)):
         for j in range(i + 1, len(wires)):
