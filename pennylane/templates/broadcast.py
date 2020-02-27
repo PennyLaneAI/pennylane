@@ -108,7 +108,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :target: javascript:void(0);
 
       .. note:: For 2 wires, the ring pattern is automatically replaced by ``pattern = 'chain'`` to avoid
-                a repetition of the block acting on the same two wires.
+                a mere repetition of the block.
 
     * ``pattern= 'pyramid'`` applies a two-wire block to wire pairs shaped in a pyramid declining to the right:
 
