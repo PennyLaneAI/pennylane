@@ -30,7 +30,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 def wires_ring(wires):
-    """wire sequence for ring pattern"""
+    """Wire sequence for thering pattern"""
 
     if len(wires) in [0, 1]:
         return []
@@ -45,7 +45,7 @@ def wires_ring(wires):
 
 
 def wires_pyramid(wires):
-    """wire sequence for pyramid pattern"""
+    """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
         temp = wires[layer : len(wires) - layer]
@@ -53,8 +53,13 @@ def wires_pyramid(wires):
     return sequence
 
 
+<<<<<<< HEAD
 def wires_all_to_all(wires):
     """wire sequence for all-to-all pattern"""
+=======
+def wires_alltoall(wires):
+    """Wire sequence for the all-to-all pattern."""
+>>>>>>> 9911fc28c51614b3bfbdffce73baa81e94d6f8bb
     sequence = []
     for i in range(len(wires)):
         for j in range(i + 1, len(wires)):
@@ -100,7 +105,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :target: javascript:void(0);
 
     * ``pattern= 'ring'`` applies a two-wire block to all :math:`M` neighbouring pairs of wires,
-      where the last wire is considered to be neighbour to the first one:
+      where the last wire is considered to be a neighbour to the first one:
 
       .. figure:: ../../_static/templates/broadcast_ring.png
           :align: center
