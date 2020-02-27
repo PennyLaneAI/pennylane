@@ -28,6 +28,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 # helpers to define pattern wire sequences
 
+
 def wires_ring(wires):
     """wire sequence for ring pattern"""
 
@@ -47,7 +48,7 @@ def wires_pyramid(wires):
     """wire sequence for pyramid pattern"""
     sequence = []
     for layer in range(len(wires) // 2):
-        temp = wires[layer: len(wires) - layer]
+        temp = wires[layer : len(wires) - layer]
         sequence += [[temp[i], temp[i + 1]] for i in range(0, len(temp) - 1, 2)]
     return sequence
 
@@ -464,10 +465,10 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         "single": len(wires),
         "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
         "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
-        "chain": 0 if len(wires) in [0, 1] else len(wires)-1,
+        "chain": 0 if len(wires) in [0, 1] else len(wires) - 1,
         "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-        "pyramid": 0 if len(wires) in [0, 1] else sum(i+1 for i in range(len(wires) // 2)),
-        "all_to_all": 0 if len(wires) in [0, 1] else len(wires)*(len(wires)-1)//2,
+        "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
+        "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
     }
 
     # check that enough parameters for pattern
@@ -476,7 +477,9 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
         # specific error message for ring edge case of 2 wires
         if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
-            raise ValueError("the ring pattern with 2 wires is an exception and only applies one block")
+            raise ValueError(
+                "the ring pattern with 2 wires is an exception and only applies one block"
+            )
 
         if shape[0] != n_parameters[pattern]:
             raise ValueError(
@@ -498,10 +501,10 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         "single": wires,
         "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
         "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
-        "chain": [[wires[i], wires[i + 1]] for i in range(len(wires)-1)],
+        "chain": [[wires[i], wires[i + 1]] for i in range(len(wires) - 1)],
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_all_to_all(wires)
+        "all_to_all": wires_all_to_all(wires),
     }
 
     # broadcast the block
