@@ -439,9 +439,7 @@ class BaseQNode:
                     self._determine_structured_variable_name(variable_value, variable_name)
                 )
 
-        arg_vars = [
-            Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))
-        ]
+        arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
 
         # arrange the newly created Variables in the nested structure of args
