@@ -64,28 +64,23 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """
 
     if len(wires) == 1:
-        broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights)
+        weights_zz = []
+        weights_fields = weights
 
     elif len(wires) == 2:
-        # exception to optimize code: template for 2 wires does not have periodic boundary conditions
-        # since it would repeat the ZZ gate on the same wires
-
+        # for 2 wires the periodic boundary condition is dropped in broadcast's "ring" pattern
+        # only feed in 1 parameter
         weights_zz = weights[:1]
         weights_fields = weights[1:]
-
-        # zz couplings
-        broadcast(block=zz, pattern="chain", wires=wires, parameters=weights_zz)
-        # local fields
-        broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 
     else:
         weights_zz = weights[:len(wires)]
         weights_fields = weights[len(wires):]
 
-        # zz couplings
-        broadcast(block=zz, pattern="ring", wires=wires, parameters=weights_zz)
-        # local fields
-        broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights_fields)
+    # zz couplings
+    broadcast(block=zz, pattern="ring", wires=wires, parameters=weights_zz)
+    # local fields
+    broadcast(block=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 
 
 

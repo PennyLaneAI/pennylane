@@ -21,19 +21,26 @@ To add a new pattern:
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
-from math import factorial
 
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _check_is_in_options
 
-# helpers to define pattern wire sequences
 
+# helpers to define pattern wire sequences
 
 def wires_ring(wires):
     """wire sequence for ring pattern"""
-    ring = list(wires) + list(wires[0:1])
-    sequence = [[ring[i], ring[i + 1]] for i in range(len(wires))]
-    return sequence
+
+    if len(wires) in [0, 1]:
+        return []
+    elif len(wires) == 2:
+        # exception: for 2 wires ring is set equal to chain,
+        # to avoid duplication of gate
+        return [[wires[0], wires[1]]]
+    else:
+        ring = list(wires) + list(wires[0:1])
+        sequence = [[ring[i], ring[i + 1]] for i in range(len(wires))]
+        return sequence
 
 
 def wires_pyramid(wires):
@@ -45,7 +52,7 @@ def wires_pyramid(wires):
     return sequence
 
 
-def wires_alltoall(wires):
+def wires_all_to_all(wires):
     """wire sequence for all-to-all pattern"""
     sequence = []
     for i in range(len(wires)):
@@ -98,6 +105,9 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
           :align: center
           :width: 20%
           :target: javascript:void(0);
+
+      .. note:: For 2 wires, the ring pattern is automatically replaced by ``pattern = 'chain'`` to avoid
+                a repetition of the block acting on the same two wires.
 
     * ``pattern= 'pyramid'`` applies a two-wire block to wire pairs shaped in a pyramid declining to the right:
 
@@ -278,7 +288,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
         The basic usage of the different patterns works as follows:
 
-        * Double pattern with four wires (applying 2 blocks)
+        * Double pattern
 
             .. code-block:: python
 
@@ -290,14 +300,16 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, 2, 3]
+                pars1 = [-1, 2.5, 3]
                 pars2 = [-1, 4, 2]
 
                 circuit([pars1, pars2])
 
-        * Double-odd pattern with four wires (applying 1 block)
+        * Double-odd pattern
 
             .. code-block:: python
+
+                dev = qml.device('default.qubit', wires=4)
 
                 @qml.qnode(dev)
                 def circuit(pars):
@@ -305,13 +317,15 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, 2, 3]
+                pars1 = [-5.3, 2.3, 3]
 
                 circuit([pars1])
 
-        * Chain pattern with four wires (applying 3 blocks)
+        * Chain pattern
 
             .. code-block:: python
+
+                dev = qml.device('default.qubit', wires=4)
 
                 @qml.qnode(dev)
                 def circuit(pars):
@@ -319,30 +333,53 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, 2, 3]
+                pars1 = [1.8, 2, 3]
                 pars2 = [-1, 3, 1]
-                pars3 = [2, 1, 4]
+                pars3 = [2, -1.2, 4]
 
                 circuit([pars1, pars2, pars3])
 
-        * Ring pattern with four wires (applying 4 blocks)
+        * Ring pattern
+
+          In general, the number of parameter sets has to match
+          the number of wires:
 
             .. code-block:: python
+
+                dev = qml.device('default.qubit', wires=3)
 
                 @qml.qnode(dev)
                 def circuit(pars):
                     broadcast(block=qml.CRot, pattern='ring',
-                              wires=[0,1,2,3], parameters=pars)
+                              wires=[0,1,2], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, 2, 3]
+                pars1 = [1, -2.2, 3]
                 pars2 = [-1, 3, 1]
-                pars3 = [2, 1, 4]
-                pars4 = [-1, -2, -3]
+                pars3 = [2.6, 1, 4]
 
-                circuit([pars1, pars2, pars3, pars4])
+                circuit([pars1, pars2, pars3])
 
-        * Pyramid pattern with four wires (applying 3 blocks)
+          However, there is an exception for 2 wires, where only one set of parameters is needed.
+          This avoids repeating a gate over the
+          same wires twice:
+
+            .. code-block:: python
+
+                dev = qml.device('default.qubit', wires=2)
+
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(block=qml.CRot, pattern='ring',
+                              wires=[0,1], parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [-3.2, 2, 1.2]
+
+                circuit([pars1])
+
+        * Pyramid pattern
 
             .. code-block:: python
 
@@ -352,9 +389,9 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
                               wires=[0,1,2,3], parameters=pars)
                     return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, 2, 3]
+                pars1 = [1.1, 2, 3]
                 pars2 = [-1, 3, 1]
-                pars3 = [2, 1, 4]
+                pars3 = [2, 1, 4.2]
 
                 circuit([pars1, pars2, pars3])
 
@@ -409,23 +446,29 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
 
     n_parameters = {
         "single": len(wires),
-        "double": len(wires) // 2,
-        "double_odd": (len(wires) - 1) // 2,
-        "chain": len(wires)-1,
-        "ring": len(wires),
-        "pyramid": sum(i+1 for i in range(len(wires) // 2)),
-        "all_to_all": len(wires)*(len(wires)-1)//2,
+        "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
+        "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
+        "chain": 0 if len(wires) in [0, 1] else len(wires)-1,
+        "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
+        "pyramid": 0 if len(wires) in [0, 1] else sum(i+1 for i in range(len(wires) // 2)),
+        "all_to_all": 0 if len(wires) in [0, 1] else len(wires)*(len(wires)-1)//2,
     }
 
     # check that enough parameters for pattern
     if parameters is not None:
         shape = _get_shape(parameters)
+
+        # specific error message for ring edge case of 2 wires
+        if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
+            raise ValueError("the ring pattern with 2 wires is an exception and only applies one block")
+
         if shape[0] != n_parameters[pattern]:
             raise ValueError(
                 "'parameters' must contain entries for {} blocks; got {} entries".format(
                     n_parameters[pattern], shape[0]
                 )
             )
+
         # repackage for consistent unpacking
         if len(shape) == 1:
             parameters = [[p] for p in parameters]
@@ -442,7 +485,7 @@ def broadcast(block, wires, pattern, parameters=None, kwargs=None):
         "chain": [[wires[i], wires[i + 1]] for i in range(len(wires)-1)],
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_alltoall(wires)
+        "all_to_all": wires_all_to_all(wires)
     }
 
     # broadcast the block
