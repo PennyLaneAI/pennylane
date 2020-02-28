@@ -24,7 +24,7 @@ from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
 from .utils import _flatten
-from .variable import VariableRef
+from .variable import Variable
 
 
 def _by_idx(x):
@@ -184,7 +184,7 @@ class CircuitGraph:
             serialization_string += op.name
 
             for param in op.params:
-                if isinstance(param, VariableRef):
+                if isinstance(param, Variable):
                     serialization_string += delimiter
                     serialization_string += variable_delimiter
                     serialization_string += str(param.idx)

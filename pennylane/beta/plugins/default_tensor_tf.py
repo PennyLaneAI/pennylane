@@ -28,7 +28,7 @@ try:
 except ImportError as e:
     raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
 
-from pennylane.variable import VariableRef
+from pennylane.variable import Variable
 from pennylane.beta.plugins.default_tensor import DefaultTensor, I, X, Y, Z
 
 
@@ -327,7 +327,7 @@ class DefaultTensorTF(DefaultTensor):
         # check that no Variables remain in the op_params dictionary
         values = [item for sublist in self.op_params.values() for item in sublist]
         assert not any(
-            isinstance(v, VariableRef) for v in values
+            isinstance(v, Variable) for v in values
         ), "A pennylane.Variable instance was not correctly converted to a tf.Variable"
 
         # flatten the variables list in case of nesting
