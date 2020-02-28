@@ -229,7 +229,7 @@ class TestConstructorBroadcast:
             circuit()
 
     def test_throws_special_error_for_ring_pattern_2_wires(self):
-        """Tests that the special error is thrown when 'parameters' does not contain one set
+        """Tests that the special error is thrown when 'parameters' does not contain one sequence
            of parameters for a two-wire ring pattern."""
 
         dev = qml.device('default.qubit', wires=2)

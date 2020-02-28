@@ -30,7 +30,7 @@ from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _ch
 
 
 def wires_ring(wires):
-    """Wire sequence for thering pattern"""
+    """Wire sequence for the ring pattern"""
 
     if len(wires) in [0, 1]:
         return []
@@ -359,7 +359,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         * Ring pattern
 
-          In general, the number of parameter sets has to match
+          In general, the number of parameter sequences has to match
           the number of wires:
 
             .. code-block:: python
