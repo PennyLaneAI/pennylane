@@ -21,6 +21,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ville Bergholm
 
 # Release 0.8.1 (current release)
 
