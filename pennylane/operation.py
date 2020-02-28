@@ -112,7 +112,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 
 from .utils import _flatten, pauli_eigs
-from .variable import VariableRef
+from .variable import Variable
 
 # =============================================================================
 # Wire types
@@ -223,7 +223,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, VariableRef]): operator parameters
+        params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -375,27 +375,27 @@ class Operator(abc.ABC):
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
-        :class:`.VariableRef` instances can represent any real scalars (but not arrays).
+        :class:`.Variable` instances can represent any real scalars (but not arrays).
 
         Args:
-            p (Number, array, VariableRef): parameter to check
+            p (Number, array, Variable): parameter to check
             flattened (bool): True means p is an element of a flattened parameter
                 sequence (affects the handling of 'A' parameters)
         Raises:
             TypeError: parameter is not an element of the expected domain
             ValueError: parameter is an element of an unknown domain
         Returns:
-            Number, array, VariableRef: p
+            Number, array, Variable: p
         """
-        if isinstance(p, VariableRef):
+        if isinstance(p, Variable):
             if self.par_domain == "A":
                 raise TypeError(
-                    "{}: Array parameter expected, got a VariableRef,"
+                    "{}: Array parameter expected, got a Variable,"
                     "which can only represent real scalars.".format(self.name)
                 )
             return p
 
-        # p is not a VariableRef
+        # p is not a Variable
         if self.par_domain == "A":
             if flattened:
                 if isinstance(p, np.ndarray):
@@ -442,7 +442,7 @@ class Operator(abc.ABC):
         """Current parameter values.
 
         Fixed parameters are returned as is, free parameters represented by
-        :class:`.VariableRef` instances are replaced by their
+        :class:`.Variable` instances are replaced by their
         current numerical value.
 
         Returns:
@@ -452,12 +452,12 @@ class Operator(abc.ABC):
         def evaluate(p):
             """Evaluate a single parameter."""
             if isinstance(p, np.ndarray):
-                # object arrays may have VariableRefs inside them
+                # object arrays may have Variables inside them
                 if p.dtype == object:
-                    temp = np.array([x.val if isinstance(x, VariableRef) else x for x in p.flat])
+                    temp = np.array([x.val if isinstance(x, Variable) else x for x in p.flat])
                     return temp.reshape(p.shape)
                 return p
-            if isinstance(p, VariableRef):
+            if isinstance(p, Variable):
                 p = self.check_domain(p.val)
             return p
 
@@ -498,7 +498,7 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array, VariableRef]): operation parameters
+        params (tuple[float, int, array, Variable]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -549,7 +549,7 @@ class Operation(Operator):
         recipe = self.grad_recipe[idx]
         multiplier, shift = (0.5, np.pi / 2) if recipe is None else recipe
 
-        # internal multiplier in the VariableRef
+        # internal multiplier in the Variable
         var_mult = self.params[idx].mult
 
         multiplier *= var_mult
@@ -682,7 +682,7 @@ class Observable(Operator):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, VariableRef]): observable parameters
+        params (tuple[float, int, array, Variable]): observable parameters
 
     Keyword Args:
         wires (Sequence[int]): subsystems it acts on.

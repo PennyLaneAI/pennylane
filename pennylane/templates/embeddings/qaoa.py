@@ -27,59 +27,60 @@ from pennylane.templates.utils import (
 )
 
 
+@template
+def zz(weight, wires):
+    """Template for decomposition of ZZ coupling.
+
+    Args:
+        wires (list[int]): qubit indices that the template acts on
+    """
+    CNOT(wires=wires)
+    RZ(2 * weight, wires=wires[0])
+    CNOT(wires=wires)
+
+
 def qaoa_feature_encoding_hamiltonian(features, wires):
     """Implements the encoding Hamiltonian of the QAOA embedding.
 
     Args:
         features (array): array of features to encode
-        wires (Sequence[int] or int): `n` qubit indices that the template acts on
+        wires (list[int]): qubit indices that the template acts on
     """
 
     feature_encoding_wires = wires[: len(features)]
     remaining_wires = wires[len(features) :]
 
-    broadcast(block=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
-    broadcast(block=Hadamard, pattern="single", wires=remaining_wires)
+    broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
+    broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
 
 
-def qaoa_ising_hamiltonian(weights, wires, local_fields, l):
+def qaoa_ising_hamiltonian(weights, wires, local_fields):
     """Implements the Ising-like Hamiltonian of the QAOA embedding.
 
     Args:
-        weights (array): array of weights
-        wires (Sequence[int] or int): `n` qubit indices that the template acts on
+        weights (array): array of weights for one layer
+        wires (list[int]): qubit indices that the template acts on
         local_fields (str): gate implementing the local field
-        l (int): layer index
     """
-    # trainable "Ising" ansatz
+
     if len(wires) == 1:
-        local_fields(weights[l][0], wires=wires[0])
+        weights_zz = []
+        weights_fields = weights
 
     elif len(wires) == 2:
-        # ZZ coupling
-        CNOT(wires=[wires[0], wires[1]])
-        RZ(2 * weights[l][0], wires=wires[0])
-        CNOT(wires=[wires[0], wires[1]])
-
-        # local fields
-        for i, _ in enumerate(wires):
-            local_fields(weights[l][i + 1], wires=wires[i])
+        # for 2 wires the periodic boundary condition is dropped in broadcast's "ring" pattern
+        # only feed in 1 parameter
+        weights_zz = weights[:1]
+        weights_fields = weights[1:]
 
     else:
-        for i, _ in enumerate(wires):
-            if i < len(wires) - 1:
-                # ZZ coupling
-                CNOT(wires=[wires[i], wires[i + 1]])
-                RZ(2 * weights[l][i], wires=wires[i])
-                CNOT(wires=[wires[i], wires[i + 1]])
-            else:
-                # ZZ coupling to enforce periodic boundary condition
-                CNOT(wires=[wires[i], wires[0]])
-                RZ(2 * weights[l][i], wires=wires[i])
-                CNOT(wires=[wires[i], wires[0]])
-        # local fields
-        for i, _ in enumerate(wires):
-            local_fields(weights[l][len(wires) + i], wires=wires[i])
+        weights_zz = weights[: len(wires)]
+        weights_fields = weights[len(wires) :]
+
+    # zz couplings
+    broadcast(unitary=zz, pattern="ring", wires=wires, parameters=weights_zz)
+    # local fields
+    broadcast(unitary=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 
 
 @template
@@ -281,7 +282,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     for l in range(repeat):
         # apply alternating Hamiltonians
         qaoa_feature_encoding_hamiltonian(features, wires)
-        qaoa_ising_hamiltonian(weights, wires, local_fields, l)
+        qaoa_ising_hamiltonian(weights[l], wires, local_fields)
 
     # repeat the feature encoding once more at the end
     qaoa_feature_encoding_hamiltonian(features, wires)
