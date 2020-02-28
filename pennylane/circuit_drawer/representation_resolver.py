@@ -107,12 +107,12 @@ class RepresentationResolver:
         """Resolve the representation of an Operator's parameter.
 
         Args:
-            par (Union[~.variable.VariableRef, int, float]): The parameter to be rendered
+            par (Union[~.variable.Variable, int, float]): The parameter to be rendered
 
         Returns:
             str: String representation of the parameter
         """
-        if isinstance(par, qml.variable.VariableRef):
+        if isinstance(par, qml.variable.Variable):
             return par.render(self.show_variable_names)
 
         return str(round(par, 3))

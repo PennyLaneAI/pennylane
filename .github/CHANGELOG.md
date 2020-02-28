@@ -13,6 +13,20 @@
 
 <h3>Improvements</h3>
 
+<h3>Documentation</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Ville Bergholm
+
+# Release 0.8.1 (current release)
+
+<h3>Improvements</h3>
+
 * Beginning of support for Python 3.8, with the test suite
   now being run in a Python 3.8 environment.
   [(#501)](https://github.com/XanaduAI/pennylane/pull/501)
@@ -40,7 +54,7 @@ This release contains contributions from (in alphabetical order):
 
 Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva.
 
-# Release 0.8.0 (current release)
+# Release 0.8.0
 
 <h3>New features since last release</h3>
 

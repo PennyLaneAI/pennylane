@@ -27,7 +27,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.variable import VariableRef
+from pennylane.variable import Variable
 
 
 def _flatten(x):
@@ -66,7 +66,7 @@ def _unflatten(flat, model):
         Union[array, list, Any], array: first elements of flat arranged into the nested
         structure of model, unused elements of flat
     """
-    if isinstance(model, (numbers.Number, VariableRef, str)):
+    if isinstance(model, (numbers.Number, Variable, str)):
         return flat[0], flat[1:]
 
     if isinstance(model, np.ndarray):
