@@ -128,14 +128,9 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {}),
                               (broadcast,
                                {'parameters': [[1.], [1.]]},
-                               {'block': qml.RX,
+                               {'unitary': qml.RX,
                                 'wires': [0, 1],
                                 'pattern': 'single'}),
-                              (broadcast,
-                               {'parameters': [[1., 1., 1.]]},
-                               {'block': qml.CRot,
-                                'wires': [0, 1],
-                                'pattern': 'double'})
                               ]
 
 # cv templates, dict of differentiable arguments, dict of non-differentiable arguments
@@ -639,16 +634,10 @@ class TestGradientIntegration:
                                           [1]),
                                          (broadcast,
                                           {'parameters': [[1.], [1.]]},
-                                          {'block': qml.RX,
+                                          {'unitary': qml.RX,
                                            'pattern': 'single',
                                            'wires': [0, 1]},
                                           [0]),
-                                         (broadcast,
-                                          {'parameters': [[1., 1., 1.]]},
-                                          {'block': qml.CRot,
-                                           'pattern': 'double',
-                                           'wires': [0, 1]},
-                                          [0])
                                          ]
 
     CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,
