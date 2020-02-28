@@ -44,7 +44,6 @@ An example of how to use templates is the following:
     init_weights = strong_ent_layers_uniform(n_layers=3, n_wires=2)
     print(circuit(init_weights, x=[1., 2.]))
 
-
 Here, we used the embedding template :func:`~.AngleEmbedding`
 together with the layer template :func:`~.StronglyEntanglingLayers`,
 and the uniform parameter initialization strategy
@@ -55,7 +54,7 @@ Custom templates
 
 In addition, custom templates can be created; simply
 decorate a Python function that applies quantum gates
-with the :func:`~.template` decorator:
+with the :func:`pennylane.template` decorator:
 
 .. code-block:: python3
 
@@ -78,7 +77,6 @@ functions that act on templates, such as :func:`~.pennylane.inv`:
 
 
 The following is a gallery of built-in templates provided by PennyLane.
-
 
 .. _intro_ref_temp_emb:
 
@@ -184,6 +182,54 @@ of other templates.
     :link: ../code/api/pennylane.templates.subroutines.Interferometer.html
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
+.. _intro_ref_temp_constr:
+
+Broadcasting function
+---------------------
+
+PennyLane offers a broadcasting function to easily construct templates: :func:`~.broadcast`
+takes single quantum operations or other templates and applies them to wires in a specific pattern.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (single)
+    :figure: ../_static/templates/broadcast_single.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (double)
+    :figure: ../_static/templates/broadcast_double.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (double_odd)
+    :figure: ../_static/templates/broadcast_double_odd.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (chain)
+    :figure: ../_static/templates/broadcast_chain.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (ring)
+    :figure: ../_static/templates/broadcast_ring.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (pyramid)
+    :figure: ../_static/templates/broadcast_pyramid.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (all-to-all)
+    :figure: ../_static/templates/broadcast_alltoall.png
+
 
 .. raw:: html
 
