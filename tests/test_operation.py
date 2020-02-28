@@ -158,9 +158,9 @@ class TestOperation:
             # params must be arrays
             with pytest.raises(TypeError, match='Array parameter expected'):
                 test_class(*n*[0.0], wires=ww)
-            # params must not be VariableRefs
+            # params must not be Variables
             with pytest.raises(TypeError, match='Array parameter expected'):
-                test_class(*n*[qml.variable.VariableRef(0)], wires=ww)
+                test_class(*n*[qml.variable.Variable(0)], wires=ww)
         elif test_class.par_domain == 'N':
             # params must be natural numbers
             with pytest.raises(TypeError, match='Natural number'):
@@ -387,8 +387,8 @@ class TestOperationConstruction:
             par_domain = 'A'
             grad_method = 'F'
 
-        with pytest.raises(TypeError, match="Array parameter expected, got a VariableRef"):
-            DummyOp(qml.variable.VariableRef(0), wires=[0])
+        with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
+            DummyOp(qml.variable.Variable(0), wires=[0])
 
     def test_array_instead_of_flattened_array(self):
         """Test that an exception is raised if an array is expected, but an array is passed

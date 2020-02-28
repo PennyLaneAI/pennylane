@@ -33,11 +33,11 @@ Additionally, any array-like ADT needs to be able to handle (1) scalar multiplic
 (2) indexing/slicing, and possibly (3) iteration, as these are the things qfuncs expect of
 array-like parameters.
 
-PassthruQNode does not have a Jacobian method, so it does not HAVE to use VariableRefs or scalar linear indexing of input parameters.
+PassthruQNode does not have a Jacobian method, so it does not HAVE to use Variables or scalar linear indexing of input parameters.
 Two options:
-1. Use VariableRefs anyway, re-use most BaseQNode methods.
-   Problem: after evaluating the VariableRefs, stacking sliced/indexed Tensors in Operation.parameters should somehow result in a Tensor, not an object array.
-2. Do not use VariableRefs, call the qfunc each time :meth:`PassthruQNode.evaluate` is called (always mutable).
+1. Use Variables anyway, re-use most BaseQNode methods.
+   Problem: after evaluating the Variables, stacking sliced/indexed Tensors in Operation.parameters should somehow result in a Tensor, not an object array.
+2. Do not use Variables, call the qfunc each time :meth:`PassthruQNode.evaluate` is called (always mutable).
    Problem: tensornet_tf requires variable_deps?
 
 TODO rethink output_conversion? should require device to return things in a fixed form, but either as arrays or as AD Tensors, do conversion in interface (if necessary...)
@@ -84,13 +84,13 @@ class PassthruQNode(BaseQNode):
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
     def _set_variables(self, args, kwargs):
-        # do nothing, since we do not use VariableRefs
+        # do nothing, since we do not use Variables
         pass
 
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
 
-        Like :class:`.BaseQNode._construct`, but does not use VariableRefs.
+        Like :class:`.BaseQNode._construct`, but does not use Variables.
         """
         # temporary queues for operations and observables
         self.queue = []  #: list[Operation]: applied operations
@@ -114,7 +114,7 @@ class PassthruQNode(BaseQNode):
         # no output conversion
         self.output_conversion = lambda x: x
 
-        # no VariableRefs, self.variable_deps is empty!
+        # no Variables, self.variable_deps is empty!
         # generate the DAG
         self.circuit = pennylane.circuit_graph.CircuitGraph(self.ops, self.variable_deps)
 
