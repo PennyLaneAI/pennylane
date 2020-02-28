@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
-from pennylane.variable import VariableRef
+from pennylane.variable import Variable
 
 
 @pytest.fixture
@@ -43,16 +43,16 @@ def unicode_representation_resolver_varnames():
 
 @pytest.fixture
 def variable(monkeypatch):
-    """A mocked VariableRef instance for a non-keyword variable."""
-    monkeypatch.setattr(VariableRef, "positional_arg_values", [0, 1, 2, 3])
-    yield VariableRef(2, "test")
+    """A mocked Variable instance for a non-keyword variable."""
+    monkeypatch.setattr(Variable, "positional_arg_values", [0, 1, 2, 3])
+    yield Variable(2, "test")
 
 
 @pytest.fixture
 def kwarg_variable(monkeypatch):
-    """A mocked VariableRef instance for a keyword variable."""
-    monkeypatch.setattr(VariableRef, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
-    yield VariableRef(1, "kwarg_test", True)
+    """A mocked Variable instance for a keyword variable."""
+    monkeypatch.setattr(Variable, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
+    yield Variable(1, "kwarg_test", True)
 
 
 class TestRepresentationResolver:

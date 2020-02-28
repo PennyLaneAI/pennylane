@@ -18,7 +18,7 @@ Utility functions used in the templates.
 from collections.abc import Iterable
 
 import numpy as np
-from pennylane.variable import VariableRef
+from pennylane.variable import Variable
 
 
 def _check_no_variable(arg, msg):
@@ -32,11 +32,11 @@ def _check_no_variable(arg, msg):
         msg (str): error message to display
     """
 
-    if isinstance(arg, VariableRef):
+    if isinstance(arg, Variable):
         raise ValueError(msg)
 
     if isinstance(arg, Iterable):
-        if any([isinstance(a_, VariableRef) for a_ in arg]):
+        if any([isinstance(a_, Variable) for a_ in arg]):
             raise ValueError(msg)
 
 
