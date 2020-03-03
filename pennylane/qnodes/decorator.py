@@ -97,31 +97,45 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     model = device.capabilities().get("model", "qubit")
     device_jacobian = device.capabilities().get("provides_jacobian", False)
 
+    qnode_creator = get_qnode_creator(device_jacobian, model, diff_method)
+    node = qnode_creator(func, device, mutable=mutable, properties=properties)
+
+    interface_creator = get_interface_creator(node, interface, diff_method)
+    node = interface_creator()
+    return node
+
+def get_qnode_creator(device_jacobian, model, diff_method):
+    """Returns the QNode creator function object.
+
+    Returns:
+       callable: a function
+    """
+
     if device_jacobian and (diff_method == "best"):
         # hand off differentiation to the device
-        node = DeviceJacobianQNode(func, device, mutable=mutable, properties=properties)
+        return DeviceJacobianQNode
 
-    elif model in PARAMETER_SHIFT_QNODES and diff_method in ("best", "parameter-shift"):
+    if model in PARAMETER_SHIFT_QNODES and diff_method in ("best", "parameter-shift"):
         # parameter-shift analytic differentiation
-        node = PARAMETER_SHIFT_QNODES[model](func, device, mutable=mutable, properties=properties)
+        return PARAMETER_SHIFT_QNODES[model]
 
-    else:
-        # finite differences
-        node = JacobianQNode(func, device, mutable=mutable, properties=properties)
+    # finite differences
+    return JacobianQNode
 
+def get_interface_creator(node, interface, diff_method):
     if interface == "torch":
-        return node.to_torch()
+        return node.to_torch
 
     if interface == "tf":
-        return node.to_tf()
+        return node.to_tf
 
     if interface in ("autograd", "numpy"):
         # keep "numpy" for backwards compatibility
-        return node.to_autograd()
+        return node.to_autograd
 
     if interface is None:
         # if no interface is specified, return the 'bare' QNode
-        return node
+        return lambda: node
 
     raise ValueError(
         "Interface {} not recognized. Allowed "
