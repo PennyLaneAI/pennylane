@@ -24,19 +24,33 @@ from pennylane.utils import _flatten, _inv_dict
 from .base import BaseQNode, QuantumFunctionError
 
 DEFAULT_STEP_SIZE = 0.3
+DEFAULT_STEP_SIZE_ANALYTIC = 1e-7
+
+
+def default_step_size(analytic):
+    """Returns the step size based on the boolean.
+
+    Args:
+        analytic (bool): determines if the analytic step size is to be returned
+
+    Returns:
+        float: the step size requested
+    """
+    return DEFAULT_STEP_SIZE_ANALYTIC if analytic else DEFAULT_STEP_SIZE
+
 
 class JacobianQNode(BaseQNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 
-    def __init__(self, func, device, mutable=True, h=DEFAULT_STEP_SIZE, properties=None):
+    def __init__(self, func, device, mutable=True, h=None, properties=None):
         super().__init__(func, device, mutable=mutable, properties=properties)
 
         self.par_to_grad_method = None
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
 
-        self.h = h
+        self._h = h or default_step_size(device.analytic)
         """float: step size for parameter shift or the finite difference
         method"""
 
@@ -51,7 +65,7 @@ class JacobianQNode(BaseQNode):
     def h(self):
         """float: step size for parameter shift or the finite difference
         method"""
-        return self.h
+        return self._h
 
     def __repr__(self):
         """String representation."""
@@ -186,7 +200,7 @@ class JacobianQNode(BaseQNode):
         options = options or {}
 
         # Add the step size into the options, if it was not there already
-        if "h" not in options.keys():
+        if "h" not in options.keys() and not self.device.analytic:
             options = {"h": self.h,  **options}
 
         # (re-)construct the circuit if necessary
@@ -310,7 +324,7 @@ class JacobianQNode(BaseQNode):
             array[float]: partial derivative of the node
         """
         y0 = options.get("y0", None)
-        h = options.get("h", 1e-7)
+        h = options.get("h", self.h)
         order = options.get("order", 1)
 
         shift_args = args.copy()

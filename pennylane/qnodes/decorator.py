@@ -19,7 +19,7 @@ from functools import lru_cache
 from .base import BaseQNode
 from .cv import CVQNode
 from .device_jacobian import DeviceJacobianQNode
-from .jacobian import JacobianQNode, DEFAULT_STEP_SIZE
+from .jacobian import JacobianQNode
 from .qubit import QubitQNode
 
 
@@ -28,7 +28,7 @@ ALLOWED_DIFF_METHODS = ("best", "parameter-shift", "finite-diff")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
-def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", h=DEFAULT_STEP_SIZE, properties=None):
+def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", h=None, properties=None):
     """QNode constructor for creating QNodes.
 
     When applied to a quantum function and device, converts it into
@@ -110,7 +110,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
 
     else:
         # finite differences
-        node = JacobianQNode(func, device, mutable=mutable, properties=properties)
+        node = JacobianQNode(func, device, mutable=mutable, h=h, properties=properties)
 
     if interface == "torch":
         return node.to_torch()
@@ -132,7 +132,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     )
 
 
-def qnode(device, *, interface="autograd", mutable=True, diff_method="best", h=DEFAULT_STEP_SIZE, properties=None):
+def qnode(device, *, interface="autograd", mutable=True, diff_method="best", h=None, properties=None):
     """Decorator for creating QNodes.
 
     When applied to a quantum function, this decorator converts it into
