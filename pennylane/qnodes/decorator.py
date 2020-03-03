@@ -28,7 +28,7 @@ ALLOWED_DIFF_METHODS = ("best", "parameter-shift", "finite-diff")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
-def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
+def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", h=0.011, properties=None):
     """QNode constructor for creating QNodes.
 
     When applied to a quantum function and device, converts it into
@@ -78,6 +78,9 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
             * ``"finite-diff"``: Uses numerical finite-differences.
 
             * ``None``: a non-differentiable QNode is returned.
+
+        h (float): step size for parameter shift or the finite
+            difference method
 
         properties (dict[str->Any]): additional keyword properties passed to the QNode
     """
@@ -129,7 +132,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     )
 
 
-def qnode(device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
+def qnode(device, *, interface="autograd", mutable=True, diff_method="best", h=0.011, properties=None):
     """Decorator for creating QNodes.
 
     When applied to a quantum function, this decorator converts it into
@@ -178,6 +181,8 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", pro
             * ``"finite-diff"``: Uses numerical finite-differences.
 
             * ``None``: a non-differentiable QNode is returned.
+        h (float): step size for parameter shift or the finite
+            difference method
 
         properties (dict[str->Any]): additional keyword properties passed to the QNode
     """
@@ -191,6 +196,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", pro
             interface=interface,
             mutable=mutable,
             diff_method=diff_method,
+            h=h,
             properties=properties,
         )
 
