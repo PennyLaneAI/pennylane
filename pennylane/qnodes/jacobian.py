@@ -201,7 +201,7 @@ class JacobianQNode(BaseQNode):
 
         # Add the step size into the options, if it was not there already
         if "h" not in options.keys() and not self.device.analytic:
-            options = {"h": self.h,  **options}
+            options = {"h": self.h, **options}
 
         # (re-)construct the circuit if necessary
         if self.circuit is None or self.mutable:
