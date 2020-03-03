@@ -101,6 +101,8 @@ def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
     created when diff_method='finite-diff' and the step size is set through the
     decorator."""
     step_size = 0.5
+    new_step_size = 0.12345
+
     dev = qml.device('default.qubit', wires=1)
 
     @qnode(dev, diff_method="finite-diff", h=step_size)
@@ -113,6 +115,9 @@ def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
     assert isinstance(circuit, JacobianQNode)
     assert hasattr(circuit, "jacobian")
     assert circuit.h == step_size
+
+    circuit.h = new_step_size
+    assert circuit.h == new_step_size
 
 def test_tf_interface(skip_if_no_tf_support):
     """Test tf interface conversion"""

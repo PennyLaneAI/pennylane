@@ -67,6 +67,10 @@ class JacobianQNode(BaseQNode):
         method"""
         return self._h
 
+    @h.setter
+    def h(self, value):
+        self._h = value
+
     def __repr__(self):
         """String representation."""
         detail = "<QNode (differentiable): device='{}', func={}, wires={}, interface={}>"
