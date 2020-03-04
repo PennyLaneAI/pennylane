@@ -43,16 +43,15 @@ class JacobianQNode(BaseQNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 
-    def __init__(self, func, device, mutable=True, h=None, properties=None):
-        super().__init__(func, device, mutable=mutable, properties=properties)
+    def __init__(self, func, device, mutable=True, **kwargs):
+        super().__init__(func, device, mutable=mutable, **kwargs)
 
         self.par_to_grad_method = None
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
 
-        self._h = h or default_step_size(device.analytic)
-        """float: step size for parameter shift or the finite difference
-        method"""
+        self._h = kwargs.get("h", default_step_size(device.analytic))
+        """float: step size for the finite difference method"""
 
     metric_tensor = None
 
@@ -63,8 +62,7 @@ class JacobianQNode(BaseQNode):
 
     @property
     def h(self):
-        """float: step size for parameter shift or the finite difference
-        method"""
+        """float: step size for the finite difference method"""
         return self._h
 
     @h.setter
@@ -204,7 +202,7 @@ class JacobianQNode(BaseQNode):
         options = options or {}
 
         # Add the step size into the options, if it was not there already
-        if "h" not in options.keys() and not self.device.analytic:
+        if "h" not in options.keys():
             options = {"h": self.h, **options}
 
         # (re-)construct the circuit if necessary
