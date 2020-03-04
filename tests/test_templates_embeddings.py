@@ -445,9 +445,8 @@ class TestQAOAEmbedding:
 
     @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi/2]], [1, 0]),
                                                                     (3, [0, 0], [[0, 0, 0, 0, 0, np.pi/2]], [1, 1, 0])])
-    def test_qaoa_embedding_state_more_qubit_than_features(self, n_wires, features, weights, target, tol):
-        """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
-        Uses RY local fields."""
+    def test_qaoa_embedding_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
+        """Checks the state is correct if there are more qubits than features."""
 
         dev = qml.device('default.qubit', wires=n_wires)
 
