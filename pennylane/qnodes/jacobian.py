@@ -27,18 +27,6 @@ DEFAULT_STEP_SIZE = 0.3
 DEFAULT_STEP_SIZE_ANALYTIC = 1e-7
 
 
-def default_step_size(analytic):
-    """Returns the step size based on the boolean.
-
-    Args:
-        analytic (bool): determines if the analytic step size is to be returned
-
-    Returns:
-        float: the step size requested
-    """
-    return DEFAULT_STEP_SIZE_ANALYTIC if analytic else DEFAULT_STEP_SIZE
-
-
 class JacobianQNode(BaseQNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
@@ -50,7 +38,8 @@ class JacobianQNode(BaseQNode):
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
 
-        self._h = kwargs.get("h", default_step_size(device.analytic))
+        default_step_size = DEFAULT_STEP_SIZE_ANALYTIC if device.analytic else DEFAULT_STEP_SIZE
+        self._h = kwargs.get("h", default_step_size)
         """float: step size for the finite difference method"""
 
     metric_tensor = None

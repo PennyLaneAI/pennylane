@@ -80,9 +80,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
             * ``None``: a non-differentiable QNode is returned.
 
     Kwargs:
-        h (float): step size for parameter shift or the finite
-            difference method
-
+        h (float): step size for the finite-difference method
         kwargs (dict[str->Any]): additional keyword arguments passed to the QNode
     """
     if diff_method is None:
