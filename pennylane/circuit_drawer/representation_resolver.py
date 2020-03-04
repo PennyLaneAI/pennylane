@@ -177,7 +177,7 @@ class RepresentationResolver:
         return "{:+.3g}{}".format(coefficient, variable)
 
     def _format_polyxp_order1(self, coefficients):
-        """Format a first-order polynmomial of x and p operators.
+        """Format a first-order polynomial of x and p operators.
 
         Args:
             coefficients (array[float]): The polynomial coefficients as a vector
@@ -203,7 +203,7 @@ class RepresentationResolver:
         return poly_str
 
     def _format_polyxp_order2(self, coefficients):
-        """Format a second-order polynmomial of x and p operators.
+        """Format a second-order polynomial of x and p operators.
 
         Args:
             coefficients (array[float]): The polynomial coefficients as a matrix
