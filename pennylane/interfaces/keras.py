@@ -14,92 +14,109 @@
 """
 This module contains the :func:`to_keras` function to convert quantum nodes into Keras layers.
 """
+import functools
+import inspect
+from typing import Optional
+
 import tensorflow as tf
+
 import pennylane as qml
+from pennylane.interfaces.tf import to_tf
 
-major, minor, patch = tf.__version__.split(".")
-
-if (int(major) == 1 and int(minor) < 4) or int(major) == 0:
-    raise ImportError("Must use TensorFlow v1.4.0 or above")
+if int(tf.__version__.split(".")[0]) < 2:
+    raise ImportError("TensorFlow version 2 or above is required for Keras QNodes")
 else:
-    from tensorflow import keras
+    from tensorflow.keras.layers import Layer
 
 
-class QuantumLayers(keras.layers.Layer):
-    """TODO - This is a layer for a specific architecture given here:
-    https://github.com/XanaduAI/qml/issues/28#issuecomment-574889614.
-    """
+class _KerasQNode(Layer):
     def __init__(
         self,
-        units,
-        device="default.qubit",
-        n_layers=1,
-        rotations_initializer="random_uniform",
-        rotations_regularizer=None,
-        rotations_constraint=None,
-        **kwargs,
+        qnode: qml.QNode,
+        weight_shapes: dict,
+        output_dim: int,
+        input_dim: Optional[int] = None,
+        weight_specs: Optional[dict] = None,
+        **kwargs
     ):
-        if "input_shape" not in kwargs and "input_dim" in kwargs:
-            kwargs["input_shape"] = (kwargs.pop("input_dim"),)
-        if "dynamic" in kwargs:
-            del kwargs["dynamic"]
-        super(QuantumLayers, self).__init__(dynamic=True, **kwargs)
 
-        self.units = units
-        self.device = device
-        self.n_layers = n_layers
-        self.rotations_initializer = keras.initializers.get(rotations_initializer)
-        self.rotations_regularizer = keras.regularizers.get(rotations_regularizer)
-        self.rotations_constraint = keras.constraints.get(rotations_constraint)
+        self.sig = qnode.func.sig
+        defaults = [
+            name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
+        ]
+        if len(defaults) != 1:
+            raise TypeError("Keras QNodes must have a single default argument")
+        self.input_arg = defaults[0]
 
-        self.input_spec = keras.layers.InputSpec(min_ndim=2, axes={-1: units})
-        self.supports_masking = False
+        if self.input_arg in {weight_shapes.keys()}:
+            raise ValueError("Input argument dimension should not be specified in weight_shapes")
+        if {weight_shapes.keys()} | {self.input_arg} != {self.sig.keys()}:
+            raise ValueError("Must specify a shape for every non-input parameter in QNode")
+        if qnode.func.var_pos:
+            raise TypeError("Keras QNodes cannot have a variable number of positional arguments")
+        if qnode.func.var_keyword:
+            raise TypeError("Keras QNodes cannot have a variable number of keyword arguments")
+        if len(weight_shapes.keys()) != len({weight_shapes.keys()}):
+            raise ValueError("A shape is specified multiple times in weight_shapes")
 
-        def circuit(inputs, parameters):
-            qml.templates.embeddings.AngleEmbedding(inputs, wires=list(range(self.units)))
-            qml.templates.layers.StronglyEntanglingLayers(parameters, wires=list(range(self.units)))
-            return [qml.expval(qml.PauliZ(i)) for i in range(self.units)]
+        self.qnode = qnode
+        self.input_dim = input_dim if isinstance(input_dim, (int, type(None))) else input_dim[0]
+        self.weight_shapes = {
+            weight: ((size,) if isinstance(size, int) else tuple(size))
+            for weight, size in weight_shapes.items()
+        }
+        self.output_dim = output_dim if isinstance(output_dim, int) else output_dim[0]
 
-        self.dev = qml.device(device, wires=units)
-        self.layer = qml.QNode(circuit, self.dev, interface="tf")
+        if weight_specs:
+            self.weight_specs = weight_specs
+        else:
+            self.weight_specs = {}
+        self.qnode_weights = {}
 
-    def apply_layer(self, *args):
-        return tf.keras.backend.cast_to_floatx(self.layer(*args))
+        super(_KerasQNode, self).__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
-        # assert len(input_shape) == 2
-        input_dim = input_shape[-1]
-        assert input_dim == self.units
+        if self.input_dim and input_shape[-1] != self.input_dim:
+            raise ValueError("QNode can only accept inputs of size {}".format(self.input_dim))
 
-        self.rotations = self.add_weight(
-            shape=(self.n_layers, input_dim, 3),
-            initializer=self.rotations_initializer,
-            name="rotations",
-            regularizer=self.rotations_regularizer,
-            constraint=self.rotations_constraint,
-        )
-        self.built = True
+        for weight, size in self.weight_shapes.items():
+            spec = self.weight_specs.pop(weight, {})
+            self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
 
-    def call(self, inputs):
-        return tf.stack([self.apply_layer(i, self.rotations) for i in inputs])
+        super(_KerasQNode, self).build(input_shape)
+
+    def call(self, inputs, **kwargs):
+        qnode = self.qnode
+        for arg in self.sig:
+            if arg is not self.input_arg:
+                w = self.qnode_weights[arg]
+                qnode = functools.partial(qnode, w)
+
+        outputs = tf.stack([qnode(**{self.input_arg: x}) for x in inputs])
+        input_shape = tf.shape(inputs)
+
+        return tf.reshape(outputs, self.compute_output_shape(input_shape))
 
     def compute_output_shape(self, input_shape):
-        return input_shape
+        return tf.TensorShape([input_shape[0], self.output_dim])
 
-    def get_config(self):
-        config = {
-            "units": self.units,
-            "device": self.device,
-            "n_layers": self.n_layers,
-            "rotations_initializer": keras.initializers.serialize(self.rotations_initializer),
-            "rotations_regularizer": keras.regularizers.serialize(self.rotations_regularizer),
-            "rotations_constraint": keras.constraints.serialize(self.rotations_constraint),
-        }
-        base_config = super(QuantumLayers, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
+    @property
+    def interface(self):
+        return "keras"
+
+    def __str__(self):
+        detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
+        return detail.format(
+            self.qnode.device.short_name,
+            self.qnode.func.__name__,
+            self.qnode.num_wires,
+            self.interface,
+        )
+
+    def __repr__(self):
+        return self.__str__()
 
 
 def to_keras(qnode: qml.QNode):
-    """TODO
-    """
-    return qnode
+    qnode = to_tf(qnode)
+    return _KerasQNode(qnode)
