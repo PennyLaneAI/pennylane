@@ -52,9 +52,8 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000, analytic=True):
+    def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
-        self.analytic = analytic
         self.shots = shots
 
         self._op_queue = None
