@@ -192,7 +192,9 @@ class BaseQNode:
         # introspect the quantum function signature
         _get_signature(self.func)
 
-        self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
+        self.output_conversion = (
+            None
+        )  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 

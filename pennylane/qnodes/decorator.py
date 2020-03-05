@@ -191,12 +191,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
     def qfunc_decorator(func):
         """The actual decorator"""
         return QNode(
-            func,
-            device,
-            interface=interface,
-            mutable=mutable,
-            diff_method=diff_method,
-            **kwargs
+            func, device, interface=interface, mutable=mutable, diff_method=diff_method, **kwargs
         )
 
     return qfunc_decorator
