@@ -67,6 +67,7 @@ def to_tf(qnode):
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
+        func = qnode.func
 
     @qnode_str
     @tf.custom_gradient
