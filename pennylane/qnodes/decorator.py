@@ -79,9 +79,8 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
 
             * ``None``: a non-differentiable QNode is returned.
 
-    Kwargs:
+    Keyword Args:
         h (float): step size for the finite-difference method
-        kwargs (dict[str->Any]): additional keyword arguments passed to the QNode
     """
     if diff_method is None:
         # QNode is not differentiable
@@ -184,8 +183,6 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
     Keyword Args:
         h (float): Step size for the finite difference method. Default is `1e-7` for analytic devices, or
             `0.3` for non-analytic devices (those that estimate expectation values with a finite number of shots).
-
-        kwargs (dict[str->Any]): additional keyword arguments passed to the QNode
    """
 
     @lru_cache()
