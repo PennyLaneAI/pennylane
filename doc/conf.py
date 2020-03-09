@@ -97,8 +97,10 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'PennyLane'
-copyright = """
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Carsten Blank, Keri McKiernan, and Nathan Killoran. <br>
+copyright = """\
+Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
+Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
+Zeyue Niu, Antal Száva, and Nathan Killoran. <br>
 PennyLane: Automatic differentiation of hybrid quantum-classical computations. arXiv:1811.04968, 2018.<br>
 &copy; Copyright 2018-2020, Xanadu Quantum Technologies Inc."""
 author = 'Xanadu Inc.'
