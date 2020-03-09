@@ -474,9 +474,7 @@ class TestOptimizer:
 
         for f in univariate_funcs:
             x_onestep = bunch.rotosolve_opt.step(f, x_start)
-            print(x_start)
             x_onestep_target = self.rotosolve_step(f, x_start)
-            print(x_onestep_target)
 
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
@@ -512,9 +510,6 @@ class TestOptimizer:
         # the optimal generators for the 2-qubit VQE circuit
         # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
         optimal_generators = [qml.RY, qml.RX]
-        print(optimal_generators[0])
-        import sys
-        sys.exit()
 
         dev = qml.device("default.qubit", analytic=True, wires=2)
 
