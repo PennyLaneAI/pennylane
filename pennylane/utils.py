@@ -30,6 +30,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.variable import Variable
 
+
 def decompose_hamiltonian(H):
     """Decomposes a hamiltonian into tensor product of pauli matrices
 
@@ -41,8 +42,8 @@ def decompose_hamiltonian(H):
             list: tensor product of pauli matrix combinations
         """
     N = int(np.log2(len(H)))
-    if len(H)-2**N != 0:
-        raise ValueError('Hamiltonian should be in the form (n^2 x n^2), for any n>=1')
+    if len(H) - 2 ** N != 0:
+        raise ValueError("Hamiltonian should be in the form (n^2 x n^2), for any n>=1")
     #
     paulis = [qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ]
     obs = []
@@ -50,18 +51,23 @@ def decompose_hamiltonian(H):
     #
     for term in itertools.product(paulis, repeat=N):
         matrices = [i._matrix() for i in term]
-        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / (2**N)
+        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / (2 ** N)
         #
         if not np.allclose(coeff, 0):
             coeffs.append(coeff)
-        #
+            #
             if not all(t is qml.Identity for t in term):
-                obs.append(functools.reduce(operator.matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity]))
+                obs.append(
+                    functools.reduce(
+                        operator.matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity]
+                    )
+                )
             else:
                 obs.append(functools.reduce(operator.matmul, [t(i) for i, t in enumerate(term)]))
         # obs.append(functools.reduce(operator.matmul, [t(i) for i, t in enumerate(term)]))
     #
     return coeffs, obs
+
 
 def _flatten(x):
     """Iterate recursively through an arbitrarily nested structure in depth-first order.
