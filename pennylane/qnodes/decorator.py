@@ -180,7 +180,8 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
             * ``"finite-diff"``: Uses numerical finite-differences.
 
             * ``None``: a non-differentiable QNode is returned.
-    Kwargs:
+
+    Keyword Args:
         h (float): Step size for the finite difference method. Default is `1e-7` for analytic devices, or
             `0.3` for non-analytic devices (those that estimate expectation values with a finite number of shots).
 
