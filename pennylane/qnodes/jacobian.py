@@ -38,11 +38,9 @@ class JacobianQNode(BaseQNode):
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
 
-        try:
-            analytic = self.device.analytic
-        except AttributeError:
-            # The analytic attribute is not defined for hardware devices
-            analytic = False
+        analytic = getattr(self.device, "analytic", False)
+        """bool: whether the device runs in analytic mode; this attribute is
+        not defined for hardware devices so set to False in such cases"""
 
         default_step_size = DEFAULT_STEP_SIZE_ANALYTIC if analytic else DEFAULT_STEP_SIZE
         self._h = kwargs.get("h", default_step_size)
