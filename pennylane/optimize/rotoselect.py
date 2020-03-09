@@ -33,7 +33,9 @@ class RotoselectOptimizer:
               \left<H\right>_{\theta_d=\pi/2} - \left<H\right>_{\theta_d=-\pi/2}\right),
 
     where :math:`\left<H\right>_{\theta_d}` is the expectation value of the objective function
-    optimized over the parameter :math:`\theta_d`.
+    optimized over the parameter :math:`\theta_d`. :math:`\text{arctan2}(x, y)` computes the
+    element-wise arc tangent of :math:`x/y` choosing the quadrant correctly, avoiding, in
+    particular, division-by-zero when :math:`y = 0`.
 
     The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_
 
