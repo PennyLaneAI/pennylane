@@ -158,7 +158,10 @@ class BaseQNode:
             and returning a tuple of measured :class:`~.operation.Observable` instances.
         device (~pennylane._device.Device): computational device to execute the function on
         mutable (bool): whether the circuit is mutable, see above
-        kwargs (dict[str, Any] or None): additional keyword arguments for adjusting the QNode behavior
+
+    Keyword Args:
+        vis_check (bool): whether to check for operations that cannot affect the output
+        par_check (bool): whether to check for unused positional params
     """
 
     # pylint: disable=too-many-instance-attributes
