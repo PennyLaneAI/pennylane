@@ -27,7 +27,7 @@ class RotoselectOptimizer:
     optimal value of the :math:`d^{th}` parameter :math:`\theta^*_d` when the other parameters and
     gate choices are fixed:
 
-    .. math:: \theta^*_d = \underset{\theta_d}{\text{argmin}}\left<H\right>_{\theta_d} 
+    .. math:: \theta^*_d = \underset{\theta_d}{\text{argmin}}\left<H\right>_{\theta_d}
               = -\frac{\pi}{2} - \text{arctan2}\left(2\left<H\right>_{\theta_d=0}
               - \left<H\right>_{\theta_d=\pi/2} - \left<H\right>_{\theta_d=-\pi/2},
               \left<H\right>_{\theta_d=\pi/2} - \left<H\right>_{\theta_d=-\pi/2}\right),
