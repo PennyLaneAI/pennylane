@@ -69,7 +69,10 @@ class PassthruQNode(BaseQNode):
             A Python function containing :class:`~.operation.Operation` constructor calls,
             and returning a tuple of measured :class:`~.operation.Observable` instances.
         device (~pennylane._device.Device): computational device to execute the function on
-        kwargs (dict[str, Any] or None): additional keyword arguments for adjusting the QNode behavior
+
+    Keyword Args:
+        use_native_type (bool): If True, return the result in whatever type the device uses
+            internally, otherwise convert it into array[float]. Default: True.
     """
 
     def __init__(self, func, device, **kwargs):

@@ -140,6 +140,7 @@ class QubitDevice(Device):
         Args:
             circuit (~.CircuitGraph): circuit to execute on the device
 
+
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
 

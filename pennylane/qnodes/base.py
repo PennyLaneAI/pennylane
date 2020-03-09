@@ -761,6 +761,10 @@ class BaseQNode:
             args (tuple[Any]): positional arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
+        Keyword Args:
+            use_native_type (bool): If True, return the result in whatever type the device uses
+                internally, otherwise convert it into array[float]. Default: False.
+
         Returns:
             float or array[float]: output measured value(s)
         """
