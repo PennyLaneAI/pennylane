@@ -14,8 +14,9 @@
 """
 Unit tests for the :mod:`pennylane` :class:`GradientDescentOptimizer` subclasses.
 """
-import pytest
+# pylint: disable=redefined-outer-name
 import itertools as it
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -501,7 +502,7 @@ class TestOptimizer:
 
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    @pytest.mark.parametrize('x_start', [[0.3, 0.25], [-0.6, 0.45], [1.3, -0.9]])
+    @pytest.mark.parametrize('x_start', [0.5, -1.14, [0.3, 0.25], [-0.6, 0.45], [1.3, -0.9]])
     @pytest.mark.parametrize('generators', [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)])
     def test_rotoselect_optimizer(self, x_start, generators, bunch, tol):
         """Tests that rotoselect optimizer takes one and two steps correctly for the VQE circuit
@@ -510,6 +511,8 @@ class TestOptimizer:
         # the optimal generators for the 2-qubit VQE circuit
         # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
         optimal_generators = [qml.RY, qml.RX]
+        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        bunch.rotoselect_opt.update_possible_generators(possible_generators)
 
         dev = qml.device("default.qubit", analytic=True, wires=2)
 
@@ -529,6 +532,9 @@ class TestOptimizer:
             return qml.expval(qml.PauliX(0))
 
         def cost_fn(params, generators):
+            # test single parameter inputs
+            if np.ndim(params) == 1:
+                params = [params[0], params[0]]
             Z_1, Y_2 = circuit_rsel(params, generators=generators)
             X_1 = circuit_rsel2(params, generators=generators)
             return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
