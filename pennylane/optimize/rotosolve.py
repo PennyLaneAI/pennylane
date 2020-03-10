@@ -36,6 +36,29 @@ class RotosolveOptimizer:
     particular, division-by-zero when :math:`y = 0`.
 
     The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_
+
+    **Example:**
+
+    Initialize the optimizer, define a cost function (that takes a list of values as input and
+    return a single value), set the initial values of ``x`` to be used and set the number of steps
+    to optimize over.
+
+    >>> opt = qml.optimize.RotosolveOptimizer()
+    >>> cost = lambda x: np.cos(x[0]) + np.sin(x[1])
+    >>> x = [0.3, 0.7]
+    >>> n_steps = 1000
+
+    Run the optimization step-by-step for ``n_steps`` steps.
+
+    >>> cost_rotosel = []
+    >>> for _ in range(n_steps):
+    >>>     cost_rotosel.append(cost(x))
+    >>>     x = opt.step(cost, x)
+
+    The optimized values for x should now be stored in ``x`` and steps-vs-cost can be seen by
+    plotting ``cost_rotosel``.
+
+
     """
     # pylint: disable=too-few-public-methods
 
@@ -46,11 +69,12 @@ class RotosolveOptimizer:
         """Update x with one step of the optimizer.
 
         Args:
-            objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
+            objective_fn (function): The objective function for optimization. It should take a list
+                of values ``x`` as inputs and return a single value.
+            x (array[float]): NumPy array containing the current values of the variables to be updated.
 
         Returns:
-            array: the new variable values :math:`x^{(t+1)}`
+            array: The new variable values :math:`x^{(t+1)}`.
         """
         # make sure that x is an array
         if np.ndim(x) == 0:
@@ -66,11 +90,12 @@ class RotosolveOptimizer:
         """The rotosolve step for one parameter.
 
         Args:
-            objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
+            objective_fn (function): The objective function for optimization. It should take a list
+                of values ``x`` as inputs and return a single value.
+            x (array[float]): NumPy array containing the current values of the variables to be updated.
 
         Returns:
-            array: the input array ``x`` with the value at position ``d`` optimized
+            array: The input array ``x`` with the value at position ``d`` optimized.
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):

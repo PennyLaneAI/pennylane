@@ -42,6 +42,32 @@ class RotoselectOptimizer:
     Keyword Args:
         possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit`` operators
             that are allowed in the circuit. Default is the set of Pauli matrices :math:`\{X, Y, Z\}`.
+
+    **Example:**
+
+    Initialize the optimizer, set the initial values of ``x``, choose the initial generators to
+    start with, and set the number of steps to optimize over.
+
+    >>> opt = qml.optimize.RotoselectOptimizer()
+    >>> x = [0.3, 0.7]
+    >>> generators = [qml.RX, qml.RY]
+    >>> n_steps = 1000
+
+    Define a cost function based on a PennyLane circuit
+
+    >>> def cost(x, generators):
+    >>>     X_1, Y_2 = circuit(x, generators=generators)
+    >>>     return 0.2 * X_1 + 0.5 * Y_2
+
+    Run the optimization step-by-step for ``n_steps`` steps.
+
+    >>> cost_rotosel = []
+    >>> for _ in range(n_steps):
+    >>>     cost_rotosel.append(cost(x, generators))
+    >>>     x, generators = opt.step(cost, x, generators)
+
+    The optimized values for x should now be stored in ``x`` together with the optimal gates for
+    the circuit, while steps-vs-cost can be seen by plotting ``cost_rotosel``.
     """
 
     def __init__(self, **kwargs):
@@ -51,13 +77,14 @@ class RotoselectOptimizer:
         """Update x with one step of the optimizer.
 
         Args:
-            objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
-            generators (list): List containing ``pennylane.ops.qubit`` operators to be used in the
-                circuit and updated
+            objective_fn (function): The objective function for optimization. It should take two lists
+                of the values ``x`` and the gates ``generators`` as inputs, and return a single value.
+            x (array[float]): NumPy array containing the initial values of the variables to be optimized over.
+            generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over.
 
         Returns:
-            array: the new variable values :math:`x^{(t+1)}` as well as the new generators.
+            array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
         # make sure that x is an array
         if np.ndim(x) == 0:
@@ -72,7 +99,7 @@ class RotoselectOptimizer:
         """Update list of possible generators.
 
         Args:
-            possible_generators (list): list of new possible generators to be used in optimization
+            possible_generators (list): List of new possible generators to be used in optimization.
         """
         self.possible_generators = possible_generators
 
@@ -82,15 +109,16 @@ class RotoselectOptimizer:
         Optimizes for the best generator at position ``d``.
 
         Args:
-            objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
-            generators (list): List containing ``pennylane.ops.qubit`` operators to be used in the
-                circuit and to be updated
-            d (int): the position in the input array ``x`` containing the value to be optimized
+            objective_fn (function): The objective function for optimization. It should take two lists
+                of the values ``x`` and the gates ``generators`` as inputs, and return a single value.
+            x (array[float]): NumPy array containing the initial values of the variables to be optimized over.
+            generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over.
+            d (int): The position in the input array ``x`` containing the value to be optimized.
 
         Returns:
             tuple: Tuple containing the parameter value and generator that, at position ``d`` in their
-            respective lists ``x`` and ``generators``, optimizes the objective function
+            respective lists ``x`` and ``generators``, optimizes the objective function.
         """
         for i, generator in enumerate(self.possible_generators):
             generators[d] = generator
@@ -110,14 +138,15 @@ class RotoselectOptimizer:
         """The rotosolve step for one parameter and one set of generators.
 
         Args:
-            objective_fn (function): the objective function for optimization
-            x (array): NumPy array containing the current values of the variables to be updated
-            generators (list): List containing ``pennylane.ops.qubit`` operators to be used in the
-                circuit and to be updated
-            d (int): the position in the input array ``x`` containing the value to be optimized
+            objective_fn (function): The objective function for optimization. It should take two lists
+                of the values ``x`` and the gates ``generators`` as inputs, and return a single value.
+            x (array[float]): NumPy array containing the initial values of the variables to be optimized over.
+            generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over.
+            d (int): The position in the input array ``x`` containing the value to be optimized.
 
         Returns:
-            array: the input array ``x`` with the value at position ``d`` optimized
+            array: The input array ``x`` with the value at position ``d`` optimized.
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):
