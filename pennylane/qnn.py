@@ -17,7 +17,7 @@ from typing import Optional
 
 import tensorflow as tf
 
-import pennylane as qml
+from pennylane.qnodes import QNode
 
 if int(tf.__version__.split(".")[0]) < 2:
     raise ImportError("TensorFlow version 2 or above is required for this module")
@@ -28,7 +28,7 @@ else:
 class KerasLayer(Layer):
     def __init__(
         self,
-        qnode: qml.QNode,
+        qnode: QNode,
         weight_shapes: dict,
         output_dim: int,
         input_dim: Optional[int] = None,
@@ -45,15 +45,15 @@ class KerasLayer(Layer):
                             "default argument")
         self.input_arg = defaults[0]
 
-        if self.input_arg in {weight_shapes.keys()}:
+        if self.input_arg in set(weight_shapes.keys()):
             raise ValueError("Input argument dimension should not be specified in weight_shapes")
-        if {weight_shapes.keys()} | {self.input_arg} != {self.sig.keys()}:
+        if set(weight_shapes.keys()) | set(self.input_arg) != set(self.sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
         if qnode.func.var_pos:
             raise TypeError("Cannot have a variable number of positional arguments")
         if qnode.func.var_keyword:
             raise TypeError("Cannot have a variable number of keyword arguments")
-        if len(weight_shapes.keys()) != len({weight_shapes.keys()}):
+        if len(weight_shapes.keys()) != len(set(weight_shapes.keys())):
             raise ValueError("A shape is specified multiple times in weight_shapes")
 
         self.qnode = qnode
@@ -98,12 +98,8 @@ class KerasLayer(Layer):
         return tf.TensorShape([input_shape[0], self.output_dim])
 
     def __str__(self):
-        detail = "<Quantum Keras layer: device='{}', func={}, wires={}, interface=\"tf\">"
-        return detail.format(
-            self.qnode.device.short_name,
-            self.qnode.func.__name__,
-            self.qnode.num_wires,
-        )
+        detail = "<Quantum Keras layer: func={}>"
+        return detail.format(self.qnode.func.__name__)
 
     def __repr__(self):
         return self.__str__()
