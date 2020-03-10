@@ -16,10 +16,8 @@ Benchmarking tool for PennyLane.
 """
 # pylint: disable=import-outside-toplevel,invalid-name
 import argparse
-import functools
 import importlib
 import subprocess
-import sys
 
 import numpy as np
 
@@ -100,9 +98,6 @@ def profile(func, identifier, *, repeat=20):
 
 def cli():
     """Parse the command line arguments, perform the requested action.
-
-    Returns:
-      argparse.Namespace: parsed arguments in a namespace container
     """
     parser = argparse.ArgumentParser(description='PennyLane benchmarking tool')
     parser.add_argument('--version', action='version', version=__version__)

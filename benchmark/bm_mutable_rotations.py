@@ -39,6 +39,10 @@ class Benchmark(bu.BaseBenchmark):
     min_wires = 1
     n_vals = range(10, 60, 10)
 
+    def __init__(self, device=None):
+        super().__init__(device)
+        self.qnode = None
+
     def setup(self):
         self.qnode = bu.create_qnode(circuit, self.device, mutable=True)
 
