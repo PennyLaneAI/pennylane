@@ -11,9 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains the :func:`to_keras` function to convert quantum nodes into Keras layers.
-"""
 import functools
 import inspect
 from typing import Optional
@@ -21,15 +18,14 @@ from typing import Optional
 import tensorflow as tf
 
 import pennylane as qml
-from pennylane.interfaces.tf import to_tf
 
 if int(tf.__version__.split(".")[0]) < 2:
-    raise ImportError("TensorFlow version 2 or above is required for Keras QNodes")
+    raise ImportError("TensorFlow version 2 or above is required for this module")
 else:
     from tensorflow.keras.layers import Layer
 
 
-class _KerasQNode(Layer):
+class KerasLayer(Layer):
     def __init__(
         self,
         qnode: qml.QNode,
@@ -45,17 +41,18 @@ class _KerasQNode(Layer):
             name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
         ]
         if len(defaults) != 1:
-            raise TypeError("Keras QNodes must have a single default argument")
+            raise TypeError("Conversion to a Keras layer requires a QNode with a single "
+                            "default argument")
         self.input_arg = defaults[0]
 
         if self.input_arg in {weight_shapes.keys()}:
             raise ValueError("Input argument dimension should not be specified in weight_shapes")
         if {weight_shapes.keys()} | {self.input_arg} != {self.sig.keys()}:
-            raise ValueError("Must specify a shape for every non-input parameter in QNode")
+            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
         if qnode.func.var_pos:
-            raise TypeError("Keras QNodes cannot have a variable number of positional arguments")
+            raise TypeError("Cannot have a variable number of positional arguments")
         if qnode.func.var_keyword:
-            raise TypeError("Keras QNodes cannot have a variable number of keyword arguments")
+            raise TypeError("Cannot have a variable number of keyword arguments")
         if len(weight_shapes.keys()) != len({weight_shapes.keys()}):
             raise ValueError("A shape is specified multiple times in weight_shapes")
 
@@ -73,17 +70,17 @@ class _KerasQNode(Layer):
             self.weight_specs = {}
         self.qnode_weights = {}
 
-        super(_KerasQNode, self).__init__(dynamic=True, **kwargs)
+        super(KerasLayer, self).__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
         if self.input_dim and input_shape[-1] != self.input_dim:
             raise ValueError("QNode can only accept inputs of size {}".format(self.input_dim))
 
         for weight, size in self.weight_shapes.items():
-            spec = self.weight_specs.pop(weight, {})
+            spec = self.weight_specs.get(weight, {})
             self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
 
-        super(_KerasQNode, self).build(input_shape)
+        super(KerasLayer, self).build(input_shape)
 
     def call(self, inputs, **kwargs):
         qnode = self.qnode
@@ -100,23 +97,13 @@ class _KerasQNode(Layer):
     def compute_output_shape(self, input_shape):
         return tf.TensorShape([input_shape[0], self.output_dim])
 
-    @property
-    def interface(self):
-        return "keras"
-
     def __str__(self):
-        detail = "<QNode: device='{}', func={}, wires={}, interface={}>"
+        detail = "<Quantum Keras layer: device='{}', func={}, wires={}, interface=\"tf\">"
         return detail.format(
             self.qnode.device.short_name,
             self.qnode.func.__name__,
             self.qnode.num_wires,
-            self.interface,
         )
 
     def __repr__(self):
         return self.__str__()
-
-
-def to_keras(qnode: qml.QNode):
-    qnode = to_tf(qnode)
-    return _KerasQNode(qnode)
