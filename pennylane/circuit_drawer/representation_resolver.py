@@ -405,6 +405,9 @@ class RepresentationResolver:
         if obs.return_type == qml.operation.Sample:
             return "Sample[{}]".format(self.operator_representation(obs, wire))
 
+        if obs.return_type == qml.operation.Probability:
+            return "Probs"
+
         # Unknown return_type
         return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))
 
