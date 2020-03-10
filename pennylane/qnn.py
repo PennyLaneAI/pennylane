@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections.abc import Iterable
 import functools
 import inspect
 from typing import Optional
@@ -53,16 +54,14 @@ class KerasLayer(Layer):
             raise TypeError("Cannot have a variable number of positional arguments")
         if qnode.func.var_keyword:
             raise TypeError("Cannot have a variable number of keyword arguments")
-        if len(weight_shapes.keys()) != len(set(weight_shapes.keys())):
-            raise ValueError("A shape is specified multiple times in weight_shapes")
 
         self.qnode = qnode
-        self.input_dim = input_dim if isinstance(input_dim, (int, type(None))) else input_dim[0]
+        self.input_dim = input_dim[0] if isinstance(input_dim, Iterable) else input_dim
         self.weight_shapes = {
-            weight: ((size,) if isinstance(size, int) else tuple(size))
+            weight: (tuple(size) if isinstance(size, Iterable) else (size,))
             for weight, size in weight_shapes.items()
         }
-        self.output_dim = output_dim if isinstance(output_dim, int) else output_dim[0]
+        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
 
         if weight_specs:
             self.weight_specs = weight_specs
