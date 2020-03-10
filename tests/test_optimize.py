@@ -540,7 +540,7 @@ class TestOptimizer:
             return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
         x_onestep, generators = bunch.rotoselect_opt.step(cost_fn, x_start, generators)
-        f_best_gen = lambda x_start: cost_fn(x_start, generators=optimal_generators)
+        f_best_gen = lambda x: cost_fn(x, generators=optimal_generators)
         x_onestep_target = self.rotosolve_step(f_best_gen, x_start)
 
         assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
