@@ -69,6 +69,7 @@ class RotoselectOptimizer:
     The optimized values for x should now be stored in ``x`` together with the optimal gates for
     the circuit, while steps-vs-cost can be seen by plotting ``cost_rotosel``.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, **kwargs):
         self.possible_generators = kwargs.get("possible_generators", [qml.RX, qml.RY, qml.RZ])
