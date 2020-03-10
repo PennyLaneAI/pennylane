@@ -550,6 +550,18 @@ class TestOptimizer:
 
         assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
+    @pytest.mark.parametrize('x_start', [[[0.5]], [[0.3, 0.25]], [[-0.6, 0.2], 0.45]])
+    def test_rotoselect_inputs(self, x_start, bunch):
+        """Test that rotoselect raises an error when using inputs with the wrong dimension."""
+        with pytest.raises(ValueError, match="Input must be either an array with dimension"):
+            bunch.rotoselect_opt.step(lambda *args: None, x_start, [qml.RY, qml.RX])
+
+    @pytest.mark.parametrize('x_start', [[[0.5]], [[0.3, 0.25]], [[-0.6, 0.2], 0.45]])
+    def test_rotosolve_inputs(self, x_start, bunch):
+        """Test that rotosolve raises an error when using inputs with the wrong dimension."""
+        with pytest.raises(ValueError, match="Input must be either an array with dimension"):
+            bunch.rotosolve_opt.step(lambda *args: None, x_start)
+
     @staticmethod
     def rotosolve_step(f, x):
         """Helper function to test the Rotosolve and Rotoselect optimizers"""
