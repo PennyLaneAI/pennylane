@@ -57,8 +57,6 @@ class RotosolveOptimizer:
 
     The optimized values for x should now be stored in ``x`` and steps-vs-cost can be seen by
     plotting ``cost_rotosel``.
-
-
     """
     # pylint: disable=too-few-public-methods
 
