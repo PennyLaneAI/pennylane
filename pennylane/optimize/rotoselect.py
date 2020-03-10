@@ -113,14 +113,18 @@ class RotoselectOptimizer:
             tuple: Tuple containing the parameter value and generator that, at position ``d`` in their
             respective lists ``x`` and ``generators``, optimizes the objective function.
         """
-        for i, generator in enumerate(self.possible_generators):
+        params_opt_d = x[d]
+        generators_opt_d = generators[d]
+        params_opt_cost = objective_fn(x, generators)
+
+        for generator in self.possible_generators:
             generators[d] = generator
 
             x = self._rotosolve(objective_fn, x, generators, d)
             params_cost = objective_fn(x, generators)
 
-            # initialize optimal generator with first item in list and update if necessary
-            if i == 0 or params_cost <= params_opt_cost:
+            # save the best paramter and generator for position d
+            if params_cost <= params_opt_cost:
                 params_opt_d = x[d]
                 params_opt_cost = params_cost
                 generators_opt_d = generator
