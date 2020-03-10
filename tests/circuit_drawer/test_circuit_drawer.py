@@ -550,6 +550,40 @@ def drawn_qubit_circuit_with_unused_wires():
           " 5: ──X──╰C──┤ ⟨Y⟩ \n"
     )
 
+@pytest.fixture
+def qubit_circuit_with_probs():
+    """A qubit ciruit with probs."""
+
+    def qfunc():
+        qml.PauliX(0)
+        qml.PauliX(5)
+        qml.Toffoli(wires=[5, 1, 0])
+
+        return [
+            qml.expval(qml.PauliY(0)),
+            qml.probs(wires=[1,2,4])
+        ]
+
+    dev = qml.device("default.qubit", wires=6)
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+
+@pytest.fixture
+def drawn_qubit_circuit_with_probs():
+    """The rendered circuit representation of the above qubit circuit."""
+    return (
+          " 0: ──X──╭X───┤ ⟨Y⟩   \n" +
+          " 1: ─────├C──╭┤ Probs \n" +
+          " 2: ─────│───├┤ Probs \n" +
+          " 4: ─────│───╰┤ Probs \n" +
+          " 5: ──X──╰C───┤       \n"
+    )
+
 
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
@@ -615,6 +649,12 @@ class TestCircuitDrawerIntegration:
         output = qubit_circuit_with_unused_wires.draw()
 
         assert output == drawn_qubit_circuit_with_unused_wires
+
+    def test_qubit_circuit_with_probs(self, qubit_circuit_with_probs, drawn_qubit_circuit_with_probs):
+        """Test that a qubit circuit with unused wires renders correctly."""
+        output = qubit_circuit_with_probs.draw()
+
+        assert output == drawn_qubit_circuit_with_probs
 
     def test_direct_qnode_integration(self):
         """Test that a regular QNode renders correctly."""
