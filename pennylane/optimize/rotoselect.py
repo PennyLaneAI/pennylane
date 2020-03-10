@@ -78,18 +78,25 @@ class RotoselectOptimizer:
         """Update x with one step of the optimizer.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take two lists
-                of the values ``x`` and the gates ``generators`` as inputs, and return a single value.
-            x (array[float]): NumPy array containing the initial values of the variables to be optimized over.
+            objective_fn (function): The objective function for optimization. It should take an
+                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                return a single value.
+            x (Union[array[float], float]): NumPy array containing the initial values of the
+                variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
 
         Returns:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
-        # make sure that x is an array
+        # make sure that x is an array of shape (1, -1)
         if np.ndim(x) == 0:
-            x = np.array([x])
+            x = np.array([x], dtype=float)
+        try:
+            x = np.array(x, dtype=float)
+            assert np.ndim(x) == 1
+        except (AssertionError, ValueError):
+            raise ValueError("Input must be either an array with dimension 1 or a float, and not x = {}.".format(x))
 
         for d, _ in enumerate(x):
             x[d], generators[d] = self._find_optimal_params(objective_fn, x, generators, d)
@@ -102,16 +109,18 @@ class RotoselectOptimizer:
         Optimizes for the best generator at position ``d``.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take two lists
-                of the values ``x`` and the gates ``generators`` as inputs, and return a single value.
-            x (array[float]): NumPy array containing the initial values of the variables to be optimized over.
+            objective_fn (function): The objective function for optimization. It should take an
+                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                return a single value.
+            x (Union[array[float], float]): NumPy array containing the initial values of the
+                variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
             d (int): The position in the input array ``x`` containing the value to be optimized.
 
         Returns:
-            tuple: Tuple containing the parameter value and generator that, at position ``d`` in their
-            respective lists ``x`` and ``generators``, optimizes the objective function.
+            tuple: Tuple containing the parameter value and generator that, at position ``d`` in
+            ``x`` and ``generators``, optimizes the objective function.
         """
         params_opt_d = x[d]
         generators_opt_d = generators[d]
@@ -135,9 +144,11 @@ class RotoselectOptimizer:
         """The rotosolve step for one parameter and one set of generators.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take two lists
-                of the values ``x`` and the gates ``generators`` as inputs, and return a single value.
-            x (array[float]): NumPy array containing the initial values of the variables to be optimized over.
+            objective_fn (function): The objective function for optimization. It should take an
+                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                return a single value.
+            x (Union[array[float], float]): NumPy array containing the initial values of the
+                variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
             d (int): The position in the input array ``x`` containing the value to be optimized.

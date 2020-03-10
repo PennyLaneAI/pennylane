@@ -64,16 +64,23 @@ class RotosolveOptimizer:
         """Update x with one step of the optimizer.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take a list
-                of values ``x`` as inputs and return a single value.
-            x (array[float]): NumPy array containing the current values of the variables to be updated.
+            objective_fn (function): The objective function for optimization. It should take an
+                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                return a single value.
+            x (Union[array[float], float]): NumPy array containing the initial values of the
+                variables to be optimized over, or a single float with the initial value.
 
         Returns:
             array: The new variable values :math:`x^{(t+1)}`.
         """
-        # make sure that x is an array
+        # make sure that x is an array of shape (1, -1)
         if np.ndim(x) == 0:
-            x = np.array([x])
+            x = np.array([x], dtype=float)
+        try:
+            x = np.array(x, dtype=float)
+            assert np.ndim(x) == 1
+        except (AssertionError, ValueError):
+            raise ValueError("Input must be either an array with dimension 1 or a float, and not x = {}.".format(x))
 
         for d, _ in enumerate(x):
             x = self._rotosolve(objective_fn, x, d)
@@ -85,9 +92,11 @@ class RotosolveOptimizer:
         """The rotosolve step for one parameter.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take a list
-                of values ``x`` as inputs and return a single value.
-            x (array[float]): NumPy array containing the current values of the variables to be updated.
+            objective_fn (function): The objective function for optimization. It should take an
+                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+                return a single value.
+            x (Union[array[float], float]): NumPy array containing the initial values of the
+                variables to be optimized over, or a single float with the initial value.
 
         Returns:
             array: The input array ``x`` with the value at position ``d`` optimized.
