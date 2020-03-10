@@ -512,7 +512,7 @@ class TestOptimizer:
         # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
         optimal_generators = [qml.RY, qml.RX]
         possible_generators = [qml.RX, qml.RY, qml.RZ]
-        bunch.rotoselect_opt.update_possible_generators(possible_generators)
+        bunch.rotoselect_opt.possible_generators = possible_generators
 
         dev = qml.device("default.qubit", analytic=True, wires=2)
 
