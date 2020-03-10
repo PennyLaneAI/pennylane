@@ -37,7 +37,7 @@ class RotoselectOptimizer:
     element-wise arc tangent of :math:`x/y` choosing the quadrant correctly, avoiding, in
     particular, division-by-zero when :math:`y = 0`.
 
-    The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_
+    The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
     Keyword Args:
         possible_generators (list): List containing the possible ``pennylane.ops.qubit`` operators
