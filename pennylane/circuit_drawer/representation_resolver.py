@@ -329,11 +329,12 @@ class RepresentationResolver:
 
         # Display a control symbol for all controlling qubits of a controlled Operation
         if base_name in self.control_wire_dict and wire in [
-            op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]
+            op.wires[control_idx] for control_idx in self.control_wire_dict[base_name]
         ]:
-            representation = self.charset.CONTROL
+            # No need to add a -1 for inverse here
+            return self.charset.CONTROL
 
-        elif op.num_params == 0:
+        if op.num_params == 0:
             representation = name
 
         elif base_name == "QubitUnitary":
