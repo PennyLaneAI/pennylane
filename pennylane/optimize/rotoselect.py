@@ -90,7 +90,7 @@ class RotoselectOptimizer:
 
         Returns:
             tuple: Tuple containing the parameter value and generator that, at position ``d`` in their
-                respective lists ``x`` and ``generators``, optimizes the objective function
+            respective lists ``x`` and ``generators``, optimizes the objective function
         """
         for i, generator in enumerate(self.possible_generators):
             generators[d] = generator
