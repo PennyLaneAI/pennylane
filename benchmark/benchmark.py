@@ -123,7 +123,8 @@ def cli():
 
     print("Benchmarking PennyLane", qml.version())
     print("Commit:", title)
-    #qml.about()
+    qml.about()
+    print()
 
     # import the requested benchmark module
     mod = importlib.import_module(args.benchmark)
