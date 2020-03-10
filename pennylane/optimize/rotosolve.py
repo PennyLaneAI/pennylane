@@ -62,9 +62,6 @@ class RotosolveOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self):
-        pass
-
     def step(self, objective_fn, x):
         """Update x with one step of the optimizer.
 
