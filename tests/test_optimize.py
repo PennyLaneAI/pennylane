@@ -516,27 +516,27 @@ class TestOptimizer:
 
         dev = qml.device("default.qubit", analytic=True, wires=2)
 
-        def ansatz_rsel(params, generators):
+        def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
             qml.CNOT(wires=[0, 1])
 
         @qml.qnode(dev)
-        def circuit_rsel(params, generators=None):  # generators will be passed as a keyword arg
-            ansatz_rsel(params, generators)
+        def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         @qml.qnode(dev)
-        def circuit_rsel2(params, generators=None):  # generators will be passed as a keyword arg
-            ansatz_rsel(params, generators)
+        def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
             return qml.expval(qml.PauliX(0))
 
         def cost_fn(params, generators):
             # test single parameter inputs
             if np.ndim(params) == 1:
                 params = [params[0], params[0]]
-            Z_1, Y_2 = circuit_rsel(params, generators=generators)
-            X_1 = circuit_rsel2(params, generators=generators)
+            Z_1, Y_2 = circuit_1(params, generators=generators)
+            X_1 = circuit_2(params, generators=generators)
             return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
         x_onestep, generators = bunch.rotoselect_opt.step(cost_fn, x_start, generators)
