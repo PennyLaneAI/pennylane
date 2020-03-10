@@ -23,17 +23,28 @@ from pennylane.utils import _flatten, _inv_dict
 
 from .base import BaseQNode, QuantumFunctionError
 
+DEFAULT_STEP_SIZE = 0.3
+DEFAULT_STEP_SIZE_ANALYTIC = 1e-7
+
 
 class JacobianQNode(BaseQNode):
     """Quantum node that can be differentiated with respect to its positional parameters.
     """
 
-    def __init__(self, func, device, mutable=True, properties=None):
-        super().__init__(func, device, mutable=mutable, properties=properties)
+    def __init__(self, func, device, mutable=True, **kwargs):
+        super().__init__(func, device, mutable=mutable, **kwargs)
 
         self.par_to_grad_method = None
         """dict[int, str]: map from flattened quantum function positional parameter index
         to the gradient method to be used with that parameter"""
+
+        analytic = getattr(self.device, "analytic", False)
+        """bool: whether the device runs in analytic mode; this attribute is
+        not defined for hardware devices so set to False in such cases"""
+
+        default_step_size = DEFAULT_STEP_SIZE_ANALYTIC if analytic else DEFAULT_STEP_SIZE
+        self._h = kwargs.get("h", default_step_size)
+        """float: step size for the finite difference method"""
 
     metric_tensor = None
 
@@ -41,6 +52,15 @@ class JacobianQNode(BaseQNode):
     def interface(self):
         """str, None: automatic differentiation interface used by the node, if any"""
         return None
+
+    @property
+    def h(self):
+        """float: step size for the finite difference method"""
+        return self._h
+
+    @h.setter
+    def h(self, value):
+        self._h = value
 
     def __repr__(self):
         """String representation."""
@@ -174,6 +194,10 @@ class JacobianQNode(BaseQNode):
 
         options = options or {}
 
+        # Add the step size into the options, if it was not there already
+        if "h" not in options.keys():
+            options = {"h": self.h, **options}
+
         # (re-)construct the circuit if necessary
         if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
@@ -295,7 +319,7 @@ class JacobianQNode(BaseQNode):
             array[float]: partial derivative of the node
         """
         y0 = options.get("y0", None)
-        h = options.get("h", 1e-7)
+        h = options.get("h", self.h)
         order = options.get("order", 1)
 
         shift_args = args.copy()
