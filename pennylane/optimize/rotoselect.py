@@ -96,7 +96,11 @@ class RotoselectOptimizer:
             x = np.array(x, dtype=float)
             assert np.ndim(x) == 1
         except (AssertionError, ValueError):
-            raise ValueError("Input must be either an array with dimension 1 or a float, and not x = {}.".format(x))
+            raise ValueError(
+                "Input must be either an array with dimension 1 or a float, and not x = {}.".format(
+                    x
+                )
+            )
 
         for d, _ in enumerate(x):
             x[d], generators[d] = self._find_optimal_params(objective_fn, x, generators, d)
