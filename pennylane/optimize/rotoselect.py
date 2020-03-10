@@ -95,14 +95,6 @@ class RotoselectOptimizer:
 
         return x, generators
 
-    def update_possible_generators(self, possible_generators):
-        """Update list of possible generators.
-
-        Args:
-            possible_generators (list): List of new possible generators to be used in optimization.
-        """
-        self.possible_generators = possible_generators
-
     def _find_optimal_params(self, objective_fn, x, generators, d):
         """Optimizer for the generators.
 
