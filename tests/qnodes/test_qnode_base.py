@@ -1017,6 +1017,9 @@ class TestDecomposition:
 
         res = decompose_queue(queue, operable_mock_device_2_wires_with_inverses)
 
+        print([op.name for op in res])
+        print([op.parameters for op in res])
+
         assert len(res) == 9
 
         assert res[0].name == "RZ.inv"
@@ -1028,23 +1031,23 @@ class TestDecomposition:
         assert res[2].name == "RZ.inv"
         assert res[2].parameters == [0]
 
-        assert res[2].name == "PhaseShift.inv"
-        assert res[2].parameters == [4]
-
         assert res[3].name == "PhaseShift.inv"
-        assert res[3].parameters == [5]
+        assert res[3].parameters == [4]
 
-        assert res[4].name == "RZ.inv"
-        assert res[4].parameters == [-5]
+        assert res[4].name == "PhaseShift.inv"
+        assert res[4].parameters == [5]
 
-        assert res[5].name == "RY.inv"
-        assert res[5].parameters == [3]
+        assert res[5].name == "RZ.inv"
+        assert res[5].parameters == [-5]
 
-        assert res[6].name == "RZ.inv"
-        assert res[6].parameters == [5]
+        assert res[6].name == "RY.inv"
+        assert res[6].parameters == [3]
 
-        assert res[7].name == "RX.inv"
-        assert res[7].parameters == [6]
+        assert res[7].name == "RZ.inv"
+        assert res[7].parameters == [5]
+
+        assert res[8].name == "RX.inv"
+        assert res[8].parameters == [6]
 
     def test_invalid_decompose(self, operable_mock_device_2_wires):
         """Test that an error is raised if the device
