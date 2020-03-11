@@ -165,7 +165,9 @@ class CircuitGraph:
             else:
                 return_type = str(op.return_type)
 
-            if op.parameters:
+            if op.return_type == qml.operation.Probability:
+                print("{}(wires={})".format(return_type, op.wires))
+            elif op.parameters:
                 params = "".join([str(p) for p in op.parameters])
                 print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
             else:
