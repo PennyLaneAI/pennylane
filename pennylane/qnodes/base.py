@@ -213,7 +213,7 @@ class BaseQNode:
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: whether the circuit is mutable
-        #: dict[str, Any]: additional keyword kwargs for adjusting the QNode behavior
+        #: dict[str, Any]: additional keyword args for adjusting the QNode behavior
         self.kwargs = kwargs or {}
 
         self.variable_deps = {}
@@ -546,21 +546,15 @@ class BaseQNode:
 
         # set up the context for Operator entry
         with self:
-            try:
-                # generate the program queue by executing the quantum circuit function
-                if self.mutable:
-                    # It's ok to directly pass auxiliary args since the circuit is re-constructed
-                    # each time they change. Positional args must be replaced because parameter-shift
-                    # differentiation requires Variables.
-                    res = self.func(*arg_vars, **kwargs)
-                else:
-                    # immutable circuits are only constructed once, hence we must use Variables
-                    res = self.func(*arg_vars, **kwarg_vars)
-            except:
-                # The qfunc call may have failed because the user supplied bad parameters, which is why we must wipe the created Variables.
-                self.arg_vars = None
-                self.kwarg_vars = None
-                raise
+            # generate the program queue by executing the quantum circuit function
+            if self.mutable:
+                # It's ok to directly pass auxiliary args since the circuit is re-constructed
+                # each time they change. Positional args must be replaced because parameter-shift
+                # differentiation requires Variables.
+                res = self.func(*arg_vars, **kwargs)
+            else:
+                # immutable circuits are only constructed once, hence we must use Variables
+                res = self.func(*arg_vars, **kwarg_vars)
 
         # check the validity of the circuit
         self._check_circuit(res)
