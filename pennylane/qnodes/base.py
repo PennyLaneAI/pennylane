@@ -322,7 +322,9 @@ class BaseQNode:
         Variable.positional_arg_values = np.array(list(_flatten(args)))
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
-            Variable.auxiliary_arg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
+            Variable.auxiliary_arg_values = {
+                k: np.array(list(_flatten(v))) for k, v in kwargs.items()
+            }
 
     def _op_descendants(self, op, only):
         """Descendants of the given operator in the quantum circuit.
