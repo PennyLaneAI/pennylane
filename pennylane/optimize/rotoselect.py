@@ -45,8 +45,8 @@ class RotoselectOptimizer:
 
     **Example:**
 
-    Initialize the optimizer, set the initial values of ``x``, choose the initial generators to
-    start with, and set the number of steps to optimize over.
+    To start with we initialize the Rotoselect optimizer, set the initial values of  the weights ``x``,
+    choose the initial generators, and set the number of steps to optimize over.
 
     >>> opt = qml.optimize.RotoselectOptimizer()
     >>> x = [0.3, 0.7]
