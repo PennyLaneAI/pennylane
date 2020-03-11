@@ -13,6 +13,11 @@
 
 <h3>Improvements</h3>
 
+* Added a step size keyword argument to the `qnode` decorator, `QNode` and
+  `JacobianQNode` classes to enable   setting the step size when using finite
+  difference methods.
+  [(#530)](https://github.com/XanaduAI/pennylane/pull/530)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
@@ -21,7 +26,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm
+Ville Bergholm, Antal Száva.
 
 # Release 0.8.1 (current release)
 
