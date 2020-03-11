@@ -420,7 +420,8 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[1])  # on its own component in the circuit graph
             return qml.expval(qml.PauliZ(0))
 
-        node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"vis_check": True})
+        kwargs = {"vis_check": True}
+        node = BaseQNode(circuit, operable_mock_device_2_wires, **kwargs)
         with pytest.raises(QuantumFunctionError, match="cannot affect the circuit output"):
             node(0.5)
 
@@ -552,7 +553,8 @@ class TestQNodeExceptions:
             qml.RX(a, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"par_check": True})
+        kwargs = {"par_check": True}
+        node = BaseQNode(circuit, operable_mock_device_2_wires, **kwargs)
         with pytest.raises(QuantumFunctionError, match="The positional parameters"):
             node(1.0, 2.0)
 
