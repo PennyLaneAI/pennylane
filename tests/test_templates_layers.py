@@ -126,6 +126,16 @@ class TestCVNeuralNet:
 class TestStronglyEntangling:
     """Tests for the StronglyEntanglingLayers method from the pennylane.templates.layers module."""
 
+    @pytest.mark.parametrize("n_layers", range(1, 4))
+    def test_single_qubit(self, n_layers):
+        weights = np.zeros((n_layers, 1, 3))
+        with qml.utils.OperationRecorder() as rec:
+            StronglyEntanglingLayers(weights, wires=range(1))
+
+        assert len(rec.queue) == n_layers
+        assert all([isinstance(q, qml.Rot) for q in rec.queue])
+        assert all([q._wires[0] == 0 for q in rec.queue])
+
     def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
         """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
         np.random.seed(12)
