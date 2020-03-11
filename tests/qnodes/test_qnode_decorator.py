@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.qnodes import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
+from pennylane.qnodes.jacobian import DEFAULT_STEP_SIZE_ANALYTIC, DEFAULT_STEP_SIZE
 
 
 def test_create_qubit_qnode():
@@ -75,11 +76,14 @@ def test_torch_interface(skip_if_no_torch_support):
 
     assert circuit.interface == "torch"
 
+step_sizes = [(True, DEFAULT_STEP_SIZE_ANALYTIC),
+            (False, DEFAULT_STEP_SIZE)]
 
-def test_finite_diff_qubit_qnode():
+@pytest.mark.parametrize("analytic, step_size", step_sizes)
+def test_finite_diff_qubit_qnode(analytic, step_size):
     """Test that a finite-difference differentiable qubit QNode
-    is correctly created when diff_method='finite-diff'"""
-    dev = qml.device('default.qubit', wires=1)
+    is correctly created when diff_method='finite-diff' and analytic=True"""
+    dev = qml.device('default.qubit', wires=1, analytic=analytic)
 
     @qnode(dev, diff_method="finite-diff")
     def circuit(a):
@@ -90,7 +94,30 @@ def test_finite_diff_qubit_qnode():
     assert not isinstance(circuit, QubitQNode)
     assert isinstance(circuit, JacobianQNode)
     assert hasattr(circuit, "jacobian")
+    assert circuit.h == step_size
 
+def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
+    """Test that a finite-difference differentiable qubit QNode is correctly
+    created when diff_method='finite-diff' and the step size is set through the
+    decorator."""
+    step_size = 0.5
+    new_step_size = 0.12345
+
+    dev = qml.device('default.qubit', wires=1)
+
+    @qnode(dev, diff_method="finite-diff", h=step_size)
+    def circuit(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
+
+    assert not isinstance(circuit, CVQNode)
+    assert not isinstance(circuit, QubitQNode)
+    assert isinstance(circuit, JacobianQNode)
+    assert hasattr(circuit, "jacobian")
+    assert circuit.h == step_size
+
+    circuit.h = new_step_size
+    assert circuit.h == new_step_size
 
 def test_tf_interface(skip_if_no_tf_support):
     """Test tf interface conversion"""
