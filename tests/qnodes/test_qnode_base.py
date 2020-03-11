@@ -850,8 +850,8 @@ class TestQNodeCaching:
         assert len(node.circuit.operations) == 2
         node.ops[0] is not temp  # all Operations in the circuit are generated anew
 
-    def test_caching(self):
-        """Test that non-mutable circuit structure does not change on subsequent evalutions."""
+    def test_immutable_qfunc_caching(self):
+        """Test that immutable qfunc circuit does not change on subsequent evalutions."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -871,6 +871,38 @@ class TestQNodeCaching:
         node(0.1, c=1)
         assert len(node.circuit.operations) == 2
         node.ops[0] is temp  # it's the same circuit with the same objects
+
+    def test_immutable_qfunc_with_nested_parameters(self, tol):
+        """Test that immutable qfuncs work with parameters that have a nested structure."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        def non_mutable_circuit(x, *, c=None):
+            # positional parameter x
+            qml.RX(x[0], wires=0)
+            qml.RX(x[1][1], wires=0)
+            # auxiliary parameter c
+            qml.RX(c[0], wires=0)
+            qml.RX(c[1][0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        node = BaseQNode(non_mutable_circuit, dev, mutable=False)
+
+        # first evaluation
+        x = [0.1, [0.2, 0.3]]
+        c = [1.1, [1.2, 1.3]]
+        res = node(x, c=c)
+        assert len(node.circuit.operations) == 4
+        temp = node.ops[0]
+        assert res == pytest.approx(np.cos(x[0] + x[1][1] + c[0] + c[1][0]), abs=tol)
+
+        # second evaluation
+        x = [2.1, [2.2, 2.3]]
+        c = [3.1, [3.2, 3.3]]
+        res = node(x, c=c)
+        assert len(node.circuit.operations) == 4
+        node.ops[0] is temp  # it's the same circuit with the same objects
+        assert res == pytest.approx(np.cos(x[0] + x[1][1] + c[0] + c[1][0]), abs=tol)
 
     THETA = np.linspace(0.11, 1, 3)
     PHI = np.linspace(0.32, 1, 3)
