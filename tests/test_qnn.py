@@ -15,10 +15,12 @@
 Tests for the pennylane.qnn module.
 """
 import pytest
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import RandomNormal
+import tempfile
 
 import pennylane as qml
 from pennylane.qnn import KerasLayer
@@ -309,8 +311,7 @@ class TestKerasLayerIntegration:
         assert loss[0] > loss[-1]
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
-    @pytest.mark.parametrize("batch_size", [5, 10])
-    def test_model_gradients(self, model, output_dim, batch_size, n_qubits):
+    def test_model_gradients(self, model, output_dim, n_qubits):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model"""
         x = np.zeros((5, n_qubits))
@@ -323,3 +324,21 @@ class TestKerasLayerIntegration:
         gradients = tape.gradient(loss, model.trainable_variables)
 
         assert all([not isinstance(g, type(None)) for g in gradients])
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
+    def test_model_save_weights(self, model, n_qubits):
+        """Test if the model can be successfully saved and reloaded using the get_weights()
+        method"""
+        _, filename = tempfile.mkstemp()
+        prediction = model.predict(np.ones(n_qubits))
+        weights = model.get_weights()
+        model.save_weights(filename)
+        model.load_weights(filename)
+        prediction_loaded = model.predict(np.ones(n_qubits))
+        weights_loaded = model.get_weights()
+
+        assert np.allclose(prediction, prediction_loaded)
+        for i, w in enumerate(weights):
+            assert np.allclose(w, weights_loaded[i])
+
+        os.remove(filename)
