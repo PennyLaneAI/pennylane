@@ -468,6 +468,31 @@ class TestOptimizer:
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
+    @staticmethod
+    def rotosolve_step(f, x):
+        """Helper function to test the Rotosolve and Rotoselect optimizers"""
+        # make sure that x is an array
+        if np.ndim(x) == 0:
+            x = np.array([x])
+
+        # helper function for x[d] = theta
+        def insert(x, d, theta):
+            x[d] = theta
+            return x
+
+        for d, _ in enumerate(x):
+            H_0 = float(f(insert(x, d, 0)))
+            H_p = float(f(insert(x, d, np.pi / 2)))
+            H_m = float(f(insert(x, d, -np.pi / 2)))
+
+            a = np.arctan2(2 * H_0 - H_p - H_m, H_p - H_m)
+
+            x[d] = -np.pi / 2 - a
+
+            if x[d] <= -np.pi:
+                x[d] += 2 * np.pi
+        return x
+
     @pytest.mark.parametrize('x_start', x_vals)
     def test_rotosolve_optimizer_univar(self, x_start, bunch, tol):
         """Tests that rotosolve optimizer takes one and two steps correctly
@@ -561,31 +586,6 @@ class TestOptimizer:
         """Test that rotosolve raises an error when using inputs with the wrong dimension."""
         with pytest.raises(ValueError, match="Input must be either an array with dimension"):
             bunch.rotosolve_opt.step(lambda *args: None, x_start)
-
-    @staticmethod
-    def rotosolve_step(f, x):
-        """Helper function to test the Rotosolve and Rotoselect optimizers"""
-        # make sure that x is an array
-        if np.ndim(x) == 0:
-            x = np.array([x])
-
-        # helper function for x[d] = theta
-        def insert(x, d, theta):
-            x[d] = theta
-            return x
-
-        for d, _ in enumerate(x):
-            H_0 = float(f(insert(x, d, 0)))
-            H_p = float(f(insert(x, d, np.pi / 2)))
-            H_m = float(f(insert(x, d, -np.pi / 2)))
-
-            a = np.arctan2(2 * H_0 - H_p - H_m, H_p - H_m)
-
-            x[d] = -np.pi / 2 - a
-
-            if x[d] <= -np.pi:
-                x[d] += 2 * np.pi
-        return x
 
     def test_update_stepsize(self):
         """Tests that the stepsize correctly updates"""
