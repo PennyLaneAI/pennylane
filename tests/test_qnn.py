@@ -24,10 +24,10 @@ import pennylane as qml
 from pennylane.qnn import KerasLayer
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_circuit(n_qubits, output_dim):
     """Fixture for getting a sample quantum circuit with a controllable qubit number and output
-    dimension. Returns both the circuit and the shape of the weights"""
+    dimension. Returns both the circuit and the shape of the weights."""
 
     dev = qml.device("default.qubit", wires=n_qubits)
     weight_shapes = {"w1": (3, n_qubits, 3), "w2": (2, n_qubits, 3), "w3": (1,), "w4": 1,
@@ -41,6 +41,12 @@ def get_circuit(n_qubits, output_dim):
         if n_qubits > 1:
             qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(w2, wires=list(range(n_qubits)))
+        else:  # TODO tidy up
+            for w in w1:
+                qml.Rot(w[0][0], w[0][1], w[0][2], wires=0)
+            for w in w2:
+                qml.Rot(w[0][0], w[0][1], w[0][2], wires=0)
+
         qml.RX(w3, wires=0)
         qml.RX(w4, wires=0)
         qml.Rot(*w5, wires=0)
@@ -49,7 +55,29 @@ def get_circuit(n_qubits, output_dim):
     return circuit, weight_shapes
 
 
+@pytest.mark.usefixtures("get_circuit")
+@pytest.fixture
+def model(get_circuit, n_qubits, output_dim):
+    """Fixture for creating a hybrid Keras model. The model is composed of KerasLayers sandwiched
+    between Dense layers."""
+    c, w = get_circuit
+    layer1 = KerasLayer(c, w, output_dim)
+    layer2 = KerasLayer(c, w, output_dim)
+
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Dense(n_qubits),
+        layer1,
+        tf.keras.layers.Dense(n_qubits),
+        layer2,
+        tf.keras.layers.Dense(output_dim),
+    ])
+
+    return model
+
+
 def indices(n_max):
+    """Returns an iterator over the number of qubits and output dimension, up to value n_max.
+    The output dimension never exceeds the number of qubits."""
     a, b = np.tril_indices(n_max)
     return zip(*[a + 1, b + 1])
 
@@ -196,6 +224,8 @@ class TestKerasLayer:
         keywords are there."""
 
         def add_weight_dummy(*args, **kwargs):
+            """Dummy function for mocking out the add_weight method to simply return the input
+            keyword arguments"""
             return kwargs
 
         weight_specs = {
@@ -245,7 +275,7 @@ class TestKerasLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
     def test_str_repr(self, get_circuit, output_dim):
-        """Tests the __str__ and __repr__ representations"""
+        """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
 
@@ -253,5 +283,43 @@ class TestKerasLayer:
         assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"
 
 
-# class TestKerasLayerIntegration:
-#     """Integration tests for the pennylane.qnn.KerasLayer class."""
+tf.keras.backend.set_floatx('float64')  # TODO fix
+
+
+@pytest.mark.usefixtures("get_circuit", "model")
+class TestKerasLayerIntegration:
+    """Integration tests for the pennylane.qnn.KerasLayer class."""
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
+    @pytest.mark.parametrize("batch_size", [5, 10])
+    def test_train_model(self, model, batch_size, n_qubits, output_dim):
+        """Test if a model can train using the KerasLayer. The model is composed of a single
+        KerasLayer sandwiched between two Dense layers, and the dataset is simply input and output
+        vectors of zeros. The test checks that the loss function after two epochs is less than
+        the loss function after one epoch, indicating that training is taking place."""
+
+        x = np.zeros((5, n_qubits))
+        y = np.zeros((5, output_dim))
+
+        model.compile(optimizer='sgd', loss='mse')
+
+        result = model.fit(x, y, epochs=2, batch_size=batch_size, verbose=0)
+        loss = result.history['loss']
+
+        assert loss[0] > loss[-1]
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
+    @pytest.mark.parametrize("batch_size", [5, 10])
+    def test_model_gradients(self, model, output_dim, batch_size, n_qubits):
+        """Test if a gradient can be calculated with respect to all of the trainable variables in
+        the model"""
+        x = np.zeros((5, n_qubits))
+        y = np.zeros((5, output_dim))
+
+        with tf.GradientTape() as tape:
+            out = model(x)
+            loss = tf.keras.losses.mean_squared_error(out, y)
+
+        gradients = tape.gradient(loss, model.trainable_variables)
+
+        assert all([not isinstance(g, type(None)) for g in gradients])
