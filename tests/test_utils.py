@@ -86,14 +86,6 @@ class TestFlatten:
         assert unflattened.shape == reshaped.shape
         assert np.array_equal(unflattened, reshaped)
 
-    @pytest.mark.skip('New behavior has no unsupported types')
-    def test_unflatten_error_unsupported_model(self):
-        """Tests that unflatten raises an error if the given model is not supported"""
-
-        with pytest.raises(TypeError, match="Unsupported type in the model"):
-            model = lambda x: x  # not a valid model for unflatten
-            pu.unflatten(flat_dummy_array, model)
-
     def test_unflatten_error_too_many_elements(self):
         """Tests that unflatten raises an error if the given iterable has
            more elements than the model"""
