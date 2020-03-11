@@ -82,7 +82,7 @@ class Variable:
     Args:
         idx  (int): index into the value vector, >= 0
         name (str): structured name of the parameter
-        basename (None, str): for auxiliary parameters the name of the base parameter, otherwise None
+        dict_key (None, str): for auxiliary parameters the name of the base parameter, otherwise None
     """
 
     # pylint: disable=too-few-public-methods
@@ -93,10 +93,10 @@ class Variable:
     #: dict[str->array[float]]: current auxiliary parameter values, set in :meth:`.BaseQNode._set_variables`
     kwarg_values = None
 
-    def __init__(self, idx, name=None, basename=None):
+    def __init__(self, idx, name=None, dict_key=None):
         self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter structured name
-        self.basename = basename
+        self.dict_key = dict_key
         """str, None: for auxiliary parameters the key for the kwarg_values dict"""
         self.mult = 1  #: int, float: parameter scalar multiplier
 
@@ -146,7 +146,7 @@ class Variable:
         Returns:
             bool: True iff the VariableRef represents (an element of) an auxiliary parameter
         """
-        return self.basename is not None
+        return self.dict_key is not None
 
     @property
     def val(self):
@@ -161,7 +161,7 @@ class Variable:
             return Variable.positional_arg_values[self.idx] * self.mult
 
         # The variable is a placeholder for a keyword argument
-        values = Variable.kwarg_values[self.basename]
+        values = Variable.kwarg_values[self.dict_key]
         return values[self.idx] * self.mult
 
     def render(self, show_name_only=False):

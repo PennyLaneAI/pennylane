@@ -487,7 +487,7 @@ class BaseQNode:
         for prefix, a in kwargs.items():
             variable_names = self._determine_structured_variable_name(a, prefix)
             temp = [
-                Variable(idx, name, basename=prefix)
+                Variable(idx, name, dict_key=prefix)
                 for idx, name in enumerate(_flatten(variable_names))
             ]
             kwarg_vars[prefix] = unflatten(temp, a)

@@ -95,10 +95,10 @@ def test_variable_val(par_positional, ind, mult, tol):
 @pytest.mark.parametrize("name", keyword_par_names)
 def test_keyword_variable(par_keyword, name, ind, mult, tol):
     """Keyword variable evaluation."""
-    v = Variable(ind, "aaa", basename=name)
+    v = Variable(ind, "aaa", dict_key=name)
 
     assert v.name == "aaa"
-    assert v.basename == name
+    assert v.dict_key == name
     assert v.mult == 1
     assert v.idx == ind
     assert v.is_kwarg

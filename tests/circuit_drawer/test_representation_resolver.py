@@ -52,7 +52,7 @@ def variable(monkeypatch):
 def kwarg_variable(monkeypatch):
     """A mocked Variable instance for an auxiliary variable."""
     monkeypatch.setattr(Variable, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
-    yield Variable(1, "kwarg_test", basename="kwarg_test")
+    yield Variable(1, "kwarg_test", dict_key="kwarg_test")
 
 
 class TestRepresentationResolver:
