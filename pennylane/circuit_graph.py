@@ -159,7 +159,11 @@ class CircuitGraph:
         print("\nObservables")
         print("===========")
         for op in self.observables:
-            return_type = return_map[op.return_type]
+            if op.return_type in return_map:                
+                return_type = return_map[op.return_type]
+            else:
+                return_type = str(op.return_type)
+
             if op.parameters:
                 params = "".join([str(p) for p in op.parameters])
                 print("{}({}({}, wires={}))".format(return_type, op.name, params, op.wires))
