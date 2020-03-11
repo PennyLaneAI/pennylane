@@ -162,7 +162,7 @@ class CVQNode(JacobianQNode):
         """
         force_order2 = options.get("force_order2", False)
 
-        n = self.num_variables
+        n = self.num_primary_parameters
         w = self.num_wires
         pd = np.zeros(self.output_dim)
         # find the Operators in which the free parameter appears, use the product rule

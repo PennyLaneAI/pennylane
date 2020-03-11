@@ -199,8 +199,8 @@ class BaseQNode:
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
-        #: int: number of flattened differentiable parameters in the circuit
-        self.num_variables = None
+        #: int: number of (flattened) differentiable parameters in the circuit
+        self.num_primary_parameters = None
         #: dict[str, Any]: deepcopy of the auxiliary arguments the qnode was passed on last call
         self.last_auxiliary_args = None
 
@@ -225,7 +225,8 @@ class BaseQNode:
         # introspect the quantum function signature
         _get_signature(self.func)
 
-        self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
+        #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
+        self.output_conversion = None
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
@@ -469,7 +470,7 @@ class BaseQNode:
 
         # create the VariableRefs
         arg_vars = [VariableRef(idx, name) for idx, name in enumerate(_flatten(variable_names))]
-        self.num_variables = len(arg_vars)
+        self.num_primary_parameters = len(arg_vars)
 
         # arrange the VariableRefs in the nested structure of args
         arg_vars = unflatten(arg_vars, args)
@@ -566,8 +567,8 @@ class BaseQNode:
         # Prune all the Tensor objects that have been used in the circuit
         self.ops = self._prune_tensors(self.ops)
 
-        # map each free variable to the operators which depend on it
-        self.variable_deps = {k: [] for k in range(self.num_variables)}
+        # map each differentiable parameter to the operators which depend on it
+        self.variable_deps = {k: [] for k in range(self.num_primary_parameters)}
         for op in self.ops:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, VariableRef):

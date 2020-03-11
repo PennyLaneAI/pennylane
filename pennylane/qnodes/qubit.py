@@ -113,7 +113,7 @@ class QubitQNode(JacobianQNode):
         Returns:
             array[float]: partial derivative of the node
         """
-        n = self.num_variables
+        n = self.num_primary_parameters
         pd = 0.0
         # find the Operators in which the free parameter appears, use the product rule
         for op, p_idx in self.variable_deps[idx]:
@@ -352,7 +352,7 @@ class QubitQNode(JacobianQNode):
         # temporarily store the parameter values in the Variable class
         self._set_variables(args, kwargs)
 
-        tensor = np.zeros([self.num_variables, self.num_variables])
+        tensor = np.zeros([self.num_primary_parameters, self.num_primary_parameters])
 
         # execute constructed metric tensor subcircuits
         for params, circuit in self._metric_tensor_subcircuits.items():

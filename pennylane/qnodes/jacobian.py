@@ -191,12 +191,12 @@ class JacobianQNode(BaseQNode):
 
         # check that the wrt parameters are ok
         if wrt is None:
-            wrt = range(self.num_variables)
+            wrt = range(self.num_primary_parameters)
         else:
-            if min(wrt) < 0 or max(wrt) >= self.num_variables:
+            if min(wrt) < 0 or max(wrt) >= self.num_primary_parameters:
                 raise ValueError(
                     "Tried to compute the gradient with respect to parameters {} "
-                    "(this node has {} parameters).".format(wrt, self.num_variables)
+                    "(this node has {} differentiable parameters).".format(wrt, self.num_primary_parameters)
                 )
             if len(wrt) != len(set(wrt)):  # set removes duplicates
                 raise ValueError("Parameter indices must be unique.")
