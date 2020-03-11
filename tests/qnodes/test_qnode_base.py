@@ -66,7 +66,7 @@ def operable_mock_device_2_wires_with_inverses(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, "__abstractmethods__", frozenset())
-        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit", "inverse_operations" : True})
+        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit", "inverse_operations": True})
         m.setattr(dev, "operations", ["BasisState", "RX", "RY", "RZ", "CNOT", "PhaseShift"])
         m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, "reset", lambda self: None)
@@ -283,6 +283,7 @@ class TestQNodeOperationQueue:
 
     def test_prune_tensors_construct(self, mock_device):
         """Test that the tensors are pruned in construct."""
+
         def circuit(x):
             return qml.expval(qml.PauliX(0) @ qml.Identity(1))
 
@@ -292,6 +293,7 @@ class TestQNodeOperationQueue:
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
         assert qnode.ops[0].wires[0] == 0
+
 
 class TestQNodeExceptions:
     """Tests that QNode raises proper errors"""
@@ -857,7 +859,7 @@ class TestQNodeCaching:
         """Test that a mutable QNode evaluated multiple times mutates well and produces
         the desired result.
         """
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(weights, n_layers=1):
@@ -882,12 +884,12 @@ class TestQNodeCaching:
         when called with different auxiliary arguments and different shaped positional
         arguments.
         """
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def node(x, n=1):
             for k in range(2):
-                for j in range(min(n, k+1)):
+                for j in range(min(n, k + 1)):
                     qml.RX(x[k][j], wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -898,6 +900,7 @@ class TestQNodeCaching:
         res = node([[0.1], [0.2, 0.3]], n=2)
         exp = np.cos(sum([0.1] + [0.2, 0.3]))
         assert np.allclose(res, exp, atol=tol, rtol=0)
+
 
 class TestQNodeEvaluate:
     """Test for observable statistic evaluation"""
@@ -1006,7 +1009,11 @@ class TestDecomposition:
         """Test that decompose queue works correctly
         when an operation exists that can be decomposed"""
 
-        queue = [qml.Rot(0, 1, 2, wires=0).inv(), qml.U3(3, 4, 5, wires=0).inv(), qml.RX(6, wires=0).inv()]
+        queue = [
+            qml.Rot(0, 1, 2, wires=0).inv(),
+            qml.U3(3, 4, 5, wires=0).inv(),
+            qml.RX(6, wires=0).inv(),
+        ]
 
         res = decompose_queue(queue, operable_mock_device_2_wires_with_inverses)
 
@@ -1068,6 +1075,7 @@ class TestQNodeVariableMap:
 
     def test_regular_arguments(self, mock_device):
         """Test that regular arguments are properly converted to Variable instances."""
+
         def circuit(a, b, c, d):
             qml.RX(a, wires=[0])
             qml.RY(b, wires=[0])
@@ -1093,6 +1101,7 @@ class TestQNodeVariableMap:
 
     def test_array_arguments(self, mock_device):
         """Test that array arguments are properly converted to Variable instances."""
+
         def circuit(weights):
             qml.RX(weights[0, 0], wires=[0])
             qml.RY(weights[0, 1], wires=[0])
@@ -1120,6 +1129,7 @@ class TestQNodeVariableMap:
 
     def test_regular_keyword_arguments(self, mock_device):
         """Test that regular keyword arguments are properly converted to Variable instances."""
+
         def circuit(*, a=1, b=2, c=3, d=4):
             qml.RX(a, wires=[0])
             qml.RY(b, wires=[0])
@@ -1129,24 +1139,28 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        arg_vars, kwarg_vars = node._make_variables([], {"b" : 3})
+        arg_vars, kwarg_vars = node._make_variables([], {"b": 3})
 
         expected_kwarg_vars = {
-            "a" : [Variable(0, "a", is_kwarg=True)],
-            "b" : [Variable(0, "b", is_kwarg=True)],
-            "c" : [Variable(0, "c", is_kwarg=True)],
-            "d" : [Variable(0, "d", is_kwarg=True)],
+            "a": [Variable(0, "a", is_kwarg=True)],
+            "b": [Variable(0, "b", is_kwarg=True)],
+            "c": [Variable(0, "c", is_kwarg=True)],
+            "d": [Variable(0, "d", is_kwarg=True)],
         }
 
         assert not arg_vars
 
         for expected_key in expected_kwarg_vars:
-            for var, expected in zip(qml.utils._flatten(kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
+            for var, expected in zip(
+                qml.utils._flatten(kwarg_vars[expected_key]),
+                qml.utils._flatten(expected_kwarg_vars[expected_key]),
+            ):
                 assert var == expected
 
     def test_array_keyword_arguments(self, mock_device):
         """Test that array keyword arguments are properly converted to Variable instances."""
-        def circuit(*, a=np.array([[1, 0], [0, 1]]), b=np.array([1,2,3])):
+
+        def circuit(*, a=np.array([[1, 0], [0, 1]]), b=np.array([1, 2, 3])):
             qml.RX(a[0, 0], wires=[0])
             qml.RX(a[0, 1], wires=[0])
             qml.RX(a[1, 0], wires=[0])
@@ -1158,16 +1172,16 @@ class TestQNodeVariableMap:
             return qml.expval(qml.PauliX(0))
 
         node = BaseQNode(circuit, mock_device)
-        arg_vars, kwarg_vars = node._make_variables([], {"b" : np.array([6,7,8,9])})
+        arg_vars, kwarg_vars = node._make_variables([], {"b": np.array([6, 7, 8, 9])})
 
         expected_kwarg_vars = {
-            "a" : [
+            "a": [
                 Variable(0, "a[0,0]", is_kwarg=True),
                 Variable(1, "a[0,1]", is_kwarg=True),
                 Variable(2, "a[1,0]", is_kwarg=True),
                 Variable(3, "a[1,1]", is_kwarg=True),
             ],
-            "b" : [
+            "b": [
                 Variable(0, "b[0]", is_kwarg=True),
                 Variable(1, "b[1]", is_kwarg=True),
                 Variable(2, "b[2]", is_kwarg=True),
@@ -1178,11 +1192,15 @@ class TestQNodeVariableMap:
         assert not arg_vars
 
         for expected_key in expected_kwarg_vars:
-            for var, expected in zip(qml.utils._flatten(kwarg_vars[expected_key]), qml.utils._flatten(expected_kwarg_vars[expected_key])):
+            for var, expected in zip(
+                qml.utils._flatten(kwarg_vars[expected_key]),
+                qml.utils._flatten(expected_kwarg_vars[expected_key]),
+            ):
                 assert var == expected
 
     def test_variadic_arguments(self, mock_device):
         """Test that variadic arguments are properly converted to Variable instances."""
+
         def circuit(a, *b):
             qml.RX(a, wires=[0])
             qml.RX(b[0], wires=[0])
@@ -1228,5 +1246,8 @@ class TestQNodeDraw:
 
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(RuntimeError, match="The QNode can only be drawn after its CircuitGraph has been constructed"):
+        with pytest.raises(
+            RuntimeError,
+            match="The QNode can only be drawn after its CircuitGraph has been constructed",
+        ):
             circuit.draw()
