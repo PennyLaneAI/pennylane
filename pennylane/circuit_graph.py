@@ -154,6 +154,7 @@ class CircuitGraph:
             qml.operation.Expectation: "expval",
             qml.operation.Variance: "var",
             qml.operation.Sample: "sample",
+            qml.operation.Probability: "probs",
         }
 
         print("\nObservables")
