@@ -244,5 +244,7 @@ class TestGrid:
         an uninitialized Grid is attempted."""
         grid = Grid()
 
-        with pytest.raises(AttributeError, match="Can't replace layer. The Grid has not yet been initialized."):
+        with pytest.raises(
+            AttributeError, match="Can't replace layer. The Grid has not yet been initialized."
+        ):
             grid.replace_layer(1, [1, 2, 3])

@@ -156,9 +156,7 @@ class TestCircuitDrawer:
     multiwire_and_single_wire_gate_grid = to_grid(
         [[qml.Toffoli(wires=[0, 3, 4]), qml.PauliX(wires=[1]), qml.Hadamard(wires=[2])]], 5
     )
-    multiwire_and_single_wire_gate_representation_grid = Grid(
-        [["╭"], ["│"], ["│"], ["├"], ["╰"]]
-    )
+    multiwire_and_single_wire_gate_representation_grid = Grid([["╭"], ["│"], ["│"], ["├"], ["╰"]])
 
     all_wire_state_preparation_grid = to_grid(
         [[qml.BasisState(np.array([0, 1, 0, 0, 1, 1]), wires=[0, 1, 2, 3, 4, 5])]], 6
@@ -167,12 +165,23 @@ class TestCircuitDrawer:
         [["╭"], ["├"], ["├"], ["├"], ["├"], ["╰"]]
     )
 
-    multiwire_gate_grid = to_grid([[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 4])]], 5)
+    multiwire_gate_grid = to_grid(
+        [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.CNOT(wires=[3, 4])]], 5
+    )
 
     multiwire_gate_representation_grid = Grid([["╭"], ["╰"], [""], ["╭"], ["╰"],])
 
     multi_and_single_wire_gate_grid = to_grid(
-        [[qml.CNOT(wires=[0, 1]), qml.PauliX(2), qml.PauliX(4), qml.CNOT(wires=[3, 5]), qml.Hadamard(6)]], 7
+        [
+            [
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(2),
+                qml.PauliX(4),
+                qml.CNOT(wires=[3, 5]),
+                qml.Hadamard(6),
+            ]
+        ],
+        7,
     )
 
     multi_and_single_wire_gate_representation_grid = Grid(
@@ -239,24 +248,25 @@ def parameterized_qubit_qnode():
         qml.RX(a, wires=0)
         qml.RX(b, wires=1)
         qml.PauliZ(1)
-        qml.CNOT(wires=[0, 1])
+        qml.CNOT(wires=[0, 1]).inv()
         qml.CRY(b, wires=[3, 1])
         qml.RX(angles[0], wires=0)
         qml.RX(4 * angles[1], wires=1)
         qml.PhaseShift(17 / 9 * c, wires=2)
         qml.RZ(b, wires=3)
-        qml.RX(angles[2], wires=2)
-        qml.CRY(0.3589, wires=[3, 1])
+        qml.RX(angles[2], wires=2).inv()
+        qml.CRY(0.3589, wires=[3, 1]).inv()
+        qml.CSWAP(wires=[4, 2, 1]).inv()
         qml.QubitUnitary(np.eye(2), wires=[2])
         qml.Toffoli(wires=[0, 2, 1])
         qml.CNOT(wires=[0, 2])
         qml.PauliZ(wires=[1])
-        qml.PauliZ(wires=[1])
+        qml.PauliZ(wires=[1]).inv()
         qml.CZ(wires=[0, 1])
-        qml.CZ(wires=[0, 2])
+        qml.CZ(wires=[0, 2]).inv()
         qml.CNOT(wires=[2, 1])
         qml.CNOT(wires=[0, 2])
-        qml.SWAP(wires=[0, 2])
+        qml.SWAP(wires=[0, 2]).inv()
         qml.CNOT(wires=[1, 3])
         qml.RZ(b, wires=3)
         qml.CSWAP(wires=[4, 0, 1])
@@ -281,11 +291,11 @@ def parameterized_qubit_qnode():
 def drawn_parameterized_qubit_circuit_with_variable_names():
     """The rendered circuit representation of the above qubit circuit with variable names."""
     return (
-        " 0: ──RX(a)───────────────────────╭C────RX(angles[0])───────────────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP───╭SWAP───┤ ⟨Y⟩       \n"
-        + " 1: ──RX(b)────────Z──────────────╰X───╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│───────├SWAP───┤ Var[H]    \n"
-        + " 2: ──Rϕ(1.889*c)──RX(angles[2])───U0──│────────────────────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP───│───────┤ Sample[X] \n"
-        + " 3: ───────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────────────────────────────╰X───────RZ(b)──│──────╭┤ ⟨H0⟩      \n"
-        + " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
+        " 0: ──RX(a)─────────────────────────╭C─────RX(angles[0])──────────────────────────────────────────────╭C─────╭C───────╭C──╭C────────────╭C──╭SWAP⁻¹──╭SWAP───┤ ⟨Y⟩       \n"
+        + " 1: ──RX(b)────────Z────────────────╰X⁻¹──╭RY(b)──────────RX(4*angles[1])──╭RY(0.359)⁻¹──╭SWAP⁻¹──────├X──Z──│───Z⁻¹──╰Z──│─────╭X──╭C──│───│────────├SWAP───┤ Var[H]    \n"
+        + " 2: ──Rϕ(1.889*c)──RX(angles[2])⁻¹────────│────────────────────────────────│─────────────├SWAP⁻¹──U0──╰C─────╰X───────────╰Z⁻¹──╰C──│───╰X──╰SWAP⁻¹──│───────┤ Sample[X] \n"
+        + " 3: ──────────────────────────────────────╰C──────────────RZ(b)────────────╰C────────────│──────────────────────────────────────────╰X───────RZ(b)───│──────╭┤ ⟨H0⟩      \n"
+        + " 4: ─────────────────────────────────────────────────────────────────────────────────────╰C──────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
         + "U0 =\n"
         + "[[1. 0.]\n"
         + " [0. 1.]]\n"
@@ -301,11 +311,11 @@ def drawn_parameterized_qubit_circuit_with_variable_names():
 def drawn_parameterized_qubit_circuit_with_values():
     """The rendered circuit representation of the above qubit circuit with variable values."""
     return (
-        " 0: ──RX(0.1)─────────────╭C────RX(0.4)───────────────────────╭C─────╭C─────╭C──╭C──────────╭C──╭SWAP─────╭SWAP───┤ ⟨Y⟩       \n"
-        + " 1: ──RX(0.2)────Z────────╰X───╭RY(0.2)──RX(2.0)──╭RY(0.359)──├X──Z──│───Z──╰Z──│───╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n"
-        + " 2: ──Rϕ(0.567)──RX(0.6)───U0──│──────────────────│───────────╰C─────╰X─────────╰Z──╰C──│───╰X──╰SWAP─────│───────┤ Sample[X] \n"
-        + " 3: ───────────────────────────╰C────────RZ(0.2)──╰C────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n"
-        + " 4: ──────────────────────────────────────────────────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
+        " 0: ──RX(0.1)───────────────╭C─────RX(0.4)──────────────────────────────────────╭C─────╭C───────╭C──╭C────────────╭C──╭SWAP⁻¹───╭SWAP───┤ ⟨Y⟩       \n"
+        + " 1: ──RX(0.2)────Z──────────╰X⁻¹──╭RY(0.2)──RX(2.0)──╭RY(0.359)⁻¹──╭SWAP⁻¹──────├X──Z──│───Z⁻¹──╰Z──│─────╭X──╭C──│───│─────────├SWAP───┤ Var[H]    \n"
+        + " 2: ──Rϕ(0.567)──RX(0.6)⁻¹────────│──────────────────│─────────────├SWAP⁻¹──U0──╰C─────╰X───────────╰Z⁻¹──╰C──│───╰X──╰SWAP⁻¹───│───────┤ Sample[X] \n"
+        + " 3: ──────────────────────────────╰C────────RZ(0.2)──╰C────────────│──────────────────────────────────────────╰X───────RZ(0.2)──│──────╭┤ ⟨H0⟩      \n"
+        + " 4: ───────────────────────────────────────────────────────────────╰C───────────────────────────────────────────────────────────╰C─────╰┤ ⟨H0⟩      \n"
         + "U0 =\n"
         + "[[1. 0.]\n"
         + " [0. 1.]]\n"
@@ -517,6 +527,7 @@ def drawn_parameterized_cv_qnode_with_values():
         + " [0. 0. 0. 0. 0. 0. 0. 2.]]\n"
     )
 
+
 @pytest.fixture
 def qubit_circuit_with_unused_wires():
     """A qubit ciruit with unused wires."""
@@ -544,10 +555,38 @@ def qubit_circuit_with_unused_wires():
 @pytest.fixture
 def drawn_qubit_circuit_with_unused_wires():
     """The rendered circuit representation of the above qubit circuit."""
+    return " 0: ──X──╭X──┤ ⟨Y⟩ \n" + " 1: ─────├C──┤ ⟨Y⟩ \n" + " 5: ──X──╰C──┤ ⟨Y⟩ \n"
+
+
+@pytest.fixture
+def qubit_circuit_with_probs():
+    """A qubit ciruit with probs."""
+
+    def qfunc():
+        qml.PauliX(0)
+        qml.PauliX(5)
+        qml.Toffoli(wires=[5, 1, 0])
+
+        return [qml.expval(qml.PauliY(0)), qml.probs(wires=[1, 2, 4])]
+
+    dev = qml.device("default.qubit", wires=6)
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+
+@pytest.fixture
+def drawn_qubit_circuit_with_probs():
+    """The rendered circuit representation of the above qubit circuit."""
     return (
-          " 0: ──X──╭X──┤ ⟨Y⟩ \n" +
-          " 1: ─────├C──┤ ⟨Y⟩ \n" +
-          " 5: ──X──╰C──┤ ⟨Y⟩ \n"
+        " 0: ──X──╭X───┤ ⟨Y⟩   \n"
+        + " 1: ─────├C──╭┤ Probs \n"
+        + " 2: ─────│───├┤ Probs \n"
+        + " 4: ─────│───╰┤ Probs \n"
+        + " 5: ──X──╰C───┤       \n"
     )
 
 
@@ -610,11 +649,21 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_parameterized_cv_qnode_with_values
 
-    def test_qubit_circuit_with_unused_wires(self, qubit_circuit_with_unused_wires, drawn_qubit_circuit_with_unused_wires):
+    def test_qubit_circuit_with_unused_wires(
+        self, qubit_circuit_with_unused_wires, drawn_qubit_circuit_with_unused_wires
+    ):
         """Test that a qubit circuit with unused wires renders correctly."""
         output = qubit_circuit_with_unused_wires.draw()
 
         assert output == drawn_qubit_circuit_with_unused_wires
+
+    def test_qubit_circuit_with_probs(
+        self, qubit_circuit_with_probs, drawn_qubit_circuit_with_probs
+    ):
+        """Test that a qubit circuit with unused wires renders correctly."""
+        output = qubit_circuit_with_probs.draw()
+
+        assert output == drawn_qubit_circuit_with_probs
 
     def test_direct_qnode_integration(self):
         """Test that a regular QNode renders correctly."""
