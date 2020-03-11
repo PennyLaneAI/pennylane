@@ -78,9 +78,9 @@ class RotoselectOptimizer:
         """Update x with one step of the optimizer.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take an
-                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
-                return a single value.
+            objective_fn (function): The objective function for optimization. It must have the
+                signature ``objective_fn(x, generators=None)`` with an array of the values ``x``
+                and a list of the gates ``generators`` as inputs, returning a single value.
             x (Union[array[float], float]): NumPy array containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
@@ -113,9 +113,9 @@ class RotoselectOptimizer:
         Optimizes for the best generator at position ``d``.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take an
-                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
-                return a single value.
+            objective_fn (function): The objective function for optimization. It must have the
+                signature ``objective_fn(x, generators=None)`` with an array of the values ``x``
+                and a list of the gates ``generators`` as inputs, returning a single value.
             x (Union[array[float], float]): NumPy array containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
@@ -148,9 +148,9 @@ class RotoselectOptimizer:
         """The rotosolve step for one parameter and one set of generators.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take an
-                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
-                return a single value.
+            objective_fn (function): The objective function for optimization. It must have the
+                signature ``objective_fn(x, generators=None)`` with an array of the values ``x``
+                and a list of the gates ``generators`` as inputs, returning a single value.
             x (Union[array[float], float]): NumPy array containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
