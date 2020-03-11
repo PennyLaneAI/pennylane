@@ -19,41 +19,33 @@ Description
 -----------
 
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
-:meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode.construct`
-method is called, which performs a 'just-in-time' circuit construction
-on the :mod:`~pennylane._device.Device`. As part of this construction, all arguments
-and keyword arguments are wrapped in a `Variable` as follows:
+:meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode._construct`
+method is called, which performs a 'just-in-time' circuit construction.
+As part of this construction, all positional arguments
+(and possibly also the auxiliary arguments) are wrapped in `Variable` instances as follows:
 
-* All positional arguments in ``*args``, including those with multiple dimensions, are
-  flattened to a single list, and each element wrapped as a Variable instance,
+* The tuple containing all positional arguments is
+  flattened to a single list, and each element wrapped in a `Variable` instance,
   indexed by its position in the list.
+  The list can then be unflattened back to the original shape.
 
-  This allows PennyLane to inspect the shape and type of arguments
-  the user wishes to pass. The list can then be unflattened back to the original
-  shape of ``*args``.
+* The same is done for each auxiliary argument, the only
+  difference being that the dict_key of each contained Variable corresponds
+  with the argument name.
 
-
-* The same is done for each keyword argument in ``**kwargs``, the only
-  difference being that the name of each contained Variable corresponds
-  with the keyword name.
-
-As a result, the device stores a list of operations and expectations, with all
-free parameters stored as Variable instances.
+As a result, the circuit is described as a graph of operations and expectations, with all
+the parameters stored as Variable instances.
 
 .. note::
     The QNode can be differentiated with respect to positional arguments,
-    but *not* with respect to keyword arguments. This makes keyword arguments
+    but *not* with respect to auxiliary arguments. This makes auxiliary arguments
     a natural location for data placeholders.
 
-.. important::
-    If the user defines a keyword argument, then they always have to pass the
-    corresponding variable as a keyword argument, otherwise it won't register.
-
-For each successive QNode execution, the user-provided values for the positional and keyword
+For each successive QNode execution, the user-provided values for the positional and auxiliary
 arguments are stored in :attr:`Variable.positional_arg_values` and
-:attr:`Variable.kwarg_values` respectively; the values are
-then returned by :meth:`Variable.val`, using the Variable's ``idx`` attribute, and, for
-keyword arguments, its ``name``, to return the correct value to the operation.
+:attr:`Variable.auxiliary_arg_values` respectively; the values are
+then returned by :meth:`Variable.val`, using the Variable's :attr:`idx` attribute, and, for
+auxiliary arguments, its :attr:`dict_key`, to return the correct value to the operation.
 
 .. note::
     The :meth:`Operation.parameters() <pennylane.operation.Operation.parameters>`
@@ -87,17 +79,17 @@ class Variable:
 
     # pylint: disable=too-few-public-methods
 
-    #: array[float]: current positional parameter values, set in :meth:`.BaseQNode._set_variables`
+    #: array[float]: current flattened positional parameter values, set in :meth:`.BaseQNode._set_variables`
     positional_arg_values = None
 
-    #: dict[str->array[float]]: current auxiliary parameter values, set in :meth:`.BaseQNode._set_variables`
-    kwarg_values = None
+    #: dict[str->array[float]]: current flattened auxiliary parameter values, set in :meth:`.BaseQNode._set_variables`
+    auxiliary_arg_values = None
 
     def __init__(self, idx, name=None, dict_key=None):
         self.idx = idx  #: int: parameter index
         self.name = name  #: str: parameter structured name
         self.dict_key = dict_key
-        """str, None: for auxiliary parameters the key for the kwarg_values dict"""
+        """str, None: for auxiliary parameters the key for the auxiliary_arg_values dict"""
         self.mult = 1  #: int, float: parameter scalar multiplier
 
     def __repr__(self):
@@ -160,8 +152,8 @@ class Variable:
             # The variable is a placeholder for a positional argument
             return Variable.positional_arg_values[self.idx] * self.mult
 
-        # The variable is a placeholder for a keyword argument
-        values = Variable.kwarg_values[self.dict_key]
+        # The variable is a placeholder for an auxiliary argument
+        values = Variable.auxiliary_arg_values[self.dict_key]
         return values[self.idx] * self.mult
 
     def render(self, show_name_only=False):

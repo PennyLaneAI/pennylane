@@ -24,7 +24,7 @@ from pennylane.variable import Variable
 nr.seed(42)
 
 n = 10
-keyword_par_names = ['foo', 'bar']
+auxiliary_par_names = ['foo', 'bar']
 par_inds = [0, 9]
 par_mults = [1, 0.4, -2.7]
 
@@ -37,10 +37,10 @@ def par_positional():
     return temp
 
 @pytest.fixture(scope="function")
-def par_keyword():
-    "QNode: keyword parameters"
-    temp = {name: nr.randn(n) for name in keyword_par_names}
-    Variable.kwarg_values = temp  # set the values
+def par_auxiliary():
+    "QNode: auxiliary parameters"
+    temp = {name: nr.randn(n) for name in auxiliary_par_names}
+    Variable.auxiliary_arg_values = temp  # set the values
     return temp
 
 
@@ -92,9 +92,9 @@ def test_variable_val(par_positional, ind, mult, tol):
 
 @pytest.mark.parametrize("ind", par_inds)
 @pytest.mark.parametrize("mult", par_mults)
-@pytest.mark.parametrize("name", keyword_par_names)
-def test_keyword_variable(par_keyword, name, ind, mult, tol):
-    """Keyword variable evaluation."""
+@pytest.mark.parametrize("name", auxiliary_par_names)
+def test_auxiliary_variable(par_auxiliary, name, ind, mult, tol):
+    """Auxiliary variable evaluation."""
     v = Variable(ind, "aaa", dict_key=name)
 
     assert v.name == "aaa"
@@ -102,4 +102,4 @@ def test_keyword_variable(par_keyword, name, ind, mult, tol):
     assert v.mult == 1
     assert v.idx == ind
     assert v.is_kwarg
-    variable_eval_asserts(v, par_keyword[name][ind], mult, tol)
+    variable_eval_asserts(v, par_auxiliary[name][ind], mult, tol)

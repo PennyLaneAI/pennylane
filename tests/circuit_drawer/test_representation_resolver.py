@@ -49,10 +49,10 @@ def variable(monkeypatch):
 
 
 @pytest.fixture
-def kwarg_variable(monkeypatch):
+def auxiliary_variable(monkeypatch):
     """A mocked Variable instance for an auxiliary variable."""
-    monkeypatch.setattr(Variable, "kwarg_values", {"kwarg_test": [0, 1, 2, 3]})
-    yield Variable(1, "kwarg_test", dict_key="kwarg_test")
+    monkeypatch.setattr(Variable, "auxiliary_arg_values", {"auxiliary_test": [0, 1, 2, 3]})
+    yield Variable(1, "auxiliary_test", dict_key="auxiliary_test")
 
 
 class TestRepresentationResolver:
@@ -84,13 +84,13 @@ class TestRepresentationResolver:
 
         assert unicode_representation_resolver.single_parameter_representation(variable) == "2"
 
-    def test_single_parameter_representation_kwarg_variable(
-        self, unicode_representation_resolver, kwarg_variable
+    def test_single_parameter_representation_auxiliary_variable(
+        self, unicode_representation_resolver, auxiliary_variable
     ):
         """Test that kwarg variables are properly resolved."""
 
         assert (
-            unicode_representation_resolver.single_parameter_representation(kwarg_variable) == "1"
+            unicode_representation_resolver.single_parameter_representation(auxiliary_variable) == "1"
         )
 
     @pytest.mark.parametrize("par,expected", [(3, "3"), (5.236422, "5.236"),])
@@ -113,14 +113,14 @@ class TestRepresentationResolver:
             == "test"
         )
 
-    def test_single_parameter_representation_kwarg_variable_varnames(
-        self, unicode_representation_resolver_varnames, kwarg_variable
+    def test_single_parameter_representation_auxiliary_variable_varnames(
+        self, unicode_representation_resolver_varnames, auxiliary_variable
     ):
         """Test that kwarg variables are properly resolved when show_variable_names is True."""
 
         assert (
-            unicode_representation_resolver_varnames.single_parameter_representation(kwarg_variable)
-            == "kwarg_test"
+            unicode_representation_resolver_varnames.single_parameter_representation(auxiliary_variable)
+            == "auxiliary_test"
         )
 
     @pytest.mark.parametrize(
