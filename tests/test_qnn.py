@@ -16,6 +16,9 @@ Tests for the pennylane.qnn module.
 """
 import pytest
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.layers import Layer
+from tensorflow.keras.initializers import RandomNormal
 
 import pennylane as qml
 from pennylane.qnn import KerasLayer
@@ -34,12 +37,12 @@ def get_circuit(n_qubits, output_dim):
     def circuit(w1, w2, w3, w4, w5, x=None):
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
         operations. The output is a PauliZ measurement on the first output_dim qubits."""
-        qml.templates.AngleEmbedding(x)
-        qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-        qml.templates.StronglyEntanglingLayers(w2, wires=list(range(n_qubits)))
-        qml.RX(w3, wires=0)
+        qml.templates.AngleEmbedding(x, wires=list(range(n_qubits)))
+        # qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+        # qml.templates.StronglyEntanglingLayers(w2, wires=list(range(n_qubits)))
+        # qml.RX(w3, wires=0)
         qml.RX(w4, wires=0)
-        qml.Rot(w5, wires=0)
+        qml.Rot(*w5, wires=0)
         return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
     return circuit, weight_shapes
@@ -170,3 +173,80 @@ class TestKerasLayer:
         layer = KerasLayer(c, w, output_dim, input_dim=4)
         with pytest.raises(ValueError, match="QNode can only accept inputs of size"):
             layer.build(input_shape=(10, 3))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
+    def test_qnode_weights(self, get_circuit, n_qubits, output_dim):
+        """Test if the build() method correctly initializes the weights in the qnode_weights
+        dictionary, i.e., that each value of the dictionary has correct shape and name."""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+        layer.build(input_shape=(10, n_qubits))
+
+        for weight, shape in layer.weight_shapes.items():
+            assert layer.qnode_weights[weight].shape == shape
+            assert layer.qnode_weights[weight].name[:-2] == weight
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
+    def test_qnode_weights_with_spec(self, get_circuit, monkeypatch, output_dim, n_qubits):
+        """Test if the build() method correctly passes on user specified weight_specs to the
+        inherited add_weight() method. This is done by monkeypatching add_weight() so that it
+        simply returns its input keyword arguments. The qnode_weights dictionary should then have
+        values that are the input keyword arguments, and we check that the specified weight_specs
+        keywords are there."""
+
+        def add_weight_dummy(*args, **kwargs):
+            return kwargs
+
+        weight_specs = {
+            "w1": {"initializer": "random_uniform", "trainable": False},
+            "w2": {"initializer": RandomNormal(mean=0, stddev=0.5)},
+            "w3": {},
+            "w4": {},
+            "w5": {},
+        }
+
+        with monkeypatch.context() as m:
+            m.setattr(Layer, 'add_weight', add_weight_dummy)
+            c, w = get_circuit
+            layer = KerasLayer(c, w, output_dim, weight_specs=weight_specs)
+            layer.build(input_shape=(10, n_qubits))
+
+            for weight in layer.weight_shapes:
+                assert all(item in layer.qnode_weights[weight].items() for item in weight_specs[
+                    weight].items())
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(3))
+    @pytest.mark.parametrize("input_shape", [(10, 4), (8, 3)])
+    def test_compute_output_shape(self, get_circuit, output_dim, input_shape):
+        """Test if the compute_output_shape() method performs correctly, i.e., that it replaces
+        the last element in the input_shape tuple with the specified output_dim and that the
+        output shape is of type tf.TensorShape"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        assert layer.compute_output_shape(input_shape) == (input_shape[0], output_dim)
+        assert isinstance(layer.compute_output_shape(input_shape), tf.TensorShape)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(4))
+    @pytest.mark.parametrize("batch_size", [5, 10, 15])
+    def test_call(self, get_circuit, output_dim, batch_size, n_qubits):
+        """Test if the call() method performs correctly, i.e., that it outputs with shape
+        (batch_size, output_dim) with results that agree with directly calling the QNode"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+        x = tf.ones((batch_size, n_qubits))
+
+        layer_out = layer(x)
+        weights = [w[0] if w.shape == (1,) else w for w in layer.qnode_weights.values()]
+
+        assert layer_out.shape == (batch_size, output_dim)
+        assert np.allclose(layer_out[0], c(*weights, x=x[0]))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
+    def test_str_repr(self, get_circuit, output_dim):
+        """Tests the __str__ and __repr__ representations"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        assert layer.__str__() == "<Quantum Keras layer: func=circuit>"
+        assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"

@@ -86,7 +86,10 @@ class KerasLayer(Layer):
         for arg in self.sig:
             if arg is not self.input_arg:
                 w = self.qnode_weights[arg]
-                qnode = functools.partial(qnode, w)
+                if w.shape == (1,):
+                    qnode = functools.partial(qnode, w[0])
+                else:
+                    qnode = functools.partial(qnode, w)
 
         outputs = tf.stack([qnode(**{self.input_arg: x}) for x in inputs])
         input_shape = tf.shape(inputs)
