@@ -60,6 +60,22 @@ def operable_mock_device_2_wires(monkeypatch):
 
 
 @pytest.fixture(scope="function")
+def operable_mock_device_2_wires_with_inverses(monkeypatch):
+    """A mock instance of the abstract Device class that can support Qubit qfuncs."""
+
+    dev = Device
+    with monkeypatch.context() as m:
+        m.setattr(dev, "__abstractmethods__", frozenset())
+        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit", "inverse_operations" : True})
+        m.setattr(dev, "operations", ["BasisState", "RX", "RY", "RZ", "CNOT", "PhaseShift"])
+        m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, "reset", lambda self: None)
+        m.setattr(dev, "apply", lambda self, x, y, z: None)
+        m.setattr(dev, "expval", lambda self, x, y, z: 1)
+        yield Device(wires=2)
+
+
+@pytest.fixture(scope="function")
 def operable_mock_CV_device_2_wires(monkeypatch):
     """A mock instance of the abstract Device class that can support CV qfuncs."""
 
@@ -985,6 +1001,43 @@ class TestDecomposition:
 
         assert res[4].name == "RX"
         assert res[4].parameters == [6]
+
+    def test_decompose_queue_inv(self, operable_mock_device_2_wires_with_inverses):
+        """Test that decompose queue works correctly
+        when an operation exists that can be decomposed"""
+
+        queue = [qml.Rot(0, 1, 2, wires=0).inv(), qml.U3(3, 4, 5, wires=0).inv(), qml.RX(6, wires=0).inv()]
+
+        res = decompose_queue(queue, operable_mock_device_2_wires_with_inverses)
+
+        assert len(res) == 9
+
+        assert res[0].name == "RZ.inv"
+        assert res[0].parameters == [2]
+
+        assert res[1].name == "RY.inv"
+        assert res[1].parameters == [1]
+
+        assert res[2].name == "RZ.inv"
+        assert res[2].parameters == [0]
+
+        assert res[2].name == "PhaseShift.inv"
+        assert res[2].parameters == [4]
+
+        assert res[3].name == "PhaseShift.inv"
+        assert res[3].parameters == [5]
+
+        assert res[4].name == "RZ.inv"
+        assert res[4].parameters == [-5]
+
+        assert res[5].name == "RY.inv"
+        assert res[5].parameters == [3]
+
+        assert res[6].name == "RZ.inv"
+        assert res[6].parameters == [5]
+
+        assert res[7].name == "RX.inv"
+        assert res[7].parameters == [6]
 
     def test_invalid_decompose(self, operable_mock_device_2_wires):
         """Test that an error is raised if the device
