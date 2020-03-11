@@ -160,7 +160,7 @@ class CircuitGraph:
         print("\nObservables")
         print("===========")
         for op in self.observables:
-            if op.return_type in return_map:                
+            if op.return_type in return_map:
                 return_type = return_map[op.return_type]
             else:
                 return_type = str(op.return_type)
