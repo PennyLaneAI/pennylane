@@ -151,15 +151,6 @@ class TestKerasLayer:
             with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
                 KerasLayer(c, w, output_dim)
 
-    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
-    @pytest.mark.parametrize("input_dim", zip(*[[None, [1], (1,), 1], [None, 1, 1, 1]]))
-    def test_input_dim(self, get_circuit, input_dim, output_dim):
-        """Test if the input_dim is correctly processed, i.e., that an iterable is mapped to
-        its first element while an int or None is left unchanged."""
-        c, w = get_circuit
-        layer = KerasLayer(c, w, output_dim, input_dim[0])
-        assert layer.input_dim == input_dim[1]
-
     @pytest.mark.parametrize("n_qubits", [1])
     @pytest.mark.parametrize("output_dim", zip(*[[[1], (1,), 1], [1, 1, 1]]))
     def test_output_dim(self, get_circuit, output_dim):
@@ -198,26 +189,6 @@ class TestKerasLayer:
             TypeError, match="Only the argument {} is permitted".format(qml.qnn.INPUT_ARG)
         ):
             KerasLayer(c_dummy, {**w, **{"w6": 1}}, output_dim)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
-    @pytest.mark.parametrize("weight_specs", zip(*[[None, {"w1": {}}], [{}, {"w1": {}}]]))
-    def test_weight_specs_initialize(self, get_circuit, output_dim, weight_specs):
-        """Test if the weight_specs input argument is correctly processed, so that it
-        initializes to an empty dictionary if not specified but is left unchanged if already a
-        dictionary"""
-        c, w = get_circuit
-        layer = KerasLayer(c, w, output_dim, weight_specs=weight_specs[0])
-        assert layer.weight_specs == weight_specs[1]
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
-    def test_build_wrong_input_shape(self, get_circuit, output_dim):
-        """Test if the build() method raises a ValueError if the user has specified an input
-        dimension but build() is called with a different dimension. Note that the input_shape
-        passed to build is a tuple to include a batch dimension"""
-        c, w = get_circuit
-        layer = KerasLayer(c, w, output_dim, input_dim=4)
-        with pytest.raises(ValueError, match="QNode can only accept inputs of size"):
-            layer.build(input_shape=(10, 3))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
     def test_qnode_weights(self, get_circuit, n_qubits, output_dim):

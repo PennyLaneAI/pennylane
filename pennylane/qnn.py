@@ -6,16 +6,13 @@
 
 #     http://www.apache.org/licenses/LICENSE-2.0
 
-
-
-
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import functools
-import inspect
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
+import inspect
 from collections.abc import Iterable
 from typing import Optional
 
@@ -34,7 +31,6 @@ class KerasLayer(Layer):
         qnode: QNode,
         weight_shapes: dict,
         output_dim: int,
-        input_dim: Optional[int] = None,
         weight_specs: Optional[dict] = None,
         **kwargs
     ):
@@ -56,7 +52,6 @@ class KerasLayer(Layer):
             raise TypeError("Cannot have a variable number of keyword arguments")
 
         self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
-        self.input_dim = input_dim[0] if isinstance(input_dim, Iterable) else input_dim
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,))
             for weight, size in weight_shapes.items()
@@ -66,30 +61,24 @@ class KerasLayer(Layer):
         defaults = {
             name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
         }
-        self.input_is_default = True if INPUT_ARG in defaults else False
+        self.input_is_default = INPUT_ARG in defaults
         if defaults - {INPUT_ARG} != set():
             raise TypeError("Only the argument {} is permitted to have a default".format(INPUT_ARG))
 
-        if weight_specs:
-            self.weight_specs = weight_specs
-        else:
-            self.weight_specs = {}
+        self.weight_specs = weight_specs if weight_specs is not None else {}
 
         self.qnode_weights = {}
 
         super(KerasLayer, self).__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
-        if self.input_dim and input_shape[-1] != self.input_dim:
-            raise ValueError("QNode can only accept inputs of size {}".format(self.input_dim))
-
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
             self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
 
         super(KerasLayer, self).build(input_shape)
 
-    def call(self, inputs, **kwargs):
+    def call(self, inputs):
         outputs = []
         for x in inputs:
             qnode = self.qnode
