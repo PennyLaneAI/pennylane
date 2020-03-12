@@ -40,15 +40,8 @@ def get_circuit(n_qubits, output_dim):
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
         operations. The output is a PauliZ measurement on the first output_dim qubits."""
         qml.templates.AngleEmbedding(x, wires=list(range(n_qubits)))
-        if n_qubits > 1:
-            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-            qml.templates.StronglyEntanglingLayers(w2, wires=list(range(n_qubits)))
-        else:  # TODO tidy up
-            for w in w1:
-                qml.Rot(w[0][0], w[0][1], w[0][2], wires=0)
-            for w in w2:
-                qml.Rot(w[0][0], w[0][1], w[0][2], wires=0)
-
+        qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+        qml.templates.StronglyEntanglingLayers(w2, wires=list(range(n_qubits)))
         qml.RX(w3, wires=0)
         qml.RX(w4, wires=0)
         qml.Rot(*w5, wires=0)
