@@ -26,7 +26,7 @@ if int(tf.__version__.split(".")[0]) < 2:
 else:
     from tensorflow.keras.layers import Layer
 
-INPUT_ARG = 'inputs'
+INPUT_ARG = "inputs"
 
 
 class KerasLayer(Layer):
@@ -41,10 +41,14 @@ class KerasLayer(Layer):
     ):
         self.sig = qnode.func.sig
         if INPUT_ARG not in self.sig:
-            raise TypeError("QNode must include an argument with name {} for inputting data".format(INPUT_ARG))
+            raise TypeError(
+                "QNode must include an argument with name {} for inputting data".format(INPUT_ARG)
+            )
         if INPUT_ARG in set(weight_shapes.keys()):
-            raise ValueError("{} argument should not have its dimension specified in "
-                             "weight_shapes".format(INPUT_ARG))
+            raise ValueError(
+                "{} argument should not have its dimension specified in "
+                "weight_shapes".format(INPUT_ARG)
+            )
         if set(weight_shapes.keys()) | {INPUT_ARG} != set(self.sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
         if qnode.func.var_pos:
