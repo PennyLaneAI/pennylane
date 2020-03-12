@@ -100,7 +100,6 @@ def to_tf(qnode):
 
             jacobian = qnode.jacobian(args, kwargs)
             grad_output_np = grad_output.numpy()
-            grad_output_type = grad_output.dtype
 
             # perform the vector-Jacobian product
             if not grad_output_np.shape:
@@ -112,24 +111,17 @@ def to_tf(qnode):
             grad_input = unflatten(temp.flat, args)
 
             if isinstance(grad_input, list):
-                grad_input = [tf.convert_to_tensor(i, dtype=grad_output_type) for i in grad_input]
+                grad_input = [tf.convert_to_tensor(i) for i in grad_input]
             elif isinstance(grad_input, tuple):
-                grad_input = tuple(tf.convert_to_tensor(i, dtype=grad_output_type) for i in grad_input)
+                grad_input = tuple(tf.convert_to_tensor(i) for i in grad_input)
             else:
-                grad_input = tf.convert_to_tensor(grad_input, dtype=grad_output_type)
+                grad_input = tf.convert_to_tensor(grad_input)
 
             if variables is not None:
                 return grad_input, variables
 
             return grad_input
 
-        if args:
-            target_dtype = args[0].dtype
-        elif kwargs:
-            target_dtype = kwargs.values()[0].dtype
-        else:
-            target_dtype = tf.float32
-
-        return tf.cast(res, target_dtype), grad
+        return res, grad
 
     return _TFQNode
