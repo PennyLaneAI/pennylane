@@ -285,9 +285,6 @@ class TestKerasLayer:
         assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"
 
 
-tf.keras.backend.set_floatx('float64')  # TODO fix
-
-
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
     """Integration tests for the pennylane.qnn.KerasLayer class."""
