@@ -14,13 +14,14 @@
 """
 Tests for the pennylane.qnn module.
 """
-import pytest
 import os
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.layers import Layer
-from tensorflow.keras.initializers import RandomNormal
 import tempfile
+
+import numpy as np
+import pytest
+import tensorflow as tf
+from tensorflow.keras.initializers import RandomNormal
+from tensorflow.keras.layers import Layer
 
 import pennylane as qml
 from pennylane.qnn import KerasLayer

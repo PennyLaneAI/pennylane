@@ -6,25 +6,24 @@
 
 #     http://www.apache.org/licenses/LICENSE-2.0
 
+
+
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-from collections import Iterable
 import functools
 import inspect
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from collections.abc import Iterable
 from typing import Optional
 
 import tensorflow as tf
+from tensorflow.keras.layers import Layer
 
-from pennylane.qnodes import QNode
 from pennylane.interfaces.tf import to_tf
-
-if int(tf.__version__.split(".")[0]) < 2:
-    raise ImportError("TensorFlow version 2 or above is required for this module")
-else:
-    from tensorflow.keras.layers import Layer
+from pennylane.qnodes import QNode
 
 INPUT_ARG = "inputs"
 
