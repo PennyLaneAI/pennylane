@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections.abc import Iterable
+from collections import Iterable
 import functools
 import inspect
 from typing import Optional
@@ -26,6 +26,8 @@ if int(tf.__version__.split(".")[0]) < 2:
 else:
     from tensorflow.keras.layers import Layer
 
+INPUT_ARG = 'inputs'
+
 
 class KerasLayer(Layer):
     def __init__(
@@ -37,19 +39,13 @@ class KerasLayer(Layer):
         weight_specs: Optional[dict] = None,
         **kwargs
     ):
-
         self.sig = qnode.func.sig
-        defaults = [
-            name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
-        ]
-        if len(defaults) != 1:
-            raise TypeError("Conversion to a Keras layer requires a QNode with a single "
-                            "default argument")
-        self.input_arg = defaults[0]
-
-        if self.input_arg in set(weight_shapes.keys()):
-            raise ValueError("Input argument dimension should not be specified in weight_shapes")
-        if set(weight_shapes.keys()) | set(self.input_arg) != set(self.sig.keys()):
+        if INPUT_ARG not in self.sig:
+            raise TypeError("QNode must include an argument with name {} for inputting data".format(INPUT_ARG))
+        if INPUT_ARG in set(weight_shapes.keys()):
+            raise ValueError("{} argument should not have its dimension specified in "
+                             "weight_shapes".format(INPUT_ARG))
+        if set(weight_shapes.keys()) | {INPUT_ARG} != set(self.sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
         if qnode.func.var_pos:
             raise TypeError("Cannot have a variable number of positional arguments")
@@ -64,10 +60,18 @@ class KerasLayer(Layer):
         }
         self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
 
+        defaults = {
+            name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
+        }
+        self.input_is_default = True if INPUT_ARG in defaults else False
+        if defaults - {INPUT_ARG} != set():
+            raise TypeError("Only the argument {} is permitted to have a default".format(INPUT_ARG))
+
         if weight_specs:
             self.weight_specs = weight_specs
         else:
             self.weight_specs = {}
+
         self.qnode_weights = {}
 
         super(KerasLayer, self).__init__(dynamic=True, **kwargs)
@@ -83,19 +87,24 @@ class KerasLayer(Layer):
         super(KerasLayer, self).build(input_shape)
 
     def call(self, inputs, **kwargs):
-        qnode = self.qnode
-        for arg in self.sig:
-            if arg is not self.input_arg:
-                w = self.qnode_weights[arg]
-                if w.shape == (1,):
-                    qnode = functools.partial(qnode, w[0])
+        outputs = []
+        for x in inputs:
+            qnode = self.qnode
+            for arg in self.sig:
+                if arg is not INPUT_ARG:
+                    w = self.qnode_weights[arg]
+                    if w.shape == (1,):
+                        qnode = functools.partial(qnode, w[0])
+                    else:
+                        qnode = functools.partial(qnode, w)
                 else:
-                    qnode = functools.partial(qnode, w)
+                    if self.input_is_default:
+                        qnode = functools.partial(qnode, **{INPUT_ARG: x})
+                    else:
+                        qnode = functools.partial(qnode, x)
+            outputs.append(qnode())
 
-        outputs = tf.stack([qnode(**{self.input_arg: x}) for x in inputs])
-        input_shape = tf.shape(inputs)
-
-        return tf.reshape(outputs, self.compute_output_shape(input_shape))
+        return tf.stack(outputs)
 
     def compute_output_shape(self, input_shape):
         return tf.TensorShape([input_shape[0], self.output_dim])

@@ -32,19 +32,20 @@ def get_circuit(n_qubits, output_dim):
     dimension. Returns both the circuit and the shape of the weights."""
 
     dev = qml.device("default.qubit", wires=n_qubits)
-    weight_shapes = {"w1": (3, n_qubits, 3), "w2": (2, n_qubits, 3), "w3": (1,), "w4": 1,
-                     "w5": [3]}
+    weight_shapes = {"w1": (3, n_qubits, 3), "w2": (1,), "w3": 1,
+                     "w4": [3], "w5": (2, n_qubits, 3)}
 
     @qml.qnode(dev, interface='tf')
-    def circuit(w1, w2, w3, w4, w5, x=None):
+    def circuit(inputs, w1, w2, w3, w4, w5):
         """A circuit that embeds data using the AngleEmbedding and then performs a variety of
-        operations. The output is a PauliZ measurement on the first output_dim qubits."""
-        qml.templates.AngleEmbedding(x, wires=list(range(n_qubits)))
+        operations. The output is a PauliZ measurement on the first output_dim qubits. One set of
+        parameters, w5, are specified as non-trainable."""
+        qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
         qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
-        qml.templates.StronglyEntanglingLayers(w2, wires=list(range(n_qubits)))
+        qml.RX(w2, wires=0)
         qml.RX(w3, wires=0)
-        qml.RX(w4, wires=0)
-        qml.Rot(*w5, wires=0)
+        qml.Rot(*w4, wires=0)
+        qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
         return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
     return circuit, weight_shapes
@@ -82,19 +83,12 @@ class TestKerasLayer:
     """Unit tests for the pennylane.qnn.KerasLayer class."""
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
-    def test_too_many_defaults(self, get_circuit, output_dim):
-        """Test if a TypeError is raised when instantiated with a QNode that has two defaults"""
+    def test_no_input(self, get_circuit, output_dim):
+        """Test if a TypeError is raised when instantiated with a QNode that does not have an
+        INPUT_ARG argument"""
         c, w = get_circuit
-        c.func.sig['x2'] = c.func.sig['x']
-        with pytest.raises(TypeError, match="Conversion to a Keras layer requires"):
-            KerasLayer(c, w, output_dim)
-
-    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
-    def test_no_defaults(self, get_circuit, output_dim):
-        """Test if a TypeError is raised when instantiated with a QNode that has no defaults"""
-        c, w = get_circuit
-        del c.func.sig['x']
-        with pytest.raises(TypeError, match="Conversion to a Keras layer requires"):
+        del c.func.sig[qml.qnn.INPUT_ARG]
+        with pytest.raises(TypeError, match="QNode must include an argument with name"):
             KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
@@ -102,8 +96,8 @@ class TestKerasLayer:
         """Test if a ValueError is raised when instantiated with a weight_shapes dictionary that
         contains the shape of the input"""
         c, w = get_circuit
-        w['x'] = n_qubits
-        with pytest.raises(ValueError, match="Input argument dimension should not"):
+        w[qml.qnn.INPUT_ARG] = n_qubits
+        with pytest.raises(ValueError, match="{} argument should not have its dimension".format(qml.qnn.INPUT_ARG)):
             KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
@@ -175,8 +169,22 @@ class TestKerasLayer:
         with values that are tuples."""
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
-        assert layer.weight_shapes == {'w1': (3, n_qubits, 3), 'w2': (2, n_qubits, 3), 'w3': (1,), 'w4': (1,),
-                                       'w5': (3,)}
+        assert layer.weight_shapes == {"w1": (3, n_qubits, 3), "w2": (1,), "w3": (1,),
+                     "w4": (3,), "w5": (2, n_qubits, 3)}
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
+    def test_non_input_defaults(self, get_circuit, output_dim, n_qubits):
+        """Test if a TypeError is raised when default arguments that are not INPUT_ARG are
+        present in the QNode"""
+        c, w = get_circuit
+
+        @qml.qnode(qml.device('default.qubit', wires=n_qubits), interface='tf')
+        def c_dummy(inputs, w1, w2, w3, w4, w5, w6=None):
+            """Dummy version of the circuit with a default argument"""
+            return c(inputs, w1, w2, w3, w4, w5)
+
+        with pytest.raises(TypeError, match="Only the argument {} is permitted".format(qml.qnn.INPUT_ARG)):
+            KerasLayer(c_dummy, {**w, **{"w6": 1}}, output_dim)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
     @pytest.mark.parametrize("weight_specs", zip(*[[None, {"w1": {}}], [{}, {"w1": {}}]]))
@@ -266,7 +274,63 @@ class TestKerasLayer:
         weights = [w[0] if w.shape == (1,) else w for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(*weights, x=x[0]))
+        assert np.allclose(layer_out[0], c(x[0], *weights))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
+    @pytest.mark.parametrize("batch_size", [5])
+    def test_call_shuffled_args(self, get_circuit, output_dim, batch_size, n_qubits):
+        """Test if the call() method performs correctly when the inputs argument is not the first
+        positional argument, i.e., that it outputs with shape (batch_size, output_dim) with
+        results that agree with directly calling the QNode"""
+        c, w = get_circuit
+
+        @qml.qnode(qml.device('default.qubit', wires=n_qubits), interface='tf')
+        def c_shuffled(w1, inputs, w2, w3, w4, w5):
+            """Version of the circuit with a shuffled signature"""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2, wires=0)
+            qml.RX(w3, wires=0)
+            qml.Rot(*w4, wires=0)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = KerasLayer(c_shuffled, w, output_dim)
+        x = tf.ones((batch_size, n_qubits))
+
+        layer_out = layer(x)
+        weights = [w[0] if w.shape == (1,) else w for w in layer.qnode_weights.values()]
+
+        assert layer_out.shape == (batch_size, output_dim)
+        assert np.allclose(layer_out[0], c(x[0], *weights))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
+    @pytest.mark.parametrize("batch_size", [5])
+    def test_call_default_input(self, get_circuit, output_dim, batch_size, n_qubits):
+        """Test if the call() method performs correctly when the inputs argument is a default
+        argument, i.e., that it outputs with shape (batch_size, output_dim) with results that
+        agree with directly calling the QNode"""
+        c, w = get_circuit
+
+        @qml.qnode(qml.device('default.qubit', wires=n_qubits), interface='tf')
+        def c_default(w1, w2, w3, w4, w5, inputs=None):
+            """Version of the circuit with inputs as a default argument"""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2, wires=0)
+            qml.RX(w3, wires=0)
+            qml.Rot(*w4, wires=0)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = KerasLayer(c_default, w, output_dim)
+        x = tf.ones((batch_size, n_qubits))
+
+        layer_out = layer(x)
+        weights = [w[0] if w.shape == (1,) else w for w in layer.qnode_weights.values()]
+
+        assert layer_out.shape == (batch_size, output_dim)
+        assert np.allclose(layer_out[0], c(x[0], *weights))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
     def test_str_repr(self, get_circuit, output_dim):
@@ -304,15 +368,14 @@ class TestKerasLayerIntegration:
     def test_model_gradients(self, model, output_dim, n_qubits):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model"""
-        x = np.zeros((5, n_qubits))
-        y = np.zeros((5, output_dim))
+        x = tf.zeros((5, n_qubits))
+        y = tf.zeros((5, output_dim))
 
         with tf.GradientTape() as tape:
             out = model(x)
             loss = tf.keras.losses.mean_squared_error(out, y)
 
         gradients = tape.gradient(loss, model.trainable_variables)
-
         assert all([not isinstance(g, type(None)) for g in gradients])
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices(2))
