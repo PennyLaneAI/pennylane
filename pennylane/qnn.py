@@ -19,6 +19,7 @@ from typing import Optional
 import tensorflow as tf
 
 from pennylane.qnodes import QNode
+from pennylane.interfaces.tf import to_tf
 
 if int(tf.__version__.split(".")[0]) < 2:
     raise ImportError("TensorFlow version 2 or above is required for this module")
@@ -55,7 +56,7 @@ class KerasLayer(Layer):
         if qnode.func.var_keyword:
             raise TypeError("Cannot have a variable number of keyword arguments")
 
-        self.qnode = qnode
+        self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
         self.input_dim = input_dim[0] if isinstance(input_dim, Iterable) else input_dim
         self.weight_shapes = {
             weight: (tuple(size) if isinstance(size, Iterable) else (size,))
