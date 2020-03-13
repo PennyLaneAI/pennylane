@@ -96,6 +96,7 @@ class KerasLayer(Layer):
         **kwargs
     ):
         self.sig = qnode.func.sig
+
         if INPUT_ARG not in self.sig:
             raise TypeError(
                 "QNode must include an argument with name {} for inputting data".format(INPUT_ARG)
