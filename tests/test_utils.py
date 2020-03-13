@@ -416,7 +416,7 @@ class TestOperationRecorder:
         """Test that the OperationRecorder is added to the list of contexts."""
         with pu.OperationRecorder() as recorder:
             assert recorder in qml.QueuingContext._active_contexts
-        
+
         assert recorder not in qml.QueuingContext._active_contexts
 
     def test_circuit_integration(self):
