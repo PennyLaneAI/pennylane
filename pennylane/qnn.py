@@ -18,10 +18,18 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional
 
-import tensorflow as tf
-from tensorflow.keras.layers import Layer
+try:
+    import tensorflow as tf
+    from tensorflow.keras.layers import Layer
+    from pennylane.interfaces.tf import to_tf
 
-from pennylane.interfaces.tf import to_tf
+    CORRECT_TF_VERSION = int(tf.__version__.split(".")[0]) > 1
+except ImportError:
+    from abc import ABC
+
+    Layer = ABC
+    CORRECT_TF_VERSION = False
+
 from pennylane.qnodes import QNode
 
 INPUT_ARG = "inputs"
@@ -96,6 +104,9 @@ class KerasLayer(Layer):
         weight_specs: Optional[dict] = None,
         **kwargs
     ):
+        if not CORRECT_TF_VERSION:
+            raise ImportError("KerasLayer requires TensorFlow version 2 and above")
+
         self.sig = qnode.func.sig
 
         if INPUT_ARG not in self.sig:

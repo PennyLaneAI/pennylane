@@ -22,13 +22,22 @@ import pytest
 
 try:
     import tensorflow as tf
-    from tensorflow.keras.initializers import RandomNormal
     from tensorflow.keras.layers import Layer
+    from tensorflow.keras.initializers import RandomNormal
+
+    CORRECT_TF_VERSION = int(tf.__version__.split(".")[0]) > 1
 except ImportError:
-    pass
+    from abc import ABC
+
+    Layer = ABC
+    CORRECT_TF_VERSION = False
 
 import pennylane as qml
 from pennylane.qnn import KerasLayer
+
+min_tf = pytest.mark.skipif(
+    not CORRECT_TF_VERSION, reason="TensorFlow version 2 and above required"
+)
 
 
 @pytest.fixture
@@ -84,9 +93,21 @@ def indices(n_max):
     return zip(*[a + 1, b + 1])
 
 
-@pytest.mark.usefixtures("get_circuit", "skip_if_no_tf_support")
+@min_tf
+@pytest.mark.usefixtures("get_circuit")
 class TestKerasLayer:
     """Unit tests for the pennylane.qnn.KerasLayer class."""
+
+    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
+    def test_bad_tf_version(self, get_circuit, output_dim, monkeypatch):
+        """Test if an ImportError is raised when instantiated with an incorrect version of
+        TensorFlow"""
+        c, w = get_circuit
+        with monkeypatch.context() as m:
+            m.setattr(qml.qnn, "CORRECT_TF_VERSION", False)
+            with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
+                KerasLayer(c, w, output_dim)
 
     @pytest.mark.parametrize("interface", ["tf"])
     @pytest.mark.parametrize("n_qubits, output_dim", indices(1))
@@ -273,8 +294,9 @@ class TestKerasLayer:
         x = np.ones((batch_size, n_qubits), dtype=np.float32)
 
         layer_out = layer(x)
-        weights = [w[0].numpy() if w.shape == (1,) else w.numpy() for w in
-                   layer.qnode_weights.values()]
+        weights = [
+            w[0].numpy() if w.shape == (1,) else w.numpy() for w in layer.qnode_weights.values()
+        ]
 
         assert layer_out.shape == (batch_size, output_dim)
         assert np.allclose(layer_out[0], c(x[0], *weights))
@@ -348,7 +370,8 @@ class TestKerasLayer:
         assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"
 
 
-@pytest.mark.usefixtures("get_circuit", "model", "skip_if_no_tf_support")
+@min_tf
+@pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
     """Integration tests for the pennylane.qnn.KerasLayer class."""
 
