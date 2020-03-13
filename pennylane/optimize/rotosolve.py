@@ -14,6 +14,7 @@
 """Rotosolve gradient free optimizer"""
 
 from pennylane import numpy as np
+from pennylane.utils import _flatten, unflatten
 
 
 class RotosolveOptimizer:
@@ -73,23 +74,12 @@ class RotosolveOptimizer:
         Returns:
             array: The new variable values :math:`x^{(t+1)}`.
         """
-        # make sure that x is an array of shape (1, -1)
-        if np.ndim(x) == 0:
-            x = np.array([x], dtype=float)
-        try:
-            x = np.array(x, dtype=float)
-            assert np.ndim(x) == 1
-        except (AssertionError, ValueError):
-            raise ValueError(
-                "Input must be either an array with dimension 1 or a float, and not x = {}.".format(
-                    x
-                )
-            )
+        x_flat = np.fromiter(_flatten(x), dtype=float)
 
-        for d, _ in enumerate(x):
-            x = self._rotosolve(objective_fn, x, d)
+        for d, _ in enumerate(x_flat):
+            x_flat = self._rotosolve(objective_fn, x_flat, d)
 
-        return x
+        return unflatten(x_flat, x)
 
     @staticmethod
     def _rotosolve(objective_fn, x, d):

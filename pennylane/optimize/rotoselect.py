@@ -15,6 +15,7 @@
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.utils import _flatten, unflatten
 
 
 class RotoselectOptimizer:
@@ -89,25 +90,16 @@ class RotoselectOptimizer:
         Returns:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
-        # make sure that x is an array of shape (1, -1)
-        if np.ndim(x) == 0:
-            x = np.array([x], dtype=float)
-        try:
-            x = np.array(x, dtype=float)
-            assert np.ndim(x) == 1
-        except (AssertionError, ValueError):
-            raise ValueError(
-                "Input must be either an array with dimension 1 or a float, and not x = {}.".format(
-                    x
-                )
+        x_flat = np.fromiter(_flatten(x), dtype=float)
+
+        for d, _ in enumerate(x_flat):
+            x_flat[d], generators[d] = self._find_optimal_generators(
+                objective_fn, x_flat, generators, d
             )
 
-        for d, _ in enumerate(x):
-            x[d], generators[d] = self._find_optimal_params(objective_fn, x, generators, d)
+        return unflatten(x_flat, x), generators
 
-        return x, generators
-
-    def _find_optimal_params(self, objective_fn, x, generators, d):
+    def _find_optimal_generators(self, objective_fn, x, generators, d):
         """Optimizer for the generators.
 
         Optimizes for the best generator at position ``d``.
