@@ -22,12 +22,6 @@ from .operation import Observable, Sample, Variance, Expectation, Probability, T
 from .qnodes import QuantumFunctionError
 
 
-def _remove_if_in_queue(op):
-    r"""Helper function to handle removing ops from the QNode queue"""
-    if op in qml._current_context.queue:
-        qml._current_context.queue.remove(op)
-
-
 def expval(op):
     r"""Expectation value of the supplied observable.
 
@@ -60,20 +54,11 @@ def expval(op):
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
-    if qml._current_context is not None:
-        # delete observables from QNode operation queue if needed
-        if isinstance(op, Tensor):
-            for o in op.obs:
-                _remove_if_in_queue(o)
-        else:
-            _remove_if_in_queue(op)
+    if isinstance(op, Tensor):
+        for o in op.obs:
+            qml.QueuingContext.remove_operator(o)
 
-    # set return type to be an expectation value
     op.return_type = Expectation
-
-    if qml._current_context is not None:
-        # add observable to QNode observable queue
-        qml._current_context._append_op(op)
 
     return op
 
@@ -110,20 +95,11 @@ def var(op):
             "{} is not an observable: cannot be used with var".format(op.name)
         )
 
-    if qml._current_context is not None:
-        # delete operations from QNode queue
-        if isinstance(op, Tensor):
-            for o in op.obs:
-                _remove_if_in_queue(o)
-        else:
-            _remove_if_in_queue(op)
+    if isinstance(op, Tensor):
+        for o in op.obs:
+            qml.QueuingContext.remove_operator(o)
 
-    # set return type to be a variance
     op.return_type = Variance
-
-    if qml._current_context is not None:
-        # add observable to QNode observable queue
-        qml._current_context._append_op(op)
 
     return op
 
@@ -161,20 +137,11 @@ def sample(op):
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
-    if qml._current_context is not None:
-        # delete operations from QNode queue
-        if isinstance(op, Tensor):
-            for o in op.obs:
-                _remove_if_in_queue(o)
-        else:
-            _remove_if_in_queue(op)
+    if isinstance(op, Tensor):
+        for o in op.obs:
+            qml.QueuingContext.remove_operator(o)
 
-    # set return type to be a sample
     op.return_type = Sample
-
-    if qml._current_context is not None:
-        # add observable to QNode observable queue
-        qml._current_context._append_op(op)
 
     return op
 
@@ -218,8 +185,6 @@ def probs(wires):
     op = qml.Identity(wires=wires, do_queue=False)
     op.return_type = Probability
 
-    if qml._current_context is not None:
-        # add observable to QNode observable queue
-        qml._current_context._append_op(op)
+    qml.QueuingContext.append_operator(op)
 
     return op
