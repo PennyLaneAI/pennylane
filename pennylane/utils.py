@@ -394,14 +394,10 @@ def inv(operation_list):
 
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
-    if qml._current_context is not None:
-        ops_in_queue = {op for op in operation_list if op in qml._current_context.queue}
+    for op in operation_list:
+        qml.QueuingContext.remove_operator(op)
 
-        for op in ops_in_queue:
-            qml._current_context._remove_op(op)
-
-        for inv_op in inv_ops:
-            qml._current_context._append_op(inv_op)
-            inv_op.queue_idx = qml._current_context.queue.index(inv_op)
+    for inv_op in inv_ops:
+        qml.QueuingContext.append_operator(op)
 
     return inv_ops
