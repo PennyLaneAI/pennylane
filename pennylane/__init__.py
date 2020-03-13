@@ -23,6 +23,7 @@ from autograd import jacobian as _jacobian
 
 from semantic_version import Version, Spec
 
+from ._queuing_context import QueuingContext
 import pennylane.operation
 
 import pennylane.init
@@ -43,7 +44,6 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
-from ._queuing_context import QueuingContext
 
 
 # overwrite module docstrings
