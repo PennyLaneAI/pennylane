@@ -46,9 +46,6 @@ from .io import *
 from ._queuing_context import QueuingContext
 
 
-_current_context = None
-
-
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
 
