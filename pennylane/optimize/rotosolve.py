@@ -68,8 +68,8 @@ class RotosolveOptimizer:
 
     >>> cost_rotosel = []
     >>> for _ in range(n_steps):
-    >>>     cost_rotosel.append(cost(x))
-    >>>     x = opt.step(cost, x)
+    ...     cost_rotosel.append(cost(x))
+    ...     x = opt.step(cost, x)
 
     The optimized values for x should now be stored in ``x`` and steps-vs-cost can be seen by
     plotting ``cost_rotosel``.
