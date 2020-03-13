@@ -22,7 +22,7 @@ class RotoselectOptimizer:
     r"""Rotoselect gradient free optimizer.
 
     The Rotoselect optimizer minimizes an objective function with respect to the parameters and
-    gates of a quantum circuit without the need of calculating the gradient of the function. The
+    gates of a quantum circuit without the need for calculating the gradient of the function. The
     algorithm works by updating the parameters :math:`\theta = \theta_1, \dots, \theta_D` and gate
     choices :math:`R = R_1,\dots,R_D` one at a time according to a closed-form expression for the
     optimal value of the :math:`d^{th}` parameter :math:`\theta^*_d` when the other parameters and
