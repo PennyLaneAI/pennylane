@@ -165,7 +165,7 @@ class TestEvalation:
     """Tests for the QNodeCollection evaluation"""
 
     @pytest.mark.parametrize("interface", ["autograd", "numpy"])
-    def test_eval_autograd(self, qnodes, parallel):
+    def test_eval_autograd(self, qnodes, parallel, interface):
         """Test correct evaluation of the QNodeCollection using
         the Autograd interface"""
         qnode1, qnode2 = qnodes
@@ -177,7 +177,7 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.parametrize("interface", ["autograd", "numpy"])
-    def test_grad_autograd(self, qnodes, parallel):
+    def test_grad_autograd(self, qnodes, parallel, interface):
         """Test correct gradient of the QNodeCollection using
         the Autograd interface"""
         qnode1, qnode2 = qnodes
@@ -196,7 +196,7 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_eval_torch(self, qnodes, skip_if_no_torch_support, parallel):
+    def test_eval_torch(self, qnodes, skip_if_no_torch_support, parallel, interface):
         """Test correct evaluation of the QNodeCollection using
         the torch interface"""
         qnode1, qnode2 = qnodes
@@ -208,7 +208,7 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_grad_torch(self, qnodes, skip_if_no_torch_support, parallel):
+    def test_grad_torch(self, qnodes, skip_if_no_torch_support, parallel, interface):
         """Test correct gradient of the QNodeCollection using
         the torch interface"""
         qnode1, qnode2 = qnodes
@@ -229,7 +229,7 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_eval_tf(self, qnodes, skip_if_no_tf_support, parallel):
+    def test_eval_tf(self, qnodes, skip_if_no_tf_support, parallel, interface):
         """Test correct evaluation of the QNodeCollection using
         the tf interface"""
         qnode1, qnode2 = qnodes
@@ -242,7 +242,7 @@ class TestEvalation:
 
     @pytest.mark.xfail(raises=AttributeError, reason="Dask breaks the TF gradient tape")
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_grad_tf(self, qnodes, skip_if_no_tf_support, parallel):
+    def test_grad_tf(self, qnodes, skip_if_no_tf_support, parallel, interface):
         """Test correct gradient of the QNodeCollection using
         the tf interface"""
         qnode1, qnode2 = qnodes
