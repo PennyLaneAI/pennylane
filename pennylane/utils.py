@@ -398,6 +398,6 @@ def inv(operation_list):
         qml.QueuingContext.remove_operator(op)
 
     for inv_op in inv_ops:
-        qml.QueuingContext.append_operator(op)
+        qml.QueuingContext.append_operator(inv_op)
 
     return inv_ops
