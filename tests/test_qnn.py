@@ -19,9 +19,13 @@ import tempfile
 
 import numpy as np
 import pytest
-import tensorflow as tf
-from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import Layer
+
+try:
+    import tensorflow as tf
+    from tensorflow.keras.initializers import RandomNormal
+    from tensorflow.keras.layers import Layer
+except ImportError:
+    pass
 
 import pennylane as qml
 from pennylane.qnn import KerasLayer
@@ -80,7 +84,7 @@ def indices(n_max):
     return zip(*[a + 1, b + 1])
 
 
-@pytest.mark.usefixtures("get_circuit")
+@pytest.mark.usefixtures("get_circuit", "skip_if_no_tf_support")
 class TestKerasLayer:
     """Unit tests for the pennylane.qnn.KerasLayer class."""
 
@@ -344,7 +348,7 @@ class TestKerasLayer:
         assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"
 
 
-@pytest.mark.usefixtures("get_circuit", "model")
+@pytest.mark.usefixtures("get_circuit", "model", "skip_if_no_tf_support")
 class TestKerasLayerIntegration:
     """Integration tests for the pennylane.qnn.KerasLayer class."""
 
