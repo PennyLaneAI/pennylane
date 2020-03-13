@@ -243,7 +243,7 @@ class OperationRecorder(QueuingContext):
     """
 
     def __init__(self):
-        self.queue = None
+        self.queue = []
         self.operations = None
         self.observables = None
 
