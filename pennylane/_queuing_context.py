@@ -26,6 +26,8 @@ class QueuingContext(abc.ABC):
     def __enter__(self):
         QueuingContext._active_contexts.append(self)
 
+        return self
+
     def __exit__(self, exception_type, exception_value, traceback):
         QueuingContext._active_contexts.remove(self)
 
