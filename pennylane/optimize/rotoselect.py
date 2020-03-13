@@ -38,6 +38,11 @@ class RotoselectOptimizer:
     element-wise arc tangent of :math:`x/y` choosing the quadrant correctly, avoiding, in
     particular, division-by-zero when :math:`y = 0`.
 
+    Which parameters and gates that should be optimized over is decided in the user-defined cost
+    function, where :math:`R` would be passed on as gates in a quantum circuit, along
+    with the parameters :math:`\theta` for the circuit and its gates. Note that not all gates
+    or paramaters need to be optimized over.
+
     The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
     Keyword Args:
@@ -46,7 +51,7 @@ class RotoselectOptimizer:
 
     **Example:**
 
-    To start with we initialize the Rotoselect optimizer, set the initial values of  the weights ``x``,
+    Initialize the Rotoselect optimizer, set the initial values of  the weights ``x``,
     choose the initial generators, and set the number of steps to optimize over.
 
     >>> opt = qml.optimize.RotoselectOptimizer()
@@ -54,7 +59,18 @@ class RotoselectOptimizer:
     >>> generators = [qml.RX, qml.RY]
     >>> n_steps = 1000
 
-    Define a cost function based on a PennyLane circuit
+    Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
+
+    >>> dev = qml.device("default.qubit", analytic=True, wires=2)
+
+    >>> @qml.qnode(dev)
+    >>> def circuit(params, generators=None):  # generators will be passed as a keyword arg
+    >>>     generators[0](params[0], wires=0)
+    >>>     generators[1](params[1], wires=1)
+    >>>     qml.CNOT(wires=[0, 1])
+    >>>     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
+
+    Define a cost function based on the above circuit.
 
     >>> def cost(x, generators):
     >>>     X_1, Y_2 = circuit(x, generators=generators)
@@ -72,17 +88,17 @@ class RotoselectOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, possible_generators=[qml.RX, qml.RY, qml.RZ]):
-        self.possible_generators = possible_generators
+    def __init__(self, possible_generators=None):
+        self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
 
     def step(self, objective_fn, x, generators):
-        """Update x with one step of the optimizer.
+        r"""Update x with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
-                signature ``objective_fn(x, generators=None)`` with an array of the values ``x``
+                signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
                 and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[array[float], float]): NumPy array containing the initial values of the
+            x (Union[Sequence[float], float]): Sequence containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
@@ -100,19 +116,19 @@ class RotoselectOptimizer:
         return unflatten(x_flat, x), generators
 
     def _find_optimal_generators(self, objective_fn, x, generators, d):
-        """Optimizer for the generators.
+        r"""Optimizer for the generators.
 
         Optimizes for the best generator at position ``d``.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
-                signature ``objective_fn(x, generators=None)`` with an array of the values ``x``
+                signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
                 and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[array[float], float]): NumPy array containing the initial values of the
+            x (Union[Sequence[float], float]): Sequence containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
-            d (int): The position in the input array ``x`` containing the value to be optimized.
+            d (int): The position in the input sequence ``x`` containing the value to be optimized.
 
         Returns:
             tuple: Tuple containing the parameter value and generator that, at position ``d`` in
@@ -137,20 +153,23 @@ class RotoselectOptimizer:
 
     @staticmethod
     def _rotosolve(objective_fn, x, generators, d):
-        """The rotosolve step for one parameter and one set of generators.
+        r"""The rotosolve step for one parameter and one set of generators.
+
+        Updates the parameter :math:`\theta_d` based on Equation 1 in
+        `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the
-                signature ``objective_fn(x, generators=None)`` with an array of the values ``x``
+                signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
                 and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[array[float], float]): NumPy array containing the initial values of the
+            x (Union[Sequence[float], float]): Sequence containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
             generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
-            d (int): The position in the input array ``x`` containing the value to be optimized.
+            d (int): The position in the input sequence ``x`` containing the value to be optimized.
 
         Returns:
-            array: The input array ``x`` with the value at position ``d`` optimized.
+            array: The input sequence ``x`` with the value at position ``d`` optimized.
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):

@@ -40,14 +40,30 @@ class RotosolveOptimizer:
 
     **Example:**
 
-    Initialize the optimizer, define a cost function (that takes a list of values as input and
-    return a single value), set the initial values of ``x`` to be used and set the number of steps
-    to optimize over.
+    Initialize the optimizer, set the initial values of ``x`` to be used and set the number of
+    steps to optimize over.
 
     >>> opt = qml.optimize.RotosolveOptimizer()
-    >>> cost = lambda x: np.cos(x[0]) + np.sin(x[1])
     >>> x = [0.3, 0.7]
     >>> n_steps = 1000
+
+    Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
+
+    >>> dev = qml.device("default.qubit", analytic=True, wires=2)
+
+    >>> @qml.qnode(dev)
+    >>> def circuit(params):
+    >>>     qml.RX(params[0], wires=0)
+    >>>     qml.RY(params[1], wires=1)
+    >>>     qml.CNOT(wires=[0, 1])
+    >>>     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
+
+    Define a cost function (that takes a list of values as input and return a single value) based
+    on the above circuit.
+
+    >>> def cost(x):
+    >>>     X_1, Y_2 = circuit(x)
+    >>>     return 0.2 * X_1 + 0.5 * Y_2
 
     Run the optimization step-by-step for ``n_steps`` steps.
 
@@ -62,13 +78,13 @@ class RotosolveOptimizer:
     # pylint: disable=too-few-public-methods
 
     def step(self, objective_fn, x):
-        """Update x with one step of the optimizer.
+        r"""Update x with one step of the optimizer.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take an
-                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+            objective_fn (function): The objective function for optimization. It should take a
+                sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[array[float], float]): NumPy array containing the initial values of the
+            x (Union[Sequence[float], float]): Sequence containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
 
         Returns:
@@ -83,17 +99,21 @@ class RotosolveOptimizer:
 
     @staticmethod
     def _rotosolve(objective_fn, x, d):
-        """The rotosolve step for one parameter.
+        r"""The rotosolve step for one parameter.
+
+        Updates the parameter :math:`\theta_d` based on Equation 1 in
+        `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
         Args:
-            objective_fn (function): The objective function for optimization. It should take an
-                array of the values ``x`` and a list of the gates ``generators`` as inputs, and
+            objective_fn (function): The objective function for optimization. It should take a
+                sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[array[float], float]): NumPy array containing the initial values of the
+            x (Union[Sequence[float], float]): Sequence containing the initial values of the
                 variables to be optimized over, or a single float with the initial value.
+            d (int): The position in the input sequence ``x`` containing the value to be optimized.
 
         Returns:
-            array: The input array ``x`` with the value at position ``d`` optimized.
+            array: The input sequence ``x`` with the value at position ``d`` optimized.
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):
