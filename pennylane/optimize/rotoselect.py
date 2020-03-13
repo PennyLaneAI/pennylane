@@ -79,8 +79,8 @@ class RotoselectOptimizer:
 
     >>> cost_rotosel = []
     >>> for _ in range(n_steps):
-    >>>     cost_rotosel.append(cost(x, generators))
-    >>>     x, generators = opt.step(cost, x, generators)
+    ...     cost_rotosel.append(cost(x, generators))
+    ...     x, generators = opt.step(cost, x, generators)
 
     The optimized values for x should now be stored in ``x`` together with the optimal gates for
     the circuit, while steps-vs-cost can be seen by plotting ``cost_rotosel``.
