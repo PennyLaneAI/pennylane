@@ -59,10 +59,16 @@ class QueuingContext(abc.ABC):
 
     @classmethod
     def remove_operator(cls, operator):
-        """Remove an operator from the global queue(s).
+        """Remove an operator from the global queue(s) if it is in the queue(s).
 
         Args:
             operator (Operator): The Operator instance to be removed
         """
         for context in cls._active_contexts:
-            context._remove_operator(operator) # pylint: disable=protected-access
+            # We use the duck-typing approach to assume that the underlying remove
+            # behaves like list.remove and throws an ValueError if the operator
+            # is not in the list
+            try:
+                context._remove_operator(operator) # pylint: disable=protected-access
+            except ValueError:
+                pass
