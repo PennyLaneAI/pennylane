@@ -30,6 +30,27 @@ INPUT_ARG = "inputs"
 class KerasLayer(Layer):
     """A Keras layer for integrating PennyLane QNodes with the Keras API.
 
+    This class converts a :class:`~.QNode` to a Keras layer. The QNode must have a signature that
+    satisfies the following conditions:
+
+    - Contain an ``inputs`` argument for inputting data. All other arguments are treated as
+      weights within the QNode.
+    - All arguments must accept an array or tensor, e.g., arguments should not use nested lists
+      of different lengths.
+    - All arguments, except ``inputs``, must have no default value.
+    - The ``inputs`` argument is permitted to have a default value provided the gradient with
+      respect to ``inputs`` is not required.
+    - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args`` or
+      ``**kwargs`` present in the signature.
+
+    The QNode weights are initialized within the :class:`~.KerasLayer`. Upon instantiation,
+    a ``weight_shapes`` dictionary must hence be passed which describes the shapes of all
+    weights in the QNode. The optional ``weight_specs`` argument allows for a more fine-grained
+    specification of the QNode weights, such as the method of initialization and any
+    regularization or constraints. If not specified, weights will be added using the Keras
+    default initialization and without any regularization
+    or constraints.
+
     **Example usage:**
 
     .. code-block:: python
@@ -62,7 +83,7 @@ class KerasLayer(Layer):
             initialization. This specification is provided as a dictionary with keys given by the
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
-            (e.g., ``initializer``) and values being the corresponding specification.
+            (e.g., ``initializer``) method and values being the corresponding specification.
         **kwargs: additional keyword arguments passed to the `Layer
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__ base class
     """
@@ -75,7 +96,6 @@ class KerasLayer(Layer):
         **kwargs
     ):
         self.sig = qnode.func.sig
-        print(self.sig)
         if INPUT_ARG not in self.sig:
             raise TypeError(
                 "QNode must include an argument with name {} for inputting data".format(INPUT_ARG)
