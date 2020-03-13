@@ -8,4 +8,4 @@ qml.qnn
     :include-all-objects:
     :no-inheritance-diagram:
     :no-inherited-members:
-    :skip: INPUT_ARG, Iterable, Layer, Optional
+    :skip: CORRECT_TF_VERSION, INPUT_ARG, Iterable, Layer, Optional
