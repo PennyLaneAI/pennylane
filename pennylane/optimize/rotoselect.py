@@ -71,8 +71,8 @@ class RotoselectOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, **kwargs):
-        self.possible_generators = kwargs.get("possible_generators", [qml.RX, qml.RY, qml.RZ])
+    def __init__(self, possible_generators=[qml.RX, qml.RY, qml.RZ]):
+        self.possible_generators = possible_generators
 
     def step(self, objective_fn, x, generators):
         """Update x with one step of the optimizer.
