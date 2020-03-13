@@ -61,8 +61,8 @@ class RotosolveOptimizer:
     on the above circuit.
 
     >>> def cost(x):
-    >>>     X_1, Y_2 = circuit(x)
-    >>>     return 0.2 * X_1 + 0.5 * Y_2
+    ...     X_1, Y_2 = circuit(x)
+    ...     return 0.2 * X_1 + 0.5 * Y_2
 
     Run the optimization step-by-step for ``n_steps`` steps.
 
