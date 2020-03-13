@@ -136,8 +136,7 @@ class VQECost:
             where ``params`` are the trainable weights of the variational circuit, and
             ``kwargs`` are any additional keyword arguments that need to be passed
             to the template.
-        hamiltonian (qml.vqe.Hamiltonian): Hamiltonian operator (represented using the class
-            :class:`~.Hamiltonian`) whose expectation value should be measured.
+        hamiltonian (~.Hamiltonian): Hamiltonian operator whose expectation value should be measured
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             cost function should be executed. This can either be a single device, or a list
             of devices of length matching the number of terms in the Hamiltonian.
