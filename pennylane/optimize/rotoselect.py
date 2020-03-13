@@ -108,6 +108,13 @@ class RotoselectOptimizer:
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
 
+        try:
+            assert len(x_flat) == len(generators)
+        except AssertionError:
+            raise ValueError(
+                "Number of parameters {} must be equal to the number of generators.".format(x)
+            )
+
         for d, _ in enumerate(x_flat):
             x_flat[d], generators[d] = self._find_optimal_generators(
                 objective_fn, x_flat, generators, d
