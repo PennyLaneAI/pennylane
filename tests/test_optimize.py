@@ -527,7 +527,7 @@ class TestOptimizer:
 
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    @pytest.mark.parametrize('x_start', [0.5, -1.14, [0.3, 0.25], [-0.6, 0.45], [1.3, -0.9]])
+    @pytest.mark.parametrize('x_start', [[0.3, 0.25], [-0.6, 0.45], [1.3, -0.9]])
     @pytest.mark.parametrize('generators', [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)])
     def test_rotoselect_optimizer(self, x_start, generators, bunch, tol):
         """Tests that rotoselect optimizer takes one and two steps correctly for the VQE circuit
