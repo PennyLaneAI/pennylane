@@ -304,7 +304,7 @@ class BaseQNode(QueuingContext):
             self.obs_queue.remove(operator)
         else:
             self.queue.remove(operator)
-            
+
     def _append_operator(self, operator):
         if operator.num_wires == Wires.All:
             if set(operator.wires) != set(range(self.num_wires)):
@@ -478,12 +478,8 @@ class BaseQNode(QueuingContext):
                 the nesting structure.
                 Each positional argument is replaced with a :class:`~.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
-
-        Raises:
-            QuantumFunctionError: if :data:`pennylane._current_context` is attempted to be modified
-                inside of this method, the quantum function returns incorrect values or if
-                both continuous and discrete operations are specified in the same quantum circuit
         """
+        # TODO: Update the docstring to reflect the kwargs and the raising conditions
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
         self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
