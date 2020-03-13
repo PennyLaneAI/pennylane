@@ -62,13 +62,12 @@ class RotoselectOptimizer:
     Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
 
     >>> dev = qml.device("default.qubit", analytic=True, wires=2)
-
     >>> @qml.qnode(dev)
-    >>> def circuit(params, generators=None):  # generators will be passed as a keyword arg
-    >>>     generators[0](params[0], wires=0)
-    >>>     generators[1](params[1], wires=1)
-    >>>     qml.CNOT(wires=[0, 1])
-    >>>     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
+    ... def circuit(params, generators=None):  # generators will be passed as a keyword arg
+    ...     generators[0](params[0], wires=0)
+    ...     generators[1](params[1], wires=1)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
 
     Define a cost function based on the above circuit.
 
