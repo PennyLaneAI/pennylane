@@ -21,12 +21,12 @@ from pennylane.utils import _flatten, unflatten
 class RotoselectOptimizer:
     r"""Rotoselect gradient free optimizer.
 
-    The Rotoselect optimizer minimizes an objective function with respect to the parameters and
-    gates of a quantum circuit without the need for calculating the gradient of the function. The
-    algorithm works by updating the parameters :math:`\theta = \theta_1, \dots, \theta_D` and gate
-    choices :math:`R = R_1,\dots,R_D` one at a time according to a closed-form expression for the
-    optimal value of the :math:`d^{th}` parameter :math:`\theta^*_d` when the other parameters and
-    gate choices are fixed:
+    The Rotoselect optimizer minimizes an objective function with respect to the rotation gates and
+    parameters of a quantum circuit without the need for calculating the gradient of the function.
+    The algorithm works by updating the parameters :math:`\theta = \theta_1, \dots, \theta_D`
+    and rotation gate choices :math:`R = R_1,\dots,R_D` one at a time according to a closed-form
+    expression for the optimal value of the :math:`d^{th}` parameter :math:`\theta^*_d` when the
+    other parameters and gate choices are fixed:
 
     .. math:: \theta^*_d = \underset{\theta_d}{\text{argmin}}\left<H\right>_{\theta_d}
               = -\frac{\pi}{2} - \text{arctan2}\left(2\left<H\right>_{\theta_d=0}
@@ -39,15 +39,16 @@ class RotoselectOptimizer:
     particular, division-by-zero when :math:`y = 0`.
 
     Which parameters and gates that should be optimized over is decided in the user-defined cost
-    function, where :math:`R` would be passed on as gates in a quantum circuit, along
-    with the parameters :math:`\theta` for the circuit and its gates. Note that not all gates
-    or paramaters need to be optimized over.
+    function, where :math:`R` is a list of parametrized rotation gates in a quantum circuit, along
+    with their respective parameters :math:`\theta` for the circuit and its gates. Note that the
+    number of generators should match the number of parameters.
 
     The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
     Args:
-        possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit`` operators
-            that are allowed in the circuit. Default is the set of Pauli matrices :math:`\{R_x, R_y, R_z\}`.
+        possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit``
+        operators that are allowed in the circuit. Default is the set of Pauli rotations
+        :math:`\{R_x, R_y, R_z\}`.
 
     **Example:**
 
