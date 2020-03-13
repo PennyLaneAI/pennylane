@@ -683,9 +683,9 @@ class CRY(Operation):
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
-            U3(theta / 2, 0, 0, wires=wires[1]),
+            RY(theta / 2, wires=wires[1]),
             CNOT(wires=wires),
-            U3(-theta / 2, 0, 0, wires=wires[1]),
+            RY(-theta / 2, wires=wires[1]),
             CNOT(wires=wires),
         ]
         return decomp_ops
