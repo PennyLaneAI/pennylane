@@ -22,6 +22,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
+from pennylane import QueuingContext
 from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
@@ -131,7 +132,7 @@ def decompose_queue(ops, device):
     return new_ops
 
 
-class BaseQNode:
+class BaseQNode(QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
     A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
@@ -206,22 +207,6 @@ class BaseQNode:
         """String representation."""
         detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
-
-    def __enter__(self):
-        """Make this node the current execution context for quantum functions.
-        """
-        if qml._current_context is None:
-            qml._current_context = self
-        else:
-            raise QuantumFunctionError(
-                "qml._current_context must not be modified outside this method."
-            )
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Reset the quantum function execution context to None.
-        """
-        qml._current_context = None
 
     def print_applied(self):
         """Prints the most recently applied operations from the QNode.
@@ -314,48 +299,37 @@ class BaseQNode:
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
 
-    def _remove_op(self, op):
-        """Remove a quantum operation from the circuit queue.
-
-        Args:
-            op (:class:`~.operation.Operation`): quantum operation to be removed from the circuit
-        """
-        self.queue.remove(op)
-
-    def _append_op(self, op):
-        """Append a quantum operation into the circuit queue.
-
-        Args:
-            op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
-
-        Raises:
-            ValueError: if `op` does not act on all wires
-            QuantumFunctionError: if state preparations and gates do not precede measured observables
-        """
-        if op.num_wires == Wires.All:
-            if set(op.wires) != set(range(self.num_wires)):
-                raise QuantumFunctionError("Operator {} must act on all wires".format(op.name))
+    def _remove_operator(self, operator):
+        if isinstance(operator, Observable) and operator.return_type is not None:
+            self.obs_queue.remove(operator)
+        else:
+            self.queue.remove(operator)
+            
+    def _append_operator(self, operator):
+        if operator.num_wires == Wires.All:
+            if set(operator.wires) != set(range(self.num_wires)):
+                raise QuantumFunctionError("Operator {} must act on all wires".format(operator.name))
 
         # Make sure only existing wires are used.
-        for w in _flatten(op.wires):
+        for w in _flatten(operator.wires):
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with {} wires.".format(op.name, w, self.num_wires)
+                    "on device with {} wires.".format(operator.name, w, self.num_wires)
                 )
 
         # observables go to their own, temporary queue
-        if isinstance(op, Observable):
-            if op.return_type is None:
-                self.queue.append(op)
+        if isinstance(operator, Observable):
+            if operator.return_type is None:
+                self.queue.append(operator)
             else:
-                self.obs_queue.append(op)
+                self.obs_queue.append(operator)
         else:
             if self.obs_queue:
                 raise QuantumFunctionError(
                     "State preparations and gates must precede measured observables."
                 )
-            self.queue.append(op)  # TODO rename self.queue to self.op_queue
+            self.queue.append(operator)
 
     def _determine_structured_variable_name(self, parameter_value, prefix):
         """Determine the variable names corresponding to a parameter.
