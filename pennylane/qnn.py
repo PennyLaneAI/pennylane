@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test"""
+"""This module contains the :class:`~.KerasLayer` class for integrating QNodes with the Keras
+layer API."""
 import functools
 import inspect
 from collections.abc import Iterable
@@ -27,6 +28,44 @@ INPUT_ARG = "inputs"
 
 
 class KerasLayer(Layer):
+    """A Keras layer for integrating PennyLane QNodes with the Keras API.
+
+    **Example usage:**
+
+    .. code-block:: python
+
+        n_qubits = 2
+        dev = qml.dev("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(inputs, weights):
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        weight_shapes = {"weights": (3, n_qubits, 3)}
+        weight_specs = {"weights": {"initializer": "random_uniform"}}
+
+        qnode = qml.qnn.KerasLayer(circuit, weight_shapes, 2, weight_specs)
+
+    The resulting ``qnode`` can be treated as a Keras layer and can be combined with other layers
+    using the `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
+    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ APIs.
+
+    Args:
+        qnode (qml.QNode): the PennyLane QNode to be converted into a Keras layer
+        weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
+            their corresponding sizes
+        output_dim (int): the dimension of data output from the QNode
+        weight_specs (dict[str, dict]): an optional dictionary for users to provide additional
+            specifications for weights used in the QNode, such as the method of parameter
+            initialization. This specification is provided as a dictionary with keys given by the
+            arguments of the `add_weight()
+            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
+            (e.g., ``initializer``) and values being the corresponding specification.
+        **kwargs: additional keyword arguments passed to the `Layer
+            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__ base class
+    """
     def __init__(
         self,
         qnode: QNode,
@@ -36,6 +75,7 @@ class KerasLayer(Layer):
         **kwargs
     ):
         self.sig = qnode.func.sig
+        print(self.sig)
         if INPUT_ARG not in self.sig:
             raise TypeError(
                 "QNode must include an argument with name {} for inputting data".format(INPUT_ARG)
@@ -73,7 +113,7 @@ class KerasLayer(Layer):
         super(KerasLayer, self).__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
-        """Initializes the :class:`~.KerasLayer` weights.
+        """Initializes the QNode weights.
 
         Args:
             input_shape (tuple or tf.TensorShape): shape of input data
@@ -85,8 +125,7 @@ class KerasLayer(Layer):
         super(KerasLayer, self).build(input_shape)
 
     def call(self, inputs):
-        """Evaluates the :class:`~.KerasLayer` on input data using the
-        :attr:`~.KerasLayer.qnode_weights`.
+        """Evaluates the QNode on input data using the initialized weights.
 
         Args:
             inputs (tensor): data to be processed
@@ -115,7 +154,7 @@ class KerasLayer(Layer):
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
-        :class:`~.KerasLayer`.
+        QNode.
 
         Args:
             input_shape (tuple or tf.TensorShape): shape of input data
