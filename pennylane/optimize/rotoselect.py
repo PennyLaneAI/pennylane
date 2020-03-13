@@ -47,7 +47,7 @@ class RotoselectOptimizer:
 
     Args:
         possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit`` operators
-            that are allowed in the circuit. Default is the set of Pauli matrices :math:`\{X, Y, Z\}`.
+            that are allowed in the circuit. Default is the set of Pauli matrices :math:`\{R_x, R_y, R_z\}`.
 
     **Example:**
 
