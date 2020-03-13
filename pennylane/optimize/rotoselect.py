@@ -59,7 +59,7 @@ class RotoselectOptimizer:
     >>> generators = [qml.RX, qml.RY]
     >>> n_steps = 1000
 
-    Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
+    Set up the PennyLane circuit using the ``default.qubit`` simulator device.
 
     >>> dev = qml.device("default.qubit", analytic=True, wires=2)
     >>> @qml.qnode(dev)
