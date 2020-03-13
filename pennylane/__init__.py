@@ -154,7 +154,7 @@ def device(name, *args, **kwargs):
 
             if 'analytic' in config['main']:
                 signature = inspect.signature(plugin_device_class)
-                print(signature)
+
                 if 'analytic' not in str(signature):
                     # remove the analytic option if the device does not support it
                     del config["main"]['analytic']
