@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Test"""
 import functools
 import inspect
 from collections.abc import Iterable
@@ -72,6 +73,11 @@ class KerasLayer(Layer):
         super(KerasLayer, self).__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
+        """Initializes the :class:`~.KerasLayer` weights.
+
+        Args:
+            input_shape (tuple or tf.TensorShape): shape of input data
+        """
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
             self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
@@ -79,6 +85,15 @@ class KerasLayer(Layer):
         super(KerasLayer, self).build(input_shape)
 
     def call(self, inputs):
+        """Evaluates the :class:`~.KerasLayer` on input data using the
+        :attr:`~.KerasLayer.qnode_weights`.
+
+        Args:
+            inputs (tensor): data to be processed
+
+        Returns:
+            tensor: output data
+        """
         outputs = []
         for x in inputs:
             qnode = self.qnode
@@ -99,6 +114,15 @@ class KerasLayer(Layer):
         return tf.stack(outputs)
 
     def compute_output_shape(self, input_shape):
+        """Computes the output shape after passing data of shape ``input_shape`` through the
+        :class:`~.KerasLayer`.
+
+        Args:
+            input_shape (tuple or tf.TensorShape): shape of input data
+
+        Returns:
+            tf.TensorShape: shape of output data
+        """
         return tf.TensorShape([input_shape[0], self.output_dim])
 
     def __str__(self):
