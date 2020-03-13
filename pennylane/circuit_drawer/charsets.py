@@ -128,6 +128,7 @@ class UnicodeCharSet(CharSet):
         "7": "⁷",
         "8": "⁸",
         "9": "⁹",
+        "-": "⁻",
     }
 
     _subscript_dict = {
@@ -141,6 +142,7 @@ class UnicodeCharSet(CharSet):
         "7": "₇",
         "8": "₈",
         "9": "₉",
+        "-": "₋",
     }
 
     @staticmethod

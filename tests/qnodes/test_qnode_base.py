@@ -199,6 +199,56 @@ class TestQNodeOperationQueue:
 
         assert out == expected_qnode_print.format(x=0.1)
 
+    def test_print_applied_with_probs(self, mock_device):
+        """Test that printing applied gates works correctly when probs are returned"""
+
+        H = np.array([[0, 1], [1, 0]])
+
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.SWAP(wires=[1, 0])
+            qml.RZ(-0.2, wires=[1])
+            return qml.probs(wires=[0]), qml.var(qml.Hermitian(H, wires=1))
+
+        expected_qnode_print = textwrap.dedent(
+            """\
+            Operations
+            ==========
+            RX({x}, wires=[0])
+            CNOT(wires=[0, 1])
+            SWAP(wires=[1, 0])
+            RZ(-0.2, wires=[1])
+
+            Observables
+            ===========
+            probs(wires=[0])
+            var(Hermitian([[0 1]
+             [1 0]], wires=[1]))"""
+        )
+
+        node = BaseQNode(circuit, mock_device)
+
+        # test before construction
+        f = io.StringIO()
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == "QNode has not yet been executed."
+
+        # construct QNode
+        f = io.StringIO()
+        node._set_variables([0.1], {})
+        node._construct([0.1], {})
+
+        with contextlib.redirect_stdout(f):
+            node.print_applied()
+            out = f.getvalue().strip()
+
+        assert out == expected_qnode_print.format(x=0.1)
+
     def test_operation_appending(self, mock_device):
         """Tests that operations are correctly appended."""
         CNOT = qml.CNOT(wires=[0, 1])
@@ -420,7 +470,8 @@ class TestQNodeExceptions:
             qml.RX(x, wires=[1])  # on its own component in the circuit graph
             return qml.expval(qml.PauliZ(0))
 
-        node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"vis_check": True})
+        kwargs = {"vis_check": True}
+        node = BaseQNode(circuit, operable_mock_device_2_wires, **kwargs)
         with pytest.raises(QuantumFunctionError, match="cannot affect the circuit output"):
             node(0.5)
 
@@ -552,7 +603,8 @@ class TestQNodeExceptions:
             qml.RX(a, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        node = BaseQNode(circuit, operable_mock_device_2_wires, properties={"par_check": True})
+        kwargs = {"par_check": True}
+        node = BaseQNode(circuit, operable_mock_device_2_wires, **kwargs)
         with pytest.raises(QuantumFunctionError, match="The positional parameters"):
             node(1.0, 2.0)
 
