@@ -21,7 +21,7 @@ class RotosolveOptimizer:
     r"""Rotosolve gradient free optimizer.
 
     The Rotosolve optimizer minimizes an objective function with respect to the parameters of a
-    quantum circuit without the need of calculating the gradient of the function. The algorithm
+    quantum circuit without the need for calculating the gradient of the function. The algorithm
     works by updating the parameters :math:`\theta = \theta_1, \dots, \theta_D` one at a time
     according to a closed-form expression for the optimal value of the :math:`d^{th}` parameter
     :math:`\theta^*_d` when the other parameters are fixed:
