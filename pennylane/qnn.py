@@ -87,6 +87,7 @@ class KerasLayer(Layer):
         **kwargs: additional keyword arguments passed to the `Layer
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__ base class
     """
+
     def __init__(
         self,
         qnode: QNode,
