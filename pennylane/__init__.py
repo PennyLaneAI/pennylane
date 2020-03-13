@@ -43,6 +43,7 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
+from ._queuing_context import QueuingContext
 
 
 _current_context = None
