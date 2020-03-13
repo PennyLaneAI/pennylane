@@ -45,7 +45,7 @@ class RotoselectOptimizer:
 
     The algorithm is described in further detail in `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
 
-    Keyword Args:
+    Args:
         possible_generators (list[~.Operation]): List containing the possible ``pennylane.ops.qubit`` operators
             that are allowed in the circuit. Default is the set of Pauli matrices :math:`\{X, Y, Z\}`.
 
