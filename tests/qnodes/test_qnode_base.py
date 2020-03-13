@@ -1017,8 +1017,6 @@ class TestDecomposition:
 
         res = decompose_queue(queue, operable_mock_device_2_wires_with_inverses)
 
-        print([op.name for op in res])
-        print([op.parameters for op in res])
 
         assert len(res) == 9
 
