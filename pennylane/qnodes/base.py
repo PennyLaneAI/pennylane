@@ -308,7 +308,9 @@ class BaseQNode(QueuingContext):
     def _append_operator(self, operator):
         if operator.num_wires == Wires.All:
             if set(operator.wires) != set(range(self.num_wires)):
-                raise QuantumFunctionError("Operator {} must act on all wires".format(operator.name))
+                raise QuantumFunctionError(
+                    "Operator {} must act on all wires".format(operator.name)
+                )
 
         # Make sure only existing wires are used.
         for w in _flatten(operator.wires):

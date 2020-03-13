@@ -16,6 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 import abc
 
+
 class QueuingContext(abc.ABC):
     """Abstract base class for classes that exposes a queue for Operations.
     """
@@ -47,7 +48,7 @@ class QueuingContext(abc.ABC):
             operator (Operator): The Operator instance to be appended
         """
         for context in cls._active_contexts:
-            context._append_operator(operator) # pylint: disable=protected-access
+            context._append_operator(operator)  # pylint: disable=protected-access
 
     @abc.abstractmethod
     def _remove_operator(self, operator):
@@ -69,6 +70,6 @@ class QueuingContext(abc.ABC):
             # behaves like list.remove and throws an ValueError if the operator
             # is not in the list
             try:
-                context._remove_operator(operator) # pylint: disable=protected-access
+                context._remove_operator(operator)  # pylint: disable=protected-access
             except ValueError:
                 pass
