@@ -229,10 +229,7 @@ class Operator(abc.ABC):
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into a :class:`BaseQNode` circuit queue.
-            The circuit queue is determined by the presence of an
-            applicable `qml._current_context`. If no context is
-            available, this argument is ignored.
+            immediately pushed into the Operator queue.
     """
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
@@ -336,7 +333,7 @@ class Operator(abc.ABC):
         self._check_wires(wires)
         self._wires = wires  #: tuple[int]: wires on which the operator acts
 
-        if do_queue and (qml._current_context is not None):
+        if do_queue:
             self.queue()
 
     def __str__(self):
@@ -464,9 +461,9 @@ class Operator(abc.ABC):
         return [evaluate(p) for p in self.params]
 
     def queue(self):
-        """Append the operator to a BaseQNode queue."""
+        """Append the operator to the Operator queue."""
+        qml.QueuingContext._append_operator(self)
 
-        qml._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
@@ -688,10 +685,7 @@ class Observable(Operator):
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`BaseQNode` observable queue.
-            The observable queue is determined by the presence of an
-            applicable `qml._current_context`. If no context is
-            available, this argument is ignored.
+            immediately pushed into the Operator queue.
     """
 
     # pylint: disable=abstract-method
