@@ -57,8 +57,12 @@ def expval(op):
     if isinstance(op, Tensor):
         for o in op.obs:
             qml.QueuingContext.remove_operator(o)
+    else:
+        qml.QueuingContext.remove_operator(op)
 
     op.return_type = Expectation
+
+    qml.QueuingContext.append_operator(op)
 
     return op
 
@@ -98,8 +102,12 @@ def var(op):
     if isinstance(op, Tensor):
         for o in op.obs:
             qml.QueuingContext.remove_operator(o)
+    else:
+        qml.QueuingContext.remove_operator(op)
 
     op.return_type = Variance
+
+    qml.QueuingContext.append_operator(op)
 
     return op
 
@@ -140,8 +148,12 @@ def sample(op):
     if isinstance(op, Tensor):
         for o in op.obs:
             qml.QueuingContext.remove_operator(o)
+    else:
+        qml.QueuingContext.remove_operator(op)
 
     op.return_type = Sample
+
+    qml.QueuingContext.append_operator(op)
 
     return op
 
