@@ -31,7 +31,7 @@ def cnot_ring_layer(weights, wires, rotation):
     r"""A layer applying a one-parameter single-qubit rotation on each qubit, followed by a chain of CNOT gates.
 
     Args:
-        weights (array[float]): array of weights of shape ``(len(wires), 3)``
+        weights (array[float]): array of weights of shape ``(len(wires),)``
         wires (Sequence[int]): sequence of qubit indices that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             defaults to :class:`~pennylane.ops.RX`
@@ -48,43 +48,100 @@ def CnotRingLayers(weights, wires, rotation=None):
     The ring of CNOT gates connects every qubit with its neighbour, whereas the last qubit is considered to be
     a neighbour of the first qubit.
 
-    .. figure:: ../../_static/cnot_ring.png
+    .. figure:: ../../_static/templates/layers/cnot_ring.png
         :align: center
-        :width: 60%
+        :width: 40%
         :target: javascript:void(0);
 
     The argument ``weights`` contains the weights for each layer. The number of layers :math:`L` is therefore derived
-    from the first dimension of ``weights``.
+    from the first dimension of ``weights``. When using a single wire, the template only applies the single qubit gates.
 
     .. note::
 
-        When using a single wire, the template only applies the single qubit gates:
+        Following the standard of dropping the entanglement between the last and the first qubit when using
+        only two wires, only one CNOT gate is applied in each layer in this case:
 
-        .. figure:: ../../_static/cnot_ring_1wire.png
-            :align: center
-            :width: 40%
-            :target: javascript:void(0);
-
-    .. note::
-
-        For two wires, only one CNOT gate is applied in each layer:
-
-        .. figure:: ../../_static/cnot_ring_2wires.png
+        .. figure:: ../../_static/templates/layers/cnot_ring_2wires.png
             :align: center
             :width: 30%
             :target: javascript:void(0);
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
+        weights (array[float]): array of weights of shape ``(L, len(wires))``
         wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
-                                            defaults to :class:`~pennylane.ops.RX`
+                                            if ``None`` :class:`~pennylane.ops.RX` is used as default
     Raises:
         ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
+        The template is used inside a qnode:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import CnotRingLayers
+            from math import pi
+
+            n_wires = 3
+            dev = qml.device('default.qubit', wires=n_wires)
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                CnotRingLayers(weights=weights, wires=range(n_wires))
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        >>> circuit([[pi, pi, pi]])
+        [1., 1., -1.]
+
+        **Parameter initialization function**
+
+        The :mod:`~pennylane.init` module has two parameter initialization functions, ``cnot_ring_layers_normal``
+        and ``cnot_ring_layers_uniform``.
+
+        .. code-block:: python
+
+            from pennylane.init import cnot_ring_layers_normal
+
+            n_layers = 4
+            weights = cnot_ring_layers_normal(n_layers=n_layers, n_wires=n_wires)
+
+            circuit(weights)
+
+
+        **No periodic boundary for two wires**
+
+        When using two wires, the convention is to drop the periodic boundary condition.
+        This means that the connection from the second to the first wire is omitted.
+
+        .. code-block:: python
+
+            n_wires = 2
+            dev = qml.device('default.qubit', wires=n_wires)
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                CnotRingLayers(weights=weights, wires=range(n_wires))
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        >>> circuit([[pi, pi]])
+        [-1, 1]
+
+
+        **Changing the rotation gate**
+
+        Another single-qubit gate than ``RX`` can be used, as long as it only takes a single parameter.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                CnotRingLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        Accidentally using a gate that expects more parameters throws a ``ValueError``.
 
     """
 
