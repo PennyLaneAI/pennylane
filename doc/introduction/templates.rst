@@ -150,6 +150,11 @@ Layer architectures define sequences of trainable gates that are repeated like t
     :description: CnotRingLayers
     :figure: ../_static/templates/layers/cnot_ring.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.CerezTwoDesignLayers.html
+    :description: CerezTwoDesignLayers
+    :figure: ../_static/templates/layers/cerez_two_design.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
