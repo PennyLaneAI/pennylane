@@ -126,7 +126,7 @@ class VQECost:
     expectation value of a Hamiltonian.
 
     Args:
-        ansatz (callable): The ansatz for the circuit before the final measurement step
+        ansatz (callable): The ansatz for the circuit before the final measurement step.
             Note that the ansatz **must** have the following signature:
 
             .. code-block:: python
@@ -136,6 +136,7 @@ class VQECost:
             where ``params`` are the trainable weights of the variational circuit, and
             ``kwargs`` are any additional keyword arguments that need to be passed
             to the template.
+        hamiltonian (~.Hamiltonian): Hamiltonian operator whose expectation value should be measured
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             cost function should be executed. This can either be a single device, or a list
             of devices of length matching the number of terms in the Hamiltonian.
