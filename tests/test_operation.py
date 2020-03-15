@@ -1031,16 +1031,16 @@ class TestDecomposition:
 
         assert len(rec.queue) == 4
 
-        assert rec.queue[0].name == "U3"
-        assert rec.queue[0].parameters == [phi/2, 0, 0]
+        assert rec.queue[0].name == "RY"
+        assert rec.queue[0].parameters == [phi/2]
         assert rec.queue[0].wires == [1]
 
         assert rec.queue[1].name == "CNOT"
         assert rec.queue[1].parameters == []
         assert rec.queue[1].wires == operation_wires
 
-        assert rec.queue[2].name == "U3"
-        assert rec.queue[2].parameters == [-phi/2, 0, 0]
+        assert rec.queue[2].name == "RY"
+        assert rec.queue[2].parameters == [-phi/2]
         assert rec.queue[2].wires == [1]
 
         assert rec.queue[3].name == "CNOT"
