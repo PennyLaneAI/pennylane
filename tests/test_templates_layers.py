@@ -22,9 +22,12 @@ from pennylane import numpy as np
 from pennylane.templates.layers import (CVNeuralNetLayers,
                                         StronglyEntanglingLayers,
                                         RandomLayers,
-                                        CnotRingLayers)
+                                        CnotRingLayers,
+                                        SimplifiedTwoDesignLayers)
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
+
+TOLERANCE = 1e-8
 
 
 class TestCVNeuralNet:
@@ -38,29 +41,29 @@ class TestCVNeuralNet:
     @pytest.fixture(scope="class")
     def weights(self):
         return [
-                np.array([[ 5.48791879, 6.08552046, 5.46131036, 3.33546468, 1.46227521, 0.0716208 ],
-                          [ 3.36869403, 0.63074883, 4.59400392, 5.9040016 , 5.92704296, 2.35455147]]),
-                np.array([[ 2.70471535, 2.52804815, 3.28406182, 3.0058243 , 3.48940764, 3.41419504],
-                         [ 3.74320919, 4.15936005, 3.20807161, 2.95870535, 0.05574621, 0.42660569]]),
-                np.array([[ 4.7808479 , 4.47598146, 3.89357744, 2.67721355],
-                         [ 2.73203094, 2.71115444, 1.16794164, 3.32823666]]),
-                np.array([[ 0.27344502, 0.68431314, 0.30026443, 0.23128064],
-                         [ 0.45945175, 0.53255468, 0.28383751, 0.34263728]]),
-                np.array([[2.3936353, 4.80135971, 5.89867895, 2.00867023],
-                          [5.14552399, 3.31578667, 5.90119363, 4.54515204]]),
-            np.array([[ 0.4134863 , 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
-                         [ 5.16969442, 3.6890488 , 4.43916808, 3.20808287, 5.21543123, 4.52815349]]),
-                np.array([[ 2.47328111, 5.63064513, 2.17059932, 6.1873632 , 0.18052879, 2.20970037],
-                         [ 5.44288268, 1.27806129, 1.87574979, 2.98956484, 3.10140853, 3.81814174]]),
-                np.array([[ 5.03318258, 4.01017269, 0.43159284, 3.7928101 ],
-                         [ 3.5329307 , 4.79661266, 5.0683084 , 1.87631749]]),
-                np.array([[ 1.61159166, 0.1608155 , 0.96535086, 1.60132783],
-                         [ 0.36293094, 1.30725604, 0.11578591, 1.5983082 ]]),
-                np.array([[ 6.21267547, 3.71076099, 0.34060195, 2.86031556],
-                         [ 3.20443756, 6.26536946, 6.18450567, 1.50406923]]),
-                np.array([[ 0.1376345 , 0.22541113, 0.14306356, 0.13019402],
-                         [ 0.26999146, 0.26256351, 0.14722687, 0.23137066]])
-            ]
+            np.array([[5.48791879, 6.08552046, 5.46131036, 3.33546468, 1.46227521, 0.0716208],
+                      [3.36869403, 0.63074883, 4.59400392, 5.9040016, 5.92704296, 2.35455147]]),
+            np.array([[2.70471535, 2.52804815, 3.28406182, 3.0058243, 3.48940764, 3.41419504],
+                      [3.74320919, 4.15936005, 3.20807161, 2.95870535, 0.05574621, 0.42660569]]),
+            np.array([[4.7808479, 4.47598146, 3.89357744, 2.67721355],
+                      [2.73203094, 2.71115444, 1.16794164, 3.32823666]]),
+            np.array([[0.27344502, 0.68431314, 0.30026443, 0.23128064],
+                      [0.45945175, 0.53255468, 0.28383751, 0.34263728]]),
+            np.array([[2.3936353, 4.80135971, 5.89867895, 2.00867023],
+                      [5.14552399, 3.31578667, 5.90119363, 4.54515204]]),
+            np.array([[0.4134863, 6.17555778, 0.80334114, 2.02400747, 0.44574704, 1.41227118],
+                      [5.16969442, 3.6890488, 4.43916808, 3.20808287, 5.21543123, 4.52815349]]),
+            np.array([[2.47328111, 5.63064513, 2.17059932, 6.1873632, 0.18052879, 2.20970037],
+                      [5.44288268, 1.27806129, 1.87574979, 2.98956484, 3.10140853, 3.81814174]]),
+            np.array([[5.03318258, 4.01017269, 0.43159284, 3.7928101],
+                      [3.5329307, 4.79661266, 5.0683084, 1.87631749]]),
+            np.array([[1.61159166, 0.1608155, 0.96535086, 1.60132783],
+                      [0.36293094, 1.30725604, 0.11578591, 1.5983082]]),
+            np.array([[6.21267547, 3.71076099, 0.34060195, 2.86031556],
+                      [3.20443756, 6.26536946, 6.18450567, 1.50406923]]),
+            np.array([[0.1376345, 0.22541113, 0.14306356, 0.13019402],
+                      [0.26999146, 0.26256351, 0.14722687, 0.23137066]])
+        ]
 
     def test_cvneuralnet_uses_correct_weights(self, weights):
         """Tests that the CVNeuralNetLayers template uses the weigh parameters correctly."""
@@ -77,7 +80,7 @@ class TestCVNeuralNet:
             # count the position of each group of gates in the layer
             num_gates_per_type = [0, 6, 4, 4, 6, 4, 4, 4]
             s = np.cumsum(num_gates_per_type)
-            gc = l*sum(num_gates_per_type)+np.array(list(zip(s[:-1], s[1:])))
+            gc = l * sum(num_gates_per_type) + np.array(list(zip(s[:-1], s[1:])))
 
             # loop through expected gates
             for idx, g in enumerate(gates):
@@ -139,7 +142,7 @@ class TestStronglyEntangling:
             StronglyEntanglingLayers(weights, wires=range(num_wires))
 
         # Test that gates appear in the right order
-        exp_gates = [qml.Rot]*num_wires + [qml.CNOT]*num_wires
+        exp_gates = [qml.Rot] * num_wires + [qml.CNOT] * num_wires
         exp_gates *= n_layers
         res_gates = rec.queue
 
@@ -148,7 +151,7 @@ class TestStronglyEntangling:
 
         # test the device parameters
         for l in range(n_layers):
-            layer_ops = rec.queue[2*l*num_wires:2*(l+1)*num_wires]
+            layer_ops = rec.queue[2 * l * num_wires:2 * (l + 1) * num_wires]
 
             # check each rotation gate parameter
             for n in range(num_wires):
@@ -165,7 +168,7 @@ class TestStronglyEntangling:
             StronglyEntanglingLayers(weights=weights, wires=range(n_subsystems), imprimitive=imprimitive)
 
         types = [type(q) for q in rec.queue]
-        assert types.count(imprimitive) == n_subsystems*n_layers
+        assert types.count(imprimitive) == n_subsystems * n_layers
 
     @pytest.mark.parametrize("n_wires, n_layers, ranges", [(2, 2, [2, 1]),
                                                            (3, 1, [5])])
@@ -398,7 +401,7 @@ class TestCnotRing:
             CnotRingLayers(weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
-        exp_gates = [qml.RX]*n_wires + [qml.CNOT]*n_cnots
+        exp_gates = [qml.RX] * n_wires + [qml.CNOT] * n_cnots
         exp_gates *= n_layers
         res_gates = rec.queue
 
@@ -408,7 +411,7 @@ class TestCnotRing:
         # test the device parameters
         for l in range(n_layers):
             # only select the rotation gates
-            layer_ops = rec.queue[l*(n_wires+n_cnots): l*(n_wires+n_cnots)+n_wires]
+            layer_ops = rec.queue[l * (n_wires + n_cnots): l * (n_wires + n_cnots) + n_wires]
 
             # check each rotation gate parameter
             for n in range(n_wires):
@@ -433,9 +436,9 @@ class TestCnotRing:
                 assert isinstance(op, rotation)
 
     @pytest.mark.parametrize("weights, n_wires, target", [([[np.pi]], 1, [-1]),
-                                                          ([[np.pi]*2], 2, [-1, 1]),
-                                                          ([[np.pi]*3], 3, [1, 1, -1]),
-                                                          ([[np.pi]*4], 4, [-1, 1, -1, 1]),
+                                                          ([[np.pi] * 2], 2, [-1, 1]),
+                                                          ([[np.pi] * 3], 3, [1, 1, -1]),
+                                                          ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
                                                           ])
     def test_custom_rotation(self, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
@@ -450,3 +453,69 @@ class TestCnotRing:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+
+class TestCerezoTwoDesign:
+    """Tests for the SimplifiedTwoDesignLayers method from the pennylane.templates.layers module."""
+
+    @pytest.mark.parametrize("n_wires, n_layers, shape_weights", [(1, 2, (0,)),
+                                                                  (2, 2, (2, 1, 2)),
+                                                                  (3, 2, (2, 2, 2)),
+                                                                  (4, 2, (2, 3, 2))])
+    def test_circuit_queue(self, n_wires, n_layers, shape_weights):
+        """Tests the gate types and parameter values in the circuit."""
+        np.random.seed(12)
+
+        initial_block = np.random.randn(n_wires)
+        weights = np.random.randn(*shape_weights)
+
+        with qml.utils.OperationRecorder() as rec:
+            SimplifiedTwoDesignLayers(initial_block, weights, wires=range(n_wires))
+
+        # Test that gates appear in the right order
+        exp_gates = [qml.CZ, qml.RY, qml.RY] * ((n_wires // 2) + (n_wires - 1) // 2)
+        exp_gates *= n_layers
+        exp_gates = [qml.RY] * n_wires + exp_gates
+        res_gates = rec.queue
+
+        for op1, op2 in zip(res_gates, exp_gates):
+            assert isinstance(op1, op2)
+
+        # test the device parameters
+        for l in range(n_layers):
+            # only select the rotation gates
+            ops = [gate for gate in rec.queue if isinstance(gate, qml.RY)]
+
+            # check each initial_block gate parameters
+            for n in range(n_wires):
+                res_param = ops[n].parameters[0]
+                exp_param = initial_block[n]
+                assert res_param == exp_param
+
+            # check layer gate parameters
+            ops = ops[n_wires:]
+            exp_params = weights.flatten()
+            for o, exp_param in zip(ops, exp_params):
+                res_param = o.parameters[0]
+                assert res_param == exp_param
+
+    @pytest.mark.parametrize("initial_block, weights, n_wires, target", [([np.pi], [], 1, [-1]),
+                                                                         ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
+                                                                         ([np.pi] * 3, [[[np.pi] * 2] * 2], 3,
+                                                                          [1, -1, 1]),
+                                                                         ([np.pi] * 4, [[[np.pi] * 2] * 3], 4,
+                                                                          [1, -1, -1, 1]),
+                                                                         ])
+    def test_result(self, initial_block, weights, n_wires, target):
+        """Tests the result of the template for simple cases."""
+
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(initial_block, weights):
+            SimplifiedTwoDesignLayers(initial_block=initial_block, weights=weights, wires=range(n_wires))
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        expectations = circuit(initial_block, weights)
+        for exp, target_exp in zip(expectations, target):
+            assert pytest.approx(exp, target_exp, abs=TOLERANCE)

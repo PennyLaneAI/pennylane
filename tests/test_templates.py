@@ -48,7 +48,8 @@ from pennylane.templates import (Interferometer,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
                                  QAOAEmbedding,
-                                 CnotRingLayers)
+                                 CnotRingLayers,
+                                 SimplifiedTwoDesignLayers)
 
 from pennylane.templates import broadcast
 
@@ -81,7 +82,11 @@ from pennylane.init import (strong_ent_layers_uniform,
                             qaoa_embedding_uniform,
                             qaoa_embedding_normal,
                             cnot_ring_layers_normal,
-                            cnot_ring_layers_uniform)
+                            cnot_ring_layers_uniform,
+                            simplified_two_design_initial_block_normal,
+                            simplified_two_design_initial_block_uniform,
+                            simplified_two_design_weights_normal,
+                            simplified_two_design_weights_uniform)
 
 #######################################
 # Interfaces
@@ -114,7 +119,7 @@ except ImportError as e:
 #########################################
 # Parameters shared between test classes
 
-# qubit templates, dict of differentiable arguments, dict of non-differentiable arguments
+# qubit templates for 2 wires, dict of differentiable arguments, dict of non-differentiable arguments
 QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                             [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
@@ -135,10 +140,14 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                 'pattern': 'single'}),
                               (CnotRingLayers,
                                {'weights': [[1., 1.]]},
-                               {'rotation': qml.RX})
+                               {'rotation': qml.RX}),
+                              (SimplifiedTwoDesignLayers,
+                               {'initial_block': [1., 1.],
+                                'weights': [[1., 1.]]},
+                               {}),
                               ]
 
-# cv templates, dict of differentiable arguments, dict of non-differentiable arguments
+# cv templates for 2 wires, dict of differentiable arguments, dict of non-differentiable arguments
 CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
                             {'features': [1., 2.]},
                             {}),
@@ -286,6 +295,7 @@ class TestIntegrationCircuit:
                                         template2, diffable2, nondiffable2,
                                         interface, to_var):
         """Tests integration of qubit templates passing differentiable arguments as positional arguments to qnode."""
+        #TODO: rewrite test to avoid quadratic growth of test cases with the number of templates
 
         # Extract keys and items
         keys_diffable1 = [*diffable1]
@@ -552,6 +562,14 @@ class TestInitializationIntegration:
                    {'weights': cnot_ring_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
                   (CnotRingLayers,
                    {'weights': cnot_ring_layers_normal(n_layers=3, n_wires=3), 'wires': range(3)}),
+                  (SimplifiedTwoDesignLayers,
+                   {'initial_block': simplified_two_design_initial_block_uniform(n_wires=4),
+                    'weights': simplified_two_design_weights_uniform(n_layers=3, n_wires=4),
+                    'wires': range(4)}),
+                  (SimplifiedTwoDesignLayers,
+                   {'initial_block': simplified_two_design_initial_block_normal(n_wires=4),
+                    'weights': simplified_two_design_weights_normal(n_layers=3, n_wires=4),
+                    'wires': range(4)}),
                   ]
 
     CV_INIT = [(CVNeuralNetLayers,
@@ -659,6 +677,11 @@ class TestGradientIntegration:
                                           {'weights': [[1., 1.]]},
                                           {'wires': [0, 1]},
                                           [0]),
+                                         (SimplifiedTwoDesignLayers,
+                                          {'initial_block': [1., 1.],
+                                           'weights': [[1., 1.]]},
+                                          {'wires': [0, 1]},
+                                          [0, 1]),
                                          ]
 
     CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,

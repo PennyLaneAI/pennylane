@@ -20,4 +20,4 @@ from .strongly_entangling import StronglyEntanglingLayers
 from .random import RandomLayers
 from .cv_neural_net import CVNeuralNetLayers
 from .cnot_ring import CnotRingLayers
-from .cerezo_two_design import CerezoTwoDesignLayers
+from .simplified_two_design import SimplifiedTwoDesignLayers
