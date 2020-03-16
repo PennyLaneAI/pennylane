@@ -152,12 +152,12 @@ def device(name, *args, **kwargs):
             # Keyword arguments take preference, followed by device options,
             # followed by plugin options, followed by global options.
 
-            if 'analytic' in config['main']:
+            if "analytic" in config["main"]:
                 signature = inspect.signature(plugin_device_class)
 
-                if 'analytic' not in str(signature):
+                if "analytic" not in str(signature):
                     # remove the analytic option if the device does not support it
-                    del config["main"]['analytic']
+                    del config["main"]["analytic"]
 
             options.update(config["main"])
             options.update(config[name.split(".")[0] + ".global"])
