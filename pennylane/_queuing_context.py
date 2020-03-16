@@ -25,11 +25,18 @@ class QueuingContext(abc.ABC):
     """The list of contexts that are currently active."""
 
     def __enter__(self):
+        """Adds this instance to the global list of active contexts.
+
+        Returns:
+            QueuingContext: This instance
+        """
         QueuingContext._active_contexts.append(self)
 
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
+        """Remove this instance from the global list of active contexts.
+        """
         QueuingContext._active_contexts.remove(self)
 
     @abc.abstractmethod
