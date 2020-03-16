@@ -15,8 +15,6 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-import inspect
-
 import pkg_resources
 
 from autograd import numpy
@@ -30,24 +28,24 @@ from ._queuing_context import QueuingContext  # pylint: disable=wrong-import-ord
 import pennylane.operation
 
 import pennylane.init
-import pennylane.operation
 import pennylane.templates
+from pennylane.templates import template, broadcast
 from pennylane.about import about
-from pennylane.templates import broadcast, template
 from pennylane.vqe import Hamiltonian, VQECost
 
-from ._device import Device, DeviceError
-from ._qubit_device import QubitDevice
-from ._version import __version__
 from .circuit_graph import CircuitGraph
-from .collections import QNodeCollection, apply, dot, map, sum
 from .configuration import Configuration
-from .io import *
-from .measure import expval, probs, sample, var
+from ._device import Device, DeviceError
+from .collections import apply, map, sum, dot, QNodeCollection
+from ._qubit_device import QubitDevice
+from .measure import expval, var, sample, probs
 from .ops import *
 from .optimize import *
-from .qnodes import QNode, QuantumFunctionError, qnode
+from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
+from ._version import __version__
+from .io import *
+
 
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
@@ -136,6 +134,20 @@ def device(name, *args, **kwargs):
     if name in plugin_devices:
         options = {}
 
+        # load global configuration settings if available
+        config = kwargs.get("config", default_config)
+
+        if config:
+            # combine configuration options with keyword arguments.
+            # Keyword arguments take preference, followed by device options,
+            # followed by plugin options, followed by global options.
+            options.update(config["main"])
+            options.update(config[name.split(".")[0] + ".global"])
+            options.update(config[name])
+
+        kwargs.pop("config", None)
+        options.update(kwargs)
+
         # loads the plugin device class
         plugin_device_class = plugin_devices[name].load()
 
@@ -146,28 +158,6 @@ def device(name, *args, **kwargs):
                     name, plugin_device_class.pennylane_requires, __version__
                 )
             )
-
-        # load global configuration settings if available
-        config = kwargs.get("config", default_config)
-
-        if config:
-            # combine configuration options with keyword arguments.
-            # Keyword arguments take preference, followed by device options,
-            # followed by plugin options, followed by global options.
-
-            if "analytic" in config["main"]:
-                signature = inspect.signature(plugin_device_class)
-
-                if "analytic" not in str(signature):
-                    # remove the analytic option if the device does not support it
-                    del config["main"]["analytic"]
-
-            options.update(config["main"])
-            options.update(config[name.split(".")[0] + ".global"])
-            options.update(config[name])
-
-        kwargs.pop("config", None)
-        options.update(kwargs)
 
         # load plugin device
         return plugin_device_class(*args, **options)
