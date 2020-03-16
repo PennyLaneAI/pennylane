@@ -22,10 +22,10 @@ class QueuingContext(abc.ABC):
 
     In PennyLane, the construction of quantum gates is separated from the
     specific quantum node (:class:`BaseQNode`) that they belong to. However,
-    including a logic for this when creating an instance of :class:`Operator`
+    including logic for this when creating an instance of :class:`Operator`
     does not align with the current architecture. Therefore, there is a need to
-    use a overlay object that holds information about the relationship between
-    a quantum gates and a quantum node.
+    use a high level object that holds information about the relationship
+    between quantum gates and a quantum node.
 
     The ``QueuingContext`` class realizes this by providing access to the
     current QNode.  Furthermore, it provides the flexibility to have multiple
