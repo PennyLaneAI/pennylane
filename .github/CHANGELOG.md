@@ -93,14 +93,20 @@
   ... def circuit(theta):
   ...     qml.RX(theta, wires=0)
   ...     qml.CNOT(wires=[0, 1])
-  ...     qml.S(wires=1).inv
+  ...     qml.S(wires=1).inv()
   ...     return qml.probs(wires=[0, 1])
   >>> circuit(0.2)
   array([0.99003329, 0.        , 0.        , 0.00996671])
   >>> print(circuit.draw())
-  0: ──RX(0.2)──╭C─────╭┤ Probs
-  1: ───────────╰X──S──╰┤ Probs
+  0: ──RX(0.2)──╭C───────╭┤ Probs
+  1: ───────────╰X──S⁻¹──╰┤ Probs
   ```
+
+* The underlying queuing system was refactored, removing the `qml._current_context`
+  property that held the currently active `QNode` or `OperationRecorder`. Now, all
+  objects that expose a queue for operations inherit from `QueuingContext` and
+  register their queue globally.
+  [(#548)](https://github.com/XanaduAI/pennylane/pull/548)
 
 <h3>Documentation</h3>
 
