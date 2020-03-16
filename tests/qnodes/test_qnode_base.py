@@ -239,8 +239,8 @@ class TestQNodeOperationQueue:
             Observables
             ===========
             probs(wires=[0])
-            var(Hermitian([[0 1]
-             [1 0]], wires=[1]))"""
+            var(Hermitian(array([[0, 1],
+                   [1, 0]]), wires=[1]))"""
         )
 
         node = BaseQNode(circuit, mock_device)
