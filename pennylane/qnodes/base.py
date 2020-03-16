@@ -486,6 +486,7 @@ class BaseQNode(qml.QueuingContext):
         self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
+        # TODO rename self.queue to self.op_queue
         self.queue = []  #: list[Operation]: applied operations
         self.obs_queue = []  #: list[Observable]: applied observables
 
