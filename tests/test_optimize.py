@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`GradientDescentOptimizer` subclasses.
+Unit tests for the :mod:`pennylane` optimizers.
 """
+# pylint: disable=redefined-outer-name
+import itertools as it
 import pytest
 
 import pennylane as qml
@@ -24,7 +26,9 @@ from pennylane.optimize import (GradientDescentOptimizer,
                                 NesterovMomentumOptimizer,
                                 AdagradOptimizer,
                                 RMSPropOptimizer,
-                                AdamOptimizer)
+                                AdamOptimizer,
+                                RotoselectOptimizer,
+                                RotosolveOptimizer)
 
 x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
@@ -121,6 +125,8 @@ def bunch():
         adag_opt = AdagradOptimizer(stepsize)
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
+        rotosolve_opt = RotosolveOptimizer()
+        rotoselect_opt = RotoselectOptimizer()
 
     return A()
 
@@ -461,6 +467,113 @@ class TestOptimizer:
                 secondmoment = (delta * gradf(x_vec) * gradf(x_vec) + (1 - delta) * gradf(x_onestep) * gradf(x_onestep))
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (np.sqrt(secondmoment) + 1e-8)
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
+
+    @staticmethod
+    def rotosolve_step(f, x):
+        """Helper function to test the Rotosolve and Rotoselect optimizers"""
+        # make sure that x is an array
+        if np.ndim(x) == 0:
+            x = np.array([x])
+
+        # helper function for x[d] = theta
+        def insert(x, d, theta):
+            x[d] = theta
+            return x
+
+        for d, _ in enumerate(x):
+            H_0 = float(f(insert(x, d, 0)))
+            H_p = float(f(insert(x, d, np.pi / 2)))
+            H_m = float(f(insert(x, d, -np.pi / 2)))
+
+            a = np.arctan2(2 * H_0 - H_p - H_m, H_p - H_m)
+
+            x[d] = -np.pi / 2 - a
+
+            if x[d] <= -np.pi:
+                x[d] += 2 * np.pi
+        return x
+
+    @pytest.mark.parametrize('x_start', x_vals)
+    def test_rotosolve_optimizer_univar(self, x_start, bunch, tol):
+        """Tests that rotosolve optimizer takes one and two steps correctly
+        for uni-variate functions."""
+
+        for f in univariate_funcs:
+            x_onestep = bunch.rotosolve_opt.step(f, x_start)
+            x_onestep_target = self.rotosolve_step(f, x_start)
+
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
+
+            x_twosteps = bunch.rotosolve_opt.step(f, x_onestep)
+            x_twosteps_target = self.rotosolve_step(f, x_onestep_target)
+
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
+
+    def test_rotosolve_optimizer_multivar(self, bunch, tol):
+        """Tests that rotosolve optimizer takes one and two steps correctly
+        for multi-variate functions."""
+
+        for f in multivariate_funcs:
+            for jdx in range(len(x_vals[:-1])):
+                x_vec = x_vals[jdx:jdx + 2]
+
+                x_onestep = bunch.rotosolve_opt.step(f, x_vec)
+                x_onestep_target = self.rotosolve_step(f, x_vec)
+
+                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
+
+                x_twosteps = bunch.rotosolve_opt.step(f, x_onestep)
+                x_twosteps_target = self.rotosolve_step(f, x_onestep_target)
+
+                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
+
+    @pytest.mark.parametrize('x_start', [[0.3, 0.25], [-0.6, 0.45], [1.3, -0.9]])
+    @pytest.mark.parametrize('generators', [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)])
+    def test_rotoselect_optimizer(self, x_start, generators, bunch, tol):
+        """Tests that rotoselect optimizer takes one and two steps correctly for the VQE circuit
+        defined in `this rotoselect tutorial <https://pennylane.ai/qml/demos/tutorial_rotoselect.html>`_."""
+
+        # the optimal generators for the 2-qubit VQE circuit
+        # H = 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
+        optimal_generators = [qml.RY, qml.RX]
+        possible_generators = [qml.RX, qml.RY, qml.RZ]
+        bunch.rotoselect_opt.possible_generators = possible_generators
+
+        dev = qml.device("default.qubit", analytic=True, wires=2)
+
+        def ansatz(params, generators):
+            generators[0](params[0], wires=0)
+            generators[1](params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
+            ansatz(params, generators)
+            return qml.expval(qml.PauliX(0))
+
+        def cost_fn(params, generators):
+            # test single parameter inputs
+            if np.ndim(params) == 1:
+                params = [params[0], params[0]]
+            Z_1, Y_2 = circuit_1(params, generators=generators)
+            X_1 = circuit_2(params, generators=generators)
+            return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
+
+        x_onestep, generators = bunch.rotoselect_opt.step(cost_fn, x_start, generators)
+        f_best_gen = lambda x: cost_fn(x, generators=optimal_generators)
+        x_onestep_target = self.rotosolve_step(f_best_gen, x_start)
+
+        assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
+
+        x_twosteps, generators = bunch.rotoselect_opt.step(cost_fn, x_onestep, generators)
+        x_twosteps_target = self.rotosolve_step(f_best_gen, x_onestep_target)
+
+        assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     def test_update_stepsize(self):
         """Tests that the stepsize correctly updates"""
