@@ -18,10 +18,16 @@ PennyLane can be directly imported.
 import inspect
 
 import pkg_resources
+
+from autograd import numpy
 from autograd import grad as _grad
 from autograd import jacobian as _jacobian
-from autograd import numpy
-from semantic_version import Spec, Version
+
+from semantic_version import Version, Spec
+
+# QueuingContext needs to be imported before all other pennylane imports
+from ._queuing_context import QueuingContext  # pylint: disable=wrong-import-order
+import pennylane.operation
 
 import pennylane.init
 import pennylane.operation
@@ -42,9 +48,6 @@ from .ops import *
 from .optimize import *
 from .qnodes import QNode, QuantumFunctionError, qnode
 from .utils import inv
-
-_current_context = None
-
 
 # overwrite module docstrings
 numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."

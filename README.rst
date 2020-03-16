@@ -150,7 +150,7 @@ for more details.
 Authors
 =======
 
-PennyLane is the work of [many contributors](https://github.com/XanaduAI/pennylane/graphs/contributors).
+PennyLane is the work of `many contributors <https://github.com/XanaduAI/pennylane/graphs/contributors>`_.
 
 If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1811.04968>`_:
 

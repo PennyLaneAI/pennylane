@@ -189,8 +189,8 @@ class TestQNodeOperationQueue:
             Observables
             ===========
             expval(PauliX(wires=[0]))
-            var(Hermitian([[0 1]
-             [1 0]], wires=[1]))"""
+            var(Hermitian(array([[0, 1],
+                   [1, 0]]), wires=[1]))"""
         )
 
         node = BaseQNode(circuit, mock_device)
@@ -239,8 +239,8 @@ class TestQNodeOperationQueue:
             Observables
             ===========
             probs(wires=[0])
-            var(Hermitian([[0 1]
-             [1 0]], wires=[1]))"""
+            var(Hermitian(array([[0, 1],
+                   [1, 0]]), wires=[1]))"""
         )
 
         node = BaseQNode(circuit, mock_device)
@@ -270,7 +270,7 @@ class TestQNodeOperationQueue:
         CNOT = qml.CNOT(wires=[0, 1])
 
         def circuit(x):
-            qml._current_context._append_op(CNOT)
+            qml.QueuingContext.append_operator(CNOT)
             qml.RY(0.4, wires=[0])
             qml.RZ(-0.2, wires=[1])
 
@@ -293,7 +293,7 @@ class TestQNodeOperationQueue:
             qml.RY(0.4, wires=[0])
             qml.RZ(-0.2, wires=[1])
 
-            qml._current_context._remove_op(RX)
+            qml.QueuingContext.remove_operator(RX)
 
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
@@ -347,24 +347,6 @@ class TestQNodeOperationQueue:
 
 class TestQNodeExceptions:
     """Tests that QNode raises proper errors"""
-
-    def test_current_context_modified_outside_construct(
-        self, operable_mock_device_2_wires, monkeypatch
-    ):
-        """Error: _current_context was modified outside of construct."""
-
-        def circuit(x):
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.PauliZ(wires=0))
-
-        node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with monkeypatch.context() as m:
-            m.setattr(qml, "_current_context", node)
-            with pytest.raises(
-                QuantumFunctionError,
-                match="qml._current_context must not be modified outside this method.",
-            ):
-                node(0.5)
 
     def test_operations_after_observables(self, operable_mock_device_2_wires):
         """Error: qfunc contains operations after observables."""
