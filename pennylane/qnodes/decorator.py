@@ -28,7 +28,7 @@ ALLOWED_DIFF_METHODS = ("best", "parameter-shift", "finite-diff")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
-def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
+def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", **kwargs):
     """QNode constructor for creating QNodes.
 
     When applied to a quantum function and device, converts it into
@@ -79,11 +79,12 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
 
             * ``None``: a non-differentiable QNode is returned.
 
-        properties (dict[str->Any]): additional keyword properties passed to the QNode
+    Keyword Args:
+        h (float): step size for the finite-difference method
     """
     if diff_method is None:
         # QNode is not differentiable
-        return BaseQNode(func, device, mutable=mutable, properties=properties)
+        return BaseQNode(func, device, mutable=mutable, **kwargs)
 
     if diff_method not in ALLOWED_DIFF_METHODS:
         raise ValueError(
@@ -99,15 +100,15 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
 
     if device_jacobian and (diff_method == "best"):
         # hand off differentiation to the device
-        node = DeviceJacobianQNode(func, device, mutable=mutable, properties=properties)
+        node = DeviceJacobianQNode(func, device, mutable=mutable, **kwargs)
 
     elif model in PARAMETER_SHIFT_QNODES and diff_method in ("best", "parameter-shift"):
         # parameter-shift analytic differentiation
-        node = PARAMETER_SHIFT_QNODES[model](func, device, mutable=mutable, properties=properties)
+        node = PARAMETER_SHIFT_QNODES[model](func, device, mutable=mutable, **kwargs)
 
     else:
         # finite differences
-        node = JacobianQNode(func, device, mutable=mutable, properties=properties)
+        node = JacobianQNode(func, device, mutable=mutable, **kwargs)
 
     if interface == "torch":
         return node.to_torch()
@@ -129,7 +130,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     )
 
 
-def qnode(device, *, interface="autograd", mutable=True, diff_method="best", properties=None):
+def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **kwargs):
     """Decorator for creating QNodes.
 
     When applied to a quantum function, this decorator converts it into
@@ -179,19 +180,16 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", pro
 
             * ``None``: a non-differentiable QNode is returned.
 
-        properties (dict[str->Any]): additional keyword properties passed to the QNode
-    """
+    Keyword Args:
+        h (float): Step size for the finite difference method. Default is ``1e-7`` for analytic devices, or
+            ``0.3`` for non-analytic devices (those that estimate expectation values with a finite number of shots).
+   """
 
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
         return QNode(
-            func,
-            device,
-            interface=interface,
-            mutable=mutable,
-            diff_method=diff_method,
-            properties=properties,
+            func, device, interface=interface, mutable=mutable, diff_method=diff_method, **kwargs
         )
 
     return qfunc_decorator

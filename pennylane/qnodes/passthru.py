@@ -69,14 +69,17 @@ class PassthruQNode(BaseQNode):
             A Python function containing :class:`~.operation.Operation` constructor calls,
             and returning a tuple of measured :class:`~.operation.Observable` instances.
         device (~pennylane._device.Device): computational device to execute the function on
-        properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
+
+    Keyword Args:
+        use_native_type (bool): If True, return the result in whatever type the device uses
+            internally, otherwise convert it into array[float]. Default: True.
     """
 
-    def __init__(self, func, device, properties=None):
+    def __init__(self, func, device, **kwargs):
         # make the device return the result in its native type
-        properties = properties or {}
-        properties.setdefault("use_native_type", True)
-        super().__init__(func, device, mutable=True, properties=properties)
+        kwargs = kwargs or {}
+        kwargs.setdefault("use_native_type", True)
+        super().__init__(func, device, mutable=True, **kwargs)
 
     def __repr__(self):
         """String representation."""
@@ -119,7 +122,7 @@ class PassthruQNode(BaseQNode):
         self.circuit = pennylane.circuit_graph.CircuitGraph(self.ops, self.variable_deps)
 
         # check for operations that cannot affect the output
-        if self.properties.get("vis_check", False):
+        if self.kwargs.get("vis_check", False):
             invisible = self.circuit.invisible_operations()
             if invisible:
                 raise QuantumFunctionError(

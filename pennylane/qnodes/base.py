@@ -98,6 +98,9 @@ def _decompose_queue(ops, device):
             new_ops.append(op)
         else:
             decomposed_ops = op.decomposition(*op.params, wires=op.wires)
+            if op.inverse:
+                decomposed_ops = qml.inv(decomposed_ops)
+
             decomposition = _decompose_queue(decomposed_ops, device)
             new_ops.extend(decomposition)
 
@@ -158,11 +161,14 @@ class BaseQNode:
             and returning a tuple of measured :class:`~.operation.Observable` instances.
         device (~pennylane._device.Device): computational device to execute the function on
         mutable (bool): whether the circuit is mutable, see above
-        properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
+
+    Keyword Args:
+        vis_check (bool): whether to check for operations that cannot affect the output
+        par_check (bool): whether to check for unused positional params
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, func, device, *, mutable=True, properties=None):
+    def __init__(self, func, device, *, mutable=True, **kwargs):
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
@@ -177,8 +183,8 @@ class BaseQNode:
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: whether the circuit is mutable
-        #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
-        self.properties = properties or {}
+        #: dict[str, Any]: additional keyword kwargs for adjusting the QNode behavior
+        self.kwargs = kwargs or {}
 
         self.variable_deps = {}
         """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc positional parameter
@@ -549,7 +555,7 @@ class BaseQNode:
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
 
         # check for unused positional params
-        if self.properties.get("par_check", False):
+        if self.kwargs.get("par_check", False):
             unused = [k for k, v in self.variable_deps.items() if not v]
             if unused:
                 raise QuantumFunctionError(
@@ -557,7 +563,7 @@ class BaseQNode:
                 )
 
         # check for operations that cannot affect the output
-        if self.properties.get("vis_check", False):
+        if self.kwargs.get("vis_check", False):
             invisible = self.circuit.invisible_operations()
             if invisible:
                 raise QuantumFunctionError(
@@ -756,6 +762,10 @@ class BaseQNode:
             args (tuple[Any]): positional arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
+        Keyword Args:
+            use_native_type (bool): If True, return the result in whatever type the device uses
+                internally, otherwise convert it into array[float]. Default: False.
+
         Returns:
             float or array[float]: output measured value(s)
         """
@@ -767,7 +777,7 @@ class BaseQNode:
 
         self.device.reset()
 
-        temp = self.properties.get("use_native_type", False)
+        temp = self.kwargs.get("use_native_type", False)
         if isinstance(self.device, qml.QubitDevice):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
             ret = self.device.execute(self.circuit, return_native_type=temp)

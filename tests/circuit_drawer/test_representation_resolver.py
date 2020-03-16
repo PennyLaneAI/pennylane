@@ -244,6 +244,12 @@ class TestRepresentationResolver:
                 "1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀+2.6x₀x₁-p₁²-4.7x₁p₁",
             ),
             (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x+sin(3.14)p"),
+            (qml.PauliX(wires=[1]).inv(), 1, "X⁻¹"),
+            (qml.CNOT(wires=[0, 1]).inv(), 1, "X⁻¹"),
+            (qml.CNOT(wires=[0, 1]).inv(), 0, "C"),
+            (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X⁻¹"),
+            (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
+            (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
         ],
     )
     def test_operator_representation_unicode(
@@ -373,6 +379,13 @@ class TestRepresentationResolver:
                 "1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0+2.6x_0x_1-4.7x_1p_1",
             ),
             (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x+sin(3.14)p"),
+            (qml.QuadOperator(3.14, wires=[1]), 1, "cos(3.14)x+sin(3.14)p"),
+            (qml.PauliX(wires=[1]).inv(), 1, "X^-1"),
+            (qml.CNOT(wires=[0, 1]).inv(), 1, "X^-1"),
+            (qml.CNOT(wires=[0, 1]).inv(), 0, "C"),
+            (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X^-1"),
+            (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
+            (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
         ],
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):
@@ -517,6 +530,7 @@ class TestRepresentationResolver:
                 0,
                 "Sample[H0 ⊗ H1]",
             ),
+            (qml.probs([0]), 0, "Probs"),
         ],
     )
     def test_output_representation_unicode(
@@ -670,6 +684,7 @@ class TestRepresentationResolver:
                 0,
                 "Sample[H0 @ H1]",
             ),
+            (qml.probs([0]), 0, "Probs"),
         ],
     )
     def test_output_representation_ascii(self, ascii_representation_resolver, obs, wire, target):
