@@ -20,12 +20,18 @@ import abc
 class QueuingContext(abc.ABC):
     """Abstract base class for classes that exposes a queue for Operations.
 
+    In PennyLane, quantum gates are not attached to some kind of circuit object
+    by the user. Here, the *construction* of a quantum gate is used to realize this
+    behaviour. As the constructor does not know to which QNode (PennyLane's circuit
+    object) it should attach the quantum gate we need to use a global variable that
+    holds that information. The ``QueuingContext`` class realizes this by providing
+    access to the current QNode. Furthermore, it provides the flexibility to have
+    multiple objects record the creation of quantum gates.
+
     The QueuingContext class both acts as the abstract base class for all
     classes that expose a queue for Operations (so-called contexts), as well
-    as the interface to said queues.
-
-    The active contexts contain maximally one QNode and an arbitrary number
-    of other contexts like the OperationRecorder.
+    as the interface to said queues. The active contexts contain maximally one QNode
+    and an arbitrary number of other contexts like the OperationRecorder.
     """
 
     _active_contexts = []
