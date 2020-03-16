@@ -70,14 +70,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     (such as :meth:`~.pennylane.ops.RX`), or a
     user-supplied template. Depending on the chosen pattern, ``unitary`` is applied to a wire or a subset of wires:
 
-    * ``pattern= 'single'`` applies a single-wire unitary to each one of the :math:`M` wires:
+    * ``pattern="single"`` applies a single-wire unitary to each one of the :math:`M` wires:
 
       .. figure:: ../../_static/templates/broadcast_single.png
             :align: center
             :width: 20%
             :target: javascript:void(0);
 
-    * ``pattern= 'double'`` applies a two-wire unitary to :math:`\lfloor \frac{M}{2} \rfloor`
+    * ``pattern="double"`` applies a two-wire unitary to :math:`\lfloor \frac{M}{2} \rfloor`
       subsequent pairs of wires:
 
       .. figure:: ../../_static/templates/broadcast_double.png
@@ -85,7 +85,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'double_odd'`` applies a two-wire unitary to :math:`\lfloor \frac{M-1}{2} \rfloor`
+    * ``pattern="double_odd"`` applies a two-wire unitary to :math:`\lfloor \frac{M-1}{2} \rfloor`
       subsequent pairs of wires, starting with the second wire:
 
       .. figure:: ../../_static/templates/broadcast_double_odd.png
@@ -93,14 +93,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'chain'`` applies a two-wire unitary to all :math:`M-1` neighbouring pairs of wires:
+    * ``pattern="chain"`` applies a two-wire unitary to all :math:`M-1` neighbouring pairs of wires:
 
       .. figure:: ../../_static/templates/broadcast_chain.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'ring'`` applies a two-wire unitary to all :math:`M` neighbouring pairs of wires,
+    * ``pattern="ring"`` applies a two-wire unitary to all :math:`M` neighbouring pairs of wires,
       where the last wire is considered to be a neighbour to the first one:
 
       .. figure:: ../../_static/templates/broadcast_ring.png
@@ -111,14 +111,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
       .. note:: For 2 wires, the ring pattern is automatically replaced by ``pattern = 'chain'`` to avoid
                 a mere repetition of the unitary.
 
-    * ``pattern= 'pyramid'`` applies a two-wire unitary to wire pairs shaped in a pyramid declining to the right:
+    * ``pattern="pyramid"`` applies a two-wire unitary to wire pairs shaped in a pyramid declining to the right:
 
       .. figure:: ../../_static/templates/broadcast_pyramid.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
-    * ``pattern= 'all_to_all'`` applies a two-wire unitary to wire pairs that connect all wires to each other:
+    * ``pattern="all_to_all"`` applies a two-wire unitary to wire pairs that connect all wires to each other:
 
       .. figure:: ../../_static/templates/broadcast_alltoall.png
           :align: center
@@ -269,16 +269,16 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-                @template
-                def mytemplate(pars1, pars2, wires):
-                    qml.Hadamard(wires=wires)
-                    qml.RY(pars1, wires=wires)
-                    qml.RX(pars2, wires=wires)
+            @template
+            def mytemplate(pars1, pars2, wires):
+                qml.Hadamard(wires=wires)
+                qml.RY(pars1, wires=wires)
+                qml.RX(pars2, wires=wires)
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+            @qml.qnode(dev)
+            def circuit(pars):
+                broadcast(unitary=mytemplate, pattern="single", wires=[0, 1, 2], parameters=pars)
+                return qml.expval(qml.PauliZ(0))
 
         >>> circuit([1, 2, 3]))
         TypeError: mytemplate() missing 1 required positional argument: 'pars2'
@@ -308,129 +308,128 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         * Double pattern
 
-            .. code-block:: python
+          .. code-block:: python
 
-                dev = qml.device('default.qubit', wires=4)
+              dev = qml.device('default.qubit', wires=4)
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='double',
-                              wires=[0,1,2,3], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='double',
+                            wires=[0,1,2,3], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                pars1 = [-1, 2.5, 3]
-                pars2 = [-1, 4, 2]
+              pars1 = [-1, 2.5, 3]
+              pars2 = [-1, 4, 2]
 
-                circuit([pars1, pars2])
+              circuit([pars1, pars2])
 
         * Double-odd pattern
 
-            .. code-block:: python
+          .. code-block:: python
 
-                dev = qml.device('default.qubit', wires=4)
+              dev = qml.device('default.qubit', wires=4)
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='double_odd',
-                              wires=[0,1,2,3], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='double_odd',
+                            wires=[0,1,2,3], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                pars1 = [-5.3, 2.3, 3]
+              pars1 = [-5.3, 2.3, 3]
 
-                circuit([pars1])
+              circuit([pars1])
 
         * Chain pattern
 
-            .. code-block:: python
+          .. code-block:: python
 
-                dev = qml.device('default.qubit', wires=4)
+              dev = qml.device('default.qubit', wires=4)
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='chain',
-                              wires=[0,1,2,3], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='chain',
+                            wires=[0,1,2,3], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1.8, 2, 3]
-                pars2 = [-1, 3, 1]
-                pars3 = [2, -1.2, 4]
+              pars1 = [1.8, 2, 3]
+              pars2 = [-1, 3, 1]
+              pars3 = [2, -1.2, 4]
 
-                circuit([pars1, pars2, pars3])
+              circuit([pars1, pars2, pars3])
 
         * Ring pattern
 
           In general, the number of parameter sequences has to match
           the number of wires:
 
-            .. code-block:: python
+          .. code-block:: python
 
-                dev = qml.device('default.qubit', wires=3)
+              dev = qml.device('default.qubit', wires=3)
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='ring',
-                              wires=[0,1,2], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='ring',
+                            wires=[0,1,2], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, -2.2, 3]
-                pars2 = [-1, 3, 1]
-                pars3 = [2.6, 1, 4]
+              pars1 = [1, -2.2, 3]
+              pars2 = [-1, 3, 1]
+              pars3 = [2.6, 1, 4]
 
-                circuit([pars1, pars2, pars3])
+              circuit([pars1, pars2, pars3])
 
           However, there is an exception for 2 wires, where only one set of parameters is needed.
           This avoids repeating a gate over the
           same wires twice:
 
-            .. code-block:: python
+          .. code-block:: python
 
-                dev = qml.device('default.qubit', wires=2)
+              dev = qml.device('default.qubit', wires=2)
 
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='ring',
+                            wires=[0,1], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='ring',
-                              wires=[0,1], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              pars1 = [-3.2, 2, 1.2]
 
-                pars1 = [-3.2, 2, 1.2]
-
-                circuit([pars1])
+              circuit([pars1])
 
         * Pyramid pattern
 
-            .. code-block:: python
+          .. code-block:: python
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='pyramid',
-                              wires=[0,1,2,3], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='pyramid',
+                            wires=[0,1,2,3], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1.1, 2, 3]
-                pars2 = [-1, 3, 1]
-                pars3 = [2, 1, 4.2]
+              pars1 = [1.1, 2, 3]
+              pars2 = [-1, 3, 1]
+              pars3 = [2, 1, 4.2]
 
-                circuit([pars1, pars2, pars3])
+              circuit([pars1, pars2, pars3])
 
         * All-to-all pattern
 
-            .. code-block:: python
+          .. code-block:: python
 
-                @qml.qnode(dev)
-                def circuit(pars):
-                    broadcast(unitary=qml.CRot, pattern='ring',
-                              wires=[0,1,2,3], parameters=pars)
-                    return qml.expval(qml.PauliZ(0))
+              @qml.qnode(dev)
+              def circuit(pars):
+                  broadcast(unitary=qml.CRot, pattern='ring',
+                            wires=[0,1,2,3], parameters=pars)
+                  return qml.expval(qml.PauliZ(0))
 
-                pars1 = [1, 2, 3]
-                pars2 = [-1, 3, 1]
-                pars3 = [2, 1, 4]
-                pars4 = [-1, -2, -3]
-                pars5 = [2, 1, 4]
-                pars6 = [3, -2, -3]
+              pars1 = [1, 2, 3]
+              pars2 = [-1, 3, 1]
+              pars3 = [2, 1, 4]
+              pars4 = [-1, -2, -3]
+              pars5 = [2, 1, 4]
+              pars6 = [3, -2, -3]
 
-                circuit([pars1, pars2, pars3, pars4, pars5, pars6])
+              circuit([pars1, pars2, pars3, pars4, pars5, pars6])
     """
 
     OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
