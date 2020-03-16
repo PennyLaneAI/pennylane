@@ -18,8 +18,8 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples.
 """
 import pennylane as qml
-from .operation import Observable, Sample, Variance, Expectation, Probability, Tensor
-from .qnodes import QuantumFunctionError
+from pennylane.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
+from pennylane.qnodes import QuantumFunctionError
 
 
 def expval(op):
