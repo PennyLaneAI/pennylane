@@ -74,7 +74,7 @@ class QueuingContext(abc.ABC):
         """
         for context in cls._active_contexts:
             # We use the duck-typing approach to assume that the underlying remove
-            # behaves like list.remove and throws an ValueError if the operator
+            # behaves like list.remove and throws a ValueError if the operator
             # is not in the list
             try:
                 context._remove_operator(operator)  # pylint: disable=protected-access
