@@ -102,6 +102,12 @@
   1: ───────────╰X──S──╰┤ Probs
   ```
 
+* The underlying queuing system was refactored, removing the `qml._current_context`
+  property that held the currently active `QNode` or `OperationRecorder`. Now, all
+  objects that expose a queue for operations inherit from `QueuingContext` and
+  register their queue globally.
+  [(#548)](https://github.com/XanaduAI/pennylane/pull/548)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
