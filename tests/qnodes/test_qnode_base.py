@@ -189,8 +189,8 @@ class TestQNodeOperationQueue:
             Observables
             ===========
             expval(PauliX(wires=[0]))
-            var(Hermitian([[0 1]
-             [1 0]], wires=[1]))"""
+            var(Hermitian(array([[0, 1],
+                   [1, 0]]), wires=[1]))"""
         )
 
         node = BaseQNode(circuit, mock_device)
@@ -239,8 +239,8 @@ class TestQNodeOperationQueue:
             Observables
             ===========
             probs(wires=[0])
-            var(Hermitian([[0 1]
-             [1 0]], wires=[1]))"""
+            var(Hermitian(array([[0, 1],
+                   [1, 0]]), wires=[1]))"""
         )
 
         node = BaseQNode(circuit, mock_device)
@@ -1045,56 +1045,32 @@ class TestDecomposition:
 
         res = decompose_queue(queue, operable_mock_device_2_wires_with_inverses)
 
-        assert len(res) == 17
+        assert len(res) == 9
 
-        assert res[0].name == "RZ"
-        assert res[0].parameters == [0]
+        assert res[0].name == "RY"
+        assert res[0].parameters == [0.5]
 
-        assert res[1].name == "RY"
-        assert res[1].parameters == [0.5]
+        assert res[1].name == "CNOT"
 
-        assert res[2].name == "RZ"
-        assert res[2].parameters == [0]
+        assert res[2].name == "RY"
+        assert res[2].parameters == [-0.5]
 
-        assert res[3].name == "PhaseShift"
-        assert res[3].parameters == [0]
+        assert res[3].name == "CNOT"
 
-        assert res[4].name == "PhaseShift"
-        assert res[4].parameters == [0]
+        assert res[4].name == "RZ"
+        assert res[4].parameters == [5]
 
-        assert res[5].name == "CNOT"
+        assert res[5].name == "RY"
+        assert res[5].parameters == [3]
 
         assert res[6].name == "RZ"
-        assert res[6].parameters == [0]
+        assert res[6].parameters == [-5]
 
-        assert res[7].name == "RY"
-        assert res[7].parameters == [-0.5]
+        assert res[7].name == "PhaseShift"
+        assert res[7].parameters == [5]
 
-        assert res[8].name == "RZ"
-        assert res[8].parameters == [0]
-
-        assert res[9].name == "PhaseShift"
-        assert res[9].parameters == [0]
-
-        assert res[10].name == "PhaseShift"
-        assert res[10].parameters == [0]
-
-        assert res[11].name == "CNOT"
-
-        assert res[12].name == "RZ"
-        assert res[12].parameters == [5]
-
-        assert res[13].name == "RY"
-        assert res[13].parameters == [3]
-
-        assert res[14].name == "RZ"
-        assert res[14].parameters == [-5]
-
-        assert res[15].name == "PhaseShift"
-        assert res[15].parameters == [5]
-
-        assert res[16].name == "PhaseShift"
-        assert res[16].parameters == [4]
+        assert res[8].name == "PhaseShift"
+        assert res[8].parameters == [4]
 
     def test_decompose_queue_inv(self, operable_mock_device_2_wires_with_inverses):
         """Test that decompose queue works correctly
