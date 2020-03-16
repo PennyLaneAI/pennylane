@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
 """
 
 import pytest
+import pennylane as qml
 from pennylane import QueuingContext
 
 
@@ -46,3 +47,42 @@ class TestQueuingContext:
             assert mock_queuing_context in QueuingContext._active_contexts
 
         assert not QueuingContext._active_contexts
+
+    def test_append_operator_no_context(self):
+        """Test that append_operator does not fail when no context is present."""
+
+        QueuingContext.append_operator(qml.PauliZ(0))
+
+    def test_remove_operator_no_context(self):
+        """Test that remove_operator does not fail when no context is present."""
+
+        QueuingContext.remove_operator(qml.PauliZ(0))
+
+    def test_append_operator(self, mock_queuing_context):
+        """Test that append_operator appends the operator to the queue."""
+
+        op = qml.PauliZ(0)
+        assert not mock_queuing_context.queue
+
+        with mock_queuing_context:
+            QueuingContext.append_operator(op)
+
+        assert len(mock_queuing_context.queue) == 1
+        assert op in mock_queuing_context.queue
+
+
+    def test_remove_operator(self, mock_queuing_context):
+        """Test that append_operator removes the operator to the queue."""
+
+        op = qml.PauliZ(0)
+        assert not mock_queuing_context.queue
+
+        with mock_queuing_context:
+            QueuingContext.append_operator(op)
+
+            assert len(mock_queuing_context.queue) == 1
+            assert op in mock_queuing_context.queue
+
+            QueuingContext.remove_operator(op)
+
+        assert not mock_queuing_context.queue
