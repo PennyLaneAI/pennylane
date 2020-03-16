@@ -339,28 +339,13 @@ class OperationRecorder:
         output += "Operations\n"
         output += "==========\n"
         for op in self.operations:
-            if op.parameters:
-                params = ", ".join([str(p) for p in op.parameters])
-                output += "{}({}, wires={})\n".format(op.name, params, op.wires)
-            else:
-                output += "{}(wires={})\n".format(op.name, op.wires)
+            output += repr(op) + "\n"
 
-        return_map = {
-            qml.operation.Expectation: "expval",
-            qml.operation.Variance: "var",
-            qml.operation.Sample: "sample",
-        }
         output += "\n"
         output += "Observables\n"
         output += "==========\n"
         for op in self.observables:
-            if op.parameters:
-                params = ", ".join([str(p) for p in op.parameters])
-                output += "{}({}({}, wires={}))\n".format(
-                    return_map[op.return_type], op.name, params, op.wires
-                )
-            else:
-                output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
+            output += repr(op) + "\n"
 
         return output
 
