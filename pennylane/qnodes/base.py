@@ -22,7 +22,6 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane import QueuingContext
 from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
@@ -132,7 +131,7 @@ def decompose_queue(ops, device):
     return new_ops
 
 
-class BaseQNode(QueuingContext):
+class BaseQNode(qml.QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
     A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`

@@ -27,7 +27,6 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane import QueuingContext
 from pennylane.variable import Variable
 
 
@@ -205,7 +204,7 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-class OperationRecorder(QueuingContext):
+class OperationRecorder(qml.QueuingContext):
     """A template and quantum function inspector,
     allowing easy introspection of operators that have been
     applied without requiring a QNode.
