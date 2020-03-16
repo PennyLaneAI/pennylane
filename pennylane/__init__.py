@@ -24,7 +24,7 @@ from autograd import jacobian as _jacobian
 from semantic_version import Version, Spec
 
 # QueuingContext needs to be imported before all other pennylane imports
-from ._queuing_context import QueuingContext # pylint: disable=wrong-import-order
+from ._queuing_context import QueuingContext  # pylint: disable=wrong-import-order
 import pennylane.operation
 
 import pennylane.init
