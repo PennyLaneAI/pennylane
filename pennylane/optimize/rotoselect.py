@@ -19,7 +19,7 @@ from pennylane.utils import _flatten, unflatten
 
 
 class RotoselectOptimizer:
-    r"""Rotoselect gradient free optimizer.
+    r"""Rotoselect gradient-free optimizer.
 
     The Rotoselect optimizer minimizes an objective function with respect to the rotation gates and
     parameters of a quantum circuit without the need for calculating the gradient of the function.
