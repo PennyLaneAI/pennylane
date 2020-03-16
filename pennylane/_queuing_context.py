@@ -21,11 +21,11 @@ class QueuingContext(abc.ABC):
     """Abstract base class for classes that exposes a queue for Operations.
 
     In PennyLane, the construction of quantum gates is separated from the specific
-    quantum node (:class:`BaseQNode`) that they belong to. As the constructor does 
-    not know to which QNode (PennyLane's circuit object) it should attach the quantum 
-    gate we need to use a global variable that holds that information. The 
-    ``QueuingContext`` class realizes this by providing access to the current QNode. 
-    Furthermore, it provides the flexibility to have multiple objects record the 
+    quantum node (:class:`BaseQNode`) that they belong to. As the constructor does
+    not know to which QNode (PennyLane's circuit object) it should attach the quantum
+    gate we need to use a global variable that holds that information. The
+    ``QueuingContext`` class realizes this by providing access to the current QNode.
+    Furthermore, it provides the flexibility to have multiple objects record the
     creation of quantum gates.
 
     The QueuingContext class both acts as the abstract base class for all
