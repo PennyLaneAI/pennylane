@@ -116,6 +116,24 @@ class TestQueuingContext:
 
         assert not mock_queuing_context.queue
 
+    def test_remove_operator_not_in_list(self, mock_queuing_context):
+        """Test that remove_operator does not fail when the operator to be removed is not in the queue."""
+
+        op1 = qml.PauliZ(0)
+        op2 = qml.PauliZ(1)
+        assert not mock_queuing_context.queue
+
+        with mock_queuing_context:
+            QueuingContext.append_operator(op1)
+
+            assert len(mock_queuing_context.queue) == 1
+            assert op1 in mock_queuing_context.queue
+
+            QueuingContext.remove_operator(op2)
+
+        assert len(mock_queuing_context.queue) == 1
+        assert op1 in mock_queuing_context.queue
+
     def test_append_operator_multiple_queues(self, three_mock_queuing_contexts):
         """Test that append_operator appends the operator to multiple queues."""
 
