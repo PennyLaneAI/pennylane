@@ -18,6 +18,8 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional
 
+from pennylane.qnodes import QNode
+
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
@@ -30,7 +32,6 @@ except ImportError:
     Layer = ABC
     CORRECT_TF_VERSION = False
 
-from pennylane.qnodes import QNode
 
 INPUT_ARG = "inputs"
 
