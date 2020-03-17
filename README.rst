@@ -37,30 +37,33 @@
 
 |CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
-`PennyLane <https://pennylane.readthedocs.io>`_ is a Python library for **differentiable quantum programming**. 
+`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for **differentiable quantum programming**. 
+.. raw:: html
 
-Learn how you can use PennyLane for quantum computing, quantum machine learning, and hybrid quantum-classical computations: view and download examples and demos at https://pennylane.ai/qml.
+    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
+    
+You can use PennyLane for quantum computing, quantum machine learning, quantum chemistry, and hybrid quantum-classical computations. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
 
-Features
-========
+Key Features
+============
 
 .. raw:: html
 
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
-
-- **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
-
-- **Best of both worlds**.
-  Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, TensorFlow, and NumPy.
-
-- **Batteries included**. Provides **optimization and machine learning** tools.
 
 - **Device independent**.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`__ to access even more
   devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
+  
+- **Best of both worlds**.
+  Support for **hybrid quantum and classical** models; connect quantum
+  hardware with PyTorch, TensorFlow, and NumPy.
+
+- **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
+
+- **Batteries included**. Built-in tools for **optimization, machine learning, and quantum chemistry**.
 
 Available plugins
 =================
