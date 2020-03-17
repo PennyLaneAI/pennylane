@@ -417,9 +417,8 @@ class TestKerasLayerIntegration:
         model.load_weights(filename)
         prediction_loaded = model.predict(np.ones(n_qubits))
         weights_loaded = model.get_weights()
+        os.remove(filename)
 
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):
             assert np.allclose(w, weights_loaded[i])
-
-        os.remove(filename)
