@@ -58,10 +58,12 @@ class BaseBenchmark(abc.ABC):
         """
 
 
-def create_qnode(qfunc, device, mutable=True):
+def create_qnode(qfunc, device, mutable=True, interface="autograd"):
     """Utility function for creating a quantum node.
 
     Takes care of the backwards compatibility of the benchmarks.
+
+    Implicitly uses the parameter-shift method for computing Jacobians.
 
     Args:
         qfunc (Callable): quantum function defining a circuit
@@ -72,8 +74,13 @@ def create_qnode(qfunc, device, mutable=True):
         BaseQNode: constructed QNode
     """
     try:
-        qnode = qml.qnodes.QubitQNode(qfunc, device, mutable=mutable)
+        qnode = qml.qnodes.QNode(qfunc, device, mutable=mutable, diff_method="parameter-shift", interface=interface)
     except AttributeError:
         # versions before the "new-style" QNodes
         qnode = qml.QNode(qfunc, device, cache=not mutable)
+        if interface == "torch":
+            return qnode.to_torch()
+        if interface == "tf":
+            return qnode.to_tf()
+
     return qnode
