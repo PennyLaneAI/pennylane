@@ -25,12 +25,14 @@ class BaseBenchmark(abc.ABC):
 
     Args:
         device (~pennylane.Device): device for executing the benchmark (if needed)
+        verbose (bool): If True, print debugging info during the benchmark. Note that this
+            may invalidate the benchmark due to printing latency that should be irrelevant.
     """
     name = None  #: str: benchmark name
     min_wires = 1  #: int: minimum number of quantum wires required by the benchmark
     n_vals = None  #: Sequence[Any]: range of benchmark parameter values for perfplot
 
-    def __init__(self, device=None):
+    def __init__(self, device=None, verbose=False):
         self.device = device
         if device is not None:
             if device.num_wires < self.min_wires:
@@ -38,6 +40,7 @@ class BaseBenchmark(abc.ABC):
             self.n_wires = device.num_wires
         else:
             self.n_wires = None
+        self.verbose = verbose
 
     @abc.abstractmethod
     def setup(self):

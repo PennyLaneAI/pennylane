@@ -101,7 +101,7 @@ def cli():
     """
     parser = argparse.ArgumentParser(description='PennyLane benchmarking tool')
     parser.add_argument('--version', action='version', version=__version__)
-    #parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
+    parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
     parser.add_argument('-d', '--device', type=lambda x: x.split(','), default=['default.qubit'], help='comma-separated list of devices to run the benchmark on (default: %(default)s)')
     parser.add_argument('-w', '--wires', type=int, default=3, help='number of wires to run the benchmark on (default: %(default)s)')
     parser.add_argument('cmd', choices=['time', 'plot', 'profile'], help='function to perform')
@@ -117,6 +117,8 @@ def cli():
     short_hash = title.split(" ", maxsplit=1)[0]
 
     print("Benchmarking PennyLane", qml.version())
+    if args.verbose:
+        print("Verbose mode on, results may not be representative.")
     print("Commit:", title)
     qml.about()
     print()
@@ -128,20 +130,20 @@ def cli():
     if args.cmd == "time":
         for d in args.device:
             dev = qml.device(d, wires=args.wires)
-            bm = mod.Benchmark(dev)
+            bm = mod.Benchmark(dev, args.verbose)
             bm.setup()
             print("Timing: '{}' benchmark on {}".format(bm.name, d))
             timing(bm.benchmark)
     elif args.cmd == "plot":
         print("Performance plot: '{}' benchmark on {}".format(mod.Benchmark.name, args.device))
-        bms = [mod.Benchmark(qml.device(d, wires=args.wires)) for d in args.device]
+        bms = [mod.Benchmark(qml.device(d, wires=args.wires), args.verbose) for d in args.device]
         for k in bms:
             k.setup()
         plot(title, [k.benchmark for k in bms], [args.benchmark + ' ' + k.device.short_name for k in bms], mod.Benchmark.n_vals)
     elif args.cmd == "profile":
         for d in args.device:
             dev = qml.device(d, wires=args.wires)
-            bm = mod.Benchmark(dev)
+            bm = mod.Benchmark(dev, args.verbose)
             bm.setup()
             print("Profiling: '{}' benchmark on {}".format(bm.name, d))
             profile(bm.benchmark, identifier=short_hash + '_' + d)

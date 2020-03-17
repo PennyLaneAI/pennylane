@@ -39,8 +39,8 @@ class Benchmark(bu.BaseBenchmark):
     min_wires = 1
     n_vals = range(10, 60, 10)
 
-    def __init__(self, device=None):
-        super().__init__(device)
+    def __init__(self, device=None, verbose=False):
+        super().__init__(device, verbose)
         self.qnode = None
 
     def setup(self):
@@ -51,6 +51,8 @@ class Benchmark(bu.BaseBenchmark):
         # Execution time should grow quadratically in n as
         # the circuit size grows linearly with evaluation number.
 
+        # PL commits 3862206f and earlier suffer from a bug which accidentally
+        # makes this benchmark very fast, but return nonsense results.
         wrong_results = 0
         for i in range(n):
             params = np.random.rand(i)
@@ -60,5 +62,6 @@ class Benchmark(bu.BaseBenchmark):
             if np.abs(res - expected) > 1e-6:
                 wrong_results += 1
 
-        # print("Wrong results: {}/{}".format(wrong_results, n))
+        if self.verbose:
+            print("Wrong results: {}/{}".format(wrong_results, n))
         return True

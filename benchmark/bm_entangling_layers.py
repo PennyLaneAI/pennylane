@@ -47,18 +47,15 @@ class Benchmark(bu.BaseBenchmark):
     def setup(self):
         pass  # everything is timed
 
-
     def benchmark(self, n=3):
         # n is the number of layers in the circuit
+        if self.verbose:
+            print("circuit: {} layers, {} wires".format(n, self.n_wires))
 
-        # print("circuit: {} layers, {} wires".format(n_layers, n_wires))
         features = np.arange(self.n_wires)
         init_weights = strong_ent_layers_uniform(n_layers=n, n_wires=self.n_wires)
 
         qnode = bu.create_qnode(circuit, self.device, mutable=False)
-
         qnode(init_weights, features=features)
-        # print(qnode.draw())
-
         qnode.jacobian(init_weights, {"features": features})
         return True
