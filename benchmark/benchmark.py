@@ -61,15 +61,6 @@ def plot(title, kernels, labels, n_vals):
         n_range=n_vals,
         xlabel="n",
         title=title,
-        # logx="auto",  # set to True or False to force scaling
-        # logy="auto",
-        # equality_check=numpy.allclose,  # set to None to disable "correctness" assertion
-        # automatic_order=True,
-        # colors=None,
-        # target_time_per_measurement=1.0,
-        # time_unit="s",  # set to one of ("auto", "s", "ms", "us", or "ns") to force plot units
-        # relative_to=1,  # plot the timings relative to one of the measurements
-        # flops=lambda n: 3*n,  # FLOPS plots
     )
 
 
