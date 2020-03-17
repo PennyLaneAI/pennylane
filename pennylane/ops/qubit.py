@@ -637,7 +637,7 @@ class CRY(Operation):
     .. math::
 
         \begin{align}
-             CRY(\phi) &= I_{1}\otimes U3_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes U3_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
+             CRY(\phi) &= I_{1}\otimes RY_{2}(\pi / 2) ~\cdot~ CNOT_{12} ~\cdot~ I_{1}\otimes RY_{2}(-\pi / 2) ~\cdot~ CNOT_{12} \notag \\[10pt]
             &=
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
@@ -659,7 +659,7 @@ class CRY(Operation):
     **Decomposition**
 
     If the ``CRY`` gate is not supported on the targeted device, PennyLane
-    will attempt to decompose the gate into :class:`~.U3` and :class:`~.CNOT` gates the following way:
+    will attempt to decompose the gate into :class:`~.RY` and :class:`~.CNOT` gates the following way:
 
     .. image:: ../../_static/cry_circuit.png
         :align: center
@@ -683,9 +683,9 @@ class CRY(Operation):
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
-            U3(theta / 2, 0, 0, wires=wires[1]),
+            RY(theta / 2, wires=wires[1]),
             CNOT(wires=wires),
-            U3(-theta / 2, 0, 0, wires=wires[1]),
+            RY(-theta / 2, wires=wires[1]),
             CNOT(wires=wires),
         ]
         return decomp_ops
