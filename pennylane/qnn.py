@@ -134,7 +134,7 @@ class KerasLayer(Layer):
 
         self.qnode = to_tf(qnode, dtype=tf.keras.backend.floatx())
         self.weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,))
+            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
         }
         self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
@@ -179,10 +179,7 @@ class KerasLayer(Layer):
             for arg in self.sig:
                 if arg is not INPUT_ARG:
                     w = self.qnode_weights[arg]
-                    if w.shape == (1,):
-                        qnode = functools.partial(qnode, w[0])
-                    else:
-                        qnode = functools.partial(qnode, w)
+                    qnode = functools.partial(qnode, w)
                 else:
                     if self.input_is_default:
                         qnode = functools.partial(qnode, **{INPUT_ARG: x})
