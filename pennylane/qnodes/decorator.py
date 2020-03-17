@@ -95,6 +95,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     node = interface_creator()
     return node
 
+
 def get_qnode_creator(device_jacobian, model, diff_method):
     """Returns the class for the specified QNode.
 
@@ -124,6 +125,7 @@ def get_qnode_creator(device_jacobian, model, diff_method):
         "Differentiation method {} not recognized. Allowed "
         "options are {}".format(diff_method, ALLOWED_DIFF_METHODS)
     )
+
 
 def get_interface_creator(node, interface, diff_method):
     """Returns the method that creates the specified interface.
