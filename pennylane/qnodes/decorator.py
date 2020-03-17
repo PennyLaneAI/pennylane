@@ -96,10 +96,13 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     return node
 
 def get_qnode_creator(device_jacobian, model, diff_method):
-    """Returns the QNode creator function object.
+    """Returns the class for the specified QNode.
+
+    Raises:
+        ValueError: if an unrecognized ``diff_method`` is defined
 
     Returns:
-       callable: a function
+       callable: the QNode class object that will be instantiated
     """
     if diff_method is None:
         # QNode is not differentiable
@@ -123,6 +126,14 @@ def get_qnode_creator(device_jacobian, model, diff_method):
     )
 
 def get_interface_creator(node, interface, diff_method):
+    """Returns the method that creates the specified interface.
+
+    Raises:
+        ValueError: if an unrecognized ``interface`` is defined
+
+    Returns:
+       callable: the QNode method that creates the interface
+    """
     if interface == "torch":
         return node.to_torch
 
@@ -134,7 +145,8 @@ def get_interface_creator(node, interface, diff_method):
         return node.to_autograd
 
     if interface is None:
-        # if no interface is specified, return the 'bare' QNode
+        # if no interface is specified, return a lambda function that returns
+        # the 'bare' QNode
         return lambda: node
 
     raise ValueError(
