@@ -122,8 +122,8 @@ class TestKerasLayer:
         c, w = get_circuit
         w[qml.qnn.keras.INPUT_ARG] = n_qubits
         with pytest.raises(
-            ValueError, match="{} argument should not have its dimension".format(
-                    qml.qnn.keras.INPUT_ARG)
+            ValueError,
+            match="{} argument should not have its dimension".format(qml.qnn.keras.INPUT_ARG),
         ):
             KerasLayer(c, w, output_dim)
 
