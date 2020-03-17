@@ -82,16 +82,6 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     Keyword Args:
         h (float): step size for the finite-difference method
     """
-    if diff_method is None:
-        # QNode is not differentiable
-        return BaseQNode(func, device, mutable=mutable, **kwargs)
-
-    if diff_method not in ALLOWED_DIFF_METHODS:
-        raise ValueError(
-            "Differentiation method {} not recognized. Allowed "
-            "options are {}".format(diff_method, ALLOWED_DIFF_METHODS)
-        )
-
     # Set the default model to qubit, for backwards compatability with existing plugins
     # TODO: once all plugins have been updated to add `model` to their
     # capabilities dictionary, update the logic here
@@ -99,7 +89,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     device_jacobian = device.capabilities().get("provides_jacobian", False)
 
     qnode_creator = get_qnode_creator(device_jacobian, model, diff_method)
-    node = qnode_creator(func, device, mutable=mutable, properties=properties)
+    node = qnode_creator(func, device, mutable=mutable, **kwargs)
 
     interface_creator = get_interface_creator(node, interface, diff_method)
     node = interface_creator()
@@ -111,6 +101,9 @@ def get_qnode_creator(device_jacobian, model, diff_method):
     Returns:
        callable: a function
     """
+    if diff_method is None:
+        # QNode is not differentiable
+        return BaseQNode
 
     if device_jacobian and (diff_method == "best"):
         # hand off differentiation to the device
@@ -120,8 +113,14 @@ def get_qnode_creator(device_jacobian, model, diff_method):
         # parameter-shift analytic differentiation
         return PARAMETER_SHIFT_QNODES[model]
 
-    # finite differences
-    return JacobianQNode
+    if diff_method in ALLOWED_DIFF_METHODS:
+        # finite differences
+        return JacobianQNode
+
+    raise ValueError(
+        "Differentiation method {} not recognized. Allowed "
+        "options are {}".format(diff_method, ALLOWED_DIFF_METHODS)
+    )
 
 def get_interface_creator(node, interface, diff_method):
     if interface == "torch":
