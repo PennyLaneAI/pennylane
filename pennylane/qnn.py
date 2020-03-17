@@ -41,7 +41,7 @@ class KerasLayer(Layer):
     This class converts a :class:`~.QNode` to a Keras layer. The QNode must have a signature that
     satisfies the following conditions:
 
-    - Contain an ``inputs`` argument for inputting data. All other arguments are treated as
+    - Contain an ``inputs`` named argument for input data. All other arguments are treated as
       weights within the QNode.
     - All arguments must accept an array or tensor, e.g., arguments should not use nested lists
       of different lengths.
@@ -52,14 +52,13 @@ class KerasLayer(Layer):
       ``**kwargs`` present in the signature.
 
     The QNode weights are initialized within the :class:`~.KerasLayer`. Upon instantiation,
-    a ``weight_shapes`` dictionary must hence be passed which describes the shapes of all
+    a ``weight_shapes`` dictionary must be passed which describes the shapes of all
     weights in the QNode. The optional ``weight_specs`` argument allows for a more fine-grained
     specification of the QNode weights, such as the method of initialization and any
     regularization or constraints. If not specified, weights will be added using the Keras
-    default initialization and without any regularization
-    or constraints.
+    default initialization and without any regularization or constraints.
 
-    **Example usage:**
+    **Example:**
 
     .. code-block:: python
 
@@ -86,7 +85,7 @@ class KerasLayer(Layer):
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
             their corresponding sizes
         output_dim (int): the dimension of data output from the QNode
-        weight_specs (dict[str, dict]): an optional dictionary for users to provide additional
+        weight_specs (dict[str, dict]): An optional dictionary for users to provide additional
             specifications for weights used in the QNode, such as the method of parameter
             initialization. This specification is provided as a dictionary with keys given by the
             arguments of the `add_weight()
@@ -155,7 +154,7 @@ class KerasLayer(Layer):
             spec = self.weight_specs.get(weight, {})
             self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
 
-        super(KerasLayer, self).build(input_shape)
+        super().build(input_shape)
 
     def call(self, inputs):
         """Evaluates the QNode on input data using the initialized weights.

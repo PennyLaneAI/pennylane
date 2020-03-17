@@ -37,7 +37,7 @@ def to_tf(qnode, dtype=None):
 
     Args:
         qnode (~pennylane.qnode.QNode): a PennyLane QNode
-        dtype (tf.DType): target output type of QNode, uses default output type of QNode if not
+        dtype (tf.DType): target output type of QNode; uses default output type of QNode if not
             specified
 
     Returns:
