@@ -38,7 +38,7 @@ INPUT_ARG = "inputs"
 class KerasLayer(Layer):
     """A Keras layer for integrating PennyLane QNodes with the Keras API.
 
-    This class converts a :class:`~.QNode` to a Keras layer. The QNode must have a signature that
+    This class converts a :func:`~.QNode` to a Keras layer. The QNode must have a signature that
     satisfies the following conditions:
 
     - Contain an ``inputs`` named argument for input data. All other arguments are treated as
@@ -58,28 +58,6 @@ class KerasLayer(Layer):
     regularization or constraints. If not specified, weights will be added using the Keras
     default initialization and without any regularization or constraints.
 
-    **Example:**
-
-    .. code-block:: python
-
-        n_qubits = 2
-        dev = qml.dev("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(inputs, weights):
-            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
-            qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        weight_shapes = {"weights": (3, n_qubits, 3)}
-        weight_specs = {"weights": {"initializer": "random_uniform"}}
-
-        qnode = qml.qnn.KerasLayer(circuit, weight_shapes, 2, weight_specs)
-
-    The resulting ``qnode`` can be treated as a Keras layer and can be combined with other layers
-    using the `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
-    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ APIs.
-
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras layer
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
@@ -90,9 +68,35 @@ class KerasLayer(Layer):
             initialization. This specification is provided as a dictionary with keys given by the
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
-            (e.g., ``initializer``) method and values being the corresponding specification.
+            method and values being the corresponding specification.
         **kwargs: additional keyword arguments passed to the `Layer
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__ base class
+
+    **Example**
+
+    The following shows how a circuit composed of templates from the :doc:`/code/qml_templates`
+    module can be converted into a Keras layer.
+
+    .. code-block:: python
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(inputs, weights):
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        weight_shapes = {"weights": (3, n_qubits, 3)}
+        weight_specs = {"weights": {"initializer": "random_uniform"}}
+
+        keras_layer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2,
+                                         weight_specs=weight_specs)
+
+    The resulting ``keras_layer`` can be combined with other layers using the `Sequential
+    <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
+    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ Keras APIs.
     """
 
     def __init__(
@@ -112,15 +116,19 @@ class KerasLayer(Layer):
             raise TypeError(
                 "QNode must include an argument with name {} for inputting data".format(INPUT_ARG)
             )
+
         if INPUT_ARG in set(weight_shapes.keys()):
             raise ValueError(
                 "{} argument should not have its dimension specified in "
                 "weight_shapes".format(INPUT_ARG)
             )
+
         if set(weight_shapes.keys()) | {INPUT_ARG} != set(self.sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+
         if qnode.func.var_pos:
             raise TypeError("Cannot have a variable number of positional arguments")
+
         if qnode.func.var_keyword:
             raise TypeError("Cannot have a variable number of keyword arguments")
 
@@ -142,7 +150,7 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super(KerasLayer, self).__init__(dynamic=True, **kwargs)
+        super().__init__(dynamic=True, **kwargs)
 
     def build(self, input_shape):
         """Initializes the QNode weights.
@@ -200,5 +208,4 @@ class KerasLayer(Layer):
         detail = "<Quantum Keras layer: func={}>"
         return detail.format(self.qnode.func.__name__)
 
-    def __repr__(self):
-        return self.__str__()
+    __repr__ = __str__
