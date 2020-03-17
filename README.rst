@@ -37,11 +37,9 @@
 
 |CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
-`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
-automatic differentiation, and optimization of hybrid quantum-classical computations.
+`PennyLane <https://pennylane.readthedocs.io>`_ is a Python library for **differentiable quantum programming**. 
 
-Learn more about quantum machine learning with PennyLane: view and download QML examples
-and demos over at https://pennylane.ai/qml.
+Learn how you can use PennyLane for quantum computing, quantum machine learning, and hybrid quantum-classical computations: view and download examples and demos at https://pennylane.ai/qml.
 
 Features
 ========
@@ -50,13 +48,13 @@ Features
 
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
-- **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
+- **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
 
 - **Best of both worlds**.
   Support for **hybrid quantum and classical** models; connect quantum
   hardware with PyTorch, TensorFlow, and NumPy.
 
-- **Batteries included**. Provides **optimization and machine learning** tools
+- **Batteries included**. Provides **optimization and machine learning** tools.
 
 - **Device independent**.
   The same quantum circuit model can be **run on different backends**. Install
