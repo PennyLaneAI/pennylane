@@ -98,6 +98,9 @@ def _decompose_queue(ops, device):
             new_ops.append(op)
         else:
             decomposed_ops = op.decomposition(*op.params, wires=op.wires)
+            if op.inverse:
+                decomposed_ops = qml.inv(decomposed_ops)
+
             decomposition = _decompose_queue(decomposed_ops, device)
             new_ops.extend(decomposition)
 
@@ -128,7 +131,7 @@ def decompose_queue(ops, device):
     return new_ops
 
 
-class BaseQNode:
+class BaseQNode(qml.QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
     A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
@@ -158,11 +161,14 @@ class BaseQNode:
             and returning a tuple of measured :class:`~.operation.Observable` instances.
         device (~pennylane._device.Device): computational device to execute the function on
         mutable (bool): whether the circuit is mutable, see above
-        properties (dict[str, Any] or None): additional keyword properties for adjusting the QNode behavior
+
+    Keyword Args:
+        vis_check (bool): whether to check for operations that cannot affect the output
+        par_check (bool): whether to check for unused positional params
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, func, device, *, mutable=True, properties=None):
+    def __init__(self, func, device, *, mutable=True, **kwargs):
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
@@ -177,8 +183,8 @@ class BaseQNode:
         self.circuit = None  #: CircuitGraph: DAG representation of the quantum circuit
 
         self.mutable = mutable  #: bool: whether the circuit is mutable
-        #: dict[str, Any]: additional keyword properties for adjusting the QNode behavior
-        self.properties = properties or {}
+        #: dict[str, Any]: additional keyword kwargs for adjusting the QNode behavior
+        self.kwargs = kwargs or {}
 
         self.variable_deps = {}
         """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc positional parameter
@@ -200,22 +206,6 @@ class BaseQNode:
         """String representation."""
         detail = "<QNode: device='{}', func={}, wires={}>"
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
-
-    def __enter__(self):
-        """Make this node the current execution context for quantum functions.
-        """
-        if qml._current_context is None:
-            qml._current_context = self
-        else:
-            raise QuantumFunctionError(
-                "qml._current_context must not be modified outside this method."
-            )
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Reset the quantum function execution context to None.
-        """
-        qml._current_context = None
 
     def print_applied(self):
         """Prints the most recently applied operations from the QNode.
@@ -308,48 +298,39 @@ class BaseQNode:
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
 
-    def _remove_op(self, op):
-        """Remove a quantum operation from the circuit queue.
+    def _remove_operator(self, operator):
+        if isinstance(operator, Observable) and operator.return_type is not None:
+            self.obs_queue.remove(operator)
+        else:
+            self.queue.remove(operator)
 
-        Args:
-            op (:class:`~.operation.Operation`): quantum operation to be removed from the circuit
-        """
-        self.queue.remove(op)
-
-    def _append_op(self, op):
-        """Append a quantum operation into the circuit queue.
-
-        Args:
-            op (:class:`~.operation.Operation`): quantum operation to be added to the circuit
-
-        Raises:
-            ValueError: if `op` does not act on all wires
-            QuantumFunctionError: if state preparations and gates do not precede measured observables
-        """
-        if op.num_wires == Wires.All:
-            if set(op.wires) != set(range(self.num_wires)):
-                raise QuantumFunctionError("Operator {} must act on all wires".format(op.name))
+    def _append_operator(self, operator):
+        if operator.num_wires == Wires.All:
+            if set(operator.wires) != set(range(self.num_wires)):
+                raise QuantumFunctionError(
+                    "Operator {} must act on all wires".format(operator.name)
+                )
 
         # Make sure only existing wires are used.
-        for w in _flatten(op.wires):
+        for w in _flatten(operator.wires):
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with {} wires.".format(op.name, w, self.num_wires)
+                    "on device with {} wires.".format(operator.name, w, self.num_wires)
                 )
 
         # observables go to their own, temporary queue
-        if isinstance(op, Observable):
-            if op.return_type is None:
-                self.queue.append(op)
+        if isinstance(operator, Observable):
+            if operator.return_type is None:
+                self.queue.append(operator)
             else:
-                self.obs_queue.append(op)
+                self.obs_queue.append(operator)
         else:
             if self.obs_queue:
                 raise QuantumFunctionError(
                     "State preparations and gates must precede measured observables."
                 )
-            self.queue.append(op)  # TODO rename self.queue to self.op_queue
+            self.queue.append(operator)
 
     def _determine_structured_variable_name(self, parameter_value, prefix):
         """Determine the variable names corresponding to a parameter.
@@ -498,17 +479,14 @@ class BaseQNode:
                 the nesting structure.
                 Each positional argument is replaced with a :class:`~.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
-
-        Raises:
-            QuantumFunctionError: if :data:`pennylane._current_context` is attempted to be modified
-                inside of this method, the quantum function returns incorrect values or if
-                both continuous and discrete operations are specified in the same quantum circuit
         """
+        # TODO: Update the docstring to reflect the kwargs and the raising conditions
         # pylint: disable=attribute-defined-outside-init, too-many-branches, too-many-statements
 
         self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
         # temporary queues for operations and observables
+        # TODO rename self.queue to self.op_queue
         self.queue = []  #: list[Operation]: applied operations
         self.obs_queue = []  #: list[Observable]: applied observables
 
@@ -549,7 +527,7 @@ class BaseQNode:
         self.circuit = CircuitGraph(self.ops, self.variable_deps)
 
         # check for unused positional params
-        if self.properties.get("par_check", False):
+        if self.kwargs.get("par_check", False):
             unused = [k for k, v in self.variable_deps.items() if not v]
             if unused:
                 raise QuantumFunctionError(
@@ -557,7 +535,7 @@ class BaseQNode:
                 )
 
         # check for operations that cannot affect the output
-        if self.properties.get("vis_check", False):
+        if self.kwargs.get("vis_check", False):
             invisible = self.circuit.invisible_operations()
             if invisible:
                 raise QuantumFunctionError(
@@ -756,6 +734,10 @@ class BaseQNode:
             args (tuple[Any]): positional arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
+        Keyword Args:
+            use_native_type (bool): If True, return the result in whatever type the device uses
+                internally, otherwise convert it into array[float]. Default: False.
+
         Returns:
             float or array[float]: output measured value(s)
         """
@@ -767,7 +749,7 @@ class BaseQNode:
 
         self.device.reset()
 
-        temp = self.properties.get("use_native_type", False)
+        temp = self.kwargs.get("use_native_type", False)
         if isinstance(self.device, qml.QubitDevice):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
             ret = self.device.execute(self.circuit, return_native_type=temp)
