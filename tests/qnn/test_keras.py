@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the pennylane.qnn module.
+Tests for the pennylane.qnn.keras module.
 """
 import os
 import tempfile
@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnn import KerasLayer
+from pennylane.qnn.keras import KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
@@ -91,7 +91,7 @@ def indicies_up_to(n_max):
 
 @pytest.mark.usefixtures("get_circuit")
 class TestKerasLayer:
-    """Unit tests for the pennylane.qnn.KerasLayer class."""
+    """Unit tests for the pennylane.qnn.keras.KerasLayer class."""
 
     @pytest.mark.parametrize("interface", ["tf"])
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
@@ -100,7 +100,7 @@ class TestKerasLayer:
         TensorFlow"""
         c, w = get_circuit
         with monkeypatch.context() as m:
-            m.setattr(qml.qnn, "CORRECT_TF_VERSION", False)
+            m.setattr(qml.qnn.keras, "CORRECT_TF_VERSION", False)
             with pytest.raises(ImportError, match="KerasLayer requires TensorFlow version 2"):
                 KerasLayer(c, w, output_dim)
 
@@ -110,7 +110,7 @@ class TestKerasLayer:
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         INPUT_ARG argument"""
         c, w = get_circuit
-        del c.func.sig[qml.qnn.INPUT_ARG]
+        del c.func.sig[qml.qnn.keras.INPUT_ARG]
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
             KerasLayer(c, w, output_dim)
 
@@ -120,9 +120,10 @@ class TestKerasLayer:
         """Test if a ValueError is raised when instantiated with a weight_shapes dictionary that
         contains the shape of the input"""
         c, w = get_circuit
-        w[qml.qnn.INPUT_ARG] = n_qubits
+        w[qml.qnn.keras.INPUT_ARG] = n_qubits
         with pytest.raises(
-            ValueError, match="{} argument should not have its dimension".format(qml.qnn.INPUT_ARG)
+            ValueError, match="{} argument should not have its dimension".format(
+                    qml.qnn.keras.INPUT_ARG)
         ):
             KerasLayer(c, w, output_dim)
 
@@ -216,7 +217,7 @@ class TestKerasLayer:
             return c(inputs, w1, w2, w3, w4, w5, w6, w7)
 
         with pytest.raises(
-            TypeError, match="Only the argument {} is permitted".format(qml.qnn.INPUT_ARG)
+            TypeError, match="Only the argument {} is permitted".format(qml.qnn.keras.INPUT_ARG)
         ):
             KerasLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
 
@@ -372,7 +373,7 @@ class TestKerasLayer:
 
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
-    """Integration tests for the pennylane.qnn.KerasLayer class."""
+    """Integration tests for the pennylane.qnn.keras.KerasLayer class."""
 
     @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(2))
