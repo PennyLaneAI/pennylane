@@ -18,6 +18,7 @@ Benchmarking tool for PennyLane.
 import argparse
 import importlib
 import subprocess
+import time
 
 import numpy as np
 
@@ -64,27 +65,35 @@ def plot(title, kernels, labels, n_vals):
     )
 
 
-def profile(func, identifier, *, repeat=20):
+def profile(func, identifier, *, min_time=5):
     """Profile the given function.
 
     Args:
         func (Callable[[], Any]): function to profile
         identifier (str): identifying part of the name of the file containing the results
-        repeat (int): the number of times the function is run
+        min_time (float): func is called repeatedly until at least this many seconds have elapsed
     """
     import cProfile
     import pstats
 
+    print("Minimum duration: {} seconds.".format(min_time))
     pr = cProfile.Profile()
     pr.enable()
 
-    for _ in range(repeat):
+    t0 = time.process_time()
+    repeats = 0
+    while True:
         func()
+        repeats += 1
+        elapsed = time.process_time() - t0
+        if elapsed > min_time:
+            break
 
     pr.disable()
     pr.dump_stats("pennylane_{}.pstats".format(identifier))
     ps = pstats.Stats(pr).strip_dirs().sort_stats("tottime")  # "cumulative")
     ps.print_stats()
+    print("{} repeats.".format(repeats))
 
 
 def cli():
