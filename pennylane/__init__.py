@@ -23,6 +23,8 @@ from autograd import jacobian as _jacobian
 
 from semantic_version import Version, Spec
 
+# QueuingContext needs to be imported before all other pennylane imports
+from ._queuing_context import QueuingContext  # pylint: disable=wrong-import-order
 import pennylane.operation
 
 import pennylane.init
@@ -44,9 +46,6 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
-
-
-_current_context = None
 
 
 # overwrite module docstrings
