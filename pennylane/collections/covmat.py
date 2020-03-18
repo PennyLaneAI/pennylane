@@ -31,19 +31,22 @@ _PAULIS = {"PauliX", "PauliY", "PauliZ"}
 
 # All qubit observables: X, Y, Z, H, Hermitian, Identity, (Tensor)
 def symmetric_product(obs1, obs2):
-    wires1 = obs1.wires if not isinstance(obs1, Tensor) else _flatten(obs1.wires)
-    wires2 = obs2.wires if not isinstance(obs2, Tensor) else _flatten(obs2.wires)
+    wires1 = obs1.wires if not isinstance(obs1, Tensor) else list(_flatten(obs1.wires))
+    wires2 = obs2.wires if not isinstance(obs2, Tensor) else list(_flatten(obs2.wires))
 
     if set(wires1).isdisjoint(set(wires2)):
         return obs1 @ obs2
     
     # By now, the observables are guaranteed to have the same wires
-    if obs1.name in _PAULIS and obs2.name in _PAULIS:
-        if obs1.name == obs2.name:
-            return Identity(wires=wires1)
-        
-        # TODO: Add a Zero observable / Multiple of Identity observable
-        return Hermitian(np.zeros((2, 2)), wires=wires1)
+    try:
+        if obs1.name in _PAULIS and obs2.name in _PAULIS:
+            if obs1.name == obs2.name:
+                return Identity(wires=wires1)
+            
+            # TODO: Add a Zero observable / Multiple of Identity observable
+            return Hermitian(np.zeros((2, 2)), wires=wires1)
+    except TypeError:
+        pass
 
     # TODO: add further cases with a lookup table and/or logic
     # the following code will then be needed only for the case
