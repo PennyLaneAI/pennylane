@@ -389,6 +389,8 @@ def inv(operation_list):
 
 def expand_matrix(matrix, original_wires, expanded_wires):
     """Expand matrix to larger tensor space and rearrange wires"""
+    original_wires = list(original_wires)
+    expanded_wires = list(expanded_wires)
     N = len(original_wires)
     M = len(expanded_wires)
     D = M - N
