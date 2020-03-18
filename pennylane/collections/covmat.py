@@ -46,6 +46,7 @@ def symmetric_product(obs1, obs2):
         return Hermitian(np.zeros((2, 2)), wires=wires1)
 
     # TODO: add further cases with a lookup table and/or logic
+    # the following code will then be needed only for the case
     # if isinstance(obs1, Hermitian) or isinstance(obs2, Hermitian):
 
     expanded_wires = list(set(wires1 + wires2))
