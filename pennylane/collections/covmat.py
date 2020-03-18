@@ -17,49 +17,43 @@ Contains an implementation of the covariance matrix using QNode collections.
 import itertools
 import numpy as np
 import pennylane as qml
+from pennylane.utils import expand_matrix, _flatten
+from pennylane.operation import Tensor
+from pennylane import PauliX, PauliY, PauliZ, Hadamard, Identity, Hermitian
 
+def _get_matrix(obs):
+    if isinstance(obs, Tensor):
+        return obs.matrix
+    
+    return obs._matrix(*obs.params)
 
-def expand(matrix, original_wires, expanded_wires):
-    N = len(original_wires)
-    M = len(expanded_wires)
-    D = M - N
+_PAULIS = {"PauliX", "PauliY", "PauliZ"}
 
-    dims = [2] * (2 * N)
-    tensor = matrix.reshape(dims)
-
-    if D > 0:
-        extra_dims = [2] * (2 * D)
-        identity = np.eye(len(extra_dims)).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, identity, axes=0)
-        # Fix order of tensor factors
-        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
-    else:
-        expanded_tensor = tensor
-
-    wire_indices = []
-    for wire in original_wires:
-        wire_indices.append(expanded_wires.index(wire))
-
-    wire_indices = np.array(wire_indices)
-
-    # Order tensor factors according to wires
-    original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
-
-    return expanded_tensor.reshape((2 ** M, 2 ** M))
-
-
+# All qubit observables: X, Y, Z, H, Hermitian, (Tensor)
 def symmetric_product(obs1, obs2):
-    if isinstance(obs1, qml.Hermitian) and isinstance(obs2, qml.Hermitian):
-        expanded_wires = list(set(obs1.wires + obs2.wires))
-        mat1 = expand(np.array(obs1.params[0]), obs1.wires, expanded_wires)
-        mat2 = expand(np.array(obs2.params[0]), obs2.wires, expanded_wires)
+    wires1 = obs1.wires if not isinstance(obs1, Tensor) else _flatten(obs1.wires)
+    wires2 = obs2.wires if not isinstance(obs2, Tensor) else _flatten(obs2.wires)
+
+    if set(wires1).isdisjoint(set(wires2)):
+        return obs1 @ obs2
+
+    if isinstance(obs1, Hermitian) or isinstance(obs2, Hermitian):
+        expanded_wires = list(set(wires1 + wires2))
+        mat1 = expand_matrix(_get_matrix(obs1)), wires1, expanded_wires)
+        mat2 = expand_matrix(_get_matrix(obs2)), wires2, expanded_wires)
         sym_mat = 0.5 * (mat1 @ mat2 + mat2 @ mat1)
 
-        return qml.Hermitian(sym_mat, wires=expanded_wires)
-    else:
-        raise NotImplementedException("Only Hermitian supported so far.")
+        return Hermitian(sym_mat, wires=expanded_wires)
+    
+    # By now, the observables are guaranteed to have the same wires
+    if obs1.name in _PAULIS and obs2.name in _PAULIS:
+        if obs1.name == obs2.name:
+            return Identity(wires=wires1)
+        
+        # TODO: Add a Zero observable
+        return Hermitian(np.zeros((2, 2)), wires=wires1)
+
+    raise NotImplementedError("Symmetric product for observables {} and {} is not supported.".format(obs1.name, obs2.name))
 
 
 class CovarianceMatrix:
