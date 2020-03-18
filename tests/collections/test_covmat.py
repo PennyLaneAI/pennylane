@@ -238,11 +238,13 @@ class TestCovarianceMatrix:
         assert np.allclose(matrix, expected_matrix, atol=tol, rtol=0)
 
     ZZ_cov = np.array([[1, 1], [1, 1]])
+    ZH_cov = np.array([[1, 1/np.sqrt(2)], [1/np.sqrt(2), 1]])
 
     @pytest.mark.parametrize(
         "observables,expected_matrix",
         [
             ([qml.PauliZ(0), qml.PauliZ(1)], ZZ_cov),
+            ([qml.PauliZ(0), qml.Hadamard(1)], ZH_cov),
         ],
     )
     def test_result_phi_plus(self, observables, expected_matrix, default_qubit_device, tol):
