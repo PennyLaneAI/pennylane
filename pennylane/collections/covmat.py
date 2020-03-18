@@ -36,16 +36,17 @@ def symmetric_product(obs1, obs2):
 
     if set(wires1).isdisjoint(set(wires2)):
         return obs1 @ obs2
-    
+
     # By now, the observables are guaranteed to have the same wires
     try:
         if obs1.name in _PAULIS and obs2.name in _PAULIS:
             if obs1.name == obs2.name:
                 return Identity(wires=wires1)
-            
+
             # TODO: Add a Zero observable / Multiple of Identity observable
             return Hermitian(np.zeros((2, 2)), wires=wires1)
     except TypeError:
+        # This occurs when we use in with a tensor's name
         pass
 
     # TODO: add further cases with a lookup table and/or logic
