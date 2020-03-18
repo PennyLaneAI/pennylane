@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.collection.covmat` submodule.
 """
 import pytest
 
+import autograd
 import numpy as np
 import pennylane as qml
 from pennylane.collections.covmat import symmetric_product, CovarianceMatrix
@@ -179,9 +180,11 @@ class TestSymmetricProduct:
         for result_param, expected_param in zip(result.params, expected_product.params):
             assert np.allclose(result_param, expected_param, atol=tol, rtol=0)
 
+
 @qml.template
 def empty_ansatz(params, wires=None):
     """Do nothing."""
+
 
 @qml.template
 def phi_plus_ansatz(params, wires=None):
@@ -189,11 +192,13 @@ def phi_plus_ansatz(params, wires=None):
     qml.Hadamard(0)
     qml.CNOT(wires=[0, 1])
 
+
 @qml.template
 def parametrized_ansatz(params, wires=None):
     """Prepare a Phi+ state."""
     qml.Rot(params[0], params[1], params[2], wires=[0])
     qml.CNOT(wires=[0, 1])
+
 
 @pytest.fixture
 def default_qubit_device():
@@ -235,28 +240,28 @@ class TestCovarianceMatrix:
             ([qml.PauliX(0), qml.PauliX(1)], XX_cov),
             ([qml.PauliX(0), qml.Hermitian(H3, wires=[0, 1])], XH3_cov),
             ([qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian(H3, wires=[0, 1])], H3H4_cov),
-            ([qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian(H3, wires=[1, 2])], H3H4_cov_different_wires),
+            (
+                [qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian(H3, wires=[1, 2])],
+                H3H4_cov_different_wires,
+            ),
         ],
     )
     def test_result_zero_state(self, observables, expected_matrix, default_qubit_device, tol):
-        """Test that the calculated covariance matrix is correct."""
+        """Test that the calculated covariance matrix is correct for the zero state."""
         covmat = CovarianceMatrix(empty_ansatz, observables, default_qubit_device)
         matrix = covmat([])
 
         assert np.allclose(matrix, expected_matrix, atol=tol, rtol=0)
 
     ZZ_cov = np.array([[1, 1], [1, 1]])
-    ZH_cov = np.array([[1, 1/np.sqrt(2)], [1/np.sqrt(2), 1]])
+    ZH_cov = np.array([[1, 1 / np.sqrt(2)], [1 / np.sqrt(2), 1]])
 
     @pytest.mark.parametrize(
         "observables,expected_matrix",
-        [
-            ([qml.PauliZ(0), qml.PauliZ(1)], ZZ_cov),
-            ([qml.PauliZ(0), qml.Hadamard(1)], ZH_cov),
-        ],
+        [([qml.PauliZ(0), qml.PauliZ(1)], ZZ_cov), ([qml.PauliZ(0), qml.Hadamard(1)], ZH_cov),],
     )
     def test_result_phi_plus(self, observables, expected_matrix, default_qubit_device, tol):
-        """Test that the calculated covariance matrix is correct."""
+        """Test that the calculated covariance matrix is correct for a Phi+ state."""
         covmat = CovarianceMatrix(phi_plus_ansatz, observables, default_qubit_device)
         matrix = covmat([])
 
@@ -264,12 +269,31 @@ class TestCovarianceMatrix:
 
     @staticmethod
     def expected_ZZ_cov(alpha, beta, gamma):
-        return np.sin(beta)**2 * np.ones((2, 2))
+        return np.sin(beta) ** 2 * np.ones((2, 2))
 
-    @pytest.mark.parametrize("beta", np.linspace(0, 2*np.pi, 9))
+    @pytest.mark.parametrize("beta", np.linspace(0, 2 * np.pi, 9))
     def test_parametric_dependence(self, beta, default_qubit_device, tol):
-        """Test that the calculated covariance matrix is correct."""
-        covmat = CovarianceMatrix(parametrized_ansatz, [qml.PauliZ(0), qml.PauliZ(1)], default_qubit_device)
+        """Test that the calculated covariance matrix is correct for a parametric dependence."""
+        covmat = CovarianceMatrix(
+            parametrized_ansatz, [qml.PauliZ(0), qml.PauliZ(1)], default_qubit_device
+        )
         matrix = covmat([0, beta, 0])
 
         assert np.allclose(matrix, self.expected_ZZ_cov(0, beta, 0), atol=tol, rtol=0)
+
+    @staticmethod
+    def expected_grad(alpha, beta, gamma):
+        return np.array([0, 8 * np.sin(beta) * np.cos(beta), 0])
+
+    @pytest.mark.parametrize("beta", np.linspace(0, 2 * np.pi, 9))
+    def test_gradient(self, beta, default_qubit_device, tol):
+        """Test that the calculated covariance matrix is correct."""
+        covmat = CovarianceMatrix(
+            parametrized_ansatz, [qml.PauliZ(0), qml.PauliZ(1)], default_qubit_device
+        )
+        def cost(params):
+            return np.sum(covmat(params))
+
+        gradient = autograd.grad(cost)([0.0, beta, 0.0])
+
+        assert np.allclose(gradient, self.expected_grad(0, beta, 0), atol=tol, rtol=0)
