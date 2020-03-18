@@ -103,6 +103,13 @@ class TestSymmetricProduct:
             (qml.Hadamard(0), qml.Hadamard(0), qml.Hermitian(np.eye(2), wires=[0])),
             (qml.Hermitian(H1, 0), qml.Hermitian(H1, 0), qml.Hermitian(H1 @ H1, wires=[0])),
             (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1), qml.Hermitian(XZ @ XZ, wires=[0, 1])),
+
+            (qml.PauliX(0), qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)),
+            (qml.PauliY(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)),
+            (qml.PauliZ(0), qml.Hadamard(1), qml.PauliZ(0) @ qml.Hadamard(1)),
+            (qml.Hadamard(0), qml.Hermitian(H1, wires=[1]), qml.Hadamard(0) @ qml.Hermitian(H1, wires=[1])),
+            (qml.Hermitian(H1, 0), qml.PauliX(1), qml.Hermitian(H1, 0) @ qml.PauliX(1)),
+            (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2) @ qml.PauliZ(3), qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3)),
         ],
     )
     def test_symmetric_product(self, obs1, obs2, expected_product, tol):
