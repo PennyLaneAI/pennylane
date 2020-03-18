@@ -85,23 +85,18 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     # Set the default model to qubit, for backwards compatability with existing plugins
     # TODO: once all plugins have been updated to add `model` to their
     # capabilities dictionary, update the logic here
-    model = device.capabilities().get("model", "qubit")
-    device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
-
-    qnode_class = _get_qnode_class(device_provides_jacobian, model, diff_method)
+    qnode_class = _get_qnode_class(device, diff_method)
     qnode = qnode_class(func, device, mutable=mutable, **kwargs)
 
-    qnode = _apply_interface(node, interface, diff_method)
+    qnode = _apply_interface(qnode, interface, diff_method)
     return qnode
 
 
-def _get_qnode_class(device_jacobian, model, diff_method):
+def _get_qnode_class(device, diff_method):
     """Returns the class for the specified QNode.
 
     Args:
-        device_provides_jacobian (bool): specifies whether or not the device
-            provides a jacobian
-        model (str): the quantum information model the device is using.
+        device (~.Device): a PennyLane-compatible device
         diff_method (str, None): the method of differentiation to use in the created QNode.
 
     Raises:
@@ -111,11 +106,14 @@ def _get_qnode_class(device_jacobian, model, diff_method):
        ~.BaseQNode: the QNode class object that is compatible with the provided device and
            differentiation method
     """
+    model = device.capabilities().get("model", "qubit")
+    device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
+
     if diff_method is None:
         # QNode is not differentiable
         return BaseQNode
 
-    if device_jacobian and (diff_method == "best"):
+    if device_provides_jacobian and (diff_method == "best"):
         # hand off differentiation to the device
         return DeviceJacobianQNode
 
