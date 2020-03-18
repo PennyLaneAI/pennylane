@@ -103,7 +103,8 @@ def get_qnode_creator(device_jacobian, model, diff_method):
         ValueError: if an unrecognized ``diff_method`` is defined
 
     Returns:
-       callable: the QNode class object that will be instantiated
+       ~.BaseQNode: the QNode class object that is compatible with the provided device and
+           differentiation method
     """
     if diff_method is None:
         # QNode is not differentiable
