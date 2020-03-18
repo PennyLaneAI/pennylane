@@ -385,3 +385,38 @@ def inv(operation_list):
         qml.QueuingContext.append_operator(inv_op)
 
     return inv_ops
+
+
+def expand_matrix(matrix, original_wires, expanded_wires):
+    """Expand matrix to larger tensor space and rearrange wires"""
+    N = len(original_wires)
+    M = len(expanded_wires)
+    D = M - N
+
+    dims = [2] * (2 * N)
+    tensor = matrix.reshape(dims)
+
+    if D > 0:
+        extra_dims = [2] * (2 * D)
+        identity = np.eye(len(extra_dims)).reshape(extra_dims)
+        expanded_tensor = np.tensordot(tensor, identity, axes=0)
+        # Fix order of tensor factors
+        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
+    else:
+        expanded_tensor = tensor
+
+    wire_indices = []
+    for wire in original_wires:
+        wire_indices.append(expanded_wires.index(wire))
+
+    wire_indices = np.array(wire_indices)
+
+    # Order tensor factors according to wires
+    original_indices = np.array(range(N))
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
+
+    return expanded_tensor.reshape((2 ** M, 2 ** M))
+
+def rearrange_matrix(matrix, old_wires, new_wires):
+    return expand_matrix(matrix, old_wires, new_wires)
