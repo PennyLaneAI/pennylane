@@ -102,8 +102,10 @@ def cli():
     parser = argparse.ArgumentParser(description='PennyLane benchmarking tool')
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
-    parser.add_argument('-d', '--device', type=lambda x: x.split(','), default=['default.qubit'], help='comma-separated list of devices to run the benchmark on (default: %(default)s)')
-    parser.add_argument('-w', '--wires', type=int, default=3, help='number of wires to run the benchmark on (default: %(default)s)')
+    parser.add_argument('-d', '--device', type=lambda x: x.split(','), default=['default.qubit'],
+                        help='comma-separated list of devices to run the benchmark on (default: %(default)s)')
+    parser.add_argument('-w', '--wires', type=int, default=3,
+                        help='number of wires to run the benchmark on (default: %(default)s)')
     parser.add_argument('cmd', choices=['time', 'plot', 'profile'], help='function to perform')
     parser.add_argument('benchmark', help='benchmark module')
 
@@ -130,9 +132,13 @@ def cli():
     if args.cmd == "plot":
         print("Performance plot: '{}' benchmark on {}".format(mod.Benchmark.name, args.device))
         bms = [mod.Benchmark(qml.device(d, wires=args.wires), args.verbose) for d in args.device]
-        for k in bms: k.setup()
-        plot(title, [k.benchmark for k in bms], [args.benchmark + ' ' + k.device.short_name for k in bms], mod.Benchmark.n_vals)
-        for k in bms: k.teardown()
+        for k in bms:
+            k.setup()
+        plot(title, [k.benchmark for k in bms],
+             [args.benchmark + ' ' + k.device.short_name for k in bms],
+             mod.Benchmark.n_vals)
+        for k in bms:
+            k.teardown()
         return
 
     for d in args.device:
