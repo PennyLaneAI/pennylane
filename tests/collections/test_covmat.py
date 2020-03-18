@@ -186,6 +186,7 @@ def empty_ansatz(params, wires=None):
 
 @pytest.fixture
 def default_qubit_device():
+    """A default.qubit device with 5 wires."""
     return qml.device("default.qubit", wires=5)
 
 
