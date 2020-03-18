@@ -178,3 +178,34 @@ class TestSymmetricProduct:
         assert result.wires == expected_product.wires
         for result_param, expected_param in zip(result.params, expected_product.params):
             assert np.allclose(result_param, expected_param, atol=tol, rtol=0)
+
+
+def empty_ansatz(params, wires=None):
+    """Do nothing."""
+
+
+@pytest.fixture
+def default_qubit_device():
+    return qml.device("default.qubit", wires=5)
+
+
+class TestCovarianceMatrix:
+    """Test the CovarianceMatrix class."""
+
+    @pytest.mark.parametrize(
+        "observables,expected_shape",
+        [
+            ([qml.PauliX(0), qml.PauliZ(1)], (2, 2)),
+            ([qml.PauliX(0), qml.PauliZ(1), qml.Hadamard(2)], (3, 3)),
+            (
+                [qml.PauliX(0), qml.PauliZ(1), qml.Hadamard(2), qml.Hermitian(H3, wires=[3, 4])],
+                (4, 4),
+            ),
+        ],
+    )
+    def test_shape(self, observables, expected_shape, default_qubit_device):
+        """Test that the covariance matrix has the correct shape."""
+        covmat = CovarianceMatrix(empty_ansatz, observables, default_qubit_device)
+        matrix = covmat([])
+
+        assert matrix.shape == expected_shape
