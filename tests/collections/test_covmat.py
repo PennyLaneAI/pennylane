@@ -291,6 +291,7 @@ class TestCovarianceMatrix:
         covmat = CovarianceMatrix(
             parametrized_ansatz, [qml.PauliZ(0), qml.PauliZ(1)], default_qubit_device
         )
+
         def cost(params):
             return np.sum(covmat(params))
 
