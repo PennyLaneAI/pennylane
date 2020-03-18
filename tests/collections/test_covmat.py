@@ -189,6 +189,12 @@ def phi_plus_ansatz(params, wires=None):
     qml.Hadamard(0)
     qml.CNOT(wires=[0, 1])
 
+@qml.template
+def parametrized_ansatz(params, wires=None):
+    """Prepare a Phi+ state."""
+    qml.Rot(params[0], params[1], params[2], wires=[0])
+    qml.CNOT(wires=[0, 1])
+
 @pytest.fixture
 def default_qubit_device():
     """A default.qubit device with 5 wires."""
@@ -255,3 +261,15 @@ class TestCovarianceMatrix:
         matrix = covmat([])
 
         assert np.allclose(matrix, expected_matrix, atol=tol, rtol=0)
+
+    @staticmethod
+    def expected_ZZ_cov(alpha, beta, gamma):
+        return np.sin(beta)**2 * np.ones((2, 2))
+
+    @pytest.mark.parametrize("beta", np.linspace(0, 2*np.pi, 9))
+    def test_parametric_dependence(self, beta, default_qubit_device, tol):
+        """Test that the calculated covariance matrix is correct."""
+        covmat = CovarianceMatrix(parametrized_ansatz, [qml.PauliZ(0), qml.PauliZ(1)], default_qubit_device)
+        matrix = covmat([0, beta, 0])
+
+        assert np.allclose(matrix, self.expected_ZZ_cov(0, beta, 0), atol=tol, rtol=0)
