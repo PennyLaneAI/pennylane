@@ -210,3 +210,24 @@ class TestCovarianceMatrix:
         matrix = covmat([])
 
         assert matrix.shape == expected_shape
+
+    XZ_cov = np.array([[1, 0], [0, 0]])
+    XX_cov = np.array([[1, 0], [0, 1]])
+    XH3_cov = np.array([[1.0, -0.47862897], [-0.47862897, 3.84270392]])
+    H3H4_cov = np.array([[12.72599565, -1.3951829], [-1.3951829, 3.84270392]])
+
+    @pytest.mark.parametrize(
+        "observables,expected_matrix",
+        [
+            ([qml.PauliX(0), qml.PauliZ(1)], XZ_cov),
+            ([qml.PauliX(0), qml.PauliX(1)], XX_cov),
+            ([qml.PauliX(0), qml.Hermitian(H3, wires=[0, 1])], XH3_cov),
+            ([qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian(H3, wires=[0, 1])], H3H4_cov),
+        ],
+    )
+    def test_result_zero_state(self, observables, expected_matrix, default_qubit_device, tol):
+        """Test that the calculated covariance matrix is correct."""
+        covmat = CovarianceMatrix(empty_ansatz, observables, default_qubit_device)
+        matrix = covmat([])
+
+        assert np.allclose(matrix, expected_matrix, atol=tol, rtol=0)
