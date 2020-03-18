@@ -179,10 +179,15 @@ class TestSymmetricProduct:
         for result_param, expected_param in zip(result.params, expected_product.params):
             assert np.allclose(result_param, expected_param, atol=tol, rtol=0)
 
-
+@qml.template
 def empty_ansatz(params, wires=None):
     """Do nothing."""
 
+@qml.template
+def phi_plus_ansatz(params, wires=None):
+    """Prepare a Phi+ state."""
+    qml.Hadamard(0)
+    qml.CNOT(wires=[0, 1])
 
 @pytest.fixture
 def default_qubit_device():
@@ -228,6 +233,21 @@ class TestCovarianceMatrix:
     def test_result_zero_state(self, observables, expected_matrix, default_qubit_device, tol):
         """Test that the calculated covariance matrix is correct."""
         covmat = CovarianceMatrix(empty_ansatz, observables, default_qubit_device)
+        matrix = covmat([])
+
+        assert np.allclose(matrix, expected_matrix, atol=tol, rtol=0)
+
+    ZZ_cov = np.array([[1, 1], [1, 1]])
+
+    @pytest.mark.parametrize(
+        "observables,expected_matrix",
+        [
+            ([qml.PauliZ(0), qml.PauliZ(1)], ZZ_cov),
+        ],
+    )
+    def test_result_phi_plus(self, observables, expected_matrix, default_qubit_device, tol):
+        """Test that the calculated covariance matrix is correct."""
+        covmat = CovarianceMatrix(phi_plus_ansatz, observables, default_qubit_device)
         matrix = covmat([])
 
         assert np.allclose(matrix, expected_matrix, atol=tol, rtol=0)
