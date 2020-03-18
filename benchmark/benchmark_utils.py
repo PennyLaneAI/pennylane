@@ -41,11 +41,16 @@ class BaseBenchmark(abc.ABC):
             self.n_wires = None
         self.verbose = verbose
 
-    @abc.abstractmethod
     def setup(self):
         """Set up the benchmark.
 
         This method contains the initial part of the benchmark that should not be timed.
+        """
+
+    def teardown(self):
+        """Tear down the benchmark.
+
+        This method contains the final part of the benchmark that should not be timed.
         """
 
     @abc.abstractmethod
@@ -71,6 +76,8 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
         qfunc (Callable): quantum function defining a circuit
         device (~pennylane.Device): device for executing the circuit
         mutable (bool): whether the QNode should mutable
+        interface (str, None): interface used for classical backpropagation,
+            in ('autograd', 'torch, 'tf', None)
 
     Returns:
         BaseQNode: constructed QNode

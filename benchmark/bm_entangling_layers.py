@@ -43,9 +43,6 @@ class Benchmark(bu.BaseBenchmark):
     min_wires = 2
     n_vals = range(1, 5)
 
-    def setup(self):
-        pass  # everything is timed
-
     def benchmark(self, n=3):
         # n is the number of layers in the circuit
         if self.verbose:

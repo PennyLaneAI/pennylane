@@ -127,29 +127,27 @@ def cli():
     mod = importlib.import_module(args.benchmark)
 
     # execute the command
-    if args.cmd == "time":
-        for d in args.device:
-            dev = qml.device(d, wires=args.wires)
-            bm = mod.Benchmark(dev, args.verbose)
-            bm.setup()
-            print("Timing: '{}' benchmark on {}".format(bm.name, d))
-            timing(bm.benchmark)
-    elif args.cmd == "plot":
+    if args.cmd == "plot":
         print("Performance plot: '{}' benchmark on {}".format(mod.Benchmark.name, args.device))
         bms = [mod.Benchmark(qml.device(d, wires=args.wires), args.verbose) for d in args.device]
-        for k in bms:
-            k.setup()
+        for k in bms: k.setup()
         plot(title, [k.benchmark for k in bms], [args.benchmark + ' ' + k.device.short_name for k in bms], mod.Benchmark.n_vals)
-    elif args.cmd == "profile":
-        for d in args.device:
-            dev = qml.device(d, wires=args.wires)
-            bm = mod.Benchmark(dev, args.verbose)
-            bm.setup()
+        for k in bms: k.teardown()
+        return
+
+    for d in args.device:
+        dev = qml.device(d, wires=args.wires)
+        bm = mod.Benchmark(dev, args.verbose)
+        bm.setup()
+        if args.cmd == "time":
+            print("Timing: '{}' benchmark on {}".format(bm.name, d))
+            timing(bm.benchmark)
+        elif args.cmd == "profile":
             print("Profiling: '{}' benchmark on {}".format(bm.name, d))
             profile(bm.benchmark, identifier=short_hash + '_' + d)
-    else:
-        raise ValueError("Unknown command.")
-
+        else:
+            raise ValueError("Unknown command.")
+        bm.teardown()
 
 if __name__ == "__main__":
     cli()
