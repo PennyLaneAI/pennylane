@@ -26,6 +26,8 @@ H1 = np.array(
         [-0.75838808 - 0.30230447j, 0.37278698 + 0.0j],
     ]
 )
+H1I = np.kron(H1, np.eye(2))
+
 H2 = np.array(
     [
         [2.34418375 + 0.0j, -0.01975143 - 0.59445146j],
@@ -114,6 +116,9 @@ class TestSymmetricProduct:
             (qml.PauliX(0), qml.PauliY(0), qml.Hermitian(np.zeros((2, 2)), wires=[0])),
             (qml.PauliX(0), qml.PauliZ(0), qml.Hermitian(np.zeros((2, 2)), wires=[0])),
             (qml.PauliY(0), qml.PauliZ(0), qml.Hermitian(np.zeros((2, 2)), wires=[0])),
+            (qml.Hermitian(H1, 0), qml.Hermitian(H2, 0), qml.Hermitian((H1 @ H2 + H2 @ H1)/2, wires=[0])),
+
+            (qml.Hermitian(H1, wires=[0]), qml.Hermitian(H3, wires=[0, 1]), qml.Hermitian((H1I @ H3 + H3 @ H1I)/2, wires=[0, 1])),
         ],
     )
     def test_symmetric_product(self, obs1, obs2, expected_product, tol):
