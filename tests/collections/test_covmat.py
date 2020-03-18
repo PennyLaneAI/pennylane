@@ -62,6 +62,8 @@ H3 = np.array(
         ],
     ]
 )
+IH3 = np.kron(np.eye(2), H3)
+
 H4 = np.array(
     [
         [
@@ -90,6 +92,7 @@ H4 = np.array(
         ],
     ]
 )
+H4I = np.kron(H4, np.eye(2))
 
 XZ = (qml.PauliX(0) @ qml.PauliZ(1)).matrix
 
@@ -105,20 +108,20 @@ class TestSymmetricProduct:
             (qml.Hadamard(0), qml.Hadamard(0), qml.Hermitian(np.eye(2), wires=[0])),
             (qml.Hermitian(H1, 0), qml.Hermitian(H1, 0), qml.Hermitian(H1 @ H1, wires=[0])),
             (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1), qml.Hermitian(XZ @ XZ, wires=[0, 1])),
-
             (qml.PauliX(0), qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)),
             (qml.PauliY(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)),
             (qml.PauliZ(0), qml.Hadamard(1), qml.PauliZ(0) @ qml.Hadamard(1)),
             (qml.Hadamard(0), qml.Hermitian(H1, wires=[1]), qml.Hadamard(0) @ qml.Hermitian(H1, wires=[1])),
             (qml.Hermitian(H1, 0), qml.PauliX(1), qml.Hermitian(H1, 0) @ qml.PauliX(1)),
             (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2) @ qml.PauliZ(3), qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3)),
-            
             (qml.PauliX(0), qml.PauliY(0), qml.Hermitian(np.zeros((2, 2)), wires=[0])),
             (qml.PauliX(0), qml.PauliZ(0), qml.Hermitian(np.zeros((2, 2)), wires=[0])),
             (qml.PauliY(0), qml.PauliZ(0), qml.Hermitian(np.zeros((2, 2)), wires=[0])),
             (qml.Hermitian(H1, 0), qml.Hermitian(H2, 0), qml.Hermitian((H1 @ H2 + H2 @ H1)/2, wires=[0])),
-
             (qml.Hermitian(H1, wires=[0]), qml.Hermitian(H3, wires=[0, 1]), qml.Hermitian((H1I @ H3 + H3 @ H1I)/2, wires=[0, 1])),
+            (qml.PauliX(0) @ qml.PauliZ(1), qml.Hermitian(H3, wires=[0, 1]), qml.Hermitian((XZ @ H3 + H3 @ XZ)/2, wires=[0, 1])),
+            (qml.Hermitian(H3, wires=[1, 2]), qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian((IH3 @ H4I + H4I @ IH3)/2, wires=[0, 1, 2])),
+            (qml.Hermitian(H3, wires=[3, 6]), qml.Hermitian(H4, wires=[0, 3]), qml.Hermitian((IH3 @ H4I + H4I @ IH3)/2, wires=[0, 3, 6])),
         ],
     )
     def test_symmetric_product(self, obs1, obs2, expected_product, tol):
