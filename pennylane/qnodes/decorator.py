@@ -89,10 +89,10 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
     qnode_class = _get_qnode_class(device_provides_jacobian, model, diff_method)
-    node = qnode_class(func, device, mutable=mutable, **kwargs)
+    qnode = qnode_class(func, device, mutable=mutable, **kwargs)
 
-    node = _apply_interface(node, interface, diff_method)
-    return node
+    qnode = _apply_interface(node, interface, diff_method)
+    return qnode
 
 
 def _get_qnode_class(device_jacobian, model, diff_method):
@@ -133,10 +133,11 @@ def _get_qnode_class(device_jacobian, model, diff_method):
     )
 
 
-def _apply_interface(node, interface, diff_method):
-    """Returns the method that creates the specified interface.
+def _apply_interface(qnode, interface, diff_method):
+    """Applies an interface to a specified QNode.
 
     Args:
+        qnode (~.BaseQNode): the QNode to which the interface is applied
         device_provides_jacobian (bool): specifies whether or not the device
             provides a jacobian
         model (str): the quantum information model the device is using.
@@ -149,18 +150,18 @@ def _apply_interface(node, interface, diff_method):
        callable: the QNode method that creates the interface
     """
     if interface == "torch":
-        return node.to_torch()
+        return qnode.to_torch()
 
     if interface == "tf":
-        return node.to_tf()
+        return qnode.to_tf()
 
     if interface in ("autograd", "numpy"):
         # keep "numpy" for backwards compatibility
-        return node.to_autograd()
+        return qnode.to_autograd()
 
     if interface is None:
         # if no interface is specified, return the 'bare' QNode
-        return node
+        return qnode
 
     raise ValueError(
         "Interface {} not recognized. Allowed "
