@@ -59,32 +59,38 @@ def symmetric_product(obs1, obs2):
 
 class CovarianceMatrix:
     def __init__(self, ansatz, observables, device, interface="autograd", diff_method="best"):
-        self.N = len(observables)
+        self.num_observables = len(observables)
+
         product_observables = []
         self.product_observable_indices = {}
-        for i, j in itertools.combinations(range(self.N), r=2):
+        for i, j in itertools.combinations(range(self.num_observables), r=2):
             product_observables.append(symmetric_product(observables[i], observables[j]))
             self.product_observable_indices[(i, j)] = len(product_observables) - 1
-            self.product_observable_indices[(j, i)] = len(product_observables) - 1
+
+        squared_observables = []
+        for i in range(self.num_observables):
+            squared_observables.append(symmetric_product(observables[i], observables[i]))
 
         self.product_qnodes = qml.map(
             ansatz, product_observables, device, interface=interface, diff_method=diff_method
         )
-        self.var_qnodes = qml.map(
-            ansatz, observables, device, measure="var", interface=interface, diff_method=diff_method
+
+        self.square_qnodes = qml.map(
+            ansatz, squared_observables, device, interface=interface, diff_method=diff_method
         )
+
         self.expval_qnodes = qml.map(
             ansatz, observables, device, interface=interface, diff_method=diff_method
         )
 
     def __call__(self, *args, **kwargs):
-        variances = self.var_qnodes(*args, **kwargs)
+        squares = self.square_qnodes(*args, **kwargs)
         expvals = self.expval_qnodes(*args, **kwargs)
         products = self.product_qnodes(*args, **kwargs)
 
-        cov_mat = np.diag(variances)
+        cov_mat = np.diag(squares - expvals**2)
 
-        for i, j in itertools.combinations(range(self.N), r=2):
+        for i, j in itertools.combinations(range(self.num_observables), r=2):
             cov_mat[i, j] = (
                 products[self.product_observable_indices[(i, j)]] - expvals[i] * expvals[j]
             )
