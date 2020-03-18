@@ -88,7 +88,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     model = device.capabilities().get("model", "qubit")
     device_jacobian = device.capabilities().get("provides_jacobian", False)
 
-    qnode_creator = get_qnode_creator(device_jacobian, model, diff_method)
+    qnode_class = _get_qnode_class(device_jacobian, model, diff_method)
     node = qnode_creator(func, device, mutable=mutable, **kwargs)
 
     interface_creator = get_interface_creator(node, interface, diff_method)
