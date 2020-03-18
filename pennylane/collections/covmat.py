@@ -50,8 +50,8 @@ def symmetric_product(obs1, obs2):
     # if isinstance(obs1, Hermitian) or isinstance(obs2, Hermitian):
 
     expanded_wires = list(set(wires1 + wires2))
-    mat1 = expand_matrix(_get_matrix(obs1)), wires1, expanded_wires)
-    mat2 = expand_matrix(_get_matrix(obs2)), wires2, expanded_wires)
+    mat1 = expand_matrix(_get_matrix(obs1), wires1, expanded_wires)
+    mat2 = expand_matrix(_get_matrix(obs2), wires2, expanded_wires)
     sym_mat = 0.5 * (mat1 @ mat2 + mat2 @ mat1)
 
     return Hermitian(sym_mat, wires=expanded_wires)
