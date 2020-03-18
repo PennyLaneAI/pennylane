@@ -86,18 +86,23 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     # TODO: once all plugins have been updated to add `model` to their
     # capabilities dictionary, update the logic here
     model = device.capabilities().get("model", "qubit")
-    device_jacobian = device.capabilities().get("provides_jacobian", False)
+    device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
-    qnode_class = _get_qnode_class(device_jacobian, model, diff_method)
-    node = qnode_creator(func, device, mutable=mutable, **kwargs)
+    qnode_class = _get_qnode_class(device_provides_jacobian, model, diff_method)
+    node = qnode_class(func, device, mutable=mutable, **kwargs)
 
-    interface_creator = get_interface_creator(node, interface, diff_method)
-    node = interface_creator()
+    node = _apply_interface(node, interface, diff_method)
     return node
 
 
-def get_qnode_creator(device_jacobian, model, diff_method):
+def _get_qnode_class(device_jacobian, model, diff_method):
     """Returns the class for the specified QNode.
+
+    Args:
+        device_provides_jacobian (bool): specifies whether or not the device
+            provides a jacobian
+        model (str): the quantum information model the device is using.
+        diff_method (str, None): the method of differentiation to use in the created QNode.
 
     Raises:
         ValueError: if an unrecognized ``diff_method`` is defined
@@ -127,8 +132,14 @@ def get_qnode_creator(device_jacobian, model, diff_method):
     )
 
 
-def get_interface_creator(node, interface, diff_method):
+def _apply_interface(node, interface, diff_method):
     """Returns the method that creates the specified interface.
+
+    Args:
+        device_provides_jacobian (bool): specifies whether or not the device
+            provides a jacobian
+        model (str): the quantum information model the device is using.
+        diff_method (str, None): the method of differentiation to use in the created QNode.
 
     Raises:
         ValueError: if an unrecognized ``interface`` is defined
@@ -137,19 +148,18 @@ def get_interface_creator(node, interface, diff_method):
        callable: the QNode method that creates the interface
     """
     if interface == "torch":
-        return node.to_torch
+        return node.to_torch()
 
     if interface == "tf":
-        return node.to_tf
+        return node.to_tf()
 
     if interface in ("autograd", "numpy"):
         # keep "numpy" for backwards compatibility
-        return node.to_autograd
+        return node.to_autograd()
 
     if interface is None:
-        # if no interface is specified, return a lambda function that returns
-        # the 'bare' QNode
-        return lambda: node
+        # if no interface is specified, return the 'bare' QNode
+        return node
 
     raise ValueError(
         "Interface {} not recognized. Allowed "
