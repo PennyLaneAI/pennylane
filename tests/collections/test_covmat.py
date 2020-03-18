@@ -89,7 +89,7 @@ H4 = np.array(
     ]
 )
 
-XZ = (qml.PauliX(0) @ qml.PauliZ(0)).matrix
+XZ = (qml.PauliX(0) @ qml.PauliZ(1)).matrix
 
 class TestSymmetricProduct:
     """Test the symmetric product of observables."""
@@ -102,7 +102,7 @@ class TestSymmetricProduct:
             (qml.PauliZ(0), qml.PauliZ(0), qml.Identity(wires=[0])),
             (qml.Hadamard(0), qml.Hadamard(0), qml.Hermitian(np.eye(2), wires=[0])),
             (qml.Hermitian(H1, 0), qml.Hermitian(H1, 0), qml.Hermitian(H1 @ H1, wires=[0])),
-            (qml.PauliX(0) @ qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(0), qml.Hermitian(XZ @ XZ, wires=[0])),
+            (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1), qml.Hermitian(XZ @ XZ, wires=[0, 1])),
         ],
     )
     def test_symmetric_product(self, obs1, obs2, expected_product, tol):
