@@ -29,31 +29,31 @@ def _get_matrix(obs):
 
 _PAULIS = {"PauliX", "PauliY", "PauliZ"}
 
-# All qubit observables: X, Y, Z, H, Hermitian, (Tensor)
+# All qubit observables: X, Y, Z, H, Hermitian, Identity, (Tensor)
 def symmetric_product(obs1, obs2):
     wires1 = obs1.wires if not isinstance(obs1, Tensor) else _flatten(obs1.wires)
     wires2 = obs2.wires if not isinstance(obs2, Tensor) else _flatten(obs2.wires)
 
     if set(wires1).isdisjoint(set(wires2)):
         return obs1 @ obs2
-
-    if isinstance(obs1, Hermitian) or isinstance(obs2, Hermitian):
-        expanded_wires = list(set(wires1 + wires2))
-        mat1 = expand_matrix(_get_matrix(obs1)), wires1, expanded_wires)
-        mat2 = expand_matrix(_get_matrix(obs2)), wires2, expanded_wires)
-        sym_mat = 0.5 * (mat1 @ mat2 + mat2 @ mat1)
-
-        return Hermitian(sym_mat, wires=expanded_wires)
     
     # By now, the observables are guaranteed to have the same wires
     if obs1.name in _PAULIS and obs2.name in _PAULIS:
         if obs1.name == obs2.name:
             return Identity(wires=wires1)
         
-        # TODO: Add a Zero observable
+        # TODO: Add a Zero observable / Multiple of Identity observable
         return Hermitian(np.zeros((2, 2)), wires=wires1)
 
-    raise NotImplementedError("Symmetric product for observables {} and {} is not supported.".format(obs1.name, obs2.name))
+    # TODO: add further cases with a lookup table and/or logic
+    # if isinstance(obs1, Hermitian) or isinstance(obs2, Hermitian):
+
+    expanded_wires = list(set(wires1 + wires2))
+    mat1 = expand_matrix(_get_matrix(obs1)), wires1, expanded_wires)
+    mat2 = expand_matrix(_get_matrix(obs2)), wires2, expanded_wires)
+    sym_mat = 0.5 * (mat1 @ mat2 + mat2 @ mat1)
+
+    return Hermitian(sym_mat, wires=expanded_wires)
 
 
 class CovarianceMatrix:
