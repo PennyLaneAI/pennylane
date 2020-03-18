@@ -21,18 +21,17 @@ import pennylane as qml
 from pennylane.templates.layers import StronglyEntanglingLayers
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.init import strong_ent_layers_uniform
-import benchmark_utils as bu
 
+import benchmark_utils as bu
 
 
 def circuit(weights, *, features=None):
     """Immutable quantum circuit."""
 
     n_wires = len(features)  # normally not allowed in immutable circuits, but here we know the len will not change...
-    AngleEmbedding(features, range(n_wires))
+    AngleEmbedding(features, wires=range(n_wires))
     StronglyEntanglingLayers(weights, wires=range(n_wires))
     return qml.expval(qml.PauliZ(0))
-
 
 class Benchmark(bu.BaseBenchmark):
     """Entangling layers benchmark.

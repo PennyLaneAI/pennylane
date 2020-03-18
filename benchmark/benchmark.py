@@ -151,6 +151,5 @@ def cli():
         raise ValueError("Unknown command.")
 
 
-
 if __name__ == "__main__":
     cli()

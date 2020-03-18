@@ -19,7 +19,6 @@ import abc
 import pennylane as qml
 
 
-
 class BaseBenchmark(abc.ABC):
     """ABC for benchmarks.
 
