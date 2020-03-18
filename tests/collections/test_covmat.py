@@ -220,6 +220,7 @@ class TestCovarianceMatrix:
     XX_cov = np.array([[1, 0], [0, 1]])
     XH3_cov = np.array([[1.0, -0.47862897], [-0.47862897, 3.84270392]])
     H3H4_cov = np.array([[12.72599565, -1.3951829], [-1.3951829, 3.84270392]])
+    H3H4_cov_different_wires = np.array([[12.72599565, -0.76926436], [-0.76926436, 3.84270392]])
 
     @pytest.mark.parametrize(
         "observables,expected_matrix",
@@ -228,6 +229,7 @@ class TestCovarianceMatrix:
             ([qml.PauliX(0), qml.PauliX(1)], XX_cov),
             ([qml.PauliX(0), qml.Hermitian(H3, wires=[0, 1])], XH3_cov),
             ([qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian(H3, wires=[0, 1])], H3H4_cov),
+            ([qml.Hermitian(H4, wires=[0, 1]), qml.Hermitian(H3, wires=[1, 2])], H3H4_cov_different_wires),
         ],
     )
     def test_result_zero_state(self, observables, expected_matrix, default_qubit_device, tol):
