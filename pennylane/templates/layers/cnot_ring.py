@@ -28,7 +28,7 @@ from pennylane.templates.utils import (
 
 
 def cnot_ring_layer(weights, wires, rotation):
-    r"""A layer applying a one-parameter single-qubit rotation on each qubit, followed by a chain of CNOT gates.
+    r"""A layer applying a one-parameter single-qubit rotation on each qubit, followed by a ring of CNOT gates.
 
     Args:
         weights (array[float]): array of weights of shape ``(len(wires),)``
@@ -43,23 +43,26 @@ def cnot_ring_layer(weights, wires, rotation):
 
 @template
 def CnotRingLayers(weights, wires, rotation=None):
-    r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a ring of CNOT gates.
+    r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
+    or *ring* of CNOT gates.
 
-    The ring of CNOT gates connects every qubit with its neighbour, whereas the last qubit is considered to be
-    a neighbour of the first qubit.
+    The ring of CNOT gates connects every qubit with its neighbour,
+    whereas the last qubit is considered to be a neighbour of the first qubit.
 
     .. figure:: ../../_static/templates/layers/cnot_ring.png
         :align: center
         :width: 40%
         :target: javascript:void(0);
 
-    The argument ``weights`` contains the weights for each layer. The number of layers :math:`L` is therefore derived
-    from the first dimension of ``weights``. When using a single wire, the template only applies the single qubit gates.
+    The argument ``weights`` is an array of weights for each layer. The number of layers :math:`L` is derived
+    from the first dimension of ``weights``. When using a single wire, the template only applies the single
+    qubit gates in each layer.
 
     .. note::
 
-        Following the standard of dropping the entanglement between the last and the first qubit when using
-        only two wires, only one CNOT gate is applied in each layer in this case:
+        This template follows the convention of dropping the entanglement between the last and the first
+        qubit when using only two wires, so the entangler is not repeated on the same wires.
+        In this case, only one CNOT gate is applied in each layer:
 
         .. figure:: ../../_static/templates/layers/cnot_ring_2wires.png
             :align: center
@@ -71,7 +74,7 @@ def CnotRingLayers(weights, wires, rotation=None):
         weights (array[float]): array of weights of shape ``(L, len(wires))``
         wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
-                                            if ``None`` :class:`~pennylane.ops.RX` is used as default
+                                            if ``None``, :class:`~pennylane.ops.RX` is used as default
     Raises:
         ValueError: if inputs do not have the correct format
 
@@ -141,8 +144,8 @@ def CnotRingLayers(weights, wires, rotation=None):
                 CnotRingLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        Accidentally using a gate that expects more parameters throws a ``ValueError``.
-
+        Accidentally using a gate that expects more parameters throws a
+        ``ValueError: Wrong number of parameters``.
     """
 
     #############
