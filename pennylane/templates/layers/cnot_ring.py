@@ -27,20 +27,6 @@ from pennylane.templates.utils import (
 )
 
 
-def cnot_ring_layer(weights, wires, rotation):
-    r"""A layer applying a one-parameter single-qubit rotation on each qubit, followed by a ring of CNOT gates.
-
-    Args:
-        weights (array[float]): array of weights of shape ``(len(wires),)``
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
-        rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
-                                            defaults to :class:`~pennylane.ops.RX`
-    """
-
-    broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights)
-    broadcast(unitary=CNOT, pattern="ring", wires=wires)
-
-
 @template
 def CnotRingLayers(weights, wires, rotation=None):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
@@ -171,4 +157,5 @@ def CnotRingLayers(weights, wires, rotation=None):
 
     for layer in range(repeat):
 
-        cnot_ring_layer(weights=weights[layer], wires=wires, rotation=rotation)
+        broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
+        broadcast(unitary=CNOT, pattern="ring", wires=wires)
