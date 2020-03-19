@@ -889,4 +889,3 @@ def cnot_ring_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
     return params
-
