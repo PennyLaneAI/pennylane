@@ -911,10 +911,11 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
     n_unitaries_per_layer = n_wires//2 + (n_wires-1)//2
 
     if n_unitaries_per_layer == 0:
-        return np.array([])
+        params = np.array([])
     else:
         params = np.random.uniform(low=low, high=high, size=(n_layers, n_unitaries_per_layer, 2))
-        return params
+
+    return params
 
 
 def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
@@ -943,7 +944,8 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
     n_unitaries_per_layer = n_wires//2 + (n_wires-1)//2
 
     if n_unitaries_per_layer == 0:
-        return np.array([])
+        params = np.array([])
     else:
         params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_unitaries_per_layer, 2))
-        return params
+
+    return params

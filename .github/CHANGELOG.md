@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added the ``SimplifiedTwoDesign`` template, which implements the circuit 
+  design of `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_. 
+  [(#515)](https://github.com/XanaduAI/pennylane/pull/515)
+
+
 * PennyLane now offers a broadcasting function to easily construct templates:
   `qml.broadcast()` takes single quantum operations or other templates and applies
   them to wires in a specific pattern.
