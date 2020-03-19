@@ -510,7 +510,7 @@ class TestCnotRing:
         with qml.utils.OperationRecorder() as rec:
             CnotRingLayers(weights, wires=range(n_wires))
 
-        # assert queue contains the custom rotation and CNOTSonly
+        # assert queue contains the custom rotations and CNOTs only
         gates = rec.queue
         for op in gates:
             if not isinstance(op, CNOT):
@@ -521,7 +521,7 @@ class TestCnotRing:
                                                           ([[np.pi]*3], 3, [1, 1, -1]),
                                                           ([[np.pi]*4], 4, [-1, 1, -1, 1]),
                                                           ])
-    def test_custom_rotation(self, weights, n_wires, target):
+    def test_simple_target_outputs(self, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
 
         dev = qml.device('default.qubit', wires=n_wires)
