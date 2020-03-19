@@ -505,10 +505,10 @@ class TestCnotRing:
         """Tests that non-default rotation gates are used correctly."""
         n_layers = 2
         n_wires = 4
-        weights = np.ones(n_layers, n_wires)
+        weights = np.ones(shape=(n_layers, n_wires))
 
         with qml.utils.OperationRecorder() as rec:
-            CnotRingLayers(weights, wires=range(n_wires))
+            CnotRingLayers(weights, wires=range(n_wires), rotation=rotation)
 
         # assert queue contains the custom rotations and CNOTs only
         gates = rec.queue
