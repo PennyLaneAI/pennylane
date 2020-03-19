@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the ``CnotRingLayers`` template, which is a simple layer architecture 
+  of rotations and CNOT nearest-neighbour entanglers. 
+  [(#555)](https://github.com/XanaduAI/pennylane/pull/555)
+
 * PennyLane now offers a broadcasting function to easily construct templates:
   `qml.broadcast()` takes single quantum operations or other templates and applies
   them to wires in a specific pattern.
