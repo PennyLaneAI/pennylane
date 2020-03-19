@@ -171,6 +171,4 @@ def CnotRingLayers(weights, wires, rotation=None):
 
     for layer in range(repeat):
 
-        cnot_ring_layer(
-            weights=weights[layer], wires=wires, rotation=rotation
-        )
+        cnot_ring_layer(weights=weights[layer], wires=wires, rotation=rotation)
