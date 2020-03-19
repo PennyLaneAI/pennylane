@@ -518,7 +518,7 @@ class TestSimplifiedTwoDesign:
                                                                          ([np.pi] * 4, [[[np.pi] * 2] * 3], 4,
                                                                           [1, -1, -1, 1]),
                                                                          ])
-    def test_result(self, initial_layer, weights, n_wires, target):
+    def test_correct_target_output(self, initial_layer, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
 
         dev = qml.device('default.qubit', wires=n_wires)
