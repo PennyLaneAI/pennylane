@@ -837,8 +837,8 @@ def interferometer_varphi_normal(n_wires, mean=0, std=0.1, seed=None):
     return varphi
 
 
-def simplified_two_design_initial_block_uniform(n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a parameter array for the ``initial_block`` argument of :func:`~.SimplifiedTwoDesignLayers`,
+def simplified_two_design_initial_layer_uniform(n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for the ``initial_layer`` argument of :func:`~.SimplifiedTwoDesign`,
     drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_wires,)`` and each parameter is drawn uniformly at random \
@@ -861,8 +861,8 @@ def simplified_two_design_initial_block_uniform(n_wires, low=0, high=2 * pi, see
     return params
 
 
-def simplified_two_design_initial_block_normal(n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for the ``initial_block`` argument of :func:`~.SimplifiedTwoDesignLayers`,
+def simplified_two_design_initial_layer_normal(n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for the ``initial_layer`` argument of :func:`~.SimplifiedTwoDesign`,
     drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_wires,)`` and each parameter is drawn
@@ -887,7 +887,7 @@ def simplified_two_design_initial_block_normal(n_wires, mean=0, std=0.1, seed=No
 
 
 def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesignLayers`,
+    r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesign`,
     drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires//2 + (n_wires-1)//2, 2)``
@@ -918,7 +918,7 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
 
 
 def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesignLayers`,
+    r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesign`,
     drawn from a uniform distribution.
 
     The shape of the parameter array is ``(n_layers, 2*(n_wires//2 + (n_wires-1)//2))``

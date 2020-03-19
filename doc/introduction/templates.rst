@@ -146,14 +146,9 @@ Layer architectures define sequences of trainable gates that are repeated like t
     :figure: ../_static/templates/layers/strongly_entangling.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.CnotRingLayers.html
-    :description: CnotRingLayers
-    :figure: ../_static/templates/layers/cnot_ring.png
-
-.. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.CerezTwoDesignLayers.html
-    :description: CerezTwoDesignLayers
-    :figure: ../_static/templates/layers/cerez_two_design.png
+    :link: ../code/api/pennylane.templates.layers.SimplifiedTwoDesign.html
+    :description: SimplifiedTwoDesign
+    :figure: ../_static/templates/layers/simplified_two_design.png
 
 .. raw:: html
 

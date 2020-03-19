@@ -48,7 +48,7 @@ from pennylane.templates import (Interferometer,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
                                  QAOAEmbedding,
-                                 SimplifiedTwoDesignLayers)
+                                 SimplifiedTwoDesign)
 
 from pennylane.templates import broadcast
 
@@ -80,8 +80,8 @@ from pennylane.init import (strong_ent_layers_uniform,
                             interferometer_theta_uniform,
                             qaoa_embedding_uniform,
                             qaoa_embedding_normal,
-                            simplified_two_design_initial_block_normal,
-                            simplified_two_design_initial_block_uniform,
+                            simplified_two_design_initial_layer_normal,
+                            simplified_two_design_initial_layer_uniform,
                             simplified_two_design_weights_normal,
                             simplified_two_design_weights_uniform)
 
@@ -135,9 +135,9 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'parameters': [[1.], [1.]]},
                                {'unitary': qml.RX,
                                 'pattern': 'single'}),
-                              (SimplifiedTwoDesignLayers,
-                               {'initial_block': [1., 1.],
-                                'weights': [[1., 1.]]},
+                              (SimplifiedTwoDesign,
+                               {'initial_layer': [1., 1.],
+                                'weights': [[[1., 1.]]]},
                                {}),
                               ]
 
@@ -544,12 +544,12 @@ class TestInitializationIntegration:
                    {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=1), 'wires': range(1)}),
                   (QAOAEmbedding,
                    {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)}),
-                  (SimplifiedTwoDesignLayers,
-                   {'initial_block': simplified_two_design_initial_block_uniform(n_wires=4),
+                  (SimplifiedTwoDesign,
+                   {'initial_layer': simplified_two_design_initial_layer_uniform(n_wires=4),
                     'weights': simplified_two_design_weights_uniform(n_layers=3, n_wires=4),
                     'wires': range(4)}),
-                  (SimplifiedTwoDesignLayers,
-                   {'initial_block': simplified_two_design_initial_block_normal(n_wires=4),
+                  (SimplifiedTwoDesign,
+                   {'initial_layer': simplified_two_design_initial_layer_normal(n_wires=4),
                     'weights': simplified_two_design_weights_normal(n_layers=3, n_wires=4),
                     'wires': range(4)}),
                   ]
@@ -655,9 +655,9 @@ class TestGradientIntegration:
                                            'pattern': 'single',
                                            'wires': [0, 1]},
                                           [0]),
-                                         (SimplifiedTwoDesignLayers,
-                                          {'initial_block': [1., 1.],
-                                           'weights': [[1., 1.]]},
+                                         (SimplifiedTwoDesign,
+                                          {'initial_layer': [1., 1.],
+                                           'weights': [[[1., 1.]]]},
                                           {'wires': [0, 1]},
                                           [0, 1]),
                                          ]

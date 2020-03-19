@@ -22,8 +22,7 @@ from pennylane import numpy as np
 from pennylane.templates.layers import (CVNeuralNetLayers,
                                         StronglyEntanglingLayers,
                                         RandomLayers,
-                                        CnotRingLayers,
-                                        SimplifiedTwoDesignLayers)
+                                        SimplifiedTwoDesign)
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 
@@ -383,8 +382,8 @@ class TestRandomLayers:
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
 
 
-class TestCerezoTwoDesign:
-    """Tests for the SimplifiedTwoDesignLayers method from the pennylane.templates.layers module."""
+class TestSimplifiedTwoDesign:
+    """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
 
     @pytest.mark.parametrize("n_wires, n_layers, shape_weights", [(1, 2, (0,)),
                                                                   (2, 2, (2, 1, 2)),
@@ -394,11 +393,11 @@ class TestCerezoTwoDesign:
         """Tests the gate types and parameter values in the circuit."""
         np.random.seed(12)
 
-        initial_block = np.random.randn(n_wires)
+        initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
         with qml.utils.OperationRecorder() as rec:
-            SimplifiedTwoDesignLayers(initial_block, weights, wires=range(n_wires))
+            SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
         exp_gates = [qml.CZ, qml.RY, qml.RY] * ((n_wires // 2) + (n_wires - 1) // 2)
@@ -414,10 +413,10 @@ class TestCerezoTwoDesign:
             # only select the rotation gates
             ops = [gate for gate in rec.queue if isinstance(gate, qml.RY)]
 
-            # check each initial_block gate parameters
+            # check each initial_layer gate parameters
             for n in range(n_wires):
                 res_param = ops[n].parameters[0]
-                exp_param = initial_block[n]
+                exp_param = initial_layer[n]
                 assert res_param == exp_param
 
             # check layer gate parameters
@@ -427,23 +426,23 @@ class TestCerezoTwoDesign:
                 res_param = o.parameters[0]
                 assert res_param == exp_param
 
-    @pytest.mark.parametrize("initial_block, weights, n_wires, target", [([np.pi], [], 1, [-1]),
+    @pytest.mark.parametrize("initial_layer, weights, n_wires, target", [([np.pi], [], 1, [-1]),
                                                                          ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
                                                                          ([np.pi] * 3, [[[np.pi] * 2] * 2], 3,
                                                                           [1, -1, 1]),
                                                                          ([np.pi] * 4, [[[np.pi] * 2] * 3], 4,
                                                                           [1, -1, -1, 1]),
                                                                          ])
-    def test_result(self, initial_block, weights, n_wires, target):
+    def test_result(self, initial_layer, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
 
         dev = qml.device('default.qubit', wires=n_wires)
 
         @qml.qnode(dev)
-        def circuit(initial_block, weights):
-            SimplifiedTwoDesignLayers(initial_block=initial_block, weights=weights, wires=range(n_wires))
+        def circuit(initial_layer, weights):
+            SimplifiedTwoDesign(initial_layer=initial_layer, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        expectations = circuit(initial_block, weights)
+        expectations = circuit(initial_layer, weights)
         for exp, target_exp in zip(expectations, target):
             assert pytest.approx(exp, target_exp, abs=TOLERANCE)
