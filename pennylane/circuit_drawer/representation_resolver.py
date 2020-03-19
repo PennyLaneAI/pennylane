@@ -301,7 +301,7 @@ class RepresentationResolver:
 
         return self._format_polyxp_order2(coefficients)
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-branches
     def operator_representation(self, op, wire):
         """Return the string representation of an Operator.
 
@@ -319,67 +319,78 @@ class RepresentationResolver:
 
             return (" " + self.charset.OTIMES + " ").join(constituent_representations)
 
-        name = op.name
+        representation = ""
+        base_name = getattr(op, "base_name", op.name)
+        name = base_name
 
         # Use a shorter name if applicable
         if name in RepresentationResolver.resolution_dict:
             name = RepresentationResolver.resolution_dict[name]
 
         # Display a control symbol for all controlling qubits of a controlled Operation
-        if op.name in self.control_wire_dict and wire in [
-            op.wires[control_idx] for control_idx in self.control_wire_dict[op.name]
+        if base_name in self.control_wire_dict and wire in [
+            op.wires[control_idx] for control_idx in self.control_wire_dict[base_name]
         ]:
+            # No need to add a -1 for inverse here
             return self.charset.CONTROL
 
         if op.num_params == 0:
-            return name
+            representation = name
 
-        if op.name == "QubitUnitary":
-            return RepresentationResolver._format_matrix_operation(
+        elif base_name == "QubitUnitary":
+            representation = RepresentationResolver._format_matrix_operation(
                 op, "U", self.unitary_matrix_cache
             )
 
-        if op.name == "Hermitian":
-            return RepresentationResolver._format_matrix_operation(
+        elif base_name == "Hermitian":
+            representation = RepresentationResolver._format_matrix_operation(
                 op, "H", self.hermitian_matrix_cache
             )
 
-        if op.name == "QuadOperator":
+        elif base_name == "QuadOperator":
             par_rep = self.single_parameter_representation(op.params[0])
 
-            return "cos({0})x+sin({0})p".format(par_rep)
+            representation = "cos({0})x+sin({0})p".format(par_rep)
 
-        if op.name == "FockStateProjector":
+        elif base_name == "FockStateProjector":
             n_str = ",".join([str(n) for n in op.params[0]])
 
-            return (
+            representation = (
                 self.charset.PIPE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.PIPE
             )
 
-        if op.name == "PolyXP":
-            return self._format_polyxp(op)
+        elif base_name == "PolyXP":
+            representation = self._format_polyxp(op)
 
-        if op.name == "FockState":
-            return self.charset.PIPE + str(op.params[0]) + self.charset.RANGLE
+        elif base_name == "FockState":
+            representation = self.charset.PIPE + str(op.params[0]) + self.charset.RANGLE
 
-        if op.name in {"BasisState", "FockStateVector"}:
-            return self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
+        elif base_name in {"BasisState", "FockStateVector"}:
+            representation = (
+                self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
+            )
 
         # Operations that only have matrix arguments
-        if op.name in {
+        elif base_name in {
             "GaussianState",
             "FockDensityMatrix",
             "FockStateVector",
             "QubitStateVector",
             "Interferometer",
         }:
-            return name + RepresentationResolver._format_matrix_arguments(
+            representation = name + RepresentationResolver._format_matrix_arguments(
                 op.params, "M", self.matrix_cache
             )
 
-        return "{}({})".format(
-            name, ", ".join([self.single_parameter_representation(par) for par in op.params])
-        )
+        else:
+            representation = "{}({})".format(
+                name, ", ".join([self.single_parameter_representation(par) for par in op.params])
+            )
+
+        if getattr(op, "inverse", False):
+            representation += self.charset.to_superscript("-1")
+
+        return representation
 
     def output_representation(self, obs, wire):
         """Return the string representation of a circuit's output.
@@ -404,6 +415,9 @@ class RepresentationResolver:
 
         if obs.return_type == qml.operation.Sample:
             return "Sample[{}]".format(self.operator_representation(obs, wire))
+
+        if obs.return_type == qml.operation.Probability:
+            return "Probs"
 
         # Unknown return_type
         return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))

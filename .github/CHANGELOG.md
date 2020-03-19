@@ -2,12 +2,75 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now offers a broadcasting function to easily construct templates:
+  `qml.broadcast()` takes single quantum operations or other templates and applies
+  them to wires in a specific pattern.
+  [(#515)](https://github.com/XanaduAI/pennylane/pull/515)
+  [(#522)](https://github.com/XanaduAI/pennylane/pull/522)
+  [(#526)](https://github.com/XanaduAI/pennylane/pull/526)
+
+  For example, we can use broadcast to repeat a custom template
+  across multiple wires:
+
+  ```python
+  from pennylane.templates import template
+
+  @template
+  def mytemplate(pars, wires):
+      qml.Hadamard(wires=wires)
+      qml.RY(pars, wires=wires)
+
+  dev = qml.device('default.qubit', wires=3)
+
+  @qml.qnode(dev)
+  def circuit(pars):
+      qml.broadcast(mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  Executing this circuit:
+
+  ```python
+  >>> circuit([1, 1, 0.1])
+  -0.841470984807896
+  >>> print(circuit.draw())
+   0: ──H──RY(1.0)──┤ ⟨Z⟩
+   1: ──H──RY(1.0)──┤
+   2: ──H──RY(0.1)──┤
+  ```
+
+  For other available patterns, see the
+  [broadcast function documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.broadcast.html).
+
 * Added the `qml.qnodes.PassthruQNode` class for simulated QNodes that appear as white boxes
   to an external autodifferentiation (AD) framework, and hence can be directly differentiated
   by it. Note that the simulator device executing the PassthruQNode has to be compatible with
-  the external AD framework. Currently the only such device supported by PennyLane is
-  `default.tensor.tf`, compatible with TensorFlow 2.
+  the external AD framework.
   [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
+
+  Currently the only such device supported by PennyLane is `default.tensor.tf`,
+  compatible with the `'tf'` inteface using TensorFlow 2:
+
+  ```python
+  from pennylane.qnodes import PassthruQNode
+
+  dev = qml.device('default.tensor.tf', wires=2)
+
+  def circuit(params):
+      qml.RX(params[0], wires=0)
+      qml.RX(params[1], wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0))
+
+  qnode = PassthruQNode(circuit, dev)
+  params = tf.Variable([0.3, 0.1])
+
+  with tf.GradientTape() as tape:
+      tape.watch(params)
+      res = qnode(params)
+
+  grad = tape.gradient(res, params)
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -18,15 +81,54 @@
   difference methods.
   [(#530)](https://github.com/XanaduAI/pennylane/pull/530)
 
+* The decomposition for the `CRY` gate now uses the simpler form `RY @ CNOT @ RY @ CNOT`
+  [(#547)](https://github.com/XanaduAI/pennylane/pull/547)
+
+* The circuit drawer now displays inverted operations, as well as wires
+  where probabilities are returned from the device:
+  [(#540)](https://github.com/XanaduAI/pennylane/pull/540)
+
+  ```python
+  >>> @qml.qnode(dev)
+  ... def circuit(theta):
+  ...     qml.RX(theta, wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     qml.S(wires=1).inv()
+  ...     return qml.probs(wires=[0, 1])
+  >>> circuit(0.2)
+  array([0.99003329, 0.        , 0.        , 0.00996671])
+  >>> print(circuit.draw())
+  0: ──RX(0.2)──╭C───────╭┤ Probs
+  1: ───────────╰X──S⁻¹──╰┤ Probs
+  ```
+
+* The underlying queuing system was refactored, removing the `qml._current_context`
+  property that held the currently active `QNode` or `OperationRecorder`. Now, all
+  objects that expose a queue for operations inherit from `QueuingContext` and
+  register their queue globally.
+  [(#548)](https://github.com/XanaduAI/pennylane/pull/548)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug in the `StronglyEntanglingLayers` template, allowing it to
+  work correctly when applied to a single wire.
+  [(544)](https://github.com/XanaduAI/pennylane/pull/544)
+
+* Fixed a bug when inverting operations with decompositions; operations marked as inverted
+  are now correctly inverted when the fallback decomposition is called.
+  [(#543)](https://github.com/XanaduAI/pennylane/pull/543)
+
+* The `QNode.print_applied()` method now correctly displays wires where
+  `qml.prob()` is being returned.
+  [#542](https://github.com/XanaduAI/pennylane/pull/542)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Antal Száva.
+Ville Bergholm, Thomas Bromley, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 
