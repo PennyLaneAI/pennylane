@@ -843,7 +843,7 @@ def simplified_two_design_initial_layer_uniform(n_wires, low=0, high=2 * pi, see
 
     The shape of the parameter array is ``(n_wires,)`` and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the Pauli-Y rotation angles
-    applied in the initial block.
+    applied in the initial layer.
 
     Args:
         n_wires (int): number of qubits
@@ -868,7 +868,7 @@ def simplified_two_design_initial_layer_normal(n_wires, mean=0, std=0.1, seed=No
     The shape of the parameter array is ``(n_wires,)`` and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
     The parameters define the Pauli-Y rotation angles
-    applied in the initial block.
+    applied in the initial layer.
 
     Args:
         n_wires (int): number of qubits
