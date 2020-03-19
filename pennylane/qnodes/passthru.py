@@ -75,10 +75,11 @@ class PassthruQNode(BaseQNode):
             internally, otherwise convert it into array[float]. Default: True.
     """
 
-    def __init__(self, func, device, **kwargs):
+    def __init__(self, func, device, mutable, **kwargs):
         # make the device return the result in its native type
         kwargs = kwargs or {}
         kwargs.setdefault("use_native_type", True)
+        
         super().__init__(func, device, mutable=True, **kwargs)
 
     def __repr__(self):

@@ -21,10 +21,11 @@ from .cv import CVQNode
 from .device_jacobian import DeviceJacobianQNode
 from .jacobian import JacobianQNode
 from .qubit import QubitQNode
+from .passthru import PassthruQNode
 
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
-ALLOWED_DIFF_METHODS = ("best", "parameter-shift", "finite-diff")
+ALLOWED_DIFF_METHODS = ("best", "classical", "device", "parameter-shift", "finite-diff")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
@@ -107,19 +108,54 @@ def _get_qnode_class(device, diff_method):
            differentiation method
     """
     model = device.capabilities().get("model", "qubit")
+    allows_passthru = device.capabilities().get("passthru", False)
     device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
     if diff_method is None:
         # QNode is not differentiable
         return BaseQNode
 
-    if device_provides_jacobian and (diff_method == "best"):
-        # hand off differentiation to the device
-        return DeviceJacobianQNode
+    if diff_method == "best":
 
-    if model in PARAMETER_SHIFT_QNODES and diff_method in ("best", "parameter-shift"):
-        # parameter-shift analytic differentiation
-        return PARAMETER_SHIFT_QNODES[model]
+        if allows_passthru:
+            # hand off differentiation to the device without type conversion
+            return PassthruQNode
+
+        if device_provides_jacobian:
+            # hand off differentiation to the device
+            return DeviceJacobianQNode
+
+        if model in PARAMETER_SHIFT_QNODES:
+            # parameter-shift analytic differentiation
+            return PARAMETER_SHIFT_QNODES[model]
+
+    if diff_method == "classical":
+        if allows_passthru:
+            return PassthruQNode
+
+        raise ValueError(
+            "The {} device does not support native computations with "
+            "autodifferentiation frameworks.".format(device)
+        )
+
+    if diff_method == "device":
+        if device_provides_jacobian:
+            return DeviceJacobianQNode
+
+        raise ValueError(
+            "The {} device does not provide a native method "
+            "for computing the jacobian.".format(device)
+        )
+
+    if diff_method=="parameter-shift":
+        if model in PARAMETER_SHIFT_QNODES:
+            # parameter-shift analytic differentiation
+            return PARAMETER_SHIFT_QNODES[model]
+
+        raise ValueError(
+            "The {} device does not provide a native method "
+            "for computing the jacobian.".format(device)
+        )
 
     if diff_method in ALLOWED_DIFF_METHODS:
         # finite differences
