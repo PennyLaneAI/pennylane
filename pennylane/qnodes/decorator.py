@@ -147,7 +147,7 @@ def _get_qnode_class(device, diff_method):
             "for computing the jacobian.".format(device)
         )
 
-    if diff_method=="parameter-shift":
+    if diff_method == "parameter-shift":
         if model in PARAMETER_SHIFT_QNODES:
             # parameter-shift analytic differentiation
             return PARAMETER_SHIFT_QNODES[model]
