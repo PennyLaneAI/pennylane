@@ -32,6 +32,15 @@ The script has three main functions.
   "size parameter" ``n``, the exact meaning of which depends on each benchmark.
 
 
+Installation
+------------
+
+The benchmarking tool has the same dependencies as PennyLane.
+Additionally, performance plots require the ``perfplot`` Python package,
+and the profiling stats visualization script requires the ``gprof2dot``
+Python package and the ``Graphviz`` binary package.
+
+
 Usage
 -----
 

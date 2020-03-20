@@ -77,11 +77,9 @@ def profile(func, identifier, *, min_time=5):
 
     t0 = time.process_time()
     repeats = 0
-    while True:
+    while time.process_time() - t0 < min_time:
         func()
         repeats += 1
-        if time.process_time() - t0 > min_time:
-            break
 
     pr.disable()
     pr.dump_stats("pennylane_{}.pstats".format(identifier))
