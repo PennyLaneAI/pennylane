@@ -80,8 +80,7 @@ def profile(func, identifier, *, min_time=5):
     while True:
         func()
         repeats += 1
-        elapsed = time.process_time() - t0
-        if elapsed > min_time:
+        if time.process_time() - t0 > min_time:
             break
 
     pr.disable()
