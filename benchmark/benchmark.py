@@ -102,7 +102,7 @@ def cli():
     parser = argparse.ArgumentParser(description='PennyLane benchmarking tool')
     parser.add_argument('--version', action='version', version=__version__)
     parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
-    parser.add_argument('-d', '--device', type=lambda x: x.split(','), default=['default.qubit'],
+    parser.add_argument('-d', '--device', type=lambda x: x.split(','), default='default.qubit',
                         help='comma-separated list of devices to run the benchmark on (default: %(default)s)')
     parser.add_argument('-w', '--wires', type=int, default=3,
                         help='number of wires to run the benchmark on (default: %(default)s)')
