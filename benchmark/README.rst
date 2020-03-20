@@ -53,6 +53,15 @@ The most important ones are
 * ``-w WIRES``: Number of wires to run the benchmark on. The default is 3.
 
 
+Note
+----
+
+Since the benchmarking tool is (for the time being) in the same Git repository as PennyLane,
+checking out a specific PennyLane commit for benchmarking also may change the benchmarks.
+Therefore it is recommended to make a copy of the latest version of the benchmarking tool in
+another directory, and run that on the checked-out commit.
+
+
 Included benchmarks
 -------------------
 
