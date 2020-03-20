@@ -47,7 +47,7 @@ The most important ones are
 Included benchmarks
 -------------------
 
-* bm_entangling_layers: Creates an immutable QNode consisting of strongly entangling layers,
+* ``bm_entangling_layers``: Creates an immutable QNode consisting of strongly entangling layers,
   then evaluates it and its Jacobian. The size parameter ``n`` is the number of layers.
-* bm_mutable_rotations: Evaluates a mutable QNode consisting of ``k`` simple rotations on one qubit
+* ``bm_mutable_rotations``: Evaluates a mutable QNode consisting of ``k`` simple rotations on one qubit
   several times, varying ``k`` from 0 to ``n``. The qfunc is called each time due to the mutability.

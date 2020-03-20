@@ -107,7 +107,7 @@ def cli():
     parser.add_argument('-w', '--wires', type=int, default=3,
                         help='number of wires to run the benchmark on (default: %(default)s)')
     parser.add_argument('cmd', choices=['time', 'plot', 'profile'], help='function to perform')
-    parser.add_argument('benchmark', help='benchmark module')
+    parser.add_argument('benchmark', help='benchmark module name (without .py)')
 
     args = parser.parse_args()
 

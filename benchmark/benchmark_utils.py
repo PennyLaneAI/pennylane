@@ -61,7 +61,7 @@ class BaseBenchmark(abc.ABC):
             n (int): benchmark size parameter
 
         Returns:
-            Any: Result of the benchmark. Not None.
+            Any: Result of the benchmark. Must not return None.
         """
 
 
