@@ -28,10 +28,12 @@ import benchmark_utils as bu
 def circuit(weights, *, features=None):
     """Immutable quantum circuit."""
 
-    n_wires = len(features)  # normally not allowed in immutable circuits, but here we know the len will not change...
+    # normally not allowed in immutable circuits, but here we know the len will not change...
+    n_wires = len(features)
     AngleEmbedding(features, wires=range(n_wires))
     StronglyEntanglingLayers(weights, wires=range(n_wires))
     return qml.expval(qml.PauliZ(0))
+
 
 class Benchmark(bu.BaseBenchmark):
     """Entangling layers benchmark.
@@ -39,7 +41,8 @@ class Benchmark(bu.BaseBenchmark):
     Creates an immutable QNode using the StronglyEntanglingLayers template,
     then evaluates it and its Jacobian.
     """
-    name = 'entangling layers'
+
+    name = "entangling layers"
     min_wires = 2
     n_vals = range(1, 5)
 

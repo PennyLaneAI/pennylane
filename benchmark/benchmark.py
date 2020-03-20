@@ -39,7 +39,7 @@ def timing(func, *, number=10, repeat=5):
     """
     import timeit
 
-    print('{} loops, {} runs'.format(number, repeat))
+    print("{} loops, {} runs".format(number, repeat))
     res = timeit.repeat(func, number=number, repeat=repeat, globals=globals())
     print("Timing per loop:", np.array(res) / number)
 
@@ -56,12 +56,7 @@ def plot(title, kernels, labels, n_vals):
     import perfplot
 
     perfplot.show(
-        setup=lambda n: n,
-        kernels=kernels,
-        labels=labels,
-        n_range=n_vals,
-        xlabel="n",
-        title=title,
+        setup=lambda n: n, kernels=kernels, labels=labels, n_range=n_vals, xlabel="n", title=title,
     )
 
 
@@ -99,21 +94,34 @@ def profile(func, identifier, *, min_time=5):
 def cli():
     """Parse the command line arguments, perform the requested action.
     """
-    parser = argparse.ArgumentParser(description='PennyLane benchmarking tool')
-    parser.add_argument('--version', action='version', version=__version__)
-    parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
-    parser.add_argument('-d', '--device', type=lambda x: x.split(','), default='default.qubit',
-                        help='comma-separated list of devices to run the benchmark on (default: %(default)s)')
-    parser.add_argument('-w', '--wires', type=int, default=3,
-                        help='number of wires to run the benchmark on (default: %(default)s)')
-    parser.add_argument('cmd', choices=['time', 'plot', 'profile'], help='function to perform')
-    parser.add_argument('benchmark', help='benchmark module name (without .py)')
+    parser = argparse.ArgumentParser(description="PennyLane benchmarking tool")
+    parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
+    parser.add_argument(
+        "-d",
+        "--device",
+        type=lambda x: x.split(","),
+        default="default.qubit",
+        help="comma-separated list of devices to run the benchmark on (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-w",
+        "--wires",
+        type=int,
+        default=3,
+        help="number of wires to run the benchmark on (default: %(default)s)",
+    )
+    parser.add_argument("cmd", choices=["time", "plot", "profile"], help="function to perform")
+    parser.add_argument("benchmark", help="benchmark module name (without .py)")
 
     args = parser.parse_args()
 
     # look up information about the current HEAD Git commit
     res = subprocess.run(
-        ["git", "log", "-1", "--pretty=%h %s"], stdout=subprocess.PIPE, encoding="utf-8", check=True
+        ["git", "log", "-1", "--pretty=%h %s"],
+        stdout=subprocess.PIPE,
+        encoding="utf-8",
+        check=True,
     )
     title = res.stdout
     short_hash = title.split(" ", maxsplit=1)[0]
@@ -134,9 +142,12 @@ def cli():
         bms = [mod.Benchmark(qml.device(d, wires=args.wires), args.verbose) for d in args.device]
         for k in bms:
             k.setup()
-        plot(title, [k.benchmark for k in bms],
-             [args.benchmark + ' ' + k.device.short_name for k in bms],
-             mod.Benchmark.n_vals)
+        plot(
+            title,
+            [k.benchmark for k in bms],
+            [args.benchmark + " " + k.device.short_name for k in bms],
+            mod.Benchmark.n_vals,
+        )
         for k in bms:
             k.teardown()
         return
@@ -150,10 +161,11 @@ def cli():
             timing(bm.benchmark)
         elif args.cmd == "profile":
             print("Profiling: '{}' benchmark on {}".format(bm.name, d))
-            profile(bm.benchmark, identifier=short_hash + '_' + d)
+            profile(bm.benchmark, identifier=short_hash + "_" + d)
         else:
             raise ValueError("Unknown command.")
         bm.teardown()
+
 
 if __name__ == "__main__":
     cli()

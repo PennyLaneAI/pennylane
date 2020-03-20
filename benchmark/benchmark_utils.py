@@ -27,6 +27,7 @@ class BaseBenchmark(abc.ABC):
         verbose (bool): If True, print debugging info during the benchmark. Note that this
             may invalidate the benchmark due to printing latency that should be irrelevant.
     """
+
     name = None  #: str: benchmark name
     min_wires = 1  #: int: minimum number of quantum wires required by the benchmark
     n_vals = None  #: Sequence[Any]: range of benchmark parameter values for perfplot
@@ -35,7 +36,9 @@ class BaseBenchmark(abc.ABC):
         self.device = device
         if device is not None:
             if device.num_wires < self.min_wires:
-                raise ValueError("'{}' requires at least {} wires.".format(self.name, self.min_wires))
+                raise ValueError(
+                    "'{}' requires at least {} wires.".format(self.name, self.min_wires)
+                )
             self.n_wires = device.num_wires
         else:
             self.n_wires = None
@@ -83,7 +86,13 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
         BaseQNode: constructed QNode
     """
     try:
-        qnode = qml.qnodes.QNode(qfunc, device, mutable=mutable, diff_method="parameter-shift", interface=interface)
+        qnode = qml.qnodes.QNode(
+            qfunc,
+            device,
+            mutable=mutable,
+            diff_method="parameter-shift",
+            interface=interface,
+        )
     except AttributeError:
         # versions before the "new-style" QNodes
         qnode = qml.QNode(qfunc, device, cache=not mutable)

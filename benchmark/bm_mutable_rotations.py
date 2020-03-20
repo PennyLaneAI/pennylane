@@ -21,7 +21,6 @@ import pennylane as qml
 import benchmark_utils as bu
 
 
-
 def circuit(a, *, b=1):
     """Mutable quantum circuit."""
     for idx in range(b):
@@ -35,7 +34,8 @@ class Benchmark(bu.BaseBenchmark):
     The benchmark consists of a single mutable QNode evaluated several times,
     each evaluation having a larger number of rotations in the circuit.
     """
-    name = 'mutable sequence of rotations'
+
+    name = "mutable sequence of rotations"
     min_wires = 1
     n_vals = range(10, 60, 10)
 
