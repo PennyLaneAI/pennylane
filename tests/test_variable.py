@@ -101,5 +101,5 @@ def test_auxiliary_variable(par_auxiliary, name, ind, mult, tol):
     assert v.dict_key == name
     assert v.mult == 1
     assert v.idx == ind
-    assert v.is_kwarg
+    assert v.is_auxiliary
     variable_eval_asserts(v, par_auxiliary[name][ind], mult, tol)

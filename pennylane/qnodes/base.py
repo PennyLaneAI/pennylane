@@ -547,7 +547,7 @@ class BaseQNode(qml.QueuingContext):
         for op in self.ops:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
-                    if not p.is_kwarg:  # ignore auxiliary arguments
+                    if not p.is_auxiliary:  # ignore auxiliary arguments
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG

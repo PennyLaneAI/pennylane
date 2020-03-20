@@ -107,7 +107,7 @@ class Variable:
         return (
             self.name == other.name
             and self.idx == other.idx
-            and self.is_kwarg == other.is_kwarg
+            and self.is_auxiliary == other.is_auxiliary
             and self.mult == other.mult
         )
 
@@ -132,7 +132,7 @@ class Variable:
     __rmul__ = __mul__  # Left multiplication by scalars.
 
     @property
-    def is_kwarg(self):
+    def is_auxiliary(self):
         """Type of the parameter the VariableRef represents.
 
         Returns:
@@ -148,7 +148,7 @@ class Variable:
             float: current value of the Variable
         """
         # pylint: disable=unsubscriptable-object
-        if not self.is_kwarg:
+        if not self.is_auxiliary:
             # The variable is a placeholder for a primary argument
             return Variable.primary_arg_values[self.idx] * self.mult
 
