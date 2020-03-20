@@ -29,6 +29,29 @@ import pennylane as qml
 __version__ = "0.1.0"
 
 
+# ANSI escape sequences for terminal colors
+Colors = {
+    "red": "\033[31m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[95m",
+}
+RESET = "\033[0m"
+
+
+def col(text, color):
+    """Wraps the given text in color ANSI sequences.
+
+    Args:
+        text  (str): text to print
+        color (str): ANSI color code
+
+    Returns:
+        str: text wrapped with ANSI codes
+    """
+    return Colors[color] + text + RESET
+
+
 def timing(func, *, number=10, repeat=5):
     """Time the given function.
 
@@ -41,7 +64,7 @@ def timing(func, *, number=10, repeat=5):
 
     print("{} loops, {} runs".format(number, repeat))
     res = timeit.repeat(func, number=number, repeat=repeat, globals=globals())
-    print("Timing per loop:", np.array(res) / number)
+    print("Timing per loop:", col(str(np.array(res) / number), "yellow"))
 
 
 def plot(title, kernels, labels, n_vals):
@@ -126,7 +149,7 @@ def cli():
     print("Benchmarking PennyLane", qml.version())
     if args.verbose:
         print("Verbose mode on, results may not be representative.")
-    print("Commit:", title)
+    print("Commit:", col(title, "red"))
     qml.about()
     print()
 
@@ -153,11 +176,12 @@ def cli():
         dev = qml.device(d, wires=args.wires)
         bm = mod.Benchmark(dev, args.verbose)
         bm.setup()
+        text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{d}", "magenta")
         if args.cmd == "time":
-            print("Timing: '{}' benchmark on {}".format(bm.name, d))
+            print("Timing:", text)
             timing(bm.benchmark)
         elif args.cmd == "profile":
-            print("Profiling: '{}' benchmark on {}".format(bm.name, d))
+            print("Profiling:", text)
             profile(bm.benchmark, identifier=short_hash + "_" + d)
         else:
             raise ValueError("Unknown command.")
