@@ -28,14 +28,14 @@ DEFAULT_STEP_SIZE_ANALYTIC = 1e-7
 
 
 class JacobianQNode(BaseQNode):
-    """Quantum node that can be differentiated with respect to its positional parameters.
+    """Quantum node that can be differentiated with respect to its primary parameters.
     """
 
     def __init__(self, func, device, mutable=True, **kwargs):
         super().__init__(func, device, mutable=mutable, **kwargs)
 
         self.par_to_grad_method = None
-        """dict[int, str]: map from flattened quantum function positional parameter index
+        """dict[int, str]: map from flattened quantum function primary parameter index
         to the gradient method to be used with that parameter"""
 
         analytic = getattr(self.device, "analytic", False)
@@ -73,13 +73,13 @@ class JacobianQNode(BaseQNode):
         """Constructs the quantum circuit graph by calling the quantum function.
 
         Like :meth:`.QNode._construct`, additionally determines the best gradient computation method
-        for each positional parameter.
+        for each primary parameter.
         """
         super()._construct(args, kwargs)
-        self.par_to_grad_method = {k: self._best_method(k) for k in self.variable_deps}
+        self.par_to_grad_method = {k: self._best_method(k) for k in self.primary_deps}
 
     def _best_method(self, idx):
-        """Determine the correct partial derivative computation method for a free parameter.
+        """Determine the correct partial derivative computation method for a primary parameter.
 
         Note that if even one dependent Operation does not support differentiation,
         we cannot differentiate with respect to this parameter at all.
@@ -93,13 +93,13 @@ class JacobianQNode(BaseQNode):
             required.
 
         Args:
-            idx (int): free parameter index
+            idx (int): primary parameter index
 
         Returns:
             str: partial derivative method to be used
         """
-        # operations that depend on this free parameter
-        ops = [d.op for d in self.variable_deps[idx]]
+        # operations that depend on this primary parameter
+        ops = [d.op for d in self.primary_deps[idx]]
 
         # Observables in the circuit
         # (the topological order is the queue order)
@@ -131,7 +131,7 @@ class JacobianQNode(BaseQNode):
             else:
                 op.use_method = "F"
 
-        # if all ops that depend on the free parameter have a best method
+        # if all ops that depend on the primary parameter have a best method
         # of "0", then we can skip the partial derivative altogether
         if all(o.use_method == "0" for o in ops):
             return "0"
@@ -170,9 +170,9 @@ class JacobianQNode(BaseQNode):
            'F' method requires exact expectation values, i.e., ``analytic=True`` in simulation plugins.
 
         Args:
-            args (nested Iterable[float] or float): positional arguments to the quantum function (differentiable)
+            args (nested Iterable[float] or float): primary arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments to the quantum function (not differentiable)
-            wrt (Sequence[int] or None): Indices of the flattened positional parameters with respect
+            wrt (Sequence[int] or None): Indices of the flattened primary parameters with respect
                 to which to compute the Jacobian. None means all the parameters.
                 Note that you cannot compute the Jacobian with respect to the kwargs.
             method (str): Jacobian computation method, in ``{'F', 'A', 'best', 'device'}``, see above
@@ -231,7 +231,7 @@ class JacobianQNode(BaseQNode):
         method_map = _inv_dict(self.par_to_grad_method)
 
         def inds_using(m):
-            """Intersection of ``wrt`` with free params indices whose best grad method is m."""
+            """Intersection of ``wrt`` with primary params indices whose best grad method is m."""
             return method_map.get(m, set()).intersection(wrt)
 
         # are we trying to differentiate wrt. params that don't support any method?
@@ -242,7 +242,7 @@ class JacobianQNode(BaseQNode):
         if method == "device":
             self._set_variables(args, kwargs)
             return self.device.jacobian(
-                self.circuit.operations, self.circuit.observables, self.variable_deps
+                self.circuit.operations, self.circuit.observables, self.primary_deps
             )
 
         if method == "A":
@@ -309,7 +309,7 @@ class JacobianQNode(BaseQNode):
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Keyword Args:
@@ -347,7 +347,7 @@ class JacobianQNode(BaseQNode):
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Returns:
@@ -360,7 +360,7 @@ class JacobianQNode(BaseQNode):
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Returns:

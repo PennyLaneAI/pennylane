@@ -32,7 +32,7 @@ class CVQNode(JacobianQNode):
     """Quantum node for CV parameter shift analytic differentiation"""
 
     def _best_method(self, idx):
-        """Determine the correct partial derivative computation method for a free parameter.
+        """Determine the correct partial derivative computation method for a primary parameter.
 
         Use the parameter-shift analytic method iff every gate that depends on the parameter supports it.
         If not, use the finite difference method only (one would have to use it anyway).
@@ -41,14 +41,14 @@ class CVQNode(JacobianQNode):
         we cannot differentiate with respect to this parameter at all.
 
         Args:
-            idx (int): free parameter index
+            idx (int): primary parameter index
 
         Returns:
             str: partial derivative method to be used
         """
         # pylint: disable=too-many-branches
-        # operations that depend on this free parameter
-        ops = [d.op for d in self.variable_deps[idx]]
+        # operations that depend on this primary parameter
+        ops = [d.op for d in self.primary_deps[idx]]
 
         # Observables in the circuit
         # (the topological order is the queue order)
@@ -100,7 +100,7 @@ class CVQNode(JacobianQNode):
             else:
                 op.use_method = "A"
 
-        # if all ops that depend on the free parameter have a best method
+        # if all ops that depend on the primary parameter have a best method
         # of "0", then we can skip the partial derivative altogether
         if all(o.use_method == "0" for o in ops):
             return "0"
@@ -151,7 +151,7 @@ class CVQNode(JacobianQNode):
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Keyword Args:
@@ -165,8 +165,8 @@ class CVQNode(JacobianQNode):
         n = self.num_primary_parameters
         w = self.num_wires
         pd = np.zeros(self.output_dim)
-        # find the Operators in which the free parameter appears, use the product rule
-        for op, p_idx in self.variable_deps[idx]:
+        # find the Operators in which the primary parameter appears, use the product rule
+        for op, p_idx in self.primary_deps[idx]:
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operators depending on the original.
@@ -241,7 +241,7 @@ class CVQNode(JacobianQNode):
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Returns:

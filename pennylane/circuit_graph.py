@@ -75,7 +75,7 @@ Layer = namedtuple("Layer", ["ops", "param_inds"])
 Args:
 
     ops (list[Operator]): parametrized operators in the layer
-    param_inds (list[int]): corresponding free parameter indices
+    param_inds (list[int]): corresponding flattened primary parameter indices
 """
 # TODO define what a layer is
 
@@ -85,7 +85,7 @@ LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"]
 Args:
     pre_ops (list[Operator]): operators that precede the layer
     ops (list[Operator]): parametrized operators in the layer
-    param_inds (tuple[int]): corresponding free parameter indices
+    param_inds (tuple[int]): corresponding flattened primary parameter indices
     post_ops (list[Operator]): operators that succeed the layer
 """
 
@@ -100,12 +100,12 @@ class CircuitGraph:
 
     Args:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
-        variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
-            The dictionary key is the parameter index.
+        primary_deps (dict[int, list[ParameterDependency]]): Mapping from flattened primary
+            parameter indices to Operators that depend on them.
     """
 
-    def __init__(self, ops, variable_deps):
-        self.variable_deps = variable_deps
+    def __init__(self, ops, primary_deps):
+        self.primary_deps = primary_deps
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
@@ -370,7 +370,7 @@ class CircuitGraph:
         layers = [current]
 
         # sort vars by first occurrence of the var in the ops queue
-        variable_ops_sorted = sorted(self.variable_deps.items(), key=lambda x: x[1][0].op.queue_idx)
+        variable_ops_sorted = sorted(self.primary_deps.items(), key=lambda x: x[1][0].op.queue_idx)
 
         # iterate over all parameters
         for param_idx, gate_param_tuple in variable_ops_sorted:
@@ -477,7 +477,7 @@ class CircuitGraph:
         Raises:
             ValueError: if the new :class:`~.Operator` does not act on the same wires as the old one
         """
-        # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
+        # NOTE Does not alter the graph edges in any way. primary_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx

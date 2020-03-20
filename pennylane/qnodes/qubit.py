@@ -37,7 +37,7 @@ class QubitQNode(JacobianQNode):
     """Quantum node for qubit parameter shift analytic differentiation"""
 
     def _best_method(self, idx):
-        """Determine the correct partial derivative computation method for a free parameter.
+        """Determine the correct partial derivative computation method for a primary parameter.
 
         Use the parameter-shift analytic method iff every gate that depends on the parameter supports it.
         If not, use the finite difference method only.
@@ -46,13 +46,13 @@ class QubitQNode(JacobianQNode):
         we cannot differentiate with respect to this parameter at all.
 
         Args:
-            idx (int): free parameter index
+            idx (int): primary parameter index
 
         Returns:
             str: partial derivative method to be used
         """
-        # operations that depend on this free parameter
-        ops = [d.op for d in self.variable_deps[idx]]
+        # operations that depend on this primary parameter
+        ops = [d.op for d in self.primary_deps[idx]]
 
         # Observables in the circuit
         # (the topological order is the queue order)
@@ -88,7 +88,7 @@ class QubitQNode(JacobianQNode):
             else:
                 op.use_method = "A"
 
-        # if all ops that depend on the free parameter have a best method
+        # if all ops that depend on the primary parameter have a best method
         # of "0", then we can skip the partial derivative altogether
         if all(o.use_method == "0" for o in ops):
             return "0"
@@ -107,7 +107,7 @@ class QubitQNode(JacobianQNode):
         """Partial derivative of the node using the analytic parameter shift method.
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Returns:
@@ -115,8 +115,8 @@ class QubitQNode(JacobianQNode):
         """
         n = self.num_primary_parameters
         pd = 0.0
-        # find the Operators in which the free parameter appears, use the product rule
-        for op, p_idx in self.variable_deps[idx]:
+        # find the Operators in which the primary parameter appears, use the product rule
+        for op, p_idx in self.primary_deps[idx]:
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operators depending on the original.
@@ -149,7 +149,7 @@ class QubitQNode(JacobianQNode):
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
-            args (array[float]): flattened positional arguments at which to evaluate the p.d.
+            args (array[float]): flattened primary arguments at which to evaluate the p.d.
             kwargs (dict[str, Any]): auxiliary arguments
 
         Returns:
@@ -326,7 +326,7 @@ class QubitQNode(JacobianQNode):
         """Evaluate the value of the metric tensor.
 
         Args:
-            args (tuple[Any]): positional (differentiable) arguments
+            args (tuple[Any]): primary (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
             diag_approx (bool): iff True, use the diagonal approximation
             only_construct (bool): Iff True, construct the circuits used for computing
@@ -368,7 +368,7 @@ class QubitQNode(JacobianQNode):
 
                 if isinstance(self.device, qml.QubitDevice):
                     ops = circuit["queue"] + [unitary_op] + [qml.expval(qml.PauliZ(0))]
-                    circuit_graph = qml.CircuitGraph(ops, self.variable_deps)
+                    circuit_graph = qml.CircuitGraph(ops, self.primary_deps)
                     self.device.execute(circuit_graph)
                 else:
                     self.device.execute(
@@ -416,7 +416,7 @@ class QubitQNode(JacobianQNode):
                 # diagonal approximation
                 if isinstance(self.device, qml.QubitDevice):
                     circuit_graph = qml.CircuitGraph(
-                        circuit["queue"] + circuit["observable"], self.variable_deps
+                        circuit["queue"] + circuit["observable"], self.primary_deps
                     )
                     variances = self.device.execute(circuit_graph)
                 else:

@@ -25,20 +25,20 @@ class DeviceJacobianQNode(JacobianQNode):
     # pylint: disable=abstract-method
 
     def _best_method(self, idx):
-        """Determine the correct partial derivative computation method for a positional parameter.
+        """Determine the correct partial derivative computation method for a primary parameter.
 
-        For this QNode, the partial derivative of every free parameter will be
+        For this QNode, the partial derivative of every primary parameter will be
         computed using the device; only parameters used in operations with
         ``grad_method=None`` will be marked as non-differentiable.
 
         Args:
-            idx (int): free parameter index
+            idx (int): primary parameter index
 
         Returns:
             str: partial derivative method to be used
         """
-        # operations that depend on this free parameter
-        ops = [d.op for d in self.variable_deps[idx]]
+        # operations that depend on this primary parameter
+        ops = [d.op for d in self.primary_deps[idx]]
         methods = [op.grad_method for op in ops]
 
         # one nondifferentiable item makes the whole nondifferentiable

@@ -179,7 +179,7 @@ class TestCircuitGraphHash:
 
     @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_observable_queue)
     def test_serialize_numeric_arguments_observables(self, queue, observable_queue, expected_string):
-        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
+        """Tests that the same hash is created for two circuitgraphs that have identical queues and empty primary_deps."""
 
         circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
         circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
