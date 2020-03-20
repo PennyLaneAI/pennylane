@@ -44,7 +44,7 @@ def unicode_representation_resolver_varnames():
 @pytest.fixture
 def variable(monkeypatch):
     """A mocked Variable instance for a non-keyword variable."""
-    monkeypatch.setattr(Variable, "positional_arg_values", [0, 1, 2, 3])
+    monkeypatch.setattr(Variable, "primary_arg_values", [0, 1, 2, 3])
     yield Variable(2, "test")
 
 

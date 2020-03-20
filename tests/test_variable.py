@@ -30,10 +30,10 @@ par_mults = [1, 0.4, -2.7]
 
 
 @pytest.fixture(scope="function")
-def par_positional():
-    "QNode: positional parameters"
+def par_primary():
+    "QNode: primary parameters"
     temp = nr.randn(n)
-    Variable.positional_arg_values = temp  # set the values
+    Variable.primary_arg_values = temp  # set the values
     return temp
 
 @pytest.fixture(scope="function")
@@ -80,14 +80,14 @@ def variable_eval_asserts(v, p, m, tol):
 
 @pytest.mark.parametrize("ind", par_inds)
 @pytest.mark.parametrize("mult", par_mults)
-def test_variable_val(par_positional, ind, mult, tol):
-    """Positional variable evaluation."""
+def test_variable_val(par_primary, ind, mult, tol):
+    """Primary variable evaluation."""
     v = Variable(ind)
 
     assert v.name is None
     assert v.mult == 1
     assert v.idx == ind
-    variable_eval_asserts(v, par_positional[ind], mult, tol)
+    variable_eval_asserts(v, par_primary[ind], mult, tol)
 
 
 @pytest.mark.parametrize("ind", par_inds)

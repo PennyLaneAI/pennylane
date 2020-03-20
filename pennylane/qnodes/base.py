@@ -30,10 +30,10 @@ from pennylane.variable import Variable
 
 
 ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
-"""Represents the dependence of an Operator on a positional parameter of the quantum function.
+"""Represents the dependence of an Operator on a primary parameter of the quantum function.
 
 Args:
-    op (Operator): operator depending on the positional parameter in question
+    op (Operator): operator depending on the primary parameter in question
     par_idx (int): flattened operator parameter index of the corresponding
         :class:`~.Variable` instance
 """
@@ -87,7 +87,7 @@ def _get_signature(func):
 
         # record the default values for auxiliary parameters in a dict
         if p.default is not inspect.Parameter.empty:
-            # default value => auxiliary parameter
+            # has a default value => is an auxiliary parameter
             func.aux_defaults[p.name] = p.default
 
     func.sig = OrderedDict(
@@ -151,27 +151,27 @@ class BaseQNode(qml.QueuingContext):
     and the computational device it is executed on.
 
     The quantum function can take two kinds of classical input parameters:
-    *positional* and *auxiliary*.
+    *primary* and *auxiliary*.
     Parameters that have default values in the quantum function signature are interpreted as
-    auxiliary parameters. All other parameters are positional.
+    auxiliary parameters. All other parameters are primary.
 
-    * The quantum function can *only* be differentiated with respect to its positional parameters.
-      The positional parameters should be only used as the parameters of the
+    * The quantum function can *only* be differentiated with respect to its primary parameters.
+      The primary parameters should be only used as the arguments of the
       :class:`quantum operations <.Operator>` in the function,
-      and they must be real numbers, or nested ``Iterables`` of real numbers
-      (note that this includes NumPy arrays).
-      Classical processing of positional parameters, either by arithmetic operations
-      or external functions, is not allowed. One current exception is simple scalar multiplication or division.
-      Positional parameters *must* be given using the positional syntax.
+      and they must be real numbers, or nested ``Sequences`` (or ``np.ndarrays``) of real numbers.
+      Classical processing of primary parameters, either by arithmetic operations
+      or external functions, is not allowed. One current exception is simple scalar multiplication
+      or division. Primary parameters *must* be given as positional arguments.
 
     * The quantum function can *not* be differentiated with respect to auxiliary parameters.
       They are useful for providing data or 'placeholders' to the quantum function.
-      Auxiliary parameters *must* be given using the keyword syntax.
+      Auxiliary parameters *must* be given as keyword arguments.
 
     The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance represeting
     the quantum circuit. The circuit can be either
 
-    * *mutable*, which means the quantum function is called each time the QNode is evaluated, or
+    * *mutable*, which means the quantum function is called each time the QNode is evaluated
+      if the auxiliary parameters have changed since the last call, or
     * *immutable*, which means the quantum function is called only once, on first evaluation,
       to construct the circuit representation.
 
@@ -182,11 +182,11 @@ class BaseQNode(qml.QueuingContext):
     * determine the wires on which operators act.
 
     The last two uses can potentially result in a different circuit structure on each call, hence
-    the term mutable. On the other hand,
-    for immutable circuits the quantum function must build the same circuit graph consisting of the same
-    :class:`.Operator` instances regardless of its parameters; they can only appear as the
-    arguments of the Operators in the circuit. Immutable circuits are slightly faster to execute, and
-    can be optimized, but require that the layout of the circuit is fixed.
+    the term mutable. On the other hand, for immutable circuits the quantum function must build the
+    same circuit graph consisting of the same :class:`.Operator` instances regardless of its
+    arguments; they can only appear as the arguments of the Operators in the circuit.
+    Immutable circuits are slightly faster to execute, and can be optimized, but require that the
+    layout of the circuit is fixed.
 
     Args:
         func (callable): The *quantum function* of the QNode.
@@ -197,7 +197,7 @@ class BaseQNode(qml.QueuingContext):
 
     Keyword Args:
         vis_check (bool): whether to check for operations that cannot affect the output
-        par_check (bool): whether to check for unused positional params
+        par_check (bool): whether to check for unused primary params
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -205,7 +205,7 @@ class BaseQNode(qml.QueuingContext):
         self.func = func  #: callable: quantum function
         self.device = device  #: Device: device that executes the circuit
         self.num_wires = device.num_wires  #: int: number of subsystems (wires) in the circuit
-        #: int: number of (flattened) differentiable parameters in the circuit
+        #: int: number of (flattened) primary parameters in the circuit
         self.num_primary_parameters = None
         #: dict[str, Any]: deepcopy of the auxiliary arguments the qnode was passed on last call
         self.last_auxiliary_args = None
@@ -220,7 +220,7 @@ class BaseQNode(qml.QueuingContext):
         self.kwargs = kwargs or {}
 
         self.variable_deps = {}
-        """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc positional parameter
+        """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc primary parameter
         index to the list of :class:`~pennylane.operation.Operator` instances (in this circuit)
         that depend on it.
         """
@@ -303,10 +303,10 @@ class BaseQNode(qml.QueuingContext):
         so the Operators may access them.
 
         Args:
-            args (tuple[Any]): positional (differentiable) arguments
+            args (tuple[Any]): primary (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
-        Variable.positional_arg_values = np.array(list(_flatten(args)))
+        Variable.primary_arg_values = np.array(list(_flatten(args)))
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
             Variable.auxiliary_arg_values = {
@@ -431,14 +431,14 @@ class BaseQNode(qml.QueuingContext):
         where the Variable instances are replaced with their name for readability.
 
         Args:
-            args (tuple[Any]): Positional arguments passed to the quantum function.
+            args (tuple[Any]): Primary arguments passed to the quantum function.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
                 They are only represented with Variables if the circuit is immutable.
 
         Returns:
             nested list[Variable], Union[nested list[Variable], None]: references for args, references for kwargs
         """
-        # positional args
+        # primary args
         variable_names = []
         # the positional args must come first in the signature
         for prefix, a in zip(self.func.sig, args[: self.func.n_pos_nd]):
@@ -484,14 +484,14 @@ class BaseQNode(qml.QueuingContext):
         converts it into a circuit graph, and creates the Variable mapping.
 
         .. note::
-           In mutable circuits the Variables are only used to represent the nested elements of
-           the positional args. We reconstruct the circuit each time the auxiliary args change.
+           In mutable circuits the Variables are only used to represent the primary args.
+           We reconstruct the circuit each time the auxiliary args change.
 
         Args:
-            args (tuple[Any]): Positional arguments passed to the quantum function.
+            args (tuple[Any]): Primary arguments passed to the quantum function.
                 During the construction we are not concerned with the numerical values, but with
                 the nesting structure.
-                Each atomic element ("scalar") within a nested positional argument is replaced with
+                Each atomic element ("scalar") within a nested primary argument is replaced with
                 a :class:`~.Variable` instance.
             kwargs (dict[str, Any]): Auxiliary arguments passed to the quantum function.
         """
@@ -526,11 +526,12 @@ class BaseQNode(qml.QueuingContext):
             # generate the program queue by executing the quantum circuit function
             if self.mutable:
                 # It's ok to directly pass auxiliary args since the circuit is re-constructed
-                # each time they change. Positional args must be replaced because parameter-shift
+                # each time they change. Primary args must be replaced because parameter-shift
                 # differentiation requires Variables.
                 res = self.func(*arg_vars, **kwargs)
             else:
-                # immutable circuits are only constructed once, hence we must use Variables
+                # immutable circuits are only constructed once, hence we must use Variables for
+                # both primary and auxiliary arguments
                 res = self.func(*arg_vars, **kwarg_vars)
 
         # check the validity of the circuit
@@ -556,12 +557,12 @@ class BaseQNode(qml.QueuingContext):
         # We only update the aux args here to ensure that they represent the current circuit.
         self.last_auxiliary_args = copy.deepcopy(kwargs)
 
-        # check for unused positional params
+        # check for unused primary params
         if self.kwargs.get("par_check", False):
             unused = [k for k, v in self.variable_deps.items() if not v]
             if unused:
                 raise QuantumFunctionError(
-                    "The positional parameters {} are unused.".format(unused)
+                    "The primary parameters {} are unused.".format(unused)
                 )
 
         # check for operations that cannot affect the output
@@ -739,7 +740,7 @@ class BaseQNode(qml.QueuingContext):
         """Evaluate the quantum function on the specified device.
 
         Args:
-            args (tuple[Any]): positional arguments to the quantum function (differentiable)
+            args (tuple[Any]): primary arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
         Keyword Args:
@@ -777,7 +778,7 @@ class BaseQNode(qml.QueuingContext):
 
         Args:
             obs  (Iterable[Observable]): observables to measure
-            args (tuple[Any]): positional arguments to the quantum function (differentiable)
+            args (tuple[Any]): primary arguments to the quantum function (differentiable)
             kwargs (dict[str, Any]): auxiliary arguments (not differentiable)
 
         Returns:

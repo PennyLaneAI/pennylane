@@ -585,9 +585,9 @@ class TestQNodeExceptions:
             QuantumFunctionError, match="'args' cannot be given using the keyword syntax"
         ):
             node(args=1)
-        with pytest.raises(QuantumFunctionError, match="positional parameter 'x' missing"):
+        with pytest.raises(QuantumFunctionError, match="primary parameter 'x' missing"):
             node(n=0.4)
-        with pytest.raises(QuantumFunctionError, match="keyword-only parameter 'n' missing"):
+        with pytest.raises(QuantumFunctionError, match="auxiliary parameter 'n' missing"):
             node(0.1)
 
         # valid calls
@@ -596,8 +596,8 @@ class TestQNodeExceptions:
         node(0.1, n=0.4)
         assert circuit.in_args[2:] == (0.3, 0.4)
 
-    def test_unused_positional_parameter(self, operable_mock_device_2_wires):
-        """Error: a positional parameter is not used in the circuit."""
+    def test_unused_primary_parameter(self, operable_mock_device_2_wires):
+        """Error: a primary parameter is not used in the circuit."""
 
         def circuit(a, x):
             qml.RX(a, wires=[0])
@@ -605,7 +605,7 @@ class TestQNodeExceptions:
 
         kwargs = {"par_check": True}
         node = BaseQNode(circuit, operable_mock_device_2_wires, **kwargs)
-        with pytest.raises(QuantumFunctionError, match="The positional parameters"):
+        with pytest.raises(QuantumFunctionError, match="The primary parameters"):
             node(1.0, 2.0)
 
     @pytest.mark.xfail(
@@ -626,11 +626,11 @@ class TestQNodeExceptions:
             QuantumFunctionError, match="'kwargs' cannot be given using the keyword syntax"
         ):
             node(kwargs=1)
-        with pytest.raises(QuantumFunctionError, match="takes 2 positional parameters, 3 given"):
+        with pytest.raises(QuantumFunctionError, match="takes 2 primary parameters, 3 given"):
             node(0.1, 0.2, 100, n=0.4)
-        with pytest.raises(QuantumFunctionError, match="positional parameter 'x' missing"):
+        with pytest.raises(QuantumFunctionError, match="primary parameter 'x' missing"):
             node(n=0.4)
-        with pytest.raises(QuantumFunctionError, match="keyword-only parameter 'n' missing"):
+        with pytest.raises(QuantumFunctionError, match="auxiliary parameter 'n' missing"):
             node(0.1)
 
         # valid calls
@@ -739,7 +739,7 @@ class TestQNodeArgs:
         assert c == pytest.approx([-1.0, 0.0], abs=tol)
 
     def test_arraylike_args_used(self, qubit_device_2_wires, tol):
-        """Tests that qnodes use array-like positional arguments."""
+        """Tests that qnodes use array-like primary arguments."""
 
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -835,7 +835,7 @@ class TestQNodeArgs:
 
     def test_mutable_node_variable_number_of_args(self, qubit_device_1_wire):
         """Tests a mutable circuit that expects a variable number of
-        positional arguments based on the values of its auxiliary arguments.
+        primary arguments based on the values of its auxiliary arguments.
         """
         def circuit(x, n=1):
             for k in range(n):
@@ -844,7 +844,7 @@ class TestQNodeArgs:
 
         node = BaseQNode(circuit, qubit_device_1_wire, mutable=True)
 
-        # first evaluation creates VariableRefs for the positional args
+        # first evaluation creates VariableRefs for the primary args
         node([0.1], n=1)
         assert node.num_primary_parameters == 1
         # new VariableRefs must be created since the auxiliary args have changed
@@ -853,7 +853,7 @@ class TestQNodeArgs:
 
     def test_mutable_node_variable_number_of_args_nested(self, qubit_device_1_wire):
         """Tests a mutable circuit that expects a variable number of
-        positional arguments based on the values of its auxiliary arguments,
+        primary arguments based on the values of its auxiliary arguments,
         in a nested structure.
         """
         def circuit(x, n=1):
@@ -892,12 +892,12 @@ class TestQNodeCaching:
         assert len(node.circuit.operations) == 1
         temp = node.ops[0]
 
-        # second evaluation, same auxiliary args, different positional args
+        # second evaluation, same auxiliary args, different primary args
         node(0.1, n=0)
         assert len(node.circuit.operations) == 1
         node.ops[0] is temp  # same circuit, same ops
 
-        # third evaluation, different auxiliary args, same positional args
+        # third evaluation, different auxiliary args, same primary args
         node(0.1, n=1)
         assert len(node.circuit.operations) == 2
         node.ops[0] is not temp  # all Operations in the circuit are generated anew
@@ -930,7 +930,7 @@ class TestQNodeCaching:
         dev = qml.device("default.qubit", wires=2)
 
         def non_mutable_circuit(x, *, c=None):
-            # positional parameter x
+            # primary parameter x
             qml.RX(x[0], wires=0)
             qml.RX(x[1][1], wires=0)
             # auxiliary parameter c
@@ -987,7 +987,7 @@ class TestQNodeCaching:
 
     def test_mutable_qnode_for_loop_varying_executions(self, tol):
         """Test that a mutable QNode containing a for loop correctly mutates
-        when called with different auxiliary arguments and different shaped positional
+        when called with different auxiliary arguments and different shaped primary
         arguments.
         """
         dev = qml.device("default.qubit", wires=1)
@@ -1450,6 +1450,6 @@ class TestQNodeDraw:
         node1([1.1])
         node1.draw()  # works fine
 
-        # VariableRef.positional_arg_values was last set by node1.
+        # VariableRef.primary_arg_values was last set by node1.
         # Here node2.draw tries to evaluate the node2 parameters but there is one value too few.
         node2.draw()

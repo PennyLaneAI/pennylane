@@ -21,10 +21,10 @@ Description
 The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode._construct`
 method is called, which performs a 'just-in-time' circuit construction.
-As part of this construction, all positional arguments
+As part of this construction, all primary arguments
 (and possibly also the auxiliary arguments) are wrapped in `Variable` instances as follows:
 
-* The tuple containing all positional arguments is
+* The nested sequence of primary arguments is
   flattened to a single list, and each element wrapped in a `Variable` instance,
   indexed by its position in the list.
   The list can then be unflattened back to the original shape.
@@ -37,12 +37,12 @@ As a result, the circuit is described as a graph of operations and expectations,
 the parameters stored as Variable instances.
 
 .. note::
-    The QNode can be differentiated with respect to positional arguments,
+    The QNode can be differentiated with respect to primary arguments,
     but *not* with respect to auxiliary arguments. This makes auxiliary arguments
     a natural location for data placeholders.
 
-For each successive QNode execution, the user-provided values for the positional and auxiliary
-arguments are stored in :attr:`Variable.positional_arg_values` and
+For each successive QNode execution, the user-provided values for the primary and auxiliary
+arguments are stored in :attr:`Variable.primary_arg_values` and
 :attr:`Variable.auxiliary_arg_values` respectively; the values are
 then returned by :meth:`Variable.val`, using the Variable's :attr:`idx` attribute, and, for
 auxiliary arguments, its :attr:`dict_key`, to return the correct value to the operation.
@@ -61,7 +61,7 @@ class Variable:
     Represents an atomic ("scalar") quantum circuit parameter (with a non-fixed value),
     or data placeholder.
 
-    Each time the circuit is executed, it is given a vector of flattened positional argument values,
+    Each time the circuit is executed, it is given a vector of flattened primary argument values,
     and a dictionary mapping auxiliary argument names to vectors of their flattened values.
     Each element of these vectors corresponds to a Variable instance.
     :attr:`Variable.idx` is an index into the argument value vector.
@@ -79,8 +79,8 @@ class Variable:
 
     # pylint: disable=too-few-public-methods
 
-    #: array[float]: current flattened positional parameter values, set in :meth:`.BaseQNode._set_variables`
-    positional_arg_values = None
+    #: array[float]: current flattened primary parameter values, set in :meth:`.BaseQNode._set_variables`
+    primary_arg_values = None
 
     #: dict[str->array[float]]: current flattened auxiliary parameter values, set in :meth:`.BaseQNode._set_variables`
     auxiliary_arg_values = None
@@ -149,8 +149,8 @@ class Variable:
         """
         # pylint: disable=unsubscriptable-object
         if not self.is_kwarg:
-            # The variable is a placeholder for a positional argument
-            return Variable.positional_arg_values[self.idx] * self.mult
+            # The variable is a placeholder for a primary argument
+            return Variable.primary_arg_values[self.idx] * self.mult
 
         # The variable is a placeholder for an auxiliary argument
         values = Variable.auxiliary_arg_values[self.dict_key]
