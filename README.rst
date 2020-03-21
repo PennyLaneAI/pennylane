@@ -41,7 +41,9 @@
  
 .. raw:: html
 
+    <p align="center">
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
+    </p>
     
 You can use PennyLane for quantum computing, quantum machine learning, quantum chemistry, and hybrid quantum-classical computations. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
 
