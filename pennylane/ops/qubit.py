@@ -16,13 +16,14 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
 from pennylane import template
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder, pauli_eigs
+from pennylane.utils import OperationRecorder, pauli_eigs, expand_matrix
 
 
 class Hadamard(Observable, Operation):
@@ -584,7 +585,7 @@ class PauliRot(Operation):
     .. note::
 
         If the ``PauliRot`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate using :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+        will attempt to decompose the gate using :class:`~.RX`, :class:`~.Hadamard`, :class:`~.RZ`
         and :class:`~.CNOT` gates.
 
     Args:
@@ -592,14 +593,36 @@ class PauliRot(Operation):
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
+    num_params = 2
     num_wires = Any
     par_domain = "R"
     grad_method = "A"
 
+    _PAULI_CONJUGATION_MATRICES = {
+        'X' : Hadamard._matrix(), 
+        'Y': RX._matrix(-np.pi/2), 
+        'Z': np.eye(2),
+    }
+
     @staticmethod
     def _matrix(*params):
-        raise NotImplementedError("Not implemented.")
+        theta = params[0]
+        pauli_word = params[1]
+        # We keep imaginary wires to be able to reconstruct the position of the identities
+        active_wires, active_gates = zip(*[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != 'I'])
+
+        # we first create the multi-Z rotation
+        multi_Z_rot_eigs = np.exp(-1j * theta/2 * pauli_eigs(len(active_gates)))
+        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+
+        # now we conjugate with Hadamard and RX to create the Pauli string
+        conjugation_matrix = itertools.accumulate(
+            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates], 
+            np.kron,
+        )
+
+        return conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix
+
 
     @staticmethod
     @template
