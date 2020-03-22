@@ -19,6 +19,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 from scipy.linalg import block_diag
 
+from pennylane import template
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder, pauli_eigs
@@ -601,8 +602,29 @@ class PauliRot(Operation):
         raise NotImplementedError("Not implemented.")
 
     @staticmethod
+    @template
     def decomposition(theta, pauli_word, wires):
-        raise NotImplementedError("Not implemented.")
+        active_wires, active_gates = zip(*[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != 'I'])
+
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == 'X':
+                Hadamard(wires=[wire])
+            elif gate == 'Y':
+                RX(np.pi/2, wires=[wire])
+
+        for i in range(len(active_wires) - 1, 0, -1):
+            CNOT(wires=[active_wires[i], active_wires[i-1]])
+
+        RZ(theta, wires=active_wires[0])
+
+        for i in range(len(active_wires)-1):
+            CNOT(wires=[active_wires[i+1], active_wires[i]])
+
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == 'X':
+                    Hadamard(wires=[wire])
+                elif gate == 'Y':
+                    RX(-np.pi/2, wires=[wire])
 
 
 class CRX(Operation):
