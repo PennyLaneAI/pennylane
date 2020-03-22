@@ -406,7 +406,7 @@ def expand_matrix(matrix, original_wires, expanded_wires):
     wire_indices = []
     for wire in original_wires:
         wire_indices.append(expanded_wires.index(wire))
- 
+
     wire_indices = np.array(wire_indices)
 
     # Order tensor factors according to wires
