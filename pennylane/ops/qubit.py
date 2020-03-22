@@ -565,6 +565,46 @@ class Rot(Operation):
         return decomp_ops
 
 
+class PauliRot(Operation):
+    r"""PauliRot(theta, pauli_word, wires)
+    Arbitrary pauli word rotation.
+
+    .. math::
+
+        RP(\theta) = \exp(-i \frac{\theta}{2} P)
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\theta}f(RP(\theta)) = \frac{1}{2}\left[f(RP(\theta +\pi/2)) - f(RP(\theta-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`RP(\theta)`.
+
+    .. note::
+
+        If the ``PauliRot`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate using :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`
+        and :class:`~.CNOT` gates.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        pauli_word (string): the Pauli word defining the rotation
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 1
+    num_wires = Any
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def _matrix(*params):
+        raise NotImplementedError("Not implemented.")
+
+    @staticmethod
+    def decomposition(phi, theta, omega, wires):
+        raise NotImplementedError("Not implemented.")
+
+
 class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
