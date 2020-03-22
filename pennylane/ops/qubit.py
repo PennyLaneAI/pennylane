@@ -16,7 +16,7 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import itertools
+import functools
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -618,8 +618,9 @@ class PauliRot(Operation):
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
         # now we conjugate with Hadamard and RX to create the Pauli string
-        conjugation_matrix = itertools.accumulate(
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates], np.kron,
+        conjugation_matrix = functools.reduce(
+            np.kron,
+            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates],
         )
 
         return expand_matrix(
