@@ -610,7 +610,7 @@ class PauliRot(Operation):
             if gate == 'X':
                 Hadamard(wires=[wire])
             elif gate == 'Y':
-                RX(np.pi/2, wires=[wire])
+                RX(-np.pi/2, wires=[wire])
 
         for i in range(len(active_wires) - 1, 0, -1):
             CNOT(wires=[active_wires[i], active_wires[i-1]])
@@ -624,7 +624,7 @@ class PauliRot(Operation):
                 if gate == 'X':
                     Hadamard(wires=[wire])
                 elif gate == 'Y':
-                    RX(-np.pi/2, wires=[wire])
+                    RX(np.pi/2, wires=[wire])
 
 
 class CRX(Operation):
