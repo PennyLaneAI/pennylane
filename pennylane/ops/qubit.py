@@ -621,7 +621,7 @@ class PauliRot(Operation):
             np.kron,
         )
 
-        return conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix
+        return expand_matrix(conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix, active_wires, list(range(len(pauli_word))))
 
 
     @staticmethod
