@@ -571,7 +571,7 @@ class PauliRot(Operation):
 
     .. math::
 
-        RP(\theta) = \exp(-i \frac{\theta}{2} P)
+        RP(\theta, P) = \exp(-i \frac{\theta}{2} P)
 
     **Details:**
 
@@ -601,7 +601,7 @@ class PauliRot(Operation):
         raise NotImplementedError("Not implemented.")
 
     @staticmethod
-    def decomposition(phi, theta, omega, wires):
+    def decomposition(theta, pauli_word, wires):
         raise NotImplementedError("Not implemented.")
 
 
