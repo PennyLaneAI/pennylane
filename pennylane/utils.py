@@ -386,6 +386,7 @@ def inv(operation_list):
 
     return inv_ops
 
+
 def expand_matrix(matrix, original_wires, expanded_wires):
     N = len(original_wires)
     M = len(expanded_wires)
@@ -399,7 +400,7 @@ def expand_matrix(matrix, original_wires, expanded_wires):
         identity = np.eye(len(extra_dims)).reshape(extra_dims)
         expanded_tensor = np.tensordot(tensor, identity, axes=0)
         # Fix order of tensor factors
-        expanded_tensor = np.moveaxis(expanded_tensor, range(2*N, 2*N+D), range(N, N+D))
+        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
     else:
         expanded_tensor = tensor
 
@@ -414,4 +415,4 @@ def expand_matrix(matrix, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
 
-    return expanded_tensor.reshape((2**M, 2**M))
+    return expanded_tensor.reshape((2 ** M, 2 ** M))

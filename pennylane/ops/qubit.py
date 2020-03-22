@@ -599,9 +599,9 @@ class PauliRot(Operation):
     grad_method = "A"
 
     _PAULI_CONJUGATION_MATRICES = {
-        'X' : Hadamard._matrix(), 
-        'Y': RX._matrix(-np.pi/2), 
-        'Z': np.eye(2),
+        "X": Hadamard._matrix(),
+        "Y": RX._matrix(-np.pi / 2),
+        "Z": np.eye(2),
     }
 
     @staticmethod
@@ -609,45 +609,51 @@ class PauliRot(Operation):
         theta = params[0]
         pauli_word = params[1]
         # We keep imaginary wires to be able to reconstruct the position of the identities
-        active_wires, active_gates = zip(*[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != 'I'])
+        active_wires, active_gates = zip(
+            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+        )
 
         # we first create the multi-Z rotation
-        multi_Z_rot_eigs = np.exp(-1j * theta/2 * pauli_eigs(len(active_gates)))
+        multi_Z_rot_eigs = np.exp(-1j * theta / 2 * pauli_eigs(len(active_gates)))
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = itertools.accumulate(
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates], 
-            np.kron,
+            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates], np.kron,
         )
 
-        return expand_matrix(conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix, active_wires, list(range(len(pauli_word))))
-
+        return expand_matrix(
+            conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix,
+            active_wires,
+            list(range(len(pauli_word))),
+        )
 
     @staticmethod
     @template
     def decomposition(theta, pauli_word, wires):
-        active_wires, active_gates = zip(*[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != 'I'])
+        active_wires, active_gates = zip(
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        )
 
         for wire, gate in zip(active_wires, active_gates):
-            if gate == 'X':
+            if gate == "X":
                 Hadamard(wires=[wire])
-            elif gate == 'Y':
-                RX(-np.pi/2, wires=[wire])
+            elif gate == "Y":
+                RX(-np.pi / 2, wires=[wire])
 
         for i in range(len(active_wires) - 1, 0, -1):
-            CNOT(wires=[active_wires[i], active_wires[i-1]])
+            CNOT(wires=[active_wires[i], active_wires[i - 1]])
 
         RZ(theta, wires=active_wires[0])
 
-        for i in range(len(active_wires)-1):
-            CNOT(wires=[active_wires[i+1], active_wires[i]])
+        for i in range(len(active_wires) - 1):
+            CNOT(wires=[active_wires[i + 1], active_wires[i]])
 
             for wire, gate in zip(active_wires, active_gates):
-                if gate == 'X':
+                if gate == "X":
                     Hadamard(wires=[wire])
-                elif gate == 'Y':
-                    RX(np.pi/2, wires=[wire])
+                elif gate == "Y":
+                    RX(np.pi / 2, wires=[wire])
 
 
 class CRX(Operation):
