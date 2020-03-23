@@ -108,9 +108,9 @@ class TestKerasLayer:
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
     def test_no_input(self, get_circuit, output_dim):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
-        INPUT_ARG argument"""
+        argument with name equal to the input_arg class attribute of KerasLayer"""
         c, w = get_circuit
-        del c.func.sig[qml.qnn.keras.INPUT_ARG]
+        del c.func.sig[qml.qnn.keras.KerasLayer.input_arg]
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
             KerasLayer(c, w, output_dim)
 
@@ -118,12 +118,15 @@ class TestKerasLayer:
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
     def test_input_in_weight_shapes(self, get_circuit, n_qubits, output_dim):
         """Test if a ValueError is raised when instantiated with a weight_shapes dictionary that
-        contains the shape of the input"""
+        contains the shape of the input argument given by the input_arg class attribute of
+        KerasLayer"""
         c, w = get_circuit
-        w[qml.qnn.keras.INPUT_ARG] = n_qubits
+        w[qml.qnn.keras.KerasLayer.input_arg] = n_qubits
         with pytest.raises(
             ValueError,
-            match="{} argument should not have its dimension".format(qml.qnn.keras.INPUT_ARG),
+            match="{} argument should not have its dimension".format(
+                qml.qnn.keras.KerasLayer.input_arg
+            ),
         ):
             KerasLayer(c, w, output_dim)
 
@@ -207,7 +210,7 @@ class TestKerasLayer:
     @pytest.mark.parametrize("interface", ["tf"])
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
     def test_non_input_defaults(self, get_circuit, output_dim, n_qubits):
-        """Test if a TypeError is raised when default arguments that are not INPUT_ARG are
+        """Test if a TypeError is raised when default arguments that are not the input argument are
         present in the QNode"""
         c, w = get_circuit
 
@@ -217,7 +220,8 @@ class TestKerasLayer:
             return c(inputs, w1, w2, w3, w4, w5, w6, w7)
 
         with pytest.raises(
-            TypeError, match="Only the argument {} is permitted".format(qml.qnn.keras.INPUT_ARG)
+            TypeError,
+            match="Only the argument {} is permitted".format(qml.qnn.keras.KerasLayer.input_arg),
         ):
             KerasLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
 

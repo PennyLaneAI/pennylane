@@ -31,8 +31,6 @@ except ImportError:
 
 from pennylane.qnodes import QNode
 
-INPUT_ARG = "inputs"
-
 
 class KerasLayer(Layer):
     """A Keras layer for integrating PennyLane QNodes with the Keras API.
@@ -98,6 +96,8 @@ class KerasLayer(Layer):
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ Keras APIs.
     """
 
+    input_arg = "inputs"
+
     def __init__(
         self,
         qnode: QNode,
@@ -111,18 +111,20 @@ class KerasLayer(Layer):
 
         self.sig = qnode.func.sig
 
-        if INPUT_ARG not in self.sig:
+        if self.input_arg not in self.sig:
             raise TypeError(
-                "QNode must include an argument with name {} for inputting data".format(INPUT_ARG)
+                "QNode must include an argument with name {} for inputting data".format(
+                    self.input_arg
+                )
             )
 
-        if INPUT_ARG in set(weight_shapes.keys()):
+        if self.input_arg in set(weight_shapes.keys()):
             raise ValueError(
                 "{} argument should not have its dimension specified in "
-                "weight_shapes".format(INPUT_ARG)
+                "weight_shapes".format(self.input_arg)
             )
 
-        if set(weight_shapes.keys()) | {INPUT_ARG} != set(self.sig.keys()):
+        if set(weight_shapes.keys()) | {self.input_arg} != set(self.sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
         if qnode.func.var_pos:
@@ -141,9 +143,11 @@ class KerasLayer(Layer):
         defaults = {
             name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
         }
-        self.input_is_default = INPUT_ARG in defaults
-        if defaults - {INPUT_ARG} != set():
-            raise TypeError("Only the argument {} is permitted to have a default".format(INPUT_ARG))
+        self.input_is_default = self.input_arg in defaults
+        if defaults - {self.input_arg} != set():
+            raise TypeError(
+                "Only the argument {} is permitted to have a default".format(self.input_arg)
+            )
 
         self.weight_specs = weight_specs if weight_specs is not None else {}
 
@@ -176,12 +180,12 @@ class KerasLayer(Layer):
         for x in inputs:
             qnode = self.qnode
             for arg in self.sig:
-                if arg is not INPUT_ARG:
+                if arg is not self.input_arg:
                     w = self.qnode_weights[arg]
                     qnode = functools.partial(qnode, w)
                 else:
                     if self.input_is_default:
-                        qnode = functools.partial(qnode, **{INPUT_ARG: x})
+                        qnode = functools.partial(qnode, **{self.input_arg: x})
                     else:
                         qnode = functools.partial(qnode, x)
             outputs.append(qnode())
