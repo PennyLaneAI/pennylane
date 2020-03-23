@@ -541,6 +541,8 @@ class TestInitializationIntegration:
                   (QAOAEmbedding,
                    {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)}),
                   (CnotRingLayers,
+                   {'weights': cnot_ring_layers_uniform(n_layers=1, n_wires=1), 'wires': range(1)}),
+                  (CnotRingLayers,
                    {'weights': cnot_ring_layers_uniform(n_layers=3, n_wires=1), 'wires': range(1)}),
                   (CnotRingLayers,
                    {'weights': cnot_ring_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),

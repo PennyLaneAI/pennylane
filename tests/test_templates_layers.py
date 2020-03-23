@@ -473,7 +473,6 @@ class TestCnotRing:
                                                   (4, 4)])
     def test_circuit_queue(self, n_wires, n_cnots):
         """Tests the gate types and parameter values in the circuit."""
-        np.random.seed(12)
         n_layers = 2
 
         weights = np.random.randn(n_layers, n_wires)

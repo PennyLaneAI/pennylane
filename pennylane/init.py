@@ -848,8 +848,6 @@ def cnot_ring_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
-
-    Keyword Args:
         mean (float): mean of parameters
         std (float): standard deviation of parameters
         seed (int): seed used in sampling the parameters, makes function call deterministic
@@ -875,8 +873,6 @@ def cnot_ring_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     Args:
         n_layers (int): number of layers
         n_wires (int): number of qubits
-
-    Keyword Args:
         low (float): minimum value of uniform distribution
         high (float): maximum value of uniform distribution
         seed (int): seed used in sampling the parameters, makes function call deterministic
