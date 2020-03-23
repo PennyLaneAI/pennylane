@@ -837,8 +837,8 @@ def interferometer_varphi_normal(n_wires, mean=0, std=0.1, seed=None):
     return varphi
 
 
-def cnot_ring_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
-    r"""Creates a parameter array for :func:`~.CnotRingLayers`, drawn from a normal
+def basic_entangler_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.BasicEntanglerLayers`, drawn from a normal
     distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires)`` and each parameter is drawn
@@ -862,8 +862,8 @@ def cnot_ring_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     return params
 
 
-def cnot_ring_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
-    r"""Creates a parameter array for :func:`~.CnotRingLayers`, drawn from a uniform
+def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.BasicEntanglerLayers`, drawn from a uniform
     distribution.
 
     The shape of the parameter array is ``(n_layers, n_wires)`` and each parameter is drawn uniformly at random

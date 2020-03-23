@@ -146,9 +146,9 @@ Layer architectures define sequences of trainable gates that are repeated like t
     :figure: ../_static/templates/layers/strongly_entangling.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.layers.CnotRingLayers.html
-    :description: CnotRingLayers
-    :figure: ../_static/templates/layers/cnot_ring.png
+    :link: ../code/api/pennylane.templates.layers.BasicEntanglerLayers.html
+    :description: BasicEntanglerLayers
+    :figure: ../_static/templates/layers/basic_entangler.png
 
 .. raw:: html
 

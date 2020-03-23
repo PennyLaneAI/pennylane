@@ -19,7 +19,7 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.layers import CVNeuralNetLayers, StronglyEntanglingLayers, RandomLayers, CnotRingLayers
+from pennylane.templates.layers import CVNeuralNetLayers, StronglyEntanglingLayers, RandomLayers, BasicEntanglerLayers
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 
@@ -465,7 +465,7 @@ class TestRandomLayers:
 
 
 class TestCnotRing:
-    """Tests for the CnotRingLayers method from the pennylane.templates.layers module."""
+    """Tests for the BasicEntanglerLayers method from the pennylane.templates.layers module."""
 
     @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0),
                                                   (2, 1),
@@ -478,7 +478,7 @@ class TestCnotRing:
         weights = np.random.randn(n_layers, n_wires)
 
         with qml.utils.OperationRecorder() as rec:
-            CnotRingLayers(weights, wires=range(n_wires))
+            BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
         exp_gates = [qml.RX]*n_wires + [qml.CNOT]*n_cnots
@@ -507,7 +507,7 @@ class TestCnotRing:
         weights = np.ones(shape=(n_layers, n_wires))
 
         with qml.utils.OperationRecorder() as rec:
-            CnotRingLayers(weights, wires=range(n_wires), rotation=rotation)
+            BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
 
         # assert queue contains the custom rotations and CNOTs only
         gates = rec.queue
@@ -527,7 +527,7 @@ class TestCnotRing:
 
         @qml.qnode(dev)
         def circuit(weights):
-            CnotRingLayers(weights=weights, wires=range(n_wires), rotation=RX)
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         expectations = circuit(weights)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``CnotRingLayers`` template.
+Contains the ``BasicEntanglerLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
@@ -28,19 +28,20 @@ from pennylane.templates.utils import (
 
 
 @template
-def CnotRingLayers(weights, wires, rotation=None):
+def BasicEntanglerLayers(weights, wires, rotation=None):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
     The ring of CNOT gates connects every qubit with its neighbour,
     with the last qubit being considered as a neighbour to the first qubit.
 
-    .. figure:: ../../_static/templates/layers/cnot_ring.png
+    .. figure:: ../../_static/templates/layers/basic_entangler.png
         :align: center
         :width: 40%
         :target: javascript:void(0);
 
-    The number of layers :math:`L` is determined by the first dimension of the argument ``weights``. When using a single wire, the template only applies the single
+    The number of layers :math:`L` is determined by the first dimension of the argument ``weights``.
+    When using a single wire, the template only applies the single
     qubit gates in each layer.
 
     .. note::
@@ -49,7 +50,7 @@ def CnotRingLayers(weights, wires, rotation=None):
         qubit when using only two wires, so the entangler is not repeated on the same wires.
         In this case, only one CNOT gate is applied in each layer:
 
-        .. figure:: ../../_static/templates/layers/cnot_ring_2wires.png
+        .. figure:: ../../_static/templates/layers/basic_entangler_2wires.png
             :align: center
             :width: 30%
             :target: javascript:void(0);
@@ -70,7 +71,7 @@ def CnotRingLayers(weights, wires, rotation=None):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import CnotRingLayers
+            from pennylane.templates import BasicEntanglerLayers
             from math import pi
 
             n_wires = 3
@@ -78,7 +79,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
             @qml.qnode(dev)
             def circuit(weights):
-                CnotRingLayers(weights=weights, wires=range(n_wires))
+                BasicEntanglerLayers(weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
@@ -86,15 +87,15 @@ def CnotRingLayers(weights, wires, rotation=None):
 
         **Parameter initialization function**
 
-        The :mod:`~pennylane.init` module has two parameter initialization functions, ``cnot_ring_layers_normal``
-        and ``cnot_ring_layers_uniform``.
+        The :mod:`~pennylane.init` module has two parameter initialization functions, ``basic_entangler_layers_normal``
+        and ``basic_entangler_layers_uniform``.
 
         .. code-block:: python
 
-            from pennylane.init import cnot_ring_layers_normal
+            from pennylane.init import basic_entangler_layers_normal
 
             n_layers = 4
-            weights = cnot_ring_layers_normal(n_layers=n_layers, n_wires=n_wires)
+            weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires)
 
             circuit(weights)
 
@@ -111,7 +112,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
             @qml.qnode(dev)
             def circuit(weights):
-                CnotRingLayers(weights=weights, wires=range(n_wires))
+                BasicEntanglerLayers(weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
@@ -126,7 +127,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
             @qml.qnode(dev)
             def circuit(weights):
-                CnotRingLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
+                BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         Accidentally using a gate that expects more parameters throws a

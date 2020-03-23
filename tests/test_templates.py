@@ -48,7 +48,7 @@ from pennylane.templates import (Interferometer,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
                                  QAOAEmbedding,
-                                 CnotRingLayers)
+                                 BasicEntanglerLayers)
 
 from pennylane.templates import broadcast
 
@@ -80,8 +80,8 @@ from pennylane.init import (strong_ent_layers_uniform,
                             interferometer_theta_uniform,
                             qaoa_embedding_uniform,
                             qaoa_embedding_normal,
-                            cnot_ring_layers_normal,
-                            cnot_ring_layers_uniform)
+                            basic_entangler_layers_normal,
+                            basic_entangler_layers_uniform)
 
 #######################################
 # Interfaces
@@ -133,7 +133,7 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'parameters': [[1.], [1.]]},
                                {'unitary': qml.RX,
                                 'pattern': 'single'}),
-                              (CnotRingLayers,
+                              (BasicEntanglerLayers,
                                {'weights': [[1., 1.]]},
                                {'rotation': qml.RX})
                               ]
@@ -540,20 +540,20 @@ class TestInitializationIntegration:
                    {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=1), 'wires': range(1)}),
                   (QAOAEmbedding,
                    {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_uniform(n_layers=1, n_wires=1), 'wires': range(1)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_uniform(n_layers=3, n_wires=1), 'wires': range(1)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_uniform(n_layers=3, n_wires=3), 'wires': range(3)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_normal(n_layers=3, n_wires=1), 'wires': range(1)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
-                  (CnotRingLayers,
-                   {'weights': cnot_ring_layers_normal(n_layers=3, n_wires=3), 'wires': range(3)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=1, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=3), 'wires': range(3)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=3), 'wires': range(3)}),
                   ]
 
     CV_INIT = [(CVNeuralNetLayers,
@@ -657,7 +657,7 @@ class TestGradientIntegration:
                                            'pattern': 'single',
                                            'wires': [0, 1]},
                                           [0]),
-                                         (CnotRingLayers,
+                                         (BasicEntanglerLayers,
                                           {'weights': [[1., 1.]]},
                                           {'wires': [0, 1]},
                                           [0]),
