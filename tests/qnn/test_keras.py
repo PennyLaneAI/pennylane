@@ -385,8 +385,7 @@ class TestKerasLayerIntegration:
     def test_train_model(self, model, batch_size, n_qubits, output_dim):
         """Test if a model can train using the KerasLayer. The model is composed of a single
         KerasLayer sandwiched between two Dense layers, and the dataset is simply input and output
-        vectors of zeros. The test checks that the loss function after two epochs is less than
-        the loss function after one epoch, indicating that training is taking place."""
+        vectors of zeros."""
 
         x = np.zeros((5, n_qubits))
         y = np.zeros((5, output_dim))
