@@ -56,7 +56,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(L, len(wires))``
+        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter for the rotation
         wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
