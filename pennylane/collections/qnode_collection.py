@@ -262,7 +262,7 @@ class QNodeCollection(Sequence):
 
         if interface in ("autograd", "numpy"):
             from autograd import numpy as np
-
+            print(results)
             return np.stack(results)
 
         return results

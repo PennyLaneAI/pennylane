@@ -53,7 +53,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             QNodeCollection should be executed. This can either be a single device, or a list
             of devices of length ``len(observables)``.
-        measure (str, Union(List[str], Tuple[str])): Measurement(s) to perform. Options include
+        measure (stepr, Union(List[str], Tuple[str])): Measurement(s) to perform. Options include
             :func:`'expval' <pennylane.expval>`, :func:`'var' <pennylane.var>`,
             and :func:`'sample' <pennylane.sample>`.
             This can either be a single measurement type, in which case it is applied
@@ -111,8 +111,16 @@ def map(template, observables, device, measure="expval", interface="autograd", d
 
     for obs, m, dev in zip(observables, measure, device):
         # Generate QNodes from all pairs of observables, measurements, and devices.
-        if not isinstance(obs, Observable):
-            raise ValueError("Could not create QNodes. Some or all observables are not valid.")
+
+        # obs may either be a sequence of observables, or a single observable.
+        # Make all single observables a sequence of length 1 for consistency.
+        if not isinstance(obs, Sequence):
+            obs = [obs]
+
+        # check that all elements of sequence obs are a valid observable
+        for o in obs:
+            if not isinstance(o, Observable):
+                raise ValueError("Could not create QNodes. Some or all observables are not valid.")
 
         wires = list(range(dev.num_wires))
 
@@ -124,7 +132,7 @@ def map(template, observables, device, measure="expval", interface="autograd", d
             params, _obs=obs, _m=m, _wires=wires, **kwargs
         ):  # pylint: disable=dangerous-default-value, function-redefined
             template(params, wires=_wires, **kwargs)
-            return MEASURE_MAP[_m](_obs)
+            return [MEASURE_MAP[_m](o) for o in _obs]
 
         qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method)
         qnodes.append(qnode)
