@@ -40,8 +40,7 @@ def CnotRingLayers(weights, wires, rotation=None):
         :width: 40%
         :target: javascript:void(0);
 
-    The argument ``weights`` is an array of weights for each layer. The number of layers :math:`L` is derived
-    from the first dimension of ``weights``. When using a single wire, the template only applies the single
+    The number of layers :math:`L` is determined by the first dimension of the argument ``weights``. When using a single wire, the template only applies the single
     qubit gates in each layer.
 
     .. note::
