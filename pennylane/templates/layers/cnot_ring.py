@@ -33,7 +33,7 @@ def CnotRingLayers(weights, wires, rotation=None):
     or *ring* of CNOT gates.
 
     The ring of CNOT gates connects every qubit with its neighbour,
-    whereas the last qubit is considered to be a neighbour of the first qubit.
+    with the last qubit being considered as a neighbour to the first qubit.
 
     .. figure:: ../../_static/templates/layers/cnot_ring.png
         :align: center
