@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Mutable QNode, complicated primary parameters benchmark.
+"""
 # pylint: disable=invalid-name
 import numpy as np
 
@@ -80,7 +82,7 @@ class Benchmark(bu.BaseBenchmark):
         evaluate(0)
         # evaluate the node several times more with different aux params
         # (it does not matter if p changes or not, the VariableRefs handle it)
-        for i in range(1, 10):
+        for _ in range(1, 10):
             evaluate(1)  # use the same auxiliary params
             # evaluate(i % 2)  # contrast: changing the aux params every time negates most possible speedups
 
