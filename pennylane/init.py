@@ -868,7 +868,7 @@ def cnot_ring_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for :func:`~.CnotRingLayers`, drawn from a uniform
     distribution.
 
-    The shape of the parameter array is ``(n_layers, n_wires)`` and each parameter is drawn uniformly at random \
+    The shape of the parameter array is ``(n_layers, n_wires)`` and each parameter is drawn uniformly at random 
     from between ``low`` and ``high``. The parameters define the rotation angles
     applied in each layer.
 

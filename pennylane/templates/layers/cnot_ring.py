@@ -33,15 +33,14 @@ def CnotRingLayers(weights, wires, rotation=None):
     or *ring* of CNOT gates.
 
     The ring of CNOT gates connects every qubit with its neighbour,
-    whereas the last qubit is considered to be a neighbour of the first qubit.
+    with the last qubit being considered as a neighbour to the first qubit.
 
     .. figure:: ../../_static/templates/layers/cnot_ring.png
         :align: center
         :width: 40%
         :target: javascript:void(0);
 
-    The argument ``weights`` is an array of weights for each layer. The number of layers :math:`L` is derived
-    from the first dimension of ``weights``. When using a single wire, the template only applies the single
+    The number of layers :math:`L` is determined by the first dimension of the argument ``weights``. When using a single wire, the template only applies the single
     qubit gates in each layer.
 
     .. note::
@@ -57,7 +56,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(L, len(wires))``
+        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter for the rotation
         wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
@@ -121,7 +120,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
         **Changing the rotation gate**
 
-        Another single-qubit gate than ``RX`` can be used, as long as it only takes a single parameter.
+        Any single-qubit gate can be used as a rotation gate, as long as it only takes a single parameter. The default is the ``RX`` gate.
 
         .. code-block:: python
 
