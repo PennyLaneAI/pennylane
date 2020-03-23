@@ -120,7 +120,7 @@ def CnotRingLayers(weights, wires, rotation=None):
 
         **Changing the rotation gate**
 
-        Another single-qubit gate than ``RX`` can be used, as long as it only takes a single parameter.
+        Any single-qubit gate can be used as a rotation gate, as long as it only takes a single parameter. The default is the ``RX`` gate.
 
         .. code-block:: python
 
