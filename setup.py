@@ -39,6 +39,7 @@ info = {
         'pennylane.plugins': [
             'default.qubit = pennylane.plugins:DefaultQubit',
             'default.gaussian = pennylane.plugins:DefaultGaussian',
+            'default.qubit.jax = pennylane.beta.plugins.default_qubit_jax:DefaultQubitJAX',
             'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
             'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF'
             ],
