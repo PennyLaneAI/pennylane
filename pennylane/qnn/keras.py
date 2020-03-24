@@ -108,9 +108,9 @@ class KerasLayer(Layer):
 
         weight_shapes = {"weights": (3, n_qubits, 3)}
 
-        q_layer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+        qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
         model = tf.keras.models.Sequential(
-            [tf.keras.layers.Dense(2), q_layer, tf.keras.layers.Dense(2, activation="softmax"),]
+            [tf.keras.layers.Dense(2), qlayer, tf.keras.layers.Dense(2, activation="softmax"),]
         )
 
         data = sklearn.datasets.make_moons()

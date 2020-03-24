@@ -371,8 +371,8 @@ class TestKerasLayer:
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
 
-        assert layer.__str__() == "<Quantum Keras layer: func=circuit>"
-        assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"
+        assert layer.__str__() == "<Quantum Keras Layer: func=circuit>"
+        assert layer.__repr__() == "<Quantum Keras Layer: func=circuit>"
 
     @pytest.mark.parametrize("interface", ["tf"])
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
