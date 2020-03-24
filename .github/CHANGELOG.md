@@ -116,6 +116,10 @@
 
 <h3>Bug fixes</h3>
 
+* `DefaultQubit.probability()` now returns the correct probability when called with
+  `device.analytic=False`.
+  [(#563)](https://github.com/XanaduAI/pennylane/pull/563)
+
 * Fixed a bug in the `StronglyEntanglingLayers` template, allowing it to
   work correctly when applied to a single wire.
   [(544)](https://github.com/XanaduAI/pennylane/pull/544)
