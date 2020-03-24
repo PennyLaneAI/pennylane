@@ -35,7 +35,7 @@ class Benchmark(bu.BaseBenchmark):
     of the primary parameters are actually used in the circuit.
 
     When the QNode is constructed, a VariableRef is built for each primary parameter,
-    and the qfunc re-evaluated. In this test this meant to be time-consuming, but it is only
+    and the qfunc re-evaluated. In this test this is meant to be time-consuming, but it is only
     strictly necessary if the auxiliary parameters change.
     The main reasons why there are significant differences in the execution speed of this test
     between different PL commits:
@@ -80,10 +80,11 @@ class Benchmark(bu.BaseBenchmark):
 
         # first evaluation and construction
         evaluate(0)
-        # evaluate the node several times more with different aux params
+        # evaluate the node several times more with a different auxiliary argument
         # (it does not matter if p changes or not, the VariableRefs handle it)
         for _ in range(1, 10):
-            evaluate(1)  # use the same auxiliary params
-            # evaluate(i % 2)  # contrast: changing the aux params every time negates most possible speedups
+            # If we had evaluate(i % 2) here instead the auxiliary arguments would change
+            # every time, which would negate most possible speedups.
+            evaluate(1)
 
         return True
