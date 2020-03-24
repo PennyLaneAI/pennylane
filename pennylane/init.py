@@ -941,7 +941,7 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
     if seed is not None:
         np.random.seed(seed)
 
-    n_unitaries_per_layer = n_wires -1
+    n_unitaries_per_layer = n_wires - 1
 
     if n_unitaries_per_layer == 0:
         params = np.array([])
