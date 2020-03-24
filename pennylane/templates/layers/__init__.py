@@ -20,3 +20,4 @@ from .strongly_entangling import StronglyEntanglingLayers
 from .random import RandomLayers
 from .cv_neural_net import CVNeuralNetLayers
 from .simplified_two_design import SimplifiedTwoDesign
+from .basic_entangler import BasicEntanglerLayers

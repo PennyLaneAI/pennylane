@@ -48,7 +48,9 @@ from pennylane.templates import (Interferometer,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
                                  QAOAEmbedding,
-                                 SimplifiedTwoDesign)
+                                 SimplifiedTwoDesign,
+                                 BasicEntanglerLayers)
+
 
 from pennylane.templates import broadcast
 
@@ -83,7 +85,9 @@ from pennylane.init import (strong_ent_layers_uniform,
                             simplified_two_design_initial_layer_normal,
                             simplified_two_design_initial_layer_uniform,
                             simplified_two_design_weights_normal,
-                            simplified_two_design_weights_uniform)
+                            simplified_two_design_weights_uniform,
+                            basic_entangler_layers_normal,
+                            basic_entangler_layers_uniform)
 
 #######################################
 # Interfaces
@@ -139,6 +143,9 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'initial_layer': [1., 1.],
                                 'weights': [[[1., 1.]]]},
                                {}),
+                              (BasicEntanglerLayers,
+                               {'weights': [[1., 1.]]},
+                               {'rotation': qml.RX}),
                               ]
 
 # cv templates for 2 wires, dict of differentiable arguments, dict of non-differentiable arguments
@@ -552,6 +559,20 @@ class TestInitializationIntegration:
                    {'initial_layer': simplified_two_design_initial_layer_normal(n_wires=4),
                     'weights': simplified_two_design_weights_normal(n_layers=3, n_wires=4),
                     'wires': range(4)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=1, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=3), 'wires': range(3)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=3), 'wires': range(3)}),
                   ]
 
     CV_INIT = [(CVNeuralNetLayers,
@@ -660,6 +681,10 @@ class TestGradientIntegration:
                                            'weights': [[[1., 1.]]]},
                                           {'wires': [0, 1]},
                                           [0, 1]),
+                                         (BasicEntanglerLayers,
+                                          {'weights': [[1., 1.]]},
+                                          {'wires': [0, 1]},
+                                          [0]),
                                          ]
 
     CV_DIFFABLE_NONDIFFABLE_ARGNUM = [(DisplacementEmbedding,
