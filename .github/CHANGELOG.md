@@ -2,6 +2,40 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
+  hybrid models using the Keras API.
+  [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
+
+  For example, here is a simple QNode:
+  
+  ```python
+  n_qubits = 2
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def qnode(inputs, weights_0, weight_1):
+      qml.RX(inputs, wires=0)
+      qml.Rot(*weights_0, wires=0)
+      qml.RY(weight_1, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+  ```
+  
+  This can be converted into a Keras Layer using:
+  
+  ```python
+  from pennylane.qnn import KerasLayer
+  
+  weight_shapes = {"weights_0": 3, "weight_1": 1}
+  qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+  ```
+  
+  A hybrid model can then be easily constructed:
+  
+  ```python
+  model = tf.keras.models.Sequential([qlayer, tf.keras.layers.Dense(2)])
+  ```
+
 * Added the ``BasicEntanglerLayers`` template, which is a simple layer architecture 
   of rotations and CNOT nearest-neighbour entanglers. 
   [(#555)](https://github.com/XanaduAI/pennylane/pull/555)
