@@ -479,9 +479,8 @@ class TestSimplifiedTwoDesign:
                                                                   (3, 2, (2, 2, 2)),
                                                                   (4, 2, (2, 3, 2))])
     def test_circuit_queue(self, n_wires, n_layers, shape_weights):
-        """Tests the gate types and parameter values in the circuit."""
-        np.random.seed(12)
-
+        """Tests the gate types in the circuit."""
+        np.random.seed(42)
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
@@ -497,6 +496,15 @@ class TestSimplifiedTwoDesign:
 
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
+
+    def test_circuit_parameters(self, n_wires, n_layers, shape_weights):
+        """Tests the parameter values in the circuit."""
+        np.random.seed(42)
+        initial_layer = np.random.randn(n_wires)
+        weights = np.random.randn(*shape_weights)
+
+        with qml.utils.OperationRecorder() as rec:
+            SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
 
         # test the device parameters
         for l in range(n_layers):
@@ -516,7 +524,7 @@ class TestSimplifiedTwoDesign:
                 res_param = o.parameters[0]
                 assert res_param == exp_param
 
-    @pytest.mark.parametrize("initial_layer, weights, n_wires, target", [([np.pi], [], 1, [-1]),
+    @pytest.mark.parametrize("initial_layer_weights, weights, n_wires, target", [([np.pi], [], 1, [-1]),
                                                                          ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
                                                                          ([np.pi] * 3, [[[np.pi] * 2] * 2], 3,
                                                                           [1, -1, 1]),
@@ -529,7 +537,7 @@ class TestSimplifiedTwoDesign:
 
         @qml.qnode(dev)
         def circuit(initial_layer, weights):
-            SimplifiedTwoDesign(initial_layer=initial_layer, weights=weights, wires=range(n_wires))
+            SimplifiedTwoDesign(initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         expectations = circuit(initial_layer, weights)
@@ -545,7 +553,8 @@ class TestBasicEntangler:
                                                   (3, 3),
                                                   (4, 4)])
     def test_circuit_queue(self, n_wires, n_cnots):
-        """Tests the gate types and parameter values in the circuit."""
+        """Tests the gate types in the circuit."""
+        np.random.seed(42)
         n_layers = 2
 
         weights = np.random.randn(n_layers, n_wires)
@@ -560,6 +569,20 @@ class TestBasicEntangler:
 
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
+
+    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0),
+                                                  (2, 1),
+                                                  (3, 3),
+                                                  (4, 4)])
+    def test_circuit_parameters(self, n_wires, n_cnots):
+        """Tests the parameter values in the circuit."""
+        np.random.seed(42)
+        n_layers = 2
+
+        weights = np.random.randn(n_layers, n_wires)
+
+        with qml.utils.OperationRecorder() as rec:
+            BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # test the device parameters
         for l in range(n_layers):

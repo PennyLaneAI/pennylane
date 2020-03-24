@@ -44,7 +44,7 @@ def entangler(par1, par2, wires):
 
 
 @template
-def SimplifiedTwoDesign(initial_layer, weights, wires):
+def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     r"""
     Layers consisting of a simplified 2-design architecture of Pauli-Y rotations and controlled-Z entanglers
     proposed in `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_.
@@ -70,14 +70,14 @@ def SimplifiedTwoDesign(initial_layer, weights, wires):
         :width: 40%
         :target: javascript:void(0);
 
-    The argument ``initial_layer`` contains the rotation angles of the initial layer of Pauli-Y rotations,
+    The argument ``initial_layer_weights`` contains the rotation angles of the initial layer of Pauli-Y rotations,
     while ``weights`` contains the pairs of Pauli-Y rotation angles of the respective layers. Each layer takes
     :math:`d = \left( \lfloor M/2 \rfloor + \lfloor (M-1)/2 \rfloor  \right)`` pairs of angles,
     where :math:`M` is the number of wires.
     The number of layers :math:`L` is derived from the first dimension of ``weights``.
 
     Args:
-        initial_layer (array[float]): array of weights for the initial rotation block, shape ``(M,)``
+        initial_layer_weights (array[float]): array of weights for the initial rotation block, shape ``(M,)``
         weights (array[float]): array of rotation angles for the layers, shape ``(L, d, 2)``
         wires (Sequence[int] or int): qubit indices that the template acts on
 
@@ -99,7 +99,7 @@ def SimplifiedTwoDesign(initial_layer, weights, wires):
 
             @qml.qnode(dev)
             def circuit(initial_block, weights):
-                SimplifiedTwoDesign(initial_layer=initial_block, weights=weights, wires=range(n_wires))
+                SimplifiedTwoDesign(initial_layer_weights=initial_block, weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
             initial_block = [pi, pi, pi]
@@ -129,10 +129,10 @@ def SimplifiedTwoDesign(initial_layer, weights, wires):
                                         simplified_two_design_weights_normal)
 
             n_layers = 4
-            initial_layer = simplified_two_design_initial_layer_normal(n_wires)
+            initial_layer_weights = simplified_two_design_initial_layer_normal(n_wires)
             weights = simplified_two_design_weights_normal(n_layers, n_wires)
 
-            >>> circuit(initial_layer, weights)
+            >>> circuit(initial_layer_weights, weights)
 
     """
 
@@ -144,10 +144,10 @@ def SimplifiedTwoDesign(initial_layer, weights, wires):
     repeat = _check_number_of_layers([weights])
 
     _check_type(
-        initial_layer,
+        initial_layer_weights,
         [list, np.ndarray],
-        msg="'initial_layer' must be of type list or np.ndarray; got type {}".format(
-            type(initial_layer)
+        msg="'initial_layer_weights' must be of type list or np.ndarray; got type {}".format(
+            type(initial_layer_weights)
         ),
     )
     _check_type(
@@ -158,10 +158,10 @@ def SimplifiedTwoDesign(initial_layer, weights, wires):
 
     expected_shape_initial = (len(wires),)
     _check_shape(
-        initial_layer,
+        initial_layer_weights,
         expected_shape_initial,
-        msg="'initial_layer' must be of shape {}; got {}"
-        "".format(expected_shape_initial, _get_shape(initial_layer)),
+        msg="'initial_layer_weights' must be of shape {}; got {}"
+        "".format(expected_shape_initial, _get_shape(initial_layer_weights)),
     )
 
     if len(wires) in [0, 1]:
@@ -178,7 +178,7 @@ def SimplifiedTwoDesign(initial_layer, weights, wires):
 
     ###############
     # initial rotations
-    broadcast(unitary=RY, pattern="single", wires=wires, parameters=initial_layer)
+    broadcast(unitary=RY, pattern="single", wires=wires, parameters=initial_layer_weights)
 
     # alternate layers
     for layer in range(repeat):
