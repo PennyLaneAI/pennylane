@@ -47,7 +47,8 @@ from pennylane.templates import (Interferometer,
                                  DisplacementEmbedding,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
-                                 QAOAEmbedding)
+                                 QAOAEmbedding,
+                                 BasicEntanglerLayers)
 
 from pennylane.templates import broadcast
 
@@ -78,7 +79,9 @@ from pennylane.init import (strong_ent_layers_uniform,
                             interferometer_theta_normal,
                             interferometer_theta_uniform,
                             qaoa_embedding_uniform,
-                            qaoa_embedding_normal)
+                            qaoa_embedding_normal,
+                            basic_entangler_layers_normal,
+                            basic_entangler_layers_uniform)
 
 #######################################
 # Interfaces
@@ -129,8 +132,10 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                               (broadcast,
                                {'parameters': [[1.], [1.]]},
                                {'unitary': qml.RX,
-                                'wires': [0, 1],
                                 'pattern': 'single'}),
+                              (BasicEntanglerLayers,
+                               {'weights': [[1., 1.]]},
+                               {'rotation': qml.RX})
                               ]
 
 # cv templates, dict of differentiable arguments, dict of non-differentiable arguments
@@ -534,7 +539,21 @@ class TestInitializationIntegration:
                   (QAOAEmbedding,
                    {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=1), 'wires': range(1)}),
                   (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)})
+                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=1, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=3), 'wires': range(3)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=3), 'wires': range(3)}),
                   ]
 
     CV_INIT = [(CVNeuralNetLayers,
@@ -637,6 +656,10 @@ class TestGradientIntegration:
                                           {'unitary': qml.RX,
                                            'pattern': 'single',
                                            'wires': [0, 1]},
+                                          [0]),
+                                         (BasicEntanglerLayers,
+                                          {'weights': [[1., 1.]]},
+                                          {'wires': [0, 1]},
                                           [0]),
                                          ]
 
