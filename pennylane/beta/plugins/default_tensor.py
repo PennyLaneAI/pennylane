@@ -36,6 +36,12 @@ tolerance = 1e-10
 #  utilities
 # ========================================================
 
+contract_fns = {
+    "greedy": tn.contractors.greedy,
+    "branch": tn.contractors.branch,
+    "optimal": tn.contractors.optimal,
+    "auto": tn.contractors.auto,
+}
 
 def spectral_decomposition(A):
     r"""Spectral decomposition of a Hermitian matrix.
@@ -377,15 +383,16 @@ class DefaultTensor(Device):
         state_node[tuple(state)] = 1
         return state_node
 
-    def _add_node(self, A, wires, name="UnnamedNode"):
+    def _add_node(self, A, wires, name="UnnamedNode", group="state"):
         """Adds a node to the underlying tensor network.
 
-        The node is also added to ``self._nodes`` for bookkeeping.
+        The node is also added to ``self._nodes`` under the key ``group`` for bookkeeping.
 
         Args:
             A (array): numerical data values for the operator (i.e., matrix form)
             wires (list[int]): wires that this operator acts on
             name (str): optional name for the node
+            group (str): which group of nodes to add new node to
 
         Returns:
             tn.Node: the newly created node
@@ -396,7 +403,11 @@ class DefaultTensor(Device):
             node = A
         else:
             node = tn.Node(A, name=name, backend=self.backend)
-        self._nodes.append(node)
+
+        if group not in self._nodes:
+            self._nodes[group] = []
+        self._nodes[group].append(node)
+
         return node
 
     def _add_edge(self, node1, idx1, node2, idx2):
@@ -414,8 +425,6 @@ class DefaultTensor(Device):
             tn.Edge: the newly created edge
         """
         edge = tn.connect(node1[idx1], node2[idx2])
-        self._edges.append(edge)
-
         return edge
 
     def apply(self, operation, wires, par):
@@ -460,18 +469,19 @@ class DefaultTensor(Device):
             tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
             self._terminal_edges[w] = op_node[idx]
 
-    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list):
+    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, group: str):
         """Helper function for creating tensornetwork nodes based on tensors.
 
         Args:
           tensors (np.ndarray, tf.Tensor, torch.Tensor): tensors of the observables
           wires (Sequence[Sequence[int]]): measured subsystems for each observable
           observable_names (Sequence[str]): name of the operation/observable
+          group (str): which group of nodes to create in
 
         Returns:
           list[tn.Node]: the observables as tensornetwork Nodes
         """
-        return [self._add_node(A, w, name=o) for A, w, o in zip(tensors, wires, observable_names)]
+        return [self._add_node(A, w, name=o, group=group) for A, w, o in zip(tensors, wires, observable_names)]
 
     def expval(self, observable, wires, par):
 
@@ -481,10 +491,10 @@ class DefaultTensor(Device):
         tensors = []
         for o, p, w in zip(observable, par, wires):
             A = self._get_operator_matrix(o, p)
-            num_mult_idxs = len(w)
-            tensors.append(self._reshape(A, [2] * num_mult_idxs * 2))
+            offset = len(w)
+            tensors.append(self._reshape(A, [2] * offset * 2))
 
-        nodes = self.create_nodes_from_tensors(tensors, wires, observable)
+        nodes = self.create_nodes_from_tensors(tensors, wires, observable, group="observables")
         return self.ev(nodes, wires)
 
     def var(self, observable, wires, par):
@@ -559,6 +569,13 @@ class DefaultTensor(Device):
             return self._array(A, dtype=self.C_DTYPE)
         return self._asarray(A(*par), dtype=self.C_DTYPE)
 
+    def _contract_to_ket(self, method="auto"):
+        if "contracted_state" not in self._nodes:
+            contract = contract_fns[method]
+            ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+            ket.set_name("Ket")
+            self._nodes["contracted_state"] = ket
+
     def ev(self, obs_nodes, wires):
         r"""Expectation value of observables on specified wires.
 
@@ -568,10 +585,11 @@ class DefaultTensor(Device):
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
+        self._contract_to_ket()
+        ket = self._nodes["contracted_state"]
+        bra = tn.conj(ket, name="Bra")
 
         all_wires = tuple(w for w in range(self.num_wires))
-        ket = self._add_node(self._state_node, wires=all_wires, name="Ket")
-        bra = self._add_node(tn.conj(ket), wires=all_wires, name="Bra")
         meas_wires = []
         # We need to build up <psi|A|psi> step-by-step.
         # For wires which are measured, we need to connect edges between
@@ -617,7 +635,8 @@ class DefaultTensor(Device):
 
     def reset(self):
         """Reset the device"""
-        self._nodes = []
+        self._contracted = False
+        self._nodes = {}
         self._terminal_edges = []
 
         for w in range(self.num_wires):
