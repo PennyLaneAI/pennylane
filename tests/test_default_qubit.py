@@ -1594,3 +1594,39 @@ class TestTensorSample:
             )
         ) / 16
         assert np.allclose(var, expected, atol=tol, rtol=0)
+
+class TestAnalyticBool:
+    """Test analytic and non-analytic for probability method"""
+
+    def mock_analytic_counter(self, wires=None):
+        self.analytic_counter += 1
+        return np.array([1, 0, 0, 0], dtype=float)
+
+    @pytest.mark.parametrize("analytic", [True, False])
+    def test_call_generate_samples(self, analytic, monkeypatch):
+        self.analytic_counter = False
+
+        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        monkeypatch.setattr(dev, "_analytic_probability", self.mock_analytic_counter)
+
+        # generate samples through `generate_samples` (using '_analytic_probability')
+        dev.generate_samples()
+
+        # should call `_analytic_probability` once through `generate_samples`
+        assert self.analytic_counter == 1
+
+    @pytest.mark.parametrize("analytic", [True, False])
+    def test_call_generate_samples_no_analytic_fn(self, analytic, mock_qubit_device, monkeypatch):
+        self.analytic_counter = False
+
+        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        monkeypatch.setattr(dev, "_analytic_probability", self.mock_analytic_counter)
+
+        # generate samples from a qubit device with no '_analytic_probabiliy' function
+        dev._samples = mock_qubit_device.generate_samples()
+        dev.probability()
+
+        # should call `_analytic_probability` through `probability` once only if analytic=True
+        # and never through `generate_samples` since the `mock_qubit_device` has no
+        # `_analytic_probabiliy` function.
+        assert self.analytic_counter == analytic
