@@ -289,7 +289,6 @@ def identity(*_):
     """
     return np.identity(2)
 
-
 # ========================================================
 #  device
 # ========================================================
@@ -355,14 +354,11 @@ class DefaultTensor(Device):
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
 
+    zero_state = np.array([1., 0.], dtype=C_DTYPE)
+
     def __init__(self, wires, shots=1000, analytic=True):
         super().__init__(wires, shots)
-        self.analytic = True
-        self._nodes = []
-        self._edges = []
-        self._state_node = None
-        self._free_edges = []
-        self.reset()
+        self.analytic = analytic
 
     @staticmethod
     def _create_basis_state(state, wires):
@@ -422,52 +418,47 @@ class DefaultTensor(Device):
 
         return edge
 
-    def pre_apply(self):
-        self.reset()
-
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
-            state = self._array(par[0], dtype=self.C_DTYPE)
-            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
-                self._state_node.tensor = self._reshape(state, [2] * self.num_wires)
-            else:
-                raise ValueError("State vector must be of length 2**wires.")
-            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError(
-                    "The default.tensor plugin can apply QubitStateVector only to all of the {} wires.".format(
-                        self.num_wires
-                    )
-                )
-            return
+            raise NotImplementedError
+            # state = self._array(par[0], dtype=self.C_DTYPE)
+            # if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
+            #     self._state_node.tensor = self._reshape(state, [2] * self.num_wires)
+            # else:
+            #     raise ValueError("State vector must be of length 2**wires.")
+            # if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+            #     raise ValueError(
+            #         "The default.tensor plugin can apply QubitStateVector only to all of the {} wires.".format(
+            #             self.num_wires
+            #         )
+            #     )
+            # return
         if operation == "BasisState":
-            n = len(par[0])
-            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
-                raise ValueError(
-                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
-                        self.num_wires
-                    )
-                )
-            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-                raise ValueError(
-                    "The default.tensor plugin can apply BasisState only to all of the {} wires.".format(
-                        self.num_wires
-                    )
-                )
-            state_node = self._create_basis_state(par[0], wires)
-            self._state_node.tensor = self._asarray(state_node, dtype=self.C_DTYPE)
-            return
+            raise NotImplementedError
+            # n = len(par[0])
+            # if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+            #     raise ValueError(
+            #         "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+            #             self.num_wires
+            #         )
+            #     )
+            # if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+            #     raise ValueError(
+            #         "The default.tensor plugin can apply BasisState only to all of the {} wires.".format(
+            #             self.num_wires
+            #         )
+            #     )
+            # state_node = self._create_basis_state(par[0], wires)
+            # self._state_node.tensor = self._asarray(state_node, dtype=self.C_DTYPE)
+            # return
 
         A = self._get_operator_matrix(operation, par)
-        num_mult_idxs = len(wires)
-        A = self._reshape(A, [2] * num_mult_idxs * 2)
+        num_wires = len(wires)
+        A = self._reshape(A, [2] * num_wires * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
         for idx, w in enumerate(wires):
-            self._add_edge(op_node, num_mult_idxs + idx, self._state_node, w)
-            self._free_edges[w] = op_node[idx]
-        # TODO: can be smarter here about collecting contractions?
-        self._state_node = tn.contract_between(
-            op_node, self._state_node, output_edge_order=self._free_edges
-        )
+            tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
+            self._terminal_edges[w] = op_node[idx]
 
     def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list):
         """Helper function for creating tensornetwork nodes based on tensors.
@@ -627,18 +618,11 @@ class DefaultTensor(Device):
     def reset(self):
         """Reset the device"""
         self._nodes = []
-        self._edges = []
+        self._terminal_edges = []
 
-        state = self._create_basis_state([0] * self.num_wires, range(self.num_wires))
-        state = self._array(state, dtype=self.C_DTYPE)
-
-        # TODO: since this state is separable, can be more intelligent about not making a dense matrix
-        self._state_node = self._add_node(
-            state, wires=tuple(w for w in range(self.num_wires)), name="AllZeroState"
-        )
-        self._free_edges = self._state_node.edges[
-            :
-        ]  # we need this list to be distinct from self._state_node.edges
+        for w in range(self.num_wires):
+            node = self._add_node(self.zero_state, wires=[w], name="ZeroState")
+            self._terminal_edges.extend(node.edges)
 
     @property
     def operations(self):
