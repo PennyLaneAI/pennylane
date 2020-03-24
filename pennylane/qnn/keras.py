@@ -33,46 +33,34 @@ from pennylane.qnodes import QNode
 
 
 class KerasLayer(Layer):
-    """A Keras layer for integrating PennyLane QNodes with the Keras API.
-
-    This class converts a :func:`~.QNode` to a Keras layer. The QNode must have a signature that
-    satisfies the following conditions:
-
-    - Contain an ``inputs`` named argument for input data. All other arguments are treated as
-      weights within the QNode.
-    - All arguments must accept an array or tensor, e.g., arguments should not use nested lists
-      of different lengths.
-    - All arguments, except ``inputs``, must have no default value.
-    - The ``inputs`` argument is permitted to have a default value provided the gradient with
-      respect to ``inputs`` is not required.
-    - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args`` or
-      ``**kwargs`` present in the signature.
-
-    The QNode weights are initialized within the :class:`~.KerasLayer`. Upon instantiation,
-    a ``weight_shapes`` dictionary must be passed which describes the shapes of all
-    weights in the QNode. The optional ``weight_specs`` argument allows for a more fine-grained
-    specification of the QNode weights, such as the method of initialization and any
-    regularization or constraints. If not specified, weights will be added using the Keras
-    default initialization and without any regularization or constraints.
+    """A Keras Layer_ for integrating PennyLane QNodes with the Keras API.
 
     Args:
-        qnode (qml.QNode): the PennyLane QNode to be converted into a Keras layer
+        qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
-            their corresponding sizes
-        output_dim (int): the dimension of data output from the QNode
+            their corresponding shapes
+        output_dim (int): the output dimension of the QNode
         weight_specs (dict[str, dict]): An optional dictionary for users to provide additional
             specifications for weights used in the QNode, such as the method of parameter
             initialization. This specification is provided as a dictionary with keys given by the
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
-        **kwargs: additional keyword arguments passed to the `Layer
-            <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__ base class
+        **kwargs: additional keyword arguments passed to the Layer_ base class
 
-    **Example**
+    This class converts a :func:`~.QNode` to a Keras Layer_, which can be used within the Keras
+    `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
+    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
+    creating quantum and hybrid models:
 
-    The following shows how a circuit composed of templates from the :doc:`/code/qml_templates`
-    module can be converted into a Keras layer.
+    .. code-block:: python
+
+        qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+        model = tf.keras.models.Sequential([qlayer, tf.keras.layers.Dense(2)])
+
+    The signature of QNode must contain an ``inputs`` named argument for input data, with all
+    other arguments to be treated as internal weights. A valid ``qnode`` for the example
+    above would be:
 
     .. code-block:: python
 
@@ -80,20 +68,113 @@ class KerasLayer(Layer):
         dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
-        def circuit(inputs, weights):
+        def qnode(inputs, weights_0, weight_1):
+            qml.RX(inputs, wires=0)
+            qml.Rot(*weights_0, wires=0)
+            qml.RY(weight_1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    The internal weights of the QNode are automatically initialized within the
+    :class:`~.KerasLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
+    For example:
+
+    .. code-block::
+
+        weight_shapes = {"weights_0": 3, "weight_1": 1}
+
+    **Example**
+
+    The code block below shows how a circuit composed of templates from the
+    :doc:`/code/qml_templates` module can be combined with classical
+    `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn the
+    two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn.datasets
+    .make_moons.html>`__ dataset.
+
+    .. code-block:: python
+
+        import pennylane as qml
+        import tensorflow as tf
+        import sklearn.datasets
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def qnode(inputs, weights):
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         weight_shapes = {"weights": (3, n_qubits, 3)}
-        weight_specs = {"weights": {"initializer": "random_uniform"}}
 
-        keras_layer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2,
-                                         weight_specs=weight_specs)
+        q_layer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+        model = tf.keras.models.Sequential(
+            [tf.keras.layers.Dense(2), q_layer, tf.keras.layers.Dense(2, activation="softmax"),]
+        )
 
-    The resulting ``keras_layer`` can be combined with other layers using the `Sequential
-    <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
-    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ Keras APIs.
+        data = sklearn.datasets.make_moons()
+        X = tf.constant(data[0])
+        Y = tf.one_hot(data[1], depth=2)
+
+        opt = tf.keras.optimizers.SGD(learning_rate=0.5)
+        model.compile(opt, loss='mae')
+
+    The model can be trained using:
+
+    >>> model.fit(X, Y, epochs=8, batch_size=5)
+    Train on 100 samples
+    Epoch 1/8
+    100/100 [==============================] - 9s 90ms/sample - loss: 0.3524
+    Epoch 2/8
+    100/100 [==============================] - 9s 87ms/sample - loss: 0.2441
+    Epoch 3/8
+    100/100 [==============================] - 9s 87ms/sample - loss: 0.1908
+    Epoch 4/8
+    100/100 [==============================] - 9s 87ms/sample - loss: 0.1832
+    Epoch 5/8
+    100/100 [==============================] - 9s 88ms/sample - loss: 0.1596
+    Epoch 6/8
+    100/100 [==============================] - 9s 87ms/sample - loss: 0.1637
+    Epoch 7/8
+    100/100 [==============================] - 9s 86ms/sample - loss: 0.1613
+    Epoch 8/8
+    100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
+
+    .. UsageDetails::
+
+        The QNode must have a signature that satisfies the following conditions:
+
+        - Contain an ``inputs`` named argument for input data.
+        - All other arguments must accept an array or tensor and are treated as internal
+          weights of the QNode.
+        - All other arguments must have no default value.
+        - The ``inputs`` argument is permitted to have a default value provided the gradient with
+          respect to ``inputs`` is not required.
+        - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
+          or ``**kwargs`` present in the signature.
+
+        The optional ``weight_specs`` argument allows for a more fine-grained
+        specification of the QNode weights, such as the method of initialization and any
+        regularization or constraints. For example, the initialization method of the ``weights``
+        argument in the example above could be specified by:
+
+        .. code-block::
+
+            weight_specs = {"weights": {"initializer": "random_uniform"}}
+
+        The values of ``weight_specs`` are dictionaries with keys given by arguments of
+        the Keras
+        `add_weight() <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
+        method. For the ``"initializer"`` argument, one can specify a string such as
+        ``"random_uniform"`` or an instance of an `Initializer
+        <https://www.tensorflow.org/api_docs/python/tf/keras/initializers>`__ class, such as
+        `tf.keras.initializers.RandomUniform <https://www.tensorflow.org/api_docs/python/tf/random_uniform_initializer>`__.
+
+        If ``weight_specs`` is not specified, weights will be added using the Keras default
+        initialization and without any regularization or constraints.
+
+    .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
 
     input_arg = "inputs"
@@ -205,7 +286,7 @@ class KerasLayer(Layer):
         return tf.TensorShape([input_shape[0], self.output_dim])
 
     def __str__(self):
-        detail = "<Quantum Keras layer: func={}>"
+        detail = "<Quantum Keras Layer: func={}>"
         return detail.format(self.qnode.func.__name__)
 
     __repr__ = __str__

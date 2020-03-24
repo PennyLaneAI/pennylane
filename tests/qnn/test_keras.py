@@ -374,6 +374,28 @@ class TestKerasLayer:
         assert layer.__str__() == "<Quantum Keras layer: func=circuit>"
         assert layer.__repr__() == "<Quantum Keras layer: func=circuit>"
 
+    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
+    def test_gradients(self, get_circuit, output_dim, n_qubits):
+        """Test if the gradients of the KerasLayer are equal to the gradients of the circuit when
+        taken with respect to the trainable variables"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+        x = tf.ones((1, n_qubits))
+
+        with tf.GradientTape() as tape:
+            out_layer = layer(x)
+
+        g_layer = tape.gradient(out_layer, layer.trainable_variables)
+
+        with tf.GradientTape() as tape:
+            out_circuit = c(x[0], *layer.trainable_variables)
+
+        g_circuit = tape.gradient(out_circuit, layer.trainable_variables)
+
+        for i in range(len(out_layer)):
+            assert np.allclose(g_layer[i], g_circuit[i])
+
 
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
