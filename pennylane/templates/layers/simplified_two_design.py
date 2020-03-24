@@ -63,22 +63,23 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     Each layer consists of an "even" part whose entanglers start with the first qubit,
     and an "odd" part that starts with the second qubit.
 
-    This is an example of two layers, including the initial block:
+    This is an example of two layers, including the initial layer:
 
     .. figure:: ../../_static/templates/layers/simplified_two_design.png
         :align: center
         :width: 40%
         :target: javascript:void(0);
 
+    |
+
     The argument ``initial_layer_weights`` contains the rotation angles of the initial layer of Pauli-Y rotations,
     while ``weights`` contains the pairs of Pauli-Y rotation angles of the respective layers. Each layer takes
-    :math:`d = \left( \lfloor M/2 \rfloor + \lfloor (M-1)/2 \rfloor  \right)`` pairs of angles,
-    where :math:`M` is the number of wires.
+    :math:`\lfloor M/2 \rfloor + \lfloor (M-1)/2 \rfloor = M-1` pairs of angles, where :math:`M` is the number of wires.
     The number of layers :math:`L` is derived from the first dimension of ``weights``.
 
     Args:
         initial_layer_weights (array[float]): array of weights for the initial rotation block, shape ``(M,)``
-        weights (array[float]): array of rotation angles for the layers, shape ``(L, d, 2)``
+        weights (array[float]): array of rotation angles for the layers, shape ``(L, M-1, 2)``
         wires (Sequence[int] or int): qubit indices that the template acts on
 
     Raises:
@@ -98,18 +99,18 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
             dev = qml.device('default.qubit', wires=n_wires)
 
             @qml.qnode(dev)
-            def circuit(initial_block, weights):
-                SimplifiedTwoDesign(initial_layer_weights=initial_block, weights=weights, wires=range(n_wires))
+            def circuit(init_weights, weights):
+                SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-            initial_block = [pi, pi, pi]
+            init_weights = [pi, pi, pi]
             weights_layer1 = [[0., pi],
                               [0., pi]]
             weights_layer2 = [[pi, 0.],
                               [pi, 0.]]
             weights = [weights_layer1, weights_layer2]
 
-            >>> circuit(initial_block, weights)
+            >>> circuit(init_weights, weights)
             [1., -1., 1.]
 
         **Parameter initialization function**
@@ -129,7 +130,7 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
                                         simplified_two_design_weights_normal)
 
             n_layers = 4
-            initial_layer_weights = simplified_two_design_initial_layer_normal(n_wires)
+            init_weights = simplified_two_design_initial_layer_normal(n_wires)
             weights = simplified_two_design_weights_normal(n_layers, n_wires)
 
             >>> circuit(initial_layer_weights, weights)
@@ -167,7 +168,7 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     if len(wires) in [0, 1]:
         expected_shape_weights = (0,)
     else:
-        expected_shape_weights = (repeat, len(wires) // 2 + (len(wires) - 1) // 2, 2)
+        expected_shape_weights = (repeat, len(wires) - 1, 2)
 
     _check_shape(
         weights,

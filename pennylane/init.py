@@ -890,7 +890,7 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
     r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesign`,
     drawn from a uniform distribution.
 
-    The shape of the parameter array is ``(n_layers, n_wires//2 + (n_wires-1)//2, 2)``
+    The shape of the parameter array is ``(n_layers, n_wires - 1, 2)``
     and each parameter is drawn uniformly at random \
     from between ``low`` and ``high``. The parameters define the Pauli-Y rotation angles
     applied in each layer.
@@ -908,7 +908,7 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
     if seed is not None:
         np.random.seed(seed)
 
-    n_unitaries_per_layer = n_wires // 2 + (n_wires - 1) // 2
+    n_unitaries_per_layer = n_wires - 1
 
     if n_unitaries_per_layer == 0:
         params = np.array([])
@@ -922,7 +922,7 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
     r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesign`,
     drawn from a uniform distribution.
 
-    The shape of the parameter array is ``(n_layers, 2*(n_wires//2 + (n_wires-1)//2))``
+    The shape of the parameter array is ``(n_layers, n_wires - 1, 2)``
     and each parameter is drawn
     from a normal distribution with mean ``mean`` and standard deviation ``std``.
     The parameters define the Pauli-Y rotation angles
@@ -941,7 +941,7 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
     if seed is not None:
         np.random.seed(seed)
 
-    n_unitaries_per_layer = n_wires // 2 + (n_wires - 1) // 2
+    n_unitaries_per_layer = n_wires -1
 
     if n_unitaries_per_layer == 0:
         params = np.array([])

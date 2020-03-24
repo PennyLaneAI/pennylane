@@ -135,7 +135,7 @@ class TestCVNeuralNet:
             # loop through expected gates
             for idx, g in enumerate(gates):
                 # loop through where these gates should be in the queue
-                for opidx, op in enumerate(rec.queue[gc[idx, 0] : gc[idx, 1]]):
+                for opidx, op in enumerate(rec.queue[gc[idx, 0]: gc[idx, 1]]):
                     # check that op in queue is correct gate
                     assert isinstance(op, g)
 
@@ -212,7 +212,7 @@ class TestStronglyEntangling:
         # test the device parameters
         for l in range(n_layers):
 
-            layer_ops = rec.queue[2 * l * num_wires : 2 * (l + 1) * num_wires]
+            layer_ops = rec.queue[2 * l * num_wires: 2 * (l + 1) * num_wires]
 
             # check each rotation gate parameter
             for n in range(num_wires):
@@ -497,6 +497,10 @@ class TestSimplifiedTwoDesign:
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
 
+    @pytest.mark.parametrize("n_wires, n_layers, shape_weights", [(1, 2, (0,)),
+                                                                  (2, 2, (2, 1, 2)),
+                                                                  (3, 2, (2, 2, 2)),
+                                                                  (4, 2, (2, 3, 2))])
     def test_circuit_parameters(self, n_wires, n_layers, shape_weights):
         """Tests the parameter values in the circuit."""
         np.random.seed(42)
@@ -525,13 +529,14 @@ class TestSimplifiedTwoDesign:
                 assert res_param == exp_param
 
     @pytest.mark.parametrize("initial_layer_weights, weights, n_wires, target", [([np.pi], [], 1, [-1]),
-                                                                         ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
-                                                                         ([np.pi] * 3, [[[np.pi] * 2] * 2], 3,
-                                                                          [1, -1, 1]),
-                                                                         ([np.pi] * 4, [[[np.pi] * 2] * 3], 4,
-                                                                          [1, -1, -1, 1]),
-                                                                         ])
-    def test_correct_target_output(self, initial_layer, weights, n_wires, target):
+                                                                                 ([np.pi] * 2, [[[np.pi] * 2]], 2,
+                                                                                  [1, 1]),
+                                                                                 ([np.pi] * 3, [[[np.pi] * 2] * 2], 3,
+                                                                                  [1, -1, 1]),
+                                                                                 ([np.pi] * 4, [[[np.pi] * 2] * 3], 4,
+                                                                                  [1, -1, -1, 1]),
+                                                                                 ])
+    def test_correct_target_output(self, initial_layer_weights, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
         dev = qml.device('default.qubit', wires=n_wires)
 
@@ -540,7 +545,7 @@ class TestSimplifiedTwoDesign:
             SimplifiedTwoDesign(initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        expectations = circuit(initial_layer, weights)
+        expectations = circuit(initial_layer_weights, weights)
         for exp, target_exp in zip(expectations, target):
             assert pytest.approx(exp, target_exp, abs=TOLERANCE)
 
@@ -563,7 +568,7 @@ class TestBasicEntangler:
             BasicEntanglerLayers(weights, wires=range(n_wires))
 
         # Test that gates appear in the right order
-        exp_gates = [qml.RX]*n_wires + [qml.CNOT]*n_cnots
+        exp_gates = [qml.RX] * n_wires + [qml.CNOT] * n_cnots
         exp_gates *= n_layers
         res_gates = rec.queue
 
@@ -587,7 +592,7 @@ class TestBasicEntangler:
         # test the device parameters
         for l in range(n_layers):
             # only select the rotation gates
-            layer_ops = rec.queue[l*(n_wires+n_cnots): l*(n_wires+n_cnots)+n_wires]
+            layer_ops = rec.queue[l * (n_wires + n_cnots): l * (n_wires + n_cnots) + n_wires]
 
             # check each rotation gate parameter
             for n in range(n_wires):
@@ -612,9 +617,9 @@ class TestBasicEntangler:
                 assert isinstance(op, rotation)
 
     @pytest.mark.parametrize("weights, n_wires, target", [([[np.pi]], 1, [-1]),
-                                                          ([[np.pi]*2], 2, [-1, 1]),
-                                                          ([[np.pi]*3], 3, [1, 1, -1]),
-                                                          ([[np.pi]*4], 4, [-1, 1, -1, 1]),
+                                                          ([[np.pi] * 2], 2, [-1, 1]),
+                                                          ([[np.pi] * 3], 3, [1, 1, -1]),
+                                                          ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
                                                           ])
     def test_simple_target_outputs(self, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
