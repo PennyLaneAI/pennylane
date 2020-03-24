@@ -19,7 +19,7 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.layers import CVNeuralNetLayers, StronglyEntanglingLayers, RandomLayers
+from pennylane.templates.layers import CVNeuralNetLayers, StronglyEntanglingLayers, RandomLayers, BasicEntanglerLayers
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 
@@ -462,3 +462,74 @@ class TestRandomLayers:
         params = [q.parameters for q in rec.queue]
         params_flat = [item for p in params for item in p]
         assert np.allclose(weights.flatten(), params_flat, atol=tol)
+
+
+class TestCnotRing:
+    """Tests for the BasicEntanglerLayers method from the pennylane.templates.layers module."""
+
+    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0),
+                                                  (2, 1),
+                                                  (3, 3),
+                                                  (4, 4)])
+    def test_circuit_queue(self, n_wires, n_cnots):
+        """Tests the gate types and parameter values in the circuit."""
+        n_layers = 2
+
+        weights = np.random.randn(n_layers, n_wires)
+
+        with qml.utils.OperationRecorder() as rec:
+            BasicEntanglerLayers(weights, wires=range(n_wires))
+
+        # Test that gates appear in the right order
+        exp_gates = [qml.RX]*n_wires + [qml.CNOT]*n_cnots
+        exp_gates *= n_layers
+        res_gates = rec.queue
+
+        for op1, op2 in zip(res_gates, exp_gates):
+            assert isinstance(op1, op2)
+
+        # test the device parameters
+        for l in range(n_layers):
+            # only select the rotation gates
+            layer_ops = rec.queue[l*(n_wires+n_cnots): l*(n_wires+n_cnots)+n_wires]
+
+            # check each rotation gate parameter
+            for n in range(n_wires):
+                res_param = layer_ops[n].parameters[0]
+                exp_param = weights[l, n]
+                assert res_param == exp_param
+
+    @pytest.mark.parametrize("rotation", [RX, RY, RZ])
+    def test_custom_rotation(self, rotation):
+        """Tests that non-default rotation gates are used correctly."""
+        n_layers = 2
+        n_wires = 4
+        weights = np.ones(shape=(n_layers, n_wires))
+
+        with qml.utils.OperationRecorder() as rec:
+            BasicEntanglerLayers(weights, wires=range(n_wires), rotation=rotation)
+
+        # assert queue contains the custom rotations and CNOTs only
+        gates = rec.queue
+        for op in gates:
+            if not isinstance(op, CNOT):
+                assert isinstance(op, rotation)
+
+    @pytest.mark.parametrize("weights, n_wires, target", [([[np.pi]], 1, [-1]),
+                                                          ([[np.pi]*2], 2, [-1, 1]),
+                                                          ([[np.pi]*3], 3, [1, 1, -1]),
+                                                          ([[np.pi]*4], 4, [-1, 1, -1, 1]),
+                                                          ])
+    def test_simple_target_outputs(self, weights, n_wires, target):
+        """Tests the result of the template for simple cases."""
+
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        expectations = circuit(weights)
+        for exp, target_exp in zip(expectations, target):
+            assert exp == target_exp
