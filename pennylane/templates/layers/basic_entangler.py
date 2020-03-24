@@ -56,8 +56,8 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
             :target: javascript:void(0);
 
     Args:
-
-        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter for the rotation
+        weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
+                                for the rotation
         wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
