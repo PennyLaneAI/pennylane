@@ -6,9 +6,15 @@
   design of `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_. 
   [(#556)](https://github.com/XanaduAI/pennylane/pull/556)
   
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/simplified_two_design.png"
+  width=50%></img>
+  
 * Added the ``BasicEntanglerLayers`` template, which is a simple layer architecture 
   of rotations and CNOT nearest-neighbour entanglers. 
   [(#555)](https://github.com/XanaduAI/pennylane/pull/555)
+  
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/basic_entangler.png"
+  width=50%></img>
 
 * PennyLane now offers a broadcasting function to easily construct templates:
   `qml.broadcast()` takes single quantum operations or other templates and applies
