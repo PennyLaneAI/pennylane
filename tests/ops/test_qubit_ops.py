@@ -597,3 +597,32 @@ class TestOperations:
         expected = expected_matrix(theta)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "theta,pauli_word,expected_matrix",
+        [
+            (
+                np.pi,
+                "XIZ",
+                np.array(
+                    [
+                        [0, 0, 0, 0, -1j, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 1j, 0, 0],
+                        [0, 0, 0, 0, 0, 0, -1j, 0],
+                        [0, 0, 0, 0, 0, 0, 0, 1j],
+                        [-1j, 0, 0, 0, 0, 0, 0, 0],
+                        [0, 1j, 0, 0, 0, 0, 0, 0],
+                        [0, 0, -1j, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 1j, 0, 0, 0, 0],
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
+        """Test parametrically that the PauliRot matrix is correct."""
+
+        res = qml.PauliRot._matrix(theta, pauli_word)
+        expected = expected_matrix
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
