@@ -624,7 +624,6 @@ class DefaultTensor(Device):
         if self._rep=="mps":
             if len(wires) == 1:
                 expval = self.mps.measure_local_operator(obs_nodes, wires[0])
-                return self._real(expval)[0]
             else:
                 raise NotImplementedError
 
@@ -658,12 +657,12 @@ class DefaultTensor(Device):
             for obs_node in obs_nodes:
                 contracted_ket = tn.contract_between(obs_node, contracted_ket)
             expval = tn.contract_between(bra, contracted_ket).tensor
-            if self._abs(self._imag(expval)) > tolerance:
-                warnings.warn(
-                    "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
-                    RuntimeWarning,
-                )
-            return self._real(expval)
+        if self._abs(self._imag(expval)) > tolerance:
+            warnings.warn(
+                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+                RuntimeWarning,
+            )
+        return self._real(expval)
 
     @property
     def _state(self):
