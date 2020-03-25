@@ -362,9 +362,10 @@ class DefaultTensor(Device):
 
     zero_state = np.array([1., 0.], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, analytic=True):
+    def __init__(self, wires, shots=1000, analytic=True, representation="mps"):
         super().__init__(wires, shots)
         self.analytic = analytic
+        self._rep = representation
 
     @staticmethod
     def _create_basis_state(state, wires):
@@ -465,9 +466,13 @@ class DefaultTensor(Device):
         num_wires = len(wires)
         A = self._reshape(A, [2] * num_wires * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
-        for idx, w in enumerate(wires):
-            tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
-            self._terminal_edges[w] = op_node[idx]
+
+        if self._rep == "exact":
+            for idx, w in enumerate(wires):
+                tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
+                self._terminal_edges[w] = op_node[idx]
+        elif self._rep == "mps":
+            print('hi')
 
     def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, group: str):
         """Helper function for creating tensornetwork nodes based on tensors.
@@ -571,10 +576,30 @@ class DefaultTensor(Device):
 
     def _contract_to_ket(self, method="auto"):
         if "contracted_state" not in self._nodes:
-            contract = contract_fns[method]
-            ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+            if method != "custom":
+                contract = contract_fns[method]
+                ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+            else:
+                ket = self.custom_contract()
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
+
+    def custom_contract(self, max_phys_bond_dim=None, max_virtual_bond_dim=None):
+        """Implementation of the contraction method from arxiv:1912.03014"""
+
+        # convert every node to MPS in canonical form
+
+        # TODO: have to be more careful when more general state prep ops are supported
+        state_nodes = self._nodes["state"]
+        meas_nodes = self._nodes["observables"]
+        state_prep_nodes = state_nodes[:self.num_wires]
+        unitary_nodes = state_nodes[self.num_wires:]
+
+        for idx, node in enumerate(meas_nodes):
+            # the nodes in ``meas_nodes`` are time-ordered
+            # TODO: can be smarter about grouping nodes and contracting in parallel?
+            pass
+
 
     def ev(self, obs_nodes, wires):
         r"""Expectation value of observables on specified wires.
@@ -585,7 +610,7 @@ class DefaultTensor(Device):
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        self._contract_to_ket()
+        self._contract_to_ket(method="auto")
         ket = self._nodes["contracted_state"]
         bra = tn.conj(ket, name="Bra")
 
@@ -630,18 +655,40 @@ class DefaultTensor(Device):
         Returns:
             (array, tf.Tensor, torch.Tensor): the numerical tensor
         """
-
-        return self._state_node.tensor
+        self._contract_to_ket()
+        ket = self._nodes["contracted_state"]
+        # TODO: does not work properly if some nodes remain disentangled?
+        return ket.tensor
 
     def reset(self):
         """Reset the device"""
-        self._contracted = False
         self._nodes = {}
-        self._terminal_edges = []
+        if self._rep=="exact":
+            self._contracted = False
+            self._terminal_edges = []
 
-        for w in range(self.num_wires):
-            node = self._add_node(self.zero_state, wires=[w], name="ZeroState")
-            self._terminal_edges.extend(node.edges)
+            for w in range(self.num_wires):
+                node = self._add_node(self.zero_state, wires=[w], name="ZeroState")
+                self._terminal_edges.extend(node.edges)
+
+        elif self._rep=="mps":
+            nodes = []
+            for w in range(self.num_wires):
+                #if w == 0:
+                #    tensor = np.expand_dims(self.zero_state, 1)
+                #elif w > 0 and w < self.num_wires - 1:
+                tensor = np.reshape(self.zero_state, [1, 2, 1])
+                #else:
+                #    tensor = np.expand_dims(self.zero_state, 0)
+                node = self._add_node(tensor, wires=[w], name="ZeroState")
+                nodes.append(node)
+            tn.connect(nodes[0][2], nodes[1][0])
+            tn.connect(nodes[1][2], nodes[2][0])
+            tn.connect(nodes[2][2], nodes[3][0])
+
+            mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+
+            print("hi")
 
     @property
     def operations(self):
