@@ -20,7 +20,7 @@ import functools
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane import template
+from pennylane.templates import template
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder, pauli_eigs, expand_matrix
