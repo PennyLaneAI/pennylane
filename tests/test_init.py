@@ -77,6 +77,14 @@ INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal, rnd_rpt_nrml1, (repeat, n_
                       (qml.init.qaoa_embedding_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1}, (2, 3)),
                       (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1}, (2, 1)),
                       (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1}, (2, 3)),
+                      (qml.init.basic_entangler_layers_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1)),
+                      (qml.init.basic_entangler_layers_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1},
+                       (2, 2)),
+                      (qml.init.basic_entangler_layers_uniform, {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.basic_entangler_layers_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
+                       (2, 2)),
                       ]
 # Functions returning a list of parameter arrays
 INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, rpt,
