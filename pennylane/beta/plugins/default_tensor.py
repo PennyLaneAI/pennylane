@@ -472,7 +472,18 @@ class DefaultTensor(Device):
                 tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
                 self._terminal_edges[w] = op_node[idx]
         elif self._rep == "mps":
-            print('hi')
+            if len(wires) == 1:
+                self.mps.apply_one_site_gate(op_node, wires[0])
+            elif len(wires) == 2:
+                if abs(wires[1]-wires[0]) == 1:
+                    ret = self.mps.apply_two_site_gate(op_node, *wires)
+                    # TODO: determine what ``ret`` is and if it is useful for anything
+                    # TODO: pass ``max_singular_values`` or ``max_truncation_error``
+                else:
+                    # only nearest-neighbours are natively supported
+                    print("ruh roh")
+            else:
+                raise NotImplementedError
 
     def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, group: str):
         """Helper function for creating tensornetwork nodes based on tensors.
@@ -598,7 +609,7 @@ class DefaultTensor(Device):
         for idx, node in enumerate(meas_nodes):
             # the nodes in ``meas_nodes`` are time-ordered
             # TODO: can be smarter about grouping nodes and contracting in parallel?
-            pass
+            raise NotImplementedError
 
 
     def ev(self, obs_nodes, wires):
@@ -610,41 +621,49 @@ class DefaultTensor(Device):
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        self._contract_to_ket(method="auto")
-        ket = self._nodes["contracted_state"]
-        bra = tn.conj(ket, name="Bra")
+        if self._rep=="mps":
+            if len(wires) == 1:
+                expval = self.mps.measure_local_operator(obs_nodes, wires[0])
+                return self._real(expval)[0]
+            else:
+                raise NotImplementedError
 
-        all_wires = tuple(w for w in range(self.num_wires))
-        meas_wires = []
-        # We need to build up <psi|A|psi> step-by-step.
-        # For wires which are measured, we need to connect edges between
-        # bra, obs_node, and ket.
-        # For wires which are not measured, we need to connect edges between
-        # bra and ket.
-        # We use the convention that the indices of a tensor are ordered like
-        # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
-        for obs_node, obs_wires in zip(obs_nodes, wires):
-            meas_wires.extend(obs_wires)
-            for idx, w in enumerate(obs_wires):
-                output_idx = idx
-                input_idx = len(obs_wires) + idx
-                self._add_edge(obs_node, input_idx, ket, w)  # A|psi>
-                self._add_edge(bra, w, obs_node, output_idx)  # <psi|A
-        for w in set(all_wires) - set(meas_wires):
-            self._add_edge(bra, w, ket, w)  # |psi[w]|**2
+        elif self._rep=="exact":
+            self._contract_to_ket(method="auto")
+            ket = self._nodes["contracted_state"]
+            bra = tn.conj(ket, name="Bra")
 
-        # At this stage, all nodes are connected, and the contraction yields a
-        # scalar value.
-        contracted_ket = ket
-        for obs_node in obs_nodes:
-            contracted_ket = tn.contract_between(obs_node, contracted_ket)
-        expval = tn.contract_between(bra, contracted_ket).tensor
-        if self._abs(self._imag(expval)) > tolerance:
-            warnings.warn(
-                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
-                RuntimeWarning,
-            )
-        return self._real(expval)
+            all_wires = tuple(w for w in range(self.num_wires))
+            meas_wires = []
+            # We need to build up <psi|A|psi> step-by-step.
+            # For wires which are measured, we need to connect edges between
+            # bra, obs_node, and ket.
+            # For wires which are not measured, we need to connect edges between
+            # bra and ket.
+            # We use the convention that the indices of a tensor are ordered like
+            # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
+            for obs_node, obs_wires in zip(obs_nodes, wires):
+                meas_wires.extend(obs_wires)
+                for idx, w in enumerate(obs_wires):
+                    output_idx = idx
+                    input_idx = len(obs_wires) + idx
+                    self._add_edge(obs_node, input_idx, ket, w)  # A|psi>
+                    self._add_edge(bra, w, obs_node, output_idx)  # <psi|A
+            for w in set(all_wires) - set(meas_wires):
+                self._add_edge(bra, w, ket, w)  # |psi[w]|**2
+
+            # At this stage, all nodes are connected, and the contraction yields a
+            # scalar value.
+            contracted_ket = ket
+            for obs_node in obs_nodes:
+                contracted_ket = tn.contract_between(obs_node, contracted_ket)
+            expval = tn.contract_between(bra, contracted_ket).tensor
+            if self._abs(self._imag(expval)) > tolerance:
+                warnings.warn(
+                    "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+                    RuntimeWarning,
+                )
+            return self._real(expval)
 
     @property
     def _state(self):
@@ -674,21 +693,13 @@ class DefaultTensor(Device):
         elif self._rep=="mps":
             nodes = []
             for w in range(self.num_wires):
-                #if w == 0:
-                #    tensor = np.expand_dims(self.zero_state, 1)
-                #elif w > 0 and w < self.num_wires - 1:
-                tensor = np.reshape(self.zero_state, [1, 2, 1])
-                #else:
-                #    tensor = np.expand_dims(self.zero_state, 0)
+                tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
                 node = self._add_node(tensor, wires=[w], name="ZeroState")
                 nodes.append(node)
-            tn.connect(nodes[0][2], nodes[1][0])
-            tn.connect(nodes[1][2], nodes[2][0])
-            tn.connect(nodes[2][2], nodes[3][0])
-
-            mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
-
-            print("hi")
+                if w > 0:
+                    tn.connect(nodes[w-1][2], nodes[w][0])
+            # Note: might want to set canonicalize=False
+            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
 
     @property
     def operations(self):
