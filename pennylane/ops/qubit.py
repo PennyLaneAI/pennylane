@@ -600,7 +600,7 @@ class PauliRot(Operation):
 
     _PAULI_CONJUGATION_MATRICES = {
         "X": Hadamard._matrix(),
-        "Y": RX._matrix(-np.pi / 2),
+        "Y": RX._matrix(np.pi / 2),
         "Z": np.eye(2),
     }
 
@@ -1239,6 +1239,7 @@ ops = {
     "PauliX",
     "PauliY",
     "PauliZ",
+    "PauliRot",
     "S",
     "T",
     "CNOT",
