@@ -617,6 +617,22 @@ class TestOperations:
                     ]
                 ),
             ),
+            (
+                np.pi / 3,
+                "XYZ",
+                np.array(
+                    [
+                        [np.sqrt(3) / 2, 0, 0, 0, 0, 0, -(1 / 2), 0],
+                        [0, np.sqrt(3) / 2, 0, 0, 0, 0, 0, 1 / 2],
+                        [0, 0, np.sqrt(3) / 2, 0, 1 / 2, 0, 0, 0],
+                        [0, 0, 0, np.sqrt(3) / 2, 0, -(1 / 2), 0, 0],
+                        [0, 0, -(1 / 2), 0, np.sqrt(3) / 2, 0, 0, 0],
+                        [0, 0, 0, 1 / 2, 0, np.sqrt(3) / 2, 0, 0],
+                        [1 / 2, 0, 0, 0, 0, 0, np.sqrt(3) / 2, 0],
+                        [0, -(1 / 2), 0, 0, 0, 0, 0, np.sqrt(3) / 2],
+                    ]
+                ),
+            ),
         ],
     )
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
