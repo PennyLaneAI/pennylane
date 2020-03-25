@@ -37,32 +37,36 @@
 
 |CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
-`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
-automatic differentiation, and optimization of hybrid quantum-classical computations.
+`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for **differentiable quantum programming**. Train a quantum computer the same way as a neural network.
+ 
+.. raw:: html
 
-Learn more about quantum machine learning with PennyLane: view and download QML examples
-and demos over at https://pennylane.ai/qml.
+    <p align="center">
+    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
+    </p>
+    
+You can use PennyLane for quantum computing, quantum machine learning, quantum chemistry, and hybrid quantum-classical computations. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
 
-Features
-========
+Key Features
+============
 
 .. raw:: html
 
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
-
-- **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
-
-- **Best of both worlds**.
-  Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, TensorFlow, and NumPy.
-
-- **Batteries included**. Provides **optimization and machine learning** tools
 
 - **Device independent**.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`__ to access even more
   devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
+  
+- **Best of both worlds**.
+  Support for **hybrid quantum and classical** models; connect quantum
+  hardware with PyTorch, TensorFlow, and NumPy.
+
+- **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
+
+- **Batteries included**. Built-in tools for **optimization, machine learning, and quantum chemistry**.
 
 Available plugins
 =================
@@ -150,7 +154,7 @@ for more details.
 Authors
 =======
 
-PennyLane is the work of [many contributors](https://github.com/XanaduAI/pennylane/graphs/contributors).
+PennyLane is the work of `many contributors <https://github.com/XanaduAI/pennylane/graphs/contributors>`_.
 
 If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1811.04968>`_:
 
