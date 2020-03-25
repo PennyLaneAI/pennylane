@@ -561,9 +561,7 @@ class BaseQNode(qml.QueuingContext):
         if self.kwargs.get("par_check", False):
             unused = [k for k, v in self.primary_deps.items() if not v]
             if unused:
-                raise QuantumFunctionError(
-                    "The primary parameters {} are unused.".format(unused)
-                )
+                raise QuantumFunctionError("The primary parameters {} are unused.".format(unused))
 
         # check for operations that cannot affect the output
         if self.kwargs.get("vis_check", False):
