@@ -87,7 +87,7 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
 
     .. UsageDetails::
 
-        The template is used inside a qnode:
+        template - here shown for two layers - is used inside a :class:`~.QNode`:
 
         .. code-block:: python
 
