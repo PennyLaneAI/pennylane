@@ -388,6 +388,16 @@ def inv(operation_list):
 
 
 def expand_matrix(matrix, original_wires, expanded_wires):
+    r"""Expand a an operator matrix to more wires.
+
+    Args:
+        matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of matrix
+        expanded_wires (Sequence[int]): expanded wires of matrix, can be shuffled
+
+    Returns:
+        array: :math:`2^m \times 2^m` matrix where m = len(expanded_wires).
+    """
     N = len(original_wires)
     M = len(expanded_wires)
     D = M - N
