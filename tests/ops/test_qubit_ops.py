@@ -553,7 +553,7 @@ class TestOperations:
 
 class TestPauliRot:
     """Test the PauliRot operation."""
-    
+
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
         "pauli_word,expected_matrix",
@@ -757,3 +757,22 @@ class TestPauliRot:
         assert decomp_ops[8].name == "RX"
         assert decomp_ops[8].wires == [2]
         assert decomp_ops[8].params[0] == -np.pi / 2
+
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2*np.pi, 7))
+    def test_differentiability(self, angle):
+        """Test that differentiation of PauliRot works."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            qml.PauliRot(theta, "XX", wires=[0, 1])
+
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit(angle)
+        
+        gradient = np.squeeze(circuit.jacobian(angle))
+
+        assert gradient == .5 * (circuit(angle + np.pi/2) - circuit(angle - np.pi/2))
