@@ -154,32 +154,33 @@ class TestOperation:
             return
 
         # wrong parameter types
-        if test_class.par_domain == 'A':
-            # params must be arrays
-            with pytest.raises(TypeError, match='Array parameter expected'):
-                test_class(*n*[0.0], wires=ww)
-            # params must not be Variables
-            with pytest.raises(TypeError, match='Array parameter expected'):
-                test_class(*n*[qml.variable.Variable(0)], wires=ww)
-        elif test_class.par_domain == 'N':
-            # params must be natural numbers
-            with pytest.raises(TypeError, match='Natural number'):
-                test_class(*n*[0.7], wires=ww)
-            with pytest.raises(TypeError, match='Natural number'):
-                test_class(*n*[-1], wires=ww)
-        elif test_class.par_domain == 'R':
-            # params must be real numbers
-            with pytest.raises(TypeError, match='Real scalar parameter expected'):
-                test_class(*n*[1j], wires=ww)
+        if test_class.do_check_domain:
+            if test_class.par_domain == 'A':
+                # params must be arrays
+                with pytest.raises(TypeError, match='Array parameter expected'):
+                    test_class(*n*[0.0], wires=ww)
+                # params must not be Variables
+                with pytest.raises(TypeError, match='Array parameter expected'):
+                    test_class(*n*[qml.variable.Variable(0)], wires=ww)
+            elif test_class.par_domain == 'N':
+                # params must be natural numbers
+                with pytest.raises(TypeError, match='Natural number'):
+                    test_class(*n*[0.7], wires=ww)
+                with pytest.raises(TypeError, match='Natural number'):
+                    test_class(*n*[-1], wires=ww)
+            elif test_class.par_domain == 'R':
+                # params must be real numbers
+                with pytest.raises(TypeError, match='Real scalar parameter expected'):
+                    test_class(*n*[1j], wires=ww)
 
-        # if par_domain ever gets overridden to an unsupported value, should raise exception
-        monkeypatch.setattr(test_class, 'par_domain', 'junk')
-        with pytest.raises(ValueError, match='Unknown parameter domain'):
-            test_class(*pars, wires=ww)
+            # if par_domain ever gets overridden to an unsupported value, should raise exception
+            monkeypatch.setattr(test_class, 'par_domain', 'junk')
+            with pytest.raises(ValueError, match='Unknown parameter domain'):
+                test_class(*pars, wires=ww)
 
-        monkeypatch.setattr(test_class, 'par_domain', 7)
-        with pytest.raises(ValueError, match='Unknown parameter domain'):
-            test_class(*pars, wires=ww)
+            monkeypatch.setattr(test_class, 'par_domain', 7)
+            with pytest.raises(ValueError, match='Unknown parameter domain'):
+                test_class(*pars, wires=ww)
 
     @pytest.fixture(scope="function")
     def qnode(self, mock_device):
