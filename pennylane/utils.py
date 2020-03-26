@@ -397,7 +397,7 @@ def expand_matrix(matrix, original_wires, expanded_wires):
 
     if D > 0:
         extra_dims = [2] * (2 * D)
-        identity = np.eye(len(extra_dims)).reshape(extra_dims)
+        identity = np.eye(2 ** D).reshape(extra_dims)
         expanded_tensor = np.tensordot(tensor, identity, axes=0)
         # Fix order of tensor factors
         expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
