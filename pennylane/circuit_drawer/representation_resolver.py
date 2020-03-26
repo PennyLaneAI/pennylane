@@ -340,6 +340,9 @@ class RepresentationResolver:
         if op.num_params == 0:
             representation = name
 
+        elif base_name == "PauliRot":
+            representation = "R{0}({1})".format(op.params[1], self.single_parameter_representation(op.params[0]))
+            
         elif base_name == "QubitUnitary":
             representation = RepresentationResolver._format_matrix_operation(
                 op, "U", self.unitary_matrix_cache
