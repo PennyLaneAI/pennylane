@@ -639,9 +639,32 @@ class TestOperations:
         ],
     )
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
-        """Test parametrically that the PauliRot matrix is correct."""
+        """Test non-parametrically that the PauliRot matrix is correct."""
 
         res = qml.PauliRot._matrix(theta, pauli_word)
         expected = expected_matrix
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "theta,pauli_word,compressed_pauli_word,wires,compressed_wires",
+        [
+            (np.pi, "XIZ", "XZ", [0, 1, 2], [0, 2]),
+            (np.pi / 3, "XIYIZI", "XYZ", [0, 1, 2, 3, 4, 5], [0, 2, 4]),
+            (np.pi / 7, "IXI", "X", [0, 1, 2], [1]),
+            (np.pi / 9, "IIIIIZI", "Z", [0, 1, 2, 3, 4, 5, 6], [5]),
+            (np.pi / 11, "XYZIII", "XYZ", [0, 1, 2, 3, 4, 5], [0, 1, 2]),
+            (np.pi / 11, "IIIXYZ", "XYZ", [0, 1, 2, 3, 4, 5], [3, 4, 5]),
+        ],
+    )
+    def test_PauliRot_matrix_identity(
+        self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
+    ):
+        """Test PauliRot matrix correctly accounts for identities."""
+
+        res = qml.PauliRot._matrix(theta, pauli_word)
+        expected = qml.utils.expand_matrix(
+            qml.PauliRot._matrix(theta, compressed_pauli_word), compressed_wires, wires
+        )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
