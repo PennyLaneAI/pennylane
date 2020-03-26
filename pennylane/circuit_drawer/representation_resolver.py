@@ -115,6 +115,9 @@ class RepresentationResolver:
         if isinstance(par, qml.variable.Variable):
             return par.render(self.show_variable_names)
 
+        if isinstance(par, str):
+            return par
+
         return str(round(par, 3))
 
     @staticmethod
