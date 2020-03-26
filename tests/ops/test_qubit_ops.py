@@ -771,8 +771,30 @@ class TestPauliRot:
 
             return qml.expval(qml.PauliZ(0))
 
-        res = circuit(angle)
-        
+        res = circuit(angle)        
         gradient = np.squeeze(circuit.jacobian(angle))
 
         assert gradient == .5 * (circuit(angle + np.pi/2) - circuit(angle - np.pi/2))
+
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2*np.pi, 7))
+    def test_decomposition_integration(self, angle, tol):
+        """Test that the decompositon of PauliRot yields the same results."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            qml.PauliRot(theta, "XX", wires=[0, 1])
+
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def decomp_circuit(theta):
+            qml.PauliRot.decomposition(theta, "XX", wires=[0, 1])
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
+        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(np.squeeze(decomp_circuit.jacobian(angle)), abs=tol)
+
