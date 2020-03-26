@@ -578,7 +578,7 @@ class PauliRot(Operation):
     **Details:**
 
     * Number of wires: Any
-    * Number of parameters: 1
+    * Number of parameters: 2 (1 differentiable parameter)
     * Gradient recipe: :math:`\frac{d}{d\theta}f(RP(\theta)) = \frac{1}{2}\left[f(RP(\theta +\pi/2)) - f(RP(\theta-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`RP(\theta)`.
 
