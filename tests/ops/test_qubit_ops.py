@@ -698,7 +698,7 @@ class TestOperations:
 
         assert decomp_ops[1].name == "RX"
         assert decomp_ops[1].wires == [1]
-        assert decomp_ops[1].params[0] == np.pi/2
+        assert decomp_ops[1].params[0] == np.pi / 2
 
         assert decomp_ops[2].name == "CNOT"
         assert decomp_ops[2].wires == [1, 0]
@@ -715,7 +715,7 @@ class TestOperations:
 
         assert decomp_ops[6].name == "RX"
         assert decomp_ops[6].wires == [1]
-        assert decomp_ops[6].params[0] == -np.pi/2
+        assert decomp_ops[6].params[0] == -np.pi / 2
 
     def test_PauliRot_decomposition_XIYZ(self):
         """Test that the decomposition for a XIYZ rotation is correct."""
@@ -729,7 +729,7 @@ class TestOperations:
 
         assert decomp_ops[1].name == "RX"
         assert decomp_ops[1].wires == [2]
-        assert decomp_ops[1].params[0] == np.pi/2
+        assert decomp_ops[1].params[0] == np.pi / 2
 
         assert decomp_ops[2].name == "CNOT"
         assert decomp_ops[2].wires == [3, 2]
@@ -752,4 +752,4 @@ class TestOperations:
 
         assert decomp_ops[8].name == "RX"
         assert decomp_ops[8].wires == [2]
-        assert decomp_ops[8].params[0] == -np.pi/2
+        assert decomp_ops[8].params[0] == -np.pi / 2

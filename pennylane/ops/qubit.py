@@ -620,8 +620,7 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
-            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates],
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates],
         )
 
         return expand_matrix(
