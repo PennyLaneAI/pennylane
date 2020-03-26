@@ -59,7 +59,7 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
 
     The template starts with an initial layer of single qubit Pauli-Y rotations, before the main
     :math:`L` layers are applied. The basic building block of the main layers are controlled-Z entanglers
-    followed by a pair of Pauli-Y gates.
+    followed by a pair of Pauli-Y rotation gates (one for each wire).
     Each layer consists of an "even" part whose entanglers start with the first qubit,
     and an "odd" part that starts with the second qubit.
 
