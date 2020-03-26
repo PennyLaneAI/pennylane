@@ -550,6 +550,10 @@ class TestOperations:
         with pytest.raises(ValueError, match="must be unitary"):
             qml.QubitUnitary(U3, wires=0).matrix
 
+
+class TestPauliRot:
+    """Test the PauliRot operation."""
+    
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
         "pauli_word,expected_matrix",
