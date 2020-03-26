@@ -58,6 +58,7 @@ class DefaultQubit(QubitDevice):
         "PauliX",
         "PauliY",
         "PauliZ",
+        "PauliRot",
         "Hadamard",
         "S",
         "T",
