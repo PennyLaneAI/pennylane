@@ -47,7 +47,10 @@ from pennylane.templates import (Interferometer,
                                  DisplacementEmbedding,
                                  BasisStatePreparation,
                                  MottonenStatePreparation,
-                                 QAOAEmbedding)
+                                 QAOAEmbedding,
+                                 SimplifiedTwoDesign,
+                                 BasicEntanglerLayers)
+
 
 from pennylane.templates import broadcast
 
@@ -78,7 +81,13 @@ from pennylane.init import (strong_ent_layers_uniform,
                             interferometer_theta_normal,
                             interferometer_theta_uniform,
                             qaoa_embedding_uniform,
-                            qaoa_embedding_normal)
+                            qaoa_embedding_normal,
+                            simplified_two_design_initial_layer_normal,
+                            simplified_two_design_initial_layer_uniform,
+                            simplified_two_design_weights_normal,
+                            simplified_two_design_weights_uniform,
+                            basic_entangler_layers_normal,
+                            basic_entangler_layers_uniform)
 
 #######################################
 # Interfaces
@@ -111,7 +120,7 @@ except ImportError as e:
 #########################################
 # Parameters shared between test classes
 
-# qubit templates, dict of differentiable arguments, dict of non-differentiable arguments
+# qubit templates for 2 wires, dict of differentiable arguments, dict of non-differentiable arguments
 QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                                {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                             [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
@@ -129,11 +138,17 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(StronglyEntanglingLayers,
                               (broadcast,
                                {'parameters': [[1.], [1.]]},
                                {'unitary': qml.RX,
-                                'wires': [0, 1],
                                 'pattern': 'single'}),
+                              (SimplifiedTwoDesign,
+                               {'initial_layer_weights': [1., 1.],
+                                'weights': [[[1., 1.]]]},
+                               {}),
+                              (BasicEntanglerLayers,
+                               {'weights': [[1., 1.]]},
+                               {'rotation': qml.RX}),
                               ]
 
-# cv templates, dict of differentiable arguments, dict of non-differentiable arguments
+# cv templates for 2 wires, dict of differentiable arguments, dict of non-differentiable arguments
 CV_DIFFABLE_NONDIFFABLE = [(DisplacementEmbedding,
                             {'features': [1., 2.]},
                             {}),
@@ -281,6 +296,7 @@ class TestIntegrationCircuit:
                                         template2, diffable2, nondiffable2,
                                         interface, to_var):
         """Tests integration of qubit templates passing differentiable arguments as positional arguments to qnode."""
+        #TODO: rewrite test to avoid quadratic growth of test cases with the number of templates
 
         # Extract keys and items
         keys_diffable1 = [*diffable1]
@@ -534,7 +550,29 @@ class TestInitializationIntegration:
                   (QAOAEmbedding,
                    {'features': [1., 2.], 'weights': qaoa_embedding_normal(n_layers=2, n_wires=1), 'wires': range(1)}),
                   (QAOAEmbedding,
-                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)})
+                   {'features': [1., 2.], 'weights': qaoa_embedding_uniform(n_layers=2, n_wires=1), 'wires': range(1)}),
+                  (SimplifiedTwoDesign,
+                   {'initial_layer_weights': simplified_two_design_initial_layer_uniform(n_wires=4),
+                    'weights': simplified_two_design_weights_uniform(n_layers=3, n_wires=4),
+                    'wires': range(4)}),
+                  (SimplifiedTwoDesign,
+                   {'initial_layer_weights': simplified_two_design_initial_layer_normal(n_wires=4),
+                    'weights': simplified_two_design_weights_normal(n_layers=3, n_wires=4),
+                    'wires': range(4)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=1, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_uniform(n_layers=3, n_wires=3), 'wires': range(3)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=1), 'wires': range(1)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=2), 'wires': range(2)}),
+                  (BasicEntanglerLayers,
+                   {'weights': basic_entangler_layers_normal(n_layers=3, n_wires=3), 'wires': range(3)}),
                   ]
 
     CV_INIT = [(CVNeuralNetLayers,
@@ -637,6 +675,15 @@ class TestGradientIntegration:
                                           {'unitary': qml.RX,
                                            'pattern': 'single',
                                            'wires': [0, 1]},
+                                          [0]),
+                                         (SimplifiedTwoDesign,
+                                          {'initial_layer_weights': [1., 1.],
+                                           'weights': [[[1., 1.]]]},
+                                          {'wires': [0, 1]},
+                                          [0, 1]),
+                                         (BasicEntanglerLayers,
+                                          {'weights': [[1., 1.]]},
+                                          {'wires': [0, 1]},
                                           [0]),
                                          ]
 
