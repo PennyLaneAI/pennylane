@@ -2,6 +2,45 @@
 
 <h3>New features since last release</h3>
 
+* Added the gate `PauliRot(angle, pauli_word)` that performs an arbitrary 
+  Pauli rotation specified by the pauli word in string form.
+  [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
+  
+  Consider as an example the following circuit:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+
+  @qml.qnode(dev)
+  def circuit(angle):
+      qml.PauliRot(angle, "IXYZ", wires=[0, 1, 2, 3])
+      return [qml.expval(qml.PauliZ(wire)) for wire in [0, 1, 2, 3]]
+  ```
+
+  We can run this circuit and look at the corresponding circuit drawing
+  
+  ```python
+  >>> circuit(0.4)
+  [1.         0.92106099 0.92106099 1.        ]
+  >>> print(circuit.draw())
+   0: ──╭RIXYZ(0.4)──┤ ⟨Z⟩
+   1: ──├RIXYZ(0.4)──┤ ⟨Z⟩
+   2: ──├RIXYZ(0.4)──┤ ⟨Z⟩
+   3: ──╰RIXYZ(0.4)──┤ ⟨Z⟩
+  ```
+
+  If the `PauliRot` gate is not supported on the target device, it will
+  be decomposed into `Hadamard`, `RX`, `RZ` and `CNOT` gates. Note that 
+  identity gates in the pauli word result in untouched wires:
+
+  ```python
+  >>> print(circuit.draw())
+   0: ──────────────────────────────────────────────────┤ ⟨Z⟩
+   1: ──H──────────────╭X──RZ(0.4)──╭X───H──────────────┤ ⟨Z⟩
+   2: ──RX(1.571)──╭X──╰C───────────╰C──╭X──RX(-1.571)──┤ ⟨Z⟩
+   3: ─────────────╰C───────────────────╰C──────────────┤ ⟨Z⟩
+  ```
+
 * PennyLane now offers a broadcasting function to easily construct templates:
   `qml.broadcast()` takes single quantum operations or other templates and applies
   them to wires in a specific pattern.
@@ -159,7 +198,7 @@ Ville Bergholm, Thomas Bromley, Johannes Jakob Meyer, Maria Schuld, Antal Száva
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Josh Izaac, Maria Schuld, Antal Száva.
+Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.0
 
