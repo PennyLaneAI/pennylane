@@ -595,6 +595,7 @@ class PauliRot(Operation):
     """
     num_params = 2
     num_wires = Any
+    do_check_domain = False
     par_domain = "R"
     grad_method = "A"
 
@@ -650,11 +651,11 @@ class PauliRot(Operation):
         for i in range(len(active_wires) - 1):
             CNOT(wires=[active_wires[i + 1], active_wires[i]])
 
-            for wire, gate in zip(active_wires, active_gates):
-                if gate == "X":
-                    Hadamard(wires=[wire])
-                elif gate == "Y":
-                    RX(-np.pi / 2, wires=[wire])
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                Hadamard(wires=[wire])
+            elif gate == "Y":
+                RX(-np.pi / 2, wires=[wire])
 
 
 class CRX(Operation):
