@@ -588,6 +588,9 @@ class TestOperations:
                     ],
                 ),
             ),
+            ("X", qml.RX._matrix),
+            ("Y", qml.RY._matrix),
+            ("Z", qml.RZ._matrix),
         ],
     )
     def test_PauliRot_matrix_parametric(self, theta, pauli_word, expected_matrix, tol):
