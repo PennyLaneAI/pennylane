@@ -869,6 +869,42 @@ class TestQNodeArgs:
         node([[0.1], [0.2, 0.3]], n=2)
         assert node.num_primary_parameters == 3
 
+    @pytest.mark.parametrize("mutable", [True, False])
+    def test_all_auxiliary_arg_kinds(self, qubit_device_1_wire, mutable, tol):
+        """Tests that a node can use a qfunc accepting any of the
+        allowed kinds of auxiliary parameters.
+        """
+        a = 0.4
+        b = 0.7
+        exp = np.cos(a+b)  # expected result
+
+        def circuit(a, b=None):  # b is POSITIONAL_OR_KEYWORD
+            qml.ops.RX(a, wires=[0])
+            qml.ops.RX(b, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+        node = BaseQNode(circuit, qubit_device_1_wire, mutable=mutable)
+
+        res = node(a, b=b)
+        assert res == pytest.approx(exp, abs=tol)
+
+        def circuit(a, *, b=None):  # b is KEYWORD_ONLY
+            qml.ops.RX(a, wires=[0])
+            qml.ops.RX(b, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+        node = BaseQNode(circuit, qubit_device_1_wire, mutable=mutable)
+
+        res = node(a, b=b)
+        assert res == pytest.approx(exp, abs=tol)
+
+        def circuit(a, **kwargs):  # b is given via a VAR_KEYWORD parameter
+            qml.ops.RX(a, wires=[0])
+            qml.ops.RX(kwargs['b'], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+        node = BaseQNode(circuit, qubit_device_1_wire, mutable=mutable)
+
+        res = node(a, b=b)
+        assert res == pytest.approx(exp, abs=tol)
+
 
 
 class TestQNodeCaching:
@@ -955,6 +991,38 @@ class TestQNodeCaching:
         assert len(node.circuit.operations) == 4
         node.ops[0] is temp  # it's the same circuit with the same objects
         assert res == pytest.approx(np.cos(x[0] + x[1][1] + c[0] + c[1][0]), abs=tol)
+
+    def test_immutable_qfunc_with_array_parameters(self, tol):
+        """Test that immutable qfuncs work with array parameters."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        def non_mutable_circuit(x, *, c=None):
+            # primary parameter x
+            qml.RX(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            # auxiliary parameter c
+            qml.RX(c[0], wires=0)
+            qml.RX(c[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        node = BaseQNode(non_mutable_circuit, dev, mutable=False)
+
+        # first evaluation
+        x = np.array([0.1, 0.2])
+        c = np.array([1.1, 1.2])
+        res = node(x, c=c)
+        assert len(node.circuit.operations) == 4
+        temp = node.ops[0]
+        assert res == pytest.approx(np.cos(x.sum() + c.sum()), abs=tol)
+
+        # second evaluation
+        x = np.array([2.1, 2.2])
+        c = np.array([3.1, 3.2])
+        res = node(x, c=c)
+        assert len(node.circuit.operations) == 4
+        node.ops[0] is temp  # it's the same circuit with the same objects
+        assert res == pytest.approx(np.cos(x.sum() + c.sum()), abs=tol)
 
     THETA = np.linspace(0.11, 1, 3)
     PHI = np.linspace(0.32, 1, 3)
