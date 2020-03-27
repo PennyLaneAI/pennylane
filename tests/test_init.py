@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.templates.parameters` module.
+Unit tests for the :mod:`pennylane.init` module.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
@@ -43,6 +43,7 @@ rnd_rpt_uni2 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': None, 'low': 0
 # Functions and their signatures
 
 # Functions returning a single parameter array
+# function name, kwargs and target shape
 INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal, rnd_rpt_nrml1, (repeat, n_rotations)),
                       (qml.init.random_layers_normal, rnd_rpt_nrml2, (repeat, n_wires)),
                       (qml.init.strong_ent_layers_normal, rpt_nrml, (repeat, n_wires, 3)),
@@ -77,6 +78,16 @@ INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal, rnd_rpt_nrml1, (repeat, n_
                       (qml.init.qaoa_embedding_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1}, (2, 3)),
                       (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1}, (2, 1)),
                       (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1}, (2, 3)),
+                      (qml.init.simplified_two_design_initial_layer_uniform, {'n_wires': 1, 'low': 0, 'high': 1}, (1,)),
+                      (qml.init.simplified_two_design_initial_layer_uniform, {'n_wires': 3, 'low': 0, 'high': 1}, (3,)),
+                      (qml.init.simplified_two_design_initial_layer_normal, {'n_wires': 1, 'mean': 0, 'std': 1}, (1,)),
+                      (qml.init.simplified_two_design_initial_layer_normal, {'n_wires': 3, 'mean': 0, 'std': 1}, (3,)),
+                      (qml.init.simplified_two_design_weights_uniform, {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1}, (0,)),
+                      (qml.init.simplified_two_design_weights_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1}, (2, 1, 2)),
+                      (qml.init.simplified_two_design_weights_uniform, {'n_layers': 2, 'n_wires': 4, 'low': 0, 'high': 1}, (2, 3, 2)),
+                      (qml.init.simplified_two_design_weights_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1}, (0, )),
+                      (qml.init.simplified_two_design_weights_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1}, (2, 1, 2)),
+                      (qml.init.simplified_two_design_weights_normal, {'n_layers': 2, 'n_wires': 4, 'mean': 0, 'std': 1}, (2, 3, 2)),
                       (qml.init.basic_entangler_layers_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
                        (2, 1)),
                       (qml.init.basic_entangler_layers_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1},
@@ -93,9 +104,8 @@ INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, rpt,
                            (repeat, n_wires)]),
                          (qml.init.interferometer_all, base, [(n_if,), (n_if,), (n_wires,)])]
 
-# Without shapes
+# Without target shapes
 INIT_KWARGS = [i[0:2] for i in INIT_KWARGS_SHAPES]
-INITALL_KWARGS = [i[0:2] for i in INITALL_KWARGS_SHAPES]
 
 #################
 
@@ -137,26 +147,32 @@ class TestInit:
         p1 = init(**s)
         s = {**s, 'seed': seed + 1}
         p2 = init(**s)
-        assert not np.allclose(p1, p2, atol=tol)
+
+        if p1.shape != (0,):
+            assert not np.allclose(p1, p2, atol=tol)
 
     @pytest.mark.parametrize("init, sgntr", INIT_KWARGS)
     def test_interval(self, init, sgntr, seed, tol):
         """Test that sampled parameters lie in correct interval."""
-        s = {**sgntr, 'seed': seed}
 
-        # Case A: Uniformly distributed parameters
-        if 'low' in s.keys() and 'high' in s.keys():
-            s['low'] = 1
-            s['high'] = 1
+        # exclude case of empty parameter list
+        if not init(**sgntr).shape == (0, ):
+
+            s = {**sgntr, 'seed': seed}
+
+            # Case A: Uniformly distributed parameters
+            if 'low' in s.keys() and 'high' in s.keys():
+                s['low'] = 1
+                s['high'] = 1
+                p = init(**s)
+                p_mean = np.mean(p)
+                assert np.isclose(p_mean, 1, atol=tol)
+
+            # Case B: Normally distributed parameters
+            if 'mean' in s.keys() and 'std' in s.keys():
+                s['mean'] = 1
+                s['std'] = 0
+
             p = init(**s)
             p_mean = np.mean(p)
             assert np.isclose(p_mean, 1, atol=tol)
-
-        # Case B: Normally distributed parameters
-        if 'mean' in s.keys() and 'std' in s.keys():
-            s['mean'] = 1
-            s['std'] = 0
-
-        p = init(**s)
-        p_mean = np.mean(p)
-        assert np.isclose(p_mean, 1, atol=tol)
