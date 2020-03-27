@@ -22,10 +22,10 @@ The first time a QNode is evaluated (either by calling :meth:`~.QNode.evaluate`,
 :meth:`~.QNode.__call__`, or :meth:`~.QNode.jacobian`), the :meth:`~.QNode._construct`
 method is called, which performs a 'just-in-time' circuit construction.
 As part of this construction, all primary arguments
-(and possibly also the auxiliary arguments) are wrapped in `Variable` instances as follows:
+(and possibly also the auxiliary arguments) are wrapped in ``Variable`` instances as follows:
 
 * The nested sequence of primary arguments is
-  flattened to a single list, and each element wrapped in a `Variable` instance,
+  flattened to a single list, and each element wrapped in a ``Variable`` instance,
   indexed by its position in the list.
   The list can then be unflattened back to the original shape.
 
@@ -73,8 +73,8 @@ class Variable:
 
     Args:
         idx  (int): index into the value vector, >= 0
-        name (str): structured name of the parameter
-        dict_key (None, str): for auxiliary parameters the name of the base parameter, otherwise None
+        name (str): structured name of the parameter (e.g. 'x[0][2]')
+        dict_key (None, str): for auxiliary parameters the name of the base parameter (e.g. 'x'), otherwise None
     """
 
     # pylint: disable=too-few-public-methods

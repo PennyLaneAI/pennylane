@@ -41,7 +41,7 @@ def is_iterable(x):
     return isinstance(x, Iterable) and not isinstance(x, (str, bytes))
 
 
-_sentinel = object()  # singleton sentinel object not normally found in the nested structures
+_sentinel = object()  # singleton sentinel object
 
 
 def equal_nested(a, b):
