@@ -567,6 +567,64 @@ class Rot(Operation):
         return decomp_ops
 
 
+class MultiRZ(Operation):
+    r"""MultiRZ(theta, wires)
+    Arbitrary multi Z rotation.
+
+    .. math::
+
+        MultiRZ(\theta) = \exp(-i \frac{\theta}{2} Z^{\otimes n})
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\theta}f(MultiRZ(\theta)) = \frac{1}{2}\left[f(MultiRZ(\theta +\pi/2)) - f(MultiRZ(\theta-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`MultiRZ(\theta)`.
+
+    .. note::
+
+        If the ``MultiRZ`` gate is not supported on the targeted device, PennyLane
+        will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = Any
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def _matrix(*params):
+        theta = params[0]
+
+        # This parameter needs to be given externally, because
+        # the number of wires is implicit
+        n = params[1]
+
+        multi_Z_rot_eigs = np.exp(-1j * theta / 2 * pauli_eigs(n))
+        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+
+        return multi_Z_rot_matrix
+
+    @property
+    def matrix(self):
+        # Overload the property here to pass additionally the number of wires
+        return self._matrix(*self.parameters, len(self.wires))
+
+    @staticmethod
+    @template
+    def decomposition(theta, wires):
+        for i in range(len(wires) - 1, 0, -1):
+            CNOT(wires=[wires[i], wires[i - 1]])
+
+        RZ(theta, wires=wires[0])
+
+        for i in range(len(wires) - 1):
+            CNOT(wires=[wires[i + 1], wires[i]])
+
 class PauliRot(Operation):
     r"""PauliRot(theta, pauli_word, wires)
     Arbitrary pauli word rotation.
