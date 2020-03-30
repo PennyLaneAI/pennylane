@@ -673,21 +673,22 @@ class PauliRot(Operation):
     def _matrix(*params):
         theta = params[0]
         pauli_word = params[1]
-        # We keep imaginary wires to be able to reconstruct the position of the identities
-        active_wires, active_gates = zip(
+        # We first generate the matrix excluding the identity parts and expand it afterwards.
+        # To this end, we have to store on which wires the non-identity parts act
+        non_identity_wires, non_identity_gates = zip(
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(active_gates))
+        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(non_identity_gates))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates],
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
             conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix,
-            active_wires,
+            non_identity_wires,
             list(range(len(pauli_word))),
         )
 
