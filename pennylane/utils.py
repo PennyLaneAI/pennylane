@@ -393,7 +393,7 @@ def expand(matrix, original_wires, expanded_wires):
     Args:
         matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
         original_wires (Sequence[int]): original wires of matrix
-        expanded_wires (Sequence[int], int): expanded wires of matrix, can be shuffled.
+        expanded_wires (Union[Sequence[int], int]): expanded wires of matrix, can be shuffled.
             If a single int m is given, corresponds to list(range(m))
 
     Returns:
@@ -405,6 +405,12 @@ def expand(matrix, original_wires, expanded_wires):
     N = len(original_wires)
     M = len(expanded_wires)
     D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if matrix.shape != (2 ** N, 2 ** N):
+        raise ValueError("Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))")
 
     dims = [2] * (2 * N)
     tensor = matrix.reshape(dims)
@@ -438,14 +444,24 @@ def expand_vector(vector, original_wires, expanded_wires):
     Args:
         vector (array): :math:`2^n` vector where n = len(original_wires).
         original_wires (Sequence[int]): original wires of vector
-        expanded_wires (Sequence[int]): expanded wires of vector, can be shuffled
+        expanded_wires (Union[Sequence[int], int]): expanded wires of vector, can be shuffled
+            If a single int m is given, corresponds to list(range(m))
 
     Returns:
         array: :math:`2^m` vector where m = len(expanded_wires).
     """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
     N = len(original_wires)
     M = len(expanded_wires)
     D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if vector.shape != (2 ** N,):
+        raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
     tensor = vector.reshape(dims)
