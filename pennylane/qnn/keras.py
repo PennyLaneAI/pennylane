@@ -50,10 +50,7 @@ class KerasLayer(Layer):
             method and values being the corresponding specification.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
-    This class converts a :func:`~.QNode` to a Keras Layer_, which can be used within the Keras
-    `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
-    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
-    creating quantum and hybrid models:
+    **Example**
 
     .. code-block:: python
 
@@ -86,65 +83,63 @@ class KerasLayer(Layer):
 
         weight_shapes = {"weights_0": 3, "weight_1": 1}
 
-    **Example**
-
-    The code block below shows how a circuit composed of templates from the
-    :doc:`/code/qml_templates` module can be combined with classical
-    `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn the
-    two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn.datasets
-    .make_moons.html>`__ dataset.
-
-    .. code-block:: python
-
-        import pennylane as qml
-        import tensorflow as tf
-        import sklearn.datasets
-
-        n_qubits = 2
-        dev = qml.device("default.qubit", wires=n_qubits)
-
-        @qml.qnode(dev)
-        def qnode(inputs, weights):
-            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
-            qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        weight_shapes = {"weights": (3, n_qubits, 3)}
-
-        qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-        clayer1 = tf.keras.layers.Dense(2)
-        clayer2 = tf.keras.layers.Dense(2, activation="softmax")
-        model = tf.keras.models.Sequential([clayer1, qlayer, clayer2])
-
-        data = sklearn.datasets.make_moons()
-        X = tf.constant(data[0])
-        Y = tf.one_hot(data[1], depth=2)
-
-        opt = tf.keras.optimizers.SGD(learning_rate=0.5)
-        model.compile(opt, loss='mae')
-
-    The model can be trained using:
-
-    >>> model.fit(X, Y, epochs=8, batch_size=5)
-    Train on 100 samples
-    Epoch 1/8
-    100/100 [==============================] - 9s 90ms/sample - loss: 0.3524
-    Epoch 2/8
-    100/100 [==============================] - 9s 87ms/sample - loss: 0.2441
-    Epoch 3/8
-    100/100 [==============================] - 9s 87ms/sample - loss: 0.1908
-    Epoch 4/8
-    100/100 [==============================] - 9s 87ms/sample - loss: 0.1832
-    Epoch 5/8
-    100/100 [==============================] - 9s 88ms/sample - loss: 0.1596
-    Epoch 6/8
-    100/100 [==============================] - 9s 87ms/sample - loss: 0.1637
-    Epoch 7/8
-    100/100 [==============================] - 9s 86ms/sample - loss: 0.1613
-    Epoch 8/8
-    100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
-
     .. UsageDetails::
+
+        The code block below shows how a circuit composed of templates from the
+        :doc:`/code/qml_templates` module can be combined with classical
+        `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn the
+        two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn.datasets
+        .make_moons.html>`__ dataset.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import tensorflow as tf
+            import sklearn.datasets
+
+            n_qubits = 2
+            dev = qml.device("default.qubit", wires=n_qubits)
+
+            @qml.qnode(dev)
+            def qnode(inputs, weights):
+                qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+                qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+            weight_shapes = {"weights": (3, n_qubits, 3)}
+
+            qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+            clayer1 = tf.keras.layers.Dense(2)
+            clayer2 = tf.keras.layers.Dense(2, activation="softmax")
+            model = tf.keras.models.Sequential([clayer1, qlayer, clayer2])
+
+            data = sklearn.datasets.make_moons()
+            X = tf.constant(data[0])
+            Y = tf.one_hot(data[1], depth=2)
+
+            opt = tf.keras.optimizers.SGD(learning_rate=0.5)
+            model.compile(opt, loss='mae')
+
+        The model can be trained using:
+
+        >>> model.fit(X, Y, epochs=8, batch_size=5)
+        Train on 100 samples
+        Epoch 1/8
+        100/100 [==============================] - 9s 90ms/sample - loss: 0.3524
+        Epoch 2/8
+        100/100 [==============================] - 9s 87ms/sample - loss: 0.2441
+        Epoch 3/8
+        100/100 [==============================] - 9s 87ms/sample - loss: 0.1908
+        Epoch 4/8
+        100/100 [==============================] - 9s 87ms/sample - loss: 0.1832
+        Epoch 5/8
+        100/100 [==============================] - 9s 88ms/sample - loss: 0.1596
+        Epoch 6/8
+        100/100 [==============================] - 9s 87ms/sample - loss: 0.1637
+        Epoch 7/8
+        100/100 [==============================] - 9s 86ms/sample - loss: 0.1613
+        Epoch 8/8
+        100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
 
         The QNode must have a signature that satisfies the following conditions:
 
