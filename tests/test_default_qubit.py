@@ -314,6 +314,9 @@ class TestApply:
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
         (qml.CRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, 1j, 0], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2, 0, 0], [math.pi / 2]),
         (qml.CRot, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2, 0, 0]),
         (qml.CRot, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (qml.CRot, [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
@@ -337,6 +340,9 @@ class TestApply:
         (qml.CRX, [0, 0, 0, 1], [0, 0, 1j, 0], [math.pi]),
         (qml.CRX, [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
          [0, 1 / math.sqrt(2), 1 / 2, 1j / 2], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, 1j, 0], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2, 0, 0], [math.pi / 2]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_two_wires_with_parameters)
