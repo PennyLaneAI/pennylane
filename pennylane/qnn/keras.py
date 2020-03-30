@@ -33,7 +33,10 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """This class converts a :func:`~.QNode` to a Keras Layer_, which can be used within the Keras
+    """Converts a :func:`~.QNode` to a Keras
+    `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
+
+    The result can be used within the Keras
     `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
     `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
     creating quantum and hybrid models.
