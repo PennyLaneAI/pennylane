@@ -410,7 +410,9 @@ def expand(matrix, original_wires, expanded_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
     if matrix.shape != (2 ** N, 2 ** N):
-        raise ValueError("Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))")
+        raise ValueError(
+            "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
+        )
 
     dims = [2] * (2 * N)
     tensor = matrix.reshape(dims)
