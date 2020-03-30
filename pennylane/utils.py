@@ -426,3 +426,41 @@ def expand_matrix(matrix, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
 
     return expanded_tensor.reshape((2 ** M, 2 ** M))
+
+
+def expand_vector(vector, original_wires, expanded_wires):
+    r"""Expand a vector to more wires.
+
+    Args:
+        vector (array): :math:`2^n` vector where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of vector
+        expanded_wires (Sequence[int]): expanded wires of vector, can be shuffled
+
+    Returns:
+        array: :math:`2^m` vector where m = len(expanded_wires).
+    """
+    N = len(original_wires)
+    M = len(expanded_wires)
+    D = M - N
+
+    dims = [2] * N
+    tensor = vector.reshape(dims)
+
+    if D > 0:
+        extra_dims = [2] * D
+        ones = np.ones(2 ** D).reshape(extra_dims)
+        expanded_tensor = np.tensordot(tensor, ones, axes=0)
+    else:
+        expanded_tensor = tensor
+
+    wire_indices = []
+    for wire in original_wires:
+        wire_indices.append(expanded_wires.index(wire))
+
+    wire_indices = np.array(wire_indices)
+
+    # Order tensor factors according to wires
+    original_indices = np.array(range(N))
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+
+    return expanded_tensor.reshape(2 ** M)
