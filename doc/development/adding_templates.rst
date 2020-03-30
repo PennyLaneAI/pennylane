@@ -28,7 +28,7 @@ correct template type.
    Make sure you consider the following:
 
    * To be consistent with other quantum operations (which are classes), the function name (i.e., ``MyNewTemplate``) is
-     capitalized. Choose the name carefully. Good names tell the user what a template is good for, or what architecture
+     written in camel case. Choose the name carefully. Good names tell the user what a template is good for, or what architecture
      it implements.
 
    * A template is "registered" by using the :mod:`template <pennylane.template>` decorator ``@template``.
