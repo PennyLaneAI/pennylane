@@ -90,7 +90,7 @@ def indicies_up_to(n_max):
 class TestKerasLayer:
     """Unit tests for the pennylane.qnn.keras.KerasLayer class."""
 
-    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
     def test_bad_tf_version(self, get_circuit, output_dim, monkeypatch):
         """Test if an ImportError is raised when instantiated with an incorrect version of
