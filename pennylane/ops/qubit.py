@@ -1295,6 +1295,7 @@ ops = {
     "PauliY",
     "PauliZ",
     "PauliRot",
+    "MultiRZ",
     "S",
     "T",
     "CNOT",
