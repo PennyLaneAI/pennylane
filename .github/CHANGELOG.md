@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * Added the gate `PauliRot(angle, pauli_word)` that performs an arbitrary 
-  Pauli rotation specified by the pauli word in string form.
+  Pauli rotation specified by the Pauli word in string form.
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
   
   Consider as an example the following circuit:
@@ -31,7 +31,7 @@
 
   If the `PauliRot` gate is not supported on the target device, it will
   be decomposed into `Hadamard`, `RX`, `RZ` and `CNOT` gates. Note that 
-  identity gates in the pauli word result in untouched wires:
+  identity gates in the Pauli word result in untouched wires:
 
   ```python
   >>> print(circuit.draw())

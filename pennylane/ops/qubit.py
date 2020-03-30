@@ -585,7 +585,7 @@ class PauliRot(Operation):
     .. note::
 
         If the ``PauliRot`` gate is not supported on the targeted device, PennyLane
-        will attempt to decompose the gate using :class:`~.RX`, :class:`~.Hadamard`, :class:`~.RZ`
+        will decompose the gate using :class:`~.RX`, :class:`~.Hadamard`, :class:`~.RZ`
         and :class:`~.CNOT` gates.
 
     Args:
