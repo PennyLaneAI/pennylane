@@ -136,7 +136,7 @@ def _get_default_args(func):
     }
 
 
-def expand(U, wires, num_wires):
+def old_expand(U, wires, num_wires):
     r"""Expand a multi-qubit operator into a full system operator.
 
     Args:
@@ -387,17 +387,21 @@ def inv(operation_list):
     return inv_ops
 
 
-def expand_matrix(matrix, original_wires, expanded_wires):
+def expand(matrix, original_wires, expanded_wires):
     r"""Expand a an operator matrix to more wires.
 
     Args:
         matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
         original_wires (Sequence[int]): original wires of matrix
-        expanded_wires (Sequence[int]): expanded wires of matrix, can be shuffled
+        expanded_wires (Sequence[int], int): expanded wires of matrix, can be shuffled.
+            If a single int m is given, corresponds to list(range(m))
 
     Returns:
         array: :math:`2^m \times 2^m` matrix where m = len(expanded_wires).
     """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
     N = len(original_wires)
     M = len(expanded_wires)
     D = M - N

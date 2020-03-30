@@ -23,7 +23,7 @@ from scipy.linalg import block_diag
 from pennylane.templates import template
 from pennylane.operation import Any, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder, pauli_eigs, expand_matrix
+from pennylane.utils import OperationRecorder, pauli_eigs, expand
 
 
 class Hadamard(Observable, Operation):
@@ -685,7 +685,7 @@ class PauliRot(Operation):
             np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in active_gates],
         )
 
-        return expand_matrix(
+        return expand(
             conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix,
             active_wires,
             list(range(len(pauli_word))),

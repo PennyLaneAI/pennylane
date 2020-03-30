@@ -667,7 +667,7 @@ class TestPauliRot:
         """Test PauliRot matrix correctly accounts for identities."""
 
         res = qml.PauliRot._matrix(theta, pauli_word)
-        expected = qml.utils.expand_matrix(
+        expected = qml.utils.expand(
             qml.PauliRot._matrix(theta, compressed_pauli_word), compressed_wires, wires
         )
 
