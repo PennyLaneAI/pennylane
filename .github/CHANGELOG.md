@@ -6,8 +6,6 @@
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
 
-  For example, here is a simple QNode:
-  
   ```python
   n_qubits = 2
   dev = qml.device("default.qubit", wires=n_qubits)
@@ -21,7 +19,7 @@
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
   ```
   
-  This can be converted into a Keras Layer using:
+  The above QNode can be converted into a Keras layer using the `KerasLayer` class:
   
   ```python
   from pennylane.qnn import KerasLayer
