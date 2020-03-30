@@ -14,9 +14,6 @@
 """
 Tests for the pennylane.qnn.keras module.
 """
-import os
-import tempfile
-
 import numpy as np
 import pytest
 
@@ -433,17 +430,16 @@ class TestKerasLayerIntegration:
 
     @pytest.mark.parametrize("interface", ["tf"])
     @pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(2))
-    def test_model_save_weights(self, model, n_qubits):
+    def test_model_save_weights(self, model, n_qubits, tmpdir):
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
-        _, filename = tempfile.mkstemp()
         prediction = model.predict(np.ones(n_qubits))
         weights = model.get_weights()
-        model.save_weights(filename)
-        model.load_weights(filename)
+        file = str(tmpdir) + '/model'
+        model.save_weights(file)
+        model.load_weights(file)
         prediction_loaded = model.predict(np.ones(n_qubits))
         weights_loaded = model.get_weights()
-        os.remove(filename)
 
         assert np.allclose(prediction, prediction_loaded)
         for i, w in enumerate(weights):

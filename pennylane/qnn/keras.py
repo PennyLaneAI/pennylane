@@ -29,8 +29,6 @@ except ImportError:
     Layer = ABC
     CORRECT_TF_VERSION = False
 
-from pennylane.qnodes import QNode
-
 
 class KerasLayer(Layer):
     """A Keras Layer_ for integrating PennyLane QNodes with the Keras API.
@@ -181,9 +179,9 @@ class KerasLayer(Layer):
 
     def __init__(
         self,
-        qnode: QNode,
+        qnode,
         weight_shapes: dict,
-        output_dim: int,
+        output_dim,
         weight_specs: Optional[dict] = None,
         **kwargs
     ):
@@ -219,6 +217,8 @@ class KerasLayer(Layer):
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
         }
+
+        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
         self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
 
         defaults = {
@@ -258,14 +258,19 @@ class KerasLayer(Layer):
             tensor: output data
         """
         outputs = []
-        for x in inputs:
+        for x in inputs:  # iterate over batch
+
+            # The QNode can require some passed arguments to be positional and others to be keyword.
+            # The following loops through input arguments in order and uses functools.partial to
+            # bind the argument to the QNode.
             qnode = self.qnode
+
             for arg in self.sig:
-                if arg is not self.input_arg:
+                if arg is not self.input_arg:  # Non-input arguments must always be positional
                     w = self.qnode_weights[arg]
                     qnode = functools.partial(qnode, w)
                 else:
-                    if self.input_is_default:
+                    if self.input_is_default:  # The input argument can be positional or keyword
                         qnode = functools.partial(qnode, **{self.input_arg: x})
                     else:
                         qnode = functools.partial(qnode, x)
