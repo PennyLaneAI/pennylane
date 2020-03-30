@@ -672,9 +672,7 @@ class PauliRot(Operation):
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        # we first create the multi-Z rotation
-        multi_Z_rot_eigs = np.exp(-1j * theta / 2 * pauli_eigs(len(active_gates)))
-        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(active_gates))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
@@ -700,13 +698,7 @@ class PauliRot(Operation):
             elif gate == "Y":
                 RX(np.pi / 2, wires=[wire])
 
-        for i in range(len(active_wires) - 1, 0, -1):
-            CNOT(wires=[active_wires[i], active_wires[i - 1]])
-
-        RZ(theta, wires=active_wires[0])
-
-        for i in range(len(active_wires) - 1):
-            CNOT(wires=[active_wires[i + 1], active_wires[i]])
+        MultiRZ(theta, wires=active_wires)
 
         for wire, gate in zip(active_wires, active_gates):
             if gate == "X":
