@@ -618,7 +618,6 @@ class MultiRZ(Operation):
 
         return self._matrix(*self.parameters, len(self.wires))
 
-
     @staticmethod
     def _eigvals(theta, n):
         """Return the eigenvalues corresponding to a specific rotation angle.
