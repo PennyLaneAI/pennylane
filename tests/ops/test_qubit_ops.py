@@ -683,9 +683,9 @@ class TestPauliRot:
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == [1, 0]
 
-        assert decomp_ops[1].name == "RZ"
-        assert decomp_ops[1].wires == [0]
-        assert decomp_ops[1].params[0] == theta
+        assert decomp_ops[0].name == "RZ"
+        assert decomp_ops[0].wires == [0]
+        assert decomp_ops[0].params[0] == theta
 
         assert decomp_ops[2].name == "CNOT"
         assert decomp_ops[2].wires == [1, 0]
@@ -758,8 +758,7 @@ class TestPauliRot:
         assert decomp_ops[8].wires == [2]
         assert decomp_ops[8].params[0] == -np.pi / 2
 
-
-    @pytest.mark.parametrize("angle", np.linspace(0, 2*np.pi, 7))
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_differentiability(self, angle):
         """Test that differentiation of PauliRot works."""
 
@@ -771,13 +770,12 @@ class TestPauliRot:
 
             return qml.expval(qml.PauliZ(0))
 
-        res = circuit(angle)        
+        res = circuit(angle)
         gradient = np.squeeze(circuit.jacobian(angle))
 
-        assert gradient == .5 * (circuit(angle + np.pi/2) - circuit(angle - np.pi/2))
+        assert gradient == 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))
 
-
-    @pytest.mark.parametrize("angle", np.linspace(0, 2*np.pi, 7))
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_decomposition_integration(self, angle, tol):
         """Test that the decompositon of PauliRot yields the same results."""
 
@@ -796,4 +794,115 @@ class TestPauliRot:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(np.squeeze(decomp_circuit.jacobian(angle)), abs=tol)
+        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
+            np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
+        )
+
+
+class TestMultiRZ:
+    """Test the MultiRZ operation."""
+
+    @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize(
+        "wires,expected_matrix",
+        [
+            ([0], qml.RZ._matrix),
+            ([0, 1], lambda theta: np.diag(np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2),),),
+            (
+                [0, 1, 2],
+                lambda theta: np.diag(
+                    np.exp(1j * np.array([-1, 1, 1, -1, 1, -1, -1, 1]) * theta / 2),
+                ),
+            ),
+        ],
+    )
+    def test_MultiRZ_matrix_parametric(self, theta, wires, expected_matrix, tol):
+        """Test parametrically that the MultiRZ matrix is correct."""
+
+        res = qml.MultiRZ._matrix(theta, len(wires))
+        expected = expected_matrix(theta)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_MultiRZ_decomposition_ZZ(self):
+        """Test that the decomposition for a ZZ rotation is correct."""
+
+        theta = 0.4
+        op = qml.MultiRZ(theta, wires=[0, 1])
+        decomp_ops = op.decomposition(theta, wires=[0, 1])
+
+        assert decomp_ops[0].name == "CNOT"
+        assert decomp_ops[0].wires == [1, 0]
+
+        assert decomp_ops[1].name == "RZ"
+        assert decomp_ops[1].wires == [0]
+        assert decomp_ops[1].params[0] == theta
+
+        assert decomp_ops[2].name == "CNOT"
+        assert decomp_ops[2].wires == [1, 0]
+
+    def test_MultiRZ_decomposition_ZZZ(self):
+        """Test that the decomposition for a ZZZ rotation is correct."""
+
+        theta = 0.4
+        op = qml.MultiRZ(theta, wires=[0, 2, 3])
+        decomp_ops = op.decomposition(theta, wires=[0, 2, 3])
+
+        assert decomp_ops[0].name == "CNOT"
+        assert decomp_ops[0].wires == [3, 2]
+
+        assert decomp_ops[1].name == "CNOT"
+        assert decomp_ops[1].wires == [2, 0]
+
+        assert decomp_ops[2].name == "RZ"
+        assert decomp_ops[2].wires == [0]
+        assert decomp_ops[2].params[0] == theta
+
+        assert decomp_ops[3].name == "CNOT"
+        assert decomp_ops[3].wires == [2, 0]
+
+        assert decomp_ops[4].name == "CNOT"
+        assert decomp_ops[4].wires == [3, 2]
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_differentiability(self, angle):
+        """Test that differentiation of MultiRZ works."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            qml.Hadamard(0)
+            qml.MultiRZ(theta, wires=[0, 1])
+
+            return qml.expval(qml.PauliX(0))
+
+        res = circuit(angle)
+        gradient = np.squeeze(circuit.jacobian(angle))
+
+        assert gradient == 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    def test_decomposition_integration(self, angle, tol):
+        """Test that the decompositon of MultiRZ yields the same results."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            qml.Hadamard(0)
+            qml.MultiRZ(theta, wires=[0, 1])
+
+            return qml.expval(qml.PauliX(0))
+
+        @qml.qnode(dev)
+        def decomp_circuit(theta):
+            qml.Hadamard(0)
+            qml.MultiRZ.decomposition(theta, wires=[0, 1])
+
+            return qml.expval(qml.PauliX(0))
+
+        assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
+        assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
+            np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
+        )
