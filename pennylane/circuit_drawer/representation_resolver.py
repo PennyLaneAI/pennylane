@@ -107,7 +107,7 @@ class RepresentationResolver:
         """Resolve the representation of an Operator's parameter.
 
         Args:
-            par (Union[~.variable.Variable, int, float]): The parameter to be rendered
+            par (Union[~.variable.Variable, int, float, str]): The parameter to be rendered
 
         Returns:
             str: String representation of the parameter
