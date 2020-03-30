@@ -32,7 +32,10 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """A Keras Layer_ for integrating PennyLane QNodes with the Keras API.
+    """This class converts a :func:`~.QNode` to a Keras Layer_, which can be used within the Keras
+    `Sequential <https://www.tensorflow.org/api_docs/python/tf/keras/Sequential>`__ or
+    `Model <https://www.tensorflow.org/api_docs/python/tf/keras/Model>`__ classes for
+    creating quantum and hybrid models.
 
     Args:
         qnode (qml.QNode): the PennyLane QNode to be converted into a Keras Layer_
@@ -55,9 +58,10 @@ class KerasLayer(Layer):
     .. code-block:: python
 
         qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-        model = tf.keras.models.Sequential([qlayer, tf.keras.layers.Dense(2)])
+        clayer = tf.keras.layers.Dense(2)
+        model = tf.keras.models.Sequential([qlayer, clayer])        
 
-    The signature of QNode must contain an ``inputs`` named argument for input data, with all
+    The signature of QNode **must** contain an ``inputs`` named argument for input data, with all
     other arguments to be treated as internal weights. A valid ``qnode`` for the example
     above would be:
 
