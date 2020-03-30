@@ -219,7 +219,7 @@ class BaseQNode(qml.QueuingContext):
         #: dict[str, Any]: additional keyword args for adjusting the QNode behavior
         self.kwargs = kwargs or {}
 
-        self.primary_deps = {}
+        self.primary_par_deps = {}
         """dict[int, list[ParameterDependency]]: Mapping from flattened qfunc primary parameter
         index to the list of :class:`~pennylane.operation.Operator` instances (in this circuit)
         that depend on it.
@@ -543,15 +543,15 @@ class BaseQNode(qml.QueuingContext):
         self.ops = self._prune_tensors(self.ops)
 
         # map each differentiable parameter to the operators which depend on it
-        self.primary_deps = {k: [] for k in range(self.num_primary_parameters)}
+        self.primary_par_deps = {k: [] for k in range(self.num_primary_parameters)}
         for op in self.ops:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if not p.is_auxiliary:  # ignore auxiliary arguments
-                        self.primary_deps[p.idx].append(ParameterDependency(op, j))
+                        self.primary_par_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
-        self.circuit = CircuitGraph(self.ops, self.primary_deps)
+        self.circuit = CircuitGraph(self.ops, self.primary_par_deps)
 
         # The qfunc call may fail for various reasons.
         # We only update the aux args here to ensure that they represent the current circuit.
@@ -559,7 +559,7 @@ class BaseQNode(qml.QueuingContext):
 
         # check for unused primary params
         if self.kwargs.get("par_check", False):
-            unused = [k for k, v in self.primary_deps.items() if not v]
+            unused = [k for k, v in self.primary_par_deps.items() if not v]
             if unused:
                 raise QuantumFunctionError("The primary parameters {} are unused.".format(unused))
 
@@ -764,7 +764,7 @@ class BaseQNode(qml.QueuingContext):
             ret = self.device.execute(
                 self.circuit.operations,
                 self.circuit.observables,
-                self.primary_deps,
+                self.primary_par_deps,
                 return_native_type=temp,
             )
         return self.output_conversion(ret)
@@ -791,9 +791,9 @@ class BaseQNode(qml.QueuingContext):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
             circuit_graph = CircuitGraph(
-                self.circuit.operations + list(obs), self.circuit.primary_deps
+                self.circuit.operations + list(obs), self.circuit.primary_par_deps
             )
             ret = self.device.execute(circuit_graph)
         else:
-            ret = self.device.execute(self.circuit.operations, obs, self.circuit.primary_deps)
+            ret = self.device.execute(self.circuit.operations, obs, self.circuit.primary_par_deps)
         return ret

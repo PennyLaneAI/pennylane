@@ -37,8 +37,8 @@ PassthruQNode does not have a Jacobian method, so it does not HAVE to use Variab
 Two options:
 1. Use Variables anyway, re-use most BaseQNode methods.
    Problem: after evaluating the Variables, stacking sliced/indexed Tensors in Operation.parameters should somehow result in a Tensor, not an object array.
-2. Do not use Variables, call the qfunc each time :meth:`PassthruQNode.evaluate` is called (always mutable).
-   Problem: tensornet_tf requires primary_deps?
+2. (this is what we use) Do not use Variables, call the qfunc each time :meth:`PassthruQNode.evaluate` is called (always mutable).
+   Problem: tensornet_tf requires primary_par_deps?
 
 TODO rethink output_conversion? should require device to return things in a fixed form, but either as arrays or as AD Tensors, do conversion in interface (if necessary...)
 """
@@ -117,9 +117,9 @@ class PassthruQNode(BaseQNode):
         # no output conversion
         self.output_conversion = lambda x: x
 
-        # no Variables, self.primary_deps is empty!
+        # no Variables, self.primary_par_deps is empty!
         # generate the DAG
-        self.circuit = pennylane.circuit_graph.CircuitGraph(self.ops, self.primary_deps)
+        self.circuit = pennylane.circuit_graph.CircuitGraph(self.ops, self.primary_par_deps)
 
         # check for operations that cannot affect the output
         if self.kwargs.get("vis_check", False):

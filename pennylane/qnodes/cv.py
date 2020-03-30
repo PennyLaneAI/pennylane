@@ -48,7 +48,7 @@ class CVQNode(JacobianQNode):
         """
         # pylint: disable=too-many-branches
         # operations that depend on this primary parameter
-        ops = [d.op for d in self.primary_deps[idx]]
+        ops = [d.op for d in self.primary_par_deps[idx]]
 
         # Observables in the circuit
         # (the topological order is the queue order)
@@ -166,7 +166,7 @@ class CVQNode(JacobianQNode):
         w = self.num_wires
         pd = np.zeros(self.output_dim)
         # find the Operators in which the primary parameter appears, use the product rule
-        for op, p_idx in self.primary_deps[idx]:
+        for op, p_idx in self.primary_par_deps[idx]:
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operators depending on the original.

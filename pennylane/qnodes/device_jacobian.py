@@ -38,7 +38,7 @@ class DeviceJacobianQNode(JacobianQNode):
             str: partial derivative method to be used
         """
         # operations that depend on this primary parameter
-        ops = [d.op for d in self.primary_deps[idx]]
+        ops = [d.op for d in self.primary_par_deps[idx]]
         methods = [op.grad_method for op in ops]
 
         # one nondifferentiable item makes the whole nondifferentiable

@@ -76,7 +76,7 @@ class JacobianQNode(BaseQNode):
         for each primary parameter.
         """
         super()._construct(args, kwargs)
-        self.par_to_grad_method = {k: self._best_method(k) for k in self.primary_deps}
+        self.par_to_grad_method = {k: self._best_method(k) for k in self.primary_par_deps}
 
     def _best_method(self, idx):
         """Determine the correct partial derivative computation method for a primary parameter.
@@ -99,7 +99,7 @@ class JacobianQNode(BaseQNode):
             str: partial derivative method to be used
         """
         # operations that depend on this primary parameter
-        ops = [d.op for d in self.primary_deps[idx]]
+        ops = [d.op for d in self.primary_par_deps[idx]]
 
         # Observables in the circuit
         # (the topological order is the queue order)
@@ -242,7 +242,7 @@ class JacobianQNode(BaseQNode):
         if method == "device":
             self._set_variables(args, kwargs)
             return self.device.jacobian(
-                self.circuit.operations, self.circuit.observables, self.primary_deps
+                self.circuit.operations, self.circuit.observables, self.primary_par_deps
             )
 
         if method == "A":

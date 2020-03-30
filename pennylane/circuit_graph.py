@@ -100,12 +100,12 @@ class CircuitGraph:
 
     Args:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
-        primary_deps (dict[int, list[ParameterDependency]]): Mapping from flattened primary
+        primary_par_deps (dict[int, list[ParameterDependency]]): Mapping from flattened primary
             parameter indices to Operators that depend on them.
     """
 
-    def __init__(self, ops, primary_deps):
-        self.primary_deps = primary_deps
+    def __init__(self, ops, primary_par_deps):
+        self.primary_par_deps = primary_par_deps
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
@@ -370,7 +370,7 @@ class CircuitGraph:
         layers = [current]
 
         # sort vars by first occurrence of the var in the ops queue
-        variable_ops_sorted = sorted(self.primary_deps.items(), key=lambda x: x[1][0].op.queue_idx)
+        variable_ops_sorted = sorted(self.primary_par_deps.items(), key=lambda x: x[1][0].op.queue_idx)
 
         # iterate over all parameters
         for param_idx, gate_param_tuple in variable_ops_sorted:
@@ -477,7 +477,7 @@ class CircuitGraph:
         Raises:
             ValueError: if the new :class:`~.Operator` does not act on the same wires as the old one
         """
-        # NOTE Does not alter the graph edges in any way. primary_deps is not changed, _grid is not changed. Dangerous!
+        # NOTE Does not alter the graph edges in any way. primary_par_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
