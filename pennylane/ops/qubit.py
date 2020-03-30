@@ -630,6 +630,7 @@ class MultiRZ(Operation):
         for i in range(len(wires) - 1):
             CNOT(wires=[wires[i + 1], wires[i]])
 
+
 class PauliRot(Operation):
     r"""PauliRot(theta, pauli_word, wires)
     Arbitrary pauli word rotation.
