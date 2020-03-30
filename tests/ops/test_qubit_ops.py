@@ -680,15 +680,11 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "ZZ", wires=[0, 1])
         decomp_ops = op.decomposition(theta, "ZZ", wires=[0, 1])
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == [1, 0]
+        assert len(decomp_ops) == 1
 
-        assert decomp_ops[0].name == "RZ"
-        assert decomp_ops[0].wires == [0]
+        assert decomp_ops[0].name == "MultiRZ"
+        assert decomp_ops[0].wires == [0, 1]
         assert decomp_ops[0].params[0] == theta
-
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == [1, 0]
 
     def test_PauliRot_decomposition_XY(self):
         """Test that the decomposition for a XY rotation is correct."""
@@ -697,6 +693,8 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "XY", wires=[0, 1])
         decomp_ops = op.decomposition(theta, "XY", wires=[0, 1])
 
+        assert len(decomp_ops) == 5
+
         assert decomp_ops[0].name == "Hadamard"
         assert decomp_ops[0].wires == [0]
 
@@ -704,22 +702,16 @@ class TestPauliRot:
         assert decomp_ops[1].wires == [1]
         assert decomp_ops[1].params[0] == np.pi / 2
 
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == [1, 0]
+        assert decomp_ops[2].name == "MultiRZ"
+        assert decomp_ops[2].wires == [0, 1]
+        assert decomp_ops[2].params[0] == theta
 
-        assert decomp_ops[3].name == "RZ"
+        assert decomp_ops[3].name == "Hadamard"
         assert decomp_ops[3].wires == [0]
-        assert decomp_ops[3].params[0] == theta
 
-        assert decomp_ops[4].name == "CNOT"
-        assert decomp_ops[4].wires == [1, 0]
-
-        assert decomp_ops[5].name == "Hadamard"
-        assert decomp_ops[5].wires == [0]
-
-        assert decomp_ops[6].name == "RX"
-        assert decomp_ops[6].wires == [1]
-        assert decomp_ops[6].params[0] == -np.pi / 2
+        assert decomp_ops[4].name == "RX"
+        assert decomp_ops[4].wires == [1]
+        assert decomp_ops[4].params[0] == -np.pi / 2
 
     def test_PauliRot_decomposition_XIYZ(self):
         """Test that the decomposition for a XIYZ rotation is correct."""
@@ -728,6 +720,8 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
         decomp_ops = op.decomposition(theta, "XIYZ", wires=[0, 1, 2, 3])
 
+        assert len(decomp_ops) == 5
+
         assert decomp_ops[0].name == "Hadamard"
         assert decomp_ops[0].wires == [0]
 
@@ -735,28 +729,16 @@ class TestPauliRot:
         assert decomp_ops[1].wires == [2]
         assert decomp_ops[1].params[0] == np.pi / 2
 
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == [3, 2]
+        assert decomp_ops[2].name == "MultiRZ"
+        assert decomp_ops[2].wires == [0, 2, 3]
+        assert decomp_ops[2].params[0] == theta
 
-        assert decomp_ops[3].name == "CNOT"
-        assert decomp_ops[3].wires == [2, 0]
+        assert decomp_ops[3].name == "Hadamard"
+        assert decomp_ops[3].wires == [0]
 
-        assert decomp_ops[4].name == "RZ"
-        assert decomp_ops[4].wires == [0]
-        assert decomp_ops[4].params[0] == theta
-
-        assert decomp_ops[5].name == "CNOT"
-        assert decomp_ops[5].wires == [2, 0]
-
-        assert decomp_ops[6].name == "CNOT"
-        assert decomp_ops[6].wires == [3, 2]
-
-        assert decomp_ops[7].name == "Hadamard"
-        assert decomp_ops[7].wires == [0]
-
-        assert decomp_ops[8].name == "RX"
-        assert decomp_ops[8].wires == [2]
-        assert decomp_ops[8].params[0] == -np.pi / 2
+        assert decomp_ops[4].name == "RX"
+        assert decomp_ops[4].wires == [2]
+        assert decomp_ops[4].params[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_differentiability(self, angle):

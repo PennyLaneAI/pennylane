@@ -705,7 +705,7 @@ class PauliRot(Operation):
             elif gate == "Y":
                 RX(np.pi / 2, wires=[wire])
 
-        MultiRZ(theta, wires=active_wires)
+        MultiRZ(theta, wires=list(active_wires))
 
         for wire, gate in zip(active_wires, active_gates):
             if gate == "X":
