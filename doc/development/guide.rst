@@ -273,3 +273,11 @@ Based on these reports, we may ask you to make small changes to your branch befo
 merging the pull request into the master branch. Alternatively, you can also
 `grant us permission to make changes to your pull request branch
 <https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/>`_.
+
+.. _adding_new_templates:
+
+.. include:: adding_templates.rst
+
+
+
+
