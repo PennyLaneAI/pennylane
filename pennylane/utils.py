@@ -136,56 +136,6 @@ def _get_default_args(func):
     }
 
 
-def old_expand(U, wires, num_wires):
-    r"""Expand a multi-qubit operator into a full system operator.
-
-    Args:
-        U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
-        wires (Sequence[int]): Target subsystems (order matters! the
-            left-most Hilbert space is at index 0).
-
-    Raises:
-        ValueError: if wrong wires of the system were targeted or
-            the size of the unitary is incorrect
-
-    Returns:
-        array: :math:`2^N\times 2^N` matrix. The full system operator.
-    """
-    if num_wires == 1:
-        # total number of wires is 1, simply return the matrix
-        return U
-
-    N = num_wires
-    wires = np.asarray(wires)
-
-    if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-        raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
-    if U.shape != (2 ** len(wires), 2 ** len(wires)):
-        raise ValueError("Matrix parameter must be of size (2**len(wires), 2**len(wires))")
-
-    # generate N qubit basis states via the cartesian product
-    tuples = np.array(list(itertools.product([0, 1], repeat=N)))
-
-    # wires not acted on by the operator
-    inactive_wires = list(set(range(N)) - set(wires))
-
-    # expand U to act on the entire system
-    U = np.kron(U, np.identity(2 ** len(inactive_wires)))
-
-    # move active wires to beginning of the list of wires
-    rearranged_wires = np.array(list(wires) + inactive_wires)
-
-    # convert to computational basis
-    # i.e., converting the list of basis state bit strings into
-    # a list of decimal numbers that correspond to the computational
-    # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
-    perm = np.ravel_multi_index(tuples[:, rearranged_wires].T, [2] * N)
-
-    # permute U to take into account rearranged wires
-    return U[:, perm][perm]
-
-
 @functools.lru_cache()
 def pauli_eigs(n):
     r"""Eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
