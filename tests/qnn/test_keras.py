@@ -435,7 +435,7 @@ class TestKerasLayerIntegration:
         method"""
         prediction = model.predict(np.ones(n_qubits))
         weights = model.get_weights()
-        file = str(tmpdir) + '/model'
+        file = str(tmpdir) + "/model"
         model.save_weights(file)
         model.load_weights(file)
         prediction_loaded = model.predict(np.ones(n_qubits))

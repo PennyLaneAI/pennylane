@@ -27,6 +27,7 @@ except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.
     from abc import ABC
+
     Layer = ABC
     CORRECT_TF_VERSION = False
 
@@ -56,7 +57,7 @@ class KerasLayer(Layer):
 
         qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
         clayer = tf.keras.layers.Dense(2)
-        model = tf.keras.models.Sequential([qlayer, clayer])        
+        model = tf.keras.models.Sequential([qlayer, clayer])
 
     The signature of QNode **must** contain an ``inputs`` named argument for input data, with all
     other arguments to be treated as internal weights. A valid ``qnode`` for the example
@@ -178,12 +179,7 @@ class KerasLayer(Layer):
     input_arg = "inputs"
 
     def __init__(
-        self,
-        qnode,
-        weight_shapes: dict,
-        output_dim,
-        weight_specs: Optional[dict] = None,
-        **kwargs
+        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
     ):
         if not CORRECT_TF_VERSION:
             raise ImportError("KerasLayer requires TensorFlow version 2 and above")
