@@ -614,6 +614,11 @@ class MultiRZ(Operation):
         # Overload the property here to pass additionally the number of wires
         return self._matrix(*self.parameters, len(self.wires))
 
+    @property
+    def eigvals(self):
+        """Returns the eigenvalues of the operation."""
+        return np.exp(-1j * self.parameters[0] / 2 * pauli_eigs(len(self.wires)))
+
     @staticmethod
     @template
     def decomposition(theta, wires):
