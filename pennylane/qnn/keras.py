@@ -24,8 +24,9 @@ try:
 
     CORRECT_TF_VERSION = int(tf.__version__.split(".")[0]) > 1
 except ImportError:
+    # The following allows this module to be imported even if TensorFlow is not installed. Users
+    # will instead see an ImportError when instantiating the KerasLayer.
     from abc import ABC
-
     Layer = ABC
     CORRECT_TF_VERSION = False
 
