@@ -602,7 +602,7 @@ class PauliRot(Operation):
     _PAULI_CONJUGATION_MATRICES = {
         "X": Hadamard._matrix(),
         "Y": RX._matrix(np.pi / 2),
-        "Z": np.eye(2),
+        "Z": np.array([[1,0], [0, 1]]),
     }
 
     @staticmethod
