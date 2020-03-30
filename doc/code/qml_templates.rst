@@ -42,3 +42,14 @@ Custom templates can be constructed using the template decorator.
     :toctree:
 
     pennylane.templates.template
+
+Utility functions for input checks
+----------------------------------
+
+A number of utility functions are provided, which are useful for standard input checks
+when constructing custom templates, for example to make sure that arguments have the right shape and types.
+
+.. autosummary::
+    :toctree:
+
+    pennylane.templates.utils

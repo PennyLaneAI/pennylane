@@ -12,13 +12,22 @@ Here we will use the template ``MyNewTemplate`` as an example, and you need to r
 correct template type.
 
 1. **Add the template** by adding a new file ``my_new_template.py`` to the correct ``templates/<templ_type>/``
-   subdirectory, which contains your new template of the form
+   subdirectory, which contains your new template. For example, this is a very basic template applying an ``qml.RX``
+   gate to each wire:
 
    .. code-block:: python
 
+        import pennylane as qml
+        from pennylane.templates import template  # import the decorator
+
         @template
-        def MyNewTemplate(*args, **kwargs):
-            ...
+        def MyNewTemplate(weights, wires):
+
+            # Check that the inputs have the correct format
+            # ...
+
+            for wire, weight in zip(wires, weights):
+                qml.RX(weight, wires=wire)
 
    A template is a function that defines a sequence of quantum gates (without measurements).
    Since the template is called within a :ref:`quantum function <intro_vcirc_qfunc>`,
@@ -41,9 +50,6 @@ correct template type.
 
         list_of_gates = rec.queue
 
-   * Your template should have a positional argument called ``wires``, which takes an integer (single wire) or a list
-     of wire indices that the template acts on.
-
    * Consider using the :func:`broadcasting <pennylane.templates.broadcasting>` function to make your code more concise.
 
    * Write an extensive docstring that explains how to use the template. Include a sketch of the template (add the
@@ -53,6 +59,8 @@ correct template type.
      At the end of the docstring, add a section starting with the ``.. UsageDetails::`` directive,
      where you demonstrate with code examples how to use the templates with different
      settings, for example varying the number of wires, explaining keyword arguments and special cases.
+     For inspiration, check one of the existing templates, such as
+     :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`
 
    * Check the inputs to the template. You can use the functions provided in :mod:`utils <pennylane.templates.utils>`.
      Don't forget that arguments may be passed by the user to the qnode as positional or keyword arguments, and
