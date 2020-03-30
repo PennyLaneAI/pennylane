@@ -239,7 +239,7 @@ class TestExpand:
     def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'wires' argument."
+            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
         ):
             pu.expand(U2, [-1, 5], 4)
 
