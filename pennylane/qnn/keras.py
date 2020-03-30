@@ -62,8 +62,8 @@ class KerasLayer(Layer):
         clayer = tf.keras.layers.Dense(2)
         model = tf.keras.models.Sequential([qlayer, clayer])
 
-    The signature of QNode **must** contain an ``inputs`` named argument for input data, with all
-    other arguments to be treated as internal weights. A valid ``qnode`` for the example
+    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
+    with all other arguments to be treated as internal weights. A valid ``qnode`` for the example
     above would be:
 
     .. code-block:: python
@@ -91,9 +91,9 @@ class KerasLayer(Layer):
 
         The code block below shows how a circuit composed of templates from the
         :doc:`/code/qml_templates` module can be combined with classical
-        `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn the
-        two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn.datasets
-        .make_moons.html>`__ dataset.
+        `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
+        the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
+        .datasets.make_moons.html>`__ dataset.
 
         .. code-block:: python
 
