@@ -277,7 +277,3 @@ merging the pull request into the master branch. Alternatively, you can also
 .. _adding_new_templates:
 
 .. include:: adding_templates.rst
-
-
-
-
