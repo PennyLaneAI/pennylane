@@ -604,7 +604,7 @@ class MultiRZ(Operation):
         # the number of wires is implicit
         n = params[1]
 
-        multi_Z_rot_eigs = np.exp(-1j * theta / 2 * pauli_eigs(n))
+        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
@@ -612,12 +612,36 @@ class MultiRZ(Operation):
     @property
     def matrix(self):
         # Overload the property here to pass additionally the number of wires
+        if self.inverse:
+            # The matrix is diagonal, so there is no need to transpose
+            return self._matrix(*self.parameters, len(self.wires)).conj()
+
         return self._matrix(*self.parameters, len(self.wires))
+
+
+    @staticmethod
+    def _eigvals(theta, n):
+        """Return the eigenvalues corresponding to a specific rotation angle.
+
+        Args:
+            theta (float): Rotation angle
+
+        Returns:
+            (array[float]): Eigenvalues of the transformation
+        """
+        return np.exp(-1j * theta / 2 * pauli_eigs(n))
 
     @property
     def eigvals(self):
-        """Returns the eigenvalues of the operation."""
-        return np.exp(-1j * self.parameters[0] / 2 * pauli_eigs(len(self.wires)))
+        """Return the eigenvalues of this operation.
+
+        Returns:
+            (array[float]): Eigenvalues of the transformation
+        """
+        if self.inverse:
+            return self._eigvals(self.parameters[0], len(self.wires)).conj()
+
+        return self._eigvals(self.parameters[0], len(self.wires))
 
     @staticmethod
     @template
