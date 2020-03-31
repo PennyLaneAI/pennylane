@@ -1595,7 +1595,7 @@ class TestTensorSample:
         ) / 16
         assert np.allclose(var, expected, atol=tol, rtol=0)
 
-class TestAnalyticBool:
+class TestProbabilityIntegration:
     """Test analytic and non-analytic for probability method"""
 
     def mock_analytic_counter(self, wires=None):
