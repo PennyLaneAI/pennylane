@@ -4,7 +4,7 @@ How to add a new template
 The following steps will help you to add your favourite circuit ansatz to
 PennyLane's :mod:`template <pennylane.template>` library.
 
-PennyLane internally distinguishes :ref:`different types <intro_ref_temp>` of templates, such as
+PennyLane internally distinguishes :doc:`different types </introduction/templates>` of templates, such as
 :mod:`embeddings <pennylane.templates.embeddings>`, :mod:`layers <pennylane.templates.layers>`,
 :mod:`state_preparations <pennylane.templates.state_preparations>` or
 :mod:`subroutines <pennylane.templates.subroutines>`.
