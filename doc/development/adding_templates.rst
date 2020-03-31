@@ -60,7 +60,7 @@ correct template type.
      where you demonstrate with code examples how to use the templates with different
      settings, for example varying the number of wires, explaining keyword arguments and special cases.
      For inspiration, check one of the existing templates, such as
-     :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`
+     :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`.
 
    * Check the inputs to the template. You can use the functions provided in :mod:`utils <pennylane.templates.utils>`.
      Don't forget that arguments may be passed by the user to the qnode as primary or auxiliary quantum function arguments, and
