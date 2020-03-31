@@ -181,9 +181,6 @@ class KerasLayer(Layer):
 
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
-
-    input_arg = "inputs"
-
     def __init__(
         self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
     ):
@@ -297,3 +294,16 @@ class KerasLayer(Layer):
         return detail.format(self.qnode.func.__name__)
 
     __repr__ = __str__
+
+    _input_arg = "inputs"
+
+    @property
+    def input_arg(self):
+        """Name of the argument to be used as the input to the Keras
+        `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__. Defaults to
+        ``"inputs"``."""
+        return self._input_arg
+
+    @input_arg.setter
+    def input_arg(self, arg):
+        self._input_arg = arg
