@@ -22,10 +22,10 @@ from pennylane.variable import Variable
 
 
 def check_no_variable(arg, msg):
-    """Checks that `arg` does not represent or contain a :func:`~.pennylane.Variable` object.
+    """Checks that ``arg`` does not represent or contain a :func:`~.pennylane.Variable` object.
 
-    This ensures that the user has not passed `arg` to the qnode as a
-    positional argument.
+    This ensures that the user has not passed ``arg`` to the qnode as a
+    primary argument.
 
     Args:
         arg: argument to check
@@ -41,11 +41,12 @@ def check_no_variable(arg, msg):
 
 
 def check_wires(wires):
-    """Standard checks for the wires argument.
+    """Checks that ``wires`` is either a non-negative integer or a list of non-negative integers.
+
+    If ``wires`` is an integer, wrap it by a list.
 
     Args:
-        wires (int or list): (subset of) wires of a quantum node, a list of positive integers
-                             or a single positive integer
+        wires (int or list[int]): (subset of) wires of a quantum node
 
     Return:
         list: list of wire indices
@@ -69,15 +70,16 @@ def check_wires(wires):
 
 
 def get_shape(inpt):
-    """Turn ``inpt`` to an array and return its shape.
+    """Turn ``inpt`` into an array and return its shape.
 
     Args:
-        inpt (list): input to a qnode
+        inpt (scalar, list or array): input to a qnode
 
     Returns:
         tuple: shape of ``inpt``
     """
 
+    # avoids incorrect assignment of shape
     if isinstance(inpt, (float, int, complex)):
         shape = ()
 
@@ -98,7 +100,7 @@ def get_shape(inpt):
 
 
 def check_shape(inpt, target_shape, msg, bound=None):
-    """Checks that the shape of ``inpt`` is equal to the target shape.
+    """Check that the shape of ``inpt`` is equal to ``target_shape``.
 
     Args:
         inpt (list): input to a qnode
@@ -126,8 +128,8 @@ def check_shape(inpt, target_shape, msg, bound=None):
 
 
 def check_shapes(inpt_list, target_shapes, msg, bounds=None):
-    """Checks that the shape of elements in the ``inpt`` list are equal to the shapes of elements
-    in the ``target shape`` list.
+    """Check that the shape of elements in the ``inpt`` list are equal to the shapes of elements
+    in the ``target_shapes`` list.
 
     Args:
         inpt_list (list): list of elements of which to check the shape
@@ -150,7 +152,7 @@ def check_shapes(inpt_list, target_shapes, msg, bounds=None):
 
 
 def check_is_in_options(element, options, msg):
-    """Checks that the value of ``element`` is in ``options``.
+    """Check that the value of ``element`` is in ``options``.
 
     Args:
         element: arbitraty variable
@@ -163,7 +165,7 @@ def check_is_in_options(element, options, msg):
 
 
 def check_type(element, types, msg):
-    """Checks that the type of ``element'' is one of ``types``.
+    """Check that the type of ``element`` is one of ``types``.
 
     Args:
         element: variable to check
@@ -176,8 +178,7 @@ def check_type(element, types, msg):
 
 
 def check_number_of_layers(list_of_weights):
-    """Checks that all weights in ``list_of_weights`` have the same first dimension, which is interpreted
-    as the number of layers.
+    """Check that all sequences in ``list_of_weights`` have the same first dimension.
 
     Args:
         list_of_weights (list): list of all weights to the template
