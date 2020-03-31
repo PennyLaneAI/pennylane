@@ -63,7 +63,7 @@ correct template type.
      :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`
 
    * Check the inputs to the template. You can use the functions provided in :mod:`utils <pennylane.templates.utils>`.
-     Don't forget that arguments may be passed by the user to the qnode as positional or keyword arguments, and
+     Don't forget that arguments may be passed by the user to the qnode as primary or auxiliary quantum function arguments, and
      by using different interfaces (i.e., an input could be a ``numpy.ndarray`` or a list of
      :class:`Variable <pennylane.variable.Variable>`, depending on how the user uses the template).
 
