@@ -181,6 +181,7 @@ class KerasLayer(Layer):
 
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
+
     def __init__(
         self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
     ):
