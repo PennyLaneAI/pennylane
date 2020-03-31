@@ -229,7 +229,6 @@ class DefaultQubit(QubitDevice):
         return prob
 
     def probability(self, wires=None):
-        """Return the (marginal) probability of each computational basis."""
         wires = wires or range(self.num_wires)
 
         if self.analytic:
