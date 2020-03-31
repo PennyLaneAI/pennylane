@@ -90,6 +90,39 @@ class KerasLayer(Layer):
 
     .. UsageDetails::
 
+        The QNode must have a signature that satisfies the following conditions:
+
+        - Contain an ``inputs`` named argument for input data.
+        - All other arguments must accept an array or tensor and are treated as internal
+          weights of the QNode.
+        - All other arguments must have no default value.
+        - The ``inputs`` argument is permitted to have a default value provided the gradient with
+          respect to ``inputs`` is not required.
+        - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
+          or ``**kwargs`` present in the signature.
+
+        The optional ``weight_specs`` argument allows for a more fine-grained
+        specification of the QNode weights, such as the method of initialization and any
+        regularization or constraints. For example, the initialization method of the ``weights``
+        argument in the example above could be specified by:
+
+        .. code-block::
+
+            weight_specs = {"weights": {"initializer": "random_uniform"}}
+
+        The values of ``weight_specs`` are dictionaries with keys given by arguments of
+        the Keras
+        `add_weight() <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
+        method. For the ``"initializer"`` argument, one can specify a string such as
+        ``"random_uniform"`` or an instance of an `Initializer
+        <https://www.tensorflow.org/api_docs/python/tf/keras/initializers>`__ class, such as
+        `tf.keras.initializers.RandomUniform <https://www.tensorflow.org/api_docs/python/tf/random_uniform_initializer>`__.
+
+        If ``weight_specs`` is not specified, weights will be added using the Keras default
+        initialization and without any regularization or constraints.
+
+        **Additional example**
+
         The code block below shows how a circuit composed of templates from the
         :doc:`/code/qml_templates` module can be combined with classical
         `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
@@ -107,8 +140,8 @@ class KerasLayer(Layer):
 
             @qml.qnode(dev)
             def qnode(inputs, weights):
-                qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
-                qml.templates.StronglyEntanglingLayers(weights, wires=list(range(n_qubits)))
+                qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
                 return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
@@ -145,37 +178,6 @@ class KerasLayer(Layer):
         100/100 [==============================] - 9s 86ms/sample - loss: 0.1613
         Epoch 8/8
         100/100 [==============================] - 9s 87ms/sample - loss: 0.1474
-
-        The QNode must have a signature that satisfies the following conditions:
-
-        - Contain an ``inputs`` named argument for input data.
-        - All other arguments must accept an array or tensor and are treated as internal
-          weights of the QNode.
-        - All other arguments must have no default value.
-        - The ``inputs`` argument is permitted to have a default value provided the gradient with
-          respect to ``inputs`` is not required.
-        - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
-          or ``**kwargs`` present in the signature.
-
-        The optional ``weight_specs`` argument allows for a more fine-grained
-        specification of the QNode weights, such as the method of initialization and any
-        regularization or constraints. For example, the initialization method of the ``weights``
-        argument in the example above could be specified by:
-
-        .. code-block::
-
-            weight_specs = {"weights": {"initializer": "random_uniform"}}
-
-        The values of ``weight_specs`` are dictionaries with keys given by arguments of
-        the Keras
-        `add_weight() <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
-        method. For the ``"initializer"`` argument, one can specify a string such as
-        ``"random_uniform"`` or an instance of an `Initializer
-        <https://www.tensorflow.org/api_docs/python/tf/keras/initializers>`__ class, such as
-        `tf.keras.initializers.RandomUniform <https://www.tensorflow.org/api_docs/python/tf/random_uniform_initializer>`__.
-
-        If ``weight_specs`` is not specified, weights will be added using the Keras default
-        initialization and without any regularization or constraints.
 
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
