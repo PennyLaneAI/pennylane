@@ -14,7 +14,8 @@ correct template type.
 1. **Add the template** by adding a new file ``my_new_template.py`` to the correct ``templates/<templ_type>/``
    subdirectory. The file contains your new template, which is a function that defines a sequence of
    quantum gates (without measurements).
-   For example, this is a very basic template applying an ``qml.RX``
+
+   For example, this is a very basic template applying an :class:`~.RX`
    gate to each wire:
 
    .. code-block:: python
