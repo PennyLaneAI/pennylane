@@ -12,7 +12,9 @@ Here we will use the template ``MyNewTemplate`` as an example, and you need to r
 correct template type.
 
 1. **Add the template** by adding a new file ``my_new_template.py`` to the correct ``templates/<templ_type>/``
-   subdirectory, which contains your new template. For example, this is a very basic template applying an ``qml.RX``
+   subdirectory. The file contains your new template, which is a function that defines a sequence of
+   quantum gates (without measurements).
+   For example, this is a very basic template applying an ``qml.RX``
    gate to each wire:
 
    .. code-block:: python
@@ -29,7 +31,6 @@ correct template type.
             for wire, weight in zip(wires, weights):
                 qml.RX(weight, wires=wire)
 
-   A template is a function that defines a sequence of quantum gates (without measurements).
    Since the template is called within a :ref:`quantum function <intro_vcirc_qfunc>`,
    it can only contain information processing that is allowed
    inside a quantum functions.
@@ -50,7 +51,8 @@ correct template type.
 
         list_of_gates = rec.queue
 
-   * Consider using the :func:`broadcasting <pennylane.templates.broadcast>` function to make your code more concise.
+   * Consider using the :func:`broadcasting <pennylane.templates.broadcast.broadcast>` function to make your
+     code more concise.
 
    * Write an extensive docstring that explains how to use the template. Include a sketch of the template (add the
      file to the ``doc/_static/templates/<templ_type>/`` directory). You can also display a small usage example
@@ -59,7 +61,7 @@ correct template type.
      At the end of the docstring, add a section starting with the ``.. UsageDetails::`` directive,
      where you demonstrate with code examples how to use the templates with different
      settings, for example varying the number of wires, explaining keyword arguments and special cases.
-     For inspiration, check one of the existing templates, such as
+     Use the docstring of one of the existing templates for inspiration, such as
      :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`.
 
    * Check the inputs to the template. You can use the functions provided in :mod:`utils <pennylane.templates.utils>`.
@@ -85,15 +87,14 @@ correct template type.
 
    .. note::
 
-      This loads the image of the template added to ``doc/_static/templates`` in Step 1. Make sure that
-      this image has the same dimensions and style as other template icons.
+      This loads the image of the template added to ``doc/_static/templates/<templ_type>/`` in Step 1. Make sure that
+      this image has the same dimensions and style as other template icons in the folder.
 
 4. **Add tests** for your new template to the test suite.
 
-   * Integration tests which check that your template can be called inside a quantum node, and that PennyLane can
+   * Integration tests, which check that your template can be called inside a quantum node and that PennyLane can
      compute gradients with respect to differentiable parameters, are added to ``tests/test_templates.py``.
-     Simply add your template to the fixtures (variables indicated by capital letters) to automatically
-     run existing tests on your new template.
+     Simply add your template to the fixtures as explained in the docstring.
 
    * Add a new test class to ``tests/test_templates_<templ_type>.py`` that contains the unit tests for the template.
      Make sure you test all keyword arguments and edge cases like using a single wire.
