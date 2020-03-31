@@ -107,7 +107,7 @@ class TestKerasLayer:
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of KerasLayer"""
         c, w = get_circuit
-        del c.func.sig[qml.qnn.keras.KerasLayer.input_arg]
+        del c.func.sig[qml.qnn.keras.KerasLayer._input_arg]
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
             KerasLayer(c, w, output_dim)
 
@@ -118,11 +118,11 @@ class TestKerasLayer:
         contains the shape of the input argument given by the input_arg class attribute of
         KerasLayer"""
         c, w = get_circuit
-        w[qml.qnn.keras.KerasLayer.input_arg] = n_qubits
+        w[qml.qnn.keras.KerasLayer._input_arg] = n_qubits
         with pytest.raises(
             ValueError,
             match="{} argument should not have its dimension".format(
-                qml.qnn.keras.KerasLayer.input_arg
+                qml.qnn.keras.KerasLayer._input_arg
             ),
         ):
             KerasLayer(c, w, output_dim)
@@ -218,7 +218,7 @@ class TestKerasLayer:
 
         with pytest.raises(
             TypeError,
-            match="Only the argument {} is permitted".format(qml.qnn.keras.KerasLayer.input_arg),
+            match="Only the argument {} is permitted".format(qml.qnn.keras.KerasLayer._input_arg),
         ):
             KerasLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
 

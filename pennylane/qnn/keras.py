@@ -303,7 +303,3 @@ class KerasLayer(Layer):
         `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__. Defaults to
         ``"inputs"``."""
         return self._input_arg
-
-    @input_arg.setter
-    def input_arg(self, arg):
-        self._input_arg = arg
