@@ -38,9 +38,9 @@ correct template type.
 
    Make sure you consider the following:
 
-   * To be consistent with other quantum operations (which are classes), the function name (i.e., ``MyNewTemplate``) is
-     written in camel case. Choose the name carefully. Good names tell the user what a template is good for, or what architecture
-     it implements.
+   * *Choose the name carefully.* Good names tell the user what a template is good for,
+      or what architecture it implements. To be consistent with other quantum operations
+      (which are classes), the function name (i.e., ``MyNewTemplate``) is written in camel case. 
 
    * A template is "registered" by using the :mod:`template <pennylane.template>` decorator ``@template``.
      This allows us to record the queue of operations of a template, which is very useful for testing:
