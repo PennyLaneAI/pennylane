@@ -52,8 +52,7 @@ def BasisEmbedding(features, wires):
     check_shape(
         features,
         expected_shape,
-        msg="'features' must be of shape {}; got {}"
-        "".format(expected_shape, get_shape(features)),
+        msg="'features' must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
     )
 
     if any([b not in [0, 1] for b in features]):
