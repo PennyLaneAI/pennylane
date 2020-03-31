@@ -189,7 +189,8 @@ def _mat_vec_product(mat, vec, wires, N):
     return np.reshape(state_multi_index, 2 ** N)
 
 
-mat_vec_product = jit(_mat_vec_product, static_argnums=(2, 3))
+# mat_vec_product = jit(_mat_vec_product, static_argnums=(2, 3))
+mat_vec_product = _mat_vec_product
 
 
 def _probability(state, wires, analytic, samples, shots):
@@ -223,7 +224,8 @@ def _probability(state, wires, analytic, samples, shots):
     return prob
 
 
-probability = jit(_probability, static_argnums=(1, 2))
+# probability = jit(_probability, static_argnums=(1, 2))
+probability = _probability
 
 
 def _marginal_prob(prob, wires):
@@ -294,11 +296,12 @@ def _marginal_prob(prob, wires):
     # it corresponds to the orders of the wires passed.
     basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
     basis_states = basis_states[:, np.argsort(np.argsort(wires))]
-    perm = np.sum(basis_states*(2**np.arange(len(wires), -1, -1)), axis=1)
+    perm = np.sum(basis_states*(2**np.arange(len(wires)-1, -1, -1)), axis=1)
     return prob[perm]
 
 
-marginal_prob = jit(_marginal_prob, static_argnums=(1,))
+# marginal_prob = jit(_marginal_prob, static_argnums=(1,))
+marginal_prob = _marginal_prob
 
 
 class DefaultQubitJAX(QubitDevice):
