@@ -7,7 +7,7 @@ PennyLane's :mod:`template <pennylane.template>` library.
 PennyLane internally distinguishes :ref:`different types <intro_ref_temp>` of templates, such as
 :mod:`embeddings <pennylane.templates.embeddings>`, :mod:`layers <pennylane.templates.layers>`,
 :mod:`state_preparations <pennylane.templates.state_preparations>` or
-:mod:`soubroutines <pennylane.templates.soubroutines>`.
+:mod:`subroutines <pennylane.templates.subroutines>`.
 Here we will use the template ``MyNewTemplate`` as an example, and you need to replace ``<templ_type>`` with the
 correct template type.
 
