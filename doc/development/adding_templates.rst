@@ -64,7 +64,7 @@ correct template type.
 
    * Check the inputs to the template. You can use the functions provided in :mod:`utils <pennylane.templates.utils>`.
      Don't forget that arguments may be passed by the user to the qnode as positional or keyword arguments, and
-     by using different interfaces (i.e., a input could be a ``numpy.ndarray`` or a list of
+     by using different interfaces (i.e., an input could be a ``numpy.ndarray`` or a list of
      :class:`Variable <pennylane.variable.Variable>`, depending on how the user uses the template).
 
 2. **Import the new template** in ``templates/<templ_type>/__init__.py`` by adding the new line
