@@ -73,7 +73,8 @@ class KerasLayer(Layer):
 
         @qml.qnode(dev)
         def qnode(inputs, weights_0, weight_1):
-            qml.RX(inputs, wires=0)
+            qml.RX(inputs[0], wires=0)
+            qml.RX(inputs[1], wires=1)
             qml.Rot(*weights_0, wires=0)
             qml.RY(weight_1, wires=1)
             qml.CNOT(wires=[0, 1])
