@@ -21,7 +21,7 @@ import numpy as np
 from pennylane.variable import Variable
 
 
-def _check_no_variable(arg, msg):
+def check_no_variable(arg, msg):
     """Checks that `arg` does not represent or contain a :func:`~.pennylane.Variable` object.
 
     This ensures that the user has not passed `arg` to the qnode as a
@@ -40,7 +40,7 @@ def _check_no_variable(arg, msg):
             raise ValueError(msg)
 
 
-def _check_wires(wires):
+def check_wires(wires):
     """Standard checks for the wires argument.
 
     Args:
@@ -68,7 +68,7 @@ def _check_wires(wires):
     return wires
 
 
-def _get_shape(inpt):
+def get_shape(inpt):
     """Turn ``inpt`` to an array and return its shape.
 
     Args:
@@ -97,7 +97,7 @@ def _get_shape(inpt):
     return shape
 
 
-def _check_shape(inpt, target_shape, msg, bound=None):
+def check_shape(inpt, target_shape, msg, bound=None):
     """Checks that the shape of ``inpt`` is equal to the target shape.
 
     Args:
@@ -110,7 +110,7 @@ def _check_shape(inpt, target_shape, msg, bound=None):
         ValueError
     """
 
-    shape = _get_shape(inpt)
+    shape = get_shape(inpt)
 
     if bound == "max":
         if shape > target_shape:
@@ -125,7 +125,7 @@ def _check_shape(inpt, target_shape, msg, bound=None):
     return shape
 
 
-def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
+def check_shapes(inpt_list, target_shapes, msg, bounds=None):
     """Checks that the shape of elements in the ``inpt`` list are equal to the shapes of elements
     in the ``target shape`` list.
 
@@ -144,12 +144,12 @@ def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
         bounds = [None] * len(inpt_list)
 
     shape_list = [
-        _check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)
+        check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)
     ]
     return shape_list
 
 
-def _check_is_in_options(element, options, msg):
+def check_is_in_options(element, options, msg):
     """Checks that the value of ``element`` is in ``options``.
 
     Args:
@@ -162,7 +162,7 @@ def _check_is_in_options(element, options, msg):
         raise ValueError(msg)
 
 
-def _check_type(element, types, msg):
+def check_type(element, types, msg):
     """Checks that the type of ``element'' is one of ``types``.
 
     Args:
@@ -175,7 +175,7 @@ def _check_type(element, types, msg):
         raise ValueError(msg)
 
 
-def _check_number_of_layers(list_of_weights):
+def check_number_of_layers(list_of_weights):
     """Checks that all weights in ``list_of_weights`` have the same first dimension, which is interpreted
     as the number of layers.
 
@@ -189,7 +189,7 @@ def _check_number_of_layers(list_of_weights):
         ValueError
     """
 
-    shapes = [_get_shape(weight) for weight in list_of_weights]
+    shapes = [get_shape(weight) for weight in list_of_weights]
 
     if any(len(s) == 0 for s in shapes):
         raise ValueError(

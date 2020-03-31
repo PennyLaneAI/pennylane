@@ -19,12 +19,12 @@ from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, Rot
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_no_variable,
-    _check_wires,
-    _check_type,
-    _check_number_of_layers,
-    _get_shape,
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_type,
+    check_number_of_layers,
+    get_shape,
 )
 
 
@@ -82,18 +82,18 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     #############
     # Input checks
 
-    _check_no_variable(ranges, msg="'ranges' cannot be differentiable")
-    _check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
+    check_no_variable(ranges, msg="'ranges' cannot be differentiable")
+    check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
-    repeat = _check_number_of_layers([weights])
+    repeat = check_number_of_layers([weights])
 
     expected_shape = (repeat, len(wires), 3)
-    _check_shape(
+    check_shape(
         weights,
         expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, _get_shape(weights)),
+        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
     )
 
     if len(wires) > 1:
@@ -102,16 +102,16 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
             ranges = [(l % (len(wires) - 1)) + 1 for l in range(repeat)]
 
         expected_shape = (repeat,)
-        _check_shape(
+        check_shape(
             ranges,
             expected_shape,
             msg="'ranges' must be of shape {}; got {}"
-            "".format(expected_shape, _get_shape(weights)),
+            "".format(expected_shape, get_shape(weights)),
         )
 
-        _check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
+        check_type(ranges, [list], msg="'ranges' must be a list; got {}" "".format(ranges))
         for r in ranges:
-            _check_type(
+            check_type(
                 r, [int], msg="'ranges' must be a list of integers; got {}" "".format(ranges)
             )
         if any((r >= len(wires) or r == 0) for r in ranges):
