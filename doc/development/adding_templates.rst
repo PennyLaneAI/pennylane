@@ -42,8 +42,9 @@ correct template type.
       or what architecture it implements. To be consistent with other quantum operations
       (which are classes), the function name (i.e., ``MyNewTemplate``) is written in camel case. 
 
-   * A template is "registered" by using the :mod:`template <pennylane.template>` decorator ``@template``.
-     This allows us to record the queue of operations of a template, which is very useful for testing:
+   * *Register the template.* A template is "registered" by using the :mod:`template <pennylane.template>`
+     decorator ``@template``. This allows us to record the queue of operations of a template,
+     which is very useful for testing:
 
      .. code-block:: python
 
