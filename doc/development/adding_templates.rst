@@ -50,7 +50,7 @@ correct template type.
 
         list_of_gates = rec.queue
 
-   * Consider using the :func:`broadcasting <pennylane.templates.broadcasting>` function to make your code more concise.
+   * Consider using the :func:`broadcasting <pennylane.templates.broadcast>` function to make your code more concise.
 
    * Write an extensive docstring that explains how to use the template. Include a sketch of the template (add the
      file to the ``doc/_static/templates/<templ_type>/`` directory). You can also display a small usage example
