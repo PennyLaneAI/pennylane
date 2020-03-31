@@ -86,7 +86,7 @@ correct template type.
    .. note::
 
       This loads the image of the template added to ``doc/_static/templates`` in Step 1. Make sure that
-      this image has the same dimensions and style than other template icons.
+      this image has the same dimensions and style as other template icons.
 
 4. **Add tests** for your new template to the test suite.
 
