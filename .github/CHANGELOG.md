@@ -146,7 +146,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Thomas Bromley, Theodor Isacsson, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 
