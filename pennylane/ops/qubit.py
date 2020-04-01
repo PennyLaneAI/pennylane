@@ -691,11 +691,25 @@ class PauliRot(Operation):
     par_domain = "R"
     grad_method = "A"
 
+    _ALLOWED_CHARACTERS = ("I", "X", "Y", "Z")
+
     _PAULI_CONJUGATION_MATRICES = {
         "X": Hadamard._matrix(),
         "Y": RX._matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
+
+    @staticmethod
+    def _check_pauli_word(pauli_word):
+        """Check that the given Pauli word has correct structure.
+
+        Args:
+            pauli_word (str): Pauli word to be checked
+
+        Returns:
+            bool: Whether the Pauli word has correct structure.
+        """
+        return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
     @staticmethod
     def _matrix(*params):
