@@ -597,13 +597,18 @@ class MultiRZ(Operation):
     grad_method = "A"
 
     @staticmethod
-    def _matrix(*params):
-        theta = params[0]
+    def _matrix(theta, n):
+        """Matrix representation of a MultiRZ gate.
 
-        # This parameter needs to be given externally, because
-        # the number of wires is implicit
-        n = params[1]
+        Args:
+            theta (float): Rotation angle.
+            n (int): Number of wires the rotation acts on. This has
+                to be given explicitly in the static method as the
+                wires object is not available.
 
+        Returns:
+            array[complex]: The matrix representation
+        """
         multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
