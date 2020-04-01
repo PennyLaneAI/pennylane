@@ -23,17 +23,20 @@ import pennylane as qml
 
 import benchmark_utils as bu
 
-CCZ_matrix = np.diag([1,1,1,1,1,1,1,-1])
+CCZ_matrix = np.diag([1, 1, 1, 1, 1, 1, 1, -1])
+
 
 @qml.template
 def CCZ(wires):
     qml.QubitUnitary(CCZ_matrix, wires=wires)
+
 
 def random_iqp_wires(n_wires):
     # The global seed was fixed during benchmark construction
     # so this is actually deterministic
     a = random.random()
     return random.sample(range(n_wires), math.ceil(3 * a))
+
 
 def circuit(n=3, n_wires=3):
     """Immutable IQP quantum circuit."""
