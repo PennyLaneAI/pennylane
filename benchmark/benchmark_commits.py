@@ -116,6 +116,9 @@ def cli():
                 for key in del_keys:
                     del sys.modules[key]
 
+                # TODO: there are still some old imports lingering around here...
+                # Somehow they can surely be removed
+
                 importlib.reload(benchmark)
                 benchmark.qml.plugins = importlib.import_module("pennylane.plugins")
 
