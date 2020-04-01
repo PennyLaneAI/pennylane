@@ -786,14 +786,14 @@ class TestPauliRot:
     def test_matrix_incorrect_pauli_word_error(self):
         """Test that _matrix throws an error if a wrong Pauli word is supplied."""
 
-        with pytest.raises(ValueError, match="The given pauli word \".*\" contains characters that are not allowed." \
+        with pytest.raises(ValueError, match="The given Pauli word \".*\" contains characters that are not allowed." \
             " Allowed characters are I, X, Y and Z"):
             qml.PauliRot._matrix(0.3, "IXYZV")
 
     def test_init_incorrect_pauli_word_error(self):
         """Test that __init__ throws an error if a wrong Pauli word is supplied."""
 
-        with pytest.raises(ValueError, match="The given pauli word \".*\" contains characters that are not allowed." \
+        with pytest.raises(ValueError, match="The given Pauli word \".*\" contains characters that are not allowed." \
             " Allowed characters are I, X, Y and Z"):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 

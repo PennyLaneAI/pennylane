@@ -661,7 +661,7 @@ class MultiRZ(Operation):
 
 class PauliRot(Operation):
     r"""PauliRot(theta, pauli_word, wires)
-    Arbitrary pauli word rotation.
+    Arbitrary Pauli word rotation.
 
     .. math::
 
@@ -706,7 +706,7 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given pauli word "{}" contains characters that are not allowed.'
+                'The given Pauli word "{}" contains characters that are not allowed.'
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
@@ -736,7 +736,7 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given pauli word "{}" contains characters that are not allowed.'
+                'The given Pauli word "{}" contains characters that are not allowed.'
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
