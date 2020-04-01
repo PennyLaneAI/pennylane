@@ -551,51 +551,88 @@ class TestOperations:
             qml.QubitUnitary(U3, wires=0).matrix
 
 
+PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
+    (
+        "XY",
+        lambda theta: np.array(
+            [
+                [np.cos(theta / 2), 0, 0, -np.sin(theta / 2)],
+                [0, np.cos(theta / 2), np.sin(theta / 2), 0],
+                [0, -np.sin(theta / 2), np.cos(theta / 2), 0],
+                [np.sin(theta / 2), 0, 0, np.cos(theta / 2)],
+            ],
+            dtype=complex,
+        ),
+    ),
+    (
+        "ZZ",
+        lambda theta: np.diag(
+            [
+                np.exp(-1j * theta / 2),
+                np.exp(1j * theta / 2),
+                np.exp(1j * theta / 2),
+                np.exp(-1j * theta / 2),
+            ],
+        ),
+    ),
+    (
+        "XI",
+        lambda theta: np.array(
+            [
+                [np.cos(theta / 2), 0, -1j * np.sin(theta / 2), 0],
+                [0, np.cos(theta / 2), 0, -1j * np.sin(theta / 2)],
+                [-1j * np.sin(theta / 2), 0, np.cos(theta / 2), 0],
+                [0, -1j * np.sin(theta / 2), 0, np.cos(theta / 2)],
+            ],
+        ),
+    ),
+    ("X", qml.RX._matrix),
+    ("Y", qml.RY._matrix),
+    ("Z", qml.RZ._matrix),
+]
+
+PAULI_ROT_MATRIX_TEST_DATA = [
+    (
+        np.pi,
+        "XIZ",
+        np.array(
+            [
+                [0, 0, 0, 0, -1j, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1j, 0, 0],
+                [0, 0, 0, 0, 0, 0, -1j, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1j],
+                [-1j, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1j, 0, 0, 0, 0, 0, 0],
+                [0, 0, -1j, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1j, 0, 0, 0, 0],
+            ]
+        ),
+    ),
+    (
+        np.pi / 3,
+        "XYZ",
+        np.array(
+            [
+                [np.sqrt(3) / 2, 0, 0, 0, 0, 0, -(1 / 2), 0],
+                [0, np.sqrt(3) / 2, 0, 0, 0, 0, 0, 1 / 2],
+                [0, 0, np.sqrt(3) / 2, 0, 1 / 2, 0, 0, 0],
+                [0, 0, 0, np.sqrt(3) / 2, 0, -(1 / 2), 0, 0],
+                [0, 0, -(1 / 2), 0, np.sqrt(3) / 2, 0, 0, 0],
+                [0, 0, 0, 1 / 2, 0, np.sqrt(3) / 2, 0, 0],
+                [1 / 2, 0, 0, 0, 0, 0, np.sqrt(3) / 2, 0],
+                [0, -(1 / 2), 0, 0, 0, 0, 0, np.sqrt(3) / 2],
+            ]
+        ),
+    ),
+]
+
+
 class TestPauliRot:
     """Test the PauliRot operation."""
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
-        "pauli_word,expected_matrix",
-        [
-            (
-                "XY",
-                lambda theta: np.array(
-                    [
-                        [np.cos(theta / 2), 0, 0, -np.sin(theta / 2)],
-                        [0, np.cos(theta / 2), np.sin(theta / 2), 0],
-                        [0, -np.sin(theta / 2), np.cos(theta / 2), 0],
-                        [np.sin(theta / 2), 0, 0, np.cos(theta / 2)],
-                    ],
-                    dtype=complex,
-                ),
-            ),
-            (
-                "ZZ",
-                lambda theta: np.diag(
-                    [
-                        np.exp(-1j * theta / 2),
-                        np.exp(1j * theta / 2),
-                        np.exp(1j * theta / 2),
-                        np.exp(-1j * theta / 2),
-                    ],
-                ),
-            ),
-            (
-                "XI",
-                lambda theta: np.array(
-                    [
-                        [np.cos(theta / 2), 0, -1j * np.sin(theta / 2), 0],
-                        [0, np.cos(theta / 2), 0, -1j * np.sin(theta / 2)],
-                        [-1j * np.sin(theta / 2), 0, np.cos(theta / 2), 0],
-                        [0, -1j * np.sin(theta / 2), 0, np.cos(theta / 2)],
-                    ],
-                ),
-            ),
-            ("X", qml.RX._matrix),
-            ("Y", qml.RY._matrix),
-            ("Z", qml.RZ._matrix),
-        ],
+        "pauli_word,expected_matrix", PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
     )
     def test_PauliRot_matrix_parametric(self, theta, pauli_word, expected_matrix, tol):
         """Test parametrically that the PauliRot matrix is correct."""
@@ -606,41 +643,7 @@ class TestPauliRot:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "theta,pauli_word,expected_matrix",
-        [
-            (
-                np.pi,
-                "XIZ",
-                np.array(
-                    [
-                        [0, 0, 0, 0, -1j, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 1j, 0, 0],
-                        [0, 0, 0, 0, 0, 0, -1j, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 1j],
-                        [-1j, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1j, 0, 0, 0, 0, 0, 0],
-                        [0, 0, -1j, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 1j, 0, 0, 0, 0],
-                    ]
-                ),
-            ),
-            (
-                np.pi / 3,
-                "XYZ",
-                np.array(
-                    [
-                        [np.sqrt(3) / 2, 0, 0, 0, 0, 0, -(1 / 2), 0],
-                        [0, np.sqrt(3) / 2, 0, 0, 0, 0, 0, 1 / 2],
-                        [0, 0, np.sqrt(3) / 2, 0, 1 / 2, 0, 0, 0],
-                        [0, 0, 0, np.sqrt(3) / 2, 0, -(1 / 2), 0, 0],
-                        [0, 0, -(1 / 2), 0, np.sqrt(3) / 2, 0, 0, 0],
-                        [0, 0, 0, 1 / 2, 0, np.sqrt(3) / 2, 0, 0],
-                        [1 / 2, 0, 0, 0, 0, 0, np.sqrt(3) / 2, 0],
-                        [0, -(1 / 2), 0, 0, 0, 0, 0, np.sqrt(3) / 2],
-                    ]
-                ),
-            ),
-        ],
+        "theta,pauli_word,expected_matrix", PAULI_ROT_MATRIX_TEST_DATA,
     )
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
         """Test non-parametrically that the PauliRot matrix is correct."""
