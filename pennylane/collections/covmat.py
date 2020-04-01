@@ -18,12 +18,12 @@ import itertools
 import numpy as np
 import pennylane as qml
 from pennylane.utils import expand_matrix, _flatten
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, Operation
 from pennylane import PauliX, PauliY, PauliZ, Hadamard, Identity, Hermitian
 
 
 def _get_matrix(obs):
-    if isinstance(obs, Tensor):
+    if isinstance(obs, Operation):
         return obs.matrix
 
     return obs._matrix(*obs.params)
