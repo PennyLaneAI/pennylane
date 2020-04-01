@@ -179,6 +179,9 @@
 
 <h3>Documentation</h3>
 
+* Extended the developer's guide by a section explaining how to add new templates.
+  [(#564)](https://github.com/XanaduAI/pennylane/pull/564)
+  
 <h3>Bug fixes</h3>
 
 * Fixed a bug in the `StronglyEntanglingLayers` template, allowing it to
