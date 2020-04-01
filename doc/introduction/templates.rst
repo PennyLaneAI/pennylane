@@ -145,6 +145,16 @@ Layer architectures define sequences of trainable gates that are repeated like t
     :description: StronglyEntanglingLayers
     :figure: ../_static/templates/layers/strongly_entangling.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.SimplifiedTwoDesign.html
+    :description: SimplifiedTwoDesign
+    :figure: ../_static/templates/layers/simplified_two_design.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.BasicEntanglerLayers.html
+    :description: BasicEntanglerLayers
+    :figure: ../_static/templates/layers/basic_entangler.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -318,3 +328,9 @@ respective interfaces.
     init_tf = tf.Variable(init_pars)
 
 The initialization functions can be found in the :mod:`~.pennylane.init` module.
+
+Adding a new template
+---------------------
+
+Consult the :ref:`Developer's guide <adding_new_templates>` to learn how to grow the templates library by
+adding your own template to PennyLane.

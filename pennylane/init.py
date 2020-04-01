@@ -835,3 +835,169 @@ def interferometer_varphi_normal(n_wires, mean=0, std=0.1, seed=None):
 
     varphi = np.random.normal(loc=mean, scale=std, size=(n_wires,))
     return varphi
+
+
+def simplified_two_design_initial_layer_uniform(n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for the ``initial_layer`` argument of :func:`~.SimplifiedTwoDesign`,
+    drawn from a uniform distribution.
+
+    The shape of the parameter array is ``(n_wires,)`` and each parameter is drawn uniformly at random \
+    from between ``low`` and ``high``. The parameters define the Pauli-Y rotation angles
+    applied in the initial layer.
+
+    Args:
+        n_wires (int): number of qubits
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    params = np.random.uniform(low=low, high=high, size=(n_wires,))
+    return params
+
+
+def simplified_two_design_initial_layer_normal(n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for the ``initial_layer`` argument of :func:`~.SimplifiedTwoDesign`,
+    drawn from a uniform distribution.
+
+    The shape of the parameter array is ``(n_wires,)`` and each parameter is drawn
+    from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    The parameters define the Pauli-Y rotation angles
+    applied in the initial layer.
+
+    Args:
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    params = np.random.normal(loc=mean, scale=std, size=(n_wires,))
+    return params
+
+
+def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesign`,
+    drawn from a uniform distribution.
+
+    The shape of the parameter array is ``(n_layers, n_wires - 1, 2)``
+    and each parameter is drawn uniformly at random \
+    from between ``low`` and ``high``. The parameters define the Pauli-Y rotation angles
+    applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_unitaries_per_layer = n_wires - 1
+
+    if n_unitaries_per_layer == 0:
+        params = np.array([])
+    else:
+        params = np.random.uniform(low=low, high=high, size=(n_layers, n_unitaries_per_layer, 2))
+
+    return params
+
+
+def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for the ``weights`` argument of :func:`~.SimplifiedTwoDesign`,
+    drawn from a uniform distribution.
+
+    The shape of the parameter array is ``(n_layers, n_wires - 1, 2)``
+    and each parameter is drawn
+    from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    The parameters define the Pauli-Y rotation angles
+    applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_unitaries_per_layer = n_wires - 1
+
+    if n_unitaries_per_layer == 0:
+        params = np.array([])
+    else:
+        params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_unitaries_per_layer, 2))
+
+    return params
+
+
+def basic_entangler_layers_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
+    r"""Creates a parameter array for :func:`~.BasicEntanglerLayers`, drawn from a normal
+    distribution.
+
+    The shape of the parameter array is ``(n_layers, n_wires)`` and each parameter is drawn
+    from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    The parameters define the rotation angles applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+
+    return params
+
+
+def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
+    r"""Creates a parameter array for :func:`~.BasicEntanglerLayers`, drawn from a uniform
+    distribution.
+
+    The shape of the parameter array is ``(n_layers, n_wires)`` and each parameter is drawn uniformly at random
+    from between ``low`` and ``high``. The parameters define the rotation angles
+    applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
+
+    return params
