@@ -676,6 +676,64 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
+class DiagonalOperation(Operation):
+    r"""Base class for diagonal operations.
+
+    The following class attributes must be defined for
+    all diagonal operations:
+
+    * :attr:`~.DiagonalOperation._diagonal`
+
+    Args:
+        params (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`BaseQNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a BaseQNode context.
+    """
+
+    @staticmethod
+    def _diagonal(*params):
+        """Array representation of the operator's diagonal
+        in the computational basis.
+
+        This is a *static method* that should be defined for all
+        new diagonal operations, that returns the array representing
+        the operator's diagonal in the computational basis.
+
+        This private method allows matrices and diagonals to be computed
+        directly without instantiating the operators first.
+
+        To return the diagonal of *instantiated* operators,
+        please use the :attr:`~.DiagonalOperator.diagonal` property instead.
+
+        **Example:**
+
+        >>> qml.RZ._diagonal(0.5)
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: diagonal of the representation in the computational basis
+        """
+        raise NotImplementedError()
+
+    def diagonal(self):
+        """Return the diagonal of the operation.
+
+        Args:
+            abc ([type]): [description]
+        """
+        return self._diagonal(*self.parameters)
+
+    # TODO: make matrix a classmethod to enable simpler calculation
+    #@classmethod
+    #def _matrix(cls, *params):
+    #    return np.diag(cls._diagonal(params))
+
 # =============================================================================
 # Base Observable class
 # =============================================================================
