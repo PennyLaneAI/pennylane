@@ -20,11 +20,11 @@ from pennylane.templates.decorator import template
 from pennylane.ops import CZ, RY
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_wires,
-    _check_number_of_layers,
-    _check_type,
-    _get_shape,
+    check_shape,
+    check_wires,
+    check_number_of_layers,
+    check_type,
+    get_shape,
 )
 
 
@@ -140,29 +140,29 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     #############
     # Input checks
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
-    repeat = _check_number_of_layers([weights])
+    repeat = check_number_of_layers([weights])
 
-    _check_type(
+    check_type(
         initial_layer_weights,
         [list, np.ndarray],
         msg="'initial_layer_weights' must be of type list or np.ndarray; got type {}".format(
             type(initial_layer_weights)
         ),
     )
-    _check_type(
+    check_type(
         weights,
         [list, np.ndarray],
         msg="'weights' must be of type list or np.ndarray; got type {}".format(type(weights)),
     )
 
     expected_shape_initial = (len(wires),)
-    _check_shape(
+    check_shape(
         initial_layer_weights,
         expected_shape_initial,
         msg="'initial_layer_weights' must be of shape {}; got {}"
-        "".format(expected_shape_initial, _get_shape(initial_layer_weights)),
+        "".format(expected_shape_initial, get_shape(initial_layer_weights)),
     )
 
     if len(wires) in [0, 1]:
@@ -170,11 +170,11 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     else:
         expected_shape_weights = (repeat, len(wires) - 1, 2)
 
-    _check_shape(
+    check_shape(
         weights,
         expected_shape_weights,
         msg="'weights' must be of shape {}; got {}"
-        "".format(expected_shape_weights, _get_shape(weights)),
+        "".format(expected_shape_weights, get_shape(weights)),
     )
 
     ###############
