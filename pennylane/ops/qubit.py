@@ -691,7 +691,7 @@ class PauliRot(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    _ALLOWED_CHARACTERS = ("I", "X", "Y", "Z")
+    _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
         "X": Hadamard._matrix(),
@@ -715,6 +715,11 @@ class PauliRot(Operation):
     def _matrix(*params):
         theta = params[0]
         pauli_word = params[1]
+
+        if not PauliRot._check_pauli_word(pauli_word):
+            raise ValueError("The given pauli word \"{}\" contains characters that are not allowed." \
+                " Allowed characters are I, X, Y and Z".format(pauli_word))
+
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
         non_identity_wires, non_identity_gates = zip(
