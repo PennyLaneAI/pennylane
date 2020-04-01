@@ -790,6 +790,23 @@ class TestPauliRot:
             " Allowed characters are I, X, Y and Z"):
             qml.PauliRot._matrix(0.3, "IXYZV")
 
+    def test_init_incorrect_pauli_word_error(self):
+        """Test that __init__ throws an error if a wrong Pauli word is supplied."""
+
+        with pytest.raises(ValueError, match="The given pauli word \".*\" contains characters that are not allowed." \
+            " Allowed characters are I, X, Y and Z"):
+            qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
+
+    @pytest.mark.parametrize("pauli_word,wires", [
+        ("XYZ", [0, 1]),
+        ("XYZ", [0, 1, 2, 3]),
+    ])
+    def test_init_incorrect_pauli_word_length_error(self, pauli_word, wires):
+        """Test that __init__ throws an error if a Pauli word of wrong length is supplied."""
+
+        with pytest.raises(ValueError, match="The given Pauli word has length .*, length .* was expected for wires .*"):
+            qml.PauliRot(0.3, pauli_word, wires=wires)
+
 
 class TestMultiRZ:
     """Test the MultiRZ operation."""
