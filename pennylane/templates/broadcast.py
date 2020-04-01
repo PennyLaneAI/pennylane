@@ -23,7 +23,7 @@ To add a new pattern:
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import _check_wires, _check_type, _get_shape, _check_is_in_options
+from pennylane.templates.utils import check_wires, check_type, get_shape, check_is_in_options
 
 
 # helpers to define pattern wire sequences
@@ -437,27 +437,27 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     #########
     # Input checks
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
-    _check_type(
+    check_type(
         parameters,
         [Iterable, type(None)],
         msg="'parameters' must be either of type None or "
         "Iterable; got {}".format(type(parameters)),
     )
 
-    _check_type(
+    check_type(
         pattern, [str], msg="'pattern' must be a string; got {}".format(type(pattern)),
     )
 
     if kwargs is None:
         kwargs = {}
 
-    _check_type(
+    check_type(
         kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
     )
 
-    _check_is_in_options(
+    check_is_in_options(
         pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
     )
 
@@ -473,7 +473,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # check that enough parameters for pattern
     if parameters is not None:
-        shape = _get_shape(parameters)
+        shape = get_shape(parameters)
 
         # specific error message for ring edge case of 2 wires
         if (pattern == "ring") and (len(wires) == 2) and (shape[0] != 1):
