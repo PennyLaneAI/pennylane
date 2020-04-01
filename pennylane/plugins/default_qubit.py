@@ -21,13 +21,13 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import itertools
 import functools
+from string import ascii_letters as ABC
 
 import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, MultiRZ
 from pennylane.utils import expand_vector
 
-ABC = string.ascii_letters
 ABC_ARRAY = np.array(list(ABC))
 
 # tolerance for numerical errors
