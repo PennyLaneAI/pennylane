@@ -24,8 +24,6 @@ import shutil
 import pkg_resources
 
 import numpy as np
-import pip
-from pip._internal.main import main as pip_main
 import zipfile
 
 import benchmark
@@ -53,6 +51,18 @@ class prepend_to_path:
     def __exit__(self, etype, value, traceback):
         sys.path.pop(0)
 
+class temporary_directory:
+    """Context manager for prepending a path to the system path"""
+    def __init__(self, path):
+        self.path = path
+
+    def __enter__(self):
+        os.mkdir(self.path)
+
+    def __exit__(self, etype, value, traceback):
+        print("Deleting temporary installation")
+        shutil.rmtree(self.path)
+
 # benchmarking tool version
 __version__ = "0.1.0"
 
@@ -71,55 +81,46 @@ def cli():
     sys.argv = [benchmark.__file__] + unknown_args
 
     for commit in args.commits:
-        print("Installing {}".format(commit))
 
         directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), commit)
-        #os.mkdir(directory)
-
-        try:
-            """
-            pip_main([
+        with temporary_directory(directory):
+            print(">>> Downloading {}".format(commit))
+            subprocess.run([
+                "pip",
                 "download",
                 "git+https://www.github.com/XanaduAI/pennylane@{}".format(commit),
                 "-d",
                 directory,
                 "--no-deps",
+                "-q",
             ])
 
             zip_path = os.path.join(directory, os.listdir(directory)[0])
-            print("Unpacking {}".format(zip_path))
+
+            print(">>> Unpacking {}".format(zip_path))
             with zipfile.ZipFile(zip_path, 'r') as zip:
                 zip.extractall(directory)
-            """
 
-            print("Running setup.py")
+            print(">>> Setup {}".format(commit))
             with cd(os.path.join(directory, "PennyLane")):
-                subprocess.run(["python", "setup.py", "bdist_wheel"])
+                subprocess.run(["python", "setup.py", "-q", "bdist_wheel"])
 
             pl_path = os.path.join(directory, "PennyLane")
             with prepend_to_path(pl_path):
+                print(">>> Reload modules")
                 del_keys = []
                 for key in sys.modules:
                     if "pennylane" in key:
                         del_keys.append(key)
 
                 for key in del_keys:
-                    print("deleting module ", key)
                     del sys.modules[key]
 
                 importlib.reload(benchmark)
+                benchmark.qml.plugins = importlib.import_module("pennylane.plugins")
 
-                print(sys.path)
-                print(sys.modules["pennylane"])
-
-                benchmark.qml = importlib.reload(benchmark.qml)
-
-                print("Benchmarking {}".format(commit))
-                #benchmark.cli()
-
-        finally:
-            print("Deleting temporary installation")
-            #shutil.rmtree(directory)
+                print(">>> Benchmark {}".format(commit))
+                benchmark.cli()
 
 
 if __name__ == "__main__":
