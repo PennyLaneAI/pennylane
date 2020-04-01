@@ -783,6 +783,13 @@ class TestPauliRot:
             np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
         )
 
+    def test_matrix_incorrect_pauli_word_error(self):
+        """Test that _matrix throws an error if a wrong Pauli word is supplied."""
+
+        with pytest.raises(ValueError, match="The given pauli word \".*\" contains characters that are not allowed." \
+            " Allowed characters are I, X, Y and Z"):
+            qml.PauliRot._matrix(0.3, "IXYZV")
+
 
 class TestMultiRZ:
     """Test the MultiRZ operation."""
