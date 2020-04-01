@@ -627,10 +627,12 @@ class Operation(Operator):
 
     @property
     def matrix(self):
-        if self.inverse:
-            return np.linalg.inv(self._matrix(*self.parameters))
+        op_matrix = self._matrix(*self.parameters)
 
-        return self._matrix(*self.parameters)
+        if self.inverse:
+            return op_matrix.conj().T
+
+        return op_matrix
 
     @property
     def base_name(self):
