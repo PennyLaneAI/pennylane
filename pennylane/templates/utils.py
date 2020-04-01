@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Utility functions used in the templates.
+Utility functions provided for the templates. These are useful for standard input checks,
+for example to make sure that arguments have the right shape, range or type.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable

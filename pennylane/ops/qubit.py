@@ -611,7 +611,7 @@ class MultiRZ(Operation):
 
     @property
     def matrix(self):
-        # Overload the property here to pass additionally the number of wires
+        # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
         if self.inverse:
             # The matrix is diagonal, so there is no need to transpose
             return self._matrix(*self.parameters, len(self.wires)).conj()
