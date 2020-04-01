@@ -18,14 +18,14 @@ Tests for the templates utility functions.
 import pytest
 import numpy as np
 from pennylane.variable import Variable
-from pennylane.templates.utils import (_check_wires,
-                                       _check_shape,
-                                       _check_shapes,
-                                       _get_shape,
-                                       _check_number_of_layers,
-                                       _check_no_variable,
-                                       _check_is_in_options,
-                                       _check_type)
+from pennylane.templates.utils import (check_wires,
+                                       check_shape,
+                                       check_shapes,
+                                       get_shape,
+                                       check_number_of_layers,
+                                       check_no_variable,
+                                       check_is_in_options,
+                                       check_type)
 
 #########################################
 # Inputs
@@ -126,90 +126,90 @@ class TestInputChecks:
     @pytest.mark.parametrize("arg", NO_VARIABLES_PASS)
     def test_check_no_variable(self, arg):
         """Tests that variable check succeeds for valid arguments."""
-        _check_no_variable(arg, msg="XXX")
+        check_no_variable(arg, msg="XXX")
 
     @pytest.mark.parametrize("arg", NO_VARIABLES_FAIL)
     def test_check_no_variable_exception(self, arg):
         """Tests that variable check throws error for invalid arguments."""
         with pytest.raises(ValueError, match="XXX"):
-            _check_no_variable(arg, msg="XXX")
+            check_no_variable(arg, msg="XXX")
 
     @pytest.mark.parametrize("wires, target", WIRES_PASS)
     def test_check_wires(self, wires, target):
         """Tests that wires check returns correct wires list and its length."""
-        res = _check_wires(wires=wires)
+        res = check_wires(wires=wires)
         assert res == target
 
     @pytest.mark.parametrize("wires", WIRES_FAIL)
     def test_check_wires_exception(self, wires):
         """Tests that wires check fails if ``wires`` is not a positive integer or iterable of positive integers."""
         with pytest.raises(ValueError, match="wires must be a positive integer"):
-            _check_wires(wires=wires)
+            check_wires(wires=wires)
 
     @pytest.mark.parametrize("inpt, target_shape", GET_SHAPE_PASS)
     def test_get_shape(self, inpt, target_shape):
-        """Tests that ``_get_shape`` returns correct shape."""
-        shape = _get_shape(inpt)
+        """Tests that ``get_shape`` returns correct shape."""
+        shape = get_shape(inpt)
         assert shape == target_shape
 
     @pytest.mark.parametrize("inpt", GET_SHAPE_FAIL)
     def test_get_shape_exception(self, inpt):
-        """Tests that ``_get_shape`` fails if unkown type of arguments."""
+        """Tests that ``get_shape`` fails if unkown type of arguments."""
         with pytest.raises(ValueError, match="could not extract shape of object"):
-            _get_shape(inpt)
+            get_shape(inpt)
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_PASS)
     def test_check_shape(self, inpt, target_shape, bound):
         """Tests that shape check succeeds for valid arguments."""
-        _check_shape(inpt, target_shape, bound=bound, msg="XXX")
+        check_shape(inpt, target_shape, bound=bound, msg="XXX")
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_PASS)
     def test_check_shape_list_of_inputs(self, inpt, target_shape, bound):
         """Tests that list version of shape check succeeds for valid arguments."""
-        _check_shapes(inpt, target_shape, bounds=[bound] * len(inpt), msg="XXX")
+        check_shapes(inpt, target_shape, bounds=[bound] * len(inpt), msg="XXX")
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_FAIL)
     def test_check_shape_exception(self, inpt, target_shape, bound):
         """Tests that shape check fails for invalid arguments."""
         with pytest.raises(ValueError, match="XXX"):
-            _check_shape(inpt, target_shape, bound=bound, msg="XXX")
+            check_shape(inpt, target_shape, bound=bound, msg="XXX")
 
     @pytest.mark.parametrize("inpt, target_shape, bound", SHAPE_LST_FAIL)
     def test_check_shape_list_of_inputs_exception(self, inpt, target_shape, bound):
         """Tests that list version of shape check succeeds for valid arguments."""
         with pytest.raises(ValueError, match="XXX"):
-            _check_shapes(inpt, target_shape, bounds=[bound] * len(inpt), msg="XXX")
+            check_shapes(inpt, target_shape, bounds=[bound] * len(inpt), msg="XXX")
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_PASS)
     def test_check_options(self, hp, opts):
         """Tests that option check succeeds for valid arguments."""
-        _check_is_in_options(hp, opts, msg="XXX")
+        check_is_in_options(hp, opts, msg="XXX")
 
     @pytest.mark.parametrize("hp, opts", OPTIONS_FAIL)
     def test_check_options_exception(self, hp, opts):
         """Tests that option check throws error for invalid arguments."""
         with pytest.raises(ValueError, match="XXX"):
-            _check_is_in_options(hp, opts, msg="XXX")
+            check_is_in_options(hp, opts, msg="XXX")
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_PASS)
     def test_check_type(self, hp, typ, alt):
         """Tests that type check succeeds for valid arguments."""
-        _check_type(hp, [typ, alt], msg="XXX")
+        check_type(hp, [typ, alt], msg="XXX")
 
     @pytest.mark.parametrize("hp, typ, alt", TYPE_FAIL)
     def test_check_type_exception(self, hp, typ, alt):
         """Tests that type check throws error for invalid arguments."""
         with pytest.raises(ValueError, match="XXX"):
-            _check_type(hp, [typ, alt], msg="XXX")
+            check_type(hp, [typ, alt], msg="XXX")
 
     @pytest.mark.parametrize("inpt, repeat", LAYERS_PASS)
     def test_check_num_layers(self, inpt, repeat):
         """Tests that layer check returns correct number of layers."""
-        n_layers = _check_number_of_layers(inpt)
+        n_layers = check_number_of_layers(inpt)
         assert n_layers == repeat
 
     @pytest.mark.parametrize("inpt, repeat", LAYERS_FAIL)
     def test_check_num_layers_exception(self, inpt, repeat):
         """Tests that layer check throws exception if number of layers not consistent."""
         with pytest.raises(ValueError, match="the first dimension of the weight parameters"):
-            _check_number_of_layers(inpt)
+            check_number_of_layers(inpt)
