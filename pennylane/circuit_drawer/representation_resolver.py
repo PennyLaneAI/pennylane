@@ -47,7 +47,7 @@ class RepresentationResolver:
         "CZ": "Z",
         "Identity": "I",
         "Hadamard": "H",
-        "MultiRZ" : "RZ",
+        "MultiRZ": "RZ",
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
@@ -343,7 +343,8 @@ class RepresentationResolver:
 
         elif base_name == "PauliRot":
             representation = "R{0}({1})".format(
-                op.params[1][op.wires.index(wire)], self.single_parameter_representation(op.params[0])
+                op.params[1][op.wires.index(wire)],
+                self.single_parameter_representation(op.params[0]),
             )
 
         elif base_name == "QubitUnitary":
