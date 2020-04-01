@@ -721,6 +721,7 @@ class DiagonalOperation(Operation):
         """
         raise NotImplementedError()
 
+    @property
     def diagonal(self):
         """Return the diagonal of the operation.
 
@@ -731,7 +732,7 @@ class DiagonalOperation(Operation):
 
         if self.inverse:
             return diag.conj()
-        
+
         return diag
 
     # TODO: make matrix a classmethod to enable simpler calculation
