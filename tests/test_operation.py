@@ -35,6 +35,9 @@ op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 
+op_classes_param_testable = op_classes.copy()
+op_classes_param_testable.remove(qml.ops.PauliRot)
+
 def U3(theta, phi, lam):
     return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
 
@@ -109,7 +112,7 @@ class TestOperation:
             U_high_order = np.array([U] * 3)
             op.heisenberg_expand(U_high_order, len(op.wires))
 
-    @pytest.mark.parametrize("test_class", op_classes)
+    @pytest.mark.parametrize("test_class", op_classes_param_testable)
     def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
