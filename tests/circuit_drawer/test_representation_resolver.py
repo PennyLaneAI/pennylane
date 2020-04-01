@@ -148,6 +148,8 @@ class TestRepresentationResolver:
             (qml.PauliRot(3.14, "IXYZI", wires=[0, 1, 2, 3, 4]), 2, "RY(3.14)"),
             (qml.PauliRot(3.14, "IXYZI", wires=[0, 1, 2, 3, 4]), 3, "RZ(3.14)"),
             (qml.PauliRot(3.14, "IXYZI", wires=[0, 1, 2, 3, 4]), 4, "RI(3.14)"),
+            (qml.MultiRZ(3.14, wires=[0, 1]), 0, "RZ(3.14)"),
+            (qml.MultiRZ(3.14, wires=[0, 1]), 1, "RZ(3.14)"),
             (qml.CRX(3.14, wires=[0, 1]), 1, "RX(3.14)"),
             (qml.CRX(3.14, wires=[0, 1]), 0, "C"),
             (qml.CRY(3.14, wires=[0, 1]), 1, "RY(3.14)"),
