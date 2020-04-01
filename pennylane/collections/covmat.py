@@ -18,7 +18,7 @@ import itertools
 import numpy as np
 import pennylane as qml
 from pennylane.utils import expand_matrix, _flatten
-from pennylane.operation import Tensor, Operation
+from pennylane.operation import Tensor, Operation, CVOperation
 from pennylane import PauliX, PauliY, PauliZ, Hadamard, Identity, Hermitian
 
 
@@ -33,6 +33,12 @@ _PAULIS = {"PauliX", "PauliY", "PauliZ"}
 
 # All qubit observables: X, Y, Z, H, Hermitian, Identity, (Tensor)
 def symmetric_product(obs1, obs2):
+    if isinstance(obs1, CVObservable) or isinstance(obs2, CVObservable):
+        raise ValueError(
+            "The symmetric product is currently only supported for Qubit observables."
+            " The following observables were provided: {}, {}.".format(obs1.name, obs2.name)
+        )
+
     wires1 = obs1.wires if not isinstance(obs1, Tensor) else list(_flatten(obs1.wires))
     wires2 = obs2.wires if not isinstance(obs2, Tensor) else list(_flatten(obs2.wires))
 
