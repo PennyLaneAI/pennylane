@@ -727,7 +727,12 @@ class DiagonalOperation(Operation):
         Args:
             abc ([type]): [description]
         """
-        return self._diagonal(*self.parameters)
+        diag = self._diagonal(*self.parameters)
+
+        if self.inverse:
+            return diag.conj()
+        
+        return diag
 
     # TODO: make matrix a classmethod to enable simpler calculation
     #@classmethod
