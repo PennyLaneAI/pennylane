@@ -19,12 +19,12 @@ import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_no_variable,
-    _check_wires,
-    _check_type,
-    _check_number_of_layers,
-    _get_shape,
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_type,
+    check_number_of_layers,
+    get_shape,
 )
 
 
@@ -113,36 +113,36 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     #############
     # Input checks
 
-    _check_no_variable(ratio_imprim, msg="'ratio_imprim' cannot be differentiable")
-    _check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
-    _check_no_variable(rotations, msg="'rotations' cannot be differentiable")
-    _check_no_variable(seed, msg="'seed' cannot be differentiable")
+    check_no_variable(ratio_imprim, msg="'ratio_imprim' cannot be differentiable")
+    check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
+    check_no_variable(rotations, msg="'rotations' cannot be differentiable")
+    check_no_variable(seed, msg="'seed' cannot be differentiable")
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
-    repeat = _check_number_of_layers([weights])
-    n_rots = _get_shape(weights)[1]
+    repeat = check_number_of_layers([weights])
+    n_rots = get_shape(weights)[1]
 
     expected_shape = (repeat, n_rots)
-    _check_shape(
+    check_shape(
         weights,
         expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, _get_shape(weights)),
+        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
     )
 
-    _check_type(
+    check_type(
         ratio_imprim,
         [float, type(None)],
         msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
     )
-    _check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
+    check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
     # TODO: Check that 'rotations' contains operations
-    _check_type(
+    check_type(
         rotations,
         [list, type(None)],
         msg="'rotations' must be a list of PennyLane operations; got {}" "".format(rotations),
     )
-    _check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
+    check_type(seed, [int, type(None)], msg="'seed' must be an integer; got {}.".format(seed))
 
     ###############
 

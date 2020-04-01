@@ -19,11 +19,11 @@ from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ, CNOT, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_wires,
-    _check_is_in_options,
-    _check_number_of_layers,
-    _get_shape,
+    check_shape,
+    check_wires,
+    check_is_in_options,
+    check_number_of_layers,
+    get_shape,
 )
 
 
@@ -226,48 +226,48 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     #############
     # Input checks
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(
+    check_shape(
         features,
         expected_shape,
         bound="max",
         msg="'features' must be of shape {} or smaller; got {}"
-        "".format((len(wires),), _get_shape(features)),
+        "".format((len(wires),), get_shape(features)),
     )
 
-    _check_is_in_options(
+    check_is_in_options(
         local_field,
         ["X", "Y", "Z"],
         msg="did not recognize option {} for 'local_field'" "".format(local_field),
     )
 
-    repeat = _check_number_of_layers([weights])
+    repeat = check_number_of_layers([weights])
 
     if len(wires) == 1:
         expected_shape = (repeat, 1)
-        _check_shape(
+        check_shape(
             weights,
             expected_shape,
             msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, _get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
         )
     elif len(wires) == 2:
         expected_shape = (repeat, 3)
-        _check_shape(
+        check_shape(
             weights,
             expected_shape,
             msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, _get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
         )
     else:
         expected_shape = (repeat, 2 * len(wires))
-        _check_shape(
+        check_shape(
             weights,
             expected_shape,
             msg="'weights' must be of shape {}; got {}"
-            "".format(expected_shape, _get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
         )
 
     #####################
