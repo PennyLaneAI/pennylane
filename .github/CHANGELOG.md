@@ -25,10 +25,10 @@
   >>> circuit(0.4)
   [1.         0.92106099 0.92106099 1.        ]
   >>> print(circuit.draw())
-   0: ──╭RIXYZ(0.4)──┤ ⟨Z⟩
-   1: ──├RIXYZ(0.4)──┤ ⟨Z⟩
-   2: ──├RIXYZ(0.4)──┤ ⟨Z⟩
-   3: ──╰RIXYZ(0.4)──┤ ⟨Z⟩
+   0: ──╭RI(0.4)──┤ ⟨Z⟩
+   1: ──├RX(0.4)──┤ ⟨Z⟩
+   2: ──├RY(0.4)──┤ ⟨Z⟩
+   3: ──╰RZ(0.4)──┤ ⟨Z⟩
   ```
 
   If the `PauliRot` gate is not supported on the target device, it will
@@ -37,10 +37,10 @@
 
   ```python
   >>> print(circuit.draw())
-   0: ────────────────────────────────────────┤ ⟨Z⟩
-   1: ──H──────────╭MultiRZ(0.4)──H───────────┤ ⟨Z⟩
-   2: ──RX(1.571)──├MultiRZ(0.4)──RX(-1.571)──┤ ⟨Z⟩
-   3: ─────────────╰MultiRZ(0.4)──────────────┤ ⟨Z⟩
+   0: ───────────────────────────────────┤ ⟨Z⟩
+   1: ──H──────────╭RZ(0.4)──H───────────┤ ⟨Z⟩
+   2: ──RX(1.571)──├RZ(0.4)──RX(-1.571)──┤ ⟨Z⟩
+   3: ─────────────╰RZ(0.4)──────────────┤ ⟨Z⟩
   ```
 
   If the `MultiRZ` gate is not supported, it will be decomposed into 
