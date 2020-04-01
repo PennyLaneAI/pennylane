@@ -42,3 +42,10 @@ Custom templates can be constructed using the template decorator.
     :toctree:
 
     pennylane.templates.template
+
+Utility functions for input checks
+----------------------------------
+
+.. automodapi:: pennylane.templates.utils
+    :no-heading:
+    :include-all-objects:

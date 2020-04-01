@@ -44,7 +44,6 @@ and has the following format:
     # Global PennyLane options.
     # Affects every loaded plugin if applicable.
     shots = 1000
-    analytic = true
 
     [strawberryfields.global]
     # Options for the Strawberry Fields plugin
