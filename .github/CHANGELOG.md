@@ -84,6 +84,7 @@
    1: ──H──────────────╭X──RZ(0.4)──╭X──────H───────────┤ ⟨Z⟩
    2: ──RX(1.571)──╭X──╰C───────────╰C──╭X──RX(-1.571)──┤ ⟨Z⟩
    3: ─────────────╰C───────────────────╰C──────────────┤ ⟨Z⟩
+  ```
 
 * Added the ``SimplifiedTwoDesign`` template, which implements the circuit 
   design of `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_. 
