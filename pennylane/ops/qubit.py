@@ -653,6 +653,14 @@ class MultiRZ(DiagonalOperation):
     def _diagonal(theta, n):
         return np.exp(-1j * theta / 2 * pauli_eigs(n))
 
+    @property
+    def diagonal(self):
+        # Redefine the property here to pass additionally the number of wires to the ``_diagonal`` method
+        if self.inverse:
+            return self._diagonal(*self.parameters, len(self.wires)).conj()
+
+        return self._diagonal(*self.parameters, len(self.wires))
+
     @staticmethod
     @template
     def decomposition(theta, wires):
