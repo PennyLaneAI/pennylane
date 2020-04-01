@@ -28,6 +28,7 @@ from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Mu
 from pennylane.utils import expand_vector
 
 ABC = string.ascii_letters
+ABC_ARRAY = np.array(list(ABC))
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -235,7 +236,7 @@ class DefaultQubit(QubitDevice):
         vec = np.reshape(vec, [2] * self.num_wires)
 
         state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(np.array(list(ABC))[wires].tolist())
+        affected_indices = "".join(ABC_ARRAY[wires].tolist())
         new_indices = ABC[self.num_wires : self.num_wires + len(wires)]
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
@@ -265,9 +266,18 @@ class DefaultQubit(QubitDevice):
         Returns:
             array: output vector after applying ``phases`` to input ``vec`` on specified subsystems
         """
-        # TODO: use multi-index vectors/matrices to represent states/gates internally
-        phases = expand_vector(phases, wires, list(range(self.num_wires)))
-        return vec * phases
+        # reshape vectors
+        phases = phases.reshape([2] * len(wires))
+        vec = vec.reshape([2] * self.num_wires)
+
+        state_indices = ABC[: self.num_wires]
+        affected_indices = "".join(ABC_ARRAY[wires].tolist())
+
+        einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
+            affected_indices=affected_indices, state_indices=state_indices
+        )
+
+        return np.einsum(einsum_indices, phases, vec).flatten()
 
     def reset(self):
         """Reset the device"""
