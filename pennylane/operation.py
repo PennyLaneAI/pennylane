@@ -676,8 +676,8 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
-class DiagonalOperation(Operation):
-    r"""Base class for diagonal operations.
+class DiagonalOperation(abc.ABC):
+    r"""Mixin for diagonal operations.
 
     The following class attributes must be defined for
     all diagonal operations:
@@ -696,7 +696,11 @@ class DiagonalOperation(Operation):
             outside of a BaseQNode context.
     """
 
-    @staticmethod
+    # We have to repeat some definitions from Operation here
+    inverse = False
+    parameters = []
+
+    @abc.abstractstaticmethod
     def _diagonal(*params):
         """Array representation of the operator's diagonal
         in the computational basis.
@@ -719,7 +723,6 @@ class DiagonalOperation(Operation):
         Returns:
             array: diagonal of the representation in the computational basis
         """
-        raise NotImplementedError()
 
     @property
     def diagonal(self):
