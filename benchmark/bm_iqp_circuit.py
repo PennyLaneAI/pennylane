@@ -28,10 +28,26 @@ CCZ_matrix = np.diag([1, 1, 1, 1, 1, 1, 1, -1])
 
 @qml.template
 def CCZ(wires):
+    """Implements a CCZ gate.
+
+    Args:
+        wires (List[int]): The wires on which the CCZ shall act.
+    """
     qml.QubitUnitary(CCZ_matrix, wires=wires)
 
 
 def random_iqp_wires(n_wires):
+    """Create a random set of IQP wires.
+
+    Returns a list of either 1, 2, or 3 distinct integers
+    in the range of n_wires.
+
+    Args:
+        n_wires (int): Number of wires of the device.
+
+    Returns:
+        List[int]: The IQP wires.
+    """
     # The global seed was fixed during benchmark construction
     # so this is actually deterministic
     a = random.random()
