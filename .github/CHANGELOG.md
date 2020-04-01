@@ -87,7 +87,7 @@
   ```
 
 * Added the ``SimplifiedTwoDesign`` template, which implements the circuit 
-  design of `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_. 
+  design of [Cerezo et al. (2020)](<https://arxiv.org/abs/2001.00550>). 
   [(#556)](https://github.com/XanaduAI/pennylane/pull/556)
   
   <img src="https://pennylane.readthedocs.io/en/latest/_images/simplified_two_design.png"
