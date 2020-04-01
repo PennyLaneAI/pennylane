@@ -103,3 +103,32 @@ class CovarianceMatrix:
             cov_mat[j, i] = cov_mat[i, j]
 
         return cov_mat
+
+
+class DiagonalObservablesCovarianceMatrix:
+    def __init__(self, ansatz, diagonals, device, interface="autograd", diff_method="best"):
+        self.diagonals = diagonals
+        self.num_observables = len(diagonals)
+
+        def func(params, wires, **kwargs):
+            ansatz(params, wires, **kwargs)
+
+            return qml.probs(wires)
+
+        self.qnode = qml.QNode(func, device, interface=interface, diff_method=diff_method)
+
+    def __call__(self, *args, **kwargs):
+        probs = self.qnode(*args, **kwargs)
+
+        squares = [np.dot(probs, diagonal**2) for diagonal in self.diagonals]
+        expvals = [np.dot(probs, diagonal) for diagonal in self.diagonals]
+
+        cov_mat = np.diag(squares - expvals ** 2)
+
+        for i, j in itertools.combinations(range(self.num_observables), r=2):
+            cov_mat[i, j] = (
+                np.dot(probs, self.diagonals[i] * self.diagonals[j]) - expvals[i] * expvals[j]
+            )
+            cov_mat[j, i] = cov_mat[i, j]
+
+        return cov_mat
