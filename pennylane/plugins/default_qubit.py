@@ -20,12 +20,14 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 simulation of a qubit-based quantum circuit architecture.
 """
 import itertools
+import functools
 
 import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, MultiRZ
 from pennylane.utils import expand_vector
 
+ABC = string.ascii_letters
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -214,6 +216,41 @@ class DefaultQubit(QubitDevice):
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
+
+    def mat_vec_product_einsum(self, mat, vec, wires):
+        r"""Apply multiplication of a matrix to subsystems of the quantum state.
+
+        This function uses einsum instead of tensordot. This approach is only
+        faster for single- and two-qubit gates.
+
+        Args:
+            mat (array): matrix to multiply
+            vec (array): state vector to multiply
+            wires (Sequence[int]): target subsystems
+
+        Returns:
+            array: output vector after applying ``mat`` to input ``vec`` on specified subsystems
+        """
+        mat = np.reshape(mat, [2] * len(wires) * 2)
+        vec = np.reshape(vec, [2] * self.num_wires)
+
+        state_indices = ABC[: self.num_wires]
+        affected_indices = "".join(np.array(list(ABC))[wires].tolist())
+        new_indices = ABC[self.num_wires : self.num_wires + len(wires)]
+        new_state_indices = functools.reduce(
+            lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
+            zip(affected_indices, new_indices),
+            state_indices,
+        )
+
+        einsum_indices = "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
+            affected_indices=affected_indices,
+            state_indices=state_indices,
+            new_indices=new_indices,
+            new_state_indices=new_state_indices,
+        )
+
+        return np.einsum(einsum_indices, mat, vec).flatten()
 
     def vec_vec_product(self, phases, vec, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
