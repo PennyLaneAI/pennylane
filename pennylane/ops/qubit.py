@@ -21,7 +21,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 from pennylane.templates import template
-from pennylane.operation import Any, Observable, Operation
+from pennylane.operation import Any, Observable, Operation, DiagonalOperation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder, pauli_eigs, expand
 
@@ -144,7 +144,7 @@ class PauliY(Observable, Operation):
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
 
-class PauliZ(Observable, Operation):
+class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
     The Pauli Z operator
 
@@ -167,11 +167,15 @@ class PauliZ(Observable, Operation):
     def _matrix(*params):
         return np.array([[1, 0], [0, -1]])
 
+    @staticmethod
+    def _diagonal(*params):
+        return np.array([1, -1])
+
     def diagonalizing_gates(self):
         return []
 
 
-class S(Operation):
+class S(DiagonalOperation):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -196,8 +200,12 @@ class S(Operation):
     def _matrix(*params):
         return np.array([[1, 0], [0, 1j]])
 
+    @staticmethod
+    def _diagonal(*params):
+        return np.array([1, 1j])
 
-class T(Operation):
+
+class T(DiagonalOperation):
     r"""T(wires)
     The single-qubit T gate
 
@@ -221,6 +229,10 @@ class T(Operation):
     @staticmethod
     def _matrix(*params):
         return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
+
+    @staticmethod
+    def _diagonal(*params):
+        return np.array([1, np.exp(1j * np.pi / 4)])
 
 
 class CNOT(Operation):
@@ -253,7 +265,7 @@ class CNOT(Operation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
-class CZ(Operation):
+class CZ(DiagonalOperation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -281,6 +293,10 @@ class CZ(Operation):
     @staticmethod
     def _matrix(*params):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+
+    @staticmethod
+    def _diagonal(*params):
+        return np.array([1, 1, 1, -1])
 
 
 class SWAP(Operation):
@@ -457,7 +473,7 @@ class RY(Operation):
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
 
 
-class RZ(Operation):
+class RZ(DiagonalOperation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -488,8 +504,13 @@ class RZ(Operation):
         theta = params[0]
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliZ._matrix()
 
+    @staticmethod
+    def _diagonal(*params):
+        theta = params[0]
+        return np.array([np.cos(theta / 2) + 1j * np.sin(-theta / 2), np.cos(theta / 2) - 1j * np.sin(-theta / 2)])
 
-class PhaseShift(Operation):
+
+class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -519,6 +540,11 @@ class PhaseShift(Operation):
     def _matrix(*params):
         phi = params[0]
         return np.array([[1, 0], [0, np.exp(1j * phi)]])
+
+    @staticmethod
+    def _diagonal(*params):
+        phi = params[0]
+        return np.array([1, np.exp(1j * phi)])
 
 
 class Rot(Operation):
@@ -567,7 +593,7 @@ class Rot(Operation):
         return decomp_ops
 
 
-class MultiRZ(Operation):
+class MultiRZ(DiagonalOperation):
     r"""MultiRZ(theta, wires)
     Arbitrary multi Z rotation.
 
@@ -609,7 +635,7 @@ class MultiRZ(Operation):
         Returns:
             array[complex]: The matrix representation
         """
-        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
+        multi_Z_rot_eigs = MultiRZ._diagonal(theta, n)
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
@@ -624,28 +650,8 @@ class MultiRZ(Operation):
         return self._matrix(*self.parameters, len(self.wires))
 
     @staticmethod
-    def _eigvals(theta, n):
-        """Return the eigenvalues corresponding to a specific rotation angle.
-
-        Args:
-            theta (float): Rotation angle
-
-        Returns:
-            (array[float]): Eigenvalues of the transformation
-        """
+    def _diagonal(theta, n):
         return np.exp(-1j * theta / 2 * pauli_eigs(n))
-
-    @property
-    def eigvals(self):
-        """Return the eigenvalues of this operation.
-
-        Returns:
-            (array[float]): Eigenvalues of the transformation
-        """
-        if self.inverse:
-            return self._eigvals(self.parameters[0], len(self.wires)).conj()
-
-        return self._eigvals(self.parameters[0], len(self.wires))
 
     @staticmethod
     @template
@@ -907,7 +913,7 @@ class CRY(Operation):
         return decomp_ops
 
 
-class CRZ(Operation):
+class CRZ(DiagonalOperation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
@@ -956,6 +962,11 @@ class CRZ(Operation):
     @staticmethod
     def _matrix(*params):
         return block_diag(np.eye(2), RZ._matrix(*params))
+
+    @staticmethod
+    def _diagonal(*params):
+        theta = params[0]
+        return np.array([1, 1, np.cos(theta / 2) + 1j * np.sin(-theta / 2), np.cos(theta / 2) - 1j * np.sin(-theta / 2)])
 
     @staticmethod
     def decomposition(lam, wires):
