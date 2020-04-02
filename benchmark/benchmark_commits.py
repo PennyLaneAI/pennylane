@@ -68,6 +68,7 @@ def cli():
     """Parse the command line arguments, perform the requested action.
     """
     #TODO: Rename commit to revision which is the general git term
+    # Use git rev-parse <revision> to get the SHA hash of the commit
     parser = argparse.ArgumentParser(description="PennyLane benchmarking tool for commits")
     parser.add_argument(
         "-c",
