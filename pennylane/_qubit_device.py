@@ -409,7 +409,7 @@ class QubitDevice(Device):
         """
         wires = wires or range(self.num_wires)
 
-        if self.analytic:
+        if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)
 
         return self.estimate_probability(wires=wires)
