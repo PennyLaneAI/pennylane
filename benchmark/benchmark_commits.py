@@ -67,6 +67,7 @@ __version__ = "0.1.0"
 def cli():
     """Parse the command line arguments, perform the requested action.
     """
+    #TODO: Rename commit to revision which is the general git term
     parser = argparse.ArgumentParser(description="PennyLane benchmarking tool for commits")
     parser.add_argument(
         "-c",
@@ -114,9 +115,10 @@ def cli():
 
                 # TODO: there are still some old imports lingering around here...
                 # Somehow they can surely be removed
-                subprocess.run(["python3", "benchmark.py"] + unknown_args)
 
                 print(">>> Benchmark {}".format(commit))
+                subprocess.run(["python", "benchmark.py"] + unknown_args)
+
 
 
 if __name__ == "__main__":
