@@ -175,6 +175,11 @@
 
 <h3>Improvements</h3>
 
+* Made the input check functions in :mod:`pennylane.templates.utils` public,
+  so they can be used when creating new templates, and they are visible in the
+  API documentation.
+  [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
+
 * Improved the performance of diagonal gates in the `default.qubit` plugin.
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
 
