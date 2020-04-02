@@ -218,7 +218,7 @@ class DefaultQubit(QubitDevice):
         self._state[0] = 1
         self._pre_rotated_state = self._state
 
-    def _analytic_probability(self, wires=None):
+    def analytic_probability(self, wires=None):
         """Return the (marginal) analytic probability of each computational basis."""
         if self._state is None:
             return None
@@ -228,12 +228,7 @@ class DefaultQubit(QubitDevice):
         prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
         return prob
 
-    def probability(self, wires=None):
-        wires = wires or range(self.num_wires)
-
-        if self.analytic:
-            return self._analytic_probability(wires=wires)
-
+    def _estimate_probability(self, wires=None):
         # non-analytic mode, estimate the probability from the generated samples
 
         # consider only the requested wires
@@ -250,3 +245,11 @@ class DefaultQubit(QubitDevice):
         prob = np.zeros([len(wires) ** 2], dtype=np.float64)
         prob[basis_states] = counts / self.shots
         return prob
+
+    def probability(self, wires=None):
+        wires = wires or range(self.num_wires)
+
+        if hasattr(self, "analytic") and self.analytic:
+            return self.analytic_probability(wires=wires)
+
+        return self._estimate_probability(wires=wires)
