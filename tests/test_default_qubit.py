@@ -1652,21 +1652,3 @@ class TestProbabilityIntegration:
 
         # should call `analytic_probability` once through `generate_samples`
         assert self.analytic_counter == 1
-
-    # TODO: remove test when enforcing `analytic_probability` method for all analytic devices
-    @pytest.mark.parametrize("analytic", [True, False])
-    def test_call_generate_samples_no_analytic_fn(self, analytic, mock_qubit_device, monkeypatch):
-        """Test analytic_probability when device has no method called analytic_probability"""
-        self.analytic_counter = 0
-
-        dev = qml.device("default.qubit", wires=2, analytic=analytic)
-        monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
-
-        # generate samples from a qubit device with no 'analytic_probabiliy' method
-        dev._samples = mock_qubit_device.generate_samples()
-        dev.probability()
-
-        # should call `mock_analytic_probability` through `probability` once only if analytic=True
-        # and never through `generate_samples` since the `mock_qubit_device` has no mocked
-        # `analytic_probabiliy` method.
-        assert self.analytic_counter == analytic
