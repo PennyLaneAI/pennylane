@@ -207,6 +207,23 @@ class TestExpand:
         expected = np.kron(np.kron(I, I), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_expand_one_wires_list(self, tol):
+        """Test that a 1 qubit gate correctly expands to 3 qubits."""
+        # test applied to wire 0
+        res = pu.expand(U, [0], [0, 4, 9])
+        expected = np.kron(np.kron(U, I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 4
+        res = pu.expand(U, [4], [0, 4, 9])
+        expected = np.kron(np.kron(I, U), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 9
+        res = pu.expand(U, [9], [0, 4, 9])
+        expected = np.kron(np.kron(I, I), U)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_expand_two_consecutive_wires(self, tol):
         """Test that a 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
@@ -239,7 +256,7 @@ class TestExpand:
     def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'wires' argument."
+            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
         ):
             pu.expand(U2, [-1, 5], 4)
 
@@ -301,6 +318,64 @@ class TestExpand:
             @ np.kron(SWAP, np.kron(I, I))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    VECTOR1 = np.array([1, -1])
+    ONES = np.array([1, 1])
+
+    @pytest.mark.parametrize(
+        "original_wires,expanded_wires,expected",
+        [
+            ([0], 3, np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([1], 3, np.kron(np.kron(ONES, VECTOR1), ONES)),
+            ([2], 3, np.kron(np.kron(ONES, ONES), VECTOR1)),
+            ([0], [0, 4, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([4], [0, 4, 7], np.kron(np.kron(ONES, VECTOR1), ONES)),
+            ([7], [0, 4, 7], np.kron(np.kron(ONES, ONES), VECTOR1)),
+            ([0], [0, 4, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([4], [4, 0, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([7], [7, 4, 0], np.kron(np.kron(VECTOR1, ONES), ONES)),
+        ],
+    )
+    def test_expand_vector_single_wire(self, original_wires, expanded_wires, expected, tol):
+        """Test that expand_vector works with a single-wire vector."""
+
+        res = pu.expand_vector(TestExpand.VECTOR1, original_wires, expanded_wires)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    VECTOR2 = np.array([1, 2, 3, 4])
+    ONES = np.array([1, 1])
+
+    @pytest.mark.parametrize(
+        "original_wires,expanded_wires,expected",
+        [
+            ([0, 1], 3, np.kron(VECTOR2, ONES)),
+            ([1, 2], 3, np.kron(ONES, VECTOR2)),
+            ([0, 2], 3, np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([0, 5], [0, 5, 9], np.kron(VECTOR2, ONES)),
+            ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
+            ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
+        ],
+    )
+    def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):
+        """Test that expand_vector works with a single-wire vector."""
+
+        res = pu.expand_vector(TestExpand.VECTOR2, original_wires, expanded_wires)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_vector_invalid_wires(self):
+        """Test exception raised if unphysical subsystems provided."""
+        with pytest.raises(
+            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
+        ):
+            pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
+
+    def test_expand_vector_invalid_vector(self):
+        """Test exception raised if incorrect sized vector provided."""
+        with pytest.raises(ValueError, match="Vector parameter must be of length"):
+            pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
 
 
 class TestOperationRecorder:

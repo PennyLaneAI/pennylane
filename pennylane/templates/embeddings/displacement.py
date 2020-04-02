@@ -19,11 +19,11 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Displacement
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_no_variable,
-    _check_wires,
-    _check_is_in_options,
-    _get_shape,
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_is_in_options,
+    get_shape,
 )
 
 
@@ -57,21 +57,21 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
     #############
     # Input checks
 
-    _check_no_variable(method, msg="'method' cannot be differentiable")
-    _check_no_variable(c, msg="'c' cannot be differentiable")
+    check_no_variable(method, msg="'method' cannot be differentiable")
+    check_no_variable(c, msg="'c' cannot be differentiable")
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
     expected_shape = (len(wires),)
-    _check_shape(
+    check_shape(
         features,
         expected_shape,
         bound="max",
         msg="'features' must be of shape {} or smaller; got {}."
-        "".format(expected_shape, _get_shape(features)),
+        "".format(expected_shape, get_shape(features)),
     )
 
-    _check_is_in_options(
+    check_is_in_options(
         method,
         ["amplitude", "phase"],
         msg="did not recognize option {} for 'method'" "".format(method),

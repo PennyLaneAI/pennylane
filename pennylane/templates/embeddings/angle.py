@@ -19,12 +19,12 @@ from pennylane.templates.decorator import template
 from pennylane.ops import RX, RY, RZ
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_no_variable,
-    _check_wires,
-    _check_is_in_options,
-    _check_type,
-    _get_shape,
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_is_in_options,
+    check_type,
+    get_shape,
 )
 
 
@@ -58,20 +58,20 @@ def AngleEmbedding(features, wires, rotation="X"):
     #############
     # Input checks
 
-    _check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
-    _check_shape(
+    check_shape(
         features,
         (len(wires),),
         bound="max",
         msg="'features' must be of shape {} or smaller; "
-        "got {}.".format((len(wires),), _get_shape(features)),
+        "got {}.".format((len(wires),), get_shape(features)),
     )
-    _check_type(rotation, [str], msg="'rotation' must be a string; got {}".format(rotation))
+    check_type(rotation, [str], msg="'rotation' must be a string; got {}".format(rotation))
 
-    _check_is_in_options(
+    check_is_in_options(
         rotation,
         ["X", "Y", "Z"],
         msg="did not recognize option {} for 'rotation'.".format(rotation),

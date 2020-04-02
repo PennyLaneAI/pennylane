@@ -23,7 +23,8 @@ import itertools
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, MultiRZ
+from pennylane.utils import expand_vector
 
 
 # tolerance for numerical errors
@@ -58,6 +59,7 @@ class DefaultQubit(QubitDevice):
         "PauliX",
         "PauliY",
         "PauliZ",
+        "MultiRZ",
         "Hadamard",
         "S",
         "T",
@@ -111,6 +113,9 @@ class DefaultQubit(QubitDevice):
             elif isinstance(operation, BasisState):
                 basis_state = par[0]
                 self.apply_basis_state(basis_state, wires)
+
+            elif isinstance(operation, MultiRZ):
+                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
 
             else:
                 self._state = self.mat_vec_product(operation.matrix, self._state, wires)
@@ -209,6 +214,23 @@ class DefaultQubit(QubitDevice):
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
+
+    def vec_vec_product(self, phases, vec, wires):
+        r"""Apply multiplication of a phase vector to subsystems of the quantum state.
+
+        This represents the multiplication with diagonal gates in a more efficient manner.
+
+        Args:
+            phases (array): vector to multiply
+            vec (array): state vector to multiply
+            wires (Sequence[int]): target subsystems
+
+        Returns:
+            array: output vector after applying ``phases`` to input ``vec`` on specified subsystems
+        """
+        # TODO: use multi-index vectors/matrices to represent states/gates internally
+        phases = expand_vector(phases, wires, list(range(self.num_wires)))
+        return vec * phases
 
     def reset(self):
         """Reset the device"""

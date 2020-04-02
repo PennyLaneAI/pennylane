@@ -32,11 +32,13 @@ else:
     from tensorflow import Variable  # pylint: disable=unused-import,ungrouped-imports
 
 
-def to_tf(qnode):
+def to_tf(qnode, dtype=None):
     """Function that accepts a :class:`~.QNode`, and returns a TensorFlow eager-execution-compatible QNode.
 
     Args:
         qnode (~pennylane.qnode.QNode): a PennyLane QNode
+        dtype (tf.DType): target output type of QNode; uses the TensorFlow equivalent of the
+            QNode output type if ``dtype`` is not specified
 
     Returns:
         function: the QNode as a TensorFlow function
@@ -67,6 +69,7 @@ def to_tf(qnode):
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
+        func = qnode.func
 
     @qnode_str
     @tf.custom_gradient
@@ -110,17 +113,17 @@ def to_tf(qnode):
             grad_input = unflatten(temp.flat, args)
 
             if isinstance(grad_input, list):
-                grad_input = [tf.convert_to_tensor(i) for i in grad_input]
+                grad_input = [tf.convert_to_tensor(i, dtype=dtype) for i in grad_input]
             elif isinstance(grad_input, tuple):
-                grad_input = tuple(tf.convert_to_tensor(i) for i in grad_input)
+                grad_input = tuple(tf.convert_to_tensor(i, dtype=dtype) for i in grad_input)
             else:
-                grad_input = tf.convert_to_tensor(grad_input)
+                grad_input = tf.convert_to_tensor(grad_input, dtype=dtype)
 
             if variables is not None:
                 return grad_input, variables
 
             return grad_input
 
-        return res, grad
+        return tf.convert_to_tensor(res, dtype=dtype), grad
 
     return _TFQNode

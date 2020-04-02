@@ -19,11 +19,11 @@ import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_no_variable,
-    _check_wires,
-    _check_type,
-    _get_shape,
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_type,
+    get_shape,
 )
 from pennylane.variable import Variable
 
@@ -170,37 +170,37 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     #############
     # Input checks
 
-    _check_no_variable(pad, msg="'pad' cannot be differentiable")
-    _check_no_variable(normalize, msg="'normalize' cannot be differentiable")
+    check_no_variable(pad, msg="'pad' cannot be differentiable")
+    check_no_variable(normalize, msg="'normalize' cannot be differentiable")
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
     n_amplitudes = 2 ** len(wires)
     expected_shape = (n_amplitudes,)
     if pad is None:
-        shape = _check_shape(
+        shape = check_shape(
             features,
             expected_shape,
             msg="'features' must be of shape {}; got {}. Use the 'pad' "
             "argument for automated padding."
-            "".format(expected_shape, _get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
         )
     else:
-        shape = _check_shape(
+        shape = check_shape(
             features,
             expected_shape,
             bound="max",
             msg="'features' must be of shape {} or smaller "
             "to be padded; got {}"
-            "".format(expected_shape, _get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
         )
 
-    _check_type(
+    check_type(
         pad,
         [float, complex, type(None)],
         msg="'pad' must be a float or complex; got {}".format(pad),
     )
-    _check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
+    check_type(normalize, [bool], msg="'normalize' must be a boolean; got {}".format(normalize))
 
     ###############
 
