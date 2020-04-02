@@ -378,6 +378,17 @@ class TestKerasLayer:
             assert np.allclose(g_layer[i], g_circuit[i])
 
 
+@pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+@pytest.mark.parametrize("n_qubits, output_dim", indicies_up_to(1))
+@pytest.mark.usefixtures("get_circuit")
+def test_interface_conversion(get_circuit, output_dim):
+    """Test if input QNodes with all types of interface are converted internally to the TensorFlow
+    interface"""
+    c, w = get_circuit
+    layer = KerasLayer(c, w, output_dim)
+    assert layer.qnode.interface == "tf"
+
+
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
@@ -390,8 +401,8 @@ class TestKerasLayerIntegration:
         KerasLayer sandwiched between two Dense layers, and the dataset is simply input and output
         vectors of zeros."""
 
-        x = np.zeros((5, n_qubits))
-        y = np.zeros((5, output_dim))
+        x = np.zeros((batch_size, n_qubits))
+        y = np.zeros((batch_size, output_dim))
 
         model.compile(optimizer="sgd", loss="mse")
 
@@ -401,8 +412,8 @@ class TestKerasLayerIntegration:
     def test_model_gradients(self, model, output_dim, n_qubits):
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model"""
-        x = tf.zeros((5, n_qubits))
-        y = tf.zeros((5, output_dim))
+        x = tf.zeros((2, n_qubits))
+        y = tf.zeros((2, output_dim))
 
         with tf.GradientTape() as tape:
             out = model(x)
