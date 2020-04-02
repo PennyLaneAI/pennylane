@@ -271,7 +271,7 @@ class DefaultQubit(QubitDevice):
     def probability(self, wires=None):
         wires = wires or range(self.num_wires)
 
-        if hasattr(self, "analytic") and self.analytic:
+        if self.analytic:
             return self.analytic_probability(wires=wires)
 
         return self._estimate_probability(wires=wires)
