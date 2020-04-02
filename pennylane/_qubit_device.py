@@ -282,7 +282,7 @@ class QubitDevice(Device):
         number_of_states = 2 ** self.num_wires
 
         # Check if device has `analytic_probability` method, otherwise call `probability`
-        # NOTE: try-except statement should be removed when enforcing an `analytic_probabily`
+        # TODO: try-except statement should be removed when enforcing an `analytic_probabily`
         # method for all analytic devices => should always call `self.analytic_probability`
         try:
             rotated_prob = self.analytic_probability()
