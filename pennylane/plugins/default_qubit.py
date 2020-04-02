@@ -250,7 +250,7 @@ class DefaultQubit(QubitDevice):
         prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
         return prob
 
-    def _estimate_probability(self, wires=None):
+    def estimate_probability(self, wires=None):
         """Return the estimated probability of each computational basis state using the generated samples."""
 
         # consider only the requested wires
@@ -274,4 +274,4 @@ class DefaultQubit(QubitDevice):
         if self.analytic:
             return self.analytic_probability(wires=wires)
 
-        return self._estimate_probability(wires=wires)
+        return self.estimate_probability(wires=wires)
