@@ -250,6 +250,6 @@ class TestInterferometer:
         assert np.allclose(res, expected, atol=tol)
 
         # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((theta, phi, varphi), method="A")
+        jac_A = circuit.jacobian((theta, phi, varphi))#, method="A")
         jac_F = circuit.jacobian((theta, phi, varphi), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)
