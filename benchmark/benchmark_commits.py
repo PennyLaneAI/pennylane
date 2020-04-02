@@ -26,8 +26,6 @@ import pkg_resources
 import numpy as np
 import zipfile
 
-import benchmark
-
 class cd:
     """Context manager for changing the current working directory"""
     def __init__(self, newPath):
@@ -78,10 +76,8 @@ def cli():
     )
 
     args, unknown_args = parser.parse_known_args()
-    sys.argv = [benchmark.__file__] + unknown_args
 
     for commit in args.commits:
-
         directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), commit)
         with temporary_directory(directory):
             print(">>> Downloading {}".format(commit))
@@ -118,12 +114,9 @@ def cli():
 
                 # TODO: there are still some old imports lingering around here...
                 # Somehow they can surely be removed
-
-                importlib.reload(benchmark)
-                benchmark.qml.plugins = importlib.import_module("pennylane.plugins")
+                subprocess.run(["python3", "benchmark.py"] + unknown_args)
 
                 print(">>> Benchmark {}".format(commit))
-                benchmark.cli()
 
 
 if __name__ == "__main__":
