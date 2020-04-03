@@ -36,7 +36,7 @@ class QubitDevice(Device):
     * :meth:`~.apply`: append circuit operations, compile the circuit (if applicable),
       and perform the quantum computation.
 
-    Devices that generate their own samples (such as hardware) may optionally overwrite 
+    Devices that generate their own samples (such as hardware) may optionally overwrite
     :meth:`~.probabilty`, which otherwise automatically computes the probabilities from the
     generated samples, and **must** overwrite the following method:
 
