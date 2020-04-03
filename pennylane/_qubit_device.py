@@ -397,7 +397,7 @@ class QubitDevice(Device):
         """Return either the analytic probability or estimated probability of
         each computational basis state.
 
-        If no `self.analytic` attributes exists for the device, then return the
+        If no :attr:`~.analytic` attributes exists for the device, then return the
         estimated probability.
 
         Args:
