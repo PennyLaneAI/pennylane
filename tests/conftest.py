@@ -172,6 +172,17 @@ def mock_device(monkeypatch):
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
         yield qml.Device(wires=2)
 
+@pytest.fixture(scope="function")
+def mock_qubit_device(monkeypatch):
+    """A mock instance of the abstract QubitDevice class"""
+
+    with monkeypatch.context() as m:
+        dev = qml.QubitDevice
+        m.setattr(dev, '__abstractmethods__', frozenset())
+        m.setattr(dev, 'short_name', 'mock_device')
+        m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
+        yield qml.QubitDevice(wires=2)
+
 @pytest.fixture
 def tear_down_hermitian():
     yield None
