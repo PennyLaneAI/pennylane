@@ -52,7 +52,9 @@ def test_fallback_Jacobian_qnode(monkeypatch):
     """Test the decorator fallsback to Jacobian QNode if it
     can't determine the device model"""
     dev = qml.device('default.gaussian', wires=1)
-    dev._capabilities["model"] = None
+    # remember the current value
+    temp = dev._capabilities["model"]
+    dev._capabilities["model"] = 'None'
 
     @qnode(dev)
     def circuit(a):
@@ -64,6 +66,8 @@ def test_fallback_Jacobian_qnode(monkeypatch):
     assert isinstance(circuit, JacobianQNode)
     assert hasattr(circuit, "jacobian")
 
+    # reset attribute so it does not interfere with other tests
+    dev._capabilities["model"] = temp
 
 def test_torch_interface(skip_if_no_torch_support):
     """Test torch interface conversion"""
