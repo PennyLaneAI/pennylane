@@ -47,6 +47,7 @@ class RepresentationResolver:
         "CZ": "Z",
         "Identity": "I",
         "Hadamard": "H",
+        "MultiRZ": "RZ",
         "CRX": "RX",
         "CRY": "RY",
         "CRZ": "RZ",
@@ -107,13 +108,16 @@ class RepresentationResolver:
         """Resolve the representation of an Operator's parameter.
 
         Args:
-            par (Union[~.variable.Variable, int, float]): The parameter to be rendered
+            par (Union[~.variable.Variable, int, float, str]): The parameter to be rendered
 
         Returns:
             str: String representation of the parameter
         """
         if isinstance(par, qml.variable.Variable):
             return par.render(self.show_variable_names)
+
+        if isinstance(par, str):
+            return par
 
         return str(round(par, 3))
 
@@ -336,6 +340,12 @@ class RepresentationResolver:
 
         if op.num_params == 0:
             representation = name
+
+        elif base_name == "PauliRot":
+            representation = "R{0}({1})".format(
+                op.params[1][op.wires.index(wire)],
+                self.single_parameter_representation(op.params[0]),
+            )
 
         elif base_name == "QubitUnitary":
             representation = RepresentationResolver._format_matrix_operation(

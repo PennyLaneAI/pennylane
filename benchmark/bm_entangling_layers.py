@@ -56,5 +56,5 @@ class Benchmark(bu.BaseBenchmark):
 
         qnode = bu.create_qnode(circuit, self.device, mutable=False)
         qnode(init_weights, features=features)
-        qnode.jacobian(init_weights, {"features": features})
+        qnode.jacobian((init_weights,), {"features": features})
         return True

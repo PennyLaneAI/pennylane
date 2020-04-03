@@ -244,6 +244,9 @@ class TestApply:
         (qml.RZ, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2]),
         (qml.RZ, [0, 1], [0, 1j], [math.pi]),
         (qml.RZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [math.pi / 2]),
+        (qml.MultiRZ, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 1], [0, 1j], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [math.pi / 2]),
         (qml.Rot, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2, 0, 0]),
         (qml.Rot, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (qml.Rot, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [0, 0, math.pi / 2]),
@@ -272,6 +275,10 @@ class TestApply:
         (qml.RZ, [1, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
         (qml.RZ, [0, 1], [0, -1j], [math.pi]),
         (qml.RZ, [1 / math.sqrt(2), 1 / math.sqrt(2)],
+         [1 / 2 + 1/2*1j, 1 / 2 - 1/2*1j], [math.pi / 2]),
+        (qml.MultiRZ, [1, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 1], [0, -1j], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2)],
          [1 / 2 + 1/2*1j, 1 / 2 - 1/2*1j], [math.pi / 2]),
     ]
 
@@ -307,6 +314,9 @@ class TestApply:
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
         (qml.CRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, 1j, 0], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2, 0, 0], [math.pi / 2]),
         (qml.CRot, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2, 0, 0]),
         (qml.CRot, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (qml.CRot, [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
@@ -330,6 +340,9 @@ class TestApply:
         (qml.CRX, [0, 0, 0, 1], [0, 0, 1j, 0], [math.pi]),
         (qml.CRX, [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
          [0, 1 / math.sqrt(2), 1 / 2, 1j / 2], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, -1j, 0], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 + 1j / 2, 1 / 2 - 1j / 2, 0, 0], [math.pi / 2]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_two_wires_with_parameters)
@@ -929,6 +942,8 @@ class TestDefaultQubitIntegration:
         ("RY", [-math.pi/4], 1/math.sqrt(2)),
         ("RZ", [math.pi/2], 1),
         ("RZ", [-math.pi/4], 1),
+        ("MultiRZ", [math.pi/2], 1),
+        ("MultiRZ", [-math.pi/4], 1),
         ("Rot", [math.pi/2, 0, 0], 1),
         ("Rot", [0, math.pi/2, 0], 0),
         ("Rot", [0, 0, math.pi/2], 1),
@@ -963,6 +978,9 @@ class TestDefaultQubitIntegration:
         ("CRZ", [0], [-1/2, -1/2]),
         ("CRZ", [-math.pi], [-1/2, -1/2]),
         ("CRZ", [math.pi/2], [-1/2, -1/2]),
+        ("MultiRZ", [0], [-1/2, -1/2]),
+        ("MultiRZ", [-math.pi], [-1/2, -1/2]),
+        ("MultiRZ", [math.pi/2], [-1/2, -1/2]),
         ("CRot", [math.pi/2, 0, 0], [-1/2, -1/2]),
         ("CRot", [0, math.pi/2, 0], [-1/2, 1/4]),
         ("CRot", [0, 0, math.pi/2], [-1/2, -1/2]),
@@ -1594,3 +1612,61 @@ class TestTensorSample:
             )
         ) / 16
         assert np.allclose(var, expected, atol=tol, rtol=0)
+
+class TestProbabilityIntegration:
+    """Test probability method for when analytic is True/False"""
+
+    def mock_analytic_counter(self, wires=None):
+        self.analytic_counter += 1
+        return np.array([1, 0, 0, 0], dtype=float)
+
+    @pytest.mark.parametrize("x", [[0.2, 0.5], [0.4, 0.9], [0.8, 0.3]])
+    def test_probability(self, x, tol):
+        """Test that the probability function works when analytic=False"""
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev_analytic = qml.device("default.qubit", wires=2, analytic=True)
+
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        prob = qml.QNode(circuit, dev)
+        prob_analytic = qml.QNode(circuit, dev_analytic)
+
+        assert np.isclose(prob(x).sum(), 1, atol=tol, rtol=0)
+        assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
+        assert not np.array_equal(prob_analytic(x), prob(x))
+
+    @pytest.mark.parametrize("analytic", [True, False])
+    def test_call_generate_samples(self, analytic, monkeypatch):
+        """Test analytic_probability call when generating samples"""
+        self.analytic_counter = False
+
+        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
+
+        # generate samples through `generate_samples` (using 'analytic_probability')
+        dev.generate_samples()
+
+        # should call `analytic_probability` once through `generate_samples`
+        assert self.analytic_counter == 1
+
+    # TODO: remove test when enforcing `analytic_probability` method for all analytic devices
+    @pytest.mark.parametrize("analytic", [True, False])
+    def test_call_generate_samples_no_analytic_fn(self, analytic, mock_qubit_device, monkeypatch):
+        """Test analytic_probability when device has no method called analytic_probability"""
+        self.analytic_counter = 0
+
+        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
+
+        # generate samples from a qubit device with no 'analytic_probabiliy' method
+        dev._samples = mock_qubit_device.generate_samples()
+        dev.probability()
+
+        # should call `mock_analytic_probability` through `probability` once only if analytic=True
+        # and never through `generate_samples` since the `mock_qubit_device` has no mocked
+        # `analytic_probabiliy` method.
+        assert self.analytic_counter == analytic

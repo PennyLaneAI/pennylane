@@ -280,7 +280,15 @@ class QubitDevice(Device):
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
         number_of_states = 2 ** self.num_wires
-        rotated_prob = self.probability()
+
+        # Check if device has `analytic_probability` method, otherwise call `probability`
+        # TODO: try-except statement should be removed when enforcing an `analytic_probabily`
+        # method for all analytic devices => should always call `self.analytic_probability`
+        try:
+            rotated_prob = self.analytic_probability()
+        except AttributeError:
+            rotated_prob = self.probability()
+
         samples = self.sample_basis_states(number_of_states, rotated_prob)
         return QubitDevice.states_to_binary(samples, self.num_wires)
 
