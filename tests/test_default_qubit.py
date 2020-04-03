@@ -1652,3 +1652,10 @@ class TestProbabilityIntegration:
 
         # should call `analytic_probability` once through `generate_samples`
         assert self.analytic_counter == 1
+
+    def test_stateless_analytic_return(self):
+        """Test that analytic_probability returns None if device is stateless"""
+        dev = qml.device("default.qubit", wires=2)
+        dev._state = None
+
+        assert dev.analytic_probability() is None
