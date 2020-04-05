@@ -69,24 +69,24 @@ def cli():
     """
     #TODO: Rename commit to revision which is the general git term
     # Use git rev-parse <revision> to get the SHA hash of the commit
-    parser = argparse.ArgumentParser(description="PennyLane benchmarking tool for commits")
+    parser = argparse.ArgumentParser(description="PennyLane benchmarking tool for revisions")
     parser.add_argument(
-        "-c",
-        "--commits",
+        "-r",
+        "--revisions",
         type=lambda x: x.split(","),
-        help="comma-separated list of commits to run the benchmark on",
+        help="comma-separated list of revisions to run the benchmark on",
     )
 
     args, unknown_args = parser.parse_known_args()
 
-    for commit in args.commits:
-        directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), commit)
+    for revision in args.revisions:
+        directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), revision)
         with temporary_directory(directory):
-            print(">>> Downloading {}".format(commit))
+            print(">>> Downloading {}".format(revision))
             subprocess.run([
                 "pip",
                 "download",
-                "git+https://www.github.com/XanaduAI/pennylane@{}".format(commit),
+                "git+https://www.github.com/XanaduAI/pennylane@{}".format(revision),
                 "-d",
                 directory,
                 "--no-deps",
@@ -99,7 +99,7 @@ def cli():
             with zipfile.ZipFile(zip_path, 'r') as zip:
                 zip.extractall(directory)
 
-            print(">>> Setup {}".format(commit))
+            print(">>> Setup {}".format(revision))
             with cd(os.path.join(directory, "PennyLane")):
                 subprocess.run(["python", "setup.py", "-q", "bdist_wheel"])
 
@@ -117,7 +117,7 @@ def cli():
                 # TODO: there are still some old imports lingering around here...
                 # Somehow they can surely be removed
 
-                print(">>> Benchmark {}".format(commit))
+                print(">>> Benchmark {}".format(revision))
                 subprocess.run(["python", "benchmark.py"] + unknown_args)
 
 
