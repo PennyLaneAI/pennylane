@@ -175,7 +175,7 @@ class PauliZ(Observable, Operation, DiagonalOperation):
         return []
 
 
-class S(Operation,DiagonalOperation):
+class S(Operation, DiagonalOperation):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -205,7 +205,7 @@ class S(Operation,DiagonalOperation):
         return np.array([1, 1j])
 
 
-class T(Operation,DiagonalOperation):
+class T(Operation, DiagonalOperation):
     r"""T(wires)
     The single-qubit T gate
 
@@ -265,7 +265,7 @@ class CNOT(Operation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
-class CZ(Operation,DiagonalOperation):
+class CZ(Operation, DiagonalOperation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -473,7 +473,7 @@ class RY(Operation):
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
 
 
-class RZ(Operation,DiagonalOperation):
+class RZ(Operation, DiagonalOperation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -507,10 +507,15 @@ class RZ(Operation,DiagonalOperation):
     @staticmethod
     def _diagonal(*params):
         theta = params[0]
-        return np.array([np.cos(theta / 2) + 1j * np.sin(-theta / 2), np.cos(theta / 2) - 1j * np.sin(-theta / 2)])
+        return np.array(
+            [
+                np.cos(theta / 2) + 1j * np.sin(-theta / 2),
+                np.cos(theta / 2) - 1j * np.sin(-theta / 2),
+            ]
+        )
 
 
-class PhaseShift(Operation,DiagonalOperation):
+class PhaseShift(Operation, DiagonalOperation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -921,7 +926,7 @@ class CRY(Operation):
         return decomp_ops
 
 
-class CRZ(Operation,DiagonalOperation):
+class CRZ(Operation, DiagonalOperation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
@@ -974,7 +979,14 @@ class CRZ(Operation,DiagonalOperation):
     @staticmethod
     def _diagonal(*params):
         theta = params[0]
-        return np.array([1, 1, np.cos(theta / 2) + 1j * np.sin(-theta / 2), np.cos(theta / 2) - 1j * np.sin(-theta / 2)])
+        return np.array(
+            [
+                1,
+                1,
+                np.cos(theta / 2) + 1j * np.sin(-theta / 2),
+                np.cos(theta / 2) - 1j * np.sin(-theta / 2),
+            ]
+        )
 
     @staticmethod
     def decomposition(lam, wires):

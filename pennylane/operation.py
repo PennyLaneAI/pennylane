@@ -739,9 +739,10 @@ class DiagonalOperation(abc.ABC):
         return diag
 
     # TODO: make matrix a classmethod to enable simpler calculation
-    #@classmethod
-    #def _matrix(cls, *params):
+    # @classmethod
+    # def _matrix(cls, *params):
     #    return np.diag(cls._diagonal(params))
+
 
 # =============================================================================
 # Base Observable class
