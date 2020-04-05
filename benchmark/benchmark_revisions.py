@@ -79,8 +79,25 @@ def cli():
 
     args, unknown_args = parser.parse_known_args()
 
+    revisions_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "revisions")
+    if not os.path.exists(revisions_directory):
+        os.mkdir(revisions_directory)
+
     for revision in args.revisions:
-        directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), revision)
+        directory = os.path.join(revisions_directory, revision)
+
+        # We first make sure we get the latest version of the desired revision
+        if os.path.exists(directory):
+            with cd(directory):
+                subprocess.run("git checkout {}".format(revision))
+        else:
+            os.mkdir(directory)
+            with cd(directory):
+                subprocess.run("git clone https://www.github.com/xanaduai/pennylane .")
+                subprocess.run("git checkout {}".format(revision))
+
+        continue
+
         with temporary_directory(directory):
             print(">>> Downloading {}".format(revision))
             subprocess.run([
