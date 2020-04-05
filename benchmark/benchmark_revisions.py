@@ -66,8 +66,6 @@ __version__ = "0.1.0"
 def cli():
     """Parse the command line arguments, perform the requested action.
     """
-    #TODO: Rename commit to revision which is the general git term
-    # Use git rev-parse <revision> to get the SHA hash of the commit
     parser = argparse.ArgumentParser(description="PennyLane benchmarking tool for revisions")
     parser.add_argument(
         "-r",
@@ -102,10 +100,7 @@ def cli():
                 subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
                 subprocess.run("git checkout {} -q".format(revision))
 
-        #with cd(directory):
-        #    print(">>> Running setup for revision {}".format(revision))
-        #    subprocess.run(["python",  "setup.py",  "-q",  "bdist_wheel"])
-
+        #TODO: Fix benchmark script call
         with prepend_to_path(directory):
             print(">>> Running benchmark for revision {}".format(revision))
             subprocess.run(["python benchmark.py"] + unknown_args)
