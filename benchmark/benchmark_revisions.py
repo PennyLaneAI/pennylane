@@ -24,7 +24,6 @@ import shutil
 import pkg_resources
 
 import numpy as np
-import zipfile
 
 class cd:
     """Context manager for changing the current working directory"""
@@ -88,54 +87,28 @@ def cli():
 
         # We first make sure we get the latest version of the desired revision
         if os.path.exists(directory):
+            print(">>> Revision {} found locally, updating...".format(revision))
             with cd(directory):
-                subprocess.run("git checkout {}".format(revision))
+                # Check if we're on a detached HEAD (i.e. for version revisions)
+                res = subprocess.run("git rev-parse --abbrev-ref --symbolic-full-name HEAD", capture_output=True)
+                
+                if "HEAD" not in str(res.stdout):
+                    subprocess.run("git checkout {} -q".format(revision))
+                    subprocess.run("git pull -q")
         else:
+            print(">>> Revision {} not found locally, cloning...".format(revision))
             os.mkdir(directory)
             with cd(directory):
-                subprocess.run("git clone https://www.github.com/xanaduai/pennylane .")
-                subprocess.run("git checkout {}".format(revision))
+                subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
+                subprocess.run("git checkout {} -q".format(revision))
 
-        continue
+        #with cd(directory):
+        #    print(">>> Running setup for revision {}".format(revision))
+        #    subprocess.run(["python",  "setup.py",  "-q",  "bdist_wheel"])
 
-        with temporary_directory(directory):
-            print(">>> Downloading {}".format(revision))
-            subprocess.run([
-                "pip",
-                "download",
-                "git+https://www.github.com/XanaduAI/pennylane@{}".format(revision),
-                "-d",
-                directory,
-                "--no-deps",
-                "-q",
-            ])
-
-            zip_path = os.path.join(directory, os.listdir(directory)[0])
-
-            print(">>> Unpacking {}".format(zip_path))
-            with zipfile.ZipFile(zip_path, 'r') as zip:
-                zip.extractall(directory)
-
-            print(">>> Setup {}".format(revision))
-            with cd(os.path.join(directory, "PennyLane")):
-                subprocess.run(["python", "setup.py", "-q", "bdist_wheel"])
-
-            pl_path = os.path.join(directory, "PennyLane")
-            with prepend_to_path(pl_path):
-                print(">>> Reload modules")
-                del_keys = []
-                for key in sys.modules:
-                    if "pennylane" in key:
-                        del_keys.append(key)
-
-                for key in del_keys:
-                    del sys.modules[key]
-
-                # TODO: there are still some old imports lingering around here...
-                # Somehow they can surely be removed
-
-                print(">>> Benchmark {}".format(revision))
-                subprocess.run(["python", "benchmark.py"] + unknown_args)
+        with prepend_to_path(directory):
+            print(">>> Running benchmark for revision {}".format(revision))
+            subprocess.run(["python benchmark.py"] + unknown_args)
 
 
 
