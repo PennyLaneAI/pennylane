@@ -11,13 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-Layers are trainable templates that are typically repeated, using different adjustable parameters in each repetition.
-They implement a transformation from a quantum state to another quantum state.
-"""
+"""This module contains classes and functions for constructing quantum neural networks from QNodes."""
 
-from .strongly_entangling import StronglyEntanglingLayers
-from .random import RandomLayers
-from .cv_neural_net import CVNeuralNetLayers
-from .simplified_two_design import SimplifiedTwoDesign
-from .basic_entangler import BasicEntanglerLayers
+from .keras import KerasLayer

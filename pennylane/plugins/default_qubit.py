@@ -23,7 +23,8 @@ import itertools
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, MultiRZ
+from pennylane.utils import expand_vector
 
 
 # tolerance for numerical errors
@@ -58,6 +59,7 @@ class DefaultQubit(QubitDevice):
         "PauliX",
         "PauliY",
         "PauliZ",
+        "MultiRZ",
         "Hadamard",
         "S",
         "T",
@@ -111,6 +113,9 @@ class DefaultQubit(QubitDevice):
             elif isinstance(operation, BasisState):
                 basis_state = par[0]
                 self.apply_basis_state(basis_state, wires)
+
+            elif isinstance(operation, MultiRZ):
+                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
 
             else:
                 self._state = self.mat_vec_product(operation.matrix, self._state, wires)
@@ -210,6 +215,23 @@ class DefaultQubit(QubitDevice):
         state_multi_index = np.transpose(tdot, inv_perm)
         return np.reshape(state_multi_index, 2 ** self.num_wires)
 
+    def vec_vec_product(self, phases, vec, wires):
+        r"""Apply multiplication of a phase vector to subsystems of the quantum state.
+
+        This represents the multiplication with diagonal gates in a more efficient manner.
+
+        Args:
+            phases (array): vector to multiply
+            vec (array): state vector to multiply
+            wires (Sequence[int]): target subsystems
+
+        Returns:
+            array: output vector after applying ``phases`` to input ``vec`` on specified subsystems
+        """
+        # TODO: use multi-index vectors/matrices to represent states/gates internally
+        phases = expand_vector(phases, wires, list(range(self.num_wires)))
+        return vec * phases
+
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
@@ -218,10 +240,38 @@ class DefaultQubit(QubitDevice):
         self._state[0] = 1
         self._pre_rotated_state = self._state
 
-    def probability(self, wires=None):
+    def analytic_probability(self, wires=None):
+        """Return the (marginal) analytic probability of each computational basis state."""
         if self._state is None:
             return None
 
         wires = wires or range(self.num_wires)
+
         prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
         return prob
+
+    def estimate_probability(self, wires=None):
+        """Return the estimated probability of each computational basis state using the generated samples."""
+
+        # consider only the requested wires
+        wires = np.hstack(wires)
+
+        samples = self._samples[:, np.array(wires)]
+
+        # convert samples from a list of 0, 1 integers, to base 10 representation
+        unraveled_indices = [2] * len(wires)
+        indices = np.ravel_multi_index(samples.T, unraveled_indices)
+
+        # count the basis state occurrences, and construct the probability vector
+        basis_states, counts = np.unique(indices, return_counts=True)
+        prob = np.zeros([len(wires) ** 2], dtype=np.float64)
+        prob[basis_states] = counts / self.shots
+        return prob
+
+    def probability(self, wires=None):
+        wires = wires or range(self.num_wires)
+
+        if self.analytic:
+            return self.analytic_probability(wires=wires)
+
+        return self.estimate_probability(wires=wires)

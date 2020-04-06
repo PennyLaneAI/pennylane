@@ -21,7 +21,7 @@ from scipy import sparse
 import pennylane as qml
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import _check_wires, _check_shape, _get_shape
+from pennylane.templates.utils import check_wires, check_shape, get_shape
 from pennylane.variable import Variable
 
 
@@ -246,15 +246,15 @@ def MottonenStatePreparation(state_vector, wires):
     ###############
     # Input checks
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
     n_wires = len(wires)
     expected_shape = (2 ** n_wires,)
-    _check_shape(
+    check_shape(
         state_vector,
         expected_shape,
         msg="'state_vector' must be of shape {}; got {}."
-        "".format(expected_shape, _get_shape(state_vector)),
+        "".format(expected_shape, get_shape(state_vector)),
     )
 
     # check if state_vector is normalized
