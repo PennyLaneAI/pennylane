@@ -367,11 +367,12 @@ class DefaultTensor(Device):
         super().__init__(wires, shots)
         self.analytic = analytic
         self._rep = representation
+        self.reset()
 
     def reset(self):
         """Reset the device"""
         self._nodes = {}
-        if self._rep=="exact":
+        if self._rep == "exact":
             self._contracted = False
             self._terminal_edges = []
 
@@ -611,16 +612,6 @@ class DefaultTensor(Device):
             return self._array(A, dtype=self.C_DTYPE)
         return self._asarray(A(*par), dtype=self.C_DTYPE)
 
-    def _contract_to_ket(self, method="auto"):
-        if "contracted_state" not in self._nodes:
-            if method != "custom":
-                contract = contract_fns[method]
-                ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
-            else:
-                ket = self.custom_contract()
-            ket.set_name("Ket")
-            self._nodes["contracted_state"] = ket
-
     def ev(self, obs_nodes, wires):
         r"""Expectation value of observables on specified wires.
 
@@ -630,7 +621,7 @@ class DefaultTensor(Device):
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        if self._rep=="exact":
+        if self._rep == "exact":
             self._contract_to_ket(method="auto")
             ket = self._nodes["contracted_state"]
             bra = tn.conj(ket, name="Bra")
@@ -675,8 +666,22 @@ class DefaultTensor(Device):
             )
         return self._real(expval)
 
+    def _contract_to_ket(self, method="auto"):
+        """Contract the nodes which represent the state preparation and evolution to a final tensor.
+        The contracted tensor is stored in the `_nodes` dictionary under the key `"contracted_state"`
+
+        Args:
+            method (str): the contraction method to be employed (possible choices are listed
+             in the dictionary `contract_fns`)
+        """
+        if "contracted_state" not in self._nodes:
+            contract = contract_fns[method]
+            ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+            ket.set_name("Ket")
+            self._nodes["contracted_state"] = ket
+
     @property
-    def _state(self):
+    def _state(self, contraction_method="auto"):
         """The numerical value of the current state vector.
 
         This attribute cannot be manually overwritten.
@@ -684,9 +689,8 @@ class DefaultTensor(Device):
         Returns:
             (array, tf.Tensor, torch.Tensor): the numerical tensor
         """
-        self._contract_to_ket()
+        self._contract_to_ket(contraction_method)
         ket = self._nodes["contracted_state"]
-        # TODO: does not work properly if some nodes remain disentangled?
         return ket.tensor
 
 
