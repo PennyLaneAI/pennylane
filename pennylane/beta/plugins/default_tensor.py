@@ -29,7 +29,7 @@ except ImportError as e:
 from pennylane._device import Device
 
 # tolerance for numerical errors
-tolerance = 1e-10
+TOL = 1e-10
 
 
 # ========================================================
@@ -42,6 +42,7 @@ contract_fns = {
     "optimal": tn.contractors.optimal,
     "auto": tn.contractors.auto,
 }
+
 
 def spectral_decomposition(A):
     r"""Spectral decomposition of a Hermitian matrix.
@@ -362,10 +363,33 @@ class DefaultTensor(Device):
 
     zero_state = np.array([1., 0.], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, analytic=True, representation="mps"):
+    def __init__(self, wires, shots=1000, analytic=True, representation="exact"):
         super().__init__(wires, shots)
         self.analytic = analytic
         self._rep = representation
+
+    def reset(self):
+        """Reset the device"""
+        self._nodes = {}
+        if self._rep=="exact":
+            self._contracted = False
+            self._terminal_edges = []
+
+            for w in range(self.num_wires):
+                node = self._add_node(self.zero_state, wires=[w], name="ZeroState")
+                self._terminal_edges.extend(node.edges)
+
+        elif self._rep == "mps":
+            raise NotImplementedError
+            #nodes = []
+            #for w in range(self.num_wires):
+            #    tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
+            #    node = self._add_node(tensor, wires=[w], name="ZeroState")
+            #    nodes.append(node)
+            #    if w > 0:
+            #        tn.connect(nodes[w-1][2], nodes[w][0])
+            ## Note: might want to set canonicalize=False
+            #self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
 
     @staticmethod
     def _create_basis_state(state, wires):
@@ -387,13 +411,13 @@ class DefaultTensor(Device):
     def _add_node(self, A, wires, name="UnnamedNode", group="state"):
         """Adds a node to the underlying tensor network.
 
-        The node is also added to ``self._nodes`` under the key ``group`` for bookkeeping.
+        The node is also added to ``self._nodes`` under the key indicated by``group`` for bookkeeping.
 
         Args:
             A (array): numerical data values for the operator (i.e., matrix form)
             wires (list[int]): wires that this operator acts on
             name (str): optional name for the node
-            group (str): which group of nodes to add new node to
+            group (str): key indicating which group of nodes to add new node to
 
         Returns:
             tn.Node: the newly created node
@@ -472,21 +496,22 @@ class DefaultTensor(Device):
                 tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
                 self._terminal_edges[w] = op_node[idx]
         elif self._rep == "mps":
-            if len(wires) == 1:
-                self.mps.apply_one_site_gate(op_node, wires[0])
-            elif len(wires) == 2:
-                if abs(wires[1]-wires[0]) == 1:
-                    ret = self.mps.apply_two_site_gate(op_node, *wires)
-                    # TODO: determine what ``ret`` is and if it is useful for anything
-                    # TODO: pass ``max_singular_values`` or ``max_truncation_error``
-                else:
-                    # only nearest-neighbours are natively supported
-                    print("ruh roh")
-            else:
-                raise NotImplementedError
+            raise NotImplementedError
+            #if len(wires) == 1:
+            #    self.mps.apply_one_site_gate(op_node, wires[0])
+            #elif len(wires) == 2:
+            #    if abs(wires[1]-wires[0]) == 1:
+            #        ret = self.mps.apply_two_site_gate(op_node, *wires)
+            #        # TODO: determine what ``ret`` is and if it is useful for anything
+            #        # TODO: pass ``max_singular_values`` or ``max_truncation_error``
+            #    else:
+            #        # only nearest-neighbours are natively supported
+            #        print("ruh roh")
+            #else:
+            #    raise NotImplementedError
 
     def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, group: str):
-        """Helper function for creating tensornetwork nodes based on tensors.
+        """Helper function for creating TensorNetwork nodes based on tensors.
 
         Args:
           tensors (np.ndarray, tf.Tensor, torch.Tensor): tensors of the observables
@@ -495,7 +520,7 @@ class DefaultTensor(Device):
           group (str): which group of nodes to create in
 
         Returns:
-          list[tn.Node]: the observables as tensornetwork Nodes
+          list[tn.Node]: the observables as TensorNetwork Nodes
         """
         return [self._add_node(A, w, name=o, group=group) for A, w, o in zip(tensors, wires, observable_names)]
 
@@ -595,39 +620,16 @@ class DefaultTensor(Device):
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
 
-    def custom_contract(self, max_phys_bond_dim=None, max_virtual_bond_dim=None):
-        """Implementation of the contraction method from arxiv:1912.03014"""
-
-        # convert every node to MPS in canonical form
-
-        # TODO: have to be more careful when more general state prep ops are supported
-        state_nodes = self._nodes["state"]
-        meas_nodes = self._nodes["observables"]
-        state_prep_nodes = state_nodes[:self.num_wires]
-        unitary_nodes = state_nodes[self.num_wires:]
-
-        for idx, node in enumerate(meas_nodes):
-            # the nodes in ``meas_nodes`` are time-ordered
-            # TODO: can be smarter about grouping nodes and contracting in parallel?
-            raise NotImplementedError
-
-
     def ev(self, obs_nodes, wires):
         r"""Expectation value of observables on specified wires.
 
          Args:
-            obs_nodes (Sequence[tn.Node]): the observables as tensornetwork Nodes
+            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
             wires (Sequence[Sequence[int]]): measured subsystems for each observable
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        if self._rep=="mps":
-            if len(wires) == 1:
-                expval = self.mps.measure_local_operator(obs_nodes, wires[0])
-            else:
-                raise NotImplementedError
-
-        elif self._rep=="exact":
+        if self._rep=="exact":
             self._contract_to_ket(method="auto")
             ket = self._nodes["contracted_state"]
             bra = tn.conj(ket, name="Bra")
@@ -657,7 +659,15 @@ class DefaultTensor(Device):
             for obs_node in obs_nodes:
                 contracted_ket = tn.contract_between(obs_node, contracted_ket)
             expval = tn.contract_between(bra, contracted_ket).tensor
-        if self._abs(self._imag(expval)) > tolerance:
+
+        elif self._rep=="mps":
+            raise NotImplementedError
+            #if len(wires) == 1:
+            #    expval = self.mps.measure_local_operator(obs_nodes, wires[0])
+            #else:
+            #    raise NotImplementedError
+
+        if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
                 "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
                 RuntimeWarning,
@@ -678,27 +688,6 @@ class DefaultTensor(Device):
         # TODO: does not work properly if some nodes remain disentangled?
         return ket.tensor
 
-    def reset(self):
-        """Reset the device"""
-        self._nodes = {}
-        if self._rep=="exact":
-            self._contracted = False
-            self._terminal_edges = []
-
-            for w in range(self.num_wires):
-                node = self._add_node(self.zero_state, wires=[w], name="ZeroState")
-                self._terminal_edges.extend(node.edges)
-
-        elif self._rep=="mps":
-            nodes = []
-            for w in range(self.num_wires):
-                tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
-                node = self._add_node(tensor, wires=[w], name="ZeroState")
-                nodes.append(node)
-                if w > 0:
-                    tn.connect(nodes[w-1][2], nodes[w][0])
-            # Note: might want to set canonicalize=False
-            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
 
     @property
     def operations(self):
