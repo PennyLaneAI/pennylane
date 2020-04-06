@@ -126,8 +126,8 @@ def prep_par(par, op):
     return par
 
 
-class TestAuxillaryFunctions:
-    """Test auxillary functions."""
+class TestAuxiliaryFunctions:
+    """Test auxiliary functions."""
 
     def test_spectral_decomposition(self, tol):
         """Test that the correct spectral decomposition is returned."""

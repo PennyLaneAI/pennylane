@@ -371,14 +371,21 @@ class DefaultTensor(Device):
 
     def reset(self):
         """Reset the device"""
+        self._clear_network()
+
+        # prepare a factorized all-zeros state
+        self._add_initial_state_nodes(
+            [self.zero_state] * self.num_wires,
+            [[w] for w in range(self.num_wires)],
+            ["ZeroState"] * self.num_wires
+        )
+
+    def _clear_network(self):
+        """Remove all data representing the current network from internal cache."""
         self._nodes = {}
         if self._rep == "exact":
             self._contracted = False
             self._terminal_edges = []
-
-            for w in range(self.num_wires):
-                node = self._add_node(self.zero_state, wires=[w], name="ZeroState")
-                self._terminal_edges.extend(node.edges)
 
         elif self._rep == "mps":
             raise NotImplementedError
@@ -391,6 +398,24 @@ class DefaultTensor(Device):
             #        tn.connect(nodes[w-1][2], nodes[w][0])
             ## Note: might want to set canonicalize=False
             #self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+
+    def _add_initial_state_nodes(self, tensors, wires, names):
+        """Create the nodes representing the initial input state circuit.
+           Input states can be factorized or entangled. If a state can be factorized
+           into k subsystems, then `tensors`, `wires`, and `names` should be lists of length k.
+
+          Args:
+              tensors (list[np.array]): the numerical tensors for each factorized component of
+               the state (in the computational basis)
+              list(list[int])): the wires for each factorized component of the state
+              name (list[str]): name for each factorized component of the state
+        """
+        if not (len(tensors) == len(wires) == len(names)):
+            raise ValueError("`tensors`, `wires`, and `names` must all be the same length.")
+
+        for t, w, n in zip(tensors, wires, names):
+            node = self._add_node(t, wires=w, name=n)
+            self._terminal_edges.extend(node.edges)
 
     @staticmethod
     def _create_basis_state(state, wires):
@@ -456,19 +481,20 @@ class DefaultTensor(Device):
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
-            raise NotImplementedError
-            # state = self._array(par[0], dtype=self.C_DTYPE)
-            # if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
-            #     self._state_node.tensor = self._reshape(state, [2] * self.num_wires)
-            # else:
-            #     raise ValueError("State vector must be of length 2**wires.")
-            # if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-            #     raise ValueError(
-            #         "The default.tensor plugin can apply QubitStateVector only to all of the {} wires.".format(
-            #             self.num_wires
-            #         )
-            #     )
-            # return
+            state = self._array(par[0], dtype=self.C_DTYPE)
+            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
+                tensor = self._reshape(state, [2] * self.num_wires)
+                self._clear_network()
+                self._add_initial_state_nodes([tensor], [list(range(self.num_wires))], ["QubitStateVector"])
+            else:
+                raise ValueError("State vector must be of length 2**wires.")
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError(
+                    "The default.tensor plugin can apply QubitStateVector only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
+            return
         if operation == "BasisState":
             raise NotImplementedError
             # n = len(par[0])
