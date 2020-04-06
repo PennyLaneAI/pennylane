@@ -47,7 +47,6 @@ def test_create_CV_qnode():
     assert isinstance(circuit, CVQNode)
     assert hasattr(circuit, "jacobian")
 
-
 def test_fallback_Jacobian_qnode(monkeypatch):
     """Test the decorator fallsback to Jacobian QNode if it
     can't determine the device model"""
@@ -66,7 +65,6 @@ def test_fallback_Jacobian_qnode(monkeypatch):
         assert not isinstance(circuit, QubitQNode)
         assert isinstance(circuit, JacobianQNode)
         assert hasattr(circuit, "jacobian")
-
 
 def test_torch_interface(skip_if_no_torch_support):
     """Test torch interface conversion"""
