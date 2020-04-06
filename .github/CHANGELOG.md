@@ -173,6 +173,10 @@
 
 <h3>Breaking changes</h3>
 
+* Probabilty methods are handled by `QubitDevice` and device method
+  requirements are modified to simplify plugin development.
+  [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
+
 <h3>Improvements</h3>
 
 * The input check functions in :mod:`pennylane.templates.utils` are now public
