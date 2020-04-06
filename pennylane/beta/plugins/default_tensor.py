@@ -496,23 +496,25 @@ class DefaultTensor(Device):
                 )
             return
         if operation == "BasisState":
-            raise NotImplementedError
-            # n = len(par[0])
-            # if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
-            #     raise ValueError(
-            #         "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
-            #             self.num_wires
-            #         )
-            #     )
-            # if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-            #     raise ValueError(
-            #         "The default.tensor plugin can apply BasisState only to all of the {} wires.".format(
-            #             self.num_wires
-            #         )
-            #     )
-            # state_node = self._create_basis_state(par[0], wires)
-            # self._state_node.tensor = self._asarray(state_node, dtype=self.C_DTYPE)
-            # return
+            n = len(par[0])
+            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+                raise ValueError(
+                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+                        self.num_wires
+                    )
+                )
+            full_wires_list = list(range(self.num_wires))
+            if wires is not None and wires != [] and list(wires) != full_wires_list:
+                raise ValueError(
+                    "The default.tensor plugin can apply BasisState only to all of the {} wires.".format(
+                        self.num_wires
+                    )
+                )
+            state = self._create_basis_state(par[0], wires)
+            tensor = self._array(state, dtype=self.C_DTYPE)
+            self._clear_network()
+            self._add_initial_state_nodes([tensor], [full_wires_list], ["BasisState"])
+            return
 
         A = self._get_operator_matrix(operation, par)
         num_wires = len(wires)
@@ -538,7 +540,7 @@ class DefaultTensor(Device):
             #else:
             #    raise NotImplementedError
 
-    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, key: str):
+    def create_nodes_from_tensors(self, tensors, wires, observable_names, key):
         """Helper function for creating TensorNetwork nodes based on tensors.
 
         Args:
@@ -578,9 +580,9 @@ class DefaultTensor(Device):
             self._reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)
         ]
 
-        obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable)
+        obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable, key="observables")
         obs_nodes_for_squares = self.create_nodes_from_tensors(
-            tensors_of_squared_matrices, wires, observable
+            tensors_of_squared_matrices, wires, observable, key="observables"
         )
 
         return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires) ** 2
