@@ -408,16 +408,17 @@ class DefaultTensor(Device):
         state_node[tuple(state)] = 1
         return state_node
 
-    def _add_node(self, A, wires, name="UnnamedNode", group="state"):
+    def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
 
-        The node is also added to ``self._nodes`` under the key indicated by``group`` for bookkeeping.
+        For bookkeeping, the dictionary ``self._nodes`` is updated. The created node is
+        appended to the list found under ``key``.
 
         Args:
             A (array): numerical data values for the operator (i.e., matrix form)
             wires (list[int]): wires that this operator acts on
             name (str): optional name for the node
-            group (str): key indicating which group of nodes to add new node to
+            key (str): which list of nodes to add new node to
 
         Returns:
             tn.Node: the newly created node
@@ -429,9 +430,9 @@ class DefaultTensor(Device):
         else:
             node = tn.Node(A, name=name, backend=self.backend)
 
-        if group not in self._nodes:
-            self._nodes[group] = []
-        self._nodes[group].append(node)
+        if key not in self._nodes:
+            self._nodes[key] = []
+        self._nodes[key].append(node)
 
         return node
 
@@ -510,19 +511,19 @@ class DefaultTensor(Device):
             #else:
             #    raise NotImplementedError
 
-    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, group: str):
+    def create_nodes_from_tensors(self, tensors: list, wires: list, observable_names: list, key: str):
         """Helper function for creating TensorNetwork nodes based on tensors.
 
         Args:
           tensors (np.ndarray, tf.Tensor, torch.Tensor): tensors of the observables
           wires (Sequence[Sequence[int]]): measured subsystems for each observable
           observable_names (Sequence[str]): name of the operation/observable
-          group (str): which group of nodes to create in
+          key (str): which subset of nodes to add the nodes to
 
         Returns:
           list[tn.Node]: the observables as TensorNetwork Nodes
         """
-        return [self._add_node(A, w, name=o, group=group) for A, w, o in zip(tensors, wires, observable_names)]
+        return [self._add_node(A, w, name=o, key=key) for A, w, o in zip(tensors, wires, observable_names)]
 
     def expval(self, observable, wires, par):
 
@@ -535,7 +536,7 @@ class DefaultTensor(Device):
             offset = len(w)
             tensors.append(self._reshape(A, [2] * offset * 2))
 
-        nodes = self.create_nodes_from_tensors(tensors, wires, observable, group="observables")
+        nodes = self.create_nodes_from_tensors(tensors, wires, observable, key="observables")
         return self.ev(nodes, wires)
 
     def var(self, observable, wires, par):
