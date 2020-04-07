@@ -23,8 +23,11 @@ from numpy.linalg import eigh
 
 try:
     import tensornetwork as tn
+    v = tn.__version__.split(".")
+    if int(v[0]) == 0 and int(v[1]) < 3:
+        raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 except ImportError as e:
-    raise ImportError("default.tensor device requires TensorNetwork>=0.2")
+    raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 
 from pennylane._device import Device
 
@@ -630,7 +633,7 @@ class DefaultTensor(Device):
         """Get the operator matrix for a given operation or observable.
 
         Args:
-          operation    (str): name of the operation/observable
+          operation (str): name of the operation/observable
           par (tuple[float]): parameter values
         Returns:
           array: matrix representation.
