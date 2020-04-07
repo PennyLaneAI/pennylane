@@ -23,7 +23,8 @@ import itertools
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, MultiRZ
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane.operation import DiagonalOperation
 from pennylane.utils import expand_vector
 
 
@@ -114,8 +115,12 @@ class DefaultQubit(QubitDevice):
                 basis_state = par[0]
                 self.apply_basis_state(basis_state, wires)
 
-            elif isinstance(operation, MultiRZ):
-                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
+            elif isinstance(operation, DiagonalOperation):
+                self._state = self.vec_vec_product(operation.diagonal, self._state, wires)
+
+            elif len(wires) <= 2:
+                # Einsum is faster for small gates
+                self._state = self.mat_vec_product_einsum(operation.matrix, self._state, wires)
 
             else:
                 self._state = self.mat_vec_product(operation.matrix, self._state, wires)
