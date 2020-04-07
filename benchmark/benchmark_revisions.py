@@ -14,7 +14,7 @@
 """
 Benchmarking tool for different commits
 """
-# pylint: disable=import-outside-toplevel,invalid-name
+# pylint: disable=subprocess-run-check
 import argparse
 import os
 import subprocess
@@ -93,16 +93,16 @@ def cli():
                 )
 
                 if "HEAD" not in str(res.stdout):
-                    subprocess.run("git checkout {} -q".format(revision), check=True)
-                    subprocess.run("git pull -q", check=True)
+                    subprocess.run("git checkout {} -q".format(revision))
+                    subprocess.run("git pull -q")
         else:
             print(">>> Revision not found locally, cloning...")
             os.mkdir(pl_directory)
             with cd(pl_directory):
                 subprocess.run(
-                    "git clone https://www.github.com/xanaduai/pennylane . -q", check=True
+                    "git clone https://www.github.com/xanaduai/pennylane . -q"
                 )
-                subprocess.run("git checkout {} -q".format(revision), check=True)
+                subprocess.run("git checkout {} -q".format(revision))
 
         benchmark_file_path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
