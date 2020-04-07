@@ -592,6 +592,43 @@ class TestDefaultTensorNetwork:
         assert all(node in dev._nodes["observables"] for node in obs_nodes)
 
 
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_contract_to_ket_correct(self, tensornet_device_3_wires, method, tol):
+        """Tests that the _contract_to_ket method contracts down to a single node with the correct tensor."""
+
+        dev = tensornet_device_3_wires
+
+        dev.apply("PauliX", [0], [])
+        dev.apply("Hadamard", [1], [])
+
+        assert "contracted_state" not in dev._nodes
+        dev._contract_to_ket(method)
+        assert "contracted_state" in dev._nodes
+        cont_state = dev._nodes["contracted_state"]
+        dev._contract_to_ket(method)  # should not change anything
+        assert dev._nodes["contracted_state"] == cont_state
+
+        expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
+
+        assert np.allclose(cont_state.tensor, expected, atol=tol, rtol=0)
+        assert cont_state.name == "Ket"
+
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_state(self, tensornet_device_3_wires, method, tol):
+
+        dev = tensornet_device_3_wires
+
+        dev.apply("PauliX", [0], [])
+        dev.apply("Hadamard", [1], [])
+
+        assert "contracted_state" not in dev._nodes
+        ket = dev._state
+        assert "contracted_state" in dev._nodes
+
+        expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
+        assert np.allclose(ket, expected, atol=tol, rtol=0)
+
+
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
