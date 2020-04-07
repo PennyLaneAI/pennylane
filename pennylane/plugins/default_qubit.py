@@ -25,7 +25,6 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.utils import expand_vector
@@ -34,21 +33,6 @@ ABC_ARRAY = np.array(list(ABC))
 
 # tolerance for numerical errors
 tolerance = 1e-10
-
-_MATRICES = {
-    qml.PauliX: qml.PauliX._matrix(),
-    qml.PauliY: qml.PauliY._matrix(),
-    qml.PauliZ: qml.PauliZ._matrix(),
-    qml.Hadamard: qml.Hadamard._matrix(),
-    qml.S: qml.S._matrix(),
-    qml.T: qml.T._matrix(),
-    qml.CNOT: qml.CNOT._matrix(),
-    qml.SWAP: qml.SWAP._matrix(),
-    qml.CSWAP: qml.CSWAP._matrix(),
-    qml.Toffoli: qml.Toffoli._matrix(),
-    qml.CZ: qml.CZ._matrix(),
-}
-
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
@@ -138,12 +122,7 @@ class DefaultQubit(QubitDevice):
 
             elif len(wires) <= 2:
                 # Einsum is faster for small gates
-                if type(operation) in _MATRICES:
-                    matrix = _MATRICES[type(operation)]
-                else:
-                    matrix = operation.matrix
-
-                self._state = self.mat_vec_product_einsum(matrix, self._state, wires)
+                self._state = self.mat_vec_product_einsum(operation.matrix, self._state, wires)
 
             else:
                 self._state = self.mat_vec_product(operation.matrix, self._state, wires)
