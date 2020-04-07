@@ -34,6 +34,7 @@ Colors = {
 }
 RESET = "\033[0m"
 
+
 def col(text, color):
     """Wraps the given text in color ANSI sequences.
 
@@ -46,8 +47,10 @@ def col(text, color):
     """
     return Colors[color] + text + RESET
 
+
 class cd:
     """Context manager for changing the current working directory"""
+
     def __init__(self, newPath):
         self.newPath = os.path.expanduser(newPath)
 
@@ -58,8 +61,10 @@ class cd:
     def __exit__(self, etype, value, traceback):
         os.chdir(self.savedPath)
 
+
 class prepend_to_path:
     """Context manager for prepending a path to the system path"""
+
     def __init__(self, path):
         self.path = path
 
@@ -69,8 +74,10 @@ class prepend_to_path:
     def __exit__(self, etype, value, traceback):
         sys.path.pop(0)
 
+
 # benchmarking tool version
 __version__ = "0.1.0"
+
 
 def cli():
     """Parse the command line arguments, perform the requested action.
@@ -90,7 +97,7 @@ def cli():
         os.mkdir(revisions_directory)
 
     for revision in args.revisions:
-        print(">>> Running benchmark for revision {}".format(col(revision, "red")))            
+        print(">>> Running benchmark for revision {}".format(col(revision, "red")))
         pl_directory = os.path.join(revisions_directory, revision)
 
         # We first make sure we get the latest version of the desired revision
@@ -98,7 +105,9 @@ def cli():
             print(">>> Revision found locally, updating...")
             with cd(pl_directory):
                 # Check if we're on a detached HEAD (i.e. for version revisions)
-                res = subprocess.run("git rev-parse --abbrev-ref --symbolic-full-name HEAD", capture_output=True)
+                res = subprocess.run(
+                    "git rev-parse --abbrev-ref --symbolic-full-name HEAD", capture_output=True
+                )
 
                 if "HEAD" not in str(res.stdout):
                     subprocess.run("git checkout {} -q".format(revision))
@@ -110,11 +119,12 @@ def cli():
                 subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
                 subprocess.run("git checkout {} -q".format(revision))
 
-        #TODO: Fix benchmark script call
+        # TODO: Fix benchmark script call
         with prepend_to_path(pl_directory):
-            benchmark_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "benchmark.py")
+            benchmark_file_path = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
+            )
             subprocess.run(["python", benchmark_file_path] + unknown_args + ["--noinfo"])
-
 
 
 if __name__ == "__main__":
