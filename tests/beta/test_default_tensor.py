@@ -378,6 +378,160 @@ class TestDefaultTensorNetwork:
         assert node_edges_set == set(dev._terminal_edges)
 
 
+    def test_add_initial_state_nodes_2_wires(self, tensornet_device_2_wires):
+        """Tests that the initial states are properly created for a 2 wire device."""
+
+        dev = tensornet_device_2_wires
+        dev._clear_network()
+
+        # factorized state
+        tensors = [np.array([1., 0.]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
+        wires = [[0], [1]]
+        names = ["AliceState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceState(0,)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+        # entangled state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)]
+        wires = [[0, 1]]
+        names = ["BellState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 1
+        assert dev._nodes["state"][0].name == "BellState(0, 1)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(1)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+
+    def test_add_initial_state_nodes_3_wires(self, tensornet_device_3_wires):
+        """Tests that the initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
+        dev._clear_network()
+
+        # A|B|C-factorized state
+        tensors = [np.array([1., 0.]), np.array([1, -1j]) / np.sqrt(2), np.array([0., 1.])]
+        wires = [[0], [1], [2]]
+        names = ["AliceState", "BobState", "CharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 3
+        assert dev._nodes["state"][0].name == "AliceState(0,)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        assert dev._nodes["state"][2].name == "CharlieState(2,)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(3)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+        # AB|C-factorized state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0, 1], [2]]
+        names = ["AliceBobState", "CharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceBobState(0, 1)"
+        assert dev._nodes["state"][1].name == "CharlieState(2,)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+        # A|BC-factorized state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0], [1, 2]]
+        names = ["AliceState", "BobCharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceState(0,)"
+        assert dev._nodes["state"][1].name == "BobCharlieState(1, 2)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+        # AC|B-factorized state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+        # tripartite entangled state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0., 0., 0.],
+                             [0., 0., 0., 0.],
+                             [0., 0., 0., 0.],
+                             [0., 0., 0., 1.]]) / np.sqrt(2)]
+        wires = [[0, 1, 2]]
+        names = ["GHZState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 1
+        assert dev._nodes["state"][0].name == "GHZState(0, 1, 2)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(1)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+        # AC|B-factorized state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
+        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+        assert node_edges_set == set(dev._terminal_edges)
+
+
+    @pytest.mark.parametrize("tensors,wires,names", [
+        ([np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)], [[0,1]], ["A", "B"]),
+        ([np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)], [[0], [1]], ["A"]),
+        ([np.array([1., 0.]), np.array([1., 1.]) / np.sqrt(2)], [[0]], ["A"]),
+    ])
+    def test_add_initial_state_nodes_exception(self, tensornet_device_2_wires, tensors, wires, names):
+        """Tests that an exception is given if the method _add_initial_state_nodes
+        receives arguments with incompatible lengths"""
+
+        dev = tensornet_device_2_wires
+        dev._clear_network()
+
+        with pytest.raises(ValueError, match="must all be the same length"):
+            dev._add_initial_state_nodes(tensors, wires, names)
 
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates

@@ -408,10 +408,10 @@ class DefaultTensor(Device):
            into k subsystems, then `tensors`, `wires`, and `names` should be lists of length k.
 
           Args:
-              tensors (list[np.array]): the numerical tensors for each factorized component of
+              tensors (list[np.array, tf.Tensor, torch,Tensor]): the numerical tensors for each factorized component of
                the state (in the computational basis)
-              list(list[int])): the wires for each factorized component of the state
-              name (list[str]): name for each factorized component of the state
+              wires (list(list[int])): the wires for each factorized component of the state
+              names (list[str]): name for each factorized component of the state
         """
         if not (len(tensors) == len(wires) == len(names)):
             raise ValueError("`tensors`, `wires`, and `names` must all be the same length.")
