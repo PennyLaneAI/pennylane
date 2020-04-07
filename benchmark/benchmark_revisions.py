@@ -14,17 +14,10 @@
 """
 Benchmarking tool for different commits
 """
-# pylint: disable=import-outside-toplevel,invalid-name
+# pylint: disable=subprocess-run-check
 import argparse
-import importlib
-import inspect
-import subprocess
-import sys
 import os
-import shutil
-import pkg_resources
-
-import numpy as np
+import subprocess
 
 # ANSI escape sequences for terminal colors
 Colors = {
@@ -63,19 +56,6 @@ class cd:
         os.chdir(self.savedPath)
 
 
-class prepend_to_path:
-    """Context manager for prepending a path to the system path"""
-
-    def __init__(self, path):
-        self.path = path
-
-    def __enter__(self):
-        sys.path.insert(0, self.path)
-
-    def __exit__(self, etype, value, traceback):
-        sys.path.pop(0)
-
-
 # benchmarking tool version
 __version__ = "0.1.0"
 
@@ -107,7 +87,9 @@ def cli():
             with cd(pl_directory):
                 # Check if we're on a detached HEAD (i.e. for version revisions)
                 res = subprocess.run(
-                    "git rev-parse --abbrev-ref --symbolic-full-name HEAD", capture_output=True
+                    "git rev-parse --abbrev-ref --symbolic-full-name HEAD",
+                    capture_output=True,
+                    check=True,
                 )
 
                 if "HEAD" not in str(res.stdout):
@@ -117,15 +99,21 @@ def cli():
             print(">>> Revision not found locally, cloning...")
             os.mkdir(pl_directory)
             with cd(pl_directory):
-                subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
+                subprocess.run(
+                    "git clone https://www.github.com/xanaduai/pennylane . -q"
+                )
                 subprocess.run("git checkout {} -q".format(revision))
 
         benchmark_file_path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
-        )   
+        )
         benchmark_env = os.environ.copy()
         benchmark_env["PYTHONPATH"] = pl_directory + ";" + benchmark_env["PATH"]
-        subprocess.run(["python", benchmark_file_path] + unknown_args + ["--noinfo"], env=benchmark_env)
+        subprocess.run(
+            ["python", benchmark_file_path] + unknown_args + ["--noinfo"],
+            env=benchmark_env,
+            check=True,
+        )
 
 
 if __name__ == "__main__":
