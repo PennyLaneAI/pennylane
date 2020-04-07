@@ -25,7 +25,6 @@ import benchmark_utils as bu
 
 CCZ_matrix = np.diag([1, 1, 1, 1, 1, 1, 1, -1])
 
-
 @qml.template
 def CCZ(wires):
     """Implements a CCZ gate.
@@ -54,8 +53,9 @@ def random_iqp_wires(n_wires):
     return random.sample(range(n_wires), math.ceil(3 * a))
 
 
-def circuit(n=3, n_wires=3):
-    """Immutable IQP quantum circuit."""
+def circuit(n=10, n_wires=3):
+    """Mutable IQP quantum circuit."""
+
     for i in range(n_wires):
         qml.Hadamard(i)
 
@@ -83,8 +83,9 @@ class Benchmark(bu.BaseBenchmark):
 
     name = "IQP circuit"
     min_wires = 3
+    n_vals = range(3, 27, 3)
 
-    def benchmark(self, n=3):
+    def benchmark(self, n=10):
         # Set seed to make iqp circuits deterministic
         random.seed(135)
 
@@ -92,7 +93,7 @@ class Benchmark(bu.BaseBenchmark):
         if self.verbose:
             print("circuit: {} IQP gates, {} wires".format(n * self.n_wires, self.n_wires))
 
-        qnode = bu.create_qnode(circuit, self.device, mutable=False)
+        qnode = bu.create_qnode(circuit, self.device, mutable=True)
         qnode(n=n, n_wires=self.n_wires)
 
         return True

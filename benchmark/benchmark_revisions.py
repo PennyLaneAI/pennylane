@@ -17,6 +17,7 @@ Benchmarking tool for different commits
 # pylint: disable=import-outside-toplevel,invalid-name
 import argparse
 import importlib
+import inspect
 import subprocess
 import sys
 import os
@@ -119,12 +120,12 @@ def cli():
                 subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
                 subprocess.run("git checkout {} -q".format(revision))
 
-        # TODO: Fix benchmark script call
-        with prepend_to_path(pl_directory):
-            benchmark_file_path = os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
-            )
-            subprocess.run(["python", benchmark_file_path] + unknown_args + ["--noinfo"])
+        benchmark_file_path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
+        )   
+        benchmark_env = os.environ.copy()
+        benchmark_env["PYTHONPATH"] = pl_directory + ";" + benchmark_env["PATH"]
+        subprocess.run(["python", benchmark_file_path] + unknown_args + ["--noinfo"], env=benchmark_env)
 
 
 if __name__ == "__main__":

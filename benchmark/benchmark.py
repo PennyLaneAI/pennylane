@@ -137,18 +137,17 @@ def cli():
 
     args = parser.parse_args()
 
-    if not args.noinfo:
-        # look up information about the current HEAD Git commit
-        res = subprocess.run(
-            ["git", "log", "-1", "--pretty=%h %s"],
-            stdout=subprocess.PIPE,
-            encoding="utf-8",
-            check=True,
-        )
-        title = res.stdout
-        short_hash = title.split(" ", maxsplit=1)[0]
+    # look up information about the current HEAD Git commit
+    res = subprocess.run(
+        ["git", "log", "-1", "--pretty=%h %s"],
+        stdout=subprocess.PIPE,
+        encoding="utf-8",
+        check=True,
+    )
+    title = res.stdout
+    short_hash = title.split(" ", maxsplit=1)[0]
 
-        print("Benchmarking PennyLane", qml.version())
+    print("Benchmarking PennyLane", qml.version())
 
     if args.verbose:
         print("Verbose mode on, results may not be representative.")
