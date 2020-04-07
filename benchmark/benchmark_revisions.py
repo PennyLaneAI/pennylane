@@ -81,27 +81,27 @@ def cli():
         os.mkdir(revisions_directory)
 
     for revision in args.revisions:
-        directory = os.path.join(revisions_directory, revision)
+        pl_directory = os.path.join(revisions_directory, revision)
 
         # We first make sure we get the latest version of the desired revision
-        if os.path.exists(directory):
+        if os.path.exists(pl_directory):
             print(">>> Revision {} found locally, updating...".format(revision))
-            with cd(directory):
+            with cd(pl_directory):
                 # Check if we're on a detached HEAD (i.e. for version revisions)
                 res = subprocess.run("git rev-parse --abbrev-ref --symbolic-full-name HEAD", capture_output=True)
-                
+
                 if "HEAD" not in str(res.stdout):
                     subprocess.run("git checkout {} -q".format(revision))
                     subprocess.run("git pull -q")
         else:
             print(">>> Revision {} not found locally, cloning...".format(revision))
-            os.mkdir(directory)
-            with cd(directory):
+            os.mkdir(pl_directory)
+            with cd(pl_directory):
                 subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
                 subprocess.run("git checkout {} -q".format(revision))
 
         #TODO: Fix benchmark script call
-        with prepend_to_path(directory):
+        with prepend_to_path(pl_directory):
             print(">>> Running benchmark for revision {}".format(revision))
             subprocess.run(["python benchmark.py"] + unknown_args)
 
