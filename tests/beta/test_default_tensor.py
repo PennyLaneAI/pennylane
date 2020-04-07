@@ -572,6 +572,26 @@ class TestDefaultTensorNetwork:
         tensornetwork.check_connected([dev._nodes["state"][0], obs_nodeA])
         tensornetwork.check_connected([dev._nodes["state"][1], obs_nodeB])
 
+
+    def test_create_nodes_from_tensors(self, tensornet_device_2_wires):
+        """Tests that the create_nodes_from_tensors method adds nodes to the tensor
+        network properly."""
+
+        dev = tensornet_device_2_wires
+
+        assert len(dev._nodes["state"]) == 2
+        A = np.array([[0, 1], [1, 0]])
+        new_node = dev.create_nodes_from_tensors([A], [[0]], ["GateA"], key="state")
+        assert new_node[0] in dev._nodes["state"]
+        assert len(dev._nodes["state"]) == 3
+
+        new_nodes = dev.create_nodes_from_tensors([A, A], [[0], [1]], ["GateA", "GateB"], key="state")
+        assert all([node in dev._nodes["state"] for node in new_nodes])
+
+        obs_nodes = dev.create_nodes_from_tensors([A, A], [[0], [1]], ["ObsA", "ObsB"], key="observables")
+        assert all(node in dev._nodes["observables"] for node in obs_nodes)
+
+
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
@@ -896,7 +916,6 @@ class TestDefaultTensorIntegration:
         dev = qml.device("default.tensor", wires=1)
 
         A = np.array([[2j, 1j], [-3j, 1j]])
-        obs_name = "ComplexObservable"
         obs_node = dev.create_nodes_from_tensors([A], [[0]], "ComplexObservable", key="observables")
 
         # text warning raised if matrix is complex
