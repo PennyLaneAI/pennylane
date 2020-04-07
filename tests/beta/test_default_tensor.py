@@ -655,11 +655,12 @@ class TestDefaultTensorIntegration:
         dev = qml.device("default.tensor", wires=1)
 
         A = np.array([[2j, 1j], [-3j, 1j]])
-        obs_node = dev._add_node(A, wires=[0])
+        obs_name = "ComplexObservable"
+        obs_node = dev.create_nodes_from_tensors([A], [[0]], "ComplexObservable", key="observables")
 
         # text warning raised if matrix is complex
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
-            dev.ev([obs_node], wires=[[0]])
+            dev.ev(obs_node, wires=[[0]])
 
     def test_cannot_overwrite_state(self, tensornet_device_2_wires):
         """Tests that _state is a property and cannot be overwritten."""

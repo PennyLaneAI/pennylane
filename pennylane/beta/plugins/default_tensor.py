@@ -544,9 +544,9 @@ class DefaultTensor(Device):
         """Helper function for creating TensorNetwork nodes based on tensors.
 
         Args:
-          tensors (np.ndarray, tf.Tensor, torch.Tensor): tensors of the observables
+          tensors (Sequence[np.ndarray, tf.Tensor, torch.Tensor]): tensors of the observables
           wires (Sequence[Sequence[int]]): measured subsystems for each observable
-          observable_names (Sequence[str]): name of the operation/observable
+          observable_names (Sequence[str]): names of the operation/observable
           key (str): which subset of nodes to add the nodes to
 
         Returns:
@@ -618,7 +618,7 @@ class DefaultTensor(Device):
             for proj, proj_wires in projs:
 
                 tensor = proj.reshape([2] * len(proj_wires) * 2)
-                obs_nodes.append(self._add_node(tensor, proj_wires))
+                obs_nodes.append(self._add_node(tensor, proj_wires, key="observables"))
                 obs_wires.append(proj_wires)
 
             joint_probabilities.append(self.ev(obs_nodes, obs_wires))
