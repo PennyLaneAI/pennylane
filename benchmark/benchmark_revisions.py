@@ -25,6 +25,27 @@ import pkg_resources
 
 import numpy as np
 
+# ANSI escape sequences for terminal colors
+Colors = {
+    "red": "\033[31m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[95m",
+}
+RESET = "\033[0m"
+
+def col(text, color):
+    """Wraps the given text in color ANSI sequences.
+
+    Args:
+        text  (str): text to print
+        color (str): ANSI color code
+
+    Returns:
+        str: text wrapped with ANSI codes
+    """
+    return Colors[color] + text + RESET
+
 class cd:
     """Context manager for changing the current working directory"""
     def __init__(self, newPath):
@@ -47,18 +68,6 @@ class prepend_to_path:
 
     def __exit__(self, etype, value, traceback):
         sys.path.pop(0)
-
-class temporary_directory:
-    """Context manager for prepending a path to the system path"""
-    def __init__(self, path):
-        self.path = path
-
-    def __enter__(self):
-        os.mkdir(self.path)
-
-    def __exit__(self, etype, value, traceback):
-        print("Deleting temporary installation")
-        shutil.rmtree(self.path)
 
 # benchmarking tool version
 __version__ = "0.1.0"
@@ -104,7 +113,7 @@ def cli():
         with prepend_to_path(pl_directory):
             print(">>> Running benchmark for revision {}".format(revision))            
             benchmark_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "benchmark.py")
-            subprocess.run(["python", benchmark_file_path] + unknown_args)
+            subprocess.run(["python", benchmark_file_path] + unknown_args + ["--noinfo"])
 
 
 
