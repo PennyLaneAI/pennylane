@@ -23,6 +23,7 @@ from numpy.linalg import eigh
 
 try:
     import tensornetwork as tn
+
     v = tn.__version__.split(".")
     if int(v[0]) == 0 and int(v[1]) < 3:
         raise ImportError("default.tensor device requires TensorNetwork>=0.3")
@@ -299,6 +300,7 @@ def identity(*_):
     """
     return np.identity(2)
 
+
 # ========================================================
 #  device
 # ========================================================
@@ -364,7 +366,7 @@ class DefaultTensor(Device):
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
 
-    zero_state = np.array([1., 0.], dtype=C_DTYPE)
+    zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
     def __init__(self, wires, shots=1000, analytic=True, representation="exact"):
         super().__init__(wires, shots)
@@ -380,7 +382,7 @@ class DefaultTensor(Device):
         self._add_initial_state_nodes(
             [self.zero_state] * self.num_wires,
             [[w] for w in range(self.num_wires)],
-            ["ZeroState"] * self.num_wires
+            ["ZeroState"] * self.num_wires,
         )
 
     def _clear_network(self):
@@ -392,15 +394,15 @@ class DefaultTensor(Device):
 
         elif self._rep == "mps":
             raise NotImplementedError
-            #nodes = []
-            #for w in range(self.num_wires):
+            # nodes = []
+            # for w in range(self.num_wires):
             #    tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
             #    node = self._add_node(tensor, wires=[w], name="ZeroState")
             #    nodes.append(node)
             #    if w > 0:
             #        tn.connect(nodes[w-1][2], nodes[w][0])
             ## Note: might want to set canonicalize=False
-            #self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+            # self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
 
     def _add_initial_state_nodes(self, tensors, wires, names):
         """Create the nodes representing the initial input state circuit.
@@ -419,7 +421,6 @@ class DefaultTensor(Device):
         for t, w, n in zip(tensors, wires, names):
             node = self._add_node(t, wires=w, name=n)
             self._terminal_edges.extend(node.edges)
-
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -470,7 +471,9 @@ class DefaultTensor(Device):
             if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
                 tensor = self._reshape(state, [2] * self.num_wires)
                 self._clear_network()
-                self._add_initial_state_nodes([tensor], [list(range(self.num_wires))], ["QubitStateVector"])
+                self._add_initial_state_nodes(
+                    [tensor], [list(range(self.num_wires))], ["QubitStateVector"]
+                )
             else:
                 raise ValueError("State vector must be of length 2**wires.")
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
@@ -513,9 +516,9 @@ class DefaultTensor(Device):
                 self._terminal_edges[w] = op_node[idx]
         elif self._rep == "mps":
             raise NotImplementedError
-            #if len(wires) == 1:
+            # if len(wires) == 1:
             #    self.mps.apply_one_site_gate(op_node, wires[0])
-            #elif len(wires) == 2:
+            # elif len(wires) == 2:
             #    if abs(wires[1]-wires[0]) == 1:
             #        ret = self.mps.apply_two_site_gate(op_node, *wires)
             #        # TODO: determine what ``ret`` is and if it is useful for anything
@@ -523,7 +526,7 @@ class DefaultTensor(Device):
             #    else:
             #        # only nearest-neighbours are natively supported
             #        print("ruh roh")
-            #else:
+            # else:
             #    raise NotImplementedError
 
     def create_nodes_from_tensors(self, tensors, wires, observable_names, key):
@@ -538,7 +541,10 @@ class DefaultTensor(Device):
         Returns:
           list[tn.Node]: the observables as TensorNetwork Nodes
         """
-        return [self._add_node(A, w, name=o, key=key) for A, w, o in zip(tensors, wires, observable_names)]
+        return [
+            self._add_node(A, w, name=o, key=key)
+            for A, w, o in zip(tensors, wires, observable_names)
+        ]
 
     def expval(self, observable, wires, par):
 
@@ -666,11 +672,11 @@ class DefaultTensor(Device):
                 contracted_ket = tn.contract_between(obs_node, contracted_ket)
             expval = tn.contract_between(bra, contracted_ket).tensor
 
-        elif self._rep=="mps":
+        elif self._rep == "mps":
             raise NotImplementedError
-            #if len(wires) == 1:
+            # if len(wires) == 1:
             #    expval = self.mps.measure_local_operator(obs_nodes, wires[0])
-            #else:
+            # else:
             #    raise NotImplementedError
 
         if self._abs(self._imag(expval)) > TOL:
@@ -706,7 +712,6 @@ class DefaultTensor(Device):
         self._contract_to_ket(contraction_method)
         ket = self._nodes["contracted_state"]
         return ket.tensor
-
 
     @property
     def operations(self):
