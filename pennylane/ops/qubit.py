@@ -46,7 +46,6 @@ class Hadamard(Observable, Operation):
     eigvals = pauli_eigs(1)
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 1], [1, -1]]) / np.sqrt(2)
 
@@ -87,7 +86,6 @@ class PauliX(Observable, Operation):
     eigvals = pauli_eigs(1)
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[0, 1], [1, 0]])
 
@@ -126,7 +124,6 @@ class PauliY(Observable, Operation):
     eigvals = pauli_eigs(1)
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[0, -1j], [1j, 0]])
 
@@ -167,7 +164,6 @@ class PauliZ(Observable, Operation, DiagonalOperation):
     eigvals = pauli_eigs(1)
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 0], [0, -1]])
 
@@ -201,7 +197,6 @@ class S(Operation, DiagonalOperation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 0], [0, 1j]])
 
@@ -232,7 +227,6 @@ class T(Operation, DiagonalOperation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
 
@@ -267,7 +261,6 @@ class CNOT(Operation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
@@ -298,7 +291,6 @@ class CZ(Operation, DiagonalOperation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
@@ -331,7 +323,6 @@ class SWAP(Operation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
@@ -366,7 +357,6 @@ class CSWAP(Operation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return np.array(
             [
@@ -413,7 +403,6 @@ class Toffoli(Operation):
     par_domain = None
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         mat = np.diag([1 for i in range(8)])
         mat[6:8, 6:8] = np.array([[0, 1], [1, 0]])
@@ -447,7 +436,6 @@ class RX(Operation):
     generator = [PauliX, -1 / 2]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         theta = params[0]
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliX._matrix()
@@ -480,7 +468,6 @@ class RY(Operation):
     generator = [PauliY, -1 / 2]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         theta = params[0]
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
@@ -513,7 +500,6 @@ class RZ(Operation, DiagonalOperation):
     generator = [PauliZ, -1 / 2]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         theta = params[0]
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliZ._matrix()
@@ -556,7 +542,6 @@ class PhaseShift(Operation, DiagonalOperation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         phi = params[0]
         return np.array([[1, 0], [0, np.exp(1j * phi)]])
@@ -603,7 +588,6 @@ class Rot(Operation):
     grad_method = "A"
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         a, b, c = params
         return RZ._matrix(c) @ (RY._matrix(b) @ RZ._matrix(a))
@@ -644,7 +628,6 @@ class MultiRZ(Operation, DiagonalOperation):
     grad_method = "A"
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(theta, n):
         """Matrix representation of a MultiRZ gate.
 
@@ -766,7 +749,6 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         theta = params[0]
         pauli_word = params[1]
@@ -867,7 +849,6 @@ class CRX(Operation):
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return block_diag(np.eye(2), RX._matrix(*params))
 
@@ -931,7 +912,6 @@ class CRY(Operation):
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return block_diag(np.eye(2), RY._matrix(*params))
 
@@ -993,7 +973,6 @@ class CRZ(Operation, DiagonalOperation):
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return block_diag(np.eye(2), RZ._matrix(*params))
 
@@ -1053,7 +1032,6 @@ class CRot(Operation):
     grad_method = "A"
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         a, b, c = params
         return CRZ._matrix(c) @ (CRY._matrix(b) @ CRZ._matrix(a))
@@ -1090,7 +1068,6 @@ class U1(Operation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         return PhaseShift._matrix(*params)
 
@@ -1139,7 +1116,6 @@ class U2(Operation):
     grad_method = "A"
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         phi, lam = params
         return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, np.pi / 2, -lam)
@@ -1195,7 +1171,6 @@ class U3(Operation):
     grad_method = "A"
 
     @staticmethod
-    @functools.lru_cache()
     def _matrix(*params):
         theta, phi, lam = params
         return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, theta, -lam)
