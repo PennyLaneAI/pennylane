@@ -420,22 +420,6 @@ class DefaultTensor(Device):
             node = self._add_node(t, wires=w, name=n)
             self._terminal_edges.extend(node.edges)
 
-    @staticmethod
-    def _create_basis_state(state, wires):
-        """Helper function to create a basis state with the correct shape.
-
-        Args:
-            state (array[int]): array of 0s and 1s of size ``(wires,)`` representing
-                the basis state
-            wires (list[int]): the wires the basis state should
-                be prepared on
-
-        Returns:
-            array[int]: state array of size ``[2]*len(wires)``
-        """
-        state_node = np.zeros(tuple([2] * len(wires)))
-        state_node[tuple(state)] = 1
-        return state_node
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -513,8 +497,9 @@ class DefaultTensor(Device):
                         self.num_wires
                     )
                 )
-            state = self._create_basis_state(par[0], wires)
-            tensor = self._array(state, dtype=self.C_DTYPE)
+            state_tensor = np.zeros(tuple([2] * len(wires)))
+            state_tensor[tuple(par[0])] = 1
+            tensor = self._array(state_tensor, dtype=self.C_DTYPE)
             self._clear_network()
             self._add_initial_state_nodes([tensor], [full_wires_list], ["BasisState"])
             return

@@ -533,6 +533,7 @@ class TestDefaultTensorNetwork:
         with pytest.raises(ValueError, match="must all be the same length"):
             dev._add_initial_state_nodes(tensors, wires, names)
 
+
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
