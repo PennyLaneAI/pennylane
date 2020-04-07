@@ -102,8 +102,9 @@ def cli():
 
         #TODO: Fix benchmark script call
         with prepend_to_path(pl_directory):
-            print(">>> Running benchmark for revision {}".format(revision))
-            subprocess.run(["python benchmark.py"] + unknown_args)
+            print(">>> Running benchmark for revision {}".format(revision))            
+            benchmark_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "benchmark.py")
+            subprocess.run(["python", benchmark_file_path] + unknown_args)
 
 
 
