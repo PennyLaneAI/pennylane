@@ -53,7 +53,7 @@ from pennylane.beta.plugins.default_tensor import (
     unitary,
 )
 
-tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
+tensornetwork = pytest.importorskip("tensornetwork", minversion="0.3")
 
 
 U = np.array(
@@ -124,6 +124,13 @@ def prep_par(par, op):
     if op.par_domain == "A":
         return [np.diag([x, 1]) for x in par]
     return par
+
+
+def edges_valid(dev, num_nodes):
+    """Test if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
+    node_edges = [dev._nodes['state'][idx].edges for idx in range(num_nodes)]
+    node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+    return node_edges_set == set(dev._terminal_edges)
 
 
 class TestAuxiliaryFunctions:
@@ -394,9 +401,7 @@ class TestDefaultTensorNetwork:
         assert len(dev._nodes["state"]) == 2
         assert dev._nodes["state"][0].name == "AliceState(0,)"
         assert dev._nodes["state"][1].name == "BobState(1,)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=2)
 
         # entangled state
         dev._clear_network()
@@ -409,9 +414,7 @@ class TestDefaultTensorNetwork:
         assert "state" in dev._nodes and len(dev._nodes) == 1
         assert len(dev._nodes["state"]) == 1
         assert dev._nodes["state"][0].name == "BellState(0, 1)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(1)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=1)
 
 
     def test_add_initial_state_nodes_3_wires(self, tensornet_device_3_wires):
@@ -431,9 +434,7 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][0].name == "AliceState(0,)"
         assert dev._nodes["state"][1].name == "BobState(1,)"
         assert dev._nodes["state"][2].name == "CharlieState(2,)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(3)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=3)
 
         # AB|C-factorized state
         dev._clear_network()
@@ -447,9 +448,7 @@ class TestDefaultTensorNetwork:
         assert len(dev._nodes["state"]) == 2
         assert dev._nodes["state"][0].name == "AliceBobState(0, 1)"
         assert dev._nodes["state"][1].name == "CharlieState(2,)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=2)
 
         # A|BC-factorized state
         dev._clear_network()
@@ -463,9 +462,7 @@ class TestDefaultTensorNetwork:
         assert len(dev._nodes["state"]) == 2
         assert dev._nodes["state"][0].name == "AliceState(0,)"
         assert dev._nodes["state"][1].name == "BobCharlieState(1, 2)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=2)
 
         # AC|B-factorized state
         dev._clear_network()
@@ -479,9 +476,21 @@ class TestDefaultTensorNetwork:
         assert len(dev._nodes["state"]) == 2
         assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
         assert dev._nodes["state"][1].name == "BobState(1,)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=2)
+
+        # AC|B-factorized state
+        dev._clear_network()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        assert edges_valid(dev, num_nodes=2)
 
         # tripartite entangled state
         dev._clear_network()
@@ -497,25 +506,7 @@ class TestDefaultTensorNetwork:
         assert "state" in dev._nodes and len(dev._nodes) == 1
         assert len(dev._nodes["state"]) == 1
         assert dev._nodes["state"][0].name == "GHZState(0, 1, 2)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(1)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
-
-        # AC|B-factorized state
-        dev._clear_network()
-
-        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
-        wires = [[0, 2], [1]]
-        names = ["AliceCharlieState", "BobState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 2
-        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
-        assert dev._nodes["state"][1].name == "BobState(1,)"
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+        assert edges_valid(dev, num_nodes=1)
 
 
     @pytest.mark.parametrize("tensors,wires,names", [
@@ -565,6 +556,21 @@ class TestDefaultTensorNetwork:
         dev._add_node(one_qubit_gate, wires=[0], key="junk")
         assert "junk" in dev._nodes and len(dev._nodes) == 2
 
+
+    def test_add_edge(self, tensornet_device_2_wires):
+        """Tests the _add_edge method."""
+
+        dev = tensornet_device_2_wires
+
+        observable = np.array([[0, 1], [1, 0]])
+        obs_nodeA = tensornetwork.Node(observable, name="ObsA")
+        obs_nodeB = tensornetwork.Node(observable, name="ObsB")
+        dev._add_edge(obs_nodeA, 1, dev._nodes["state"][0], 0)
+        dev._add_edge(obs_nodeB, 1, dev._nodes["state"][1], 0)
+
+        # check_connected raises an exception if nodes are not connected
+        tensornetwork.check_connected([dev._nodes["state"][0], obs_nodeA])
+        tensornetwork.check_connected([dev._nodes["state"][1], obs_nodeB])
 
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates

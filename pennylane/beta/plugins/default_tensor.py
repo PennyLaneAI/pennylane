@@ -450,15 +450,13 @@ class DefaultTensor(Device):
         return node
 
     def _add_edge(self, node1, idx1, node2, idx2):
-        """Adds an edge to the underlying tensor network.
-
-        The edge is also added to ``self._edges`` for bookkeeping.
+        """Adds an edge between two nodes.
 
         Args:
             node1 (tn.Node): first node to connect
-            idx1 (int): index of node1 to add the edge to
+            idx1 (int): index of node1 to connect the edge to
             node2 (tn.Node): second node to connect
-            idx2 (int): index of node2 to add the edge to
+            idx2 (int): index of node2 to connect the edge to
 
         Returns:
             tn.Edge: the newly created edge
