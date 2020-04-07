@@ -279,8 +279,8 @@ class TestAuxiliaryFunctions:
         assert np.allclose(CRot3(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0)
 
 
-class TestStateFunctions:
-    """Arbitrary state and operator tests."""
+class TestMatrixOperations:
+    """Tests for unitary and hermitian functions."""
 
     def test_unitary(self, tol):
         """Test that the unitary function produces the correct output."""

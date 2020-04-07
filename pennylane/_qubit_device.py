@@ -37,7 +37,7 @@ class QubitDevice(Device):
       and perform the quantum computation.
 
     Devices that generate their own samples (such as hardware) may optionally overwrite
-    :meth:`~.probabilty`, which otherwise automatically computes the probabilities from the
+    :meth:`~.probability`, which otherwise automatically computes the probabilities from the
     generated samples, and **must** overwrite the following method:
 
     * :meth:`~.generate_samples`: Generate samples from the device from the

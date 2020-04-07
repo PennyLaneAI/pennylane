@@ -239,7 +239,7 @@ def CRot3(a, b, c):
 
 
 # ========================================================
-#  Arbitrary states and operators
+#  Functions which create matrices
 # ========================================================
 
 
