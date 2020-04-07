@@ -534,6 +534,38 @@ class TestDefaultTensorNetwork:
             dev._add_initial_state_nodes(tensors, wires, names)
 
 
+    def test_add_node(self, tensornet_device_2_wires, tol):
+        """Tests that the _add_node method functions correctly."""
+
+        dev = tensornet_device_2_wires
+
+        assert len(dev._nodes["state"]) == 2
+
+        zero_state = np.array([1., 0])
+        one_qubit_gate = np.array([[0, 1], [1, 0]])
+        two_qubit_gate = np.eye(4)
+        dev._add_node(one_qubit_gate, wires=[0], name="NewNodeX")
+        dev._add_node(one_qubit_gate, wires=[1], name="NewNodeY")
+        dev._add_node(two_qubit_gate, wires=[0, 1], name="NewNodeZ")
+        assert len(dev._nodes["state"]) == 5
+        node_names = [n.name for n in dev._nodes["state"]]
+        print(node_names)
+        assert set(node_names) == set(["ZeroState(0,)",
+                                       "ZeroState(1,)",
+                                       "NewNodeX(0,)",
+                                       "NewNodeY(1,)",
+                                       "NewNodeZ(0, 1)"])
+        tensors = [n.tensor for n in dev._nodes["state"]]
+        assert all([np.allclose(t.data, zero_state, atol=tol, rtol=0) for t in tensors[:2]])
+        assert all([np.allclose(t.data, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
+        assert all([np.allclose(t.data, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
+        assert np.allclose(tensors[4].data, two_qubit_gate)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        dev._add_node(one_qubit_gate, wires=[0], key="junk")
+        assert "junk" in dev._nodes and len(dev._nodes) == 2
+
+
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
