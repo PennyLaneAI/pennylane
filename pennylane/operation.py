@@ -290,7 +290,6 @@ class Operator(abc.ABC):
         return self._name
 
     @property
-    @functools.lru_cache()
     def matrix(self):
         r"""Matrix representation of an instantiated operator
         in the computational basis.
