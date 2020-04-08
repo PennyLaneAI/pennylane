@@ -615,6 +615,7 @@ class TestDefaultTensorNetwork:
 
     @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
     def test_state(self, tensornet_device_3_wires, method, tol):
+        """Tests that the _state method produces the correct state after contraction."""
 
         dev = tensornet_device_3_wires
 
@@ -959,8 +960,10 @@ class TestDefaultTensorIntegration:
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
             dev.ev(obs_node, wires=[[0]])
 
-    def test_correct_state(self, tensornet_device_2_wires):
-
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_correct_state_no_params(self, tensornet_device_2_wires, method):
+        """Tests that if different QNodes are used with the same device,
+        then the contracted state is correct for each one."""
         dev = tensornet_device_2_wires
         state = dev._state()
 
@@ -979,6 +982,36 @@ class TestDefaultTensorIntegration:
         expected = np.array([[1, 0],
                              [1, 0]]) / np.sqrt(2)
         assert np.allclose(state, expected)
+
+
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_correct_state_diff_params(self, tensornet_device_2_wires, method, tol):
+        """Tests that if different inputs are fed to the same QNode,
+        then the contracted state is updated correctly."""
+        dev = tensornet_device_2_wires
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def expected(theta):
+            vec = np.outer(np.array([np.cos(theta / 2), -1j * np.sin(theta / 2)]), [1., 0.])
+            return vec.reshape([2, 2])
+
+        theta = np.pi / 4
+        out1 = circuit(theta)
+        ket1 = dev._state()
+        assert "contracted_state" in dev._nodes
+        assert np.allclose(ket1, expected(theta), atol=tol, rtol=0)
+        assert out1 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
+
+        theta = -0.1234
+        out2 = circuit(theta)
+        ket2 = dev._state()
+        assert "contracted_state" in dev._nodes
+        assert np.allclose(ket2, expected(theta), atol=tol, rtol=0)
+        assert out2 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
 
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
