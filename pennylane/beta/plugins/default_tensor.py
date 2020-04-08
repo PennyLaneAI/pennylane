@@ -411,10 +411,10 @@ class DefaultTensor(Device):
            into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be lists of length :math:`k`.
 
           Args:
-              tensors (list[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each factorized component of
+              tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each factorized component of
                the state (in the computational basis)
-              wires (list(list[int])): the wires for each factorized component of the state
-              names (list[str]): name for each factorized component of the state
+              wires (Sequence(list[int])): the wires for each factorized component of the state
+              names (Sequence[str]): name for each factorized component of the state
         """
         if not (len(tensors) == len(wires) == len(names)):
             raise ValueError("tensors, wires, and names must all be the same length.")
@@ -633,17 +633,20 @@ class DefaultTensor(Device):
             return self._array(A, dtype=self.C_DTYPE)
         return self._asarray(A(*par), dtype=self.C_DTYPE)
 
-    def ev(self, obs_nodes, wires):
+    def ev(self, obs_nodes, wires, contraction_method="auto"):
         r"""Expectation value of observables on specified wires.
 
          Args:
             obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
             wires (Sequence[Sequence[int]]): measured subsystems for each observable
+            contraction_method (str): The contraction method to be employed.
+                Possible choices are "auto", "greedy", "branch", or "optimal".
+                See TensorNetwork library documentation for more details.
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if self._rep == "exact":
-            self._contract_to_ket(method="auto")
+            self._contract_to_ket(method=contraction_method)
             ket = self._nodes["contracted_state"]
             bra = tn.conj(ket, name="Bra")
 
@@ -693,8 +696,9 @@ class DefaultTensor(Device):
         The contracted tensor is stored in the ``_nodes`` dictionary under the key ``"contracted_state"``.
 
         Args:
-            method (str): the contraction method to be employed (possible choices are listed
-             in the dictionary `contract_fns`)
+            method (str): The contraction method to be employed.
+                Possible choices are "auto", "greedy", "branch", or "optimal".
+                See TensorNetwork library documentation for more details.
         """
         if "contracted_state" not in self._nodes:
             contract = contract_fns[method]
@@ -702,12 +706,13 @@ class DefaultTensor(Device):
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
 
-    @property
     def _state(self, contraction_method="auto"):
         """The numerical value of the current state vector.
 
-        This attribute cannot be manually overwritten.
-
+        Args:
+            contraction_method (str): The contraction method to be employed.
+                Possible choices are "auto", "greedy", "branch", or "optimal".
+                See TensorNetwork library documentation for more details.
         Returns:
             (array, tf.Tensor, torch.Tensor): the numerical tensor
         """

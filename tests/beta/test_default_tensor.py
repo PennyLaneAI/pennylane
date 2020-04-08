@@ -622,7 +622,7 @@ class TestDefaultTensorNetwork:
         dev.apply("Hadamard", [1], [])
 
         assert "contracted_state" not in dev._nodes
-        ket = dev._state
+        ket = dev._state()
         assert "contracted_state" in dev._nodes
 
         expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
@@ -959,19 +959,10 @@ class TestDefaultTensorIntegration:
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
             dev.ev(obs_node, wires=[[0]])
 
-    def test_cannot_overwrite_state(self, tensornet_device_2_wires):
-        """Tests that _state is a property and cannot be overwritten."""
-
-        dev = tensornet_device_2_wires
-
-        with pytest.raises(AttributeError, match="can't set attribute"):
-            dev._state = np.array([[1, 0],
-                                   [0, 0]])
-
     def test_correct_state(self, tensornet_device_2_wires):
 
         dev = tensornet_device_2_wires
-        state = dev._state
+        state = dev._state()
 
         expected = np.array([[1, 0],
                              [0, 0]])
@@ -983,7 +974,7 @@ class TestDefaultTensorIntegration:
             return qml.expval(qml.PauliZ(0))
 
         circuit()
-        state = dev._state
+        state = dev._state()
 
         expected = np.array([[1, 0],
                              [1, 0]]) / np.sqrt(2)
@@ -1241,11 +1232,6 @@ class TestSample:
         the correct dimensions
         """
 
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
-        tensornet_device_2_wires.reset()
-
         tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
         tensornet_device_2_wires.apply('RX', wires=[1], par=[1.5708])
 
@@ -1266,9 +1252,6 @@ class TestSample:
         the correct values
         """
 
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
         tensornet_device_2_wires.reset()
 
         tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
