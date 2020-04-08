@@ -127,7 +127,7 @@ def prep_par(par, op):
 
 
 def edges_valid(dev, num_nodes):
-    """Test if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
+    """Returns True if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
     node_edges = [dev._nodes['state'][idx].edges for idx in range(num_nodes)]
     node_edges_set = set([edge for sublist in node_edges for edge in sublist])
     return node_edges_set == set(dev._terminal_edges)

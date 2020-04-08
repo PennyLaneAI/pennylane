@@ -406,17 +406,18 @@ class DefaultTensor(Device):
 
     def _add_initial_state_nodes(self, tensors, wires, names):
         """Create the nodes representing the initial input state circuit.
+        
            Input states can be factorized or entangled. If a state can be factorized
-           into k subsystems, then `tensors`, `wires`, and `names` should be lists of length k.
+           into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be lists of length :math:`k`.
 
           Args:
-              tensors (list[np.array, tf.Tensor, torch,Tensor]): the numerical tensors for each factorized component of
+              tensors (list[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each factorized component of
                the state (in the computational basis)
               wires (list(list[int])): the wires for each factorized component of the state
               names (list[str]): name for each factorized component of the state
         """
         if not (len(tensors) == len(wires) == len(names)):
-            raise ValueError("`tensors`, `wires`, and `names` must all be the same length.")
+            raise ValueError("tensors, wires, and names must all be the same length.")
 
         for t, w, n in zip(tensors, wires, names):
             node = self._add_node(t, wires=w, name=n)
@@ -687,8 +688,9 @@ class DefaultTensor(Device):
         return self._real(expval)
 
     def _contract_to_ket(self, method="auto"):
-        """Contract the nodes which represent the state preparation and evolution to a final tensor.
-        The contracted tensor is stored in the `_nodes` dictionary under the key `"contracted_state"`
+        """Contract the nodes which represent the state preparation and gate applications to get the pre-measurement state.
+
+        The contracted tensor is stored in the ``_nodes`` dictionary under the key ``"contracted_state"``.
 
         Args:
             method (str): the contraction method to be employed (possible choices are listed
