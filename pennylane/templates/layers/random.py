@@ -65,7 +65,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     .. warning::
         This template uses random number generation inside qnodes. Find more
-        details about how to invoce the desired random behaviour in the "Usage Details" section.
+        details about how to invoke the desired random behaviour in the "Usage Details" section below.
 
     The argument ``weights`` contains the weights for each layer. The number of layers :math:`L` is therefore derived
     from the first dimension of ``weights``.
