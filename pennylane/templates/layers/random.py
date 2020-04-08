@@ -190,7 +190,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         >>> np.allclose(first_call, second_call)
         >>> False
 
-        This can be rectified by making the quantum node **non-mutable**.
+        This can be rectified by making the quantum node **immutable**.
 
         .. code-block:: python
 
