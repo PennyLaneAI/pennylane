@@ -63,6 +63,10 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     r"""Layers of randomly chosen single qubit rotations and 2-qubit entangling gates, acting
     on randomly chosen qubits.
 
+    .. warning::
+        This template uses random number generation inside qnodes. Find more
+        details about how to invoce the desired random behaviour in the "Usage Details" section.
+
     The argument ``weights`` contains the weights for each layer. The number of layers :math:`L` is therefore derived
     from the first dimension of ``weights``.
 
@@ -82,15 +86,6 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         :width: 60%
         :target: javascript:void(0);
 
-    .. note::
-        Using the default seed (or any other fixed integer seed) generates one and the same circuit in every
-        quantum node. To generate different circuit architectures, either use a different random seed, or use ``seed=None``
-        together with the ``cache=False`` option when creating a quantum node.
-
-    .. warning::
-        When using a random number generator anywhere inside the quantum function without the ``cache=False`` option,
-        a new random circuit architecture will be created every time the quantum node is evaluated.
-
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
         wires (Sequence[int]): sequence of qubit indices that the template acts on
@@ -99,10 +94,116 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
             determines how often a particular rotation type is used. Defaults to the use of all three
             rotations with equal frequency.
-        seed (int): seed to generate random architecture
+        seed (int): seed to generate random architecture, defaults to 42
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    .. UsageDetails::
+
+        **Default seed**
+
+        ``RandomLayers`` always uses a seed to initialize the construction of a random circuit. If no seed is
+        provided, the default seed of ``42`` is used.
+
+        This means that the template creates the same circuit every time it is called without specifying a seed.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+            from pennylane.templates.layers import RandomLayers
+
+            dev = qml.device("default.qubit", wires=2)
+            weights = [[0.1, -2.1, 1.4]]
+
+            @qml.qnode(dev)
+            def circuit1(weights):
+                RandomLayers(weights=weights, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
+
+            @qml.qnode(dev)
+            def circuit2(weights):
+                RandomLayers(weights=weights, wires=range(2))
+                return qml.expval(qml.PauliZ(0))
+
+        >>> np.allclose(circuit1(weights), circuit2(weights))
+        >>> True
+
+        You can verify this by drawing the circuits.
+
+            >>> print(circuit1.draw())
+            >>>  0: ──RX(0.1)──RX(-2.1)──╭X──╭X───────────┤ ⟨Z⟩
+            ...  1: ─────────────────────╰C──╰C──RZ(1.4)──┤
+
+            >>> print(circuit2.draw())
+            >>>  0: ──RX(0.1)──RX(-2.1)──╭X──╭X───────────┤ ⟨Z⟩
+            ...  1: ─────────────────────╰C──╰C──RZ(1.4)──┤
+
+        **Changing the seed**
+
+        To change the randomly generated circuit architecture, you have to change the seed passed to the template.
+        For example, these two calls of ``RandomLayers`` *do not* create the same circuit:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit_9(weights):
+                RandomLayers(weights=weights, wires=range(2), seed=9)
+                return qml.expval(qml.PauliZ(0))
+
+            @qml.qnode(dev)
+            def circuit_12(weights):
+                RandomLayers(weights=weights, wires=range(2), seed=12)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> np.allclose(circuit_9(weights), circuit_12(weights))
+        >>> False
+
+        >>> print(circuit_9.draw())
+        >>>  0: ──╭X──RY(-2.1)──RX(1.4)──┤ ⟨Z⟩
+        ...  1: ──╰C──RX(0.1)────────────┤
+
+        >>> print(circuit_12.draw())
+        >>>  0: ──╭X──RX(-2.1)──╭C──╭X──RZ(1.4)──┤ ⟨Z⟩
+        ...  1: ──╰C──RZ(0.1)───╰X──╰C───────────┤
+
+
+        **Automatically creating random circuits**
+
+        To automate the process of creating different circuits with ``RandomLayers``,
+        you can pass a random number generator as seed. However, in this case care needs
+        to be taken. In the default setting, a quantum node is **mutable**, which means that the quantum function is
+        re-evaluated every time it is called. This means that the circuit is re-constructed from scratch
+        each time you call the qnode:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit_rnd(weights):
+                RandomLayers(weights=weights, wires=range(2), seed=np.random.randint(100))
+                return qml.expval(qml.PauliZ(0))
+
+            first_call = circuit_rnd(weights)
+            second_call = circuit_rnd(weights)
+
+        >>> np.allclose(first_call, second_call)
+        >>> False
+
+        This can be rectified by making the quantum node **non-mutable**.
+
+        .. code-block:: python
+
+            @qml.qnode(dev, mutable=False)
+            def circuit_rnd(weights):
+                RandomLayers(weights=weights, wires=range(2), seed=np.random.randint(100))
+                return qml.expval(qml.PauliZ(0))
+
+            first_call = circuit_rnd(weights)
+            second_call = circuit_rnd(weights)
+
+        >>> np.allclose(first_call, second_call)
+        >>> True
     """
     if seed is not None:
         np.random.seed(seed)
