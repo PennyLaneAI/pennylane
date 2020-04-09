@@ -341,7 +341,7 @@ class TestMatrixOperations:
 class TestDefaultTensorNetwork:
     """Tests of the basic tensor network functionality of default.tensor plugin."""
 
-    def clear_network(self, tensornet_device_2_wires):
+    def test_clear_network_data(self, tensornet_device_2_wires):
         """Tests that the _clear_network method clears the relevant bookkeeping data."""
 
         dev = tensornet_device_2_wires
@@ -353,7 +353,7 @@ class TestDefaultTensorNetwork:
             return qml.expval(qml.PauliZ(0)), qml.sample(qml.PauliY(1))
 
         circuit()
-        dev.reset()
+        dev._clear_network_data()
 
         assert dev._nodes == {}
         assert not dev._contracted
@@ -380,7 +380,7 @@ class TestDefaultTensorNetwork:
         assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev.zero_state, atol=tol, rtol=0)
         assert not dev._contracted
         assert len(dev._terminal_edges) == 2
-    assert edges_valid(dev, num_nodes=2)
+        assert edges_valid(dev, num_nodes=2)
 
 
     def test_add_initial_state_nodes_2_wires_factorized(self, tensornet_device_2_wires):
@@ -530,7 +530,7 @@ class TestDefaultTensorNetwork:
 
 
     def test_add_node(self, tensornet_device_2_wires, tol):
-        """Tests that the _add_node method functions correctly."""
+        """Tests that the _add_node method adds nodes with the correct attributes."""
 
         dev = tensornet_device_2_wires
 
@@ -552,11 +552,16 @@ class TestDefaultTensorNetwork:
         tensors = [n.tensor for n in dev._nodes["state"]]
         assert all([np.allclose(t.data, zero_state, atol=tol, rtol=0) for t in tensors[:2]])
         assert all([np.allclose(t.data, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
-        assert all([np.allclose(t.data, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
-        assert np.allclose(tensors[4].data, two_qubit_gate)
+        assert np.allclose(tensors[4].data, two_qubit_gate, atol=tol, rtol=0)
+
+
+    def test_add_node_creates_keys(self, tensornet_device_2_wires, tol):
+        """Tests that the _add_node method is able to create new keys in dev._nodes."""
+
+        dev = tensornet_device_2_wires
 
         assert "state" in dev._nodes and len(dev._nodes) == 1
-        dev._add_node(one_qubit_gate, wires=[0], key="junk")
+        dev._add_node(np.array([[0, 1], [1, 0]]), wires=[0], key="junk")
         assert "junk" in dev._nodes and len(dev._nodes) == 2
 
 

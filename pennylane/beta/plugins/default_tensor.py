@@ -445,7 +445,10 @@ class DefaultTensor(Device):
             self._nodes["contracted_state"] = ket
 
     def _state(self, contraction_method="auto"):
-        """The numerical value of the current state vector.
+        """The numerical quantum state tensor.
+
+        The state is obtained by contracting all the gates in the tensor network.
+        An optional contraction method can be specified.
 
         Args:
             contraction_method (str): The contraction method to be employed.
