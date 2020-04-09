@@ -91,7 +91,7 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                                {}),
                               (qml.templates.BasisStatePreparation,
                                {},
-                               {'basis_state': np.array([1, 0])})
+                               {'basis_state': np.array([1, 0])}),
                               (qml.templates.StronglyEntanglingLayers,
                                {'weights': [[[4.54, 4.79, 2.98], [4.93, 4.11, 5.58]],
                                             [[6.08, 5.94, 0.05], [2.44, 5.07, 0.95]]]},
@@ -183,16 +183,16 @@ QUBIT_INIT = [(qml.templates.StronglyEntanglingLayers,
                {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=3, n_wires=2),
                 'wires': range(2)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=3),
+               {'features': [1., 2., 3.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=3),
                 'wires': range(3)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=3),
+               {'features': [1., 2., 3.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=3),
                 'wires': range(3)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=1),
+               {'features': [1.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=1),
                 'wires': range(1)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=2, n_wires=1),
+               {'features': [1.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=2, n_wires=1),
                 'wires': range(1)}),
               (qml.templates.SimplifiedTwoDesign,
                {'initial_layer_weights': qml.init.simplified_two_design_initial_layer_uniform(n_wires=4),
@@ -384,215 +384,221 @@ class TestIntegrationQnode:
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
-        circuit(nondiffable1=nondiffable)
+        circuit(nondiffable=nondiffable)
 
-#
-# class TestIntegrationOtherOps:
-#     """Tests the integration of templates into qnodes where the template is called
-#     together with other operations."""
-#
-#     @pytest.mark.parametrize("op_before_template", [True, False])
-#     @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
-#     def test_qubit_template_followed_by_operation(self, template, diffable, nondiffable, op_before_template):
-#         """Tests integration of qubit templates with other operations."""
-#
-#         # skip this test if template does not allow for operations before
-#         if any(isinstance(template, t) for t in NO_OP_BEFORE) and op_before_template:
-#             pytest.skip("Template does not allow operations before - skipping this test.")
-#
-#         # Change type of differentiable arguments
-#         # TODO: templates should all take arrays AND lists, at the moment this is not the case
-#         diffable = {k: np.array(v) for k, v in diffable.items()}
-#
-#         # Merge differentiable and non-differentiable arguments
-#         nondiffable.update(diffable)
-#
-#         # Generate qnode
-#         dev = qml.device('default.qubit', wires=2)
-#
-#         @qml.qnode(dev)
-#         def circuit(nondiffable=None):
-#             # Add wires
-#             nondiffable['wires'] = range(2)
-#
-#             # Circuit
-#             if op_before_template:
-#                 qml.PauliX(wires=0)
-#             template(**nondiffable)
-#             if not op_before_template:
-#                 qml.PauliX(wires=1)
-#             return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
-#
-#         # Check that execution does not throw error
-#         circuit(nondiffable=nondiffable)
-#
-#     @pytest.mark.parametrize("op_before_template", [True, False])
-#     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
-#     def test_integration_cv_nondiffable(self, template, diffable, nondiffable, gaussian_device_2_wires,
-#                                         op_before_template):
-#         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
-#
-#         # Change type of differentiable arguments
-#         # TODO: templates should all take arrays AND lists, at the moment this is not the case
-#         diffable = {k: np.array(v) for k, v in diffable.items()}
-#
-#         # Merge differentiable and non-differentiable arguments
-#         nondiffable.update(diffable)
-#
-#         # Generate qnode
-#         @qml.qnode(gaussian_device_2_wires)
-#         def circuit(nondiffable=None):
-#             # Add wires
-#             nondiffable['wires'] = range(2)
-#
-#             # Circuit
-#             if op_before_template:
-#                 qml.Displacement(1., 1., wires=0)
-#             template(**nondiffable)
-#             if not op_before_template:
-#                 qml.Displacement(1., 1., wires=1)
-#             return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
-#
-#         # Check that execution does not throw error
-#         circuit(nondiffable1=nondiffable)
-#
-#
-# class TestIntegrationGradient:
-#     """Tests that gradients of circuits with templates can be computed."""
-#
-#     @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
-#     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-#     def test_integration_qubit_grad(self, template, diffable, nondiffable, interface, to_var):
-#         """Tests that gradient calculations of qubit templates execute without error."""
-#
-#         # Extract keys and items
-#         keys_diffable = [*diffable]
-#         diffable = list(diffable.values())
-#
-#         # Turn into correct format
-#         diffable = [to_var(i) for i in diffable]
-#
-#         # Make qnode
-#         n_wires = len(nondiffable['wires'])
-#         dev = qml.device('default.qubit', wires=n_wires)
-#
-#         @qml.qnode(dev, interface=interface)
-#         def circuit(*diffable):
-#
-#             # Turn diffables back into dictionaries
-#             dict = {key: item for key, item in zip(keys_diffable, diffable)}
-#
-#             # Merge diffables and nondiffables
-#             dict.update(nondiffable)
-#
-#             # Circuit
-#             template(**dict)
-#             return qml.expval(qml.Identity(0))
-#
-#         # TODO: make argum a fixture
-#         for argnum in range(len(diffable)):
-#
-#             # Check gradients in numpy interface
-#             if interface == 'numpy':
-#                 grd = qml.grad(circuit, argnum=argnum)
-#                 grd(*diffable)
-#
-#             # Check gradients in torch interface
-#             if interface == 'torch':
-#                 for a in argnum:
-#                     diffable[a] = TorchVariable(diffable[a], requires_grad=True)
-#                 res = circuit(*diffable)
-#                 res.backward()
-#                 for a in argnum:
-#                     diffable[a].grad.numpy()
-#
-#             # Check gradients in tf interface
-#             if interface == 'tf':
-#                 grad_inpts = [diffable[a] for a in argnum]
-#                 with tf.GradientTape() as tape:
-#                     loss = circuit(*diffable)
-#                     tape.gradient(loss, grad_inpts)
-#
-#     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
-#     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-#     def test_integration_cv_grad(self, template, diffable, nondiffable, interface, to_var, gaussian_dummy):
-#         """Tests that gradient calculations of cv templates execute without error."""
-#
-#         # Extract keys and items
-#         keys_diffable = [*diffable]
-#         diffable = list(diffable.values())
-#
-#         # Turn into correct format
-#         diffable = [to_var(i) for i in diffable]
-#
-#         # Make qnode
-#         n_wires = len(nondiffable['wires'])
-#         dev = gaussian_dummy(n_wires)
-#
-#         @qml.qnode(dev, interface=interface)
-#         def circuit(*diffable):
-#
-#             # Turn diffables back into dictionaries
-#             dict = {key: item for key, item in zip(keys_diffable, diffable)}
-#
-#             # Merge diffables and nondiffables
-#             dict.update(nondiffable)
-#
-#             # Circuit
-#             template(**dict)
-#             return qml.expval(qml.Identity(0))
-#
-#         # Check gradients in numpy interface
-#         if interface == 'numpy':
-#             grd = qml.grad(circuit, argnum=argnum)
-#             grd(*diffable)
-#
-#         # Check gradients in torch interface
-#         if interface == 'torch':
-#             for a in argnum:
-#                 diffable[a] = TorchVariable(diffable[a], requires_grad=True)
-#             res = circuit(*diffable)
-#             res.backward()
-#             for a in argnum:
-#                 diffable[a].grad.numpy()
-#
-#         # Check gradients in tf interface
-#         if interface == 'tf':
-#             grad_inpts = [diffable[a] for a in argnum]
-#             with tf.GradientTape() as tape:
-#                 loss = circuit(*diffable)
-#                 tape.gradient(loss, grad_inpts)
-#
-#
-# class TestInitializationIntegration:
-#     """Tests integration with the parameter initialization functions from pennylane.init"""
-#
-#     @pytest.mark.parametrize("template, dict", QUBIT_INIT)
-#     def test_integration_qubit_init(self, template, dict):
-#         """Tests that parameter initializations are compatible with qubit templates."""
-#
-#         n_wires = len(dict['wires'])
-#         dev = qml.device('default.qubit', wires=n_wires)
-#
-#         @qml.qnode(dev)
-#         def circuit():
-#             template(**dict)
-#             return qml.expval(qml.Identity(0))
-#
-#         # Check that execution does not throw error
-#         circuit()
-#
-#     @pytest.mark.parametrize("template, dict", CV_INIT)
-#     def test_integration_cv_init(self, template, dict, gaussian_dummy):
-#         """Tests that parameter initializations are compatible with cv templates."""
-#
-#         n_wires = len(dict['wires'])
-#         dev = gaussian_dummy(n_wires)
-#
-#         @qml.qnode(dev)
-#         def circuit():
-#             template(**dict)
-#             return qml.expval(qml.Identity(0))
-#
-#         # Check that execution does not throw error
-#         circuit()
+
+class TestIntegrationOtherOps:
+    """Tests the integration of templates into qnodes where the template is called
+    together with other operations."""
+
+    @pytest.mark.parametrize("op_before_template", [True, False])
+    @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
+    def test_qubit_template_followed_by_operation(self, template, diffable, nondiffable, op_before_template):
+        """Tests integration of qubit templates with other operations."""
+
+        # skip this test if template does not allow for operations before
+        if any(isinstance(template, type(t)) for t in NO_OP_BEFORE) and op_before_template:
+            pytest.skip("Template does not allow operations before - skipping this test.")
+
+        # Change type of differentiable arguments
+        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        diffable = {k: np.array(v) for k, v in diffable.items()}
+
+        # Merge differentiable and non-differentiable arguments
+        nondiffable.update(diffable)
+
+        # Generate qnode
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(nondiffable=None):
+            # Add wires
+            nondiffable['wires'] = range(2)
+
+            # Circuit
+            if op_before_template:
+                qml.PauliX(wires=0)
+            template(**nondiffable)
+            if not op_before_template:
+                qml.PauliX(wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
+
+        # Check that execution does not throw error
+        circuit(nondiffable=nondiffable)
+
+    @pytest.mark.parametrize("op_before_template", [True, False])
+    @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
+    def test_integration_cv_nondiffable(self, template, diffable, nondiffable, gaussian_device_2_wires,
+                                        op_before_template):
+        """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
+
+        # Change type of differentiable arguments
+        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        diffable = {k: np.array(v) for k, v in diffable.items()}
+
+        # Merge differentiable and non-differentiable arguments
+        nondiffable.update(diffable)
+
+        # Generate qnode
+        @qml.qnode(gaussian_device_2_wires)
+        def circuit(nondiffable=None):
+            # Add wires
+            nondiffable['wires'] = range(2)
+
+            # Circuit
+            if op_before_template:
+                qml.Displacement(1., 1., wires=0)
+            template(**nondiffable)
+            if not op_before_template:
+                qml.Displacement(1., 1., wires=1)
+            return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
+
+        # Check that execution does not throw error
+        circuit(nondiffable=nondiffable)
+
+
+class TestIntegrationGradient:
+    """Tests that gradients of circuits with templates can be computed."""
+
+    @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_qubit_grad(self, template, diffable, nondiffable, interface, to_var):
+        """Tests that gradient calculations of qubit templates execute without error."""
+
+        # Extract keys and items
+        keys_diffable = [*diffable]
+        diffable = list(diffable.values())
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Make qnode
+        n_wires = len(nondiffable['wires'])
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(*diffable):
+
+            # Turn diffables back into dictionaries
+            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+
+            # Merge diffables and nondiffables
+            dict.update(nondiffable)
+
+            # Circuit
+            template(**dict)
+            return qml.expval(qml.Identity(0))
+
+        # TODO: make argum a fixture
+        for a in range(len(diffable)):
+
+            argnum = [a]
+
+            # Check gradients in numpy interface
+            if interface == 'numpy':
+                grd = qml.grad(circuit, argnum=argnum)
+                grd(*diffable)
+
+            # Check gradients in torch interface
+            if interface == 'torch':
+                for a in argnum:
+                    diffable[a] = TorchVariable(diffable[a], requires_grad=True)
+                res = circuit(*diffable)
+                res.backward()
+                for a in argnum:
+                    diffable[a].grad.numpy()
+
+            # Check gradients in tf interface
+            if interface == 'tf':
+                grad_inpts = [diffable[a] for a in argnum]
+                with tf.GradientTape() as tape:
+                    loss = circuit(*diffable)
+                    tape.gradient(loss, grad_inpts)
+
+    @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
+    @pytest.mark.parametrize("interface, to_var", INTERFACES)
+    def test_integration_cv_grad(self, template, diffable, nondiffable, interface, to_var, gaussian_dummy):
+        """Tests that gradient calculations of cv templates execute without error."""
+
+        # Extract keys and items
+        keys_diffable = [*diffable]
+        diffable = list(diffable.values())
+
+        # Turn into correct format
+        diffable = [to_var(i) for i in diffable]
+
+        # Make qnode
+        n_wires = len(nondiffable['wires'])
+        dev = gaussian_dummy(n_wires)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(*diffable):
+
+            # Turn diffables back into dictionaries
+            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+
+            # Merge diffables and nondiffables
+            dict.update(nondiffable)
+
+            # Circuit
+            template(**dict)
+            return qml.expval(qml.Identity(0))
+
+        for a in range(len(diffable)):
+            #TODO why didnt fail
+            argnum = [a]
+
+            # Check gradients in numpy interface
+            if interface == 'numpy':
+                grd = qml.grad(circuit, argnum=argnum)
+                grd(*diffable)
+
+            # Check gradients in torch interface
+            if interface == 'torch':
+                for a in argnum:
+                    diffable[a] = TorchVariable(diffable[a], requires_grad=True)
+                res = circuit(*diffable)
+                res.backward()
+                for a in argnum:
+                    diffable[a].grad.numpy()
+
+            # Check gradients in tf interface
+            if interface == 'tf':
+                grad_inpts = [diffable[a] for a in argnum]
+                with tf.GradientTape() as tape:
+                    loss = circuit(*diffable)
+                    tape.gradient(loss, grad_inpts)
+
+
+class TestInitializationIntegration:
+    """Tests integration with the parameter initialization functions from pennylane.init"""
+
+    @pytest.mark.parametrize("template, dict", QUBIT_INIT)
+    def test_integration_qubit_init(self, template, dict):
+        """Tests that parameter initializations are compatible with qubit templates."""
+
+        n_wires = len(dict['wires'])
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            template(**dict)
+            return qml.expval(qml.Identity(0))
+
+        # Check that execution does not throw error
+        circuit()
+
+    @pytest.mark.parametrize("template, dict", CV_INIT)
+    def test_integration_cv_init(self, template, dict, gaussian_dummy):
+        """Tests that parameter initializations are compatible with cv templates."""
+
+        n_wires = len(dict['wires'])
+        dev = gaussian_dummy(n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            template(**dict)
+            return qml.expval(qml.Identity(0))
+
+        # Check that execution does not throw error
+        circuit()
