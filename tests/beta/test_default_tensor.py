@@ -361,7 +361,7 @@ class TestDefaultTensorNetwork:
 
 
     def test_reset(self, tensornet_device_2_wires, tol):
-        """Tests that the `reset` method clears relevant bookkeeping data and re-initializes the iniital state."""
+        """Tests that the `reset` method clears relevant bookkeeping data and re-initializes the initial state."""
 
         dev = tensornet_device_2_wires
 
@@ -380,9 +380,7 @@ class TestDefaultTensorNetwork:
         assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev.zero_state, atol=tol, rtol=0)
         assert not dev._contracted
         assert len(dev._terminal_edges) == 2
-        node_edges = [dev._nodes['state'][idx].edges for idx in range(2)]
-        node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-        assert node_edges_set == set(dev._terminal_edges)
+    assert edges_valid(dev, num_nodes=2)
 
 
     def test_add_initial_state_nodes_2_wires_factorized(self, tensornet_device_2_wires):
@@ -441,7 +439,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=3)
 
 
-        def test_add_initial_state_nodes_3_wires_beseparable_AB_C(self, tensornet_device_3_wires):
+        def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, tensornet_device_3_wires):
             """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
 
         dev = tensornet_device_3_wires
@@ -459,7 +457,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
 
-        def test_add_initial_state_nodes_3_wires_beseparable_A_BC(self, tensornet_device_3_wires):
+        def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, tensornet_device_3_wires):
             """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
 
         dev = tensornet_device_3_wires
@@ -477,7 +475,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
 
-        def test_add_initial_state_nodes_3_wires_beseparable_AC_B(self, tensornet_device_3_wires):
+        def test_add_initial_state_nodes_3_wires_biseparable_AC_B(self, tensornet_device_3_wires):
             """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
 
         dev = tensornet_device_3_wires
@@ -522,7 +520,7 @@ class TestDefaultTensorNetwork:
     ])
     def test_add_initial_state_nodes_exception(self, tensornet_device_2_wires, tensors, wires, names):
         """Tests that an exception is given if the method _add_initial_state_nodes
-        receives arguments with incompatible lengths"""
+        receives arguments with incompatible lengths."""
 
         dev = tensornet_device_2_wires
         dev._clear_network_data()
