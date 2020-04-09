@@ -146,11 +146,11 @@ class DefaultTensor(Device):
         """Create the nodes representing the initial input state circuit.
         
            Input states can be factorized or entangled. If a state can be factorized
-           into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be lists of length :math:`k`.
+           into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be sequences of length :math:`k`.
 
           Args:
-              tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each factorized component of
-               the state (in the computational basis)
+              tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each
+               factorized component of the state (in the computational basis)
               wires (Sequence(list[int])): the wires for each factorized component of the state
               names (Sequence[str]): name for each factorized component of the state
         """
@@ -388,7 +388,7 @@ class DefaultTensor(Device):
             ket = self._nodes["contracted_state"]
             bra = tn.conj(ket, name="Bra")
 
-            all_wires = tuple(w for w in range(self.num_wires))
+            all_wires = tuple(range(self.num_wires))
             meas_wires = []
             # We need to build up <psi|A|psi> step-by-step.
             # For wires which are measured, we need to connect edges between

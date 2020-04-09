@@ -540,7 +540,6 @@ class TestDefaultTensorNetwork:
         dev._add_node(two_qubit_gate, wires=[0, 1], name="NewNodeZ")
         assert len(dev._nodes["state"]) == 5
         node_names = [n.name for n in dev._nodes["state"]]
-        print(node_names)
         assert set(node_names) == set(["ZeroState(0,)",
                                        "ZeroState(1,)",
                                        "NewNodeX(0,)",
