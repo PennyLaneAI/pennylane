@@ -113,8 +113,8 @@ class DefaultTensor(Device):
         self.reset()
 
     def reset(self):
-        """Reset the device"""
-        self._clear_network()
+        """Reset the device."""
+        self._clear_network_data()
 
         # prepare a factorized all-zeros state
         self._add_initial_state_nodes(
@@ -123,7 +123,7 @@ class DefaultTensor(Device):
             ["ZeroState"] * self.num_wires,
         )
 
-    def _clear_network(self):
+    def _clear_network_data(self):
         """Remove all data representing the current network from internal cache."""
         self._nodes = {}
         if self._rep == "exact":
@@ -209,7 +209,7 @@ class DefaultTensor(Device):
             state = self._array(par[0], dtype=self.C_DTYPE)
             if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
                 tensor = self._reshape(state, [2] * self.num_wires)
-                self._clear_network()
+                self._clear_network_data()
                 self._add_initial_state_nodes(
                     [tensor], [list(range(self.num_wires))], ["QubitStateVector"]
                 )
@@ -240,7 +240,7 @@ class DefaultTensor(Device):
             state_tensor = np.zeros(tuple([2] * len(wires)))
             state_tensor[tuple(par[0])] = 1
             tensor = self._array(state_tensor, dtype=self.C_DTYPE)
-            self._clear_network()
+            self._clear_network_data()
             self._add_initial_state_nodes([tensor], [full_wires_list], ["BasisState"])
             return
 

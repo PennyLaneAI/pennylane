@@ -389,7 +389,7 @@ class TestDefaultTensorNetwork:
         """Tests that the initial states are properly created for a 2 wire device."""
 
         dev = tensornet_device_2_wires
-        dev._clear_network()
+        dev._clear_network_data()
 
         # factorized state
         tensors = [np.array([1., 0.]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
@@ -404,7 +404,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
         # entangled state
-        dev._clear_network()
+        dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)]
         wires = [[0, 1]]
@@ -421,7 +421,7 @@ class TestDefaultTensorNetwork:
         """Tests that the initial states are properly created for a 3 wire device."""
 
         dev = tensornet_device_3_wires
-        dev._clear_network()
+        dev._clear_network_data()
 
         # A|B|C-factorized state
         tensors = [np.array([1., 0.]), np.array([1, -1j]) / np.sqrt(2), np.array([0., 1.])]
@@ -437,7 +437,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=3)
 
         # AB|C-factorized state
-        dev._clear_network()
+        dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
         wires = [[0, 1], [2]]
@@ -451,7 +451,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
         # A|BC-factorized state
-        dev._clear_network()
+        dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
         wires = [[0], [1, 2]]
@@ -465,7 +465,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
         # AC|B-factorized state
-        dev._clear_network()
+        dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
         wires = [[0, 2], [1]]
@@ -479,7 +479,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
         # AC|B-factorized state
-        dev._clear_network()
+        dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
         wires = [[0, 2], [1]]
@@ -493,7 +493,7 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=2)
 
         # tripartite entangled state
-        dev._clear_network()
+        dev._clear_network_data()
 
         tensors = [np.array([[1., 0., 0., 0.],
                              [0., 0., 0., 0.],
@@ -519,7 +519,7 @@ class TestDefaultTensorNetwork:
         receives arguments with incompatible lengths"""
 
         dev = tensornet_device_2_wires
-        dev._clear_network()
+        dev._clear_network_data()
 
         with pytest.raises(ValueError, match="must all be the same length"):
             dev._add_initial_state_nodes(tensors, wires, names)
