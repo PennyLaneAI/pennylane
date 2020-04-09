@@ -385,8 +385,8 @@ class TestDefaultTensorNetwork:
         assert node_edges_set == set(dev._terminal_edges)
 
 
-    def test_add_initial_state_nodes_2_wires(self, tensornet_device_2_wires):
-        """Tests that the initial states are properly created for a 2 wire device."""
+    def test_add_initial_state_nodes_2_wires_factorized(self, tensornet_device_2_wires):
+        """Tests that factorized initial states are properly created for a 2 wire device."""
 
         dev = tensornet_device_2_wires
         dev._clear_network_data()
@@ -403,7 +403,12 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "BobState(1,)"
         assert edges_valid(dev, num_nodes=2)
 
+
+        def test_add_initial_state_nodes_2_wires_entangled(self, tensornet_device_2_wires):
+            """Tests that entangled initial states are properly created for a 2 wire device."""
         # entangled state
+
+        dev = tensornet_device_2_wires
         dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)]
@@ -417,13 +422,12 @@ class TestDefaultTensorNetwork:
         assert edges_valid(dev, num_nodes=1)
 
 
-    def test_add_initial_state_nodes_3_wires(self, tensornet_device_3_wires):
-        """Tests that the initial states are properly created for a 3 wire device."""
+    def test_add_initial_state_nodes_3_wires_completely_factorized(self, tensornet_device_3_wires):
+        """Tests that completely factorized initial states are properly created for a 3 wire device."""
 
         dev = tensornet_device_3_wires
         dev._clear_network_data()
 
-        # A|B|C-factorized state
         tensors = [np.array([1., 0.]), np.array([1, -1j]) / np.sqrt(2), np.array([0., 1.])]
         wires = [[0], [1], [2]]
         names = ["AliceState", "BobState", "CharlieState"]
@@ -436,7 +440,11 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][2].name == "CharlieState(2,)"
         assert edges_valid(dev, num_nodes=3)
 
-        # AB|C-factorized state
+
+        def test_add_initial_state_nodes_3_wires_beseparable_AB_C(self, tensornet_device_3_wires):
+            """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
         dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
@@ -450,7 +458,11 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "CharlieState(2,)"
         assert edges_valid(dev, num_nodes=2)
 
-        # A|BC-factorized state
+
+        def test_add_initial_state_nodes_3_wires_beseparable_A_BC(self, tensornet_device_3_wires):
+            """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
         dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
@@ -464,7 +476,11 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "BobCharlieState(1, 2)"
         assert edges_valid(dev, num_nodes=2)
 
-        # AC|B-factorized state
+
+        def test_add_initial_state_nodes_3_wires_beseparable_AC_B(self, tensornet_device_3_wires):
+            """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
         dev._clear_network_data()
 
         tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
@@ -478,21 +494,11 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "BobState(1,)"
         assert edges_valid(dev, num_nodes=2)
 
-        # AC|B-factorized state
-        dev._clear_network_data()
 
-        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
-        wires = [[0, 2], [1]]
-        names = ["AliceCharlieState", "BobState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
+        def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, tensornet_device_3_wires):
+            """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
 
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 2
-        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
-        assert dev._nodes["state"][1].name == "BobState(1,)"
-        assert edges_valid(dev, num_nodes=2)
-
-        # tripartite entangled state
+        dev = tensornet_device_3_wires
         dev._clear_network_data()
 
         tensors = [np.array([[1., 0., 0., 0.],
@@ -556,8 +562,8 @@ class TestDefaultTensorNetwork:
         assert "junk" in dev._nodes and len(dev._nodes) == 2
 
 
-    def test_add_edge(self, tensornet_device_2_wires):
-        """Tests the _add_edge method."""
+    def test_add_edge_correctly_connects_nodes(self, tensornet_device_2_wires):
+        """Tests the _add_edge method is connecting the nodes correctly."""
 
         dev = tensornet_device_2_wires
 
@@ -567,7 +573,8 @@ class TestDefaultTensorNetwork:
         dev._add_edge(obs_nodeA, 1, dev._nodes["state"][0], 0)
         dev._add_edge(obs_nodeB, 1, dev._nodes["state"][1], 0)
 
-        # check_connected raises an exception if nodes are not connected
+        # check_connected is designed to raise an exception if nodes are not connected
+        # test passes if no exception is raised
         tensornetwork.check_connected([dev._nodes["state"][0], obs_nodeA])
         tensornetwork.check_connected([dev._nodes["state"][1], obs_nodeB])
 
@@ -1000,14 +1007,14 @@ class TestDefaultTensorIntegration:
 
         theta = np.pi / 4
         out1 = circuit(theta)
-        ket1 = dev._state()
+        ket1 = dev._state(contraction_method=method)
         assert "contracted_state" in dev._nodes
         assert np.allclose(ket1, expected(theta), atol=tol, rtol=0)
         assert out1 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
 
         theta = -0.1234
         out2 = circuit(theta)
-        ket2 = dev._state()
+        ket2 = dev._state(contraction_method=method)
         assert "contracted_state" in dev._nodes
         assert np.allclose(ket2, expected(theta), atol=tol, rtol=0)
         assert out2 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
