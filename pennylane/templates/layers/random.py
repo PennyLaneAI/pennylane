@@ -103,7 +103,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
         **Default seed**
 
-        ``RandomLayers`` always uses a seed to initialize the construction of a random circuit. This means 
+        ``RandomLayers`` always uses a seed to initialize the construction of a random circuit. This means
         that the template creates the same circuit every time it is called. If no seed is provided, the default
         seed of ``42`` is used.
 
