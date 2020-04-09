@@ -341,7 +341,7 @@ class TestIntegrationQnode:
         """Tests integration of qubit templates passing differentiable arguments as auxiliary arguments to qnode."""
 
         # Change type of differentiable arguments
-        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        # Fix: templates should all take arrays AND lists, at the moment this is not the case
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
@@ -368,7 +368,7 @@ class TestIntegrationQnode:
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
         # Change type of differentiable arguments
-        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        # Fix: templates should all take arrays AND lists, at the moment this is not the case
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
@@ -401,7 +401,7 @@ class TestIntegrationOtherOps:
             pytest.skip("Template does not allow operations before - skipping this test.")
 
         # Change type of differentiable arguments
-        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        # Fix: templates should all take arrays AND lists, at the moment this is not the case
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
@@ -433,7 +433,7 @@ class TestIntegrationOtherOps:
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
         # Change type of differentiable arguments
-        # TODO: templates should all take arrays AND lists, at the moment this is not the case
+        # Fix: templates should all take arrays AND lists, at the moment this is not the case
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
@@ -489,31 +489,26 @@ class TestIntegrationGradient:
             template(**dict)
             return qml.expval(qml.Identity(0))
 
-        # TODO: make argum a fixture
-        for a in range(len(diffable)):
-
-            argnum = [a]
+        # Do gradient check for every differentiable argument
+        for argnum in range(len(diffable)):
 
             # Check gradients in numpy interface
             if interface == 'numpy':
-                grd = qml.grad(circuit, argnum=argnum)
+                grd = qml.grad(circuit, argnum=[argnum])
                 grd(*diffable)
 
             # Check gradients in torch interface
             if interface == 'torch':
-                for a in argnum:
-                    diffable[a] = TorchVariable(diffable[a], requires_grad=True)
+                diffable[argnum] = TorchVariable(diffable[argnum], requires_grad=True)
                 res = circuit(*diffable)
                 res.backward()
-                for a in argnum:
-                    diffable[a].grad.numpy()
+                diffable[argnum].grad.numpy()
 
             # Check gradients in tf interface
             if interface == 'tf':
-                grad_inpts = [diffable[a] for a in argnum]
                 with tf.GradientTape() as tape:
                     loss = circuit(*diffable)
-                    tape.gradient(loss, grad_inpts)
+                    tape.gradient(loss, diffable[argnum])
 
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
@@ -544,30 +539,26 @@ class TestIntegrationGradient:
             template(**dict)
             return qml.expval(qml.Identity(0))
 
-        for a in range(len(diffable)):
-            #TODO why didnt fail
-            argnum = [a]
+        # Do gradient check for every differentiable argument
+        for argnum in range(len(diffable)):
 
             # Check gradients in numpy interface
             if interface == 'numpy':
-                grd = qml.grad(circuit, argnum=argnum)
+                grd = qml.grad(circuit, argnum=[argnum])
                 grd(*diffable)
 
             # Check gradients in torch interface
             if interface == 'torch':
-                for a in argnum:
-                    diffable[a] = TorchVariable(diffable[a], requires_grad=True)
+                diffable[argnum] = TorchVariable(diffable[argnum], requires_grad=True)
                 res = circuit(*diffable)
                 res.backward()
-                for a in argnum:
-                    diffable[a].grad.numpy()
+                diffable[argnum].grad.numpy()
 
             # Check gradients in tf interface
             if interface == 'tf':
-                grad_inpts = [diffable[a] for a in argnum]
                 with tf.GradientTape() as tape:
                     loss = circuit(*diffable)
-                    tape.gradient(loss, grad_inpts)
+                    tape.gradient(loss, diffable[argnum])
 
 
 class TestInitializationIntegration:
