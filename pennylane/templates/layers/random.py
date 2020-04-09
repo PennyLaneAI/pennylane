@@ -65,7 +65,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     .. warning::
         This template uses random number generation inside qnodes. Find more
-        details about how to invoce the desired random behaviour in the "Usage Details" section.
+        details about how to invoke the desired random behaviour in the "Usage Details" section below.
 
     The argument ``weights`` contains the weights for each layer. The number of layers :math:`L` is therefore derived
     from the first dimension of ``weights``.
@@ -103,10 +103,9 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
         **Default seed**
 
-        ``RandomLayers`` always uses a seed to initialize the construction of a random circuit. If no seed is
-        provided, the default seed of ``42`` is used.
-
-        This means that the template creates the same circuit every time it is called without specifying a seed.
+        ``RandomLayers`` always uses a seed to initialize the construction of a random circuit. This means 
+        that the template creates the same circuit every time it is called. If no seed is provided, the default
+        seed of ``42`` is used.
 
         .. code-block:: python
 
@@ -190,7 +189,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         >>> np.allclose(first_call, second_call)
         >>> False
 
-        This can be rectified by making the quantum node **immmutable**.
+        This can be rectified by making the quantum node **immutable**.
 
         .. code-block:: python
 
