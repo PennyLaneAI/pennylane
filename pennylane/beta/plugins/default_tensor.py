@@ -93,6 +93,8 @@ class DefaultTensor(Device):
         "Identity": ops.identity,
     }
 
+    _operation_and_observable_map = {**_operation_map, **_observable_map}
+
     backend = "numpy"
     _reshape = staticmethod(np.reshape)
     _array = staticmethod(np.array)
@@ -237,7 +239,7 @@ class DefaultTensor(Device):
                         self.num_wires
                     )
                 )
-            state_tensor = np.zeros(tuple([2] * len(wires)))
+            state_tensor = np.zeros([2] * len(wires))
             state_tensor[tuple(par[0])] = 1
             tensor = self._array(state_tensor, dtype=self.C_DTYPE)
             self._clear_network_data()
@@ -366,7 +368,7 @@ class DefaultTensor(Device):
         Returns:
           array: matrix representation.
         """
-        A = {**self._operation_map, **self._observable_map}[operation]
+        A = self._operation_and_observable_map[operation]
         if not callable(A):
             return self._array(A, dtype=self.C_DTYPE)
         return self._asarray(A(*par), dtype=self.C_DTYPE)
@@ -384,7 +386,7 @@ class DefaultTensor(Device):
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if self._rep == "exact":
-            self._contract_to_ket(method=contraction_method)
+            self._contract_to_ket(contraction_method)
             ket = self._nodes["contracted_state"]
             bra = tn.conj(ket, name="Bra")
 
@@ -428,18 +430,18 @@ class DefaultTensor(Device):
             )
         return self._real(expval)
 
-    def _contract_to_ket(self, method="auto"):
+    def _contract_to_ket(self, contraction_method="auto"):
         """Contract the nodes which represent the state preparation and gate applications to get the pre-measurement state.
 
         The contracted tensor is stored in the ``_nodes`` dictionary under the key ``"contracted_state"``.
 
         Args:
-            method (str): The contraction method to be employed.
+            contraction_method (str): The contraction method to be employed.
                 Possible choices are "auto", "greedy", "branch", or "optimal".
                 See TensorNetwork library documentation for more details.
         """
         if "contracted_state" not in self._nodes:
-            contract = contract_fns[method]
+            contract = contract_fns[contraction_method]
             ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
