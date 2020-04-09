@@ -344,22 +344,21 @@ class TestRandomLayers:
         second_call = circuit(weights)
         assert np.allclose(first_call, second_call, atol=tol)
 
-    @pytest.mark.parametrize("mutable, same_circuit", [(True, False),
-                                                       (False, True)])
-    def test_no_seed(self, mutable, same_circuit, tol):
-        """Test that two calls to a qnode with RandomLayers() for 'seed=None' option creates different
-        circuits for mutable qnodes, and the same circuit for immutable qnodes."""
+    def test_no_seed(self, tol):
+        """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
+        same circuit for immutable qnodes."""
+
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1]*100]
 
-        @qml.qnode(dev, mutable=mutable)
+        @qml.qnode(dev, mutable=False)
         def circuit(weights):
             RandomLayers(weights=weights, wires=range(2), seed=None)
             return qml.expval(qml.PauliZ(0))
 
         first_call = circuit(weights)
         second_call = circuit(weights)
-        assert np.allclose(first_call, second_call, atol=tol) == same_circuit
+        assert np.allclose(first_call, second_call, atol=tol)
 
     def test_random_layers_nlayers(self, n_layers):
         """Test that RandomLayers() picks the correct number of gates."""
