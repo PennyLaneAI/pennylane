@@ -340,7 +340,6 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
         state from the last run of the device.
@@ -365,6 +364,7 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
+        raise NotImplementedError
 
     def estimate_probability(self, wires=None):
         """Return the estimated probability of each computational basis state
