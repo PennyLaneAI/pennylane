@@ -172,7 +172,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         **Automatically creating random circuits**
 
         To automate the process of creating different circuits with ``RandomLayers``,
-        you can pass a random number generator as seed. However, in this case care needs
+        you can set ``seed=None`` to avoid specifying a seed. However, in this case care needs
         to be taken. In the default setting, a quantum node is **mutable**, which means that the quantum function is
         re-evaluated every time it is called. This means that the circuit is re-constructed from scratch
         each time you call the qnode:
@@ -181,7 +181,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
             @qml.qnode(dev)
             def circuit_rnd(weights):
-                RandomLayers(weights=weights, wires=range(2), seed=np.random.randint(100))
+                RandomLayers(weights=weights, wires=range(2), seed=None)
                 return qml.expval(qml.PauliZ(0))
 
             first_call = circuit_rnd(weights)
@@ -190,13 +190,13 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         >>> np.allclose(first_call, second_call)
         >>> False
 
-        This can be rectified by making the quantum node **non-mutable**.
+        This can be rectified by making the quantum node **immmutable**.
 
         .. code-block:: python
 
             @qml.qnode(dev, mutable=False)
             def circuit_rnd(weights):
-                RandomLayers(weights=weights, wires=range(2), seed=np.random.randint(100))
+                RandomLayers(weights=weights, wires=range(2), seed=None)
                 return qml.expval(qml.PauliZ(0))
 
             first_call = circuit_rnd(weights)

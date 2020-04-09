@@ -329,26 +329,13 @@ class TestRandomLayers:
 
         assert not np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
-    def test_same_circuit_in_each_mutable_qnode_call(self, tol):
-        """Test that RandomLayers() creates the same circuit in two calls of a mutable qnode."""
+    @pytest.mark.parametrize("mutable", [True, False])
+    def test_same_circuit_in_each_qnode_call(self, mutable, tol):
+        """Test that RandomLayers() creates the same circuit in two calls of a qnode."""
         dev = qml.device("default.qubit", wires=2)
         weights = [[0.1, 0.2, 0.3]]
 
-        @qml.qnode(dev, mutable=True)
-        def circuit(weights):
-            RandomLayers(weights=weights, wires=range(2))
-            return qml.expval(qml.PauliZ(0))
-
-        first_call = circuit(weights)
-        second_call = circuit(weights)
-        assert np.allclose(first_call, second_call, atol=tol)
-
-    def test_same_circuit_in_each_nonmutable_qnode_call(self, tol):
-        """Test that RandomLayers() creates the same circuit in two calls of a nonmutable qnode."""
-        dev = qml.device("default.qubit", wires=2)
-        weights = [[0.1, 0.2, 0.3]]
-
-        @qml.qnode(dev, mutable=False)
+        @qml.qnode(dev, mutable=mutable)
         def circuit(weights):
             RandomLayers(weights=weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
