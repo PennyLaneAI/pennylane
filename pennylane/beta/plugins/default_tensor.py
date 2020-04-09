@@ -18,7 +18,7 @@ Experimental simulator plugin based on tensor network contractions
 import warnings
 from itertools import product
 
-from . import default_tensor_utils as ops
+from . import numpy_ops as ops
 
 import numpy as np
 
