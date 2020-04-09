@@ -23,6 +23,7 @@ from numpy.linalg import eigh
 #  utilities
 # ========================================================
 
+
 def spectral_decomposition(A):
     r"""Spectral decomposition of a Hermitian matrix.
 
@@ -75,6 +76,7 @@ CSWAP = np.array(
 Toffoli = np.diag([1 for i in range(8)])
 Toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
+
 def identity(*_):
     """Identity matrix observable.
 
@@ -82,6 +84,7 @@ def identity(*_):
         array: 2x2 identity matrix
     """
     return np.identity(2)
+
 
 # ========================================================
 #  parametrized gates
@@ -228,6 +231,7 @@ def CRot3(a, b, c):
 # ========================================================
 #  General gates and observables
 # ========================================================
+
 
 def unitary(*args):
     r"""Represent input argument as a unitary matrix.
