@@ -29,7 +29,8 @@ except ImportError as e:
     raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
 
 from pennylane.variable import Variable
-from pennylane.beta.plugins.default_tensor import DefaultTensor, I, X, Y, Z
+from pennylane.beta.plugins.default_tensor import DefaultTensor
+from pennylane.beta.plugins.default_tensor_utils import I, X, Y, Z
 
 
 # tolerance for numerical errors
