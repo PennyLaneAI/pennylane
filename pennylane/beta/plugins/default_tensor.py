@@ -392,22 +392,20 @@ class DefaultTensor(Device):
 
             all_wires = tuple(range(self.num_wires))
             meas_wires = []
-            # We need to build up <psi|A|psi> step-by-step.
-            # For wires which are measured, we need to connect edges between
-            # bra, obs_node, and ket.
-            # For wires which are not measured, we need to connect edges between
-            # bra and ket.
-            # We use the convention that the indices of a tensor are ordered like
-            # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
+            # For wires which are measured, add edges between
+            # the ket node, the observable nodes, and the bra node
             for obs_node, obs_wires in zip(obs_nodes, wires):
                 meas_wires.extend(obs_wires)
                 for idx, w in enumerate(obs_wires):
+                    # Use convention that the indices of a tensor are ordered like
+                    # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
                     output_idx = idx
                     input_idx = len(obs_wires) + idx
                     self._add_edge(obs_node, input_idx, ket, w)  # A|psi>
                     self._add_edge(bra, w, obs_node, output_idx)  # <psi|A
+            # unmeasured wires are contracted directly between bra and ket
             for w in set(all_wires) - set(meas_wires):
-                self._add_edge(bra, w, ket, w)  # |psi[w]|**2
+                self._add_edge(bra, w, ket, w)
 
             # At this stage, all nodes are connected, and the contraction yields a
             # scalar value.
