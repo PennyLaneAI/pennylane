@@ -134,15 +134,15 @@ class DefaultTensor(Device):
 
         elif self._rep == "mps":
             raise NotImplementedError
-            # nodes = []
-            # for w in range(self.num_wires):
-            #    tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
-            #    node = self._add_node(tensor, wires=[w], name="ZeroState")
-            #    nodes.append(node)
-            #    if w > 0:
-            #        tn.connect(nodes[w-1][2], nodes[w][0])
-            ## Note: might want to set canonicalize=False
-            # self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+            nodes = []
+            for w in range(self.num_wires):
+               tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
+               node = self._add_node(tensor, wires=[w], name="ZeroState")
+               nodes.append(node)
+               if w > 0:
+                   tn.connect(nodes[w-1][2], nodes[w][0])
+            # Note: might want to set canonicalize=False
+            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
 
     def _add_initial_state_nodes(self, tensors, wires, names):
         """Create the nodes representing the initial input state circuit.
@@ -257,18 +257,18 @@ class DefaultTensor(Device):
                 self._terminal_edges[w] = op_node[idx]
         elif self._rep == "mps":
             raise NotImplementedError
-            # if len(wires) == 1:
-            #    self.mps.apply_one_site_gate(op_node, wires[0])
-            # elif len(wires) == 2:
-            #    if abs(wires[1]-wires[0]) == 1:
-            #        ret = self.mps.apply_two_site_gate(op_node, *wires)
-            #        # TODO: determine what ``ret`` is and if it is useful for anything
-            #        # TODO: pass ``max_singular_values`` or ``max_truncation_error``
-            #    else:
-            #        # only nearest-neighbours are natively supported
-            #        print("ruh roh")
-            # else:
-            #    raise NotImplementedError
+            if len(wires) == 1:
+               self.mps.apply_one_site_gate(op_node, wires[0])
+            elif len(wires) == 2:
+               if abs(wires[1]-wires[0]) == 1:
+                   ret = self.mps.apply_two_site_gate(op_node, *wires)
+                   # TODO: determine what ``ret`` is and if it is useful for anything
+                   # TODO: pass ``max_singular_values`` or ``max_truncation_error``
+               else:
+                   # only nearest-neighbours are natively supported
+                   print("ruh roh")
+            else:
+               raise NotImplementedError
 
     def create_nodes_from_tensors(self, tensors, wires, observable_names, key):
         """Helper function for creating TensorNetwork nodes based on tensors.
