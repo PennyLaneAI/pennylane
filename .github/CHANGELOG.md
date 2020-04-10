@@ -87,6 +87,11 @@
    3: ─────────────╰C───────────────────╰C──────────────┤ ⟨Z⟩
   ```
 
+* Updated the ``default.tensor`` plugin to use a smarter factorized representation 
+  of quantum states. This will result in more efficient simulations for circuits 
+  where not all qubits become entangled. 
+  [#572](https://github.com/XanaduAI/pennylane/pull/572)
+  
 * Added the ``SimplifiedTwoDesign`` template, which implements the circuit 
   design of [Cerezo et al. (2020)](<https://arxiv.org/abs/2001.00550>). 
   [(#556)](https://github.com/XanaduAI/pennylane/pull/556)
@@ -245,7 +250,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Thomas Bromley, Theodor Isacsson, Nathan Killoran, Johannes Jakob Meyer, 
+Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 
