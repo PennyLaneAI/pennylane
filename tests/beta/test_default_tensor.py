@@ -26,7 +26,7 @@ tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
 from pennylane import numpy as np, QuantumFunctionError
-from pennylane.beta.plugins.default_tensor import (
+from pennylane.beta.plugins.numpy_ops import (
     CNOT,
     CSWAP,
     CZ,
@@ -53,7 +53,7 @@ from pennylane.beta.plugins.default_tensor import (
     unitary,
 )
 
-tensornetwork = pytest.importorskip("tensornetwork", minversion="0.1")
+tensornetwork = pytest.importorskip("tensornetwork", minversion="0.3")
 
 
 U = np.array(
@@ -126,8 +126,15 @@ def prep_par(par, op):
     return par
 
 
-class TestAuxillaryFunctions:
-    """Test auxillary functions."""
+def edges_valid(dev, num_nodes):
+    """Returns True if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
+    node_edges = [dev._nodes['state'][idx].edges for idx in range(num_nodes)]
+    node_edges_set = set([edge for sublist in node_edges for edge in sublist])
+    return node_edges_set == set(dev._terminal_edges)
+
+
+class TestAuxiliaryFunctions:
+    """Test auxiliary functions."""
 
     def test_spectral_decomposition(self, tol):
         """Test that the correct spectral decomposition is returned."""
@@ -279,8 +286,8 @@ class TestAuxillaryFunctions:
         assert np.allclose(CRot3(a, b, c), arbitrary_Crotation(a, b, c), atol=tol, rtol=0)
 
 
-class TestStateFunctions:
-    """Arbitrary state and operator tests."""
+class TestMatrixOperations:
+    """Tests for unitary and hermitian functions."""
 
     def test_unitary(self, tol):
         """Test that the unitary function produces the correct output."""
@@ -330,6 +337,307 @@ class TestStateFunctions:
         with pytest.raises(ValueError, match="must be Hermitian"):
             hermitian(H2)
  
+
+class TestDefaultTensorNetwork:
+    """Tests of the basic tensor network functionality of default.tensor plugin."""
+
+    def test_clear_network_data(self, tensornet_device_2_wires):
+        """Tests that the _clear_network method clears the relevant bookkeeping data."""
+
+        dev = tensornet_device_2_wires
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            qml.PauliY(wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.sample(qml.PauliY(1))
+
+        circuit()
+        dev._clear_network_data()
+
+        assert dev._nodes == {}
+        assert not dev._contracted
+        assert dev._terminal_edges == []
+
+
+    def test_reset(self, tensornet_device_2_wires, tol):
+        """Tests that the `reset` method clears relevant bookkeeping data and re-initializes the initial state."""
+
+        dev = tensornet_device_2_wires
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            qml.PauliY(wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.sample(qml.PauliY(1))
+
+        circuit()
+        dev.reset()
+
+        assert 'state' in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes['state']) == 2
+        assert all([dev._nodes['state'][idx].name == "ZeroState({},)".format(idx) for idx in range(2)])
+        assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev.zero_state, atol=tol, rtol=0)
+        assert not dev._contracted
+        assert len(dev._terminal_edges) == 2
+        assert edges_valid(dev, num_nodes=2)
+
+
+    def test_add_initial_state_nodes_2_wires_factorized(self, tensornet_device_2_wires):
+        """Tests that factorized initial states are properly created for a 2 wire device."""
+
+        dev = tensornet_device_2_wires
+        dev._clear_network_data()
+
+        # factorized state
+        tensors = [np.array([1., 0.]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
+        wires = [[0], [1]]
+        names = ["AliceState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceState(0,)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        assert edges_valid(dev, num_nodes=2)
+
+
+        def test_add_initial_state_nodes_2_wires_entangled(self, tensornet_device_2_wires):
+            """Tests that entangled initial states are properly created for a 2 wire device."""
+        # entangled state
+
+        dev = tensornet_device_2_wires
+        dev._clear_network_data()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)]
+        wires = [[0, 1]]
+        names = ["BellState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 1
+        assert dev._nodes["state"][0].name == "BellState(0, 1)"
+        assert edges_valid(dev, num_nodes=1)
+
+
+    def test_add_initial_state_nodes_3_wires_completely_factorized(self, tensornet_device_3_wires):
+        """Tests that completely factorized initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
+        dev._clear_network_data()
+
+        tensors = [np.array([1., 0.]), np.array([1, -1j]) / np.sqrt(2), np.array([0., 1.])]
+        wires = [[0], [1], [2]]
+        names = ["AliceState", "BobState", "CharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 3
+        assert dev._nodes["state"][0].name == "AliceState(0,)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        assert dev._nodes["state"][2].name == "CharlieState(2,)"
+        assert edges_valid(dev, num_nodes=3)
+
+
+        def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, tensornet_device_3_wires):
+            """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
+        dev._clear_network_data()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0, 1], [2]]
+        names = ["AliceBobState", "CharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceBobState(0, 1)"
+        assert dev._nodes["state"][1].name == "CharlieState(2,)"
+        assert edges_valid(dev, num_nodes=2)
+
+
+        def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, tensornet_device_3_wires):
+            """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
+        dev._clear_network_data()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0], [1, 2]]
+        names = ["AliceState", "BobCharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceState(0,)"
+        assert dev._nodes["state"][1].name == "BobCharlieState(1, 2)"
+        assert edges_valid(dev, num_nodes=2)
+
+
+        def test_add_initial_state_nodes_3_wires_biseparable_AC_B(self, tensornet_device_3_wires):
+            """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
+        dev._clear_network_data()
+
+        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
+        assert dev._nodes["state"][1].name == "BobState(1,)"
+        assert edges_valid(dev, num_nodes=2)
+
+
+        def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, tensornet_device_3_wires):
+            """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
+
+        dev = tensornet_device_3_wires
+        dev._clear_network_data()
+
+        tensors = [np.array([[1., 0., 0., 0.],
+                             [0., 0., 0., 0.],
+                             [0., 0., 0., 0.],
+                             [0., 0., 0., 1.]]) / np.sqrt(2)]
+        wires = [[0, 1, 2]]
+        names = ["GHZState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 1
+        assert dev._nodes["state"][0].name == "GHZState(0, 1, 2)"
+        assert edges_valid(dev, num_nodes=1)
+
+
+    @pytest.mark.parametrize("tensors,wires,names", [
+        ([np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)], [[0,1]], ["A", "B"]),
+        ([np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)], [[0], [1]], ["A"]),
+        ([np.array([1., 0.]), np.array([1., 1.]) / np.sqrt(2)], [[0]], ["A"]),
+    ])
+    def test_add_initial_state_nodes_exception(self, tensornet_device_2_wires, tensors, wires, names):
+        """Tests that an exception is given if the method _add_initial_state_nodes
+        receives arguments with incompatible lengths."""
+
+        dev = tensornet_device_2_wires
+        dev._clear_network_data()
+
+        with pytest.raises(ValueError, match="must all be the same length"):
+            dev._add_initial_state_nodes(tensors, wires, names)
+
+
+    def test_add_node(self, tensornet_device_2_wires, tol):
+        """Tests that the _add_node method adds nodes with the correct attributes."""
+
+        dev = tensornet_device_2_wires
+
+        assert len(dev._nodes["state"]) == 2
+
+        zero_state = np.array([1., 0])
+        one_qubit_gate = np.array([[0, 1], [1, 0]])
+        two_qubit_gate = np.eye(4)
+        dev._add_node(one_qubit_gate, wires=[0], name="NewNodeX")
+        dev._add_node(one_qubit_gate, wires=[1], name="NewNodeY")
+        dev._add_node(two_qubit_gate, wires=[0, 1], name="NewNodeZ")
+        assert len(dev._nodes["state"]) == 5
+        node_names = [n.name for n in dev._nodes["state"]]
+        assert set(node_names) == set(["ZeroState(0,)",
+                                       "ZeroState(1,)",
+                                       "NewNodeX(0,)",
+                                       "NewNodeY(1,)",
+                                       "NewNodeZ(0, 1)"])
+        tensors = [n.tensor for n in dev._nodes["state"]]
+        assert all([np.allclose(t.data, zero_state, atol=tol, rtol=0) for t in tensors[:2]])
+        assert all([np.allclose(t.data, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
+        assert np.allclose(tensors[4].data, two_qubit_gate, atol=tol, rtol=0)
+
+
+    def test_add_node_creates_keys(self, tensornet_device_2_wires, tol):
+        """Tests that the _add_node method is able to create new keys in dev._nodes."""
+
+        dev = tensornet_device_2_wires
+
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        dev._add_node(np.array([[0, 1], [1, 0]]), wires=[0], key="junk")
+        assert "junk" in dev._nodes and len(dev._nodes) == 2
+
+
+    def test_add_edge_correctly_connects_nodes(self, tensornet_device_2_wires):
+        """Tests the _add_edge method is connecting the nodes correctly."""
+
+        dev = tensornet_device_2_wires
+
+        observable = np.array([[0, 1], [1, 0]])
+        obs_nodeA = tensornetwork.Node(observable, name="ObsA")
+        obs_nodeB = tensornetwork.Node(observable, name="ObsB")
+        dev._add_edge(obs_nodeA, 1, dev._nodes["state"][0], 0)
+        dev._add_edge(obs_nodeB, 1, dev._nodes["state"][1], 0)
+
+        # check_connected is designed to raise an exception if nodes are not connected
+        # test passes if no exception is raised
+        tensornetwork.check_connected([dev._nodes["state"][0], obs_nodeA])
+        tensornetwork.check_connected([dev._nodes["state"][1], obs_nodeB])
+
+
+    def test_create_nodes_from_tensors(self, tensornet_device_2_wires):
+        """Tests that the create_nodes_from_tensors method adds nodes to the tensor
+        network properly."""
+
+        dev = tensornet_device_2_wires
+
+        assert len(dev._nodes["state"]) == 2
+        A = np.array([[0, 1], [1, 0]])
+        new_node = dev.create_nodes_from_tensors([A], [[0]], ["GateA"], key="state")
+        assert new_node[0] in dev._nodes["state"]
+        assert len(dev._nodes["state"]) == 3
+
+        new_nodes = dev.create_nodes_from_tensors([A, A], [[0], [1]], ["GateA", "GateB"], key="state")
+        assert all([node in dev._nodes["state"] for node in new_nodes])
+
+        obs_nodes = dev.create_nodes_from_tensors([A, A], [[0], [1]], ["ObsA", "ObsB"], key="observables")
+        assert all(node in dev._nodes["observables"] for node in obs_nodes)
+
+
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_contract_to_ket_correct(self, tensornet_device_3_wires, method, tol):
+        """Tests that the _contract_to_ket method contracts down to a single node with the correct tensor."""
+
+        dev = tensornet_device_3_wires
+
+        dev.apply("PauliX", [0], [])
+        dev.apply("Hadamard", [1], [])
+
+        assert "contracted_state" not in dev._nodes
+        dev._contract_to_ket(method)
+        assert "contracted_state" in dev._nodes
+        cont_state = dev._nodes["contracted_state"]
+        dev._contract_to_ket(method)  # should not change anything
+        assert dev._nodes["contracted_state"] == cont_state
+
+        expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
+
+        assert np.allclose(cont_state.tensor, expected, atol=tol, rtol=0)
+        assert cont_state.name == "Ket"
+
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_state(self, tensornet_device_3_wires, method, tol):
+        """Tests that the _state method produces the correct state after contraction."""
+
+        dev = tensornet_device_3_wires
+
+        dev.apply("PauliX", [0], [])
+        dev.apply("Hadamard", [1], [])
+
+        assert "contracted_state" not in dev._nodes
+        ket = dev._state()
+        assert "contracted_state" in dev._nodes
+
+        expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
+        assert np.allclose(ket, expected, atol=tol, rtol=0)
+
 
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
@@ -655,25 +963,18 @@ class TestDefaultTensorIntegration:
         dev = qml.device("default.tensor", wires=1)
 
         A = np.array([[2j, 1j], [-3j, 1j]])
-        obs_node = dev._add_node(A, wires=[0])
+        obs_node = dev.create_nodes_from_tensors([A], [[0]], "ComplexObservable", key="observables")
 
         # text warning raised if matrix is complex
         with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
-            dev.ev([obs_node], wires=[[0]])
+            dev.ev(obs_node, wires=[[0]])
 
-    def test_cannot_overwrite_state(self, tensornet_device_2_wires):
-        """Tests that _state is a property and cannot be overwritten."""
-
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_correct_state_no_params(self, tensornet_device_2_wires, method):
+        """Tests that if different QNodes are used with the same device,
+        then the contracted state is correct for each one."""
         dev = tensornet_device_2_wires
-
-        with pytest.raises(AttributeError, match="can't set attribute"):
-            dev._state = np.array([[1, 0],
-                                   [0, 0]])
-
-    def test_correct_state(self, tensornet_device_2_wires):
-
-        dev = tensornet_device_2_wires
-        state = dev._state
+        state = dev._state()
 
         expected = np.array([[1, 0],
                              [0, 0]])
@@ -685,11 +986,41 @@ class TestDefaultTensorIntegration:
             return qml.expval(qml.PauliZ(0))
 
         circuit()
-        state = dev._state
+        state = dev._state()
 
         expected = np.array([[1, 0],
                              [1, 0]]) / np.sqrt(2)
         assert np.allclose(state, expected)
+
+
+    @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
+    def test_correct_state_diff_params(self, tensornet_device_2_wires, method, tol):
+        """Tests that if different inputs are fed to the same QNode,
+        then the contracted state is updated correctly."""
+        dev = tensornet_device_2_wires
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def expected(theta):
+            vec = np.outer(np.array([np.cos(theta / 2), -1j * np.sin(theta / 2)]), [1., 0.])
+            return vec.reshape([2, 2])
+
+        theta = np.pi / 4
+        out1 = circuit(theta)
+        ket1 = dev._state(contraction_method=method)
+        assert "contracted_state" in dev._nodes
+        assert np.allclose(ket1, expected(theta), atol=tol, rtol=0)
+        assert out1 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
+
+        theta = -0.1234
+        out2 = circuit(theta)
+        ket2 = dev._state(contraction_method=method)
+        assert "contracted_state" in dev._nodes
+        assert np.allclose(ket2, expected(theta), atol=tol, rtol=0)
+        assert out2 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
 
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
@@ -943,11 +1274,6 @@ class TestSample:
         the correct dimensions
         """
 
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
-        tensornet_device_2_wires.reset()
-
         tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
         tensornet_device_2_wires.apply('RX', wires=[1], par=[1.5708])
 
@@ -968,9 +1294,6 @@ class TestSample:
         the correct values
         """
 
-        # Explicitly resetting is necessary as the internal
-        # state is set to None in __init__ and only properly
-        # initialized during reset
         tensornet_device_2_wires.reset()
 
         tensornet_device_2_wires.apply('RX', wires=[0], par=[1.5708])
