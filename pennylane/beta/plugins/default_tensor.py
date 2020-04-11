@@ -156,23 +156,23 @@ class DefaultTensor(Device):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
         if self._rep == "exact":
-            for tensor, wires_list, name in zip(tensors, wires, names):
-                node = self._add_node(tensor, wires=wires_list, name=name)
+            for tensor, wires_seq, name in zip(tensors, wires, names):
+                node = self._add_node(tensor, wires=wires_seq, name=name)
                 self._terminal_edges.extend(node.edges)
 
         elif self._rep == "mps":
             nodes = []
-            for tensor, wires_list, name in zip(tensors, wires, names):
+            for tensor, wires_seq, name in zip(tensors, wires, names):
                 tensor = np.expand_dims(tensor, [0, -1])
                 if tensor.shape == (1, 2, 1):
                     # factorized MPS form
-                    node = self._add_node(tensor, wires=wires_list, name=name)
+                    node = self._add_node(tensor, wires=wires_seq, name=name)
                     nodes.append(node)
                 else:
                     # break down non-factorized tensors into MPS form
                     DV = tensor
-                    for idx, wire in enumerate(wires_list):
-                        if idx < len(wires_list) - 1:
+                    for idx, wire in enumerate(wires_seq):
+                        if idx < len(wires_seq) - 1:
                             node = tn.Node(DV)
                             U, DV, _error = tn.split_node(node, node[:2], node[2:])
                             node = self._add_node(U, wires=[wire], name=name)
@@ -182,7 +182,6 @@ class DefaultTensor(Device):
                         nodes.append(node)
             # TODO: might want to set canonicalize=False
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
-            print(self.mps.nodes)
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -435,12 +434,11 @@ class DefaultTensor(Device):
             expval = tn.contract_between(bra, ket_and_observable_node).tensor
 
         elif self._rep == "mps":
-            # TODO: can measure multiple local operators in same call
-            for obs_node, obs_wires in zip(obs_nodes, wires):
-                if len(obs_wires) == 1:
-                   expval = self.mps.measure_local_operator([obs_node], obs_wires)[0]
-                else:
-                   raise NotImplementedError
+            if any(len(wires_seq) > 1 for wires_seq in wires):
+                raise NotImplementedError
+            else:
+                flat_wires_seq = [w[0] for w in wires]
+                expval = self.mps.measure_local_operator(obs_nodes, flat_wires_seq)[0]
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
