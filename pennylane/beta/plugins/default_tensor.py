@@ -106,9 +106,9 @@ class DefaultTensor(Device):
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
 
-    zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
+    _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, analytic=True, representation="exact"):
+    def __init__(self, wires, shots=1000, analytic=True, representation="mps"):
         super().__init__(wires, shots)
         self.analytic = analytic
         self._rep = representation
@@ -119,8 +119,9 @@ class DefaultTensor(Device):
         self._clear_network_data()
 
         # prepare a factorized all-zeros state
+        zero_tensor = self._shaped_zero_state_tensor()
         self._add_initial_state_nodes(
-            [self.zero_state] * self.num_wires,
+            [zero_tensor] * self.num_wires,
             [[w] for w in range(self.num_wires)],
             ["ZeroState"] * self.num_wires,
         )
@@ -131,24 +132,35 @@ class DefaultTensor(Device):
         if self._rep == "exact":
             self._contracted = False
             self._terminal_edges = []
+            self.mps = None
 
+    def _shaped_zero_state_tensor(self):
+        """Reshape the zero-state tensor to conform to the representation set in self._rep.
+        
+           For the "exact" representation, the zero state has shape (2,), while for the 
+           "mps" representation it has shape (1,2,1).
+        
+           Returns:
+               array: the tensor with the correct shape
+        """
+        tensor = self._zero_state
+        if self._rep == "exact":
+            return tensor
         elif self._rep == "mps":
-            raise NotImplementedError
-            nodes = []
-            for w in range(self.num_wires):
-               tensor = np.reshape(self.zero_state, [1, 2, 1])  # this shape is required, even for end nodes it seems
-               node = self._add_node(tensor, wires=[w], name="ZeroState")
-               nodes.append(node)
-               if w > 0:
-                   tn.connect(nodes[w-1][2], nodes[w][0])
-            # Note: might want to set canonicalize=False
-            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+            return np.reshape(tensor, [1, 2, 1])
 
     def _add_initial_state_nodes(self, tensors, wires, names):
         """Create the nodes representing the initial input state circuit.
         
            Input states can be factorized or entangled. If a state can be factorized
-           into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be sequences of length :math:`k`.
+           into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be
+           sequences of length :math:`k`.
+
+           If self._rep is "exact", then self._terminal_edges is updated with the dangling
+           edges from the prepared state nodes.
+
+           If self._rep is "mps", then the self.mps attribute is replaced with a new
+           matrix product state object representing the prepared initial states.
 
           Args:
               tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each
@@ -159,9 +171,22 @@ class DefaultTensor(Device):
         if not (len(tensors) == len(wires) == len(names)):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
-        for t, w, n in zip(tensors, wires, names):
-            node = self._add_node(t, wires=w, name=n)
-            self._terminal_edges.extend(node.edges)
+        if self._rep == "exact":
+            for t, w, n in zip(tensors, wires, names):
+                node = self._add_node(t, wires=w, name=n)
+                self._terminal_edges.extend(node.edges)
+
+        elif self._rep == "mps":
+            nodes = []
+            for t, w, n in zip(tensors, wires, names):
+                # TODO: break down non-factorized tensors into MPS form
+                node = self._add_node(t, wires=[w], name=n)
+                nodes.append(node)
+                if w != [0]:
+                    tn.connect(prev_node[2], node[0])
+                prev_node = node
+            # TODO: might want to set canonicalize=False
+            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -256,7 +281,6 @@ class DefaultTensor(Device):
                 tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
                 self._terminal_edges[w] = op_node[idx]
         elif self._rep == "mps":
-            raise NotImplementedError
             if len(wires) == 1:
                self.mps.apply_one_site_gate(op_node, wires[0])
             elif len(wires) == 2:
@@ -415,11 +439,10 @@ class DefaultTensor(Device):
             expval = tn.contract_between(bra, contracted_ket).tensor
 
         elif self._rep == "mps":
-            raise NotImplementedError
-            # if len(wires) == 1:
-            #    expval = self.mps.measure_local_operator(obs_nodes, wires[0])
-            # else:
-            #    raise NotImplementedError
+            if len(wires) == 1:
+               expval = self.mps.measure_local_operator(obs_nodes, wires[0])
+            else:
+               raise NotImplementedError
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
