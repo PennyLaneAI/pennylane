@@ -119,9 +119,8 @@ class DefaultTensor(Device):
         self._clear_network_data()
 
         # prepare a factorized all-zeros state
-        zero_tensor = self._shaped_zero_state_tensor()
         self._add_initial_state_nodes(
-            [zero_tensor] * self.num_wires,
+            [self._zero_state] * self.num_wires,
             [[w] for w in range(self.num_wires)],
             ["ZeroState"] * self.num_wires,
         )
@@ -133,21 +132,6 @@ class DefaultTensor(Device):
             self._contracted = False
             self._terminal_edges = []
             self.mps = None
-
-    def _shaped_zero_state_tensor(self):
-        """Reshape the zero-state tensor to conform to the representation set in self._rep.
-        
-           For the "exact" representation, the zero state has shape (2,), while for the 
-           "mps" representation it has shape (1,2,1).
-        
-           Returns:
-               array: the tensor with the correct shape
-        """
-        tensor = self._zero_state
-        if self._rep == "exact":
-            return tensor
-        elif self._rep == "mps":
-            return np.reshape(tensor, [1, 2, 1])
 
     def _add_initial_state_nodes(self, tensors, wires, names):
         """Create the nodes representing the initial input state circuit.
@@ -172,21 +156,33 @@ class DefaultTensor(Device):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
         if self._rep == "exact":
-            for t, w, n in zip(tensors, wires, names):
-                node = self._add_node(t, wires=w, name=n)
+            for tensor, wires_list, name in zip(tensors, wires, names):
+                node = self._add_node(tensor, wires=wires_list, name=name)
                 self._terminal_edges.extend(node.edges)
 
         elif self._rep == "mps":
             nodes = []
-            for t, w, n in zip(tensors, wires, names):
-                # TODO: break down non-factorized tensors into MPS form
-                node = self._add_node(t, wires=[w], name=n)
-                nodes.append(node)
-                if w != [0]:
-                    tn.connect(prev_node[2], node[0])
-                prev_node = node
+            for tensor, wires_list, name in zip(tensors, wires, names):
+                tensor = np.expand_dims(tensor, [0, -1])
+                if tensor.shape == (1, 2, 1):
+                    # factorized MPS form
+                    node = self._add_node(tensor, wires=wires_list, name=name)
+                    nodes.append(node)
+                else:
+                    # break down non-factorized tensors into MPS form
+                    DV = tensor
+                    for idx, wire in enumerate(wires_list):
+                        if idx < len(wires_list) - 1:
+                            node = tn.Node(DV)
+                            U, DV, _error = tn.split_node(node, node[:2], node[2:])
+                            node = self._add_node(U, wires=[wire], name=name)
+                        else:
+                            # final wire; no need to split further
+                            node = self._add_node(DV, wires=[wire], name=name)
+                        nodes.append(node)
             # TODO: might want to set canonicalize=False
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+            print(self.mps.nodes)
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -433,16 +429,18 @@ class DefaultTensor(Device):
 
             # At this stage, all nodes are connected, and the contraction yields a
             # scalar value.
-            contracted_ket = ket
+            ket_and_observable_node = ket
             for obs_node in obs_nodes:
-                contracted_ket = tn.contract_between(obs_node, contracted_ket)
-            expval = tn.contract_between(bra, contracted_ket).tensor
+                ket_and_observable_node = tn.contract_between(obs_node, ket_and_observable_node)
+            expval = tn.contract_between(bra, ket_and_observable_node).tensor
 
         elif self._rep == "mps":
-            if len(wires) == 1:
-               expval = self.mps.measure_local_operator(obs_nodes, wires[0])
-            else:
-               raise NotImplementedError
+            # TODO: can measure multiple local operators in same call
+            for obs_node, obs_wires in zip(obs_nodes, wires):
+                if len(obs_wires) == 1:
+                   expval = self.mps.measure_local_operator([obs_node], obs_wires)[0]
+                else:
+                   raise NotImplementedError
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
@@ -462,8 +460,20 @@ class DefaultTensor(Device):
                 See TensorNetwork library documentation for more details.
         """
         if "contracted_state" not in self._nodes:
-            contract = contract_fns[contraction_method]
-            ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+            if self._rep == "exact":
+                contract = contract_fns[contraction_method]
+                ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+            elif self._rep == "mps":
+                # contract any mutual edges
+                # remove superfluous edges from first and last sites
+                # return tensor
+                for idx, node in enumerate(self.mps.nodes):
+                    if idx == 0:
+                        prev_node = node
+                    else:
+                        tn.connect(prev_node[-1], node[0])
+                        prev_node = tn.contract_between(prev_node, node)
+                ket = prev_node
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
 
@@ -482,7 +492,7 @@ class DefaultTensor(Device):
         """
         self._contract_to_ket(contraction_method)
         ket = self._nodes["contracted_state"]
-        return ket.tensor
+        return np.squeeze(ket.tensor)
 
     @property
     def operations(self):

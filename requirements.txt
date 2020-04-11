@@ -1,7 +1,7 @@
 numpy
 scipy
 networkx
-tensornetwork
+tensornetwork==3.0
 autograd
 toml
 appdirs

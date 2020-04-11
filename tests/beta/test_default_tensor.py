@@ -377,7 +377,7 @@ class TestDefaultTensorNetwork:
         assert 'state' in dev._nodes and len(dev._nodes) == 1
         assert len(dev._nodes['state']) == 2
         assert all([dev._nodes['state'][idx].name == "ZeroState({},)".format(idx) for idx in range(2)])
-        assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev.zero_state, atol=tol, rtol=0)
+        assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev._zero_state, atol=tol, rtol=0)
         assert not dev._contracted
         assert len(dev._terminal_edges) == 2
         assert edges_valid(dev, num_nodes=2)
