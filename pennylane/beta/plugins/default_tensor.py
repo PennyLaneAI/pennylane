@@ -435,10 +435,35 @@ class DefaultTensor(Device):
 
         elif self._rep == "mps":
             if any(len(wires_seq) > 1 for wires_seq in wires):
+                # observables which are non-local
                 raise NotImplementedError
             else:
-                flat_wires_seq = [w[0] for w in wires]
-                expval = self.mps.measure_local_operator(obs_nodes, flat_wires_seq)[0]
+                if len(wires) == 1:
+                    expval = self.mps.measure_local_operator(obs_nodes, flat_wires_seq)[0]
+                else:
+                    # tensor product of more than two observables
+                    # apply observables as if they were gates
+                    for obs_node, wire_seq in zip(obs_nodes, wires):
+                        self.mps.apply_one_site_gate(obs_node, wire_seq[0])
+                    # connect all components of tensor network
+                    conj_nodes = [tn.conj(node) for node in self.mps.nodes]
+                    for wire in range(self.num_wires):
+                        # connect bra nodes with ket nodes
+                        tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
+                        # connect MPS nodes
+                        if wire != self.num_wires - 1:
+                            tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
+                            tn.connect(conj_nodes[wire][2], conj_nodes[wire + 1][0])
+
+                    # contract all non-trivial edges
+                    for wire in range(self.num_wires):
+                        if wire == 0:
+                            bra_contracted_node = conj_nodes[wire]
+                            ket_contracted_node = self.mps.nodes[wire]
+                        else:
+                            bra_contracted_node = tn.contract_between(bra_contracted_node, conj_nodes[wire + 1])
+                            ket_contracted_node = tn.contract_between(ket_contracted_node, self.mps.nodes[wire + 1])
+                    print("hi")
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
