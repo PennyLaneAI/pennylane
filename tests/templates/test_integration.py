@@ -305,15 +305,15 @@ class TestIntegrationQnode:
         @qml.qnode(dev, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
-            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+            all_args = {key: item for key, item in zip(keys_diffable, diffable)}
 
             # Merge with nondiffables
-            dict.update(nondiffable)
+            all_args.update(nondiffable)
 
             # Add number of wires
-            dict['wires'] = range(2)
+            all_args['wires'] = range(2)
 
-            template(**dict)
+            template(**all_args)
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
@@ -337,15 +337,15 @@ class TestIntegrationQnode:
         @qml.qnode(gaussian_device_2_wires, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
-            dict = dict(zip(keys_diffable, diffable))
+            all_args = dict(zip(keys_diffable, diffable))
 
             # Merge with nondiffables
-            dict.update(nondiffable)
+            all_args.update(nondiffable)
 
             # Add number of wires
-            dict['wires'] = range(2)
+            all_args['wires'] = range(2)
 
-            template(**dict)
+            template(**all_args)
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
@@ -382,7 +382,7 @@ class TestIntegrationQnode:
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
     def test_qubit_cv_auxiliary_args(self, template, diffable, nondiffable,
-                                        interface, to_var, gaussian_device_2_wires):
+                                     interface, to_var, gaussian_device_2_wires):
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
         # Change type of differentiable arguments
@@ -410,6 +410,7 @@ class TestIntegrationQnode:
 @qml.template
 def QubitTemplate(w):
     qml.PauliX(wires=w)
+
 
 @qml.template
 def CVTemplate(w):
@@ -461,7 +462,7 @@ class TestIntegrationOtherOps:
     @pytest.mark.parametrize("op_before_template", [True, False])
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
     def test_cv_template_followed_by_operations(self, template, diffable, nondiffable, gaussian_device_2_wires,
-                                        op_before_template):
+                                                op_before_template):
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
         # Change type of differentiable arguments
