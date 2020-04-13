@@ -25,7 +25,7 @@ Note that a template may need to be manually excluded from a test,
 as shown for the templates listed in NO_OPS_BEFORE, which do not allow for
 operations to be executed before the template is called.
 
-New **interfaces** are added as follows:
+Templates are tested with a range of interfaces. To test templates with an additional interface:
 
 * Try to import the interface and add its variable creation function to INTERFACES
 * Extend the fixture ``interfaces``
