@@ -75,6 +75,9 @@ except ImportError as e:
 # The entries have the following form:
 # (template, dict of differentiable arguments, dict of non-differentiable arguments)
 
+# "Differentiable arguments" to a template are those that in principle allow a user to compute gradients for,
+# while "nondifferentiable arguments" must always be passed as auxiliary (keyword) arguments to a qnode.
+
 # Note that the template is called in all tests using 2 wires
 
 QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
@@ -156,9 +159,10 @@ NO_OP_BEFORE = ["AmplitudeEmbedding"]
 
 # The entries have the following form:
 #
-# (template, dict of differentiable arguments, dict of non-differentiable arguments)
+# (template, dict of arguments)
 #
-# The dictionary of differentiable arguments calls the initialization function.
+# The dictionary of arguments calls the initialization function, and contains all other arguments that need to
+# be defined in the template.
 
 QUBIT_INIT = [(qml.templates.StronglyEntanglingLayers,
                {'weights': qml.init.strong_ent_layers_uniform(n_layers=3, n_wires=2), 'wires': range(2)}),
@@ -183,17 +187,17 @@ QUBIT_INIT = [(qml.templates.StronglyEntanglingLayers,
                {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=3, n_wires=2),
                 'wires': range(2)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=1),
+               {'features': [1., 2., 3.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=2, n_wires=3),
+                'wires': range(3)}),
+              (qml.templates.QAOAEmbedding,
+               {'features': [1.], 'weights': qml.init.qaoa_embedding_normal(n_layers=3, n_wires=1),
                 'wires': range(1)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=2),
+               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_normal(n_layers=3, n_wires=2),
                 'wires': range(2)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=1),
-                'wires': range(1)}),
-              (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=2, n_wires=2),
-                'wires': range(2)}),
+               {'features': [1., 2., 3.], 'weights': qml.init.qaoa_embedding_normal(n_layers=3, n_wires=3),
+                'wires': range(3)}),
               (qml.templates.SimplifiedTwoDesign,
                {'initial_layer_weights': qml.init.simplified_two_design_initial_layer_uniform(n_wires=4),
                 'weights': qml.init.simplified_two_design_weights_uniform(n_layers=3, n_wires=4),
@@ -269,7 +273,16 @@ CV_INIT = [(qml.templates.CVNeuralNetLayers,
 
 class TestIntegrationQnode:
     """Tests the integration of templates into qnodes when differentiable arguments are passed as
-    primary or auxiliary arguments to the qnode, using different interfaces."""
+    primary or auxiliary arguments to the qnode, using different interfaces.
+
+    "Differentiable arguments" to a template are those that in principle allow a user to compute gradients for,
+    while "nondifferentiable arguments" must always be passed as auxiliary (keyword) arguments to a qnode.
+
+    The tests are motivated by the fact that the way arguments are passed to the qnode
+    influences what shape and/or type the argument has inside the qnode, which is where the template calls it.
+
+    All templates should work no matter how the "differentiable arguments" are passed to the qnode.
+    """
 
     @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
@@ -287,6 +300,8 @@ class TestIntegrationQnode:
         # Generate qnode
         dev = qml.device('default.qubit', wires=2)
 
+        # Generate qnode in which differentiable arguments are passed
+        # as primary argument
         @qml.qnode(dev, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
@@ -317,7 +332,8 @@ class TestIntegrationQnode:
         # Turn into correct format
         diffable = [to_var(i) for i in diffable]
 
-        # Generate qnode
+        # Generate qnode in which differentiable arguments are passed
+        # as primary argument
         @qml.qnode(gaussian_device_2_wires, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
@@ -345,21 +361,23 @@ class TestIntegrationQnode:
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
-        nondiffable.update(diffable)
+        all_args = {**diffable, **nondiffable}
 
         # Generate qnode
         dev = qml.device('default.qubit', wires=2)
 
+        # Generate qnode in which differentiable arguments are passed
+        # as auxiliary argument
         @qml.qnode(dev, interface=interface)
-        def circuit(nondiffable=None):
+        def circuit(all_args=None):
             # Add wires
-            nondiffable['wires'] = range(2)
+            all_args['wires'] = range(2)
 
-            template(**nondiffable)
+            template(**all_args)
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
-        circuit(nondiffable=nondiffable)
+        circuit(all_args=all_args)
 
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
@@ -372,19 +390,20 @@ class TestIntegrationQnode:
         diffable = {k: np.array(v) for k, v in diffable.items()}
 
         # Merge differentiable and non-differentiable arguments
-        nondiffable.update(diffable)
+        all_args = {**diffable, **nondiffable}
 
-        # Generate qnode
+        # Generate qnode in which differentiable arguments are passed
+        # as auxiliary argument
         @qml.qnode(gaussian_device_2_wires, interface=interface)
-        def circuit(nondiffable=None):
+        def circuit(all_args=None):
             # Add wires
-            nondiffable['wires'] = range(2)
+            all_args['wires'] = range(2)
 
-            template(**nondiffable)
+            template(**all_args)
             return qml.expval(qml.Identity(0))
 
         # Check that execution does not throw error
-        circuit(nondiffable=nondiffable)
+        circuit(all_args=all_args)
 
 
 # hand-coded templates for the operation integration test
@@ -399,7 +418,7 @@ def CVTemplate(w):
 
 class TestIntegrationOtherOps:
     """Tests the integration of templates into qnodes where the template is called
-    together with other operations."""
+    together with other operations or templates."""
 
     @pytest.mark.parametrize("op_before_template", [True, False])
     @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
