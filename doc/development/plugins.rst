@@ -183,7 +183,12 @@ To execute operations on the device, the following methods **must** be defined:
 .. autosummary::
 
     apply
-    probability
+
+If the device is analytic then it **must** also overwrite:
+
+.. autosummary::
+
+    analytic_probability
 
 The :class:`~.QubitDevice` class
 provides the following convenience methods that may be used by the plugin:

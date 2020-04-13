@@ -173,7 +173,15 @@
 
 <h3>Breaking changes</h3>
 
+* Probabilty methods are handled by `QubitDevice` and device method
+  requirements are modified to simplify plugin development.
+  [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
+
 <h3>Improvements</h3>
+
+* The input check functions in :mod:`pennylane.templates.utils` are now public
+  and visible in the API documentation.
+  [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
 
 * Improved the performance of diagonal gates in the `default.qubit` plugin.
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
@@ -217,6 +225,10 @@
   
 <h3>Bug fixes</h3>
 
+* `DefaultQubit.probability()` now returns the correct probability when called with
+  `device.analytic=False`.
+  [(#563)](https://github.com/XanaduAI/pennylane/pull/563)
+
 * Fixed a bug in the `StronglyEntanglingLayers` template, allowing it to
   work correctly when applied to a single wire.
   [(544)](https://github.com/XanaduAI/pennylane/pull/544)
@@ -233,7 +245,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Thomas Bromley, Theodor Isacsson, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 

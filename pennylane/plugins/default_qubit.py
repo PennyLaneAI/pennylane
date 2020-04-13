@@ -245,10 +245,12 @@ class DefaultQubit(QubitDevice):
         self._state[0] = 1
         self._pre_rotated_state = self._state
 
-    def probability(self, wires=None):
+    def analytic_probability(self, wires=None):
+        """Return the (marginal) analytic probability of each computational basis state."""
         if self._state is None:
             return None
 
         wires = wires or range(self.num_wires)
+
         prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
         return prob
