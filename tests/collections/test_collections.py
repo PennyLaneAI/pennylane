@@ -139,7 +139,7 @@ class TestMap:
         assert qc[1].ops[1].name == "PauliY"
         assert qc[1].ops[1].return_type == qml.operation.Variance
 
-    def test_invalid_obserable(self):
+    def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""
         dev = qml.device("default.qubit", wires=1)
 
