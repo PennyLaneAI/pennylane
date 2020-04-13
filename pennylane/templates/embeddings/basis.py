@@ -21,6 +21,7 @@ from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, check_wires, get_shape, check_type
 import pennylane as qml
 
+
 @template
 def BasisEmbedding(features, wires):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
@@ -47,7 +48,9 @@ def BasisEmbedding(features, wires):
 
     wires = check_wires(wires)
 
-    check_type(features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features)))
+    check_type(
+        features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features))
+    )
 
     expected_shape = (len(wires),)
     check_shape(
