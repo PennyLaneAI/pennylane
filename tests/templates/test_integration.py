@@ -321,7 +321,7 @@ class TestIntegrationQnode:
         @qml.qnode(gaussian_device_2_wires, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
-            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+            dict = dict(zip(keys_diffable, diffable))
 
             # Merge with nondiffables
             dict.update(nondiffable)
