@@ -292,6 +292,18 @@ class TestVQE:
         with pytest.raises(ValueError, match="not a callable function."):
             cost = qml.VQECost(4, hamiltonian, mock_device)
 
+    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    def test_step_size_set(self, coeffs, observables, expected):
+        """Test that the step size used for the finite differences
+        differentiation method was passed to the QNode instances using the
+        keyword arguments."""
+        dev = qml.device("default.qubit", wires=2)
+        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev, h=123)
+
+        # Checking the h attribute which contains the step size
+        for qnode in cost.qnodes:
+            assert qnode.h == 123
 
 class TestAutogradInterface:
     """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
