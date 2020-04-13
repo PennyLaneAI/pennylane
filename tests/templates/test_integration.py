@@ -25,7 +25,7 @@ Note that a template may need to be manually excluded from a test,
 as shown for the templates listed in NO_OPS_BEFORE, which do not allow for
 operations to be executed before the template is called.
 
-New **interfaces** are added as follows:
+Templates are tested with a range of interfaces. To test templates with an additional interface:
 
 * Try to import the interface and add its variable creation function to INTERFACES
 * Extend the fixture ``interfaces``
@@ -337,7 +337,7 @@ class TestIntegrationQnode:
         @qml.qnode(gaussian_device_2_wires, interface=interface)
         def circuit(*diffable, keys_diffable=None, nondiffable=None):
             # Turn diffables back into dictionary
-            dict = {key: item for key, item in zip(keys_diffable, diffable)}
+            dict = dict(zip(keys_diffable, diffable))
 
             # Merge with nondiffables
             dict.update(nondiffable)
@@ -381,7 +381,7 @@ class TestIntegrationQnode:
 
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_cv_nondiffable(self, template, diffable, nondiffable,
+    def test_qubit_cv_auxiliary_args(self, template, diffable, nondiffable,
                                         interface, to_var, gaussian_device_2_wires):
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
