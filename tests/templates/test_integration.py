@@ -363,7 +363,7 @@ class TestIntegrationQnode:
 
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
     @pytest.mark.parametrize("interface, to_var", INTERFACES)
-    def test_integration_cv_nondiffable(self, template, diffable, nondiffable,
+    def test_qubit_cv_auxiliary_args(self, template, diffable, nondiffable,
                                         interface, to_var, gaussian_device_2_wires):
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
