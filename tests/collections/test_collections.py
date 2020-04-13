@@ -162,7 +162,7 @@ class TestMap:
 
         qc(1)
 
-        assert len(qc[0].ops) == 2
+        assert len(qc) == 2
 
         # Checking the h attribute which contains the step size
         assert qc[0].h == 123
