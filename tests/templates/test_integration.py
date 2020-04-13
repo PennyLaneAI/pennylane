@@ -149,7 +149,7 @@ CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
 # before they are called in a quantum function.
 # These templates will be skipped in tests of that nature.
 
-NO_OP_BEFORE = [qml.templates.AmplitudeEmbedding, qml.templates.BasisEmbedding]
+NO_OP_BEFORE = ["AmplitudeEmbedding"]
 
 # Each entry to QUBIT_INIT and CV_INIT adds a template with specified inputs to the
 # integration tests ``TestIntegrationInitFunctions``
@@ -169,31 +169,31 @@ QUBIT_INIT = [(qml.templates.StronglyEntanglingLayers,
               (qml.templates.StronglyEntanglingLayers,
                {'weights': qml.init.strong_ent_layers_normal(n_layers=2, n_wires=3), 'wires': range(3)}),
               (qml.templates.RandomLayers,
-               {'weights': qml.init.random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), 'wires': range(2)}),
+               {'weights': qml.init.random_layers_uniform(n_layers=3, n_rots=2, n_wires=1), 'wires': range(1)}),
               (qml.templates.RandomLayers,
                {'weights': qml.init.random_layers_uniform(n_layers=3, n_rots=2, n_wires=2), 'wires': range(2)}),
               (qml.templates.RandomLayers,
-               {'weights': qml.init.random_layers_normal(n_layers=2, n_rots=2, n_wires=3), 'wires': range(3)}),
+               {'weights': qml.init.random_layers_normal(n_layers=2, n_rots=2, n_wires=1), 'wires': range(1)}),
               (qml.templates.RandomLayers,
-               {'weights': qml.init.random_layers_normal(n_layers=2, n_rots=2, n_wires=3), 'wires': range(3)}),
+               {'weights': qml.init.random_layers_normal(n_layers=2, n_rots=2, n_wires=2), 'wires': range(2)}),
+              (qml.templates.QAOAEmbedding,
+               {'features': [1.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=3, n_wires=1),
+                'wires': range(1)}),
               (qml.templates.QAOAEmbedding,
                {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=3, n_wires=2),
                 'wires': range(2)}),
-              (qml.templates.QAOAEmbedding,
-               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=3, n_wires=2),
-                'wires': range(2)}),
-              (qml.templates.QAOAEmbedding,
-               {'features': [1., 2., 3.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=3),
-                'wires': range(3)}),
-              (qml.templates.QAOAEmbedding,
-               {'features': [1., 2., 3.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=3),
-                'wires': range(3)}),
               (qml.templates.QAOAEmbedding,
                {'features': [1.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=1),
                 'wires': range(1)}),
               (qml.templates.QAOAEmbedding,
-               {'features': [1.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=2, n_wires=1),
+               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=2),
+                'wires': range(2)}),
+              (qml.templates.QAOAEmbedding,
+               {'features': [1.], 'weights': qml.init.qaoa_embedding_normal(n_layers=2, n_wires=1),
                 'wires': range(1)}),
+              (qml.templates.QAOAEmbedding,
+               {'features': [1., 2.], 'weights': qml.init.qaoa_embedding_uniform(n_layers=2, n_wires=2),
+                'wires': range(2)}),
               (qml.templates.SimplifiedTwoDesign,
                {'initial_layer_weights': qml.init.simplified_two_design_initial_layer_uniform(n_wires=4),
                 'weights': qml.init.simplified_two_design_weights_uniform(n_layers=3, n_wires=4),
@@ -219,18 +219,18 @@ QUBIT_INIT = [(qml.templates.StronglyEntanglingLayers,
               ]
 
 CV_INIT = [(qml.templates.CVNeuralNetLayers,
-            {'theta_1': qml.init.cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
-             'phi_1': qml.init.cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
-             'varphi_1': qml.init.cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
-             'r': qml.init.cvqnn_layers_r_uniform(n_layers=3, n_wires=2),
-             'phi_r': qml.init.cvqnn_layers_phi_r_uniform(n_layers=3, n_wires=2),
-             'theta_2': qml.init.cvqnn_layers_theta_uniform(n_layers=3, n_wires=2),
-             'phi_2': qml.init.cvqnn_layers_phi_uniform(n_layers=3, n_wires=2),
-             'varphi_2': qml.init.cvqnn_layers_varphi_uniform(n_layers=3, n_wires=2),
-             'a': qml.init.cvqnn_layers_a_uniform(n_layers=3, n_wires=2),
-             'phi_a': qml.init.cvqnn_layers_phi_a_uniform(n_layers=3, n_wires=2),
-             'k': qml.init.cvqnn_layers_kappa_uniform(n_layers=3, n_wires=2),
-             'wires': range(2)}),
+            {'theta_1': qml.init.cvqnn_layers_theta_uniform(n_layers=3, n_wires=1),
+             'phi_1': qml.init.cvqnn_layers_phi_uniform(n_layers=3, n_wires=1),
+             'varphi_1': qml.init.cvqnn_layers_varphi_uniform(n_layers=3, n_wires=1),
+             'r': qml.init.cvqnn_layers_r_uniform(n_layers=3, n_wires=1),
+             'phi_r': qml.init.cvqnn_layers_phi_r_uniform(n_layers=3, n_wires=1),
+             'theta_2': qml.init.cvqnn_layers_theta_uniform(n_layers=3, n_wires=1),
+             'phi_2': qml.init.cvqnn_layers_phi_uniform(n_layers=3, n_wires=1),
+             'varphi_2': qml.init.cvqnn_layers_varphi_uniform(n_layers=3, n_wires=1),
+             'a': qml.init.cvqnn_layers_a_uniform(n_layers=3, n_wires=1),
+             'phi_a': qml.init.cvqnn_layers_phi_a_uniform(n_layers=3, n_wires=1),
+             'k': qml.init.cvqnn_layers_kappa_uniform(n_layers=3, n_wires=1),
+             'wires': range(1)}),
            (qml.templates.CVNeuralNetLayers,
             {'theta_1': qml.init.cvqnn_layers_theta_normal(n_layers=3, n_wires=2),
              'phi_1': qml.init.cvqnn_layers_phi_normal(n_layers=3, n_wires=2),
@@ -245,15 +245,15 @@ CV_INIT = [(qml.templates.CVNeuralNetLayers,
              'k': qml.init.cvqnn_layers_kappa_normal(n_layers=3, n_wires=2),
              'wires': range(2)}),
            (qml.templates.Interferometer,
-            {'phi': qml.init.interferometer_phi_uniform(n_wires=2),
-             'varphi': qml.init.interferometer_varphi_uniform(n_wires=2),
-             'theta': qml.init.interferometer_theta_uniform(n_wires=2),
-             'wires': range(2)}),
+            {'phi': qml.init.interferometer_phi_uniform(n_wires=1),
+             'varphi': qml.init.interferometer_varphi_uniform(n_wires=1),
+             'theta': qml.init.interferometer_theta_uniform(n_wires=1),
+             'wires': range(1)}),
            (qml.templates.Interferometer,
-            {'phi': qml.init.interferometer_phi_normal(n_wires=2),
-             'varphi': qml.init.interferometer_varphi_normal(n_wires=2),
-             'theta': qml.init.interferometer_theta_normal(n_wires=2),
-             'wires': range(2)}),
+            {'phi': qml.init.interferometer_phi_normal(n_wires=1),
+             'varphi': qml.init.interferometer_varphi_normal(n_wires=1),
+             'theta': qml.init.interferometer_theta_normal(n_wires=1),
+             'wires': range(1)}),
            (qml.templates.Interferometer,
             {'phi': qml.init.interferometer_phi_uniform(n_wires=3),
              'varphi': qml.init.interferometer_varphi_uniform(n_wires=3),
@@ -387,6 +387,16 @@ class TestIntegrationQnode:
         circuit(nondiffable=nondiffable)
 
 
+# hand-coded templates for the operation integration test
+@qml.template
+def QubitTemplate(w):
+    qml.PauliX(wires=w)
+
+@qml.template
+def CVTemplate(w):
+    qml.Displacement(1., 1., wires=w)
+
+
 class TestIntegrationOtherOps:
     """Tests the integration of templates into qnodes where the template is called
     together with other operations."""
@@ -397,7 +407,7 @@ class TestIntegrationOtherOps:
         """Tests integration of qubit templates with other operations."""
 
         # skip this test if template does not allow for operations before
-        if any(isinstance(template, type(t)) for t in NO_OP_BEFORE) and op_before_template:
+        if template.__name__ in NO_OP_BEFORE and op_before_template:
             pytest.skip("Template does not allow operations before - skipping this test.")
 
         # Change type of differentiable arguments
@@ -415,11 +425,14 @@ class TestIntegrationOtherOps:
             # Add wires
             nondiffable['wires'] = range(2)
 
-            # Circuit
+            # Circuit with operations before and
+            # after the template is called
             if op_before_template:
+                QubitTemplate(w=0)
                 qml.PauliX(wires=0)
             template(**nondiffable)
             if not op_before_template:
+                QubitTemplate(w=0)
                 qml.PauliX(wires=1)
             return [qml.expval(qml.Identity(0)), qml.expval(qml.PauliX(1))]
 
@@ -445,11 +458,14 @@ class TestIntegrationOtherOps:
             # Add wires
             nondiffable['wires'] = range(2)
 
-            # Circuit
+            # Circuit with operations before and
+            # after the template is called
             if op_before_template:
+                CVTemplate(w=0)
                 qml.Displacement(1., 1., wires=0)
             template(**nondiffable)
             if not op_before_template:
+                CVTemplate(w=0)
                 qml.Displacement(1., 1., wires=1)
             return [qml.expval(qml.Identity(0)), qml.expval(qml.X(1))]
 

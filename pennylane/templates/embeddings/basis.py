@@ -15,12 +15,11 @@ r"""
 Contains the ``BasisEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import numpy as np
+from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.ops import BasisState
-from pennylane.templates.utils import check_shape, check_wires, get_shape
-
+from pennylane.templates.utils import check_shape, check_wires, get_shape, check_type
+import pennylane as qml
 
 @template
 def BasisEmbedding(features, wires):
@@ -48,6 +47,8 @@ def BasisEmbedding(features, wires):
 
     wires = check_wires(wires)
 
+    check_type(features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features)))
+
     expected_shape = (len(wires),)
     check_shape(
         features,
@@ -60,5 +61,6 @@ def BasisEmbedding(features, wires):
 
     ###############
 
-    features = np.array(features)
-    BasisState(features, wires=wires)
+    for wire, bit in zip(wires, features):
+        if bit == 1:
+            qml.PauliX(wire)
