@@ -434,20 +434,29 @@ class DefaultTensor(Device):
             expval = tn.contract_between(bra, ket_and_observable_node).tensor
 
         elif self._rep == "mps":
-            if any(len(wires_seq) > 1 for wires_seq in wires):
-                # observables which are non-local
+            if any(len(wires_seq) > 2 for wires_seq in wires):
                 raise NotImplementedError
             else:
-                if len(wires) == 1:
-                    # TODO: can measure multiple local expectation values at once
+                if len(obs_nodes) == 1 and len(wires[0]) == 1:
+                    # TODO: can measure multiple local expectation values at once,
+                    # but this would require change of `expval` behaviour and
+                    # refactor of `execute` logic
                     expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
                 else:
 
                     conj_nodes = [tn.conj(node) for node in self.mps.nodes]
 
                     # apply observables as if they were gates
+                    # TODO: need to refactor these to not mutate data
+                    # Works for expval but not for sample, since sample
+                    # produces multiple projectors it needs to compute probabilities
+                    # for. Using the method below, the MPS nodes become projected by the
+                    # first projector (so subsequent projectors yield zero subspaces)
                     for obs_node, wire_seq in zip(obs_nodes, wires):
-                        self.mps.apply_one_site_gate(obs_node, wire_seq[0])
+                        if len(wire_seq) == 1:
+                            self.mps.apply_one_site_gate(obs_node, wire_seq[0])
+                        elif len(wire_seq) == 2:
+                            self.mps.apply_two_site_gate(obs_node, wire_seq[0], wire_seq[1])
 
                     for wire in range(self.num_wires):
                         # connect unmeasured ket nodes with bra nodes
