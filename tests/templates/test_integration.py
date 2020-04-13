@@ -422,7 +422,7 @@ class TestIntegrationOtherOps:
 
     @pytest.mark.parametrize("op_before_template", [True, False])
     @pytest.mark.parametrize("template, diffable, nondiffable", QUBIT_DIFFABLE_NONDIFFABLE)
-    def test_qubit_template_followed_by_operation(self, template, diffable, nondiffable, op_before_template):
+    def test_qubit_template_followed_by_operations(self, template, diffable, nondiffable, op_before_template):
         """Tests integration of qubit templates with other operations."""
 
         # skip this test if template does not allow for operations before
@@ -460,7 +460,7 @@ class TestIntegrationOtherOps:
 
     @pytest.mark.parametrize("op_before_template", [True, False])
     @pytest.mark.parametrize("template, diffable, nondiffable", CV_DIFFABLE_NONDIFFABLE)
-    def test_integration_cv_nondiffable(self, template, diffable, nondiffable, gaussian_device_2_wires,
+    def test_cv_template_followed_by_operations(self, template, diffable, nondiffable, gaussian_device_2_wires,
                                         op_before_template):
         """Tests integration of cv templates passing differentiable arguments as auxiliary arguments to qnode."""
 
