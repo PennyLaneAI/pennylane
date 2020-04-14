@@ -133,7 +133,7 @@ class DefaultTensor(Device):
         self._nodes = {}
         if self._rep == "exact":
             self._contracted = False
-            self._terminal_edges = []
+            self._free_wire_edges = []
             self.mps = None
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
@@ -186,10 +186,11 @@ class DefaultTensor(Device):
         if not (len(tensors) == len(wires) == len(names)):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
+        self._free_wire_edges = []
         if self._rep == "exact":
             for tensor, wires_seq, name in zip(tensors, wires, names):
                 node = self._add_node(tensor, wires=wires_seq, name=name)
-                self._terminal_edges.extend(node.edges)
+                self._free_wire_edges.extend(node.edges)
 
         elif self._rep == "mps":
             nodes = []
@@ -199,6 +200,7 @@ class DefaultTensor(Device):
                     # MPS form
                     node = self._add_node(tensor, wires=wires_seq, name=name)
                     nodes.append(node)
+                    self._free_wire_edges.append(node[1])
                 else:
                     # break down non-factorized tensors into MPS form
                     DV = tensor
@@ -211,6 +213,7 @@ class DefaultTensor(Device):
                             # final wire; no need to split further
                             node = self._add_node(DV, wires=[wire], name=name)
                         nodes.append(node)
+                        self._free_wire_edges.append(node[1])
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes, canonicalize=False)
 
     def _get_operator_matrix(self, operation, par):
@@ -274,7 +277,7 @@ class DefaultTensor(Device):
         self._add_initial_state_nodes(tensors, wires_seq, name)
 
     def _add_gate_nodes(self, operation, wires, par):
-        """Add tensor network nodes related to the quantum gates.
+        """Add tensor network nodes and edges related to the quantum gates.
 
         Args:
             operation (str): name of the gate operation
@@ -288,8 +291,8 @@ class DefaultTensor(Device):
 
         if self._rep == "exact":
             for idx, w in enumerate(wires):
-                tn.connect(op_node[num_wires + idx], self._terminal_edges[w])
-                self._terminal_edges[w] = op_node[idx]
+                tn.connect(op_node[num_wires + idx], self._free_wire_edges[w])
+                self._free_wire_edges[w] = op_node[idx]
         elif self._rep == "mps":
             if len(wires) == 1:
                 self.mps.apply_one_site_gate(op_node, wires[0])
@@ -520,7 +523,7 @@ class DefaultTensor(Device):
         if "contracted_state" not in self._nodes:
             if self._rep == "exact":
                 contract_fn = contract_fns[self._contraction_method]
-                ket = contract_fn(self._nodes["state"], output_edge_order=self._terminal_edges)
+                ket = contract_fn(self._nodes["state"], output_edge_order=self._free_wire_edges)
             elif self._rep == "mps":
                 # contract any mutual edges
                 # remove superfluous edges from first and last sites

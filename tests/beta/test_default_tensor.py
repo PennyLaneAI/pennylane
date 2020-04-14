@@ -130,7 +130,7 @@ def edges_valid(dev, num_nodes):
     """Returns True if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
     node_edges = [dev._nodes['state'][idx].edges for idx in range(num_nodes)]
     node_edges_set = set([edge for sublist in node_edges for edge in sublist])
-    return node_edges_set == set(dev._terminal_edges)
+    return node_edges_set == set(dev._free_wire_edges)
 
 
 class TestAuxiliaryFunctions:
@@ -357,7 +357,7 @@ class TestDefaultTensorNetwork:
 
         assert dev._nodes == {}
         assert not dev._contracted
-        assert dev._terminal_edges == []
+        assert dev._free_wire_edges == []
 
 
     def test_reset(self, rep, tol):
@@ -379,7 +379,7 @@ class TestDefaultTensorNetwork:
         assert all([dev._nodes['state'][idx].name == "ZeroState({},)".format(idx) for idx in range(2)])
         assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev._zero_state, atol=tol, rtol=0)
         assert not dev._contracted
-        assert len(dev._terminal_edges) == 2
+        assert len(dev._free_wire_edges) == 2
         assert edges_valid(dev, num_nodes=2)
 
 
