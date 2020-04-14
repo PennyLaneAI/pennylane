@@ -779,14 +779,15 @@ class TestDefaultTensorIntegration:
     @pytest.mark.parametrize("name,expected_output", [
         ("CSWAP", [-1, -1, 1]),
     ])
-    def test_supported_gate_three_wires_no_parameters(self, tensornet_device_3_wires, tol, name, expected_output):
+    def test_supported_gate_three_wires_no_parameters(self, tol, name, expected_output):
         """Tests supported gates that act on three wires that are not parameterized"""
 
+        dev = qml.device('default.tensor', wires=3, representation="exact")
         op = getattr(qml.ops, name)
 
-        assert tensornet_device_3_wires.supports_operation(name)
+        assert dev.supports_operation(name)
 
-        @qml.qnode(tensornet_device_3_wires)
+        @qml.qnode(dev)
         def circuit():
             qml.BasisState(np.array([1, 0, 1]), wires=[0, 1, 2])
             op(wires=[0, 1, 2])

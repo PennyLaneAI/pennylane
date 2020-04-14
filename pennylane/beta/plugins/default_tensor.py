@@ -285,13 +285,11 @@ class DefaultTensor(Device):
             elif len(wires) == 2:
                if abs(wires[1]-wires[0]) == 1:
                    ret = self.mps.apply_two_site_gate(op_node, *wires)
-                   # TODO: determine what ``ret`` is and if it is useful for anything
-                   # TODO: pass ``max_singular_values`` or ``max_truncation_error``
+                   # TODO: set ``max_singular_values`` or ``max_truncation_error``
                else:
-                   # only nearest-neighbours are natively supported
-                   print("ruh roh")
+                   raise NotImplementedError("Multi-wire gates only supported for nearest-neighbour wire pairs.")
             else:
-               raise NotImplementedError
+               raise NotImplementedError("Multi-wire gates only supported for nearest-neighbour wire pairs.")
 
     def create_nodes_from_tensors(self, tensors, wires, observable_names, key):
         """Helper function for creating TensorNetwork nodes based on tensors.
@@ -439,7 +437,7 @@ class DefaultTensor(Device):
 
         elif self._rep == "mps":
             if any(len(wires_seq) > 2 for wires_seq in wires):
-                raise NotImplementedError
+                raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
             else:
                 if len(obs_nodes) == 1 and len(wires[0]) == 1:
                     # TODO: can measure multiple local expectation values at once,
@@ -451,8 +449,8 @@ class DefaultTensor(Device):
                     meas_wires = []
                     # connect measured bra and ket nodes with observables
                     for obs_node, wire_seq in zip(obs_nodes, wires):
-                        if len(wire_seq) > 2 or (len(wire_seq) == 2 and np.abs(wire_seq[0]-wire_seq[1]) > 1):
-                            raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour qubit pairs.")
+                        if len(wire_seq) == 2 and abs(wire_seq[0]-wire_seq[1]) > 1:
+                            raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
                         offset = len(wire_seq)
                         for idx, wire in enumerate(wire_seq):
                             tn.connect(conj_nodes[wire][1], obs_node[idx])
