@@ -81,6 +81,7 @@ def test_torch_interface(skip_if_no_torch_support):
 step_sizes = [(True, DEFAULT_STEP_SIZE_ANALYTIC),
             (False, DEFAULT_STEP_SIZE)]
 
+
 @pytest.mark.parametrize("analytic, step_size", step_sizes)
 def test_finite_diff_qubit_qnode(analytic, step_size):
     """Test that a finite-difference differentiable qubit QNode
@@ -97,6 +98,22 @@ def test_finite_diff_qubit_qnode(analytic, step_size):
     assert isinstance(circuit, JacobianQNode)
     assert hasattr(circuit, "jacobian")
     assert circuit.h == step_size
+    assert circuit.order == 1
+
+
+@pytest.mark.parametrize("order", [1, 2])
+def test_finite_diff_qubit_qnode_passing_order_through_decorator(order):
+    """Test that a finite-difference differentiable qubit QNode is correctly created when
+    diff_method='finite-diff' and the order is set through the decorator."""
+    dev = qml.device('default.qubit', wires=1)
+
+    @qnode(dev, diff_method="finite-diff", order=order)
+    def circuit(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
+
+    assert circuit.order == order
+
 
 def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
     """Test that a finite-difference differentiable qubit QNode is correctly
