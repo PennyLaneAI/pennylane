@@ -443,24 +443,21 @@ class DefaultTensor(Device):
                     # refactor of `execute` logic
                     expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
                 else:
-
                     conj_nodes = [tn.conj(node) for node in self.mps.nodes]
-
-                    # apply observables as if they were gates
-                    # TODO: need to refactor these to not mutate data
-                    # Works for expval but not for sample, since sample
-                    # produces multiple projectors it needs to compute probabilities
-                    # for. Using the method below, the MPS nodes become projected by the
-                    # first projector (so subsequent projectors yield zero subspaces)
+                    meas_wires = []
+                    # connect measured bra and ket nodes with observables
                     for obs_node, wire_seq in zip(obs_nodes, wires):
-                        if len(wire_seq) == 1:
-                            self.mps.apply_one_site_gate(obs_node, wire_seq[0])
-                        elif len(wire_seq) == 2:
-                            self.mps.apply_two_site_gate(obs_node, wire_seq[0], wire_seq[1])
-
+                        if len(wire_seq) > 2 or (len(wire_seq) == 2 and np.abs(wire_seq[0]-wire_seq[1]) > 1):
+                            raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour qubit pairs.")
+                        offset = len(wire_seq)
+                        for idx, wire in enumerate(wire_seq):
+                            tn.connect(conj_nodes[wire][1], obs_node[idx])
+                            tn.connect(obs_node[offset + idx], self.mps.nodes[wire][1])
+                        meas_wires.extend(wire_seq)
                     for wire in range(self.num_wires):
                         # connect unmeasured ket nodes with bra nodes
-                        tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
+                        if wire not in meas_wires:
+                            tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
                         # connect local nodes of MPS (not connected by default in tn)
                         if wire != self.num_wires - 1:
                             tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
@@ -472,7 +469,10 @@ class DefaultTensor(Device):
                     for wire in range(self.num_wires - 1):
                         bra_node = tn.contract_between(bra_node, conj_nodes[wire + 1])
                         ket_node = tn.contract_between(ket_node, self.mps.nodes[wire + 1])
-
+                    # contract observables into ket
+                    for obs_node in obs_nodes:
+                        ket_node = tn.contract_between(obs_node, ket_node)
+                    # contract bra into observables/ket
                     expval_node = tn.contract_between(bra_node, ket_node)
                     # remove dangling singleton edges
                     expval = np.squeeze(expval_node.tensor)
