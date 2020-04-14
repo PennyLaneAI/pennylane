@@ -114,6 +114,9 @@ def test_finite_diff_qubit_qnode_passing_order_through_decorator(order):
 
     assert circuit.order == order
 
+    circuit.order = 1
+    assert circuit.order == 1
+
 
 def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
     """Test that a finite-difference differentiable qubit QNode is correctly
