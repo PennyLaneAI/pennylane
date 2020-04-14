@@ -102,6 +102,7 @@ class DefaultTensor(Device):
     _real = staticmethod(np.real)
     _imag = staticmethod(np.imag)
     _abs = staticmethod(np.abs)
+    _squeeze = staticmethod(np.squeeze)
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
@@ -131,10 +132,8 @@ class DefaultTensor(Device):
     def _clear_network_data(self):
         """Remove all data representing the current network from internal cache."""
         self._nodes = {}
-        if self._rep == "exact":
-            self._contracted = False
-            self._free_wire_edges = []
-            self.mps = None
+        self._free_wire_edges = []
+        self.mps = None
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -171,8 +170,7 @@ class DefaultTensor(Device):
            into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be
            sequences of length :math:`k`.
 
-           If self._rep is "exact", then self._terminal_edges is updated with the dangling
-           edges from the prepared state nodes.
+           self._free_wire_edges is updated with the dangling edges from the prepared state nodes.
 
            If self._rep is "mps", then the self.mps attribute is replaced with a new
            matrix product state object representing the prepared initial states.
@@ -295,11 +293,15 @@ class DefaultTensor(Device):
                 self._free_wire_edges[w] = op_node[idx]
         elif self._rep == "mps":
             if len(wires) == 1:
-                self.mps.apply_one_site_gate(op_node, wires[0])
+                wire = wires[0]
+                self.mps.apply_one_site_gate(op_node, wire)
+                self._free_wire_edges[wire] = self.mps.nodes[wire][1]
             elif len(wires) == 2:
                 if abs(wires[1] - wires[0]) == 1:
-                    ret = self.mps.apply_two_site_gate(op_node, *wires)
                     # TODO: set ``max_singular_values`` or ``max_truncation_error``
+                    ret = self.mps.apply_two_site_gate(op_node, *wires)
+                    for wire in wires:
+                        self._free_wire_edges[wire] = self.mps.nodes[wire][1]
                 else:
                     raise NotImplementedError(
                         "Multi-wire gates only supported for nearest-neighbour wire pairs."
@@ -430,7 +432,7 @@ class DefaultTensor(Device):
          Returns:
             complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        self._contract_to_ket()
+        self._contract_premeasurement_network()
         ket = self._nodes["contracted_state"]
         bra = tn.conj(ket, name="Bra")
 
@@ -475,7 +477,7 @@ class DefaultTensor(Device):
             if len(obs_nodes) == 1 and len(wires[0]) == 1:
                 # TODO: can measure multiple local expectation values at once,
                 # but this would require change of `expval` behaviour and
-                # refactor of `execute` logic
+                # refactor of `execute` logic from parent class
                 expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
             else:
                 conj_nodes = [tn.conj(node) for node in self.mps.nodes]
@@ -512,22 +514,20 @@ class DefaultTensor(Device):
                 # contract bra into observables/ket
                 expval_node = tn.contract_between(bra_node, ket_node)
                 # remove dangling singleton edges
-                expval = np.squeeze(expval_node.tensor)
+                expval = self._squeeze(expval_node.tensor)
             return expval
 
-    def _contract_to_ket(self):
+    def _contract_premeasurement_network(self):
         """Contract the nodes which represent the state preparation and gate applications to get the pre-measurement state.
 
-        The contracted tensor is stored in the ``_nodes`` dictionary under the key ``"contracted_state"``.
+        The contracted tensor is cached in the ``_nodes`` dictionary under the key ``"contracted_state"``.
         """
         if "contracted_state" not in self._nodes:
             if self._rep == "exact":
                 contract_fn = contract_fns[self._contraction_method]
                 ket = contract_fn(self._nodes["state"], output_edge_order=self._free_wire_edges)
             elif self._rep == "mps":
-                # contract any mutual edges
-                # remove superfluous edges from first and last sites
-                # return tensor
+                # contract all mutual edges
                 for idx, node in enumerate(self.mps.nodes):
                     if idx == 0:
                         prev_node = node
@@ -536,7 +536,7 @@ class DefaultTensor(Device):
                         prev_node = tn.contract_between(prev_node, node)
                 ket = prev_node
                 # remove dangling singleton edges
-                ket.tensor = np.squeeze(ket.tensor)
+                ket.tensor = self._squeeze(ket.tensor)
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
 
@@ -549,9 +549,12 @@ class DefaultTensor(Device):
         Returns:
             (array, tf.Tensor, torch.Tensor): the numerical tensor
         """
-        self._contract_to_ket()
+        # TODO: determine if there is an edge case where we can apply gates, pull out _state,
+        # then apply more gates and try to access _state again (second call will bring out earlier
+        # cached state)
+        self._contract_premeasurement_network()
         ket = self._nodes["contracted_state"]
-        return np.squeeze(ket.tensor)
+        return self._squeeze(ket.tensor)
 
     @property
     def contraction_method(self):

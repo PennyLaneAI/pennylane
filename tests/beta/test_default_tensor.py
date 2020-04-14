@@ -15,6 +15,7 @@
 Unit tests for the :mod:`pennylane.plugin.Tensornet` device.
 """
 import cmath
+
 # pylint: disable=protected-access,cell-var-from-loop
 import math
 
@@ -99,19 +100,21 @@ U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 U_swap = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
-U_cswap = np.array([[1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 1, 0],
-                    [0, 0, 0, 0, 0, 1, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 1]])
-
-
-H = np.array(
-    [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+U_cswap = np.array(
+    [
+        [1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1],
+    ]
 )
+
+
+H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 
 THETA = np.linspace(0.11, 1, 3)
@@ -128,7 +131,7 @@ def prep_par(par, op):
 
 def edges_valid(dev, num_nodes):
     """Returns True if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
-    node_edges = [dev._nodes['state'][idx].edges for idx in range(num_nodes)]
+    node_edges = [dev._nodes["state"][idx].edges for idx in range(num_nodes)]
     node_edges_set = set([edge for sublist in node_edges for edge in sublist])
     return node_edges_set == set(dev._free_wire_edges)
 
@@ -224,7 +227,14 @@ class TestAuxiliaryFunctions:
         assert np.allclose(CRotx(0), np.identity(4), atol=tol, rtol=0)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1j/np.sqrt(2)], [0, 0, -1j/np.sqrt(2), 1/np.sqrt(2)]])
+        expected = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1 / np.sqrt(2), -1j / np.sqrt(2)],
+                [0, 0, -1j / np.sqrt(2), 1 / np.sqrt(2)],
+            ]
+        )
         assert np.allclose(CRotx(np.pi / 2), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
@@ -238,7 +248,14 @@ class TestAuxiliaryFunctions:
         assert np.allclose(CRoty(0), np.identity(4), atol=tol, rtol=0)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1/np.sqrt(2), -1/np.sqrt(2)], [0, 0, 1/np.sqrt(2), 1/np.sqrt(2)]])
+        expected = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1 / np.sqrt(2), -1 / np.sqrt(2)],
+                [0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2)],
+            ]
+        )
         assert np.allclose(CRoty(np.pi / 2), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
@@ -252,7 +269,14 @@ class TestAuxiliaryFunctions:
         assert np.allclose(CRotz(0), np.identity(4), atol=tol, rtol=0)
 
         # test identity for theta=pi/2
-        expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, np.exp(-1j * np.pi / 4), 0], [0, 0, 0, np.exp(1j * np.pi / 4)]])
+        expected = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, np.exp(-1j * np.pi / 4), 0],
+                [0, 0, 0, np.exp(1j * np.pi / 4)],
+            ]
+        )
         assert np.allclose(CRotz(np.pi / 2), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
@@ -278,7 +302,7 @@ class TestAuxiliaryFunctions:
                     [1, 0, 0, 0],
                     [0, 1, 0, 0],
                     [0, 0, np.exp(-0.5j * (x + z)) * c, -np.exp(0.5j * (x - z)) * s],
-                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c]
+                    [0, 0, np.exp(-0.5j * (x - z)) * s, np.exp(0.5j * (x + z)) * c],
                 ]
             )
 
@@ -337,6 +361,7 @@ class TestMatrixOperations:
         with pytest.raises(ValueError, match="must be Hermitian"):
             hermitian(H2)
 
+
 @pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestDefaultTensorNetwork:
     """Tests of the basic tensor network functionality of default.tensor plugin."""
@@ -344,7 +369,7 @@ class TestDefaultTensorNetwork:
     def test_clear_network_data(self, rep):
         """Tests that the _clear_network method clears the relevant bookkeeping data."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         @qml.qnode(dev)
         def circuit():
@@ -356,14 +381,12 @@ class TestDefaultTensorNetwork:
         dev._clear_network_data()
 
         assert dev._nodes == {}
-        assert not dev._contracted
         assert dev._free_wire_edges == []
-
 
     def test_reset(self, rep, tol):
         """Tests that the `reset` method clears relevant bookkeeping data and re-initializes the initial state."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         @qml.qnode(dev)
         def circuit():
@@ -374,23 +397,34 @@ class TestDefaultTensorNetwork:
         circuit()
         dev.reset()
 
-        assert 'state' in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes['state']) == 2
-        assert all([dev._nodes['state'][idx].name == "ZeroState({},)".format(idx) for idx in range(2)])
-        assert np.allclose([dev._nodes['state'][idx].tensor for idx in range(2)], dev._zero_state, atol=tol, rtol=0)
-        assert not dev._contracted
+        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert len(dev._nodes["state"]) == 2
+        assert all(
+            [dev._nodes["state"][idx].name == "ZeroState({},)".format(idx) for idx in range(2)]
+        )
+
+        if rep == "exact":
+            shape = (2,)
+        elif rep == "mps":
+            shape = (1, 2, 1)
+        reshaped_zero_state = dev._zero_state.reshape(shape)
+        assert np.allclose(
+            [dev._nodes["state"][idx].tensor for idx in range(2)],
+            reshaped_zero_state,
+            atol=tol,
+            rtol=0,
+        )
         assert len(dev._free_wire_edges) == 2
         assert edges_valid(dev, num_nodes=2)
-
 
     def test_add_initial_state_nodes_2_wires_factorized(self, rep):
         """Tests that factorized initial states are properly created for a 2 wire device."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
         dev._clear_network_data()
 
         # factorized state
-        tensors = [np.array([1., 0.]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
+        tensors = [np.array([1.0, 0.0]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
         wires = [[0], [1]]
         names = ["AliceState", "BobState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -401,15 +435,15 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "BobState(1,)"
         assert edges_valid(dev, num_nodes=2)
 
-
         def test_add_initial_state_nodes_2_wires_entangled(self, rep):
             """Tests that entangled initial states are properly created for a 2 wire device."""
+
         # entangled state
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
         dev._clear_network_data()
 
-        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)]
+        tensors = [np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)]
         wires = [[0, 1]]
         names = ["BellState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -419,14 +453,13 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][0].name == "BellState(0, 1)"
         assert edges_valid(dev, num_nodes=1)
 
-
     def test_add_initial_state_nodes_3_wires_completely_factorized(self, rep):
         """Tests that completely factorized initial states are properly created for a 3 wire device."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [np.array([1., 0.]), np.array([1, -1j]) / np.sqrt(2), np.array([0., 1.])]
+        tensors = [np.array([1.0, 0.0]), np.array([1, -1j]) / np.sqrt(2), np.array([0.0, 1.0])]
         wires = [[0], [1], [2]]
         names = ["AliceState", "BobState", "CharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -438,14 +471,16 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][2].name == "CharlieState(2,)"
         assert edges_valid(dev, num_nodes=3)
 
-
         def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, rep):
             """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
         wires = [[0, 1], [2]]
         names = ["AliceBobState", "CharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -456,14 +491,16 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "CharlieState(2,)"
         assert edges_valid(dev, num_nodes=2)
 
-
         def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, rep):
             """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
         wires = [[0], [1, 2]]
         names = ["AliceState", "BobCharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -474,14 +511,16 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "BobCharlieState(1, 2)"
         assert edges_valid(dev, num_nodes=2)
 
-
         def test_add_initial_state_nodes_3_wires_biseparable_AC_B(self, rep):
             """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [np.array([[1., 0.], [0., 1.]]) / np.sqrt(2), np.array([1., 1.]) / np.sqrt(2)]
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
         wires = [[0, 2], [1]]
         names = ["AliceCharlieState", "BobState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -492,17 +531,23 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][1].name == "BobState(1,)"
         assert edges_valid(dev, num_nodes=2)
 
-
         def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, rep):
             """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [np.array([[1., 0., 0., 0.],
-                             [0., 0., 0., 0.],
-                             [0., 0., 0., 0.],
-                             [0., 0., 0., 1.]]) / np.sqrt(2)]
+        tensors = [
+            np.array(
+                [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            )
+            / np.sqrt(2)
+        ]
         wires = [[0, 1, 2]]
         names = ["GHZState"]
         dev._add_initial_state_nodes(tensors, wires, names)
@@ -512,31 +557,32 @@ class TestDefaultTensorNetwork:
         assert dev._nodes["state"][0].name == "GHZState(0, 1, 2)"
         assert edges_valid(dev, num_nodes=1)
 
-
-    @pytest.mark.parametrize("tensors,wires,names", [
-        ([np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)], [[0,1]], ["A", "B"]),
-        ([np.array([[1., 0.], [0., 1.]]) / np.sqrt(2)], [[0], [1]], ["A"]),
-        ([np.array([1., 0.]), np.array([1., 1.]) / np.sqrt(2)], [[0]], ["A"]),
-    ])
+    @pytest.mark.parametrize(
+        "tensors,wires,names",
+        [
+            ([np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)], [[0, 1]], ["A", "B"]),
+            ([np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)], [[0], [1]], ["A"]),
+            ([np.array([1.0, 0.0]), np.array([1.0, 1.0]) / np.sqrt(2)], [[0]], ["A"]),
+        ],
+    )
     def test_add_initial_state_nodes_exception(self, rep, tensors, wires, names):
         """Tests that an exception is given if the method _add_initial_state_nodes
         receives arguments with incompatible lengths."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
         dev._clear_network_data()
 
         with pytest.raises(ValueError, match="must all be the same length"):
             dev._add_initial_state_nodes(tensors, wires, names)
 
-
     def test_add_node(self, rep, tol):
         """Tests that the _add_node method adds nodes with the correct attributes."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert len(dev._nodes["state"]) == 2
 
-        zero_state = np.array([1., 0])
+        zero_state = np.array([1.0, 0])
         one_qubit_gate = np.array([[0, 1], [1, 0]])
         two_qubit_gate = np.eye(4)
         dev._add_node(one_qubit_gate, wires=[0], name="NewNodeX")
@@ -544,32 +590,35 @@ class TestDefaultTensorNetwork:
         dev._add_node(two_qubit_gate, wires=[0, 1], name="NewNodeZ")
         assert len(dev._nodes["state"]) == 5
         node_names = [n.name for n in dev._nodes["state"]]
-        assert set(node_names) == set(["ZeroState(0,)",
-                                       "ZeroState(1,)",
-                                       "NewNodeX(0,)",
-                                       "NewNodeY(1,)",
-                                       "NewNodeZ(0, 1)"])
+        assert set(node_names) == set(
+            ["ZeroState(0,)", "ZeroState(1,)", "NewNodeX(0,)", "NewNodeY(1,)", "NewNodeZ(0, 1)"]
+        )
+        if rep == "exact":
+            shape = (2,)
+        elif rep == "mps":
+            shape = (1, 2, 1)
         tensors = [n.tensor for n in dev._nodes["state"]]
-        assert all([np.allclose(t, zero_state, atol=tol, rtol=0) for t in tensors[:2]])
+        print([t.shape for t in tensors])
+        assert all(
+            [np.allclose(t, np.reshape(zero_state, shape), atol=tol, rtol=0) for t in tensors[:2]]
+        )
         assert all([np.allclose(t, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
         assert np.allclose(tensors[4], two_qubit_gate, atol=tol, rtol=0)
-
 
     def test_add_node_creates_keys(self, rep, tol):
         """Tests that the _add_node method is able to create new keys in dev._nodes."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert "state" in dev._nodes and len(dev._nodes) == 1
         dev._add_node(np.array([[0, 1], [1, 0]]), wires=[0], key="junk")
         assert "junk" in dev._nodes and len(dev._nodes) == 2
 
-
     def test_create_nodes_from_tensors(self, rep):
         """Tests that the create_nodes_from_tensors method adds nodes to the tensor
         network properly."""
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert len(dev._nodes["state"]) == 2
         A = np.array([[0, 1], [1, 0]])
@@ -577,30 +626,35 @@ class TestDefaultTensorNetwork:
         assert new_node[0] in dev._nodes["state"]
         assert len(dev._nodes["state"]) == 3
 
-        new_nodes = dev._create_nodes_from_tensors([A, A], [[0], [1]], ["GateA", "GateB"], key="state")
+        new_nodes = dev._create_nodes_from_tensors(
+            [A, A], [[0], [1]], ["GateA", "GateB"], key="state"
+        )
         assert all([node in dev._nodes["state"] for node in new_nodes])
 
-        obs_nodes = dev._create_nodes_from_tensors([A, A], [[0], [1]], ["ObsA", "ObsB"], key="observables")
+        obs_nodes = dev._create_nodes_from_tensors(
+            [A, A], [[0], [1]], ["ObsA", "ObsB"], key="observables"
+        )
         assert all(node in dev._nodes["observables"] for node in obs_nodes)
-
 
     @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
     def test_contract_to_ket_correct(self, rep, method, tol):
         """Tests that the _contract_to_ket method contracts down to a single node with the correct tensor."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep, contraction_method=method)
+        dev = qml.device("default.tensor", wires=3, representation=rep, contraction_method=method)
 
         dev.apply("PauliX", [0], [])
         dev.apply("Hadamard", [1], [])
 
         assert "contracted_state" not in dev._nodes
-        dev._contract_to_ket()
+        dev._contract_premeasurement_network()
         assert "contracted_state" in dev._nodes
         cont_state = dev._nodes["contracted_state"]
-        dev._contract_to_ket()  # should not change anything
+        dev._contract_premeasurement_network()  # should not change anything
         assert dev._nodes["contracted_state"] == cont_state
 
-        expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
+        expected = np.outer(
+            np.outer([0.0, 1.0], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1.0, 0.0]
+        ).reshape([2, 2, 2])
 
         assert np.allclose(cont_state.tensor, expected, atol=tol, rtol=0)
         assert cont_state.name == "Ket"
@@ -609,7 +663,7 @@ class TestDefaultTensorNetwork:
     def test_state(self, rep, method, tol):
         """Tests that the _state method produces the correct state after contraction."""
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
 
         dev.apply("PauliX", [0], [])
         dev.apply("Hadamard", [1], [])
@@ -618,7 +672,9 @@ class TestDefaultTensorNetwork:
         ket = dev._state()
         assert "contracted_state" in dev._nodes
 
-        expected = np.outer(np.outer([0., 1.], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1., 0.]).reshape([2,2,2])
+        expected = np.outer(
+            np.outer([0.0, 1.0], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1.0, 0.0]
+        ).reshape([2, 2, 2])
         assert np.allclose(ket, expected, atol=tol, rtol=0)
 
 
@@ -639,9 +695,7 @@ class TestDefaultTensorIntegration:
     def test_args(self, rep):
         """Test that the plugin requires correct arguments"""
 
-        with pytest.raises(
-            TypeError, match="missing 1 required positional argument: 'wires'"
-        ):
+        with pytest.raises(TypeError, match="missing 1 required positional argument: 'wires'"):
             qml.device("default.tensor")
 
     @pytest.mark.parametrize("gate", set(qml.ops.cv.ops))
@@ -654,7 +708,7 @@ class TestDefaultTensorIntegration:
         else:
             wires = list(range(op.num_wires))
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
 
         @qml.qnode(dev)
         def circuit(*x):
@@ -665,7 +719,8 @@ class TestDefaultTensorIntegration:
             return qml.expval(qml.X(0))
 
         with pytest.raises(
-            QuantumFunctionError, match="Device default.tensor is a qubit device; CV operations are not allowed."
+            QuantumFunctionError,
+            match="Device default.tensor is a qubit device; CV operations are not allowed.",
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
@@ -681,7 +736,7 @@ class TestDefaultTensorIntegration:
         else:
             wires = list(range(op.num_wires))
 
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
 
         @qml.qnode(dev)
         def circuit(*x):
@@ -690,7 +745,8 @@ class TestDefaultTensorIntegration:
             return qml.expval(op(*x, wires=wires))
 
         with pytest.raises(
-            QuantumFunctionError, match="Device default.tensor is a qubit device; CV operations are not allowed."
+            QuantumFunctionError,
+            match="Device default.tensor is a qubit device; CV operations are not allowed.",
         ):
             x = np.random.random([op.num_params])
             circuit(*x)
@@ -700,7 +756,8 @@ class TestDefaultTensorIntegration:
 
         p = 0.543
 
-        dev = qml.device('default.tensor', wires=1, representation=rep)
+        dev = qml.device("default.tensor", wires=1, representation=rep)
+
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -715,7 +772,7 @@ class TestDefaultTensorIntegration:
 
         p = 0.543
 
-        dev = qml.device('default.tensor', wires=1, representation=rep)
+        dev = qml.device("default.tensor", wires=1, representation=rep)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -726,18 +783,15 @@ class TestDefaultTensorIntegration:
         assert np.isclose(circuit(p), 1, atol=tol, rtol=0)
 
     # This test is ran against the state |0> with one Z expval
-    @pytest.mark.parametrize("name,expected_output", [
-        ("PauliX", -1),
-        ("PauliY", -1),
-        ("PauliZ", 1),
-        ("Hadamard", 0),
-    ])
+    @pytest.mark.parametrize(
+        "name,expected_output", [("PauliX", -1), ("PauliY", -1), ("PauliZ", 1), ("Hadamard", 0),]
+    )
     def test_supported_gate_single_wire_no_parameters(self, rep, tol, name, expected_output):
         """Tests supported gates that act on a single wire that are not parameterized"""
 
         op = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=1, representation=rep)
+        dev = qml.device("default.tensor", wires=1, representation=rep)
 
         assert dev.supports_operation(name)
 
@@ -749,37 +803,34 @@ class TestDefaultTensorIntegration:
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
     # This test is ran against the state |Phi+> with two Z expvals
-    @pytest.mark.parametrize("name,expected_output", [
-        ("CNOT", [-1/2, 1]),
-        ("SWAP", [-1/2, -1/2]),
-        ("CZ", [-1/2, -1/2]),
-    ])
+    @pytest.mark.parametrize(
+        "name,expected_output",
+        [("CNOT", [-1 / 2, 1]), ("SWAP", [-1 / 2, -1 / 2]), ("CZ", [-1 / 2, -1 / 2]),],
+    )
     def test_supported_gate_two_wires_no_parameters(self, rep, tol, name, expected_output):
         """Tests supported gates that act on two wires that are not parameterized"""
 
         op = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert dev.supports_operation(name)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(np.array([1/2, 0, 0, math.sqrt(3)/2]), wires=[0, 1])
+            qml.QubitStateVector(np.array([1 / 2, 0, 0, math.sqrt(3) / 2]), wires=[0, 1])
             op(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,expected_output", [
-        ("CSWAP", [-1, -1, 1]),
-    ])
+    @pytest.mark.parametrize("name,expected_output", [("CSWAP", [-1, -1, 1]),])
     def test_supported_gate_three_wires_no_parameters(self, rep, tol, name, expected_output):
         """Tests supported gates that act on three wires that are not parameterized"""
 
         if rep == "mps":
             pytest.skip("Three-qubit gates are not supported with MPS representation.")
-        dev = qml.device('default.tensor', wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation=rep)
         op = getattr(qml.ops, name)
 
         assert dev.supports_operation(name)
@@ -793,20 +844,23 @@ class TestDefaultTensorIntegration:
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
     # This test is ran with two Z expvals
-    @pytest.mark.parametrize("name,par,expected_output", [
-        ("BasisState", [0, 0], [1, 1]),
-        ("BasisState", [1, 0], [-1, 1]),
-        ("BasisState", [0, 1], [1, -1]),
-        ("QubitStateVector", [1, 0, 0, 0], [1, 1]),
-        ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
-        ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
-    ])
+    @pytest.mark.parametrize(
+        "name,par,expected_output",
+        [
+            ("BasisState", [0, 0], [1, 1]),
+            ("BasisState", [1, 0], [-1, 1]),
+            ("BasisState", [0, 1], [1, -1]),
+            ("QubitStateVector", [1, 0, 0, 0], [1, 1]),
+            ("QubitStateVector", [0, 0, 1, 0], [-1, 1]),
+            ("QubitStateVector", [0, 1, 0, 0], [1, -1]),
+        ],
+    )
     def test_supported_state_preparation(self, rep, tol, name, par, expected_output):
         """Tests supported state preparations"""
 
         op = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert dev.supports_operation(name)
 
@@ -818,30 +872,55 @@ class TestDefaultTensorIntegration:
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
     # This test is ran on the state |0> with one Z expvals
-    @pytest.mark.parametrize("name,par,expected_output", [
-        ("PhaseShift", [math.pi/2], 1),
-        ("PhaseShift", [-math.pi/4], 1),
-        ("RX", [math.pi/2], 0),
-        ("RX", [-math.pi/4], 1/math.sqrt(2)),
-        ("RY", [math.pi/2], 0),
-        ("RY", [-math.pi/4], 1/math.sqrt(2)),
-        ("RZ", [math.pi/2], 1),
-        ("RZ", [-math.pi/4], 1),
-        ("Rot", [math.pi/2, 0, 0], 1),
-        ("Rot", [0, math.pi/2, 0], 0),
-        ("Rot", [0, 0, math.pi/2], 1),
-        ("Rot", [math.pi/2, -math.pi/4, -math.pi/4], 1/math.sqrt(2)),
-        ("Rot", [-math.pi/4, math.pi/2, math.pi/4], 0),
-        ("Rot", [-math.pi/4, math.pi/4, math.pi/2], 1/math.sqrt(2)),
-        ("QubitUnitary", [np.array([[1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), -1j/math.sqrt(2)]])], 0),
-        ("QubitUnitary", [np.array([[-1j/math.sqrt(2), 1j/math.sqrt(2)], [1j/math.sqrt(2), 1j/math.sqrt(2)]])], 0),
-    ])
+    @pytest.mark.parametrize(
+        "name,par,expected_output",
+        [
+            ("PhaseShift", [math.pi / 2], 1),
+            ("PhaseShift", [-math.pi / 4], 1),
+            ("RX", [math.pi / 2], 0),
+            ("RX", [-math.pi / 4], 1 / math.sqrt(2)),
+            ("RY", [math.pi / 2], 0),
+            ("RY", [-math.pi / 4], 1 / math.sqrt(2)),
+            ("RZ", [math.pi / 2], 1),
+            ("RZ", [-math.pi / 4], 1),
+            ("Rot", [math.pi / 2, 0, 0], 1),
+            ("Rot", [0, math.pi / 2, 0], 0),
+            ("Rot", [0, 0, math.pi / 2], 1),
+            ("Rot", [math.pi / 2, -math.pi / 4, -math.pi / 4], 1 / math.sqrt(2)),
+            ("Rot", [-math.pi / 4, math.pi / 2, math.pi / 4], 0),
+            ("Rot", [-math.pi / 4, math.pi / 4, math.pi / 2], 1 / math.sqrt(2)),
+            (
+                "QubitUnitary",
+                [
+                    np.array(
+                        [
+                            [1j / math.sqrt(2), 1j / math.sqrt(2)],
+                            [1j / math.sqrt(2), -1j / math.sqrt(2)],
+                        ]
+                    )
+                ],
+                0,
+            ),
+            (
+                "QubitUnitary",
+                [
+                    np.array(
+                        [
+                            [-1j / math.sqrt(2), 1j / math.sqrt(2)],
+                            [1j / math.sqrt(2), 1j / math.sqrt(2)],
+                        ]
+                    )
+                ],
+                0,
+            ),
+        ],
+    )
     def test_supported_gate_single_wire_with_parameters(self, rep, tol, name, par, expected_output):
         """Tests supported gates that act on a single wire that are parameterized"""
 
         op = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=1, representation=rep)
+        dev = qml.device("default.tensor", wires=1, representation=rep)
 
         assert dev.supports_operation(name)
 
@@ -853,62 +932,96 @@ class TestDefaultTensorIntegration:
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
     # This test is ran against the state 1/2|00>+sqrt(3)/2|11> with two Z expvals
-    @pytest.mark.parametrize("name,par,expected_output", [
-        ("CRX", [0], [-1/2, -1/2]),
-        ("CRX", [-math.pi], [-1/2, 1]),
-        ("CRX", [math.pi/2], [-1/2, 1/4]),
-        ("CRY", [0], [-1/2, -1/2]),
-        ("CRY", [-math.pi], [-1/2, 1]),
-        ("CRY", [math.pi/2], [-1/2, 1/4]),
-        ("CRZ", [0], [-1/2, -1/2]),
-        ("CRZ", [-math.pi], [-1/2, -1/2]),
-        ("CRZ", [math.pi/2], [-1/2, -1/2]),
-        ("CRot", [math.pi/2, 0, 0], [-1/2, -1/2]),
-        ("CRot", [0, math.pi/2, 0], [-1/2, 1/4]),
-        ("CRot", [0, 0, math.pi/2], [-1/2, -1/2]),
-        ("CRot", [math.pi/2, 0, -math.pi], [-1/2, -1/2]),
-        ("CRot", [0, math.pi/2, -math.pi], [-1/2, 1/4]),
-        ("CRot", [-math.pi, 0, math.pi/2], [-1/2, -1/2]),
-        ("QubitUnitary", [np.array([[1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, 1]])], [-1/2, -1/2]),
-        ("QubitUnitary", [np.array([[-1, 0, 0, 0], [0, 1/math.sqrt(2), 1/math.sqrt(2), 0], [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], [0, 0, 0, -1]])], [-1/2, -1/2]),
-    ])
+    @pytest.mark.parametrize(
+        "name,par,expected_output",
+        [
+            ("CRX", [0], [-1 / 2, -1 / 2]),
+            ("CRX", [-math.pi], [-1 / 2, 1]),
+            ("CRX", [math.pi / 2], [-1 / 2, 1 / 4]),
+            ("CRY", [0], [-1 / 2, -1 / 2]),
+            ("CRY", [-math.pi], [-1 / 2, 1]),
+            ("CRY", [math.pi / 2], [-1 / 2, 1 / 4]),
+            ("CRZ", [0], [-1 / 2, -1 / 2]),
+            ("CRZ", [-math.pi], [-1 / 2, -1 / 2]),
+            ("CRZ", [math.pi / 2], [-1 / 2, -1 / 2]),
+            ("CRot", [math.pi / 2, 0, 0], [-1 / 2, -1 / 2]),
+            ("CRot", [0, math.pi / 2, 0], [-1 / 2, 1 / 4]),
+            ("CRot", [0, 0, math.pi / 2], [-1 / 2, -1 / 2]),
+            ("CRot", [math.pi / 2, 0, -math.pi], [-1 / 2, -1 / 2]),
+            ("CRot", [0, math.pi / 2, -math.pi], [-1 / 2, 1 / 4]),
+            ("CRot", [-math.pi, 0, math.pi / 2], [-1 / 2, -1 / 2]),
+            (
+                "QubitUnitary",
+                [
+                    np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
+                            [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+                            [0, 0, 0, 1],
+                        ]
+                    )
+                ],
+                [-1 / 2, -1 / 2],
+            ),
+            (
+                "QubitUnitary",
+                [
+                    np.array(
+                        [
+                            [-1, 0, 0, 0],
+                            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
+                            [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+                            [0, 0, 0, -1],
+                        ]
+                    )
+                ],
+                [-1 / 2, -1 / 2],
+            ),
+        ],
+    )
     def test_supported_gate_two_wires_with_parameters(self, rep, tol, name, par, expected_output):
         """Tests supported gates that act on two wires wires that are parameterized"""
 
         op = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert dev.supports_operation(name)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(np.array([1/2, 0, 0, math.sqrt(3)/2]), wires=[0, 1])
+            qml.QubitStateVector(np.array([1 / 2, 0, 0, math.sqrt(3) / 2]), wires=[0, 1])
             op(*par, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,state,expected_output", [
-        ("PauliX", [1/math.sqrt(2), 1/math.sqrt(2)], 1),
-        ("PauliX", [1/math.sqrt(2), -1/math.sqrt(2)], -1),
-        ("PauliX", [1, 0], 0),
-        ("PauliY", [1/math.sqrt(2), 1j/math.sqrt(2)], 1),
-        ("PauliY", [1/math.sqrt(2), -1j/math.sqrt(2)], -1),
-        ("PauliY", [1, 0], 0),
-        ("PauliZ", [1, 0], 1),
-        ("PauliZ", [0, 1], -1),
-        ("PauliZ", [1/math.sqrt(2), 1/math.sqrt(2)], 0),
-        ("Hadamard", [1, 0], 1/math.sqrt(2)),
-        ("Hadamard", [0, 1], -1/math.sqrt(2)),
-        ("Hadamard", [1/math.sqrt(2), 1/math.sqrt(2)], 1/math.sqrt(2)),
-    ])
-    def test_supported_observable_single_wire_no_parameters(self, rep, tol, name, state, expected_output):
+    @pytest.mark.parametrize(
+        "name,state,expected_output",
+        [
+            ("PauliX", [1 / math.sqrt(2), 1 / math.sqrt(2)], 1),
+            ("PauliX", [1 / math.sqrt(2), -1 / math.sqrt(2)], -1),
+            ("PauliX", [1, 0], 0),
+            ("PauliY", [1 / math.sqrt(2), 1j / math.sqrt(2)], 1),
+            ("PauliY", [1 / math.sqrt(2), -1j / math.sqrt(2)], -1),
+            ("PauliY", [1, 0], 0),
+            ("PauliZ", [1, 0], 1),
+            ("PauliZ", [0, 1], -1),
+            ("PauliZ", [1 / math.sqrt(2), 1 / math.sqrt(2)], 0),
+            ("Hadamard", [1, 0], 1 / math.sqrt(2)),
+            ("Hadamard", [0, 1], -1 / math.sqrt(2)),
+            ("Hadamard", [1 / math.sqrt(2), 1 / math.sqrt(2)], 1 / math.sqrt(2)),
+        ],
+    )
+    def test_supported_observable_single_wire_no_parameters(
+        self, rep, tol, name, state, expected_output
+    ):
         """Tests supported observables on single wires without parameters."""
 
         obs = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=1, representation=rep)
+        dev = qml.device("default.tensor", wires=1, representation=rep)
 
         assert dev.supports_observable(name)
 
@@ -919,20 +1032,30 @@ class TestDefaultTensorIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,state,expected_output,par", [
-        ("Identity", [1, 0], 1, []),
-        ("Identity", [0, 1], 1, []),
-        ("Identity", [1/math.sqrt(2), -1/math.sqrt(2)], 1, []),
-        ("Hermitian", [1, 0], 1, [np.array([[1, 1j], [-1j, 1]])]),
-        ("Hermitian", [0, 1], 1, [np.array([[1, 1j], [-1j, 1]])]),
-        ("Hermitian", [1/math.sqrt(2), -1/math.sqrt(2)], 1, [np.array([[1, 1j], [-1j, 1]])]),
-    ])
-    def test_supported_observable_single_wire_with_parameters(self, rep, tol, name, state, expected_output, par):
+    @pytest.mark.parametrize(
+        "name,state,expected_output,par",
+        [
+            ("Identity", [1, 0], 1, []),
+            ("Identity", [0, 1], 1, []),
+            ("Identity", [1 / math.sqrt(2), -1 / math.sqrt(2)], 1, []),
+            ("Hermitian", [1, 0], 1, [np.array([[1, 1j], [-1j, 1]])]),
+            ("Hermitian", [0, 1], 1, [np.array([[1, 1j], [-1j, 1]])]),
+            (
+                "Hermitian",
+                [1 / math.sqrt(2), -1 / math.sqrt(2)],
+                1,
+                [np.array([[1, 1j], [-1j, 1]])],
+            ),
+        ],
+    )
+    def test_supported_observable_single_wire_with_parameters(
+        self, rep, tol, name, state, expected_output, par
+    ):
         """Tests supported observables on single wires with parameters."""
 
         obs = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=1, representation=rep)
+        dev = qml.device("default.tensor", wires=1, representation=rep)
 
         assert dev.supports_observable(name)
 
@@ -943,20 +1066,55 @@ class TestDefaultTensorIntegration:
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("name,state,expected_output,par", [
-        ("Hermitian", [1/math.sqrt(3), 0, 1/math.sqrt(3), 1/math.sqrt(3)], 5/3, [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])]),
-        ("Hermitian", [0, 0, 0, 1], 0, [np.array([[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])]),
-        ("Hermitian", [1/math.sqrt(2), 0, -1/math.sqrt(2), 0], 1, [np.array([[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]])]),
-        ("Hermitian", [1/math.sqrt(3), -1/math.sqrt(3), 1/math.sqrt(6), 1/math.sqrt(6)], 1, [np.array([[1, 1j, 0, .5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-.5j, 0, 1j, 1]])]),
-        ("Hermitian", [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], 1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
-        ("Hermitian", [0, 1/math.sqrt(2), -1/math.sqrt(2), 0], -1, [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])]),
-    ])
-    def test_supported_observable_two_wires_with_parameters(self, rep, tol, name, state, expected_output, par):
+    @pytest.mark.parametrize(
+        "name,state,expected_output,par",
+        [
+            (
+                "Hermitian",
+                [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
+                5 / 3,
+                [np.array([[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]])],
+            ),
+            (
+                "Hermitian",
+                [0, 0, 0, 1],
+                0,
+                [np.array([[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])],
+            ),
+            (
+                "Hermitian",
+                [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+                1,
+                [np.array([[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]])],
+            ),
+            (
+                "Hermitian",
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1 / math.sqrt(6), 1 / math.sqrt(6)],
+                1,
+                [np.array([[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]])],
+            ),
+            (
+                "Hermitian",
+                [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
+                1,
+                [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])],
+            ),
+            (
+                "Hermitian",
+                [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+                -1,
+                [np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])],
+            ),
+        ],
+    )
+    def test_supported_observable_two_wires_with_parameters(
+        self, rep, tol, name, state, expected_output, par
+    ):
         """Tests supported observables on two wires with parameters."""
 
         obs = getattr(qml.ops, name)
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
         assert dev.supports_observable(name)
 
@@ -973,21 +1131,22 @@ class TestDefaultTensorIntegration:
         dev = qml.device("default.tensor", wires=1, representation=rep)
 
         A = np.array([[2j, 1j], [-3j, 1j]])
-        obs_node = dev._create_nodes_from_tensors([A], [[0]], "ComplexObservable", key="observables")
+        obs_node = dev._create_nodes_from_tensors(
+            [A], [[0]], "ComplexObservable", key="observables"
+        )
 
         # text warning raised if matrix is complex
-        with pytest.warns(RuntimeWarning, match='Nonvanishing imaginary part'):
+        with pytest.warns(RuntimeWarning, match="Nonvanishing imaginary part"):
             dev.ev(obs_node, wires=[[0]])
 
     @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
     def test_correct_state_no_params(self, rep, method):
         """Tests that if different QNodes are used with the same device,
         then the contracted state is correct for each one."""
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
         state = dev._state()
 
-        expected = np.array([[1, 0],
-                             [0, 0]])
+        expected = np.array([[1, 0], [0, 0]])
         assert np.allclose(state, expected)
 
         @qml.qnode(dev)
@@ -998,16 +1157,14 @@ class TestDefaultTensorIntegration:
         circuit()
         state = dev._state()
 
-        expected = np.array([[1, 0],
-                             [1, 0]]) / np.sqrt(2)
+        expected = np.array([[1, 0], [1, 0]]) / np.sqrt(2)
         assert np.allclose(state, expected)
-
 
     @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
     def test_correct_state_diff_params(self, rep, method, tol):
         """Tests that if different inputs are fed to the same QNode,
         then the contracted state is updated correctly."""
-        dev = qml.device('default.tensor', wires=2, representation=rep, contraction_method=method)
+        dev = qml.device("default.tensor", wires=2, representation=rep, contraction_method=method)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -1015,7 +1172,7 @@ class TestDefaultTensorIntegration:
             return qml.expval(qml.PauliZ(0))
 
         def expected(theta):
-            vec = np.outer(np.array([np.cos(theta / 2), -1j * np.sin(theta / 2)]), [1., 0.])
+            vec = np.outer(np.array([np.cos(theta / 2), -1j * np.sin(theta / 2)]), [1.0, 0.0])
             return vec.reshape([2, 2])
 
         theta = np.pi / 4
@@ -1065,7 +1222,7 @@ class TestTensorExpval:
         dev.apply("CNOT", wires=[1, 2], par=[])
 
         res = dev.expval(["PauliZ", "Identity", "PauliZ"], [[0], [1], [2]], [[], [], []])
-        expected = np.cos(varphi)*np.cos(phi)
+        expected = np.cos(varphi) * np.cos(phi)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1123,8 +1280,7 @@ class TestTensorExpval:
         dev.apply("CNOT", wires=[0, 1], par=[])
         dev.apply("CNOT", wires=[1, 2], par=[])
 
-        A1 = np.array([[1, 2],
-                       [2, 4]])
+        A1 = np.array([[1, 2], [2, 4]])
 
         A2 = np.array(
             [
@@ -1141,7 +1297,8 @@ class TestTensorExpval:
             + 4 * np.cos(phi) * np.sin(theta)
             + 3 * np.cos(varphi) * (-10 + 4 * np.cos(phi) * np.sin(theta) - 3 * np.sin(phi))
             - 3 * np.sin(phi)
-            - 2 * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
+            - 2
+            * (5 + np.cos(phi) * (6 + 4 * np.sin(theta)) + (-3 + 8 * np.sin(theta)) * np.sin(phi))
             * np.sin(varphi)
             + np.cos(theta)
             * (
@@ -1162,7 +1319,9 @@ class TestTensorExpval:
         dev.apply("RY", wires=[1], par=[phi])
         dev.apply("CNOT", wires=[0, 1], par=[])
 
-        A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+        A = np.array(
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
+        )
 
         res = dev.expval(["Hermitian", "Identity"], [[0], [1]], [[A], []])
 
@@ -1287,37 +1446,37 @@ class TestSample:
         the correct dimensions
         """
 
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
 
-        dev.apply('RX', wires=[0], par=[1.5708])
-        dev.apply('RX', wires=[1], par=[1.5708])
+        dev.apply("RX", wires=[0], par=[1.5708])
+        dev.apply("RX", wires=[1], par=[1.5708])
 
         dev.shots = 10
-        s1 = dev.sample('PauliZ', [0], [])
+        s1 = dev.sample("PauliZ", [0], [])
         assert np.array_equal(s1.shape, (10,))
 
         dev.shots = 12
-        s2 = dev.sample('PauliZ', [1], [])
+        s2 = dev.sample("PauliZ", [1], [])
         assert np.array_equal(s2.shape, (12,))
 
         dev.shots = 17
-        s3 = dev.sample('CZ', [0, 1], [])
+        s3 = dev.sample("CZ", [0, 1], [])
         assert np.array_equal(s3.shape, (17,))
 
     def test_sample_values(self, rep, tol):
         """Tests if the samples returned by sample have
         the correct values
         """
-        dev = qml.device('default.tensor', wires=2, representation=rep)
+        dev = qml.device("default.tensor", wires=2, representation=rep)
         dev.reset()
 
-        dev.apply('RX', wires=[0], par=[1.5708])
+        dev.apply("RX", wires=[0], par=[1.5708])
 
-        s1 = dev.sample('PauliZ', [0], [])
+        s1 = dev.sample("PauliZ", [0], [])
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
-        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
