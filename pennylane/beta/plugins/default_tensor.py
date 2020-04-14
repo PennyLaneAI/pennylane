@@ -165,7 +165,7 @@ class DefaultTensor(Device):
             for tensor, wires_seq, name in zip(tensors, wires, names):
                 tensor = np.expand_dims(tensor, [0, -1])
                 if tensor.shape == (1, 2, 1):
-                    # factorized MPS form
+                    # MPS form
                     node = self._add_node(tensor, wires=wires_seq, name=name)
                     nodes.append(node)
                 else:
@@ -181,7 +181,7 @@ class DefaultTensor(Device):
                             node = self._add_node(DV, wires=[wire], name=name)
                         nodes.append(node)
             # TODO: might want to set canonicalize=False
-            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes)
+            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes, canonicalize=False)
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -259,11 +259,15 @@ class DefaultTensor(Device):
                         self.num_wires
                     )
                 )
-            state_tensor = np.zeros([2] * len(wires))
-            state_tensor[tuple(par[0])] = 1
-            tensor = self._array(state_tensor, dtype=self.C_DTYPE)
+            zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
+            one_vec = zero_vec[::-1]
+            tensors = [zero_vec if par[0][wire] == 0 else one_vec for wire in range(self.num_wires)]
             self._clear_network_data()
-            self._add_initial_state_nodes([tensor], [full_wires_list], ["BasisState"])
+            self._add_initial_state_nodes(
+                tensors,
+                [[w] for w in range(self.num_wires)],
+                ["BasisState"] * self.num_wires,
+            )
             return
 
         A = self._get_operator_matrix(operation, par)
