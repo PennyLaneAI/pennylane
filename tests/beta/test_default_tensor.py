@@ -550,9 +550,9 @@ class TestDefaultTensorNetwork:
                                        "NewNodeY(1,)",
                                        "NewNodeZ(0, 1)"])
         tensors = [n.tensor for n in dev._nodes["state"]]
-        assert all([np.allclose(t.data, zero_state, atol=tol, rtol=0) for t in tensors[:2]])
-        assert all([np.allclose(t.data, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
-        assert np.allclose(tensors[4].data, two_qubit_gate, atol=tol, rtol=0)
+        assert all([np.allclose(t, zero_state, atol=tol, rtol=0) for t in tensors[:2]])
+        assert all([np.allclose(t, one_qubit_gate, atol=tol, rtol=0) for t in tensors[2:4]])
+        assert np.allclose(tensors[4], two_qubit_gate, atol=tol, rtol=0)
 
 
     def test_add_node_creates_keys(self, tensornet_device_2_wires, tol):
@@ -563,23 +563,6 @@ class TestDefaultTensorNetwork:
         assert "state" in dev._nodes and len(dev._nodes) == 1
         dev._add_node(np.array([[0, 1], [1, 0]]), wires=[0], key="junk")
         assert "junk" in dev._nodes and len(dev._nodes) == 2
-
-
-    def test_add_edge_correctly_connects_nodes(self, tensornet_device_2_wires):
-        """Tests the _add_edge method is connecting the nodes correctly."""
-
-        dev = tensornet_device_2_wires
-
-        observable = np.array([[0, 1], [1, 0]])
-        obs_nodeA = tensornetwork.Node(observable, name="ObsA")
-        obs_nodeB = tensornetwork.Node(observable, name="ObsB")
-        dev._add_edge(obs_nodeA, 1, dev._nodes["state"][0], 0)
-        dev._add_edge(obs_nodeB, 1, dev._nodes["state"][1], 0)
-
-        # check_connected is designed to raise an exception if nodes are not connected
-        # test passes if no exception is raised
-        tensornetwork.check_connected([dev._nodes["state"][0], obs_nodeA])
-        tensornetwork.check_connected([dev._nodes["state"][1], obs_nodeB])
 
 
     def test_create_nodes_from_tensors(self, tensornet_device_2_wires):

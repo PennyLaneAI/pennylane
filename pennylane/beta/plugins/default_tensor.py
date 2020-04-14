@@ -211,21 +211,6 @@ class DefaultTensor(Device):
 
         return node
 
-    def _add_edge(self, node1, idx1, node2, idx2):
-        """Adds an edge between two nodes.
-
-        Args:
-            node1 (tn.Node): first node to connect
-            idx1 (int): index of node1 to connect the edge to
-            node2 (tn.Node): second node to connect
-            idx2 (int): index of node2 to connect the edge to
-
-        Returns:
-            tn.Edge: the newly created edge
-        """
-        edge = tn.connect(node1[idx1], node2[idx2])
-        return edge
-
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector":
             state = self._array(par[0], dtype=self.C_DTYPE)
@@ -422,11 +407,11 @@ class DefaultTensor(Device):
                     # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
                     output_idx = idx
                     input_idx = len(obs_wires) + idx
-                    self._add_edge(obs_node, input_idx, ket, w)  # A|psi>
-                    self._add_edge(bra, w, obs_node, output_idx)  # <psi|A
+                    tn.connect(obs_node[input_idx], ket[w])  # A|psi>
+                    tn.connect(bra[w], obs_node[output_idx])  # <psi|A
             # unmeasured wires are contracted directly between bra and ket
             for w in set(all_wires) - set(meas_wires):
-                self._add_edge(bra, w, ket, w)
+                tn.connect(bra[w], ket[w])
 
             # At this stage, all nodes are connected, and the contraction yields a
             # scalar value.
