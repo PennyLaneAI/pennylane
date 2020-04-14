@@ -108,7 +108,9 @@ class DefaultTensor(Device):
 
     _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, analytic=True, representation="exact", contraction_method="auto"):
+    def __init__(
+        self, wires, shots=1000, analytic=True, representation="exact", contraction_method="auto"
+    ):
         super().__init__(wires, shots)
         self.analytic = analytic
         self._rep = representation
@@ -290,15 +292,19 @@ class DefaultTensor(Device):
                 self._terminal_edges[w] = op_node[idx]
         elif self._rep == "mps":
             if len(wires) == 1:
-               self.mps.apply_one_site_gate(op_node, wires[0])
+                self.mps.apply_one_site_gate(op_node, wires[0])
             elif len(wires) == 2:
-               if abs(wires[1]-wires[0]) == 1:
-                   ret = self.mps.apply_two_site_gate(op_node, *wires)
-                   # TODO: set ``max_singular_values`` or ``max_truncation_error``
-               else:
-                   raise NotImplementedError("Multi-wire gates only supported for nearest-neighbour wire pairs.")
+                if abs(wires[1] - wires[0]) == 1:
+                    ret = self.mps.apply_two_site_gate(op_node, *wires)
+                    # TODO: set ``max_singular_values`` or ``max_truncation_error``
+                else:
+                    raise NotImplementedError(
+                        "Multi-wire gates only supported for nearest-neighbour wire pairs."
+                    )
             else:
-               raise NotImplementedError("Multi-wire gates only supported for nearest-neighbour wire pairs.")
+                raise NotImplementedError(
+                    "Multi-wire gates only supported for nearest-neighbour wire pairs."
+                )
 
     def _create_nodes_from_tensors(self, tensors, wires, observable_names, key):
         """Helper function for creating TensorNetwork nodes based on tensors.
@@ -459,7 +465,9 @@ class DefaultTensor(Device):
             complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if any(len(wires_seq) > 2 for wires_seq in wires):
-            raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
+            raise NotImplementedError(
+                "Multi-wire measurement only supported for nearest-neighbour wire pairs."
+            )
         else:
             if len(obs_nodes) == 1 and len(wires[0]) == 1:
                 # TODO: can measure multiple local expectation values at once,
@@ -472,7 +480,9 @@ class DefaultTensor(Device):
                 # connect measured bra and ket nodes with observables
                 for obs_node, wire_seq in zip(obs_nodes, wires):
                     if len(wire_seq) == 2 and abs(wire_seq[0] - wire_seq[1]) > 1:
-                        raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
+                        raise NotImplementedError(
+                            "Multi-wire measurement only supported for nearest-neighbour wire pairs."
+                        )
                     offset = len(wire_seq)
                     for idx, wire in enumerate(wire_seq):
                         tn.connect(conj_nodes[wire][1], obs_node[idx])
