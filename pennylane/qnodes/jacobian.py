@@ -333,7 +333,7 @@ class JacobianQNode(BaseQNode):
             array[float]: partial derivative of the node
         """
         h = options.get("h", self.h)
-        order = options.get("order", 1)
+        order = options.get("order", self.order)
 
         shift_args = args.copy()
         if order == 1:
