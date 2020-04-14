@@ -108,7 +108,7 @@ class DefaultTensor(Device):
 
     _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, analytic=True, representation="mps"):
+    def __init__(self, wires, shots=1000, analytic=True, representation="exact"):
         super().__init__(wires, shots)
         self.analytic = analytic
         self._rep = representation
@@ -133,9 +133,37 @@ class DefaultTensor(Device):
             self._terminal_edges = []
             self.mps = None
 
+    def _add_node(self, A, wires, name="UnnamedNode", key="state"):
+        """Adds a node to the underlying tensor network.
+
+        For bookkeeping, the dictionary ``self._nodes`` is updated. The created node is
+        appended to the list found under ``key``.
+
+        Args:
+            A (array): numerical data values for the operator (i.e., matrix form)
+            wires (list[int]): wires that this operator acts on
+            name (str): optional name for the node
+            key (str): which list of nodes to add new node to
+
+        Returns:
+            tn.Node: the newly created node
+        """
+        name = "{}{}".format(name, tuple(w for w in wires))
+        if isinstance(A, tn.Node):
+            A.set_name(name)
+            node = A
+        else:
+            node = tn.Node(A, name=name, backend=self.backend)
+
+        if key not in self._nodes:
+            self._nodes[key] = []
+        self._nodes[key].append(node)
+
+        return node
+
     def _add_initial_state_nodes(self, tensors, wires, names):
         """Create the nodes representing the initial input state circuit.
-        
+
            Input states can be factorized or entangled. If a state can be factorized
            into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be
            sequences of length :math:`k`.
@@ -182,70 +210,62 @@ class DefaultTensor(Device):
                         nodes.append(node)
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes, canonicalize=False)
 
-    def _add_node(self, A, wires, name="UnnamedNode", key="state"):
-        """Adds a node to the underlying tensor network.
-
-        For bookkeeping, the dictionary ``self._nodes`` is updated. The created node is
-        appended to the list found under ``key``.
+    def _get_operator_matrix(self, operation, par):
+        """Get the operator matrix for a given operation or observable.
 
         Args:
-            A (array): numerical data values for the operator (i.e., matrix form)
-            wires (list[int]): wires that this operator acts on
-            name (str): optional name for the node
-            key (str): which list of nodes to add new node to
-
+          operation (str): name of the operation/observable
+          par (tuple[float]): parameter values
         Returns:
-            tn.Node: the newly created node
+          array: matrix representation.
         """
-        name = "{}{}".format(name, tuple(w for w in wires))
-        if isinstance(A, tn.Node):
-            A.set_name(name)
-            node = A
-        else:
-            node = tn.Node(A, name=name, backend=self.backend)
-
-        if key not in self._nodes:
-            self._nodes[key] = []
-        self._nodes[key].append(node)
-
-        return node
+        A = self._operation_and_observable_map[operation]
+        if not callable(A):
+            return self._array(A, dtype=self.C_DTYPE)
+        return self._asarray(A(*par), dtype=self.C_DTYPE)
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector" or operation == "BasisState":
+            self._apply_state_preps(operation, wires, par)
+        else:
+            self._apply_gate(operation, wires, par)
 
-            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+    def _apply_state_preps(self, operation, wires, par):
+        """TODO"""
+        if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+            raise ValueError(
+                "The default.tensor plugin can apply {} only to all of the {} wires.".format(
+                    operation, self.num_wires
+                )
+            )
+
+        if operation == "QubitStateVector":
+            state_vector = self._array(par[0], dtype=self.C_DTYPE)
+            if state_vector.ndim == 1 and state_vector.shape[0] == 2 ** self.num_wires:
+                tensors = [self._reshape(state_vector, [2] * self.num_wires)]
+                wires_seq = [list(range(self.num_wires))]
+                name = [operation]
+            else:
+                raise ValueError("State vector must be of length 2**wires.")
+        elif operation == "BasisState":
+            n = len(par[0])
+            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
                 raise ValueError(
-                    "The default.tensor plugin can apply {} only to all of the {} wires.".format(
-                        operation, self.num_wires
+                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+                        self.num_wires
                     )
                 )
+            zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
+            one_vec = zero_vec[::-1]
+            tensors = [zero_vec if par[0][wire] == 0 else one_vec for wire in range(self.num_wires)]
+            wires_seq = [[w] for w in range(self.num_wires)]
+            name = [operation] * self.num_wires
 
-            if operation == "QubitStateVector":
-                state_vector = self._array(par[0], dtype=self.C_DTYPE)
-                if state_vector.ndim == 1 and state_vector.shape[0] == 2 ** self.num_wires:
-                    tensors = [self._reshape(state_vector, [2] * self.num_wires)]
-                    wires_seq = [list(range(self.num_wires))]
-                    name = [operation]
-                else:
-                    raise ValueError("State vector must be of length 2**wires.")
-            elif operation == "BasisState":
-                n = len(par[0])
-                if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
-                    raise ValueError(
-                        "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
-                            self.num_wires
-                        )
-                    )
-                zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
-                one_vec = zero_vec[::-1]
-                tensors = [zero_vec if par[0][wire] == 0 else one_vec for wire in range(self.num_wires)]
-                wires_seq = [[w] for w in range(self.num_wires)]
-                name = [operation] * self.num_wires
+        self._clear_network_data()
+        self._add_initial_state_nodes(tensors, wires_seq, name)
 
-            self._clear_network_data()
-            self._add_initial_state_nodes(tensors, wires_seq, name)
-            return
-
+    def _apply_gate(self, operation, wires, par):
+        """TODO"""
         A = self._get_operator_matrix(operation, par)
         num_wires = len(wires)
         A = self._reshape(A, [2] * num_wires * 2)
@@ -356,19 +376,81 @@ class DefaultTensor(Device):
         outcomes = np.array([np.prod(p) for p in joint_outcomes])
         return np.random.choice(outcomes, self.shots, p=joint_probabilities)
 
-    def _get_operator_matrix(self, operation, par):
-        """Get the operator matrix for a given operation or observable.
+    def _ev_exact(self, obs_nodes, wires, contraction_method="auto"):
+        """TODO"""
+        self._contract_to_ket(contraction_method)
+        ket = self._nodes["contracted_state"]
+        bra = tn.conj(ket, name="Bra")
 
-        Args:
-          operation (str): name of the operation/observable
-          par (tuple[float]): parameter values
-        Returns:
-          array: matrix representation.
-        """
-        A = self._operation_and_observable_map[operation]
-        if not callable(A):
-            return self._array(A, dtype=self.C_DTYPE)
-        return self._asarray(A(*par), dtype=self.C_DTYPE)
+        all_wires = tuple(range(self.num_wires))
+        meas_wires = []
+        # For wires which are measured, add edges between
+        # the ket node, the observable nodes, and the bra node
+        for obs_node, obs_wires in zip(obs_nodes, wires):
+            meas_wires.extend(obs_wires)
+            for idx, w in enumerate(obs_wires):
+                # Use convention that the indices of a tensor are ordered like
+                # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
+                output_idx = idx
+                input_idx = len(obs_wires) + idx
+                tn.connect(obs_node[input_idx], ket[w])  # A|psi>
+                tn.connect(bra[w], obs_node[output_idx])  # <psi|A
+        # unmeasured wires are contracted directly between bra and ket
+        for w in set(all_wires) - set(meas_wires):
+            tn.connect(bra[w], ket[w])
+
+        # At this stage, all nodes are connected, and the contraction yields a
+        # scalar value.
+        ket_and_observable_node = ket
+        for obs_node in obs_nodes:
+            ket_and_observable_node = tn.contract_between(obs_node, ket_and_observable_node)
+        return tn.contract_between(bra, ket_and_observable_node).tensor
+
+    def _ev_mps(self, obs_nodes, wires, contraction_method="auto"):
+        """TODO"""
+        if any(len(wires_seq) > 2 for wires_seq in wires):
+            raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
+        else:
+            if len(obs_nodes) == 1 and len(wires[0]) == 1:
+                # TODO: can measure multiple local expectation values at once,
+                # but this would require change of `expval` behaviour and
+                # refactor of `execute` logic
+                expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
+            else:
+                conj_nodes = [tn.conj(node) for node in self.mps.nodes]
+                meas_wires = []
+                # connect measured bra and ket nodes with observables
+                for obs_node, wire_seq in zip(obs_nodes, wires):
+                    if len(wire_seq) == 2 and abs(wire_seq[0] - wire_seq[1]) > 1:
+                        raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
+                    offset = len(wire_seq)
+                    for idx, wire in enumerate(wire_seq):
+                        tn.connect(conj_nodes[wire][1], obs_node[idx])
+                        tn.connect(obs_node[offset + idx], self.mps.nodes[wire][1])
+                    meas_wires.extend(wire_seq)
+                for wire in range(self.num_wires):
+                    # connect unmeasured ket nodes with bra nodes
+                    if wire not in meas_wires:
+                        tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
+                    # connect local nodes of MPS (not connected by default in tn)
+                    if wire != self.num_wires - 1:
+                        tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
+                        tn.connect(conj_nodes[wire][2], conj_nodes[wire + 1][0])
+
+                # contract MPS bonds first
+                bra_node = conj_nodes[0]
+                ket_node = self.mps.nodes[0]
+                for wire in range(self.num_wires - 1):
+                    bra_node = tn.contract_between(bra_node, conj_nodes[wire + 1])
+                    ket_node = tn.contract_between(ket_node, self.mps.nodes[wire + 1])
+                # contract observables into ket
+                for obs_node in obs_nodes:
+                    ket_node = tn.contract_between(obs_node, ket_node)
+                # contract bra into observables/ket
+                expval_node = tn.contract_between(bra_node, ket_node)
+                # remove dangling singleton edges
+                expval = np.squeeze(expval_node.tensor)
+            return expval
 
     def ev(self, obs_nodes, wires, contraction_method="auto"):
         r"""Expectation value of observables on specified wires.
@@ -383,77 +465,9 @@ class DefaultTensor(Device):
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if self._rep == "exact":
-            self._contract_to_ket(contraction_method)
-            ket = self._nodes["contracted_state"]
-            bra = tn.conj(ket, name="Bra")
-
-            all_wires = tuple(range(self.num_wires))
-            meas_wires = []
-            # For wires which are measured, add edges between
-            # the ket node, the observable nodes, and the bra node
-            for obs_node, obs_wires in zip(obs_nodes, wires):
-                meas_wires.extend(obs_wires)
-                for idx, w in enumerate(obs_wires):
-                    # Use convention that the indices of a tensor are ordered like
-                    # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
-                    output_idx = idx
-                    input_idx = len(obs_wires) + idx
-                    tn.connect(obs_node[input_idx], ket[w])  # A|psi>
-                    tn.connect(bra[w], obs_node[output_idx])  # <psi|A
-            # unmeasured wires are contracted directly between bra and ket
-            for w in set(all_wires) - set(meas_wires):
-                tn.connect(bra[w], ket[w])
-
-            # At this stage, all nodes are connected, and the contraction yields a
-            # scalar value.
-            ket_and_observable_node = ket
-            for obs_node in obs_nodes:
-                ket_and_observable_node = tn.contract_between(obs_node, ket_and_observable_node)
-            expval = tn.contract_between(bra, ket_and_observable_node).tensor
-
+            expval = self._ev_exact(obs_nodes, wires, contraction_method)
         elif self._rep == "mps":
-            if any(len(wires_seq) > 2 for wires_seq in wires):
-                raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
-            else:
-                if len(obs_nodes) == 1 and len(wires[0]) == 1:
-                    # TODO: can measure multiple local expectation values at once,
-                    # but this would require change of `expval` behaviour and
-                    # refactor of `execute` logic
-                    expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
-                else:
-                    conj_nodes = [tn.conj(node) for node in self.mps.nodes]
-                    meas_wires = []
-                    # connect measured bra and ket nodes with observables
-                    for obs_node, wire_seq in zip(obs_nodes, wires):
-                        if len(wire_seq) == 2 and abs(wire_seq[0]-wire_seq[1]) > 1:
-                            raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
-                        offset = len(wire_seq)
-                        for idx, wire in enumerate(wire_seq):
-                            tn.connect(conj_nodes[wire][1], obs_node[idx])
-                            tn.connect(obs_node[offset + idx], self.mps.nodes[wire][1])
-                        meas_wires.extend(wire_seq)
-                    for wire in range(self.num_wires):
-                        # connect unmeasured ket nodes with bra nodes
-                        if wire not in meas_wires:
-                            tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
-                        # connect local nodes of MPS (not connected by default in tn)
-                        if wire != self.num_wires - 1:
-                            tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
-                            tn.connect(conj_nodes[wire][2], conj_nodes[wire + 1][0])
-
-                    # contract MPS bonds first
-                    bra_node = conj_nodes[0]
-                    ket_node = self.mps.nodes[0]
-                    for wire in range(self.num_wires - 1):
-                        bra_node = tn.contract_between(bra_node, conj_nodes[wire + 1])
-                        ket_node = tn.contract_between(ket_node, self.mps.nodes[wire + 1])
-                    # contract observables into ket
-                    for obs_node in obs_nodes:
-                        ket_node = tn.contract_between(obs_node, ket_node)
-                    # contract bra into observables/ket
-                    expval_node = tn.contract_between(bra_node, ket_node)
-                    # remove dangling singleton edges
-                    expval = np.squeeze(expval_node.tensor)
+            expval = self._ev_mps(obs_nodes, wires, contraction_method)
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
