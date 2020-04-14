@@ -108,10 +108,11 @@ class DefaultTensor(Device):
 
     _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
-    def __init__(self, wires, shots=1000, analytic=True, representation="exact"):
+    def __init__(self, wires, shots=1000, analytic=True, representation="exact", contraction_method="auto"):
         super().__init__(wires, shots)
         self.analytic = analytic
         self._rep = representation
+        self._contraction_method = contraction_method
         self.reset()
 
     def reset(self):
@@ -226,19 +227,25 @@ class DefaultTensor(Device):
 
     def apply(self, operation, wires, par):
         if operation == "QubitStateVector" or operation == "BasisState":
-            self._apply_state_preps(operation, wires, par)
-        else:
-            self._apply_gate(operation, wires, par)
-
-    def _apply_state_preps(self, operation, wires, par):
-        """TODO"""
-        if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
-            raise ValueError(
-                "The default.tensor plugin can apply {} only to all of the {} wires.".format(
-                    operation, self.num_wires
+            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+                raise ValueError(
+                    "The default.tensor plugin can apply {} only to all of the {} wires.".format(
+                        operation, self.num_wires
+                    )
                 )
-            )
+            self._clear_network_data()
+            self._add_state_prep_nodes(operation, par)
+        else:
+            self._add_gate_nodes(operation, wires, par)
 
+    def _add_state_prep_nodes(self, operation, par):
+        """Add tensor network nodes related to the state preparations ``QubitStateVector`` and
+        ``BasisState`` operations.
+
+        Args:
+            operation (str): name of the state preparation operation
+            par (tuple): parameter values for the state preparation
+        """
         if operation == "QubitStateVector":
             state_vector = self._array(par[0], dtype=self.C_DTYPE)
             if state_vector.ndim == 1 and state_vector.shape[0] == 2 ** self.num_wires:
@@ -247,6 +254,7 @@ class DefaultTensor(Device):
                 name = [operation]
             else:
                 raise ValueError("State vector must be of length 2**wires.")
+
         elif operation == "BasisState":
             n = len(par[0])
             if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
@@ -261,11 +269,16 @@ class DefaultTensor(Device):
             wires_seq = [[w] for w in range(self.num_wires)]
             name = [operation] * self.num_wires
 
-        self._clear_network_data()
         self._add_initial_state_nodes(tensors, wires_seq, name)
 
-    def _apply_gate(self, operation, wires, par):
-        """TODO"""
+    def _add_gate_nodes(self, operation, wires, par):
+        """Add tensor network nodes related to the quantum gates.
+
+        Args:
+            operation (str): name of the gate operation
+            wires (Sequence[int]): subsystems the gate is applied on
+            par (tuple): parameter values for the gate
+        """
         A = self._get_operator_matrix(operation, par)
         num_wires = len(wires)
         A = self._reshape(A, [2] * num_wires * 2)
@@ -287,7 +300,7 @@ class DefaultTensor(Device):
             else:
                raise NotImplementedError("Multi-wire gates only supported for nearest-neighbour wire pairs.")
 
-    def create_nodes_from_tensors(self, tensors, wires, observable_names, key):
+    def _create_nodes_from_tensors(self, tensors, wires, observable_names, key):
         """Helper function for creating TensorNetwork nodes based on tensors.
 
         Args:
@@ -315,7 +328,7 @@ class DefaultTensor(Device):
             offset = len(w)
             tensors.append(self._reshape(A, [2] * offset * 2))
 
-        nodes = self.create_nodes_from_tensors(tensors, wires, observable, key="observables")
+        nodes = self._create_nodes_from_tensors(tensors, wires, observable, key="observables")
         return self.ev(nodes, wires)
 
     def var(self, observable, wires, par):
@@ -330,8 +343,8 @@ class DefaultTensor(Device):
             self._reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)
         ]
 
-        obs_nodes = self.create_nodes_from_tensors(tensors, wires, observable, key="observables")
-        obs_nodes_for_squares = self.create_nodes_from_tensors(
+        obs_nodes = self._create_nodes_from_tensors(tensors, wires, observable, key="observables")
+        obs_nodes_for_squares = self._create_nodes_from_tensors(
             tensors_of_squared_matrices, wires, observable, key="observables"
         )
 
@@ -376,9 +389,39 @@ class DefaultTensor(Device):
         outcomes = np.array([np.prod(p) for p in joint_outcomes])
         return np.random.choice(outcomes, self.shots, p=joint_probabilities)
 
-    def _ev_exact(self, obs_nodes, wires, contraction_method="auto"):
-        """TODO"""
-        self._contract_to_ket(contraction_method)
+    def ev(self, obs_nodes, wires):
+        r"""Expectation value of observables on specified wires.
+
+         Args:
+            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
+            wires (Sequence[Sequence[int]]): measured subsystems for each observable
+
+         Returns:
+            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
+        if self._rep == "exact":
+            expval = self._ev_exact(obs_nodes, wires)
+        elif self._rep == "mps":
+            expval = self._ev_mps(obs_nodes, wires)
+
+        if self._abs(self._imag(expval)) > TOL:
+            warnings.warn(
+                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+                RuntimeWarning,
+            )
+        return self._real(expval)
+
+    def _ev_exact(self, obs_nodes, wires):
+        r"""Expectation value of observables on specified wires using an exact representation.
+
+         Args:
+            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
+            wires (Sequence[Sequence[int]]): measured subsystems for each observable
+
+         Returns:
+            complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
+        self._contract_to_ket()
         ket = self._nodes["contracted_state"]
         bra = tn.conj(ket, name="Bra")
 
@@ -406,8 +449,15 @@ class DefaultTensor(Device):
             ket_and_observable_node = tn.contract_between(obs_node, ket_and_observable_node)
         return tn.contract_between(bra, ket_and_observable_node).tensor
 
-    def _ev_mps(self, obs_nodes, wires, contraction_method="auto"):
-        """TODO"""
+    def _ev_mps(self, obs_nodes, wires):
+        r"""Expectation value of observables on specified wires using a MPS representation.
+
+         Args:
+            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
+            wires (Sequence[Sequence[int]]): measured subsystems for each observable
+         Returns:
+            complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        """
         if any(len(wires_seq) > 2 for wires_seq in wires):
             raise NotImplementedError("Multi-wire measurement only supported for nearest-neighbour wire pairs.")
         else:
@@ -452,44 +502,15 @@ class DefaultTensor(Device):
                 expval = np.squeeze(expval_node.tensor)
             return expval
 
-    def ev(self, obs_nodes, wires, contraction_method="auto"):
-        r"""Expectation value of observables on specified wires.
-
-         Args:
-            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            wires (Sequence[Sequence[int]]): measured subsystems for each observable
-            contraction_method (str): The contraction method to be employed.
-                Possible choices are "auto", "greedy", "branch", or "optimal".
-                See TensorNetwork library documentation for more details.
-         Returns:
-            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
-        """
-        if self._rep == "exact":
-            expval = self._ev_exact(obs_nodes, wires, contraction_method)
-        elif self._rep == "mps":
-            expval = self._ev_mps(obs_nodes, wires, contraction_method)
-
-        if self._abs(self._imag(expval)) > TOL:
-            warnings.warn(
-                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
-                RuntimeWarning,
-            )
-        return self._real(expval)
-
-    def _contract_to_ket(self, contraction_method="auto"):
+    def _contract_to_ket(self):
         """Contract the nodes which represent the state preparation and gate applications to get the pre-measurement state.
 
         The contracted tensor is stored in the ``_nodes`` dictionary under the key ``"contracted_state"``.
-
-        Args:
-            contraction_method (str): The contraction method to be employed.
-                Possible choices are "auto", "greedy", "branch", or "optimal".
-                See TensorNetwork library documentation for more details.
         """
         if "contracted_state" not in self._nodes:
             if self._rep == "exact":
-                contract = contract_fns[contraction_method]
-                ket = contract(self._nodes["state"], output_edge_order=self._terminal_edges)
+                contract_fn = contract_fns[self._contraction_method]
+                ket = contract_fn(self._nodes["state"], output_edge_order=self._terminal_edges)
             elif self._rep == "mps":
                 # contract any mutual edges
                 # remove superfluous edges from first and last sites
@@ -506,22 +527,46 @@ class DefaultTensor(Device):
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
 
-    def _state(self, contraction_method="auto"):
+    def _state(self):
         """The numerical quantum state tensor.
 
         The state is obtained by contracting all the gates in the tensor network.
         An optional contraction method can be specified.
 
-        Args:
-            contraction_method (str): The contraction method to be employed.
-                Possible choices are "auto", "greedy", "branch", or "optimal".
-                See TensorNetwork library documentation for more details.
         Returns:
             (array, tf.Tensor, torch.Tensor): the numerical tensor
         """
-        self._contract_to_ket(contraction_method)
+        self._contract_to_ket()
         ket = self._nodes["contracted_state"]
         return np.squeeze(ket.tensor)
+
+    @property
+    def contraction_method(self):
+        """The contraction method used by the tensor network.
+           Possible options are "auto", "greedy", "branch", or "optimal".
+           See TensorNetwork library documentation for more details.
+        """
+        return self._contraction_method
+
+    @contraction_method.setter
+    def contraction_method(self, method):
+        """Changes the contraction method used by the tensor network.
+
+        Args:
+            method (str): The contraction method to be employed.
+                Possible options are "auto", "greedy", "branch", or "optimal".
+                See TensorNetwork library documentation for more details.
+
+        Raises:
+            ValueError: if ``method`` is not one of the supported options
+        """
+        if method not in contract_fns:
+            raise ValueError(
+                "The contraction method ``{}`` was not found. Supported methods are"
+                "'auto', 'greedy', 'branch', or 'optimal'.".format(method)
+            )
+
+        self._contraction_method = method
 
     @property
     def operations(self):
