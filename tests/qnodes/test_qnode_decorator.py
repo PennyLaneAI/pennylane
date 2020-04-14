@@ -102,9 +102,8 @@ def test_finite_diff_qubit_qnode(analytic, step_size):
 
 
 @pytest.mark.parametrize("order", [1, 2])
-def test_finite_diff_qubit_qnode_passing_order_through_decorator(order):
-    """Test that a finite-difference differentiable qubit QNode is correctly created when
-    diff_method='finite-diff' and the order is set through the decorator."""
+def test_setting_order(order):
+    """Test that the order is correctly set and reset in a finite-difference QNode."""
     dev = qml.device('default.qubit', wires=1)
 
     @qnode(dev, diff_method="finite-diff", order=order)
