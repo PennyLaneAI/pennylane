@@ -139,7 +139,7 @@ class TestMap:
         assert qc[1].ops[1].name == "PauliY"
         assert qc[1].ops[1].return_type == qml.operation.Variance
 
-    def test_invalid_obserable(self):
+    def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -149,6 +149,24 @@ class TestMap:
         with pytest.raises(ValueError, match="Some or all observables are not valid"):
             qml.map(template, obs_list, dev, measure=["expval", "var"])
 
+    def test_step_size_set(self):
+        """Test that the step size used for the finite differences
+        differentiation method was passed to the QNode instances using the
+        keyword arguments."""
+        dev = qml.device("default.qubit", wires=1)
+
+        obs_list = [qml.PauliX(0), qml.PauliY(0)]
+        template = lambda x, wires: qml.RX(x, wires=0)
+
+        qc = qml.map(template, obs_list, dev, measure=["expval", "var"], h=123)
+
+        qc(1)
+
+        assert len(qc) == 2
+
+        # Checking the h attribute which contains the step size
+        assert qc[0].h == 123
+        assert qc[1].h == 123
 
 class TestApply:
     """Tests for the apply function"""
