@@ -194,7 +194,9 @@ class VQECost:
     :doc:`optimizer </introduction/optimizers>`.
     """
 
-    def __init__(self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs):
+    def __init__(
+        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs
+    ):
         coeffs, observables = hamiltonian.terms
         self.hamiltonian = hamiltonian
         """Hamiltonian: the hamiltonian defining the VQE problem."""

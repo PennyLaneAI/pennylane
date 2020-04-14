@@ -27,7 +27,15 @@ from .qnode_collection import QNodeCollection
 MEASURE_MAP = {"expval": expval, "var": var, "sample": sample}
 
 
-def map(template, observables, device, measure="expval", interface="autograd", diff_method="best", **kwargs):
+def map(
+    template,
+    observables,
+    device,
+    measure="expval",
+    interface="autograd",
+    diff_method="best",
+    **kwargs
+):
     """Map a quantum template over a list of observables to create
     a :class:`QNodeCollection`.
 
