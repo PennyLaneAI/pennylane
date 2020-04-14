@@ -149,16 +149,16 @@ class TestMap:
         with pytest.raises(ValueError, match="Some or all observables are not valid"):
             qml.map(template, obs_list, dev, measure=["expval", "var"])
 
-    def test_step_size_set(self):
-        """Test that the step size used for the finite differences
-        differentiation method was passed to the QNode instances using the
+    def test_passing_kwargs(self):
+        """Test that the step size and order used for the finite differences
+        differentiation method were passed to the QNode instances using the
         keyword arguments."""
         dev = qml.device("default.qubit", wires=1)
 
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, measure=["expval", "var"], h=123)
+        qc = qml.map(template, obs_list, dev, measure=["expval", "var"], h=123, order=2)
 
         qc(1)
 
@@ -167,6 +167,11 @@ class TestMap:
         # Checking the h attribute which contains the step size
         assert qc[0].h == 123
         assert qc[1].h == 123
+
+        # Checking that the order is set in each QNode
+        assert qc[0].order == 2
+        assert qc[1].order == 2
+
 
 class TestApply:
     """Tests for the apply function"""
