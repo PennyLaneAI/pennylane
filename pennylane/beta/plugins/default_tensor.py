@@ -180,7 +180,6 @@ class DefaultTensor(Device):
                             # final wire; no need to split further
                             node = self._add_node(DV, wires=[wire], name=name)
                         nodes.append(node)
-            # TODO: might want to set canonicalize=False
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes, canonicalize=False)
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
@@ -212,47 +211,39 @@ class DefaultTensor(Device):
         return node
 
     def apply(self, operation, wires, par):
-        if operation == "QubitStateVector":
-            state = self._array(par[0], dtype=self.C_DTYPE)
-            if state.ndim == 1 and state.shape[0] == 2 ** self.num_wires:
-                tensor = self._reshape(state, [2] * self.num_wires)
-                self._clear_network_data()
-                self._add_initial_state_nodes(
-                    [tensor], [list(range(self.num_wires))], ["QubitStateVector"]
-                )
-            else:
-                raise ValueError("State vector must be of length 2**wires.")
+        if operation == "QubitStateVector" or operation == "BasisState":
+
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError(
-                    "The default.tensor plugin can apply QubitStateVector only to all of the {} wires.".format(
-                        self.num_wires
+                    "The default.tensor plugin can apply {} only to all of the {} wires.".format(
+                        operation, self.num_wires
                     )
                 )
-            return
-        if operation == "BasisState":
-            n = len(par[0])
-            if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
-                raise ValueError(
-                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
-                        self.num_wires
+
+            if operation == "QubitStateVector":
+                state_vector = self._array(par[0], dtype=self.C_DTYPE)
+                if state_vector.ndim == 1 and state_vector.shape[0] == 2 ** self.num_wires:
+                    tensors = [self._reshape(state_vector, [2] * self.num_wires)]
+                    wires_seq = [list(range(self.num_wires))]
+                    name = [operation]
+                else:
+                    raise ValueError("State vector must be of length 2**wires.")
+            elif operation == "BasisState":
+                n = len(par[0])
+                if n == 0 or n > self.num_wires or not set(par[0]).issubset({0, 1}):
+                    raise ValueError(
+                        "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
+                            self.num_wires
+                        )
                     )
-                )
-            full_wires_list = list(range(self.num_wires))
-            if wires is not None and wires != [] and list(wires) != full_wires_list:
-                raise ValueError(
-                    "The default.tensor plugin can apply BasisState only to all of the {} wires.".format(
-                        self.num_wires
-                    )
-                )
-            zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
-            one_vec = zero_vec[::-1]
-            tensors = [zero_vec if par[0][wire] == 0 else one_vec for wire in range(self.num_wires)]
+                zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
+                one_vec = zero_vec[::-1]
+                tensors = [zero_vec if par[0][wire] == 0 else one_vec for wire in range(self.num_wires)]
+                wires_seq = [[w] for w in range(self.num_wires)]
+                name = [operation] * self.num_wires
+
             self._clear_network_data()
-            self._add_initial_state_nodes(
-                tensors,
-                [[w] for w in range(self.num_wires)],
-                ["BasisState"] * self.num_wires,
-            )
+            self._add_initial_state_nodes(tensors, wires_seq, name)
             return
 
         A = self._get_operator_matrix(operation, par)
