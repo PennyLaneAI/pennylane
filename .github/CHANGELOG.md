@@ -186,10 +186,13 @@
 * Improved the performance of diagonal gates in the `default.qubit` plugin.
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
 
-* Added a step size keyword argument to the `qnode` decorator, `QNode` and
-  `JacobianQNode` classes to enable setting the step size when using finite
-  difference methods.
+* Added keyword arguments for step size and order to the `qnode` decorator, `QNode` and
+  `JacobianQNode` classes to enable setting the step size and order when using finite
+  difference methods. Exposed these options in `map` and `VQECost` for users creating collections
+  of QNodes.
   [(#530)](https://github.com/XanaduAI/pennylane/pull/530)
+  [(#585)](https://github.com/XanaduAI/pennylane/pull/585)
+  [(#587)](https://github.com/XanaduAI/pennylane/pull/587)
 
 * The decomposition for the `CRY` gate now uses the simpler form `RY @ CNOT @ RY @ CNOT`
   [(#547)](https://github.com/XanaduAI/pennylane/pull/547)
