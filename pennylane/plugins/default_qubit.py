@@ -249,29 +249,3 @@ class DefaultQubit(QubitDevice):
 
         prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
         return prob
-
-    def estimate_probability(self, wires=None):
-        """Return the estimated probability of each computational basis state using the generated samples."""
-
-        # consider only the requested wires
-        wires = np.hstack(wires)
-
-        samples = self._samples[:, np.array(wires)]
-
-        # convert samples from a list of 0, 1 integers, to base 10 representation
-        unraveled_indices = [2] * len(wires)
-        indices = np.ravel_multi_index(samples.T, unraveled_indices)
-
-        # count the basis state occurrences, and construct the probability vector
-        basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([len(wires) ** 2], dtype=np.float64)
-        prob[basis_states] = counts / self.shots
-        return prob
-
-    def probability(self, wires=None):
-        wires = wires or range(self.num_wires)
-
-        if self.analytic:
-            return self.analytic_probability(wires=wires)
-
-        return self.estimate_probability(wires=wires)
