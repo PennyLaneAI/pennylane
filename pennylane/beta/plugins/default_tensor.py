@@ -511,6 +511,8 @@ class DefaultTensor(Device):
                         tn.connect(prev_node[-1], node[0])
                         prev_node = tn.contract_between(prev_node, node)
                 ket = prev_node
+                # remove dangling singleton edges
+                ket.tensor = np.squeeze(ket.tensor)
             ket.set_name("Ket")
             self._nodes["contracted_state"] = ket
 
