@@ -561,6 +561,40 @@ def generate_hamiltonian(
     return convert_hamiltonian(h_of), nr_qubits
 
 
+def sd_configs(n_electrons, n_orbitals, delta_sz):
+    r"""Generates single and double excitations from a Hartree-Fock reference state
+
+    Args:
+        n_electrons (int): number of active electrons
+        n_orbitals (int): number of active orbitals
+        delta_sz (int): spin-projection selection rule i.e., ``sz[p]-sz[r] = delta_sz`` 
+
+    Returns:
+        tuple(list, list): indices of the molecular orbitals involved in the
+        single and double excitations
+    """
+
+    # define the spin quantum number 'sz' of each molecular orbital
+    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(n_orbitals)])
+
+    # build the singly-excited configurations (ph)
+    ph = [
+           [r, p] 
+           for r in range(n_electrons) for p in range(n_electrons, n_orbitals)
+           if sz[p]-sz[r] == delta_sz
+    ]
+
+    # build the doubly-excited configurations (pphh)
+    pphh = [
+             [s, r, q, p] 
+             for s in range(n_electrons-1) for r in range(s+1, n_electrons)
+             for q in range(n_act_electrons, n_orbitals-1) for p in range(q+1, n_orbitals)
+             if (sz[p] + sz[q] - sz[r] - sz[s]) == delta_sz
+    ]
+
+    return ph, pphh    
+
+
 __all__ = [
     "read_structure",
     "meanfield_data",
@@ -571,4 +605,5 @@ __all__ = [
     "_qubit_operators_equivalent",
     "convert_hamiltonian",
     "generate_hamiltonian",
+    "sd_configs",
 ]
