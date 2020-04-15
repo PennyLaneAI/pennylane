@@ -676,14 +676,27 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
-class DiagonalOperation(Operation, abc.ABC):
-    # TODO: Adjust docstring
-    r"""Baseclass for diagonal operations.
+class DiagonalOperation(Operation):
+    r"""Base class for diagonal quantum operations supported by a device.
 
-    The following class attributes must be defined for
-    all diagonal operations:
+    As with :class:`~.Operation`, the following class attributes must be
+    defined for all operations:
 
-    * :attr:`~.DiagonalOperation._diagonal`
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
+
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
+
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
 
     Args:
         params (tuple[float, int, array, Variable]): operation parameters
@@ -696,6 +709,7 @@ class DiagonalOperation(Operation, abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
+    # pylint: disable=abstract-method
 
     @abc.abstractstaticmethod
     def _diagonal(*params):
@@ -706,7 +720,7 @@ class DiagonalOperation(Operation, abc.ABC):
         new diagonal operations, that returns the array representing
         the operator's diagonal in the computational basis.
 
-        This private method allows matrices and diagonals to be computed
+        This private method allows diagonals to be computed
         directly without instantiating the operators first.
 
         To return the diagonal of *instantiated* operators,
