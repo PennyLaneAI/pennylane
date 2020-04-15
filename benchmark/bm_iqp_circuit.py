@@ -23,16 +23,15 @@ import pennylane as qml
 
 import benchmark_utils as bu
 
-CCZ_matrix = np.diag([1, 1, 1, 1, 1, 1, 1, -1])
+CCZ_diag = np.array([1, 1, 1, 1, 1, 1, 1, -1])
+CCZ_matrix = np.diag(CCZ_diag)
 
-@qml.template
-def CCZ(wires):
-    """Implements a CCZ gate.
-
-    Args:
-        wires (List[int]): The wires on which the CCZ shall act.
-    """
-    qml.QubitUnitary(CCZ_matrix, wires=wires)
+if hasattr(qml, "DiagonalQubitUnitary"):
+    print("Use DiagonalQubitUnitary")
+    CCZ = lambda wires: qml.DiagonalQubitUnitary(CCZ_diag, wires=wires)
+else:
+    print("Use QubitUnitary")
+    CCZ = lambda wires: qml.QubitUnitary(CCZ_matrix, wires=wires)
 
 
 def random_iqp_wires(n_wires):
