@@ -676,8 +676,9 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
-class DiagonalOperation(abc.ABC):
-    r"""Mixin for diagonal operations.
+class DiagonalOperation(Operation):
+    #TODO: Adjust docstring
+    r"""Baseclass for diagonal operations.
 
     The following class attributes must be defined for
     all diagonal operations:
@@ -695,10 +696,6 @@ class DiagonalOperation(abc.ABC):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
-
-    # We have to repeat some definitions from Operation here
-    inverse = False
-    parameters = []
 
     @abc.abstractstaticmethod
     def _diagonal(*params):
