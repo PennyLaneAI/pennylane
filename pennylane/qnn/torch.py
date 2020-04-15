@@ -16,22 +16,35 @@ API."""
 import inspect
 from collections.abc import Iterable
 from typing import Callable
-
-import torch
-from torch.nn import Module
-from pennylane.interfaces.torch import to_torch
 import functools
+
+import numpy as np
+
+try:
+    import torch
+    from torch.nn import Module
+    from pennylane.interfaces.torch import to_torch
+
+    TORCH_IMPORTED = True
+except ImportError:
+    # The following allows this module to be imported even if PyTorch is not installed. Users
+    # will instead see an ImportError when instantiating the TorchLayer.
+    from abc import ABC
+
+    Module = ABC
+    TORCH_IMPORTED = False
 
 uniform_ = functools.partial(torch.nn.init.uniform_, b=2 * np.pi)
 
 
 class TorchLayer(Module):
-    """Converts a :func:`~.QNode` to a PyTorch Layer(?)"""
+    """TODO"""
 
-    def __init__(
-            self, qnode, weight_shapes: dict, output_dim, init_method: Callable = uniform_
-    ):
+    def __init__(self, qnode, weight_shapes: dict, output_dim, init_method: Callable = uniform_):
+        if not TORCH_IMPORTED:
+            raise ImportError("TorchLayer requires PyTorch")
         super().__init__()
+
         self.sig = qnode.func.sig
 
         if self.input_arg not in self.sig:
@@ -74,16 +87,18 @@ class TorchLayer(Module):
                 "Only the argument {} is permitted to have a default".format(self.input_arg)
             )
 
-        self.qnode_weights = {weight: init_method(torch.nn.Parameter(torch.Tensor(*size))) for
-                              weight, size in weight_shapes.items()}
+        self.qnode_weights = {
+            weight: init_method(torch.nn.Parameter(torch.Tensor(*size)))
+            for weight, size in weight_shapes.items()
+        }
         for name, weight in self.qnode_weights.items():
             self.register_parameter(name, weight)
 
-    def forward(self, inputs):
+    def forward(self, inputs):  # pylint: disable=arguments-differ
         if len(inputs.shape) == 1:
             return self._evaluate_qnode(inputs)
-        else:
-            return torch.stack([self._evaluate_qnode(x) for x in inputs])
+
+        return torch.stack([self._evaluate_qnode(x) for x in inputs])
 
     def _evaluate_qnode(self, x):
         qnode = self.qnode
@@ -107,7 +122,5 @@ class TorchLayer(Module):
 
     @property
     def input_arg(self):
-        """Name of the argument to be used as the input to the Torch
-        `Layer <https://www.tensorflow.org/api_docs/python/tf/Torch/layers/Layer>`__. Set to
-        ``"inputs"``."""
+        """TODO"""
         return self._input_arg
