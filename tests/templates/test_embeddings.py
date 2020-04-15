@@ -329,6 +329,21 @@ class TestBasisEmbedding:
         with pytest.raises(ValueError, match="'basis_state' must only consist of"):
             circuit(x=[2, 3])
 
+    def test_basis_embedding_features_not_iterable_exception(self):
+        """Verifies that BasisEmbedding() raises an exception if the features are not
+        of type Iterable."""
+
+        n_subsystems = 2
+        dev = qml.device('default.qubit', wires=n_subsystems)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            BasisEmbedding(features=x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="'features' must be iterable"):
+            circuit(x=1)
+
 
 class TestQAOAEmbedding:
     """ Tests the QAOAEmbedding method."""
