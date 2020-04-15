@@ -13,12 +13,11 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Torch Module
 API."""
+import functools
 import inspect
+import math
 from collections.abc import Iterable
 from typing import Callable
-import functools
-
-import numpy as np
 
 try:
     import torch
@@ -34,7 +33,7 @@ except ImportError:
     Module = ABC
     TORCH_IMPORTED = False
 
-uniform_ = functools.partial(torch.nn.init.uniform_, b=2 * np.pi)
+uniform_ = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
 
 
 class TorchLayer(Module):
