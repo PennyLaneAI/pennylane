@@ -21,6 +21,8 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 Gaussian-based quantum circuit architecture.
 """
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
+import math
+import cmath
 import numpy as np
 
 from scipy.special import factorial as fac
@@ -125,7 +127,7 @@ def fock_prob(mu, cov, event, hbar=2.0):
     # 1/sqrt(|Q|)
     sqrt_Qdet = 1 / np.sqrt(np.linalg.det(Q).real)
 
-    prefactor = np.exp(-beta @ Qinv @ beta.conj() / 2)
+    prefactor = cmath.exp(-beta @ Qinv @ beta.conj() / 2)
 
     if np.all(np.array(event) == 0):
         # all PNRs detect the vacuum state
@@ -169,7 +171,7 @@ def rotation(phi):
     Returns:
         array: symplectic transformation matrix
     """
-    return np.array([[np.cos(phi), -np.sin(phi)], [np.sin(phi), np.cos(phi)]])
+    return np.array([[math.cos(phi), -math.sin(phi)], [math.sin(phi), math.cos(phi)]])
 
 
 def displacement(state, wire, alpha, hbar=2):
@@ -199,10 +201,10 @@ def squeezing(r, phi):
     Returns:
         array: symplectic transformation matrix
     """
-    cp = np.cos(phi)
-    sp = np.sin(phi)
-    ch = np.cosh(r)
-    sh = np.sinh(r)
+    cp = math.cos(phi)
+    sp = math.sin(phi)
+    ch = math.cosh(r)
+    sh = math.sinh(r)
     return np.array([[ch - cp * sh, -sp * sh], [-sp * sh, ch + cp * sh]])
 
 
@@ -228,10 +230,10 @@ def beamsplitter(theta, phi):
     Returns:
         array: symplectic transformation matrix
     """
-    cp = np.cos(phi)
-    sp = np.sin(phi)
-    ct = np.cos(theta)
-    st = np.sin(theta)
+    cp = math.cos(phi)
+    sp = math.sin(phi)
+    ct = math.cos(theta)
+    st = math.sin(theta)
 
     S = np.array(
         [
@@ -256,10 +258,10 @@ def two_mode_squeezing(r, phi):
     Returns:
         array: symplectic transformation matrix
     """
-    cp = np.cos(phi)
-    sp = np.sin(phi)
-    ch = np.cosh(r)
-    sh = np.sinh(r)
+    cp = math.cos(phi)
+    sp = math.sin(phi)
+    ch = math.cosh(r)
+    sh = math.sinh(r)
 
     S = np.array(
         [
@@ -335,7 +337,7 @@ def squeezed_cov(r, phi, hbar=2):
     Returns:
         array: the squeezed state
     """
-    cov = np.array([[np.exp(-2 * r), 0], [0, np.exp(2 * r)]]) * hbar / 2
+    cov = np.array([[math.exp(-2 * r), 0], [0, math.exp(2 * r)]]) * hbar / 2
 
     R = rotation(phi / 2)
 
@@ -369,7 +371,7 @@ def coherent_state(a, phi=0, hbar=2.0):
     Returns:
         array: the coherent state
     """
-    alpha = a * np.exp(1j * phi)
+    alpha = a * cmath.exp(1j * phi)
     means = np.array([alpha.real, alpha.imag]) * np.sqrt(2 * hbar)
     cov = np.identity(2) * hbar / 2
     state = [means, cov]
@@ -407,7 +409,7 @@ def displaced_squeezed_state(a, phi_a, r, phi_r, hbar=2.0):
     Returns:
         array: the squeezed coherent state
     """
-    alpha = a * np.exp(1j * phi_a)
+    alpha = a * cmath.exp(1j * phi_a)
     means = np.array([alpha.real, alpha.imag]) * np.sqrt(2 * hbar)
     state = [means, squeezed_cov(r, phi_r, hbar)]
     return state
@@ -699,7 +701,7 @@ class DefaultGaussian(Device):
 
     def apply(self, operation, wires, par):
         if operation == "Displacement":
-            self._state = displacement(self._state, wires[0], par[0] * np.exp(1j * par[1]))
+            self._state = displacement(self._state, wires[0], par[0] * cmath.exp(1j * par[1]))
             return  # we are done here
 
         if operation == "GaussianState":

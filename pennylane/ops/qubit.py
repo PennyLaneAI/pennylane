@@ -16,6 +16,8 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import math
+import cmath
 import functools
 import numpy as np
 from scipy.linalg import block_diag
@@ -228,11 +230,11 @@ class T(DiagonalOperation):
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
+        return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
     def _diagonal(*params):
-        return np.array([1, np.exp(1j * np.pi / 4)])
+        return np.array([1, cmath.exp(1j * np.pi / 4)])
 
 
 class CNOT(Operation):
@@ -438,7 +440,7 @@ class RX(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliX._matrix()
+        return math.cos(theta / 2) * np.eye(2) + 1j * math.sin(-theta / 2) * PauliX._matrix()
 
 
 class RY(Operation):
@@ -470,7 +472,7 @@ class RY(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
+        return math.cos(theta / 2) * np.eye(2) + 1j * math.sin(-theta / 2) * PauliY._matrix()
 
 
 class RZ(DiagonalOperation):
@@ -502,15 +504,15 @@ class RZ(DiagonalOperation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliZ._matrix()
+        return math.cos(theta / 2) * np.eye(2) + 1j * math.sin(-theta / 2) * PauliZ._matrix()
 
     @staticmethod
     def _diagonal(*params):
         theta = params[0]
         return np.array(
             [
-                np.cos(theta / 2) + 1j * np.sin(-theta / 2),
-                np.cos(theta / 2) - 1j * np.sin(-theta / 2),
+                math.cos(theta / 2) + 1j * math.sin(-theta / 2),
+                math.cos(theta / 2) - 1j * math.sin(-theta / 2),
             ]
         )
 
@@ -544,12 +546,12 @@ class PhaseShift(DiagonalOperation):
     @staticmethod
     def _matrix(*params):
         phi = params[0]
-        return np.array([[1, 0], [0, np.exp(1j * phi)]])
+        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
 
     @staticmethod
     def _diagonal(*params):
         phi = params[0]
-        return np.array([1, np.exp(1j * phi)])
+        return np.array([1, cmath.exp(1j * phi)])
 
 
 class Rot(Operation):
@@ -983,8 +985,8 @@ class CRZ(DiagonalOperation):
             [
                 1,
                 1,
-                np.cos(theta / 2) + 1j * np.sin(-theta / 2),
-                np.cos(theta / 2) - 1j * np.sin(-theta / 2),
+                math.cos(theta / 2) + 1j * math.sin(-theta / 2),
+                math.cos(theta / 2) - 1j * math.sin(-theta / 2),
             ]
         )
 
@@ -1256,9 +1258,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
     @staticmethod
     def decomposition(D, wires):
-        return [
-            QubitUnitary(np.diag(D), wires=wires)
-        ]
+        return [QubitUnitary(np.diag(D), wires=wires)]
 
 
 # =============================================================================

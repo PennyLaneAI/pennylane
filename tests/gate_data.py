@@ -1,4 +1,6 @@
 """Convenience gate representations for testing"""
+import math
+import cmath
 import numpy as np
 
 # ========================================================
@@ -17,7 +19,7 @@ CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])  #: CN
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])  #: SWAP gate
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
 S = np.array([[1, 0], [0, 1j]])  #: Phase Gate
-T = np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])  #: T Gate
+T = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])  #: T Gate
 # Three qubit gates
 CSWAP = np.array(
     [
@@ -48,7 +50,7 @@ def Rphi(phi):
     Returns:
         array: unitary 2x2 phase shift matrix
     """
-    return np.array([[1, 0], [0, np.exp(1j * phi)]])
+    return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
 
 
 def Rotx(theta):
@@ -59,7 +61,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * X
+    return math.cos(theta / 2) * I + 1j * math.sin(-theta / 2) * X
 
 
 def Roty(theta):
@@ -70,7 +72,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Y
+    return math.cos(theta / 2) * I + 1j * math.sin(-theta / 2) * Y
 
 
 def Rotz(theta):
@@ -81,7 +83,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Z
+    return math.cos(theta / 2) * I + 1j * math.sin(-theta / 2) * Z
 
 
 def Rot3(a, b, c):
@@ -107,8 +109,8 @@ def CRotx(theta):
         [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
-            [0, 0, np.cos(theta / 2), -1j * np.sin(theta / 2)],
-            [0, 0, -1j * np.sin(theta / 2), np.cos(theta / 2)],
+            [0, 0, math.cos(theta / 2), -1j * math.sin(theta / 2)],
+            [0, 0, -1j * math.sin(theta / 2), math.cos(theta / 2)],
         ]
     )
 
@@ -125,8 +127,8 @@ def CRoty(theta):
         [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
-            [0, 0, np.cos(theta / 2), -np.sin(theta / 2)],
-            [0, 0, np.sin(theta / 2), np.cos(theta / 2)],
+            [0, 0, math.cos(theta / 2), -math.sin(theta / 2)],
+            [0, 0, math.sin(theta / 2), math.cos(theta / 2)],
         ]
     )
 
@@ -143,8 +145,8 @@ def CRotz(theta):
         [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
-            [0, 0, np.exp(-1j * theta / 2), 0],
-            [0, 0, 0, np.exp(1j * theta / 2)],
+            [0, 0, cmath.exp(-1j * theta / 2), 0],
+            [0, 0, 0, cmath.exp(1j * theta / 2)],
         ]
     )
 
@@ -164,14 +166,14 @@ def CRot3(a, b, c):
             [
                 0,
                 0,
-                np.exp(-1j * (a + c) / 2) * np.cos(b / 2),
-                -np.exp(1j * (a - c) / 2) * np.sin(b / 2),
+                cmath.exp(-1j * (a + c) / 2) * math.cos(b / 2),
+                -cmath.exp(1j * (a - c) / 2) * math.sin(b / 2),
             ],
             [
                 0,
                 0,
-                np.exp(-1j * (a - c) / 2) * np.sin(b / 2),
-                np.exp(1j * (a + c) / 2) * np.cos(b / 2),
+                cmath.exp(-1j * (a - c) / 2) * math.sin(b / 2),
+                cmath.exp(1j * (a + c) / 2) * math.cos(b / 2),
             ],
         ]
     )
