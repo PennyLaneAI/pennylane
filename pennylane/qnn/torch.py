@@ -17,7 +17,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable
+from typing import Callable, Optional
 
 try:
     import torch
@@ -33,13 +33,12 @@ except ImportError:
     Module = ABC
     TORCH_IMPORTED = False
 
-uniform_ = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
-
 
 class TorchLayer(Module):
     """TODO"""
 
-    def __init__(self, qnode, weight_shapes: dict, output_dim, init_method: Callable = uniform_):
+    def __init__(self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] =
+    None):
         if not TORCH_IMPORTED:
             raise ImportError("TorchLayer requires PyTorch")
         super().__init__()
@@ -86,12 +85,13 @@ class TorchLayer(Module):
                 "Only the argument {} is permitted to have a default".format(self.input_arg)
             )
 
-        self.qnode_weights = {
-            weight: init_method(torch.nn.Parameter(torch.Tensor(*size)))
-            for weight, size in weight_shapes.items()
-        }
-        for name, weight in self.qnode_weights.items():
-            self.register_parameter(name, weight)
+        if not init_method:
+            init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
+
+        self.qnode_weights = {}
+        for name, size in weight_shapes.items():
+            self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
+            self.register_parameter(name, self.qnode_weights[name])
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         if len(inputs.shape) == 1:
