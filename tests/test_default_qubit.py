@@ -259,6 +259,9 @@ class TestApply:
          [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
         (qml.QubitUnitary, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1j],
          [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
+        (qml.DiagonalQubitUnitary, [1, 0], [-1, 0], [np.array([-1, 1])]),
+        (qml.DiagonalQubitUnitary, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1j / math.sqrt(2)], [np.array([1, 1j])]),
+        (qml.DiagonalQubitUnitary, [1 / 2, math.sqrt(3) / 4], [cmath.exp(1j * 0.4) / 2, cmath.exp(1j * -0.4) * math.sqrt(3) / 4], [np.array([cmath.exp(1j * 0.4), cmath.exp(1j * -0.4)])]),
     ]
 
     test_data_single_wire_with_parameters_inverses = [
@@ -280,6 +283,9 @@ class TestApply:
         (qml.MultiRZ, [0, 1], [0, -1j], [math.pi]),
         (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2)],
          [1 / 2 + 1/2*1j, 1 / 2 - 1/2*1j], [math.pi / 2]),
+        (qml.DiagonalQubitUnitary, [1, 0], [-1, 0], [np.array([-1, 1])]),
+        (qml.DiagonalQubitUnitary, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1j / math.sqrt(2)], [np.array([1, 1j])]),
+        (qml.DiagonalQubitUnitary, [1 / 2, math.sqrt(3) / 4], [cmath.exp(-1j * 0.4) / 2, cmath.exp(1j * 0.4) * math.sqrt(3) / 4], [np.array([cmath.exp(1j * 0.4), cmath.exp(1j * -0.4)])]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_single_wire_with_parameters)
@@ -333,6 +339,9 @@ class TestApply:
         (qml.QubitUnitary, [1 / 2, 1 / 2, -1 / 2, 1 / 2], [1 / 2, 0, 1 / math.sqrt(2), 1 / 2], [np.array(
             [[1, 0, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
              [0, 0, 0, 1]])]),
+        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], [1/math.sqrt(2), 0, 0, -1/math.sqrt(2)], [np.array([1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, 1j, 0], [np.array([-1, 1j, 1j, -1])]),
     ]
 
     test_data_two_wires_with_parameters_inverses = [
@@ -343,6 +352,9 @@ class TestApply:
         (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.MultiRZ, [0, 0, 1, 0], [0, 0, -1j, 0], [math.pi]),
         (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 + 1j / 2, 1 / 2 - 1j / 2, 0, 0], [math.pi / 2]),
+        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], [1/math.sqrt(2), 0, 0, -1/math.sqrt(2)], [np.array([1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, -1j, 0], [np.array([-1, 1j, 1j, -1])]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_two_wires_with_parameters)
