@@ -200,24 +200,25 @@ class TestTorchLayer:
         circuit_out = c(x, *weights)
         assert np.allclose(layer_out, circuit_out)
 
-    # @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    # def test_forward_single_input(self, get_circuit, output_dim, n_qubits):
-    #     """Test if the forward() method accepts a single input (i.e., not with an extra batch
-    #     dimension) and returns a tensor of the right shape"""
-    #     c, w = get_circuit
-    #     layer = TorchLayer(c, w, output_dim)
-    #     x = torch.Tensor(np.ones(n_qubits))
-    #
-    #     layer_out = layer.forward(x)
-    #     assert layer_out.shape == torch.Size((output_dim,))
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    def test_forward_single_input(self, get_circuit, output_dim, n_qubits):
+        """Test if the forward() method accepts a single input (i.e., not with an extra batch
+        dimension) and returns a tensor of the right shape"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w, output_dim)
+        x = torch.Tensor(np.ones(n_qubits))
 
-    # @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    # def test_forward(self, get_circuit, output_dim, n_qubits):
-    #     c, w = get_circuit
-    #     layer = TorchLayer(c, w, output_dim)
-    #     x = torch.Tensor(np.ones((5, n_qubits)))
-    #
-    #     layer_out = layer.forward(x)
-    #     # print(layer_out)
-    #     # assert layer_out.shape == torch.Size((2, output_dim))
+        layer_out = layer.forward(x)
+        assert layer_out.shape == torch.Size((output_dim,))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    def test_forward(self, get_circuit, output_dim, n_qubits):
+        """Test if the forward() method accepts a batched input and returns a tensor of the right
+        shape"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w, output_dim)
+        x = torch.Tensor(np.ones((2, n_qubits)))
+
+        layer_out = layer.forward(x)
+        assert layer_out.shape == torch.Size((2, output_dim))
 
