@@ -27,7 +27,6 @@ import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
-from pennylane.utils import expand_vector
 
 ABC_ARRAY = np.array(list(ABC))
 
