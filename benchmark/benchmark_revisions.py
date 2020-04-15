@@ -110,7 +110,7 @@ def cli():
         benchmark_env = os.environ.copy()
         benchmark_env["PYTHONPATH"] = pl_directory + ";" + benchmark_env["PATH"]
         subprocess.run(
-            ["python", benchmark_file_path] + unknown_args + ["--noinfo"],
+            ["python3", benchmark_file_path] + unknown_args + ["--noinfo"],
             env=benchmark_env,
             check=True,
         )
