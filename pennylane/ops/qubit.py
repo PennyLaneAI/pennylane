@@ -1222,6 +1222,39 @@ class QubitUnitary(Operation):
         return U
 
 
+class DiagonalQubitUnitary(DiagonalOperation):
+    r"""DiagonalQubitUnitary(D, wires)
+    Apply an arbitrary fixed diagonal unitary matrix.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        D (array[complex]): diagonal of unitary matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+    num_params = 1
+    num_wires = Any
+    par_domain = "A"
+    grad_method = None
+
+    @staticmethod
+    def _matrix(*params):
+        return np.diag(DiagonalQubitUnitary._diagonal(*params))
+
+    @staticmethod
+    def _diagonal(*params):
+        D = np.asarray(params[0])
+
+        if not np.allclose(D * D.conj(), np.ones_like(D)):
+            raise ValueError("Operator must be unitary.")
+
+        return D
+
+
 # =============================================================================
 # State preparation
 # =============================================================================
