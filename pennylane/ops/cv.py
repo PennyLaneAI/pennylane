@@ -33,7 +33,6 @@ quantum operations supported by PennyLane, as well as their conventions.
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
 import math
-import cmath
 import numpy as np
 from scipy.linalg import block_diag
 

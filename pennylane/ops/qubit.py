@@ -20,7 +20,6 @@ import math
 import cmath
 import functools
 import numpy as np
-from scipy.linalg import block_diag
 
 from pennylane.templates import template
 from pennylane.operation import Any, Observable, Operation, DiagonalOperation

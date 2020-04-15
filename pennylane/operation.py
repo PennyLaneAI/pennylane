@@ -676,7 +676,7 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
-class DiagonalOperation(Operation):
+class DiagonalOperation(Operation, abc.ABC):
     # TODO: Adjust docstring
     r"""Baseclass for diagonal operations.
 
