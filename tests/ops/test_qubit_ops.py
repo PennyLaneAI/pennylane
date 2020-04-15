@@ -915,3 +915,17 @@ class TestMultiRZ:
         assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
             np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
         )
+
+
+class TestDiagonalQubitUnitary:
+    """Test the DiagonalQubitUnitary operation."""
+
+    def test_decomposition(self):
+        """Test that DiagonalQubitUnitary falls back to QubitUnitary."""
+        D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
+
+        decomp = qml.DiagonalQubitUnitary.decomposition(D, [0, 1, 2])
+
+        assert decomp[0].name == "QubitUnitary"
+        assert decomp[0].wires == [0, 1, 2]
+        assert np.allclose(decomp[0].params[0], np.diag(D))
