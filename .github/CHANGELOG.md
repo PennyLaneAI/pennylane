@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane's benchmarking tool now supports the comparison of different revisions.
+  [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
+
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
