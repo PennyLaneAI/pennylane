@@ -31,6 +31,18 @@ The script has three main functions.
   The performance plot shows the execution time of the benchmark as a function of a scalar
   "size parameter" ``n``, the exact meaning of which depends on each benchmark.
 
+Comparing Revisions
+-------------------
+
+An additional script ``benchmark_revisions.py`` enables the comparative benchmarking of different
+revisions of PennyLane. It calls upon ``benchmark.py`` and thus supports all its different arguments.
+The revisions -- including branches, tags and commits -- are specified via ``-r revision1[,revision2[,revision3...]]``,
+as in
+
+  python3 benchmark_revisions.py -r master,0c8e90a -d default.qubit,default.tensor time bm_mutable_rotations
+
+The chosen revisions will be downloaded and cached into the ``revisions`` subdirectory of the benchmarking folder.
+They are not automatically removed, if you wish to free up space you have to remove them by hand. 
 
 Installation
 ------------
@@ -69,3 +81,5 @@ Included benchmarks
   then evaluates it and its Jacobian. The size parameter ``n`` is the number of layers.
 * ``bm_mutable_rotations``: Evaluates a mutable QNode consisting of ``k`` simple rotations on one qubit
   several times, varying ``k`` from 0 to ``n``. The qfunc is called each time due to the mutability.
+* ``bm_iqp_circuit``:  Evaluates an IQP circuit on ``w`` wires with ``n*w`` gates randomly chosen from the 
+  set ``Z``, ``CZ`` and ``CCZ``.
