@@ -1457,6 +1457,7 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
+    "DiagonalQubitUnitary",
 }
 
 
