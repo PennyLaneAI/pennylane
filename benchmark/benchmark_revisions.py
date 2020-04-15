@@ -100,9 +100,7 @@ def cli():
             print(">>> Revision not found locally, cloning...")
             os.mkdir(pl_directory)
             with cd(pl_directory):
-                subprocess.run(
-                    "git clone https://www.github.com/xanaduai/pennylane . -q"
-                )
+                subprocess.run("git clone https://www.github.com/xanaduai/pennylane . -q")
                 subprocess.run("git checkout {} -q".format(revision))
 
         benchmark_file_path = os.path.join(
