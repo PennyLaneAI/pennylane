@@ -194,13 +194,15 @@ class VQECost:
     :doc:`optimizer </introduction/optimizers>`.
     """
 
-    def __init__(self, ansatz, hamiltonian, device, interface="autograd", diff_method="best"):
+    def __init__(
+        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs
+    ):
         coeffs, observables = hamiltonian.terms
         self.hamiltonian = hamiltonian
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
         self.qnodes = qml.map(
-            ansatz, observables, device, interface=interface, diff_method=diff_method
+            ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
         )
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the
         the expectation value of each observable term after applying the circuit ansatz.
