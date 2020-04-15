@@ -144,7 +144,7 @@ class PauliY(Observable, Operation):
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
 
-class PauliZ(Observable, Operation, DiagonalOperation):
+class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
     The Pauli Z operator
 
@@ -175,7 +175,7 @@ class PauliZ(Observable, Operation, DiagonalOperation):
         return []
 
 
-class S(Operation, DiagonalOperation):
+class S(DiagonalOperation):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -205,7 +205,7 @@ class S(Operation, DiagonalOperation):
         return np.array([1, 1j])
 
 
-class T(Operation, DiagonalOperation):
+class T(DiagonalOperation):
     r"""T(wires)
     The single-qubit T gate
 
@@ -265,7 +265,7 @@ class CNOT(Operation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
-class CZ(Operation, DiagonalOperation):
+class CZ(DiagonalOperation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -473,7 +473,7 @@ class RY(Operation):
         return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
 
 
-class RZ(Operation, DiagonalOperation):
+class RZ(DiagonalOperation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -515,7 +515,7 @@ class RZ(Operation, DiagonalOperation):
         )
 
 
-class PhaseShift(Operation, DiagonalOperation):
+class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -598,7 +598,7 @@ class Rot(Operation):
         return decomp_ops
 
 
-class MultiRZ(Operation, DiagonalOperation):
+class MultiRZ(DiagonalOperation):
     r"""MultiRZ(theta, wires)
     Arbitrary multi Z rotation.
 
@@ -926,7 +926,7 @@ class CRY(Operation):
         return decomp_ops
 
 
-class CRZ(Operation, DiagonalOperation):
+class CRZ(DiagonalOperation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
