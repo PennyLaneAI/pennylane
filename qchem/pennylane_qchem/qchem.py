@@ -564,27 +564,32 @@ def generate_hamiltonian(
 def sd_configs(n_electrons, n_orbitals, delta_sz):
     r"""Generates single and double excitations from a Hartree-Fock reference state
 
-    Args:
-        n_electrons (int): number of active electrons
+    Args: 
+        n_electrons (int): number of active electrons 
         n_orbitals (int): number of active orbitals
-        delta_sz (int): spin-projection selection rule i.e., ``sz[p]-sz[r] = delta_sz`` 
+        delta_sz (int): spin-projection selection rule. 
+            For single excitations ``sz[p] - sz[r] = delta_sz``.
+            For double excitations ``sz[p] + sz[p] - sz[r] - sz[s] = delta_sz``.
+            The indices ``p, q`` and ``r, s`` run over the virtual and occupied orbitals, 
+            respectively. ``sz`` is the spin quantum and ``delta_sz`` can take the values 
+            :math:`0`, :math:`\pm 1` and :math:`\pm 2`.
 
     Returns:
-        tuple(list, list): indices of the molecular orbitals involved in the
-        single and double excitations
+        tuple(list, list): nested lists with the indices of the molecular orbitals
+        involved in the single and double excitations
     """
 
-    # define the spin quantum number 'sz' of each molecular orbital
+    # define the spin quantum number 'sz' of each orbital
     sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(n_orbitals)])
 
-    # build the singly-excited configurations (ph)
+    # nested list with the indices 'p, r' for each 1particle-1hole (ph) configuration
     ph = [
            [r, p] 
            for r in range(n_electrons) for p in range(n_electrons, n_orbitals)
            if sz[p]-sz[r] == delta_sz
     ]
 
-    # build the doubly-excited configurations (pphh)
+    # nested list with the indices 's, r, q, p' for each 2particle-2hole (pphh) configuration
     pphh = [
              [s, r, q, p] 
              for s in range(n_electrons-1) for r in range(s+1, n_electrons)
