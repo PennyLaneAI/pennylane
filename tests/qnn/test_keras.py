@@ -246,7 +246,7 @@ class TestKerasLayer:
         (batch_size, output_dim) with results that agree with directly calling the QNode"""
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
-        x = np.ones((batch_size, n_qubits), dtype=np.float32)
+        x = tf.ones((batch_size, n_qubits))
 
         layer_out = layer(x)
         weights = [w.numpy() for w in layer.qnode_weights.values()]
