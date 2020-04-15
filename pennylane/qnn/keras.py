@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes and functions for integrating QNodes with the Keras Layer API."""
+"""This module contains the classes and functions for integrating QNodes with the Keras Layer
+API."""
 import functools
 import inspect
 from collections.abc import Iterable
