@@ -90,7 +90,10 @@ class TorchLayer(Module):
 
         self.qnode_weights = {}
         for name, size in weight_shapes.items():
-            self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
+            if len(size) == 0:
+                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(1))[0])
+            else:
+                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
             self.register_parameter(name, self.qnode_weights[name])
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
@@ -105,6 +108,7 @@ class TorchLayer(Module):
         for arg in self.sig:
             if arg is not self.input_arg:  # Non-input arguments must always be positional
                 w = self.qnode_weights[arg]
+
                 qnode = functools.partial(qnode, w)
             else:
                 if self.input_is_default:  # The input argument can be positional or keyword
