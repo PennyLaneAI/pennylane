@@ -677,7 +677,7 @@ class Operation(Operator):
 
 
 class DiagonalOperation(Operation):
-    #TODO: Adjust docstring
+    # TODO: Adjust docstring
     r"""Baseclass for diagonal operations.
 
     The following class attributes must be defined for
