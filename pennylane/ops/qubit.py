@@ -440,7 +440,10 @@ class RX(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return math.cos(theta / 2) * np.eye(2) + 1j * math.sin(-theta / 2) * PauliX._matrix()
+        c = math.cos(theta / 2)
+        js = 1j * math.sin(-theta / 2)
+
+        return np.array([[c, js], [js, c]])
 
 
 class RY(Operation):
@@ -472,7 +475,10 @@ class RY(Operation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return math.cos(theta / 2) * np.eye(2) + 1j * math.sin(-theta / 2) * PauliY._matrix()
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[c, -s], [s, c]])
 
 
 class RZ(DiagonalOperation):
@@ -504,17 +510,12 @@ class RZ(DiagonalOperation):
     @staticmethod
     def _matrix(*params):
         theta = params[0]
-        return math.cos(theta / 2) * np.eye(2) + 1j * math.sin(-theta / 2) * PauliZ._matrix()
+        return np.array([[cmath.exp(-0.5j * theta), 0], [0, cmath.exp(0.5j * theta)]])
 
     @staticmethod
     def _diagonal(*params):
         theta = params[0]
-        return np.array(
-            [
-                math.cos(theta / 2) + 1j * math.sin(-theta / 2),
-                math.cos(theta / 2) - 1j * math.sin(-theta / 2),
-            ]
-        )
+        return np.array([cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
 
 class PhaseShift(DiagonalOperation):
@@ -591,8 +592,16 @@ class Rot(Operation):
 
     @staticmethod
     def _matrix(*params):
-        a, b, c = params
-        return RZ._matrix(c) @ (RY._matrix(b) @ RZ._matrix(a))
+        phi, theta, omega = params
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
+                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+            ]
+        )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
@@ -852,7 +861,11 @@ class CRX(Operation):
 
     @staticmethod
     def _matrix(*params):
-        return block_diag(np.eye(2), RX._matrix(*params))
+        theta = params[0]
+        c = math.cos(theta / 2)
+        js = 1j * math.sin(-theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -915,7 +928,11 @@ class CRY(Operation):
 
     @staticmethod
     def _matrix(*params):
-        return block_diag(np.eye(2), RY._matrix(*params))
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -976,19 +993,20 @@ class CRZ(DiagonalOperation):
 
     @staticmethod
     def _matrix(*params):
-        return block_diag(np.eye(2), RZ._matrix(*params))
+        theta = params[0]
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, cmath.exp(-0.5j * theta), 0],
+                [0, 0, 0, cmath.exp(0.5j * theta)],
+            ]
+        )
 
     @staticmethod
     def _diagonal(*params):
         theta = params[0]
-        return np.array(
-            [
-                1,
-                1,
-                math.cos(theta / 2) + 1j * math.sin(-theta / 2),
-                math.cos(theta / 2) - 1j * math.sin(-theta / 2),
-            ]
-        )
+        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
     @staticmethod
     def decomposition(lam, wires):
@@ -1035,8 +1053,18 @@ class CRot(Operation):
 
     @staticmethod
     def _matrix(*params):
-        a, b, c = params
-        return CRZ._matrix(c) @ (CRY._matrix(b) @ CRZ._matrix(a))
+        phi, theta, omega = params
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
+                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+            ]
+        )
 
 
 class U1(Operation):
@@ -1071,7 +1099,8 @@ class U1(Operation):
 
     @staticmethod
     def _matrix(*params):
-        return PhaseShift._matrix(*params)
+        phi = params[0]
+        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1120,7 +1149,9 @@ class U2(Operation):
     @staticmethod
     def _matrix(*params):
         phi, lam = params
-        return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, np.pi / 2, -lam)
+        return (1 / math.sqrt(2)) * np.array(
+            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
+        )
 
     @staticmethod
     def decomposition(phi, lam, wires):
@@ -1175,7 +1206,15 @@ class U3(Operation):
     @staticmethod
     def _matrix(*params):
         theta, phi, lam = params
-        return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, theta, -lam)
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [c, -s * cmath.exp(1j * lam)],
+                [s * cmath.exp(1j * phi), c * cmath.exp(1j * (phi + lam))],
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, phi, lam, wires):
