@@ -165,11 +165,11 @@ class TestTorchLayer:
         ideal_shapes = {
             "w1": torch.Size((3, n_qubits, 3)),
             "w2": torch.Size((1,)),
-            "w3": torch.Size((0,)),
+            "w3": torch.Size([]),
             "w4": torch.Size((3,)),
             "w5": torch.Size((2, n_qubits, 3)),
             "w6": torch.Size((3,)),
-            "w7": torch.Size((0,)),
+            "w7": torch.Size([]),
         }
 
         for name, weight in layer.qnode_weights.items():
@@ -192,6 +192,63 @@ class TestTorchLayer:
         result as calling the QNode directly"""
         c, w = get_circuit
         layer = TorchLayer(c, w, output_dim)
+        x = torch.ones(n_qubits)
+
+        layer_out = layer._evaluate_qnode(x).detach().numpy()
+
+        weights = [w.detach().numpy() for w in layer.qnode_weights.values()]
+        circuit_out = c(x, *weights)
+        assert np.allclose(layer_out, circuit_out)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_evaluate_qnode_shuffled_args(self, get_circuit, output_dim, n_qubits):
+        """Test if the _evaluate_qnode() method works correctly when the inputs argument is not the
+        first positional argument, i.e., that it gives the same result as calling the QNode
+        directly"""
+        c, w = get_circuit
+
+        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
+        def c_shuffled(w1, inputs, w2, w3, w4, w5, w6, w7):
+            """Version of the circuit with a shuffled signature"""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0)
+            qml.RX(w3, wires=0)
+            qml.Rot(*w4, wires=0)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=0)
+            qml.RX(w7, wires=0)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = TorchLayer(c_shuffled, w, output_dim)
+        x = torch.Tensor(np.ones(n_qubits))
+
+        layer_out = layer._evaluate_qnode(x).detach().numpy()
+
+        weights = [w.detach().numpy() for w in layer.qnode_weights.values()]
+        circuit_out = c(x, *weights)
+        assert np.allclose(layer_out, circuit_out)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_evaluate_qnode_default_input(self, get_circuit, output_dim, n_qubits):
+        """Test if the _evaluate_qnode() method works correctly when the inputs argument is a
+        default argument, i.e., that it gives the same result as calling the QNode directly"""
+        c, w = get_circuit
+
+        @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="torch")
+        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):
+            """Version of the circuit with inputs as a default argument"""
+            qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
+            qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
+            qml.RX(w2[0], wires=0)
+            qml.RX(w3, wires=0)
+            qml.Rot(*w4, wires=0)
+            qml.templates.StronglyEntanglingLayers(w5, wires=list(range(n_qubits)))
+            qml.Rot(*w6, wires=0)
+            qml.RX(w7, wires=0)
+            return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
+
+        layer = TorchLayer(c_default, w, output_dim)
         x = torch.Tensor(np.ones(n_qubits))
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
@@ -221,4 +278,12 @@ class TestTorchLayer:
 
         layer_out = layer.forward(x)
         assert layer_out.shape == torch.Size((2, output_dim))
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_extra_repr(self, get_circuit, output_dim):
+        """Test the extra_repr method"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w, output_dim)
+        assert layer.__repr__() == "TorchLayer(Quantum Torch Layer: func=circuit)"
+
 
