@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now provides `DiagonalQubitUnitary` for diagonal gates, that are e.g.
+  encountered in IQP circuits. This kind of gates can be evaluated much faster on
+  a simulator device.
+  [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
+
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
@@ -178,6 +183,9 @@
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
 
 <h3>Improvements</h3>
+
+* Performance of the default.qubit plugin was increased.
+  [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
 
 * The input check functions in :mod:`pennylane.templates.utils` are now public
   and visible in the API documentation.
