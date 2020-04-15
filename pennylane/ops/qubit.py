@@ -1254,6 +1254,12 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
         return D
 
+    @staticmethod
+    def decomposition(D, wires):
+        return [
+            QubitUnitary(np.diag(D), wires=wires)
+        ]
+
 
 # =============================================================================
 # State preparation
