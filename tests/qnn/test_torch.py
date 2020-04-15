@@ -286,4 +286,30 @@ class TestTorchLayer:
         layer = TorchLayer(c, w, output_dim)
         assert layer.__repr__() == "TorchLayer(Quantum Torch Layer: func=circuit)"
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_gradients(self, get_circuit, output_dim, n_qubits):
+        """Test if the gradients of the TorchLayer are equal to the gradients of the circuit when
+        taken with respect to the trainable variables"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w, output_dim)
+        x = torch.ones(n_qubits)
+        weights = list(layer.parameters())
 
+        out_layer = layer(x)
+        out_layer.backward()
+
+        g_layer = [w.grad for w in weights]
+
+        out_circuit = c(x, *weights)
+        out_circuit.backward()
+
+        g_circuit = [w.grad for w in weights]
+        print(out_circuit)
+
+        # with tf.GradientTape() as tape:
+        #     out_circuit = c(x[0], *layer.trainable_variables)
+        #
+        # g_circuit = tape.gradient(out_circuit, layer.trainable_variables)
+        #
+        # for i in range(len(out_layer)):
+        #     assert np.allclose(g_layer[i], g_circuit[i])
