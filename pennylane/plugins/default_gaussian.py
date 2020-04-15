@@ -106,7 +106,7 @@ def fock_prob(mu, cov, event, hbar=2.0):
     I = np.identity(N)
 
     # mean displacement of each mode
-    alpha = (mu[:N] + 1j * mu[N:]) / np.sqrt(2 * hbar)
+    alpha = (mu[:N] + 1j * mu[N:]) / math.sqrt(2 * hbar)
     # the expectation values (<a_1>, <a_2>,...,<a_N>, <a^\dagger_1>, ..., <a^\dagger_N>)
     beta = np.concatenate([alpha, alpha.conj()])
 
@@ -125,7 +125,7 @@ def fock_prob(mu, cov, event, hbar=2.0):
     # inverse Q matrix
     Qinv = np.linalg.inv(Q)
     # 1/sqrt(|Q|)
-    sqrt_Qdet = 1 / np.sqrt(np.linalg.det(Q).real)
+    sqrt_Qdet = 1 / math.sqrt(np.linalg.det(Q).real)
 
     prefactor = cmath.exp(-beta @ Qinv @ beta.conj() / 2)
 
@@ -186,8 +186,8 @@ def displacement(state, wire, alpha, hbar=2):
         tuple: contains the vector of means and covariance matrix
     """
     mu = state[0]
-    mu[wire] += alpha.real * np.sqrt(2 * hbar)
-    mu[wire + len(mu) // 2] += alpha.imag * np.sqrt(2 * hbar)
+    mu[wire] += alpha.real * math.sqrt(2 * hbar)
+    mu[wire + len(mu) // 2] += alpha.imag * math.sqrt(2 * hbar)
     return mu, state[1]
 
 
@@ -372,7 +372,7 @@ def coherent_state(a, phi=0, hbar=2.0):
         array: the coherent state
     """
     alpha = a * cmath.exp(1j * phi)
-    means = np.array([alpha.real, alpha.imag]) * np.sqrt(2 * hbar)
+    means = np.array([alpha.real, alpha.imag]) * math.sqrt(2 * hbar)
     cov = np.identity(2) * hbar / 2
     state = [means, cov]
     return state
@@ -410,7 +410,7 @@ def displaced_squeezed_state(a, phi_a, r, phi_r, hbar=2.0):
         array: the squeezed coherent state
     """
     alpha = a * cmath.exp(1j * phi_a)
-    means = np.array([alpha.real, alpha.imag]) * np.sqrt(2 * hbar)
+    means = np.array([alpha.real, alpha.imag]) * math.sqrt(2 * hbar)
     state = [means, squeezed_cov(r, phi_r, hbar)]
     return state
 
@@ -780,7 +780,7 @@ class DefaultGaussian(Device):
             # estimate the ev
             # use central limit theorem, sample normal distribution once, only ok if n_eval is large
             # (see https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)
-            ev = np.random.normal(ev, np.sqrt(var / self.shots))
+            ev = np.random.normal(ev, math.sqrt(var / self.shots))
 
         return ev
 
@@ -828,7 +828,7 @@ class DefaultGaussian(Device):
         muphi = rot.T @ mu
         covphi = rot.T @ cov @ rot
 
-        stdphi = np.sqrt(covphi[0, 0])
+        stdphi = math.sqrt(covphi[0, 0])
         meanphi = muphi[0]
         return np.random.normal(meanphi, stdphi, self.shots)
 

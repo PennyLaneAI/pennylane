@@ -206,9 +206,9 @@ def _get_alpha_y(a, n, k):
         denominator[j - 1, 0] += e * e
 
     for (j, _), e in numerator.items():
-        numerator[j, 0] = np.sqrt(e)
+        numerator[j, 0] = math.sqrt(e)
     for (j, _), e in denominator.items():
-        denominator[j, 0] = 1 / np.sqrt(e)
+        denominator[j, 0] = 1 / math.sqrt(e)
 
     pre_alpha = numerator.multiply(denominator)  # type: sparse.csr_matrix
     for (j, _), e in pre_alpha.todok().items():

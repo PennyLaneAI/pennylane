@@ -49,7 +49,8 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        val = 1 / math.sqrt(2)
+        return np.array([[val, val], [val, -val]])
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they

@@ -13,7 +13,7 @@ X = np.array([[0, 1], [1, 0]])  #: Pauli-X matrix
 Y = np.array([[0, -1j], [1j, 0]])  #: Pauli-Y matrix
 Z = np.array([[1, 0], [0, -1]])  #: Pauli-Z matrix
 
-H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  #: Hadamard gate
+H = np.array([[1, 1], [1, -1]]) / math.sqrt(2)  #: Hadamard gate
 # Two qubit gates
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])  #: CNOT gate
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])  #: SWAP gate

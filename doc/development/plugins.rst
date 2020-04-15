@@ -347,7 +347,7 @@ acts on. For example, to define a custom gate depending on parameter :math:`\phi
         def _matrix(*params):
             """Returns the matrix representation of the operator for the
             provided parameter values, in the computational basis."""
-            return np.array([[params[0], 1], [1, -params[1]]]) / np.sqrt(2)
+            return np.array([[params[0], 1], [1, -params[1]]]) / math.sqrt(2)
 
         @staticmethod
         def decomposition(*params, wires):
@@ -440,7 +440,7 @@ For example:
 
         @staticmethod
         def _matrix(*params):
-            return np.array([[0, 1], [1, 0]]) / np.sqrt(2)
+            return np.array([[0, 1], [1, 0]]) / math.sqrt(2)
 
 
 :html:`<div class="note admonition" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content1" class="collapsed"><p class="first admonition-title">CV devices and operations (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content1" class="collapse" data-parent="#aside1" style="height: 0px;">`
