@@ -579,6 +579,25 @@ def sd_configs(n_electrons, n_orbitals, delta_sz):
         involved in the single and double excitations
     """
 
+    if not n_electrons > 0:
+        raise ValueError(
+            "The number of active electrons ({}) "
+            "has to be greater than 0.".format(n_electrons)
+        )
+
+    if n_orbitals <= n_electrons:
+        raise ValueError(
+            "The number of active orbitals ({}) "
+            "has to be greater than the number of active electrons ({})."
+            .format(n_orbitals, n_electrons)
+        )
+
+    if int(delta_sz) not in (0, 1, -1, 2, -2):
+        raise ValueError(
+            "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({})."
+             .format(delta_sz)
+        )
+
     # define the spin quantum number 'sz' of each orbital
     sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(n_orbitals)])
 
@@ -593,7 +612,7 @@ def sd_configs(n_electrons, n_orbitals, delta_sz):
     pphh = [
              [s, r, q, p] 
              for s in range(n_electrons-1) for r in range(s+1, n_electrons)
-             for q in range(n_act_electrons, n_orbitals-1) for p in range(q+1, n_orbitals)
+             for q in range(n_electrons, n_orbitals-1) for p in range(q+1, n_orbitals)
              if (sz[p] + sz[q] - sz[r] - sz[s]) == delta_sz
     ]
 
