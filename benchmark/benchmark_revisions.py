@@ -72,6 +72,7 @@ def cli():
         help="comma-separated list of revisions to run the benchmark on",
     )
 
+    # Only parse revisions, other args will go to the benchmarking script
     args, unknown_args = parser.parse_known_args()
 
     revisions_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "revisions")
