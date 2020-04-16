@@ -739,8 +739,8 @@ class DiagonalOperation(Operation):
     def diagonal(self):
         """Return the diagonal of the operation.
 
-        Args:
-            abc ([type]): [description]
+        Returns:
+            array[complex]: The diagonal of the operation.
         """
         diag = self._diagonal(*self.parameters)
 
