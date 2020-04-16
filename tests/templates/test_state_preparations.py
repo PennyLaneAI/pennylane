@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.templates.state_preparations import (BasisStatePreparation,
                                                     MottonenStatePreparation)
 from pennylane.templates.state_preparations.mottonen import gray_code
+from pennylane.templates.state_preparations.arbitrary_state_preparation import _state_preparation_pauli_words
 
 
 class TestHelperFunctions:
@@ -42,6 +43,18 @@ class TestHelperFunctions:
         Gray code of given rank."""
 
         assert gray_code(rank) == expected_gray_code
+
+    @pytest.mark.parametrize("num_wires,expected_pauli_words", [
+        (1, ["X", "Y"]),
+        (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
+        (3, ["XII", "YII", "IXI", "IYI", "IIX", "IIY", "IXX", "IXY", "XXI", "XYI", "XIX", "XIY", "XXX", "XXY"]),
+    ])
+    def test_state_preparation_pauli_words(self, num_wires, expected_pauli_words):
+        """Test that the correct Pauli words are returned."""
+        print("pauli_words = ", list(_state_preparation_pauli_words(num_wires)))
+
+        for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
+            assert expected_pauli_words[idx] == pauli_word
 
 
 class TestBasisStatePreparation:
