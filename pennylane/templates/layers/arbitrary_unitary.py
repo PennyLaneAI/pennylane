@@ -27,6 +27,9 @@ def _tuple_to_word(index_tuple):
 
 
 def _all_pauli_words_but_identity(num_wires):
+    # TODO: Replace this with a 4-ary Gray code. This will make only one letter
+    # change between each Pauli word and thus requires less gates. We would still
+    # need some gate fusion logic for this to take effect.
     index_tuples = np.ndindex(tuple([4] * num_wires))
 
     # The first index represents the all-identity-word which we skip
