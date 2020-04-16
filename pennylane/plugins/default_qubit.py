@@ -23,8 +23,7 @@ import itertools
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import DiagonalOperation
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, MultiRZ
 from pennylane.utils import expand_vector
 
 
@@ -115,12 +114,8 @@ class DefaultQubit(QubitDevice):
                 basis_state = par[0]
                 self.apply_basis_state(basis_state, wires)
 
-            elif isinstance(operation, DiagonalOperation):
-                self._state = self.vec_vec_product(operation.diagonal, self._state, wires)
-
-            elif len(wires) <= 2:
-                # Einsum is faster for small gates
-                self._state = self.mat_vec_product_einsum(operation.matrix, self._state, wires)
+            elif isinstance(operation, MultiRZ):
+                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
 
             else:
                 self._state = self.mat_vec_product(operation.matrix, self._state, wires)
@@ -245,12 +240,10 @@ class DefaultQubit(QubitDevice):
         self._state[0] = 1
         self._pre_rotated_state = self._state
 
-    def analytic_probability(self, wires=None):
-        """Return the (marginal) analytic probability of each computational basis state."""
+    def probability(self, wires=None):
         if self._state is None:
             return None
 
         wires = wires or range(self.num_wires)
-
         prob = self.marginal_prob(np.abs(self._state) ** 2, wires)
         return prob
