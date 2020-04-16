@@ -27,10 +27,8 @@ CCZ_diag = np.array([1, 1, 1, 1, 1, 1, 1, -1])
 CCZ_matrix = np.diag(CCZ_diag)
 
 if hasattr(qml, "DiagonalQubitUnitary"):
-    print("Use DiagonalQubitUnitary")
     CCZ = lambda wires: qml.DiagonalQubitUnitary(CCZ_diag, wires=wires)
 else:
-    print("Use QubitUnitary")
     CCZ = lambda wires: qml.QubitUnitary(CCZ_matrix, wires=wires)
 
 
