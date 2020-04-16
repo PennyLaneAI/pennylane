@@ -15,7 +15,7 @@ r"""
 Contains the ``ArbitraryUnitary`` template.
 """
 import numpy as np
-from pennylane import PauliRot
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_wires, check_shape, get_shape
 
@@ -62,4 +62,4 @@ def ArbitraryUnitary(angles, wires):
     )
 
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
-        PauliRot(angles[i], pauli_word, wires=wires)
+        qml.PauliRot(angles[i], pauli_word, wires=wires)

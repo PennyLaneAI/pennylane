@@ -15,7 +15,7 @@ r"""
 Contains the ``ArbitraryStatePreparation`` template.
 """
 import functools
-from pennylane import PauliRot
+import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_wires, check_shape, get_shape
 
@@ -40,7 +40,7 @@ def _state_preparation_pauli_words(num_wires):
 def ArbitraryStatePreparation(angles, wires):
     """Implements an arbitrary state preparation on the specified wires.
 
-    An arbitrary state on :math:`n` wires is parametrized by :math:`2^n - 2`
+    An arbitrary state on :math:`n` wires is parametrized by :math:`2^{n+1} - 2`
     independent real parameters. This templates uses Pauli word rotations to
     parametrize the unitary.
 
@@ -52,7 +52,7 @@ def ArbitraryStatePreparation(angles, wires):
     wires = check_wires(wires)
 
     n_wires = len(wires)
-    expected_shape = (4 ** n_wires - 1,)
+    expected_shape = (2 ** (n_wires + 1) - 2,)
     check_shape(
         angles,
         expected_shape,
@@ -60,4 +60,4 @@ def ArbitraryStatePreparation(angles, wires):
     )
 
     for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
-        PauliRot(angles[i], pauli_word, wires=wires)
+        qml.PauliRot(angles[i], pauli_word, wires=wires)
