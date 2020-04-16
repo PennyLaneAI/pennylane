@@ -51,8 +51,6 @@ class TestHelperFunctions:
     ])
     def test_state_preparation_pauli_words(self, num_wires, expected_pauli_words):
         """Test that the correct Pauli words are returned."""
-        print("pauli_words = ", list(_state_preparation_pauli_words(num_wires)))
-
         for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
             assert expected_pauli_words[idx] == pauli_word
 
