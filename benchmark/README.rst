@@ -39,6 +39,8 @@ revisions of PennyLane. It calls upon ``benchmark.py`` and thus supports all its
 The revisions -- including branches, tags and commits -- are specified via ``-r revision1[,revision2[,revision3...]]``,
 as in
 
+.. code-block:: bash
+
   python3 benchmark_revisions.py -r master,0c8e90a -d default.qubit,default.tensor time bm_mutable_rotations
 
 The chosen revisions will be downloaded and cached into the ``revisions`` subdirectory of the benchmarking folder.
