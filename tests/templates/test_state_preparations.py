@@ -358,3 +358,18 @@ class TestArbitraryStatePreparation:
         assert rec.queue[5].params[0] == angles[5]
         assert rec.queue[5].params[1] == "XY"
         assert rec.queue[5].wires == [0, 1]
+
+    # def test_draw(self):
+    #     dev = qml.device("default.qubit", wires=3)
+    #     @qml.qnode(dev)
+    #     def circuit(angles):
+    #         ArbitraryStatePreparation(angles, wires=[0, 1, 2])
+
+    #         return qml.expval(qml.PauliZ(0))
+
+    #     angles = np.random.uniform(0, 2*math.pi, 14)
+
+    #     circuit(angles)
+
+    #     print(circuit.draw())
+    #     assert False
