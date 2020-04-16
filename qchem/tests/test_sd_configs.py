@@ -36,3 +36,19 @@ def test_sd_configs(
     assert len(pphh) == len(pphh_ref)
     assert ph == ph_ref
     assert pphh == pphh_ref
+
+
+@pytest.mark.parametrize(
+    ("n_electrons", "n_orbitals", "delta_sz", "message_match"),
+    [
+        (0, 4, 0, "number of active electrons has to be greater than 0"),
+        (3, 2, 0, "has to be greater than the number of active electrons"),
+        (2, 4, 3, "Expected values for 'delta_sz'")
+    ]
+)
+def test_inconsistent_configs(n_electrons, n_orbitals, delta_sz, message_match):
+
+    r"""Test that an error is raised if a set of inconsistent arguments is input"""
+
+    with pytest.raises(ValueError, match=message_match):
+        qchem.sd_configs(n_electrons, n_orbitals, delta_sz)
