@@ -21,28 +21,7 @@ import stat
 import shutil
 import subprocess
 
-# ANSI escape sequences for terminal colors
-Colors = {
-    "red": "\033[31m",
-    "yellow": "\033[33m",
-    "blue": "\033[34m",
-    "magenta": "\033[95m",
-}
-RESET = "\033[0m"
-
-
-def col(text, color):
-    """Wraps the given text in color ANSI sequences.
-
-    Args:
-        text  (str): text to print
-        color (str): ANSI color code
-
-    Returns:
-        str: text wrapped with ANSI codes
-    """
-    return Colors[color] + text + RESET
-
+from benchmark import col
 
 class cd:
     """Context manager for changing the current working directory"""
