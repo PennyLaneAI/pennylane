@@ -75,7 +75,7 @@ def circuit(n=10, n_wires=3):
 class Benchmark(bu.BaseBenchmark):
     """IQP circuit benchmark.
 
-    Creates an immutable QNode using a random IQP circuit.
+    Creates an immutable QNode using an example IQP circuit.
     """
 
     name = "IQP circuit"
