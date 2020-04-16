@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-IQP circuit benchmark.
+Benchmark for a circuit of the Instantaneous quantum polynomial-time (IQP) complexity class.
 """
 # pylint: disable=invalid-name
 import math
