@@ -564,6 +564,14 @@ def generate_hamiltonian(
 def sd_configs(n_electrons, n_orbitals, delta_sz):
     r"""Generates single and double excitations from a Hartree-Fock reference state
 
+    **Example usage:**
+
+    >>> ph, pphh = sd_configs(2, 4, 0)
+    >>> print(ph)
+    [[0, 2], [1, 3]]
+    >>> print(pphh)
+    [[0, 1, 2, 3]]
+
     Args: 
         n_electrons (int): number of active electrons 
         n_orbitals (int): number of active orbitals
@@ -581,8 +589,8 @@ def sd_configs(n_electrons, n_orbitals, delta_sz):
 
     if not n_electrons > 0:
         raise ValueError(
-            "The number of active electrons ({}) "
-            "has to be greater than 0.".format(n_electrons)
+            "The number of active electrons has to be greater than 0 \n"
+            "Got n_electrons = {}".format(n_electrons)
         )
 
     if n_orbitals <= n_electrons:
