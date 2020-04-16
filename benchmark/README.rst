@@ -83,5 +83,5 @@ Included benchmarks
   then evaluates it and its Jacobian. The size parameter ``n`` is the number of layers.
 * ``bm_mutable_rotations``: Evaluates a mutable QNode consisting of ``k`` simple rotations on one qubit
   several times, varying ``k`` from 0 to ``n``. The qfunc is called each time due to the mutability.
-* ``bm_iqp_circuit``:  Evaluates an IQP circuit on ``w`` wires with ``n*w`` gates randomly chosen from the 
+* ``bm_iqp_circuit``:  Evaluates an IQP circuit on ``w`` wires with ``n*w`` gates chosen from the 
   set ``Z``, ``CZ`` and ``CCZ``.
