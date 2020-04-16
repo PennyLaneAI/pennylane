@@ -62,10 +62,16 @@ class cd:
 # benchmarking tool version
 __version__ = "0.1.0"
 
+
 def remove_readonly(func, path, excinfo):
+    """Remove readonly flag from file and retry.
+
+    This method is intended to be used with shutil.rmtree.
+    """
     # pylint: disable=unused-argument
     os.chmod(path, stat.S_IWRITE)
     func(path)
+
 
 def cli():
     """Parse the command line arguments, perform the requested action.
@@ -104,23 +110,43 @@ def cli():
                     subprocess.run("git checkout {} -q".format(revision))
                     subprocess.run("git pull -q")
         else:
-            print(">>> Revision not found locally, cloning...")
-            os.mkdir(pl_directory)
-            with cd(revisions_directory):
-                subprocess.run("git clone https://www.github.com/xanaduai/pennylane {} -q".format(revision))
-                with cd(pl_directory):
-                    res = subprocess.run("git checkout {} -q".format(revision))
+            try:
+                # If we already downloaded a revision we don't need to clone the whole
+                # PL repository. Instead we just copy the first revision in the directory
+                # checkout will then get the correct revision
+                with cd(revisions_directory):
+                    first_revision = next(filter(os.path.isdir, os.listdir(".")))
+                    print(">>> Revision not found locally, copying...")
+                    shutil.copytree(first_revision, revision)
+            except StopIteration:
+                # Didn't find a local revision to copy, use git to clone
+                print(">>> Revision not found locally, cloning...")
 
-                # An error occured during checkout, so the revision does not exist
-                if res.returncode != 0:
-                    print(col(">>> Couldn't check out revision {}, deleting temporary data".format(revision), "red"))
+                os.mkdir(pl_directory)
+                with cd(revisions_directory):
+                    subprocess.run(
+                        "git clone https://www.github.com/xanaduai/pennylane {} -q".format(revision)
+                    )
 
-                    # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
-                    # as writeable and retries. See also
-                    # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
-                    shutil.rmtree(pl_directory, onerror=remove_readonly)
-                    continue
+            with cd(pl_directory):
+                res = subprocess.run("git checkout {} -q".format(revision))
 
+            # An error occured during checkout, so the revision does not exist
+            if res.returncode != 0:
+                print(
+                    col(
+                        ">>> Couldn't check out revision {}, deleting temporary data".format(
+                            revision
+                        ),
+                        "red",
+                    )
+                )
+
+                # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
+                # as writeable and retries. See also
+                # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
+                shutil.rmtree(pl_directory, onerror=remove_readonly)
+                continue
 
         benchmark_file_path = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
