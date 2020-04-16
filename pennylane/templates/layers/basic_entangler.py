@@ -19,11 +19,11 @@ from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
-    _check_shape,
-    _check_no_variable,
-    _check_wires,
-    _check_number_of_layers,
-    _get_shape,
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_number_of_layers,
+    get_shape,
 )
 
 
@@ -140,17 +140,17 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
     if rotation is None:
         rotation = RX
 
-    _check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
-    repeat = _check_number_of_layers([weights])
+    repeat = check_number_of_layers([weights])
 
     expected_shape = (repeat, len(wires))
-    _check_shape(
+    check_shape(
         weights,
         expected_shape,
-        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, _get_shape(weights)),
+        msg="'weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(weights)),
     )
 
     ###############

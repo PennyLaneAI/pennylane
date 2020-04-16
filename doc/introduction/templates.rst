@@ -328,3 +328,9 @@ respective interfaces.
     init_tf = tf.Variable(init_pars)
 
 The initialization functions can be found in the :mod:`~.pennylane.init` module.
+
+Adding a new template
+---------------------
+
+Consult the :ref:`Developer's guide <adding_new_templates>` to learn how to grow the templates library by
+adding your own template to PennyLane.

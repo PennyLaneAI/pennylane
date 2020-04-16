@@ -113,14 +113,17 @@ Features
 Getting started
 ---------------
 
-For getting started with PennyLane, check out some of the
-`key concepts <https://pennylane.ai/qml/concepts.html>`_ behind quantum machine
-learning, before moving on to some `introductory tutorials <https://pennylane.ai/qml/beginner.html>`_.
+For an introduction to quantum machine learning, we have several guides and resources available
+on our `QML website <https://pennylane.ai/qml/>`_, including
+`What is QML? <https://pennylane.ai/qml/whatisqml.html>`_,
+`frequently asked questions <https://pennylane.ai/faq.html>`_,
+a `glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_, and a curated selection
+of `QML videos <https://pennylane.ai/qml/videos.html>`_.
 
 Then, take a deeper dive into quantum machine learning by
 exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
 with our collection of
-`QML tutorials <https://pennylane.ai/qml/implementations.html>`_.
+`QML demonstrations <https://pennylane.ai/qml/demonstrations.html>`_.
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
 more details on the :doc:`quantum operations <introduction/operations>`, and to explore
@@ -130,8 +133,8 @@ PennyLane-compatible quantum device.
 
 Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
 available for running your hybrid optimizations—these include
-IBM Q, provided by the `PennyLane-Qiskit <https://pennylane-qiskit.rtfd.io>`__ plugin,
-as well as the Rigetti Aspen-1 QPU provided by `PennyLane-Forest <https://pennylane-forest.rtfd.io>`__.
+IBM Q, provided by the `PennyLane-Qiskit <https://pennylaneqiskit.rtfd.io>`__ plugin,
+as well as the Rigetti Aspen QPU provided by `PennyLane-Forest <https://pennylane-forest.rtfd.io>`__.
 
 How to cite
 -----------
@@ -203,6 +206,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_operation
    code/qml_plugins
    code/qml_qchem
+   code/qml_qnn
    code/qml_qnodes
    code/qml_templates
    code/qml_utils

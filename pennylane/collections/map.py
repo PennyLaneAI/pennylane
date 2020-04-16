@@ -27,7 +27,15 @@ from .qnode_collection import QNodeCollection
 MEASURE_MAP = {"expval": expval, "var": var, "sample": sample}
 
 
-def map(template, observables, device, measure="expval", interface="autograd", diff_method="best"):
+def map(
+    template,
+    observables,
+    device,
+    measure="expval",
+    interface="autograd",
+    diff_method="best",
+    **kwargs
+):
     """Map a quantum template over a list of observables to create
     a :class:`QNodeCollection`.
 
@@ -121,12 +129,12 @@ def map(template, observables, device, measure="expval", interface="autograd", d
         # Python's late binding closure behaviour
         # (see https://docs.python-guide.org/writing/gotchas/#late-binding-closures)
         def circuit(
-            params, _obs=obs, _m=m, _wires=wires, **kwargs
+            params, _obs=obs, _m=m, _wires=wires, **circuit_kwargs
         ):  # pylint: disable=dangerous-default-value, function-redefined
-            template(params, wires=_wires, **kwargs)
+            template(params, wires=_wires, **circuit_kwargs)
             return MEASURE_MAP[_m](_obs)
 
-        qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method)
+        qnode = QNode(circuit, dev, interface=interface, diff_method=diff_method, **kwargs)
         qnodes.append(qnode)
 
     return qnodes
