@@ -803,6 +803,44 @@ class NumberOperator(CVObservable):
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
 
+class TensorNumberOperator(CVObservable):
+    r"""pennylane.ops.NumberOperator(wires)
+    The photon number observable :math:`\langle \hat{n}\rangle`.
+
+    The number operator is defined as
+    :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
+
+    When used with the :func:`~.expval` function, the mean
+    photon number :math:`\braket{\hat{n}}` is returned.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+    * Observable order: 2nd order in the quadrature operators
+    * Heisenberg representation:
+
+      .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
+            -\hbar & 0 & 0\\
+            0 & 1 & 0\\
+            0 & 0 & 1
+        \end{bmatrix}
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_wires = Any
+    num_params = 0
+    par_domain = None
+
+    ev_order = 2
+
+    @staticmethod
+    def _heisenberg_rep(p):
+        hbar = 2
+        return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
+
+
 class X(CVObservable):
     r"""pennylane.ops.X(wires)
     The position quadrature observable :math:`\hat{x}`.
@@ -1012,7 +1050,7 @@ ops = {
 }
 
 
-obs = {"QuadOperator", "NumberOperator", "P", "X", "PolyXP", "FockStateProjector"}
+obs = {"QuadOperator", "NumberOperator", "TensorNumberOperator", "P", "X", "PolyXP", "FockStateProjector"}
 
 
 __all__ = list(ops | obs)
