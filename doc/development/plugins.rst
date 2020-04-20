@@ -184,7 +184,8 @@ To execute operations on the device, the following methods **must** be defined:
 
     apply
 
-If the device is analytic then it **must** also overwrite:
+If the device is a statevector simulator (it has an ``analytic`` attribute)
+then it **must** also overwrite:
 
 .. autosummary::
 
