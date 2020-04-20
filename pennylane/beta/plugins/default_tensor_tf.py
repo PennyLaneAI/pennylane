@@ -273,7 +273,7 @@ class DefaultTensorTF(DefaultTensor):
         """tf.GradientTape: the gradient tape under which all tensor network
         modifications must be made"""
 
-        super().__init__(wires, shots=shots, analytic=True)
+        super().__init__(wires, shots=shots)
 
     def reset(self):
         self.res = None

@@ -414,6 +414,7 @@ class TestDefaultTensorNetworkParametrize:
         circuit()
         dev.reset()
 
+        assert dev._contracted_state_node is None
         assert "state" in dev._nodes and len(dev._nodes) == 1
         assert len(dev._nodes["state"]) == 2
         assert all(
@@ -544,12 +545,12 @@ class TestDefaultTensorNetworkParametrize:
         dev.apply("PauliX", [0], [])
         dev.apply("Hadamard", [1], [])
 
-        assert "contracted_state" not in dev._nodes
+        assert dev._contracted_state_node is None
         dev._contract_premeasurement_network()
-        assert "contracted_state" in dev._nodes
-        cont_state = dev._nodes["contracted_state"]
+        assert dev._contracted_state_node is not None
+        cont_state = dev._contracted_state_node
         dev._contract_premeasurement_network()  # should not change anything
-        assert dev._nodes["contracted_state"] == cont_state
+        assert dev._contracted_state_node == cont_state
 
         expected = np.outer(
             np.outer([0.0, 1.0], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1.0, 0.0]
@@ -567,9 +568,9 @@ class TestDefaultTensorNetworkParametrize:
         dev.apply("PauliX", [0], [])
         dev.apply("Hadamard", [1], [])
 
-        assert "contracted_state" not in dev._nodes
+        assert dev._contracted_state_node is None
         ket = dev._state()
-        assert "contracted_state" in dev._nodes
+        assert dev._contracted_state_node is not None
 
         expected = np.outer(
             np.outer([0.0, 1.0], [1 / np.sqrt(2), 1 / np.sqrt(2)]), [1.0, 0.0]
@@ -817,7 +818,6 @@ class TestDefaultTensorIntegration:
         dev = qml.device("default.tensor", wires=2, representation=rep)
         assert dev.num_wires == 2
         assert dev.shots == 1000
-        assert dev.analytic
         assert dev.short_name == "default.tensor"
 
     def test_args(self, rep):
@@ -1306,14 +1306,14 @@ class TestDefaultTensorIntegration:
         theta = np.pi / 4
         out1 = circuit(theta)
         ket1 = dev._state()
-        assert "contracted_state" in dev._nodes
+        assert dev._contracted_state_node is not None
         assert np.allclose(ket1, expected(theta), atol=tol, rtol=0)
         assert out1 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
 
         theta = -0.1234
         out2 = circuit(theta)
         ket2 = dev._state()
-        assert "contracted_state" in dev._nodes
+        assert dev._contracted_state_node is not None
         assert np.allclose(ket2, expected(theta), atol=tol, rtol=0)
         assert out2 == np.cos(theta / 2) ** 2 - np.sin(theta / 2) ** 2
 

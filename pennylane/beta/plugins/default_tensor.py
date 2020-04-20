@@ -121,7 +121,6 @@ class DefaultTensor(Device):
 
     def __init__(self, wires, shots=1000, representation="exact", contraction_method="auto"):
         super().__init__(wires, shots)
-        self.analytic = analytic
         if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
         self._rep = representation
@@ -144,6 +143,7 @@ class DefaultTensor(Device):
         self._nodes = {}
         self._free_wire_edges = []
         self.mps = None
+        self._contracted_state_node = None
 
     def _add_node(self, A, wires, name="UnnamedNode", key="state"):
         """Adds a node to the underlying tensor network.
@@ -456,7 +456,7 @@ class DefaultTensor(Device):
             complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         self._contract_premeasurement_network()
-        ket = self._nodes["contracted_state"]
+        ket = self._contracted_state_node
         bra = tn.conj(ket, name="Bra")
 
         all_wires = tuple(range(self.num_wires))
@@ -543,9 +543,9 @@ class DefaultTensor(Device):
     def _contract_premeasurement_network(self):
         """Contract the nodes which represent the state preparation and gate applications to get the pre-measurement state.
 
-        The contracted tensor is cached in the ``_nodes`` dictionary under the key ``"contracted_state"``.
+        The contracted tensor is cached in the attribute ``_contracted_state_node``.
         """
-        if "contracted_state" not in self._nodes:
+        if self._contracted_state_node is None:
             if self._rep == "exact":
                 contract_fn = contract_fns[self._contraction_method]
                 ket = contract_fn(self._nodes["state"], output_edge_order=self._free_wire_edges)
@@ -561,7 +561,7 @@ class DefaultTensor(Device):
                 # remove dangling singleton edges
                 ket.tensor = self._squeeze(ket.tensor)
             ket.set_name("Ket")
-            self._nodes["contracted_state"] = ket
+            self._contracted_state_node = ket
 
     def _state(self):
         """The numerical quantum state tensor.
@@ -576,7 +576,7 @@ class DefaultTensor(Device):
         # then apply more gates and try to access _state again (second call will bring out earlier
         # cached state)
         self._contract_premeasurement_network()
-        ket = self._nodes["contracted_state"]
+        ket = self._contracted_state_node
         return self._squeeze(ket.tensor)
 
     @property
