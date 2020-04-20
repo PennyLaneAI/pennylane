@@ -211,7 +211,7 @@ class DefaultTensor(Device):
                     # break down non-factorized tensors into MPS form
                     if max(wires_seq) - min(wires_seq) != len(wires_seq) - 1:
                         raise NotImplementedError(
-                            "Multi-wire state initializations only supported for consecutive wires."
+                            "Multi-wire state initializations only supported for tensors on consecutive wires."
                         )
                     DV = tensor
                     for idx, wire in enumerate(wires_seq):

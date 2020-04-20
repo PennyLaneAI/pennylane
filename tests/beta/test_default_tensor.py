@@ -54,8 +54,7 @@ from pennylane.beta.plugins.numpy_ops import (
     unitary,
 )
 
-tensornetwork = pytest.importorskip("tensornetwork", minversion="0.3")
-
+tn = pytest.importorskip("tensornetwork", minversion="0.3")
 
 U = np.array(
     [
@@ -128,6 +127,7 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+
 def nodes_and_edges_valid(dev, num_nodes, node_names, rep):
     """Asserts that nodes in a device ``dev`` are properly initialized, when there
     are ``num_nodes`` nodes expected, with names ``node_names``, using representation ``rep``."""
@@ -139,6 +139,7 @@ def nodes_and_edges_valid(dev, num_nodes, node_names, rep):
         if not dev._nodes["state"][idx].name == node_names[idx]:
             return False
     return edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
 
 def edges_valid(dev, num_nodes, rep):
     """Returns True if the edges in a device ``dev`` are properly initialized, when there
@@ -585,10 +586,13 @@ class TestDefaultTensorNetworkMoreParametrize:
         with pytest.raises(ValueError, match="Invalid representation"):
             dev = qml.device("default.tensor", wires=2, representation="junk")
 
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 2, ["AliceState(0,)", "BobState(1,)"]),
-        ("mps", 2, ["AliceState(0,)", "BobState(1,)"]),
-    ])
+    @pytest.mark.parametrize(
+        "rep,num_nodes,node_names",
+        [
+            ("exact", 2, ["AliceState(0,)", "BobState(1,)"]),
+            ("mps", 2, ["AliceState(0,)", "BobState(1,)"]),
+        ],
+    )
     def test_add_initial_state_nodes_2_wires_factorized(self, rep, num_nodes, node_names):
         """Tests that factorized initial states are properly created for a 2 wire device."""
 
@@ -602,10 +606,10 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 1, ["BellState(0, 1)"]),
-        ("mps", 2, ["BellState(0,)", "BellState(1,)"]),
-    ])
+    @pytest.mark.parametrize(
+        "rep,num_nodes,node_names",
+        [("exact", 1, ["BellState(0, 1)"]), ("mps", 2, ["BellState(0,)", "BellState(1,)"]),],
+    )
     def test_add_initial_state_nodes_2_wires_entangled(self, rep, num_nodes, node_names):
         """Tests that entangled initial states are properly created for a 2 wire device."""
 
@@ -619,11 +623,16 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
-        ("mps", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
-    ])
-    def test_add_initial_state_nodes_3_wires_completely_factorized(self, rep, num_nodes, node_names):
+    @pytest.mark.parametrize(
+        "rep,num_nodes,node_names",
+        [
+            ("exact", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
+            ("mps", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
+        ],
+    )
+    def test_add_initial_state_nodes_3_wires_completely_factorized(
+        self, rep, num_nodes, node_names
+    ):
         """Tests that completely factorized initial states are properly created for a 3 wire device."""
 
         dev = qml.device("default.tensor", wires=3, representation=rep)
@@ -636,10 +645,13 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 2, ["AliceBobState(0, 1)", "CharlieState(2,)"]),
-        ("mps", 3, ["AliceBobState(0,)", "AliceBobState(1,)", "CharlieState(2,)"]),
-    ])
+    @pytest.mark.parametrize(
+        "rep,num_nodes,node_names",
+        [
+            ("exact", 2, ["AliceBobState(0, 1)", "CharlieState(2,)"]),
+            ("mps", 3, ["AliceBobState(0,)", "AliceBobState(1,)", "CharlieState(2,)"]),
+        ],
+    )
     def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, rep, num_nodes, node_names):
         """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
 
@@ -656,10 +668,13 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 2, ["AliceState(0,)", "BobCharlieState(1, 2)"]),
-        ("mps", 3, ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"]),
-    ])
+    @pytest.mark.parametrize(
+        "rep,num_nodes,node_names",
+        [
+            ("exact", 2, ["AliceState(0,)", "BobCharlieState(1, 2)"]),
+            ("mps", 3, ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"]),
+        ],
+    )
     def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, rep, num_nodes, node_names):
         """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
 
@@ -676,6 +691,7 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
+    # mps representation does not support non-consecutive (AC) state preparation tensors
     def test_add_initial_state_nodes_3_wires_biseparable_AC_B_exact(self):
         """Tests that biseparable AC|B initial states are properly created for a 3 wire device with
         the "exact" representation."""
@@ -696,26 +712,13 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, "exact")
 
-    def test_add_initial_state_nodes_3_wires_biseparable_AC_B_mps_exception(self):
-        """Tests that biseparable AC|B initial states give an exception for "MPS" representation."""
-
-        dev = qml.device("default.tensor", wires=3, representation="mps")
-        dev._clear_network_data()
-
-        tensors = [
-            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
-            np.array([1.0, 1.0]) / np.sqrt(2),
-        ]
-        wires = [[0, 2], [1]]
-        names = ["AliceCharlieState", "BobState"]
-        with pytest.raises(NotImplementedError,
-                           match="Multi-wire state initializations only supported for consecutive wires."):
-            dev._add_initial_state_nodes(tensors, wires, names)
-
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 1, ["GHZState(0, 1, 2)"]),
-        ("mps", 3, ["GHZState(0,)", "GHZState(1,)", "GHZState(2,)"]),
-    ])
+    @pytest.mark.parametrize(
+        "rep,num_nodes,node_names",
+        [
+            ("exact", 1, ["GHZState(0, 1, 2)"]),
+            ("mps", 3, ["GHZState(0,)", "GHZState(1,)", "GHZState(2,)"]),
+        ],
+    )
     def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, rep, num_nodes, node_names):
         """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
 
@@ -729,6 +732,78 @@ class TestDefaultTensorNetworkMoreParametrize:
 
         assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
+
+class TestDefaultTensorMPSExceptions:
+    """Tests for exceptions related to non-nearest-neighbour operations when using
+    "mps" representation"""
+
+    def test_add_initial_state_nodes_3_wires_biseparable_AC_B_mps_exception(self):
+        """Tests that biseparable AC|B initial states give an exception for "MPS" representation."""
+
+        dev = qml.device("default.tensor", wires=3, representation="mps")
+        dev._clear_network_data()
+
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        with pytest.raises(
+            NotImplementedError,
+            match="Multi-wire state initializations only supported for tensors on consecutive wires.",
+        ):
+            dev._add_initial_state_nodes(tensors, wires, names)
+
+    @pytest.mark.parametrize("wires", [[0, 1, 2], [3, 2, 4], [3, 4, 5]])
+    def test_ev_mps_observable_more_than_two_wires_exception(self, wires):
+        """Tests that the _ev_mps method raises an exception if the observable is distributed across
+        more than two wires."""
+
+        dev = qml.device("default.tensor", wires=6, representation="mps")
+        obs_node = tn.Node(np.eye(8).reshape(2, 2, 2, 2, 2, 2))
+        with pytest.raises(
+            NotImplementedError,
+            match="Multi-wire measurement only supported for nearest-neighbour wire pairs.",
+        ):
+            dev._ev_mps([obs_node], [wires])
+
+    @pytest.mark.parametrize("wires", [[0, 2], [4, 1], [3, 5]])
+    def test_ev_mps_observable_two_wires_non_consecutive_exception(self, wires):
+        """Tests that the _ev_mps method raises an exception if the observable is distributed across
+        two non-consecutive wires."""
+
+        dev = qml.device("default.tensor", wires=6, representation="mps")
+        obs_node = tn.Node(np.eye(4).reshape(2, 2, 2, 2))
+        with pytest.raises(
+            NotImplementedError,
+            match="Multi-wire measurement only supported for nearest-neighbour wire pairs.",
+        ):
+            dev._ev_mps([obs_node], [wires])
+
+    @pytest.mark.parametrize("wires", [[0, 1, 2], [3, 2, 4], [3, 4, 5], [0, 2, 4, 1]])
+    def test_add_gate_nodes_more_than_two_wires_exception(self, wires):
+        """Tests that the _add_gate_nodes method raises an exception if the gate is distributed across
+        more than two wires."""
+
+        dev = qml.device("default.tensor", wires=6, representation="mps")
+        with pytest.raises(
+            NotImplementedError,
+            match="Multi-wire gates only supported for nearest-neighbour wire pairs.",
+        ):
+            dev._add_gate_nodes("Hermitian", wires, [np.eye(2 ** len(wires))])
+
+    @pytest.mark.parametrize("wires", [[0, 2], [3, 1], [3, 5], [0, 4]])
+    def test_add_gate_nodes_mtwo_wires_non_consecutive_exception(self, wires):
+        """Tests that the _add_gate_nodes method raises an exception if the gate is distributed across
+        two non-consecutive wires."""
+
+        dev = qml.device("default.tensor", wires=6, representation="mps")
+        with pytest.raises(
+            NotImplementedError,
+            match="Multi-wire gates only supported for nearest-neighbour wire pairs.",
+        ):
+            dev._add_gate_nodes("CNOT", wires, [])
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestDefaultTensorIntegration:
