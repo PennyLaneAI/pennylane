@@ -170,9 +170,9 @@ class DefaultTensor(Device):
            into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be
            sequences of length :math:`k`.
 
-           self._free_wire_edges is updated with the dangling edges from the prepared state nodes.
+           ``self._free_wire_edges`` is updated with the dangling edges from the prepared state nodes.
 
-           If self._rep is "mps", then the self.mps attribute is replaced with a new
+           If ``self._rep == "mps"``, then the ``self.mps`` attribute is replaced with a new
            matrix product state object representing the prepared initial states.
 
           Args:
