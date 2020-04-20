@@ -48,7 +48,16 @@ class DefaultTensor(Device):
     """Experimental Tensor Network simulator device for PennyLane.
 
     Args:
-        wires (int): the number of modes to initialize the device in
+        wires (int): number of subsystems in the quantum state represented by the device
+        shots (int): Number of circuit evaluations/random samples used to estimate
+            expectation values of observables. Defaults to 1000 if not specified.
+        representation (str): Underlying representation used for the tensor network simulation.
+            Valid options are "exact" (no approximations made) or "mps" (simulated quantum
+            state is approximated as a Matrix Product State).
+        contraction_method (str): Method used to perform tensor network contractions. Only applicable
+            for the "exact" representation. Valid options are "auto", "greedy", "branch", or "optimal".
+            See documentation of the `TensorNetwork library <https://tensornetwork.readthedocs.io/en/latest/>`_
+            for more information about contraction methods.
     """
 
     name = "PennyLane TensorNetwork simulator plugin"
@@ -110,12 +119,10 @@ class DefaultTensor(Device):
 
     _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
-    def __init__(
-        self, wires, shots=1000, analytic=True, representation="exact", contraction_method="auto"
-    ):
+    def __init__(self, wires, shots=1000, representation="exact", contraction_method="auto"):
         super().__init__(wires, shots)
         self.analytic = analytic
-        if representation not in ["exact","mps"]:
+        if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
         self._rep = representation
         self._contraction_method = contraction_method
@@ -191,8 +198,10 @@ class DefaultTensor(Device):
             self._free_wire_edges = []
             for tensor, wires_seq, name in zip(tensors, wires, names):
                 if len(tensor.shape) != len(wires_seq):
-                    raise ValueError("Tensor provided has shape={}, which is incompatible "
-                                     "with provided sequence of wires {}.".format(tensor.shape, wires_seq))
+                    raise ValueError(
+                        "Tensor provided has shape={}, which is incompatible "
+                        "with provided sequence of wires {}.".format(tensor.shape, wires_seq)
+                    )
                 node = self._add_node(tensor, wires=wires_seq, name=name)
                 self._free_wire_edges.extend(node.edges)
 
@@ -200,8 +209,10 @@ class DefaultTensor(Device):
             nodes = []
             for tensor, wires_seq, name in zip(tensors, wires, names):
                 if len(tensor.shape) != len(wires_seq):
-                    raise ValueError("Tensor provided has shape={}, which is incompatible "
-                                     "with provided sequence of wires {}.".format(tensor.shape, wires_seq))
+                    raise ValueError(
+                        "Tensor provided has shape={}, which is incompatible "
+                        "with provided sequence of wires {}.".format(tensor.shape, wires_seq)
+                    )
                 tensor = self._expand_dims(tensor, [0, -1])
                 if tensor.shape == (1, 2, 1):
                     # MPS form
@@ -571,7 +582,7 @@ class DefaultTensor(Device):
     @property
     def contraction_method(self):
         """The contraction method used by the tensor network.
-           Possible options are "auto", "greedy", "branch", or "optimal".
+           Available options are "auto", "greedy", "branch", or "optimal".
            See TensorNetwork library documentation for more details.
         """
         return self._contraction_method
@@ -582,7 +593,7 @@ class DefaultTensor(Device):
 
         Args:
             method (str): The contraction method to be employed.
-                Possible options are "auto", "greedy", "branch", or "optimal".
+                Available options are "auto", "greedy", "branch", or "optimal".
                 See TensorNetwork library documentation for more details.
 
         Raises:

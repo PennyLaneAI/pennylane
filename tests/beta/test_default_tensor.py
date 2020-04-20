@@ -805,6 +805,7 @@ class TestDefaultTensorMPSExceptions:
         ):
             dev._add_gate_nodes("CNOT", wires, [])
 
+
 @pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
