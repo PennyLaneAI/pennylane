@@ -209,6 +209,10 @@ class DefaultTensor(Device):
                     nodes.append(node)
                 else:
                     # break down non-factorized tensors into MPS form
+                    if max(wires_seq) - min(wires_seq) != len(wires_seq) - 1:
+                        raise NotImplementedError(
+                            "Multi-wire state initializations only supported for consecutive wires."
+                        )
                     DV = tensor
                     for idx, wire in enumerate(wires_seq):
                         if idx < len(wires_seq) - 1:

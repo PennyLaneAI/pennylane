@@ -128,9 +128,21 @@ def prep_par(par, op):
         return [np.diag([x, 1]) for x in par]
     return par
 
+def nodes_and_edges_valid(dev, num_nodes, node_names, rep):
+    """Asserts that nodes in a device ``dev`` are properly initialized, when there
+    are ``num_nodes`` nodes expected, with names ``node_names``, using representation ``rep``."""
+    if not set(dev._nodes.keys()) == {"state"}:
+        return False
+    if not len(dev._nodes["state"]) == num_nodes:
+        return False
+    for idx in range(num_nodes):
+        if not dev._nodes["state"][idx].name == node_names[idx]:
+            return False
+    return edges_valid(dev, num_nodes=num_nodes, rep=rep)
 
 def edges_valid(dev, num_nodes, rep):
-    """Returns True if the edges in a device are properly accounted for, when there are num_nodes in tensor network"""
+    """Returns True if the edges in a device ``dev`` are properly initialized, when there
+    are ``num_nodes`` nodes expected, using representation ``rep``."""
     if rep == "exact":
         node_edges = [dev._nodes["state"][idx].edges for idx in range(num_nodes)]
         node_edges_set = set([edge for sublist in node_edges for edge in sublist])
@@ -575,7 +587,7 @@ class TestDefaultTensorNetworkMoreParametrize:
 
     @pytest.mark.parametrize("rep,num_nodes,node_names", [
         ("exact", 2, ["AliceState(0,)", "BobState(1,)"]),
-        ("mps", 2, ["AliceState(0,)", "BobState(1,)"])
+        ("mps", 2, ["AliceState(0,)", "BobState(1,)"]),
     ])
     def test_add_initial_state_nodes_2_wires_factorized(self, rep, num_nodes, node_names):
         """Tests that factorized initial states are properly created for a 2 wire device."""
@@ -588,15 +600,11 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["AliceState", "BobState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
     @pytest.mark.parametrize("rep,num_nodes,node_names", [
         ("exact", 1, ["BellState(0, 1)"]),
-        ("mps", 2, ["BellState(0,)", "BellState(1,)"])
+        ("mps", 2, ["BellState(0,)", "BellState(1,)"]),
     ])
     def test_add_initial_state_nodes_2_wires_entangled(self, rep, num_nodes, node_names):
         """Tests that entangled initial states are properly created for a 2 wire device."""
@@ -609,15 +617,11 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["BellState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
     @pytest.mark.parametrize("rep,num_nodes,node_names", [
         ("exact", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
-        ("mps", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"])
+        ("mps", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
     ])
     def test_add_initial_state_nodes_3_wires_completely_factorized(self, rep, num_nodes, node_names):
         """Tests that completely factorized initial states are properly created for a 3 wire device."""
@@ -630,15 +634,11 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["AliceState", "BobState", "CharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
     @pytest.mark.parametrize("rep,num_nodes,node_names", [
         ("exact", 2, ["AliceBobState(0, 1)", "CharlieState(2,)"]),
-        ("mps", 3, ["AliceBobState(0,)", "AliceBobState(1,)", "CharlieState(2,)"])
+        ("mps", 3, ["AliceBobState(0,)", "AliceBobState(1,)", "CharlieState(2,)"]),
     ])
     def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, rep, num_nodes, node_names):
         """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
@@ -654,15 +654,11 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["AliceBobState", "CharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
     @pytest.mark.parametrize("rep,num_nodes,node_names", [
         ("exact", 2, ["AliceState(0,)", "BobCharlieState(1, 2)"]),
-        ("mps", 3, ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"])
+        ("mps", 3, ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"]),
     ])
     def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, rep, num_nodes, node_names):
         """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
@@ -678,20 +674,13 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["AliceState", "BobCharlieState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
 
-    @pytest.mark.parametrize("rep,num_nodes,node_names", [
-        ("exact", 2, ["AliceCharlieState(0, 2)", "BobState(1,)"]),
-        ("mps", 3, ["AliceCharlieState(0,)", "BobState(1,)", "AliceCharlieState(2,)"])
-    ])
-    def test_add_initial_state_nodes_3_wires_biseparable_AC_B(self, rep, num_nodes, node_names):
-        """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
+    def test_add_initial_state_nodes_3_wires_biseparable_AC_B_exact(self):
+        """Tests that biseparable AC|B initial states are properly created for a 3 wire device with
+        the "exact" representation."""
 
-        dev = qml.device("default.tensor", wires=3, representation=rep)
+        dev = qml.device("default.tensor", wires=3, representation="exact")
         dev._clear_network_data()
 
         tensors = [
@@ -702,15 +691,30 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["AliceCharlieState", "BobState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        num_nodes = 2
+        node_names = ["AliceCharlieState(0, 2)", "BobState(1,)"]
+
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, "exact")
+
+    def test_add_initial_state_nodes_3_wires_biseparable_AC_B_mps_exception(self):
+        """Tests that biseparable AC|B initial states give an exception for "MPS" representation."""
+
+        dev = qml.device("default.tensor", wires=3, representation="mps")
+        dev._clear_network_data()
+
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        with pytest.raises(NotImplementedError,
+                           match="Multi-wire state initializations only supported for consecutive wires."):
+            dev._add_initial_state_nodes(tensors, wires, names)
 
     @pytest.mark.parametrize("rep,num_nodes,node_names", [
         ("exact", 1, ["GHZState(0, 1, 2)"]),
-        ("mps", 3, ["GHZState(0,)", "GHZState(1,)", "GHZState(2,)"])
+        ("mps", 3, ["GHZState(0,)", "GHZState(1,)", "GHZState(2,)"]),
     ])
     def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, rep, num_nodes, node_names):
         """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
@@ -723,11 +727,8 @@ class TestDefaultTensorNetworkMoreParametrize:
         names = ["GHZState"]
         dev._add_initial_state_nodes(tensors, wires, names)
 
-        assert set(dev._nodes.keys()) == {"state"}
-        assert len(dev._nodes["state"]) == num_nodes
-        for idx in range(num_nodes):
-            assert dev._nodes["state"][idx].name == node_names[idx]
-        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+        assert nodes_and_edges_valid(dev, num_nodes, node_names, rep)
+
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestDefaultTensorIntegration:
