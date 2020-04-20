@@ -136,8 +136,6 @@ def edges_valid(dev, num_nodes, rep):
         node_edges_set = set([edge for sublist in node_edges for edge in sublist])
     elif rep == "mps":
         node_edges_set = {node.edges[1] for node in dev.mps.nodes}
-    print(node_edges_set)
-    print(set(dev._free_wire_edges))
     return node_edges_set == set(dev._free_wire_edges)
 
 
@@ -555,7 +553,6 @@ class TestDefaultTensorNetwork:
         dev._add_initial_state_nodes(tensors, wires, names)
 
         assert "state" in dev._nodes and len(dev._nodes) == 1
-        print(dev._nodes["state"])
         assert len(dev._nodes["state"]) == 1
         assert dev._nodes["state"][0].name == "GHZState(0, 1, 2)"
         assert edges_valid(dev, num_nodes=1, rep=rep)
