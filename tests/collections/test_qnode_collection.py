@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.QNodeCollection`
 """
 from collections.abc import Sequence
 
+import numpy as onp
 import pytest
 from pennylane import numpy as np
 
@@ -237,7 +238,7 @@ class TestEvalation:
         params = [0.5643, -0.45]
 
         res = qc(params, parallel=parallel).numpy()
-        expected = np.vstack([qnode1(params), qnode2(params)])
+        expected = onp.vstack([qnode1(params), qnode2(params)])
         assert np.all(res == expected)
 
     @pytest.mark.xfail(raises=AttributeError, reason="Dask breaks the TF gradient tape")

@@ -112,6 +112,9 @@ class TestGradientMultiargs:
 
         # gradient wrt first argument
         gx = qml.grad(f, 0)
+
+        print(f(x, y).__repr__())
+
         auto_gradx = gx(x, y)
         correct_gradx = gradf(x, y)[0]
         assert np.allclose(auto_gradx, correct_gradx, atol=tol, rtol=0)
