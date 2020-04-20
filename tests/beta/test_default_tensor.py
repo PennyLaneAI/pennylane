@@ -498,8 +498,8 @@ class TestDefaultTensorNetwork:
         dev._clear_network_data()
 
         tensors = [
-            np.array([1.0, 1.0]) / np.sqrt(2),
             np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
         ]
         wires = [[0], [1, 2]]
         names = ["AliceState", "BobCharlieState"]
@@ -565,7 +565,9 @@ class TestDefaultTensorNetwork:
             ([np.array([1.0, 0.0]), np.array([1.0, 1.0]) / np.sqrt(2)], [[0]], ["A"]),
         ],
     )
-    def test_add_initial_state_nodes_exception(self, rep, tensors, wires, names):
+    def test_add_initial_state_nodes_exception_not_all_same_length(
+        self, rep, tensors, wires, names
+    ):
         """Tests that an exception is given if the method _add_initial_state_nodes
         receives arguments with incompatible lengths."""
 
@@ -574,6 +576,33 @@ class TestDefaultTensorNetwork:
 
         with pytest.raises(ValueError, match="must all be the same length"):
             dev._add_initial_state_nodes(tensors, wires, names)
+
+    @pytest.mark.parametrize(
+        "tensors,wires,num_wires",
+        [
+            ([np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)], [[0]], 1),
+            ([np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)] * 2, [[0], [0, 1]], 2),
+            ([np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)] * 3, [[0], [1], [2]], 3),
+            ([np.array([1.0, 0.0]) / np.sqrt(2)], [[0, 1]], 1),
+            ([np.array([1.0, 0.0]) / np.sqrt(2)] * 2, [[0], [0, 1]], 2),
+            (
+                [np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)] * 2 + [np.array([1.0, 0.0])],
+                [[0], [1], [2]],
+                3,
+            ),
+        ],
+    )
+    def test_add_initial_state_nodes_exception_shape_incompatible_with_wires(
+        self, rep, tensors, wires, num_wires
+    ):
+        """Tests that an exception is given if the method _add_initial_state_nodes
+        receives a tensor whose shape is not compatible with the specified number of wires."""
+
+        dev = qml.device("default.tensor", wires=num_wires, representation=rep)
+        dev._clear_network_data()
+
+        with pytest.raises(ValueError, match="incompatible with provided sequence of wires"):
+            dev._add_initial_state_nodes(tensors, wires, ["dummy_name"] * num_wires)
 
     def test_add_node(self, rep, tol):
         """Tests that the _add_node method adds nodes with the correct attributes."""

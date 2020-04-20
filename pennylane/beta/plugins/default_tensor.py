@@ -187,12 +187,18 @@ class DefaultTensor(Device):
         if self._rep == "exact":
             self._free_wire_edges = []
             for tensor, wires_seq, name in zip(tensors, wires, names):
+                if len(tensor.shape) != len(wires_seq):
+                    raise ValueError("Tensor provided has shape={}, which is incompatible "
+                                     "with provided sequence of wires {}.".format(tensor.shape, wires_seq))
                 node = self._add_node(tensor, wires=wires_seq, name=name)
                 self._free_wire_edges.extend(node.edges)
 
         elif self._rep == "mps":
             nodes = []
             for tensor, wires_seq, name in zip(tensors, wires, names):
+                if len(tensor.shape) != len(wires_seq):
+                    raise ValueError("Tensor provided has shape={}, which is incompatible "
+                                     "with provided sequence of wires {}.".format(tensor.shape, wires_seq))
                 tensor = np.expand_dims(tensor, [0, -1])
                 if tensor.shape == (1, 2, 1):
                     # MPS form
