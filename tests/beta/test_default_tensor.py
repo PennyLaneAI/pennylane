@@ -498,8 +498,8 @@ class TestDefaultTensorNetwork:
         dev._clear_network_data()
 
         tensors = [
-            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
             np.array([1.0, 1.0]) / np.sqrt(2),
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
         ]
         wires = [[0], [1, 2]]
         names = ["AliceState", "BobCharlieState"]
@@ -537,17 +537,9 @@ class TestDefaultTensorNetwork:
         dev = qml.device("default.tensor", wires=3, representation=rep)
         dev._clear_network_data()
 
-        tensors = [
-            np.array(
-                [
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ]
-            )
-            / np.sqrt(2)
-        ]
+        ghz_tensor = np.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 1.0]]])
+
+        tensors = [ghz_tensor]
         wires = [[0, 1, 2]]
         names = ["GHZState"]
         dev._add_initial_state_nodes(tensors, wires, names)
