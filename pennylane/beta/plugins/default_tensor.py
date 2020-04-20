@@ -103,6 +103,7 @@ class DefaultTensor(Device):
     _imag = staticmethod(np.imag)
     _abs = staticmethod(np.abs)
     _squeeze = staticmethod(np.squeeze)
+    _expand_dims = staticmethod(np.expand_dims)
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
@@ -114,6 +115,8 @@ class DefaultTensor(Device):
     ):
         super().__init__(wires, shots)
         self.analytic = analytic
+        if representation not in ["exact","mps"]:
+            raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
@@ -199,7 +202,7 @@ class DefaultTensor(Device):
                 if len(tensor.shape) != len(wires_seq):
                     raise ValueError("Tensor provided has shape={}, which is incompatible "
                                      "with provided sequence of wires {}.".format(tensor.shape, wires_seq))
-                tensor = np.expand_dims(tensor, [0, -1])
+                tensor = self._expand_dims(tensor, [0, -1])
                 if tensor.shape == (1, 2, 1):
                     # MPS form
                     node = self._add_node(tensor, wires=wires_seq, name=name)

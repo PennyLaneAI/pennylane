@@ -366,8 +366,9 @@ class TestMatrixOperations:
 
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
-class TestDefaultTensorNetwork:
-    """Tests of the basic tensor network functionality of default.tensor plugin."""
+class TestDefaultTensorNetworkParametrize:
+    """Tests of the basic tensor network functionality of default.tensor plugin which are
+    easily parametrized over the different representations."""
 
     def test_clear_network_data(self, rep):
         """Tests that the _clear_network method clears the relevant bookkeeping data."""
@@ -406,10 +407,7 @@ class TestDefaultTensorNetwork:
             [dev._nodes["state"][idx].name == "ZeroState({},)".format(idx) for idx in range(2)]
         )
 
-        if rep == "exact":
-            shape = (2,)
-        elif rep == "mps":
-            shape = (1, 2, 1)
+        shape = (1, 2, 1) if rep == "mps" else (2,)
         reshaped_zero_state = dev._zero_state.reshape(shape)
         assert np.allclose(
             [dev._nodes["state"][idx].tensor for idx in range(2)],
@@ -419,135 +417,6 @@ class TestDefaultTensorNetwork:
         )
         assert len(dev._free_wire_edges) == 2
         assert edges_valid(dev, num_nodes=2, rep=rep)
-
-    def test_add_initial_state_nodes_2_wires_factorized(self, rep):
-        """Tests that factorized initial states are properly created for a 2 wire device."""
-
-        dev = qml.device("default.tensor", wires=2, representation=rep)
-        dev._clear_network_data()
-
-        tensors = [np.array([1.0, 0.0]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
-        wires = [[0], [1]]
-        names = ["AliceState", "BobState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 2
-        assert dev._nodes["state"][0].name == "AliceState(0,)"
-        assert dev._nodes["state"][1].name == "BobState(1,)"
-        assert edges_valid(dev, num_nodes=2, rep=rep)
-
-    def test_add_initial_state_nodes_2_wires_entangled(self, rep):
-        """Tests that entangled initial states are properly created for a 2 wire device."""
-
-        dev = qml.device("default.tensor", wires=2, representation=rep)
-        dev._clear_network_data()
-
-        tensors = [np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)]
-        wires = [[0, 1]]
-        names = ["BellState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 1
-        assert dev._nodes["state"][0].name == "BellState(0, 1)"
-        assert edges_valid(dev, num_nodes=1, rep=rep)
-
-    def test_add_initial_state_nodes_3_wires_completely_factorized(self, rep):
-        """Tests that completely factorized initial states are properly created for a 3 wire device."""
-
-        dev = qml.device("default.tensor", wires=3, representation=rep)
-        dev._clear_network_data()
-
-        tensors = [np.array([1.0, 0.0]), np.array([1, -1j]) / np.sqrt(2), np.array([0.0, 1.0])]
-        wires = [[0], [1], [2]]
-        names = ["AliceState", "BobState", "CharlieState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 3
-        assert dev._nodes["state"][0].name == "AliceState(0,)"
-        assert dev._nodes["state"][1].name == "BobState(1,)"
-        assert dev._nodes["state"][2].name == "CharlieState(2,)"
-        assert edges_valid(dev, num_nodes=3, rep=rep)
-
-    def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, rep):
-        """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
-
-        dev = qml.device("default.tensor", wires=3, representation=rep)
-        dev._clear_network_data()
-
-        tensors = [
-            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
-            np.array([1.0, 1.0]) / np.sqrt(2),
-        ]
-        wires = [[0, 1], [2]]
-        names = ["AliceBobState", "CharlieState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 2
-        assert dev._nodes["state"][0].name == "AliceBobState(0, 1)"
-        assert dev._nodes["state"][1].name == "CharlieState(2,)"
-        assert edges_valid(dev, num_nodes=2, rep=rep)
-
-    def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, rep):
-        """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
-
-        dev = qml.device("default.tensor", wires=3, representation=rep)
-        dev._clear_network_data()
-
-        tensors = [
-            np.array([1.0, 1.0]) / np.sqrt(2),
-            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
-        ]
-        wires = [[0], [1, 2]]
-        names = ["AliceState", "BobCharlieState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 2
-        assert dev._nodes["state"][0].name == "AliceState(0,)"
-        assert dev._nodes["state"][1].name == "BobCharlieState(1, 2)"
-        assert edges_valid(dev, num_nodes=2, rep=rep)
-
-    def test_add_initial_state_nodes_3_wires_biseparable_AC_B(self, rep):
-        """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
-
-        dev = qml.device("default.tensor", wires=3, representation=rep)
-        dev._clear_network_data()
-
-        tensors = [
-            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
-            np.array([1.0, 1.0]) / np.sqrt(2),
-        ]
-        wires = [[0, 2], [1]]
-        names = ["AliceCharlieState", "BobState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 2
-        assert dev._nodes["state"][0].name == "AliceCharlieState(0, 2)"
-        assert dev._nodes["state"][1].name == "BobState(1,)"
-        assert edges_valid(dev, num_nodes=2, rep=rep)
-
-    def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, rep):
-        """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
-
-        dev = qml.device("default.tensor", wires=3, representation=rep)
-        dev._clear_network_data()
-
-        ghz_tensor = np.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 1.0]]])
-
-        tensors = [ghz_tensor]
-        wires = [[0, 1, 2]]
-        names = ["GHZState"]
-        dev._add_initial_state_nodes(tensors, wires, names)
-
-        assert "state" in dev._nodes and len(dev._nodes) == 1
-        assert len(dev._nodes["state"]) == 1
-        assert dev._nodes["state"][0].name == "GHZState(0, 1, 2)"
-        assert edges_valid(dev, num_nodes=1, rep=rep)
 
     @pytest.mark.parametrize(
         "tensors,wires,names",
@@ -614,10 +483,7 @@ class TestDefaultTensorNetwork:
         assert set(node_names) == set(
             ["ZeroState(0,)", "ZeroState(1,)", "NewNodeX(0,)", "NewNodeY(1,)", "NewNodeZ(0, 1)"]
         )
-        if rep == "exact":
-            shape = (2,)
-        elif rep == "mps":
-            shape = (1, 2, 1)
+        shape = (1, 2, 1) if rep == "mps" else (2,)
         tensors = [n.tensor for n in dev._nodes["state"]]
         assert all(
             [np.allclose(t, np.reshape(zero_state, shape), atol=tol, rtol=0) for t in tensors[:2]]
@@ -697,6 +563,171 @@ class TestDefaultTensorNetwork:
         ).reshape([2, 2, 2])
         assert np.allclose(ket, expected, atol=tol, rtol=0)
 
+
+class TestDefaultTensorNetworkMoreParametrize:
+    """Tests of the basic tensor network functionality of default.tensor plugin which are
+    more complexly parametrized over the different representations."""
+
+    def test_exception_invalid_representation(self):
+        """Tests that an exception is raised if an invalid representation is given."""
+        with pytest.raises(ValueError, match="Invalid representation"):
+            dev = qml.device("default.tensor", wires=2, representation="junk")
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 2, ["AliceState(0,)", "BobState(1,)"]),
+        ("mps", 2, ["AliceState(0,)", "BobState(1,)"])
+    ])
+    def test_add_initial_state_nodes_2_wires_factorized(self, rep, num_nodes, node_names):
+        """Tests that factorized initial states are properly created for a 2 wire device."""
+
+        dev = qml.device("default.tensor", wires=2, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [np.array([1.0, 0.0]), np.array([np.sqrt(0.5), -1j * np.sqrt(0.5)])]
+        wires = [[0], [1]]
+        names = ["AliceState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 1, ["BellState(0, 1)"]),
+        ("mps", 2, ["BellState(0,)", "BellState(1,)"])
+    ])
+    def test_add_initial_state_nodes_2_wires_entangled(self, rep, num_nodes, node_names):
+        """Tests that entangled initial states are properly created for a 2 wire device."""
+
+        dev = qml.device("default.tensor", wires=2, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2)]
+        wires = [[0, 1]]
+        names = ["BellState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"]),
+        ("mps", 3, ["AliceState(0,)", "BobState(1,)", "CharlieState(2,)"])
+    ])
+    def test_add_initial_state_nodes_3_wires_completely_factorized(self, rep, num_nodes, node_names):
+        """Tests that completely factorized initial states are properly created for a 3 wire device."""
+
+        dev = qml.device("default.tensor", wires=3, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [np.array([1.0, 0.0]), np.array([1, -1j]) / np.sqrt(2), np.array([0.0, 1.0])]
+        wires = [[0], [1], [2]]
+        names = ["AliceState", "BobState", "CharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 2, ["AliceBobState(0, 1)", "CharlieState(2,)"]),
+        ("mps", 3, ["AliceBobState(0,)", "AliceBobState(1,)", "CharlieState(2,)"])
+    ])
+    def test_add_initial_state_nodes_3_wires_biseparable_AB_C(self, rep, num_nodes, node_names):
+        """Tests that biseparable AB|C initial states are properly created for a 3 wire device."""
+
+        dev = qml.device("default.tensor", wires=3, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
+        wires = [[0, 1], [2]]
+        names = ["AliceBobState", "CharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 2, ["AliceState(0,)", "BobCharlieState(1, 2)"]),
+        ("mps", 3, ["AliceState(0,)", "BobCharlieState(1,)", "BobCharlieState(2,)"])
+    ])
+    def test_add_initial_state_nodes_3_wires_biseparable_A_BC(self, rep, num_nodes, node_names):
+        """Tests that biseparable A|BC initial states are properly created for a 3 wire device."""
+
+        dev = qml.device("default.tensor", wires=3, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [
+            np.array([1.0, 1.0]) / np.sqrt(2),
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+        ]
+        wires = [[0], [1, 2]]
+        names = ["AliceState", "BobCharlieState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 2, ["AliceCharlieState(0, 2)", "BobState(1,)"]),
+        ("mps", 3, ["AliceCharlieState(0,)", "BobState(1,)", "AliceCharlieState(2,)"])
+    ])
+    def test_add_initial_state_nodes_3_wires_biseparable_AC_B(self, rep, num_nodes, node_names):
+        """Tests that biseparable AC|B initial states are properly created for a 3 wire device."""
+
+        dev = qml.device("default.tensor", wires=3, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
+            np.array([1.0, 1.0]) / np.sqrt(2),
+        ]
+        wires = [[0, 2], [1]]
+        names = ["AliceCharlieState", "BobState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
+
+    @pytest.mark.parametrize("rep,num_nodes,node_names", [
+        ("exact", 1, ["GHZState(0, 1, 2)"]),
+        ("mps", 3, ["GHZState(0,)", "GHZState(1,)", "GHZState(2,)"])
+    ])
+    def test_add_initial_state_nodes_3_wires_tripartite_entangled(self, rep, num_nodes, node_names):
+        """Tests that tripartite entangled initial states are properly created for a 3 wire device."""
+
+        dev = qml.device("default.tensor", wires=3, representation=rep)
+        dev._clear_network_data()
+
+        tensors = [np.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 1.0]]])]
+        wires = [[0, 1, 2]]
+        names = ["GHZState"]
+        dev._add_initial_state_nodes(tensors, wires, names)
+
+        assert set(dev._nodes.keys()) == {"state"}
+        assert len(dev._nodes["state"]) == num_nodes
+        for idx in range(num_nodes):
+            assert dev._nodes["state"][idx].name == node_names[idx]
+        assert edges_valid(dev, num_nodes=num_nodes, rep=rep)
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestDefaultTensorIntegration:
