@@ -498,8 +498,8 @@ class TestDefaultTensorNetwork:
         dev._clear_network_data()
 
         tensors = [
-            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
             np.array([1.0, 1.0]) / np.sqrt(2),
+            np.array([[1.0, 0.0], [0.0, 1.0]]) / np.sqrt(2),
         ]
         wires = [[0], [1, 2]]
         names = ["AliceState", "BobCharlieState"]
