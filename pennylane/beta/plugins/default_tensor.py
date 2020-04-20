@@ -184,8 +184,8 @@ class DefaultTensor(Device):
         if not (len(tensors) == len(wires) == len(names)):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
-        self._free_wire_edges = []
         if self._rep == "exact":
+            self._free_wire_edges = []
             for tensor, wires_seq, name in zip(tensors, wires, names):
                 node = self._add_node(tensor, wires=wires_seq, name=name)
                 self._free_wire_edges.extend(node.edges)
@@ -198,7 +198,6 @@ class DefaultTensor(Device):
                     # MPS form
                     node = self._add_node(tensor, wires=wires_seq, name=name)
                     nodes.append(node)
-                    self._free_wire_edges.append(node[1])
                 else:
                     # break down non-factorized tensors into MPS form
                     DV = tensor
@@ -211,8 +210,8 @@ class DefaultTensor(Device):
                             # final wire; no need to split further
                             node = self._add_node(DV, wires=[wire], name=name)
                         nodes.append(node)
-                        self._free_wire_edges.append(node[1])
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes, canonicalize=False)
+            self._free_wire_edges = [node[1] for node in self.mps.nodes]
 
     def _get_operator_matrix(self, operation, par):
         """Get the operator matrix for a given operation or observable.
