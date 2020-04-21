@@ -126,3 +126,74 @@ class CustomGalleryItemDirective(Directive):
         thumb = nodes.paragraph()
         self.state.nested_parse(thumbnail, self.content_offset, thumb)
         return [thumb]
+
+
+DEVICE_GALLERY_TEMPLATE = """
+.. raw:: html
+
+    <div class="card" style="width: 15rem; float:left; margin: 10px;">
+        <a href={link}>
+            <div class="card-header">
+                <b>{name}</b>
+            </div>
+            <div class="card-body">
+                <p class="card-text"> {description} </p>
+            </div>
+        </a>
+    </div>
+"""
+
+
+class CustomDeviceGalleryItemDirective(Directive):
+    """Create a sphinx gallery style thumbnail.
+    tooltip and figure are self explanatory. Description could be a link to
+    a document like in below example.
+    Example usage:
+
+    .. customgalleryitem::
+        :name: 'default.qubit'
+        :description: This is a device
+        :link: /path/to/device
+
+    """
+
+    required_arguments = 0
+    optional_arguments = 4
+    final_argument_whitespace = True
+    option_spec = {'name': directives.unchanged,
+                   'description': directives.unchanged,
+                   'link': directives.unchanged}
+
+    has_content = False
+    add_index = False
+
+    def run(self):
+        try:
+            if 'name' in self.options:
+                name = self.options['name']
+
+            if 'description' in self.options:
+                description = self.options['description']
+            else:
+                raise ValueError('description not found')
+
+            if 'link' in self.options:
+                link = self.options['link']
+            else:
+                link = "code/qml_templates"
+
+        except FileNotFoundError as e:
+            print(e)
+            return []
+        except ValueError as e:
+            print(e)
+            raise
+            return []
+
+        thumbnail_rst = DEVICE_GALLERY_TEMPLATE.format(name=name,
+                                                description=description,
+                                                link=link)
+        thumbnail = StringList(thumbnail_rst.split('\n'))
+        thumb = nodes.paragraph()
+        self.state.nested_parse(thumbnail, self.content_offset, thumb)
+        return [thumb]
