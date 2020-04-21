@@ -1,5 +1,5 @@
-How to add a new template
--------------------------
+Contributing templates
+----------------------
 
 The following steps will help you to add your favourite circuit ansatz to
 PennyLane's :mod:`template <pennylane.template>` library.
@@ -40,7 +40,7 @@ correct template type.
 
    * *Choose the name carefully.* Good names tell the user what a template is good for,
       or what architecture it implements. To be consistent with other quantum operations
-      (which are classes), the function name (i.e., ``MyNewTemplate``) is written in camel case. 
+      (which are classes), the function name (i.e., ``MyNewTemplate``) is written in camel case.
 
    * *Register the template.* A template is "registered" by using the :mod:`template <pennylane.template>`
      decorator ``@template``. This allows us to record the queue of operations of a template,
