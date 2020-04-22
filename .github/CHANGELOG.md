@@ -148,7 +148,7 @@
   [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
 
   Currently the only such device supported by PennyLane is `default.tensor.tf`,
-  compatible with the `'tf'` inteface using TensorFlow 2:
+  compatible with the `'tf'` interface using TensorFlow 2:
 
   ```python
   from pennylane.qnodes import PassthruQNode
@@ -173,23 +173,26 @@
 
 <h3>Breaking changes</h3>
 
-* Probabilty methods are handled by `QubitDevice` and device method
+* Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
 
 <h3>Improvements</h3>
 
-* The input check functions in :mod:`pennylane.templates.utils` are now public
+* The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
   [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
 
 * Improved the performance of diagonal gates in the `default.qubit` plugin.
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
 
-* Added a step size keyword argument to the `qnode` decorator, `QNode` and
-  `JacobianQNode` classes to enable setting the step size when using finite
-  difference methods.
+* Added keyword arguments for step size and order to the `qnode` decorator, `QNode` and
+  `JacobianQNode` classes to enable setting the step size and order when using finite
+  difference methods. Exposed these options in `map` and `VQECost` for users creating collections
+  of QNodes.
   [(#530)](https://github.com/XanaduAI/pennylane/pull/530)
+  [(#585)](https://github.com/XanaduAI/pennylane/pull/585)
+  [(#587)](https://github.com/XanaduAI/pennylane/pull/587)
 
 * The decomposition for the `CRY` gate now uses the simpler form `RY @ CNOT @ RY @ CNOT`
   [(#547)](https://github.com/XanaduAI/pennylane/pull/547)
@@ -245,7 +248,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 

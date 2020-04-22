@@ -81,6 +81,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
 
     Keyword Args:
         h (float): step size for the finite-difference method
+        order (int): order for the finite-difference method, must be 1 (default) or 2
     """
     if diff_method is None:
         # QNode is not differentiable
@@ -183,6 +184,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
     Keyword Args:
         h (float): Step size for the finite difference method. Default is ``1e-7`` for analytic devices, or
             ``0.3`` for non-analytic devices (those that estimate expectation values with a finite number of shots).
+        order (int): order for the finite-difference method, must be 1 (default) or 2
    """
 
     @lru_cache()
