@@ -84,12 +84,11 @@ def cli():
                     "git rev-parse --abbrev-ref --symbolic-full-name HEAD",
                     capture_output=True,
                     check=True,
-                    shell=True,
                 )
 
                 if "HEAD" not in str(res.stdout):
-                    subprocess.run("git checkout {} -q".format(revision), shell=True)
-                    subprocess.run("git pull -q", shell=True)
+                    subprocess.run("git checkout {} -q".format(revision))
+                    subprocess.run("git pull -q")
         else:
             try:
                 # If we already downloaded a revision we don't need to clone the whole
@@ -109,11 +108,10 @@ def cli():
                         "git clone https://www.github.com/xanaduai/pennylane {} -q".format(
                             revision
                         ),
-                        shell=True,
                     )
 
             with cd(pl_directory):
-                res = subprocess.run("git checkout {} -q".format(revision), shell=True)
+                res = subprocess.run("git checkout {} -q".format(revision))
 
             # An error occured during checkout, so the revision does not exist
             if res.returncode != 0:
@@ -141,7 +139,6 @@ def cli():
             ["python3", benchmark_file_path] + unknown_args + ["--noinfo"],
             env=benchmark_env,
             check=True,
-            shell=True,
         )
 
 
