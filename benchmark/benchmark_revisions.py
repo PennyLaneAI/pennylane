@@ -82,7 +82,7 @@ def cli():
                 # Check if we're on a detached HEAD (i.e. for version revisions)
                 res = subprocess.run(
                     ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
-                    capture_output=True,
+                    stdout=subprocess.PIPE,
                     check=True,
                 )
 
