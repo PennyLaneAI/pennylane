@@ -11,12 +11,12 @@ of PennyLane, its plugins and devices.
 
 .. devicegalleryitem::
     :name: Installation
-    :description: Dependencies and installation of PennyLane source code using development mode.
+    :description: Installation and dependencies of the PennyLane source code using development mode.
     :link: guide/installation.html
 
 .. devicegalleryitem::
     :name: Software tests
-    :description: Installing dependencies and running PennyLane tests and coverage.
+    :description: Installing dependencies, running the PennyLane test suite and measuring coverage.
     :link: guide/tests.html
 
 .. devicegalleryitem::
