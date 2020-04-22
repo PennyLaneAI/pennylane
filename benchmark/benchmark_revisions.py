@@ -81,14 +81,14 @@ def cli():
             with cd(pl_directory):
                 # Check if we're on a detached HEAD (i.e. for version revisions)
                 res = subprocess.run(
-                    "git rev-parse --abbrev-ref --symbolic-full-name HEAD",
+                    ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
                     capture_output=True,
                     check=True,
                 )
 
                 if "HEAD" not in str(res.stdout):
-                    subprocess.run("git checkout {} -q".format(revision))
-                    subprocess.run("git pull -q")
+                    subprocess.run(["git", "checkout", revision, "-q"])
+                    subprocess.run(["git", "pull", "-q"])
         else:
             try:
                 # If we already downloaded a revision we don't need to clone the whole
@@ -105,13 +105,11 @@ def cli():
                 os.mkdir(pl_directory)
                 with cd(revisions_directory):
                     subprocess.run(
-                        "git clone https://www.github.com/xanaduai/pennylane {} -q".format(
-                            revision
-                        ),
+                        ["git", "clone", "https://www.github.com/xanaduai/pennylane", revision, "-q"],
                     )
 
             with cd(pl_directory):
-                res = subprocess.run("git checkout {} -q".format(revision))
+                res = subprocess.run(["git", "checkout", revision, "-q"])
 
             # An error occured during checkout, so the revision does not exist
             if res.returncode != 0:
