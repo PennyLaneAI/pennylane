@@ -298,64 +298,67 @@ class TestRandomLayers:
     def rots(self, request):
         return request.param
 
-    def test_random_layers_deterministic_seed(self, n_layers, tol, seed):
-        """Test that RandomLayers() acts deterministically when using fixed seed."""
-        n_rots = 1
-        n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_rots)
+    def test_same_circuit_for_same_seed(self, tol, seed):
+        """Test that RandomLayers() creates the same circuit when using the same seed."""
+        dev = qml.device("default.qubit", wires=2)
+        weights = [[0.1, 0.2, 0.3]]
 
-        def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
+        def circuit(weights):
+            RandomLayers(weights=weights, wires=range(2), seed=seed)
             return qml.expval(qml.PauliZ(0))
 
-        def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=seed)
-            return qml.expval(qml.PauliZ(0))
-
-        qnode1 = qml.QNode(circuit1, dev)
-        qnode2 = qml.QNode(circuit2, dev)
+        qnode1 = qml.QNode(circuit, dev)
+        qnode2 = qml.QNode(circuit, dev)
         assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
 
-    def test_random_layers_deterministic_default_seed(self, n_layers, tol):
-        """Test that RandomLayers() acts deterministically when using default seed."""
-        n_rots = 1
-        n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_rots)
+    def test_different_circuits_for_different_seeds(self, tol):
+        """Test that RandomLayers() does not necessarily have the same output for two different seeds."""
+        dev = qml.device("default.qubit", wires=2)
+        weights = [[0.1, 0.2, 0.3]]
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
+            RandomLayers(weights=weights, wires=range(2), seed=1)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires))
-            return qml.expval(qml.PauliZ(0))
-
-        qnode1 = qml.QNode(circuit1, dev)
-        qnode2 = qml.QNode(circuit2, dev)
-
-        assert np.allclose(qnode1(weights), qnode2(weights), atol=tol)
-
-    def test_random_layers_two_seeds_different(self, n_layers, tol):
-        """Test that RandomLayers() does not have the same output for two different seeds."""
-        n_rots = 10
-        n_wires = 2
-        dev = qml.device("default.qubit", wires=n_wires)
-        weights = np.random.randn(n_layers, n_rots)
-
-        def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=0)
-            return qml.expval(qml.PauliZ(0))
-
-        def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(n_wires), seed=1)
+            RandomLayers(weights=weights, wires=range(2), seed=2)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
         qnode2 = qml.QNode(circuit2, dev)
 
         assert not np.allclose(qnode1(weights), qnode2(weights), atol=tol)
+
+    @pytest.mark.parametrize("mutable", [True, False])
+    def test_same_circuit_in_each_qnode_call(self, mutable, tol):
+        """Test that RandomLayers() creates the same circuit in two calls of a qnode."""
+        dev = qml.device("default.qubit", wires=2)
+        weights = [[0.1, 0.2, 0.3]]
+
+        @qml.qnode(dev, mutable=mutable)
+        def circuit(weights):
+            RandomLayers(weights=weights, wires=range(2))
+            return qml.expval(qml.PauliZ(0))
+
+        first_call = circuit(weights)
+        second_call = circuit(weights)
+        assert np.allclose(first_call, second_call, atol=tol)
+
+    def test_no_seed(self, tol):
+        """Test that two calls to a qnode with RandomLayers() for 'seed=None' option create the
+        same circuit for immutable qnodes."""
+
+        dev = qml.device("default.qubit", wires=2)
+        weights = [[0.1]*100]
+
+        @qml.qnode(dev, mutable=False)
+        def circuit(weights):
+            RandomLayers(weights=weights, wires=range(2), seed=None)
+            return qml.expval(qml.PauliZ(0))
+
+        first_call = circuit(weights)
+        second_call = circuit(weights)
+        assert np.allclose(first_call, second_call, atol=tol)
 
     def test_random_layers_nlayers(self, n_layers):
         """Test that RandomLayers() picks the correct number of gates."""
