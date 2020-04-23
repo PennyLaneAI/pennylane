@@ -795,7 +795,7 @@ class TestDefaultTensorMPSExceptions:
             dev._add_gate_nodes("Hermitian", wires, [np.eye(2 ** len(wires))])
 
     @pytest.mark.parametrize("wires", [[0, 2], [3, 1], [3, 5], [0, 4]])
-    def test_add_gate_nodes_mtwo_wires_non_consecutive_exception(self, wires):
+    def test_add_gate_nodes_two_wires_non_consecutive_exception(self, wires):
         """Tests that the _add_gate_nodes method raises an exception if the gate is distributed across
         two non-consecutive wires."""
 

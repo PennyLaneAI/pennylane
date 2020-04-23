@@ -252,7 +252,7 @@ class DefaultTensor(Device):
         return self._asarray(A(*par), dtype=self.C_DTYPE)
 
     def apply(self, operation, wires, par):
-        if operation == "QubitStateVector" or operation == "BasisState":
+        if operation in ("QubitStateVector", "BasisState"):
             if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
                 raise ValueError(
                     "The default.tensor plugin can apply {} only to all of the {} wires.".format(
