@@ -567,7 +567,6 @@ class DefaultTensor(Device):
         """The numerical quantum state tensor.
 
         The state is obtained by contracting all the gates in the tensor network.
-        An optional contraction method can be specified.
 
         Returns:
             (array, tf.Tensor, torch.Tensor): the numerical tensor
