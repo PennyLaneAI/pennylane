@@ -1,6 +1,9 @@
 Software tests
 ==============
 
+Running the test suite
+~~~~~~~~~~~~~~~~~~~~~~
+
 The PennyLane test suite requires the Python ``pytest`` package, as well as ``pytest-cov``
 for test coverage; these can be installed via ``pip``:
 
