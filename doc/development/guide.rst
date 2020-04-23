@@ -7,7 +7,7 @@ PennyLane codebase.
 The guides below are aimed towards developers and cover how to install
 PennyLane and its dependencies in development mode, run and add tests, write
 documentation, as well as general best practices and an architectural overview
-of PennyLane, its plugins and devices.
+of PennyLane, plugins, and devices.
 
 .. devicegalleryitem::
     :name: Installation
