@@ -510,9 +510,11 @@ class TestDefaultTensorNetworkParametrize:
 
         dev = qml.device("default.tensor", wires=2, representation=rep)
 
-        assert "state" in dev._nodes and len(dev._nodes) == 1
+        assert "state" in dev._nodes
+        assert len(dev._nodes) == 1
         dev._add_node(np.array([[0, 1], [1, 0]]), wires=[0], key="junk")
-        assert "junk" in dev._nodes and len(dev._nodes) == 2
+        assert "junk" in dev._nodes
+        assert len(dev._nodes) == 2
 
     def test_create_nodes_from_tensors(self, rep):
         """Tests that the create_nodes_from_tensors method adds nodes to the tensor
@@ -578,9 +580,9 @@ class TestDefaultTensorNetworkParametrize:
         assert np.allclose(ket, expected, atol=tol, rtol=0)
 
 
-class TestDefaultTensorNetworkMoreParametrize:
-    """Tests of the basic tensor network functionality of default.tensor plugin which are
-    more complexly parametrized over the different representations."""
+class TestDefaultTensorNetworkRepresentationDependentParametrize:
+    """Tests of the basic tensor network functionality of default.tensor plugin where the
+    expected values differ for different representations."""
 
     def test_exception_invalid_representation(self):
         """Tests that an exception is raised if an invalid representation is given."""
