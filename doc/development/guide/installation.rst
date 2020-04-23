@@ -6,17 +6,22 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >=3.5
+* `Python <http://python.org/>`_ >= 3.5
 
 as well as the following Python packages:
 
-* `numpy <http://numpy.org/>`_ >=1.13.3
-* `scipy <http://scipy.org/>`_ >=1.0.0
-* `NetworkX <https://networkx.github.io/>`_ >=1.0.0
+* `numpy <http://numpy.org/>`_ >= 1.13.3
+* `scipy <http://scipy.org/>`_ >= 1.0.0
+* `NetworkX <https://networkx.github.io/>`_ >= 1.0.0
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ == 2.6
+
+The following Python packages are optional:
+
+* `dask["parallel"] <https://dask.org/>`_, for parallel QNodeCollection execution
+* `tensornetwork <https://github.com/google/TensorNetwork>`_ >= 0.3, for the ``default.tensor`` plugin
 
 If you currently do not have Python 3 installed, we recommend
 `Anaconda for Python 3 <https://www.anaconda.com/download/>`_, a distributed version
@@ -30,9 +35,9 @@ Interface dependencies
 For development of the TensorFlow and PyTorch interfaces, additional
 requirements are required.
 
-* **PyTorch interface**: ``pytorch>=1.1``
+* **PyTorch interface**: ``pytorch >= 1.1``
 
-* **TensorFlow interface**: ``tensorflow>=1.12``
+* **TensorFlow interface**: ``tensorflow >= 1.12``
 
   Note that any version of TensorFlow supporting eager execution mode
   is supported, however there are slight differences between the eager
