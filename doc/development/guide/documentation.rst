@@ -3,12 +3,15 @@ Documentation
 
 To build the documentation, the following additional packages are required:
 
-* `Sphinx <http://sphinx-doc.org/>`_ == 1.8.5
-* `pygments-github-lexers <https://github.com/liluo/pygments-github-lexers>`_
-* `sphinxcontrib-bibtex <https://sphinxcontrib-bibtex.readthedocs.io/en/latest/>`_ == 0.4.2
+* `Sphinx <http://sphinx-doc.org/>`_ == 2.2.2
 * `sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`_
+* `pygments-github-lexers <https://github.com/liluo/pygments-github-lexers>`_
 
 These can all be installed via ``pip``.
+
+.. code-block:: console
+
+    $ pip install -r doc/requirements.txt
 
 To build the HTML documentation, go to the top-level directory and run
 
