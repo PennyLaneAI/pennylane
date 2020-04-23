@@ -26,10 +26,10 @@ try:
     import tensornetwork as tn
 
     v = tn.__version__.split(".")
-    if int(v[0]) != 0 and int(v[1]) != 3:
-        raise ImportError("default.tensor device requires TensorNetwork==0.3")
+    if int(v[0]) != 0 and int(v[1]) < 3:
+        raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 except ImportError as e:
-    raise ImportError("default.tensor device requires TensorNetwork==0.3")
+    raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 
 from pennylane._device import Device
 
