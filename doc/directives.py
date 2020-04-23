@@ -128,7 +128,7 @@ class CustomGalleryItemDirective(Directive):
         return [thumb]
 
 
-DEVICE_GALLERY_TEMPLATE = """
+TITLE_CARD_TEMPLATE = """
 .. raw:: html
 
     <div class="card" style="width: 15rem; float:left; margin: 10px;">
@@ -144,16 +144,16 @@ DEVICE_GALLERY_TEMPLATE = """
 """
 
 
-class CustomDeviceGalleryItemDirective(Directive):
+class TitleCardDirective(Directive):
     """Create a sphinx gallery style thumbnail.
     tooltip and figure are self explanatory. Description could be a link to
     a document like in below example.
     Example usage:
 
     .. customgalleryitem::
-        :name: 'default.qubit'
-        :description: This is a device
-        :link: /path/to/device
+        :name: Installation
+        :description: Description of page
+        :link: /path/to/page
 
     """
 
@@ -190,9 +190,9 @@ class CustomDeviceGalleryItemDirective(Directive):
             raise
             return []
 
-        thumbnail_rst = DEVICE_GALLERY_TEMPLATE.format(name=name,
-                                                description=description,
-                                                link=link)
+        thumbnail_rst = TITLE_CARD_TEMPLATE.format(name=name,
+                                                   description=description,
+                                                   link=link)
         thumbnail = StringList(thumbnail_rst.split('\n'))
         thumb = nodes.paragraph()
         self.state.nested_parse(thumbnail, self.content_offset, thumb)
