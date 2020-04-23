@@ -47,11 +47,13 @@ def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
     i = 0
     while i < len(weights):
         if np.random.random() > ratio_imprim:
+            # Apply a random rotation gate to a random wire
             gate = np.random.choice(rotations)
-            wire = np.random.choice(wires)
+            wire = int(np.random.choice(wires))
             gate(weights[i], wires=wire)
             i += 1
         else:
+            # Apply the imprimitive to two random wires
             if len(wires) > 1:
                 on_wires = np.random.permutation(wires)[:2]
                 on_wires = list(on_wires)
