@@ -26,7 +26,7 @@ try:
     import tensornetwork as tn
 
     v = tn.__version__.split(".")
-    if int(v[0]) == 0 and int(v[1]) < 3:
+    if int(v[0]) != 0 and int(v[1]) < 3:
         raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 except ImportError as e:
     raise ImportError("default.tensor device requires TensorNetwork>=0.3")
@@ -569,10 +569,8 @@ class DefaultTensor(Device):
         The state is obtained by contracting all the gates in the tensor network.
         An optional contraction method can be specified.
 
-        Args:
-            contraction_method (str): The contraction method to be employed.
-                Possible choices are "auto", "greedy", "branch", or "optimal".
-                See TensorNetwork library documentation for more details.
+        Returns:
+            (array, tf.Tensor, torch.Tensor): the numerical tensor
         """
         # TODO: determine if there is an edge case where we can apply gates, pull out _state,
         # then apply more gates and try to access _state again (second call will bring out earlier
