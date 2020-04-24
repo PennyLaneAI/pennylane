@@ -148,7 +148,7 @@
   [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
 
   Currently the only such device supported by PennyLane is `default.tensor.tf`,
-  compatible with the `'tf'` inteface using TensorFlow 2:
+  compatible with the `'tf'` interface using TensorFlow 2:
 
   ```python
   from pennylane.qnodes import PassthruQNode
@@ -173,13 +173,13 @@
 
 <h3>Breaking changes</h3>
 
-* Probabilty methods are handled by `QubitDevice` and device method
+* Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
 
 <h3>Improvements</h3>
 
-* The input check functions in :mod:`pennylane.templates.utils` are now public
+* The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
   [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
 
@@ -248,7 +248,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 
