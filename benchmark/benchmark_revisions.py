@@ -77,69 +77,91 @@ def cli():
         print(">>> Running benchmark for revision {}".format(col(revision, "red")))
         pl_directory = revisions_directory / revision
 
-        # We first make sure we get the latest version of the desired revision
-        if pl_directory.exists():
-            print(">>> Revision found locally, updating...")
-            with cd(pl_directory):
-                # Check if we're on a detached HEAD (i.e. for version revisions)
-                res = subprocess.run(
-                    ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
-                    stdout=subprocess.PIPE,
-                    check=True,
-                )
+        try:
 
-                if "HEAD" not in str(res.stdout):
-                    subprocess.run(["git", "checkout", revision, "-q"])
-                    subprocess.run(["git", "pull", "-q"])
-        else:
-            try:
-                # If we already downloaded a revision we don't need to clone the whole
-                # PL repository. Instead we just copy the first revision in the directory
-                # checkout will then get the correct revision
-                first_revision = next((x for x in revisions_directory.iterdir() if x.is_dir()))
-                print(">>> Revision not found locally, copying...")
-                print(str(first_revision), str(revisions_directory / revision))
-                shutil.copytree(str(first_revision), str(revisions_directory / revision))
-
-            except StopIteration:
-                # Didn't find a local revision to copy, use git to clone
-                print(">>> Revision not found locally, cloning...")
-
-                pl_directory.mkdir()
-                with cd(revisions_directory):
-                    subprocess.run(
-                        ["git", "clone", "https://www.github.com/xanaduai/pennylane", revision, "-q"],
+            # We first make sure we get the latest version of the desired revision
+            if pl_directory.exists():
+                print(">>> Revision found locally, updating...")
+                with cd(pl_directory):
+                    # Check if we're on a detached HEAD (i.e. for version revisions)
+                    res = subprocess.run(
+                        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
+                        stdout=subprocess.PIPE,
+                        check=True,
                     )
 
-            with cd(pl_directory):
-                res = subprocess.run(["git", "checkout", revision, "-q"], check=True)
+                    if "HEAD" not in str(res.stdout):
+                        subprocess.run(["git", "checkout", revision, "-q"], check=True)
+                        subprocess.run(["git", "pull", "-q"], check=True)
+            else:
+                try:
+                    # If we already downloaded a revision we don't need to clone the whole
+                    # PL repository. Instead we just copy the first revision in the directory
+                    # checkout will then get the correct revision
+                    first_revision = next((x for x in revisions_directory.iterdir() if x.is_dir()))
+                    print(">>> Revision not found locally, copying...")
+                    print(str(first_revision), str(revisions_directory / revision))
+                    shutil.copytree(str(first_revision), str(revisions_directory / revision))
 
-            # An error occured during checkout, so the revision does not exist
-            if res.returncode != 0:
-                print(
-                    col(
-                        ">>> Couldn't check out revision {}, deleting temporary data".format(
-                            revision
-                        ),
-                        "red",
+                except StopIteration:
+                    # Didn't find a local revision to copy, use git to clone
+                    print(">>> Revision not found locally, cloning...")
+
+                    pl_directory.mkdir()
+                    with cd(revisions_directory):
+                        subprocess.run(
+                            [
+                                "git",
+                                "clone",
+                                "https://www.github.com/xanaduai/pennylane",
+                                revision,
+                                "-q",
+                            ],
+                            check=True,
+                        )
+
+                with cd(pl_directory):
+                    res = subprocess.run(["git", "checkout", revision, "-q"])
+
+                # An error occured during checkout, so the revision does not exist
+                if res.returncode != 0:
+                    print(
+                        col(
+                            ">>> Couldn't check out revision {}, deleting temporary data".format(
+                                revision
+                            ),
+                            "red",
+                        )
                     )
-                )
 
-                # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
-                # as writeable and retries. See also
-                # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
+                    # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
+                    # as writeable and retries. See also
+                    # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
+                    shutil.rmtree(str(pl_directory), onerror=remove_readonly)
+                    continue
+
+            benchmark_file_path = Path(__file__).parent / "benchmark.py"
+            print("benchmark_file_path = ", benchmark_file_path)
+            benchmark_env = os.environ.copy()
+            benchmark_env["PYTHONPATH"] = str(pl_directory) + ";" + benchmark_env["PATH"]
+            subprocess.run(
+                ["python3", str(benchmark_file_path)] + unknown_args + ["--noinfo"],
+                env=benchmark_env,
+                check=True,
+            )
+        except:
+            print(
+                col(
+                    ">>> An error occured during execution of the script. "
+                    + "Deleting the current revision folder to not leave junk.",
+                    "red",
+                )
+            )
+
+            if pl_directory.exists():
                 shutil.rmtree(str(pl_directory), onerror=remove_readonly)
-                continue
 
-        benchmark_file_path = Path(__file__).parent / "benchmark.py"
-        print("benchmark_file_path = ", benchmark_file_path)
-        benchmark_env = os.environ.copy()
-        benchmark_env["PYTHONPATH"] = str(pl_directory) + ";" + benchmark_env["PATH"]
-        subprocess.run(
-            ["python3", str(benchmark_file_path)] + unknown_args + ["--noinfo"],
-            env=benchmark_env,
-            check=True,
-        )
+            raise
 
 
 if __name__ == "__main__":
