@@ -17,6 +17,7 @@ Benchmarking tool for different commits
 # pylint: disable=subprocess-run-check
 import argparse
 import os
+from pathlib import Path
 import stat
 import shutil
 import subprocess
@@ -28,15 +29,15 @@ class cd:
     """Context manager for changing the current working directory"""
 
     def __init__(self, newPath):
-        self.newPath = os.path.expanduser(newPath)
+        self.newPath = newPath
         self.savedPath = None
 
     def __enter__(self):
-        self.savedPath = os.getcwd()
-        os.chdir(self.newPath)
+        self.savedPath = Path.cwd()
+        os.chdir(str(self.newPath))
 
     def __exit__(self, etype, value, traceback):
-        os.chdir(self.savedPath)
+        os.chdir(str(self.savedPath))
 
 
 # benchmarking tool version
@@ -67,16 +68,17 @@ def cli():
     # Only parse revisions, other args will go to the benchmarking script
     args, unknown_args = parser.parse_known_args()
 
-    revisions_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "revisions")
-    if not os.path.exists(revisions_directory):
-        os.mkdir(revisions_directory)
+    revisions_directory = Path.home() / "pennylane.benchmarks" / "revisions"
+
+    if not revisions_directory.exists():
+        revisions_directory.mkdir(parents=True)
 
     for revision in args.revisions:
         print(">>> Running benchmark for revision {}".format(col(revision, "red")))
-        pl_directory = os.path.join(revisions_directory, revision)
+        pl_directory = revisions_directory / revision
 
         # We first make sure we get the latest version of the desired revision
-        if os.path.exists(pl_directory):
+        if pl_directory.exists():
             print(">>> Revision found locally, updating...")
             with cd(pl_directory):
                 # Check if we're on a detached HEAD (i.e. for version revisions)
@@ -94,22 +96,23 @@ def cli():
                 # If we already downloaded a revision we don't need to clone the whole
                 # PL repository. Instead we just copy the first revision in the directory
                 # checkout will then get the correct revision
-                with cd(revisions_directory):
-                    first_revision = next(filter(os.path.isdir, os.listdir(".")))
-                    print(">>> Revision not found locally, copying...")
-                    shutil.copytree(first_revision, revision)
+                first_revision = next((x for x in revisions_directory.iterdir() if x.is_dir()))
+                print(">>> Revision not found locally, copying...")
+                print(str(first_revision), str(revisions_directory / revision))
+                shutil.copytree(str(first_revision), str(revisions_directory / revision))
+
             except StopIteration:
                 # Didn't find a local revision to copy, use git to clone
                 print(">>> Revision not found locally, cloning...")
 
-                os.mkdir(pl_directory)
+                pl_directory.mkdir()
                 with cd(revisions_directory):
                     subprocess.run(
                         ["git", "clone", "https://www.github.com/xanaduai/pennylane", revision, "-q"],
                     )
 
             with cd(pl_directory):
-                res = subprocess.run(["git", "checkout", revision, "-q"])
+                res = subprocess.run(["git", "checkout", revision, "-q"], check=True)
 
             # An error occured during checkout, so the revision does not exist
             if res.returncode != 0:
@@ -125,16 +128,15 @@ def cli():
                 # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
                 # as writeable and retries. See also
                 # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
-                shutil.rmtree(pl_directory, onerror=remove_readonly)
+                shutil.rmtree(str(pl_directory), onerror=remove_readonly)
                 continue
 
-        benchmark_file_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "benchmark.py"
-        )
+        benchmark_file_path = Path(__file__).parent / "benchmark.py"
+        print("benchmark_file_path = ", benchmark_file_path)
         benchmark_env = os.environ.copy()
-        benchmark_env["PYTHONPATH"] = pl_directory + ";" + benchmark_env["PATH"]
+        benchmark_env["PYTHONPATH"] = str(pl_directory) + ";" + benchmark_env["PATH"]
         subprocess.run(
-            ["python3", benchmark_file_path] + unknown_args + ["--noinfo"],
+            ["python3", str(benchmark_file_path)] + unknown_args + ["--noinfo"],
             env=benchmark_env,
             check=True,
         )
