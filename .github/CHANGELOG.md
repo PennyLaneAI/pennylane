@@ -231,6 +231,9 @@
   
 <h3>Bug fixes</h3>
 
+* `RandomLayers()` is now compatible with the qiskit devices.
+  [(#597)](https://github.com/XanaduAI/pennylane/pull/597)
+
 * `DefaultQubit.probability()` now returns the correct probability when called with
   `device.analytic=False`.
   [(#563)](https://github.com/XanaduAI/pennylane/pull/563)
