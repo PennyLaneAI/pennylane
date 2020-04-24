@@ -459,8 +459,6 @@ class TestExpval:
         )
         res = qubit_device_1_wire.expval(obs)
 
-        print(qubit_device_1_wire._state)
-
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation,input,expected_output,par", [
