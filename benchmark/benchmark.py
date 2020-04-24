@@ -115,6 +115,7 @@ def cli():
     """Parse the command line arguments, perform the requested action.
     """
     parser = argparse.ArgumentParser(description="PennyLane benchmarking tool")
+    parser.add_argument("--noinfo", action="store_true", help="suppress information output")
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose mode")
     parser.add_argument(
@@ -147,11 +148,14 @@ def cli():
     short_hash = title.split(" ", maxsplit=1)[0]
 
     print("Benchmarking PennyLane", qml.version())
+
     if args.verbose:
         print("Verbose mode on, results may not be representative.")
-    print("Commit:", col(title, "red"))
-    qml.about()
-    print()
+
+    if not args.noinfo:
+        print("Commit:", col(title, "red"))
+        qml.about()
+        print()
 
     # import the requested benchmark module
     mod = importlib.import_module(args.benchmark)
