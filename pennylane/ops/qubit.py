@@ -28,6 +28,7 @@ from pennylane.utils import OperationRecorder, pauli_eigs, expand
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
+
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
     The Hadamard operator
