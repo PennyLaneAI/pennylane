@@ -156,8 +156,8 @@ def cli():
                 )
 
                 continue
-            else:
-                pl_directory = Path(res.stdout.decode(locale.getpreferredencoding()).strip())
+
+            pl_directory = Path(res.stdout.decode(locale.getpreferredencoding()).strip())
 
         else:
             pl_directory = revisions_directory / revision
