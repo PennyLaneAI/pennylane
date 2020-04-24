@@ -55,6 +55,76 @@ def remove_readonly(func, path, excinfo):
     func(path)
 
 
+def update_repository(directory, revision):
+    """Update the target repository.
+
+    Args:
+        directory(pathlib.Path): Path to the directory where the revision is located
+        revision(str): Revision associated with the directory
+    """
+
+    print(">>> Revision found locally, updating...")
+    with cd(directory):
+        # Check if we're on a detached HEAD (i.e. for version revisions)
+        res = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
+            stdout=subprocess.PIPE,
+            check=True,
+        )
+
+        if "HEAD" not in str(res.stdout.decode(locale.getpreferredencoding())):
+            subprocess.run(["git", "fetch", "-q"], check=True)
+            subprocess.run(["git", "checkout", revision, "-q"], check=True)
+
+
+def get_repository(pl_directory, revision):
+    """Get the target repository.
+
+    Args:
+        directory(pathlib.Path): Path to the directory where the revision shall be located
+        revision(str): Revision which shall be downloaded
+    """
+    try:
+        # If we already downloaded a revision we don't need to clone the whole
+        # PL repository. Instead we just copy the first revision in the directory
+        # checkout will then get the correct revision
+        first_revision = next((x for x in pl_directory.parent.iterdir() if x.is_dir()))
+        print(">>> Revision not found locally, copying...")
+        shutil.copytree(str(first_revision), str(pl_directory))
+
+    except StopIteration:
+        # Didn't find a local revision to copy, use git to clone
+        print(">>> Revision not found locally, cloning...")
+
+        pl_directory.mkdir()
+        subprocess.run(
+            ["git", "clone", "https://www.github.com/xanaduai/pennylane", str(pl_directory), "-q",],
+            check=True,
+        )
+
+    with cd(pl_directory):
+        subprocess.run(["git", "checkout", "master", "-q"], check=True)
+        subprocess.run(["git", "fetch", "-q"], check=True)
+        res = subprocess.run(["git", "checkout", revision, "-q"])
+
+    # An error occured during checkout, so the revision does not exist
+    if res.returncode != 0:
+        print(
+            col(
+                ">>> Couldn't check out revision {}, deleting temporary data".format(revision),
+                "red",
+            )
+        )
+
+        # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
+        # as writeable and retries. See also
+        # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
+        shutil.rmtree(str(pl_directory), onerror=remove_readonly)
+        return False
+
+    return True
+
+
 def cli():
     """Parse the command line arguments, perform the requested action.
     """
@@ -78,7 +148,7 @@ def cli():
         print(">>> Running benchmark for revision {}".format(col(revision, "red")))
 
         if revision == "here":
-            res = subprocess.run(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE,)
+            res = subprocess.run(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE)
 
             if res.returncode != 0:
                 print(
@@ -95,68 +165,12 @@ def cli():
             try:
                 # We first make sure we get the latest version of the desired revision
                 if pl_directory.exists():
-                    print(">>> Revision found locally, updating...")
-                    with cd(pl_directory):
-                        # Check if we're on a detached HEAD (i.e. for version revisions)
-                        res = subprocess.run(
-                            ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
-                            stdout=subprocess.PIPE,
-                            check=True,
-                        )
-
-                        if "HEAD" not in str(res.stdout.decode(locale.getpreferredencoding())):
-                            subprocess.run(["git", "fetch", "-q"], check=True)
-                            subprocess.run(["git", "checkout", revision, "-q"], check=True)
+                    update_repository(pl_directory, revision)
                 else:
-                    try:
-                        # If we already downloaded a revision we don't need to clone the whole
-                        # PL repository. Instead we just copy the first revision in the directory
-                        # checkout will then get the correct revision
-                        first_revision = next(
-                            (x for x in revisions_directory.iterdir() if x.is_dir())
-                        )
-                        print(">>> Revision not found locally, copying...")
-                        shutil.copytree(str(first_revision), str(revisions_directory / revision))
+                    success = get_repository(pl_directory, revision)
 
-                    except StopIteration:
-                        # Didn't find a local revision to copy, use git to clone
-                        print(">>> Revision not found locally, cloning...")
-
-                        pl_directory.mkdir()
-                        with cd(revisions_directory):
-                            subprocess.run(
-                                [
-                                    "git",
-                                    "clone",
-                                    "https://www.github.com/xanaduai/pennylane",
-                                    revision,
-                                    "-q",
-                                ],
-                                check=True,
-                            )
-
-                    with cd(pl_directory):
-                        subprocess.run(["git", "checkout", "master", "-q"], check=True)
-                        subprocess.run(["git", "fetch", "-q"], check=True)
-                        res = subprocess.run(["git", "checkout", revision, "-q"])
-
-                    # An error occured during checkout, so the revision does not exist
-                    if res.returncode != 0:
-                        print(
-                            col(
-                                ">>> Couldn't check out revision {}, deleting temporary data".format(
-                                    revision
-                                ),
-                                "red",
-                            )
-                        )
-
-                        # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
-                        # as writeable and retries. See also
-                        # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
-                        shutil.rmtree(str(pl_directory), onerror=remove_readonly)
+                    if not success:
                         continue
-
             except:
                 print(
                     col(
