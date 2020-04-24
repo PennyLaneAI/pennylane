@@ -26,6 +26,7 @@ from pennylane.operation import Any, Observable, Operation, DiagonalOperation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder, pauli_eigs, expand
 
+INV_SQRT2 = 1 / math.sqrt(2)
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
@@ -48,8 +49,7 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def _matrix(*params):
-        val = 1 / math.sqrt(2)
-        return np.array([[val, val], [val, -val]])
+        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -1149,7 +1149,7 @@ class U2(Operation):
     @staticmethod
     def _matrix(*params):
         phi, lam = params
-        return (1 / math.sqrt(2)) * np.array(
+        return INV_SQRT2 * np.array(
             [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
         )
 
