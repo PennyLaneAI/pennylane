@@ -1,13 +1,22 @@
 Documentation
 =============
 
-To build the documentation, the following additional packages are required:
+To build the documentation, in addition to the standard PennyLane dependencies,
+the following additional packages are required:
 
 * `Sphinx <http://sphinx-doc.org/>`_ == 2.2.2
 * `sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`_
 * `pygments-github-lexers <https://github.com/liluo/pygments-github-lexers>`_
+* `m2r <https://github.com/miyakogi/m2r>`_
+* `sphinx-copybutton <https://github.com/ExecutableBookProject/sphinx-copybutton>`_
 
-These can all be installed via ``pip``.
+In addition, some pages in the documentation have additional dependencies:
+
+* The latest version of PyTorch and TensorFlow are required to build the interface documentation,
+* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation, and
+* PennyLane-QChem must be installed to build the quantum chemistry documentation.
+
+These can all be installed via ``pip``:
 
 .. code-block:: console
 
