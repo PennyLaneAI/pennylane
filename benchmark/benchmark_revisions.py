@@ -100,7 +100,6 @@ def cli():
                     # checkout will then get the correct revision
                     first_revision = next((x for x in revisions_directory.iterdir() if x.is_dir()))
                     print(">>> Revision not found locally, copying...")
-                    print(str(first_revision), str(revisions_directory / revision))
                     shutil.copytree(str(first_revision), str(revisions_directory / revision))
 
                 except StopIteration:
@@ -141,7 +140,6 @@ def cli():
                     continue
 
             benchmark_file_path = Path(__file__).parent / "benchmark.py"
-            print("benchmark_file_path = ", benchmark_file_path)
             benchmark_env = os.environ.copy()
             benchmark_env["PYTHONPATH"] = str(pl_directory) + ";" + benchmark_env["PATH"]
             subprocess.run(
