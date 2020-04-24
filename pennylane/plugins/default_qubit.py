@@ -240,15 +240,24 @@ class DefaultQubit(QubitDevice):
         """
         mat = np.reshape(mat, [2] * len(wires) * 2)
 
+        # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
+
+        # Indices of the quantum state affected by this operation
         affected_indices = "".join(ABC_ARRAY[wires].tolist())
+
+        # All affected indices will be summed over, so we need the same number of new indices
         new_indices = ABC[self.num_wires : self.num_wires + len(wires)]
+
+        # The new indices of the state are given by the old ones with the affected indices
+        # replaced by the new_indices
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
             zip(affected_indices, new_indices),
             state_indices,
         )
 
+        # We now put together the indices in the notation numpy's einsum requires
         einsum_indices = "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
             affected_indices=affected_indices,
             state_indices=state_indices,
