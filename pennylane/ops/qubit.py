@@ -47,10 +47,11 @@ class Hadamard(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+        return Hadamard.matrix
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -87,10 +88,11 @@ class PauliX(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[0, 1], [1, 0]])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[0, 1], [1, 0]])
+        return PauliX.matrix
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -125,10 +127,11 @@ class PauliY(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[0, -1j], [1j, 0]])
+        return PauliY.matrix
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -165,14 +168,15 @@ class PauliZ(Observable, DiagonalOperation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[1, 0], [0, -1]])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0], [0, -1]])
+        return PauliZ.matrix
 
     @staticmethod
     def _eigvals(*params):
-        return np.array([1, -1])
+        return PauliZ.eigvals
 
     def diagonalizing_gates(self):
         return []
@@ -262,10 +266,11 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+        return CNOT.matrix
 
 
 class CZ(DiagonalOperation):
@@ -292,14 +297,16 @@ class CZ(DiagonalOperation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    eigvals = np.array([1, 1, 1, -1])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+        return CZ.matrix
 
     @staticmethod
     def _eigvals(*params):
-        return np.array([1, 1, 1, -1])
+        return CZ.eigvals
 
 
 class SWAP(Operation):
@@ -324,10 +331,11 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
     def _matrix(*params):
-        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+        return SWAP.matrix
 
 
 class CSWAP(Operation):
@@ -358,21 +366,22 @@ class CSWAP(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    matrix = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
 
     @staticmethod
     def _matrix(*params):
-        return np.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1],
-            ]
-        )
+        return CSWAP.matrix
 
 
 class Toffoli(Operation):
@@ -404,12 +413,22 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    matrix = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+        ]
+    )
 
     @staticmethod
     def _matrix(*params):
-        mat = np.diag([1 for i in range(8)])
-        mat[6:8, 6:8] = np.array([[0, 1], [1, 0]])
-        return mat
+        return Toffoli.matrix
 
 
 class RX(Operation):
