@@ -43,8 +43,9 @@ as in
 
   python3 benchmark_revisions.py -r master,0c8e90a -d default.qubit,default.tensor time bm_mutable_rotations
 
-The chosen revisions will be downloaded and cached into the ``revisions`` subdirectory of the benchmarking folder.
+The chosen revisions will be downloaded and cached into the ``pennylane.benchmark/revisions`` subdirectory of your user home directory.
 They are not automatically removed, if you wish to free up space you have to remove them by hand. 
+You can specify the revision ``here`` to use the current git toplevel.
 
 Installation
 ------------

@@ -63,7 +63,7 @@ def cli():
         "-r",
         "--revisions",
         type=lambda x: x.split(","),
-        help="comma-separated list of revisions to run the benchmark on",
+        help='Comma-separated list of revisions to run the benchmark on. Use "here" for the current git toplevel.',
     )
 
     # Only parse revisions, other args will go to the benchmarking script
