@@ -332,5 +332,5 @@ The initialization functions can be found in the :mod:`~.pennylane.init` module.
 Adding a new template
 ---------------------
 
-Consult the :ref:`Developer's guide <adding_new_templates>` to learn how to grow the templates library by
+Consult the :ref:`Contributing templates<contributing_templates>` page to learn how to grow the templates library by
 adding your own template to PennyLane.

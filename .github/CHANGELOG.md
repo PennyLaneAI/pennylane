@@ -223,6 +223,10 @@
 
 <h3>Documentation</h3>
 
+* Updated the development section by creating a landing page with links to sub-pages
+  containing specific guides.
+  [(#596)](https://github.com/XanaduAI/pennylane/pull/596)
+
 * Extended the developer's guide by a section explaining how to add new templates.
   [(#564)](https://github.com/XanaduAI/pennylane/pull/564)
   
