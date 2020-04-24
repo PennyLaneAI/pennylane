@@ -408,9 +408,10 @@ autodoc_member_order = 'bysource'
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color='lightskyblue1', style='filled')
 
-from directives import UsageDetails, CustomGalleryItemDirective
+from directives import UsageDetails, CustomGalleryItemDirective, TitleCardDirective
 
 def setup(app):
     app.add_directive('customgalleryitem', CustomGalleryItemDirective)
+    app.add_directive('titlecard', TitleCardDirective)
     app.add_directive("usagedetails", UsageDetails)
     app.add_stylesheet('xanadu_gallery.css')
