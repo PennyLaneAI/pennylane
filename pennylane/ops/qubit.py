@@ -171,7 +171,7 @@ class PauliZ(Observable, DiagonalOperation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         return np.array([1, -1])
 
     def diagonalizing_gates(self):
@@ -204,7 +204,7 @@ class S(DiagonalOperation):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         return np.array([1, 1j])
 
 
@@ -234,7 +234,7 @@ class T(DiagonalOperation):
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
 
@@ -298,7 +298,7 @@ class CZ(DiagonalOperation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         return np.array([1, 1, 1, -1])
 
 
@@ -514,7 +514,7 @@ class RZ(DiagonalOperation):
         return np.array([[cmath.exp(-0.5j * theta), 0], [0, cmath.exp(0.5j * theta)]])
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         theta = params[0]
         return np.array([cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
@@ -551,7 +551,7 @@ class PhaseShift(DiagonalOperation):
         return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         phi = params[0]
         return np.array([1, cmath.exp(1j * phi)])
 
@@ -652,7 +652,7 @@ class MultiRZ(DiagonalOperation):
         Returns:
             array[complex]: The matrix representation
         """
-        multi_Z_rot_eigs = MultiRZ._diagonal(theta, n)
+        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
         multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
@@ -667,16 +667,16 @@ class MultiRZ(DiagonalOperation):
         return self._matrix(*self.parameters, len(self.wires))
 
     @staticmethod
-    def _diagonal(theta, n):
+    def _eigvals(theta, n):
         return np.exp(-1j * theta / 2 * pauli_eigs(n))
 
     @property
-    def diagonal(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_diagonal`` method
+    def eigvals(self):
+        # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
         if self.inverse:
-            return self._diagonal(*self.parameters, len(self.wires)).conj()
+            return self._eigvals(*self.parameters, len(self.wires)).conj()
 
-        return self._diagonal(*self.parameters, len(self.wires))
+        return self._eigvals(*self.parameters, len(self.wires))
 
     @staticmethod
     @template
@@ -1005,7 +1005,7 @@ class CRZ(DiagonalOperation):
         )
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         theta = params[0]
         return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
@@ -1285,10 +1285,10 @@ class DiagonalQubitUnitary(DiagonalOperation):
 
     @staticmethod
     def _matrix(*params):
-        return np.diag(DiagonalQubitUnitary._diagonal(*params))
+        return np.diag(DiagonalQubitUnitary._eigvals(*params))
 
     @staticmethod
-    def _diagonal(*params):
+    def _eigvals(*params):
         D = np.asarray(params[0])
 
         if not np.allclose(D * D.conj(), np.ones_like(D)):

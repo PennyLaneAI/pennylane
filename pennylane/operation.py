@@ -712,47 +712,47 @@ class DiagonalOperation(Operation):
     # pylint: disable=abstract-method
 
     @abc.abstractstaticmethod
-    def _diagonal(*params):
-        """Array representation of the operator's diagonal
-        in the computational basis.
+    def _eigvals(*params):
+        """Array representation of the operator's eigenvalues
+        in computational basis order.
 
         This is a *static method* that should be defined for all
         new diagonal operations, that returns the array representing
-        the operator's diagonal in the computational basis.
+        the operator's eigenvalues in the computational basis.
 
         This private method allows diagonals to be computed
         directly without instantiating the operators first.
 
-        To return the diagonal of *instantiated* operators,
-        please use the :attr:`~.DiagonalOperator.diagonal` property instead.
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.DiagonalOperator.eigvals` property instead.
 
         **Example:**
 
-        >>> qml.RZ._diagonal(0.5)
+        >>> qml.RZ._eigvals(0.5)
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
 
         Returns:
-            array: diagonal of the representation in the computational basis
+            array[complex]: eigenvalues of the representation in the computational basis
         """
 
     @property
-    def diagonal(self):
-        """Return the diagonal of the operation.
+    def eigvals(self):
+        """Returns the eigenvalues of the operation.
 
         Returns:
-            array[complex]: The diagonal of the operation.
+            array[complex]: The eigenvalues of the operation.
         """
-        diag = self._diagonal(*self.parameters)
+        evs = self._eigvals(*self.parameters)
 
         if self.inverse:
-            return diag.conj()
+            return evs.conj()
 
-        return diag
+        return evs
 
     # TODO: make matrix a classmethod to enable simpler calculation
     # @classmethod
     # def _matrix(cls, *params):
-    #    return np.diag(cls._diagonal(params))
+    #    return np.diag(cls._eigvals(params))
 
 
 # =============================================================================
@@ -816,7 +816,11 @@ class Observable(Operator):
 
     @property
     def eigvals(self):
-        r"""Returns the eigenvalues of the observable"""
+        r"""Returns the eigenvalues of the observable.
+
+        Returns:
+            array[float]: The eigenvalues of the observable in order of diagonalization.
+        """
         raise NotImplementedError
 
     def diagonalizing_gates(self):

@@ -120,7 +120,7 @@ class DefaultQubit(QubitDevice):
                 self.apply_basis_state(basis_state, wires)
 
             elif isinstance(operation, DiagonalOperation):
-                self._state = self.vec_vec_product(operation.diagonal, self._state, wires)
+                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
 
             elif len(wires) <= 2:
                 # Einsum is faster for small gates
