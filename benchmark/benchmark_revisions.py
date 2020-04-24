@@ -91,8 +91,8 @@ def cli():
                     )
 
                     if "HEAD" not in str(res.stdout):
+                        subprocess.run(["git", "fetch", "-q"], check=True)
                         subprocess.run(["git", "checkout", revision, "-q"], check=True)
-                        subprocess.run(["git", "pull", "-q"], check=True)
             else:
                 try:
                     # If we already downloaded a revision we don't need to clone the whole
@@ -120,6 +120,8 @@ def cli():
                         )
 
                 with cd(pl_directory):
+                    subprocess.run(["git", "checkout", "master", "-q"], check=True)
+                    subprocess.run(["git", "fetch", "-q"], check=True)
                     res = subprocess.run(["git", "checkout", revision, "-q"])
 
                 # An error occured during checkout, so the revision does not exist
