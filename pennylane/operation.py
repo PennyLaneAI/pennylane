@@ -226,7 +226,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        params (tuple[float, int, array, Variable]): operator parameters
+        data (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -237,7 +237,7 @@ class Operator(abc.ABC):
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
     @staticmethod
-    def _matrix(*params):
+    def _matrix(*data):
         """Matrix representation of the operator
         in the computational basis.
 
@@ -310,7 +310,7 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *data, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -318,17 +318,17 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        if len(params) != self.num_params:
+        if len(data) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+                "{} parameters passed, {} expected.".format(self.name, len(data), self.num_params)
             )
 
-        # check the validity of the params
+        # check the validity of the data
         if self.do_check_domain:
-            for p in params:
+            for p in data:
                 self.check_domain(p)
-        self.params = list(params)  #: list[Any]: parameters of the operator
+        self.data = list(data)  #: list[Any]: parameters of the operator
 
         # apply the operator on the given wires
         if not isinstance(wires, Sequence):
@@ -341,16 +341,16 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
+        return "{}: {} data, wires {}".format(self.name, len(self.data), self.wires)
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        # FIXME using self.parameters here instead of self.params is dangerous, it assumes the params can be evaluated
+        # FIXME using self.parameters here instead of self.data is dangerous, it assumes the data can be evaluated
         # which is only true if something suitable happens to remain in VariableRef.positional_arg_values etc. after
         # the last evaluation.
         if self.parameters:
-            params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires)
+            data = ", ".join([repr(p) for p in self.parameters])
+            return "{}({}, wires={})".format(self.name, data, self.wires)
         return "{}(wires={})".format(self.name, self.wires)
 
     def _check_wires(self, wires):
@@ -471,7 +471,7 @@ class Operator(abc.ABC):
                 p = self.check_domain(p.val)
             return p
 
-        return [evaluate(p) for p in self.params]
+        return [evaluate(p) for p in self.data]
 
     def queue(self):
         """Append the operator to the Operator queue."""
@@ -508,7 +508,7 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array, Variable]): operation parameters
+        data (tuple[float, int, array, Variable]): operation parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -560,7 +560,7 @@ class Operation(Operator):
         multiplier, shift = (0.5, np.pi / 2) if recipe is None else recipe
 
         # internal multiplier in the Variable
-        var_mult = self.params[idx].mult
+        var_mult = self.data[idx].mult
 
         multiplier *= var_mult
         if var_mult != 0:
@@ -604,7 +604,7 @@ class Operation(Operator):
         self._inverse = boolean
 
     @staticmethod
-    def decomposition(*params, wires):
+    def decomposition(*data, wires):
         """Returns a template decomposing the operation into other
         quantum operations."""
         raise NotImplementedError
@@ -646,7 +646,7 @@ class Operation(Operator):
         """
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def __init__(self, *params, wires=None, do_queue=True):
+    def __init__(self, *data, wires=None, do_queue=True):
 
         self._inverse = False
 

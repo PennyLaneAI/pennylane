@@ -133,7 +133,7 @@ class RepresentationResolver:
         Returns:
             str: The formatted operation
         """
-        mat = operation.params[0]
+        mat = operation.data[0]
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
         return "{}{}".format(symbol, idx)
@@ -297,7 +297,7 @@ class RepresentationResolver:
         Returns:
             str: A string representing the polynomial
         """
-        coefficients = operation.params[0]
+        coefficients = operation.data[0]
         order = len(coefficients.shape)
 
         if order == 1:
