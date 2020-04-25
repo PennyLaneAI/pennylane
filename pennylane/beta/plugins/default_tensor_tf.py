@@ -292,7 +292,7 @@ class DefaultTensorTF(DefaultTensor):
             # Copy the operation parameters to the op_params dictionary.
             # Note that these are the unwrapped parameters, so PennyLane
             # free parameters will be represented as Variable instances.
-            self.op_params[operation] = Operation.data[:]
+            self.op_params[operation] = operation.data[:]
 
         # Loop through the free parameter reference dictionary
         for _, par_dep_list in self.parameters.items():
