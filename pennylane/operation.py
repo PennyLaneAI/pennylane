@@ -646,7 +646,7 @@ class Operation(Operator):
         """
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def __init__(self, *data, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True):
 
         self._inverse = False
 
