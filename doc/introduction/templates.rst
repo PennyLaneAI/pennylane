@@ -108,6 +108,11 @@ trainable parameters, and they may consist of repeated layers.
     :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.iqp.html
+    :description: IQPEmbedding
+    :figure: ../_static/templates/embeddings/iqp.png
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.templates.embeddings.QAOAEmbedding.html
     :description: QAOAEmbedding
     :figure: ../_static/templates/embeddings/qaoa.png

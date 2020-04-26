@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the ``IQPEmbeddings`` template, which encodes inputs into the diagonal gates of an 
+  IQP circuit. 
+  [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
+
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
