@@ -237,7 +237,7 @@ class Operator(abc.ABC):
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
     @staticmethod
-    def _matrix(*data):
+    def _matrix(*params):
         """Matrix representation of the operator
         in the computational basis.
 
@@ -318,17 +318,17 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        if len(data) != self.num_params:
+        if len(params) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(data), self.num_params)
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
             )
 
-        # check the validity of the data
+        # check the validity of the params
         if self.do_check_domain:
-            for p in data:
+            for p in params:
                 self.check_domain(p)
-        self.data = list(data)  #: list[Any]: parameters of the operator
+        self.data = list(params)  #: list[Any]: parameters of the operator
 
         # apply the operator on the given wires
         if not isinstance(wires, Sequence):
@@ -341,7 +341,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} data, wires {}".format(self.name, len(self.data), self.wires)
+        return "{}: {} params, wires {}".format(self.name, len(self.data), self.wires)
 
     def __repr__(self):
         """Constructor-call-like representation."""
