@@ -226,7 +226,7 @@ class Operator(abc.ABC):
     * :attr:`~.Operator.par_domain`
 
     Args:
-        data (tuple[float, int, array, Variable]): operator parameters
+        params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
@@ -310,7 +310,7 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def __init__(self, *data, wires=None, do_queue=True):
+    def __init__(self, *params, wires=None, do_queue=True):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
