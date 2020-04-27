@@ -128,6 +128,11 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * A custom pattern can be passed by provding a list of wire lists to ``pattern``. The ``unitary`` is applied
       to each set of wires specified in the list.
 
+      .. figure:: ../../_static/templates/broadcast_custom.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
     Each ``unitary`` may depend on a different set of parameters. These are passed as a list by the ``parameters``
     argument.
 
