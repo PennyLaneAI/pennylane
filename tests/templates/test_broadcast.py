@@ -334,3 +334,19 @@ class TestCustomPattern:
 
         with pytest.raises(ValueError, match="a custom pattern must be a list"):
             circuit()
+
+    @pytest.mark.parametrize("custom_pattern, expected", [([[0], [2], [3], [2]], [-1., 1., 1., -1.]),
+                                                          ([[3], [2], [0]], [-1., 1., -1., -1.]),
+                                                         ])
+    def test_correct_output(self, custom_pattern, expected):
+        """Tests the output for simple cases."""
+
+        dev = qml.device('default.qubit', wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            broadcast(unitary=qml.PauliX, wires=range(4), pattern=custom_pattern)
+            return [qml.expval(qml.PauliZ(w)) for w in range(4)]
+
+        res = circuit()
+        assert np.allclose(res, expected)
