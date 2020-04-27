@@ -72,7 +72,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     * ``pattern="single"`` applies a single-wire unitary to each one of the :math:`M` wires:
 
-      .. figure:: ../_static/templates/broadcast_single.png
+      .. figure:: ../../_static/templates/broadcast_single.png
             :align: center
             :width: 20%
             :target: javascript:void(0);
@@ -80,7 +80,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * ``pattern="double"`` applies a two-wire unitary to :math:`\lfloor \frac{M}{2} \rfloor`
       subsequent pairs of wires:
 
-      .. figure:: ../_static/templates/broadcast_double.png
+      .. figure:: ../../_static/templates/broadcast_double.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -88,14 +88,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * ``pattern="double_odd"`` applies a two-wire unitary to :math:`\lfloor \frac{M-1}{2} \rfloor`
       subsequent pairs of wires, starting with the second wire:
 
-      .. figure:: ../_static/templates/broadcast_double_odd.png
+      .. figure:: ../../_static/templates/broadcast_double_odd.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
     * ``pattern="chain"`` applies a two-wire unitary to all :math:`M-1` neighbouring pairs of wires:
 
-      .. figure:: ../_static/templates/broadcast_chain.png
+      .. figure:: ../../_static/templates/broadcast_chain.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -103,7 +103,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * ``pattern="ring"`` applies a two-wire unitary to all :math:`M` neighbouring pairs of wires,
       where the last wire is considered to be a neighbour to the first one:
 
-      .. figure:: ../_static/templates/broadcast_ring.png
+      .. figure:: ../../_static/templates/broadcast_ring.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -113,14 +113,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     * ``pattern="pyramid"`` applies a two-wire unitary to wire pairs shaped in a pyramid declining to the right:
 
-      .. figure:: ../_static/templates/broadcast_pyramid.png
+      .. figure:: ../../_static/templates/broadcast_pyramid.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
     * ``pattern="all_to_all"`` applies a two-wire unitary to wire pairs that connect all wires to each other:
 
-      .. figure:: ../_static/templates/broadcast_alltoall.png
+      .. figure:: ../../_static/templates/broadcast_alltoall.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -128,7 +128,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * A custom pattern can be passed by provding a list of wire lists to ``pattern``. The ``unitary`` is applied
       to each set of wires specified in the list.
 
-      .. figure:: ../_static/templates/broadcast_custom.png
+      .. figure:: ../../_static/templates/broadcast_custom.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
