@@ -72,7 +72,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     * ``pattern="single"`` applies a single-wire unitary to each one of the :math:`M` wires:
 
-      .. figure:: ../../_static/templates/broadcast_single.png
+      .. figure:: ../_static/templates/broadcast_single.png
             :align: center
             :width: 20%
             :target: javascript:void(0);
@@ -80,7 +80,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * ``pattern="double"`` applies a two-wire unitary to :math:`\lfloor \frac{M}{2} \rfloor`
       subsequent pairs of wires:
 
-      .. figure:: ../../_static/templates/broadcast_double.png
+      .. figure:: ../_static/templates/broadcast_double.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -88,14 +88,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * ``pattern="double_odd"`` applies a two-wire unitary to :math:`\lfloor \frac{M-1}{2} \rfloor`
       subsequent pairs of wires, starting with the second wire:
 
-      .. figure:: ../../_static/templates/broadcast_double_odd.png
+      .. figure:: ../_static/templates/broadcast_double_odd.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
     * ``pattern="chain"`` applies a two-wire unitary to all :math:`M-1` neighbouring pairs of wires:
 
-      .. figure:: ../../_static/templates/broadcast_chain.png
+      .. figure:: ../_static/templates/broadcast_chain.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -103,7 +103,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     * ``pattern="ring"`` applies a two-wire unitary to all :math:`M` neighbouring pairs of wires,
       where the last wire is considered to be a neighbour to the first one:
 
-      .. figure:: ../../_static/templates/broadcast_ring.png
+      .. figure:: ../_static/templates/broadcast_ring.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -113,14 +113,22 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     * ``pattern="pyramid"`` applies a two-wire unitary to wire pairs shaped in a pyramid declining to the right:
 
-      .. figure:: ../../_static/templates/broadcast_pyramid.png
+      .. figure:: ../_static/templates/broadcast_pyramid.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
 
     * ``pattern="all_to_all"`` applies a two-wire unitary to wire pairs that connect all wires to each other:
 
-      .. figure:: ../../_static/templates/broadcast_alltoall.png
+      .. figure:: ../_static/templates/broadcast_alltoall.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
+    * A custom pattern can be passed by provding a list of wire lists to ``pattern``. The ``unitary`` is applied
+      to each set of wires specified in the list.
+
+      .. figure:: ../_static/templates/broadcast_custom.png
           :align: center
           :width: 20%
           :target: javascript:void(0);
@@ -400,6 +408,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
           .. code-block:: python
 
+              dev = qml.device('default.qubit', wires=4)
+
               @qml.qnode(dev)
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='pyramid',
@@ -416,6 +426,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
           .. code-block:: python
 
+              dev = qml.device('default.qubit', wires=4)
+
               @qml.qnode(dev)
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='ring',
@@ -430,9 +442,49 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               pars6 = [3, -2, -3]
 
               circuit([pars1, pars2, pars3, pars4, pars5, pars6])
+
+        * Custom pattern
+
+          For a custom pattern, the wire lists for each application of the unitary is
+          passed to ``pattern``:
+
+          .. code-block:: python
+
+              dev = qml.device('default.qubit', wires=5)
+
+              pattern = [[0, 1], [3, 4]]
+
+              @qml.qnode(dev)
+              def circuit():
+                  broadcast(unitary=qml.CNOT, pattern=pattern,
+                            wires=range(5))
+                  return qml.expval(qml.PauliZ(0))
+
+              circuit()
+
+          When using a parametrized unitary, make sure that the number of wire lists in ``pattern`` corresponds to the
+          number of parameters in ``parameters``.
+
+          .. code-block:: python
+
+                pattern = [[0, 1], [3, 4]]
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(unitary=qml.CRot, pattern=pattern,
+                              wires=range(5), parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 3, 1]
+                pars = [pars1, pars2]
+
+                assert len(pars) == len(pattern)
+
+                circuit(pars)
     """
 
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
+    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
 
     #########
     # Input checks
@@ -446,10 +498,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "Iterable; got {}".format(type(parameters)),
     )
 
-    check_type(
-        pattern, [str], msg="'pattern' must be a string; got {}".format(type(pattern)),
-    )
-
     if kwargs is None:
         kwargs = {}
 
@@ -457,9 +505,38 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
     )
 
-    check_is_in_options(
-        pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
-    )
+    custom_pattern = None
+
+    if isinstance(pattern, str):
+        check_is_in_options(
+            pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
+        )
+    else:
+        check_type(
+            pattern,
+            [Iterable],
+            msg="a custom pattern must be a list of lists of wire indices"
+            "; got {}".format(parameters),
+        )
+        for wire_set in pattern:
+            check_type(
+                wire_set,
+                [Iterable],
+                msg="a custom pattern must be a list of lists of wire indices"
+                "; got {}".format(parameters),
+            )
+            for wire in wire_set:
+                check_type(
+                    wire,
+                    [int],
+                    msg="a custom pattern must be a list of lists of wire indices"
+                    "; got {}".format(parameters),
+                )
+
+        # remember the wire pattern
+        custom_pattern = pattern
+        # set "pattern" to "custom", indicating that custom settings have to be used
+        pattern = "custom"
 
     n_parameters = {
         "single": len(wires),
@@ -470,6 +547,9 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
         "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
     }
+
+    if pattern == "custom":
+        n_parameters["custom"] = len(custom_pattern)
 
     # check that enough parameters for pattern
     if parameters is not None:
@@ -505,6 +585,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
         "all_to_all": wires_all_to_all(wires),
+        "custom": custom_pattern,
     }
 
     # broadcast the unitary
