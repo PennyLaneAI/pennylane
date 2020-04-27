@@ -516,21 +516,21 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             pattern,
             [Iterable],
             msg="a custom pattern must be a list of lists of wire indices"
-                "; got {}".format(parameters),
+            "; got {}".format(parameters),
         )
         for wire_set in pattern:
             check_type(
                 wire_set,
                 [Iterable],
                 msg="a custom pattern must be a list of lists of wire indices"
-                    "; got {}".format(parameters),
+                "; got {}".format(parameters),
             )
             for wire in wire_set:
                 check_type(
                     wire,
                     [int],
                     msg="a custom pattern must be a list of lists of wire indices"
-                        "; got {}".format(parameters),
+                    "; got {}".format(parameters),
                 )
 
         # remember the wire pattern
@@ -585,7 +585,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
         "all_to_all": wires_all_to_all(wires),
-        "custom": custom_pattern
+        "custom": custom_pattern,
     }
 
     # broadcast the unitary
