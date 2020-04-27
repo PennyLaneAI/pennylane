@@ -47,12 +47,11 @@ Broadcasting function
 ---------------------
 
 The broadcast function creates a new template by broadcasting templates (or normal gates) over wires in a
-predefined pattern.
+predefined pattern. You can import this function both via ``qml.broadcast`` and ``qml.templates.broadcast``.
 
 .. autosummary::
-    :toctree:
 
-    pennylane.templates.broadcast
+    pennylane.broadcast
 
 Utility functions for input checks
 ----------------------------------
