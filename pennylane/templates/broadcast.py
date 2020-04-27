@@ -462,26 +462,26 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
               circuit()
 
-        When using a parametrized unitary, make sure that the number of wire lists in ``pattern`` corresponds to the
-        number of parameters in ``parameters``.
+          When using a parametrized unitary, make sure that the number of wire lists in ``pattern`` corresponds to the
+          number of parameters in ``parameters``.
 
-        .. code-block:: python
+          .. code-block:: python
 
-              pattern = [[0, 1], [3, 4]]
+                pattern = [[0, 1], [3, 4]]
 
-              @qml.qnode(dev)
-              def circuit(pars):
-                  broadcast(unitary=qml.CRot, pattern=pattern,
-                            wires=range(5), parameters=pars)
-                  return qml.expval(qml.PauliZ(0))
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(unitary=qml.CRot, pattern=pattern,
+                              wires=range(5), parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
 
-              pars1 = [1, 2, 3]
-              pars2 = [-1, 3, 1]
-              pars = [pars1, pars2]
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 3, 1]
+                pars = [pars1, pars2]
 
-              assert len(pars) == len(pattern)
+                assert len(pars) == len(pattern)
 
-              circuit(pars)
+                circuit(pars)
     """
 
     OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
