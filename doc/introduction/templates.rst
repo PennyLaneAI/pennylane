@@ -108,7 +108,7 @@ trainable parameters, and they may consist of repeated layers.
     :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.embeddings.iqp.html
+    :link: ../code/api/pennylane.templates.embeddings.IQPEmbedding.html
     :description: IQPEmbedding
     :figure: ../_static/templates/embeddings/iqp.png
 

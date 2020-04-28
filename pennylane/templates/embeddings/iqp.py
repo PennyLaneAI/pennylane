@@ -15,7 +15,7 @@ r"""
 Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Sequence
+from collections import Iterable
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, CNOT, Hadamard
 from pennylane.templates import broadcast
@@ -24,6 +24,7 @@ from pennylane.templates.utils import (
     check_wires,
     check_type,
     get_shape,
+    check_no_variable
 )
 
 
@@ -42,51 +43,144 @@ def zz(parameter, wires):
 
 
 @template
-def IQPEmbedding(features, n_repeats, wires, pattern=None):
+def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     r"""
-    Encodes :math:`N` features into :math:`n=N` qubits using diagonal gates of an IQP circuit, as proposed by
-    `Havlicek et al. <https://arxiv.org/pdf/1804.11326.pdf>`_.
+    Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit. The embedding
+    has been proposed by `Havlicek et al. (2018) <https://arxiv.org/pdf/1804.11326.pdf>`_. It and can be repeated.
+
+    .. warning::
+
+        ``IQPEmbedding`` calls a circuit that involves non-trivial classical processing of the
+        features. The ``features`` argument is therefore **not differentiable** when using the template, and
+        gradients with respect to the features cannot be computed by PennyLane.
 
     An IQP circuit is a quantum circuit of a block of Hadamards, followed by a block of gates that are
-    diagonal in the computational basis. Here, the diagonal gates are chosen as
-    two-qubit ZZ interactions :math:`e^{-i x_i \sigma_z \otimes \sigma_z}` .
+    diagonal in the computational basis. Here, the diagonal gates are single-qubit ``RZ`` rotations, applied to each
+    qubit and encoding the :math:`n` features, followed by two-qubit ZZ entanglers,
+    :math:`e^{-i x_i x_j \sigma_z \otimes \sigma_z}`. The entangler applied to wires ``(i, j)`` encodes the
+    product of features ``features[i]*features[j]``. The pattern in which the entanglers are applied is either the
+    default, or a custom pattern:
 
-    * If ``pattern`` is None, the default pattern will be used, in which the entangling gates connect successive
+    * If ``pattern`` is not specified, the default pattern will be used, in which the entangling gates connect all
       pairs of neighbours:
 
-        |
+      |
 
-        .. figure:: ../../_static/templates/iqp.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
+      .. figure:: ../../_static/templates/embeddings/iqp.png
+          :align: center
+          :width: 50%
+          :target: javascript:void(0);
 
-        |
+      |
 
-    * Else, pattern is a dictionary of the form {"i": (a, b)}, indicating that ``feature[i]`` will be applied by a
-      ZZ gate acting on wires ``[a, b]``. Since diagonal gates commute, the order in which the features are applied
-      does not play a role.
+    * Else, ``pattern`` is a list of wire pairs ``[[a, b], [c, d],...]``, applying the entangler
+      on wires ``[a, b]``, ``[c, d]``, etc. For example, ``pattern = [[0, 1], [1, 2]]`` produces
+      the following entangler pattern:
+
+      |
+
+      .. figure:: ../../_static/templates/embeddings/iqp_custom.png
+          :align: center
+          :width: 50%
+          :target: javascript:void(0);
+
+      |
+
+      Since diagonal gates commute, the order of the entanglers does not change the result.
 
     Args:
         features (array): array of features to encode
-        n_repeats (int):
         wires (Sequence[int] or int): qubit indices that the template acts on
-        pattern (dict): if provided, the features are encoded in entanglers arranged in the pattern specified in the dict
+        n_repeats (int): number of times the basic embedding is repeated
+        pattern (dict): specifies the wires and features of the entanglers
 
     Raises:
         ValueError: if inputs do not have the correct format
 
     .. UsageDetails::
 
+        A typical usage example of the template is the following:
+
         .. code-block:: python
 
-            from pennylane import IQPEmbedding
+            import pennylane as qml
+            from pennylane.templates import IQPEmbedding
 
-            features = [1., 2.]
+            dev = qml.device('default.qubit', wires=3)
 
+            @qml.qnode(dev)
+            def circuit(features=None):
+                IQPEmbedding(features=features, wires=range(3))
+                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
+            circuit(features=[1., 2., 3.])
 
+        **Do not pass features as positional argument to qnode**
 
+        The ``features`` argument cannot be passed to the quantum node
+        as a positional argument. This is due to the fact that the embedding performs non-trivial calculations
+        on the features. As a consequence, the following code **will produce an error**:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(features):
+               IQPEmbedding(features=features, wires=range(3), n_repeats=2)
+               return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+            circuit([1., 2., 3.])
+
+        >>> ValueError: 'features' cannot be differentiable
+
+        **Using a custom entangler pattern**
+
+        A custom entangler pattern can be used by specifying the ``pattern`` argument. A pattern has to be
+        a nested list of dimension ``(K, 2)``, where ``K`` is the number of entanglers to apply.
+
+        .. code-block:: python
+
+            pattern = [[1, 2], [0, 2], [1, 0]]
+
+            @qml.qnode(dev)
+            def circuit(features=None):
+                IQPEmbedding(features=features, wires=range(3), pattern=pattern)
+                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+            circuit(features=[1., 2., 3.])
+
+        Since diagonal gates commute, the order of the wire pairs has no effect on the result.
+
+        .. code-block:: python
+
+            from pennylane import numpy as np
+
+            pattern1 = [[1, 2], [0, 2], [1, 0]]
+            pattern2 = [[1, 0], [0, 2], [1, 2]]
+
+            @qml.qnode(dev)
+            def circuit(features=None, pattern=None):
+                IQPEmbedding(features=features, wires=range(3), pattern=pattern, n_repeats=3)
+                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+            res1 = circuit(features=[1., 2., 3.], pattern=pattern1)
+            res2 = circuit(features=[1., 2., 3.], pattern=pattern2)
+
+            assert np.allclose(res1, res2)
+
+        **Repeating the embedding**
+
+        The embedding can be repeated by specifying the ``n_repeats`` argument:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(features=None):
+                IQPEmbedding(features=features, wires=range(3), n_repeats=4)
+                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+            circuit(features=[1., 2., 3.])
+
+        Every repetition uses exactly the same quantum circuit.
 
     """
     #############
@@ -94,44 +188,39 @@ def IQPEmbedding(features, n_repeats, wires, pattern=None):
 
     wires = check_wires(wires)
 
-    msg = "n_repeats must be a positive integer"
-    check_type(n_repeats, [int], msg=msg)
-    msg = "features must be a sequence of floats"
-    check_type(features, [Sequence], msg=msg)
-    for f in features:
-        check_type(f, [int], msg=msg)
+    check_no_variable(
+        features,
+        msg="'features' cannot be differentiable")
 
-    if pattern is None:
-        # ring pattern has only one entangler for two wires
-        if len(features) == 2:
-            expected_shape = (1,)
-        else:
-            expected_shape = (len(wires),)
-    else:
-        expected_shape = (len(pattern),)
+    check_type(
+        n_repeats,
+        [int],
+        msg="n_repeats must be a positive integer; got type {}".format(type(n_repeats)))
 
+    expected_shape = (len(wires),)
     check_shape(
         features,
         expected_shape,
         msg="'features' must be of shape {}; got {}"
-            "".format((len(wires),), get_shape(features)),
+            "".format(expected_shape, get_shape(features)),
     )
 
     #####################
 
+    if pattern is None:
+        # default is an all-to-all pattern
+        pattern = [[i, j] for i in range(len(wires)) for j in range(len(wires)) if j > i]
+
     for i in range(n_repeats):
 
-        # first block of hadamards
-        broadcast(unitary=Hadamard, pattern="single")
+        # first block of Hadamards
+        broadcast(unitary=Hadamard, pattern="single", wires=wires)
+        # encode features into block of RZ rotations
+        broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
 
-        # diagonal gates encoding the features
-        if pattern is None:
-
-            if len(wires) == 1:
-                # for one wire, use a z rotation
-                RZ(features[0], wires=0)
-            else:
-                # use ring pattern of zz entanglers
-                broadcast(unitary=zz, pattern="ring")
-        else:
-            broadcast(unitary=zz, pattern=pattern)
+        # entangling block
+        products = []
+        for wire_pair in pattern:
+            # create products of parameters
+            products.append(features[wire_pair[0]] * features[wire_pair[1]])
+        broadcast(unitary=zz, pattern=pattern, wires=wires, parameters=products)
