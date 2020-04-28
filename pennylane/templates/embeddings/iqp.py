@@ -24,9 +24,8 @@ from pennylane.templates.utils import (
     check_wires,
     check_type,
     get_shape,
-    check_no_variable
+    check_no_variable,
 )
-
 
 
 @template
@@ -188,27 +187,24 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     wires = check_wires(wires)
 
-    check_no_variable(
-        features,
-        msg="'features' cannot be differentiable")
+    check_no_variable(features, msg="'features' cannot be differentiable")
 
     expected_shape = (len(wires),)
     check_shape(
         features,
         expected_shape,
-        msg="'features' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(features)),
+        msg="'features' must be of shape {}; got {}" "".format(expected_shape, get_shape(features)),
     )
 
     check_type(
-        n_repeats,
-        [int],
-        msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats)))
+        n_repeats, [int], msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats))
+    )
 
     check_type(
         pattern,
         [Iterable, type(None)],
-        msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern))
+        msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
+    )
 
     if pattern is not None:
 
@@ -217,13 +213,15 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             check_type(
                 p,
                 [Iterable],
-                msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern))
+                msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
+            )
 
             for w in p:
                 check_type(
                     w,
                     [int],
-                    msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern))
+                    msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
+                )
 
         # check shape
         shape = get_shape(pattern)
