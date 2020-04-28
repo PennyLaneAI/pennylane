@@ -34,19 +34,19 @@ class TestAmplitudeEmbedding:
     """ Tests the AmplitudeEmbedding method."""
 
     INPT = [np.array([0, 1, 0, 0]),
-            1/np.sqrt(4)*np.array([1, 1, 1, 1]),
+            1 / np.sqrt(4) * np.array([1, 1, 1, 1]),
             np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-            np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
+                      np.complex(0, -np.sqrt(0.1)), np.sqrt(0.5)])]
 
     NOT_ENOUGH_FEATURES = [np.array([0, 1, 0]),
                            1 / np.sqrt(3) * np.array([1, 1, 1]),
                            np.array([np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                           np.complex(0, -np.sqrt(0.6))])]
+                                     np.complex(0, -np.sqrt(0.6))])]
 
     TOO_MANY_FEATURES = [[0, 0, 0, 1, 0],
-                         1/np.sqrt(8)*np.array([1]*8),
+                         1 / np.sqrt(8) * np.array([1] * 8),
                          [np.complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3),
-                         np.complex(0, -np.sqrt(0.6)), 0., 0.]]
+                          np.complex(0, -np.sqrt(0.6)), 0., 0.]]
 
     @pytest.mark.parametrize("inpt", INPT)
     def test_amplitude_embedding_prepares_state(self, inpt):
@@ -85,7 +85,7 @@ class TestAmplitudeEmbedding:
     @pytest.mark.parametrize("inpt", INPT)
     def test_amplitude_embedding_throws_exception_if_not_normalized(self, inpt):
         """Checks that AmplitudeEmbedding() throws exception when state is not normalized and `normalize=False`."""
-        not_nrmlzd = 2*inpt
+        not_nrmlzd = 2 * inpt
         n_qubits = 2
         dev = qml.device('default.qubit', wires=2)
 
@@ -156,7 +156,7 @@ class TestAngleEmbedding:
         """Checks the state produced by AngleEmbedding()
            using the rotation='X' strategy."""
 
-        features = [pi/2, pi/2, pi/4, 0]
+        features = [pi / 2, pi / 2, pi / 4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -174,7 +174,7 @@ class TestAngleEmbedding:
         """Checks the state produced by AngleEmbedding()
            using the rotation='Y' strategy."""
 
-        features = [pi/2, pi/2, pi/4, 0]
+        features = [pi / 2, pi / 2, pi / 4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -191,7 +191,7 @@ class TestAngleEmbedding:
         """Checks the state produced by AngleEmbedding()
            using the rotation='Z' strategy."""
 
-        features = [pi/2, pi/2, pi/4, 0]
+        features = [pi / 2, pi / 2, pi / 4, 0]
 
         @qml.qnode(qubit_device)
         def circuit(x=None):
@@ -348,8 +348,57 @@ class TestBasisEmbedding:
 class TestIQPEmbedding:
     """ Tests the IQPEmbedding method."""
 
-    def test_output(self, qubit_device, n_subsystems):
-        """Checks the state for default setting."""
+    ZZ = [qml.CNOT, qml.RZ, qml.CNOT]
+    QUEUES = [(0, []),
+              (1, [qml.Hadamard, qml.RZ]),
+              (2, [qml.Hadamard, qml.Hadamard, qml.RZ, qml.RZ, *ZZ]),
+              (3, [qml.Hadamard, qml.Hadamard, qml.Hadamard, qml.RZ, qml.RZ,  qml.RZ, *ZZ, *ZZ, *ZZ])]
+
+    @pytest.mark.parametrize('n_wires, expected_queue', QUEUES)
+    @pytest.mark.parametrize('n_repeats', [1, 2])
+    def test_queue_default_pattern(self, n_wires, expected_queue, n_repeats):
+        """Checks the queue for the default pattern."""
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.templates.IQPEmbedding(features=list(range(n_wires)), wires=range(n_wires), n_repeats=n_repeats)
+
+        expected_queue = expected_queue*n_repeats
+
+        for gate, expected_gate in zip(rec.queue, expected_queue):
+            assert isinstance(gate, expected_gate)
+
+    @pytest.mark.parametrize('features, expected_params', [([1., 2., 3.],
+                                                            [1., 2., 3., 2*1*2, 2*1*3, 2*2*3]),
+                                                           ([0.1, 0.2, 0.3],
+                                                            [0.1, 0.2, 0.3, 2*0.1*0.2, 2*0.1*0.3, 2*0.2*0.3])])
+    def test_queue_parameters(self, features, expected_params):
+        """Checks the queued parameters."""
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.templates.IQPEmbedding(features=features, wires=range(3))
+
+        # compare all nonempty gate parameters to expected ones
+        counter = 0
+        for gate in rec.queue:
+            if gate.parameters:
+                assert gate.parameters[0] == expected_params[counter]
+                counter += 1
+
+    @pytest.mark.parametrize('pattern', [[[0, 3], [1, 2], [2, 0]],
+                                         [[2, 3], [0, 2], [1, 0]]])
+    def test_wires_custom_pattern(self, pattern):
+        """Checks the queue for a custom pattern."""
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.templates.IQPEmbedding(features=list(range(4)), wires=range(4), pattern=pattern)
+
+        counter = 0
+        for gate in rec.queue:
+            # check wires of entanglers
+            if len(gate.wires) == 2:
+                # //2 to account for the two CNOTs comprising one ZZ gate
+                assert gate.wires == pattern[counter//2]
+                counter += 1
 
     @pytest.mark.parametrize('features', [[1., 2.],
                                           [1., 2., 3., 4.],
@@ -432,7 +481,7 @@ class TestQAOAEmbedding:
     def test_qaoa_embedding_state_zero_weights(self, qubit_device, n_subsystems, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the weights are zero."""
 
-        features = [pi, pi/2, pi/4, 0]
+        features = [pi, pi / 2, pi / 4, 0]
         if n_subsystems == 1:
             shp = (1, 1)
         elif n_subsystems == 2:
@@ -451,9 +500,10 @@ class TestQAOAEmbedding:
         target = [1, -1, 0, 1, 1]
         assert np.allclose(res, target[:n_subsystems], atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [0]),
-                                                               (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
-                                                               (3, [[0, 0, 0, pi, pi/2, pi/4]], [-1, 0, 1/np.sqrt(2)])])
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi / 2]], [0]),
+                                                               (2, [[1, pi / 2, pi / 4]], [0, 1 / np.sqrt(2)]),
+                                                               (3, [[0, 0, 0, pi, pi / 2, pi / 4]],
+                                                                [-1, 0, 1 / np.sqrt(2)])])
     def test_qaoa_embedding_state_zero_features_local_field_ry(self, n_subsystems, weights, target, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RY local fields."""
 
@@ -468,9 +518,10 @@ class TestQAOAEmbedding:
         res = circuit(x=features[:n_subsystems])
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [0]),
-                                                               (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
-                                                               (3, [[0, 0, 0, pi, pi/2, pi/4]], [-1, 0, 1/np.sqrt(2)])])
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi / 2]], [0]),
+                                                               (2, [[1, pi / 2, pi / 4]], [0, 1 / np.sqrt(2)]),
+                                                               (3, [[0, 0, 0, pi, pi / 2, pi / 4]],
+                                                                [-1, 0, 1 / np.sqrt(2)])])
     def test_qaoa_embedding_state_zero_features_local_field_rx(self, n_subsystems, weights, target, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RX local fields."""
 
@@ -485,9 +536,9 @@ class TestQAOAEmbedding:
         res = circuit(x=features[:n_subsystems])
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi/2]], [1]),
-                                                               (2, [[1, pi/2, pi/4]], [1, 1]),
-                                                               (3, [[0, 0, 0, pi, pi/2, pi/4]], [1, 1, 1])])
+    @pytest.mark.parametrize('n_subsystems, weights, target', [(1, [[pi / 2]], [1]),
+                                                               (2, [[1, pi / 2, pi / 4]], [1, 1]),
+                                                               (3, [[0, 0, 0, pi, pi / 2, pi / 4]], [1, 1, 1])])
     def test_qaoa_embedding_state_zero_features_local_field_rz(self, n_subsystems, weights, target, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RZ local fields."""
 
@@ -502,9 +553,9 @@ class TestQAOAEmbedding:
         res = circuit(x=features[:n_subsystems])
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('features, weights, target', [([np.pi/2, 0], [[np.pi, 0, 0]], [-1, 1]),
-                                                           ([0, np.pi/2], [[np.pi, 0, 0]], [1, -1]),
-                                                           ([np.pi/2, np.pi/2], [[np.pi, 0, 0]], [-1, -1])])
+    @pytest.mark.parametrize('features, weights, target', [([np.pi / 2, 0], [[np.pi, 0, 0]], [-1, 1]),
+                                                           ([0, np.pi / 2], [[np.pi, 0, 0]], [1, -1]),
+                                                           ([np.pi / 2, np.pi / 2], [[np.pi, 0, 0]], [-1, -1])])
     def test_qaoa_embedding_state_features_and_zz(self, features, weights, target, tol):
         """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
         Uses RY local fields."""
@@ -519,8 +570,9 @@ class TestQAOAEmbedding:
         res = circuit(x=features)
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi/2]], [1, 0]),
-                                                                    (3, [0, 0], [[0, 0, 0, 0, 0, np.pi/2]], [1, 1, 0])])
+    @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi / 2]], [1, 0]),
+                                                                    (3, [0, 0], [[0, 0, 0, 0, 0, np.pi / 2]],
+                                                                     [1, 1, 0])])
     def test_qaoa_embedding_state_more_qubits_than_features(self, n_wires, features, weights, target, tol):
         """Checks the state is correct if there are more qubits than features."""
 
@@ -540,7 +592,7 @@ class TestQAOAEmbedding:
 
         features = [0, 0, 0, 0]
         n_wires = 1
-        weights = np.zeros(shape=(1, 2*n_wires))
+        weights = np.zeros(shape=(1, 2 * n_wires))
         dev = qml.device('default.qubit', wires=n_wires)
 
         @qml.qnode(dev)
@@ -556,7 +608,7 @@ class TestQAOAEmbedding:
         rotation strategy is unknown."""
 
         n_wires = 1
-        weights = np.zeros(shape=(1, 2*n_wires))
+        weights = np.zeros(shape=(1, 2 * n_wires))
         dev = qml.device('default.qubit', wires=n_wires)
 
         @qml.qnode(dev)
@@ -572,7 +624,7 @@ class TestQAOAEmbedding:
         a valid list of indices."""
 
         n_wires = 5
-        weights = np.zeros(shape=(1, 2*n_wires))
+        weights = np.zeros(shape=(1, 2 * n_wires))
         dev = qml.device('default.qubit', wires=n_wires)
 
         @qml.qnode(dev)
@@ -613,7 +665,7 @@ class TestDisplacementEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             DisplacementEmbedding(features=x, wires=range(n_wires), method='phase', c=1.)
-            Beamsplitter(pi/2, 0, wires=[0, 1])
+            Beamsplitter(pi / 2, 0, wires=[0, 1])
             DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1.)
             return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
@@ -694,7 +746,7 @@ class TestSqueezingEmbedding:
         @qml.qnode(dev)
         def circuit(x=None):
             SqueezingEmbedding(features=x, wires=range(n_wires), method='phase', c=1)
-            Beamsplitter(pi/2, 0, wires=[0, 1])
+            Beamsplitter(pi / 2, 0, wires=[0, 1])
             SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method='phase', c=1)
             return [qml.expval(qml.NumberOperator(wires=0)), qml.expval(qml.NumberOperator(wires=1))]
 
