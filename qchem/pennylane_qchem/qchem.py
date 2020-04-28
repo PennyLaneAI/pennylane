@@ -615,7 +615,7 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz):
             .format(n_orbitals, n_electrons)
         )
 
-    if int(delta_sz) not in (0, 1, -1, 2, -2):
+    if delta_sz not in (0, 1, -1, 2, -2):
         raise ValueError(
             "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({})."
              .format(delta_sz)
