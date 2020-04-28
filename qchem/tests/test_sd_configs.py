@@ -24,13 +24,13 @@ from pennylane import qchem
         (3, 4,  2, 0, 0, []                              , []),
     ]
 )
-def test_sd_configs(
+def test_sd_excitations(
     n_electrons, n_orbitals, delta_sz, n_singles, n_doubles, ph_ref, pphh_ref
 ):
 
-    r"""Test the correctness of the generated particle-hole configurations"""
+    r"""Test the correctness of the generated configurations"""
 
-    ph, pphh = qchem.sd_configs(n_electrons, n_orbitals, delta_sz)
+    ph, pphh = qchem.sd_excitations(n_electrons, n_orbitals, delta_sz)
 
     assert len(ph) == len(ph_ref)
     assert len(pphh) == len(pphh_ref)
@@ -46,9 +46,9 @@ def test_sd_configs(
         (2, 4, 3, "Expected values for 'delta_sz'")
     ]
 )
-def test_inconsistent_configs(n_electrons, n_orbitals, delta_sz, message_match):
+def test_inconsistent_excitations(n_electrons, n_orbitals, delta_sz, message_match):
 
     r"""Test that an error is raised if a set of inconsistent arguments is input"""
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.sd_configs(n_electrons, n_orbitals, delta_sz)
+        qchem.sd_excitations(n_electrons, n_orbitals, delta_sz)
