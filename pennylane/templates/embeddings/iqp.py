@@ -44,8 +44,10 @@ def zz(parameter, wires):
 @template
 def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     r"""
-    Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit. The embedding
-    has been proposed by `Havlicek et al. (2018) <https://arxiv.org/pdf/1804.11326.pdf>`_. It and can be repeated.
+    Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
+
+    The embedding has been proposed by `Havlicek et al. (2018) <https://arxiv.org/pdf/1804.11326.pdf>`_, and
+    can be repeated by specifying ``n_repeats``.
 
     .. warning::
 
