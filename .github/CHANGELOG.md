@@ -6,7 +6,6 @@
   IQP circuit. 
   [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
   
-
   <img src="https://pennylane.readthedocs.io/en/latest/_images/iqp.png"
   width=50%></img>
   
