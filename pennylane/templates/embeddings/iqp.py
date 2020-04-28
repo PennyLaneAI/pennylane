@@ -192,6 +192,14 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         features,
         msg="'features' cannot be differentiable")
 
+    expected_shape = (len(wires),)
+    check_shape(
+        features,
+        expected_shape,
+        msg="'features' must be of shape {}; got {}"
+            "".format(expected_shape, get_shape(features)),
+    )
+
     check_type(
         n_repeats,
         [int],
@@ -221,14 +229,6 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         shape = get_shape(pattern)
         if len(shape) != 2 or shape[1] != 2:
             raise ValueError("'pattern' must be a list of pairs of wires; got {}".format(pattern))
-
-    expected_shape = (len(wires),)
-    check_shape(
-        features,
-        expected_shape,
-        msg="'features' must be of shape {}; got {}"
-            "".format(expected_shape, get_shape(features)),
-    )
 
     #####################
 
