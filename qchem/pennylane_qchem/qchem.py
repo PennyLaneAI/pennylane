@@ -568,12 +568,12 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz):
     :math:`\hat T_1` and :math:`\hat T_2` on the HF state:
 
     .. math: 
-    	&& \vert \Phi_\mathrm{S} \rangle = \hat{T}_1 \vert \mathrm{HF} \rangle = \sum_{r \in
-		\mathrm{occ} \\ p \in \mathrm{virt}} \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} 
-		\rangle \\ 
-		&& \vert \Phi_\mathrm{D} \rangle = \hat{T}_2 \vert \mathrm{HF} \rangle = \sum_{r>s \in 
-		\mathrm{occ} \\ p>q \in \mathrm{virt}} \hat{c}_p^\dagger \hat{c}_q^\dagger 
-		\hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle
+        && \vert \Phi_\mathrm{S} \rangle = \hat{T}_1 \vert \mathrm{HF} \rangle = \sum_{r \in
+        \mathrm{occ} \\ p \in \mathrm{virt}} \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} 
+        \rangle \\ 
+        && \vert \Phi_\mathrm{D} \rangle = \hat{T}_2 \vert \mathrm{HF} \rangle = \sum_{r>s \in 
+        \mathrm{occ} \\ p>q \in \mathrm{virt}} \hat{c}_p^\dagger \hat{c}_q^\dagger 
+        \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle
 
 	where the indices :math:`r, s` and :math:`p, q` run over the occupied (occ) and unoccupied, 
 	referred to as virtual (virt), molecular orbitals and :math:`\hat c` and 
