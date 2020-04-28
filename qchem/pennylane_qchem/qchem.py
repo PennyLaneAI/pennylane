@@ -621,7 +621,7 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
              .format(delta_sz)
         )
 
-    # define the spin quantum number 'sz' of each orbital
+    # define the single-particle state spin quantum number 'sz'
     sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(n_orbitals)])
 
     # nested list with the indices 'p, r' for each 1particle-1hole (ph) configuration
