@@ -4,7 +4,7 @@
 
 * Added the ``IQPEmbeddings`` template, which encodes inputs into the diagonal gates of an 
   IQP circuit. 
-  [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
+  [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
 
 * The ``templates.broadcast`` function can now take custom patterns.
   [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
