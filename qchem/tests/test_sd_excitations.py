@@ -41,9 +41,10 @@ def test_sd_excitations(
 @pytest.mark.parametrize(
     ("n_electrons", "n_orbitals", "delta_sz", "message_match"),
     [
-        (0, 4, 0, "number of active electrons has to be greater than 0"),
-        (3, 2, 0, "has to be greater than the number of active electrons"),
-        (2, 4, 3, "Expected values for 'delta_sz'")
+        (0, 4, 0  , "number of active electrons has to be greater than 0"),
+        (3, 2, 0  , "has to be greater than the number of active electrons"),
+        (2, 4, 3  , "Expected values for 'delta_sz'"),
+        (2, 4, 1.5, "Expected values for 'delta_sz'")
     ]
 )
 def test_inconsistent_excitations(n_electrons, n_orbitals, delta_sz, message_match):
