@@ -195,7 +195,32 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     check_type(
         n_repeats,
         [int],
-        msg="n_repeats must be a positive integer; got type {}".format(type(n_repeats)))
+        msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats)))
+
+    check_type(
+        pattern,
+        [Iterable, type(None)],
+        msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern))
+
+    if pattern is not None:
+
+        # check type
+        for p in pattern:
+            check_type(
+                p,
+                [Iterable],
+                msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern))
+
+            for w in p:
+                check_type(
+                    w,
+                    [int],
+                    msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern))
+
+        # check shape
+        shape = get_shape(pattern)
+        if len(shape) != 2 or shape[1] != 2:
+            raise ValueError("'pattern' must be a list of pairs of wires; got {}".format(pattern))
 
     expected_shape = (len(wires),)
     check_shape(

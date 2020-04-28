@@ -345,6 +345,87 @@ class TestBasisEmbedding:
             circuit(x=1)
 
 
+class TestIQPEmbedding:
+    """ Tests the IQPEmbedding method."""
+
+    def test_output(self, qubit_device, n_subsystems):
+        """Checks the state for default setting."""
+
+    @pytest.mark.parametrize('features', [[1., 2.],
+                                          [1., 2., 3., 4.],
+                                          [[1., 1.], [2., 2.], [3., 3.]]])
+    def test_exception_wrong_number_of_features(self, features):
+        """Verifies that an exception is raised if 'feature' has the wrong shape."""
+
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(f=None):
+            qml.templates.IQPEmbedding(features=f, wires=range(3))
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        with pytest.raises(ValueError, match="'features' must be of shape"):
+            circuit(f=features)
+
+    @pytest.mark.parametrize('pattern', [qml.RZ,
+                                         [qml.RZ, qml.RZ],
+                                         [[qml.RZ, qml.RZ], [qml.RZ, qml.RZ]]])
+    def test_exception_wrong_type_pattern(self, pattern):
+        """Verifies that an exception is raised if 'pattern' is of a wrong type."""
+
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(f=None):
+            qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=pattern)
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        with pytest.raises(ValueError, match="'pattern' must be None or a list of wire pairs"):
+            circuit(f=[1., 2., 3.])
+
+    @pytest.mark.parametrize('pattern', [[[1], [2]],
+                                         [[0, 1, 2], [0, 1, 2]]])
+    def test_exception_wrong_shape_pattern(self, pattern):
+        """Verifies that an exception is raised if 'pattern' is of a wrong shape."""
+
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(f=None):
+            qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=pattern)
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        with pytest.raises(ValueError, match="'pattern' must be a list of pairs of wires"):
+            circuit(f=[1., 2., 3.])
+
+    def test_exception_wrong_type_n_repeats(self):
+        """Verifies that an exception is raised if 'n_repeats' is of a wrong type."""
+
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(f=None):
+            qml.templates.IQPEmbedding(features=f, wires=range(3), n_repeats='a')
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        with pytest.raises(ValueError, match="'n_repeats' must be an integer"):
+            circuit(f=[1., 2., 3.])
+
+    def test_exception_features_passed_as_positional_arg(self):
+        """Verifies that an exception is raised if 'features' is passed as a positional argument to the
+         qnode."""
+
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit(features):
+            qml.templates.IQPEmbedding(features=features, wires=range(3))
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        with pytest.raises(ValueError, match="'features' cannot be differentiable"):
+            circuit([1., 2., 3.])
+
+
 class TestQAOAEmbedding:
     """ Tests the QAOAEmbedding method."""
 
