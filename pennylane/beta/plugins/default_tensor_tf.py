@@ -375,6 +375,7 @@ class DefaultTensorTF(DefaultTensor):
         Returns:
             array[float]: Jacobian matrix of size (``num_params``, ``num_wires``)
         """
+        self.reset()
         self.execute(queue, observables, parameters=parameters)
         jac = self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False)
         # TODO use unconnected_gradients=tf.UnconnectedGradients.ZERO instead of the following?
