@@ -73,8 +73,16 @@ class DefaultTensorTF(DefaultTensor):
         It can also be used with the ``torch`` and the ``tf`` interface.
 
     Args:
-        wires (int): the number of modes to initialize the device in
-        shots (int): the number of shots used for returning samples
+        wires (int): number of subsystems in the quantum state represented by the device
+        shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
+            Defaults to 1000 if not specified.
+        representation (str): Underlying representation used for the tensor network simulation.
+            Valid options are "exact" (no approximations made) or "mps" (simulated quantum
+            state is approximated as a Matrix Product State).
+        contraction_method (str): Method used to perform tensor network contractions. Only applicable
+            for the "exact" representation. Valid options are "auto", "greedy", "branch", or "optimal".
+            See documentation of the `TensorNetwork library <https://tensornetwork.readthedocs.io/en/latest/>`_
+            for more information about contraction methods.
     """
 
     # pylint: disable=too-many-instance-attributes
