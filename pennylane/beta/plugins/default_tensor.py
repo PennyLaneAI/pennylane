@@ -102,8 +102,6 @@ class DefaultTensor(Device):
         "Identity": ops.identity,
     }
 
-    _operation_and_observable_map = {**_operation_map, **_observable_map}
-
     backend = "numpy"
     _reshape = staticmethod(np.reshape)
     _array = staticmethod(np.array)
@@ -123,6 +121,7 @@ class DefaultTensor(Device):
         super().__init__(wires, shots)
         if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
+        self._operation_and_observable_map = {**self._operation_map, **self._observable_map}
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()

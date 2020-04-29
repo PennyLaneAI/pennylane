@@ -258,7 +258,7 @@ class DefaultTensorTF(DefaultTensor):
     C_DTYPE = C_DTYPE
     R_DTYPE = R_DTYPE
 
-    def __init__(self, wires, shots=1000):
+    def __init__(self, wires, shots=1000, representation="exact", contraction_method="auto"):
         self.variables = []
         """List[tf.Variable]: Free parameters, cast to TensorFlow variables,
         for this circuit."""
@@ -275,7 +275,7 @@ class DefaultTensorTF(DefaultTensor):
         """tf.GradientTape: the gradient tape under which all tensor network
         modifications must be made"""
 
-        super().__init__(wires, shots=shots)
+        super().__init__(wires, shots=shots, representation=representation, contraction_method=contraction_method)
 
     def reset(self):
         self.res = None
