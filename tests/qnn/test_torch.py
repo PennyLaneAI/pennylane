@@ -298,18 +298,12 @@ class TestTorchLayer:
         out_layer = layer(x)
         out_layer.backward()
 
-        g_layer = [w.grad for w in weights]
+        g_layer = [w.grad.numpy() for w in weights]
 
         out_circuit = c(x, *weights)
         out_circuit.backward()
 
-        g_circuit = [w.grad for w in weights]
-        print(out_circuit)
+        g_circuit = [w.grad.numpy() for w in weights]
 
-        # with tf.GradientTape() as tape:
-        #     out_circuit = c(x[0], *layer.trainable_variables)
-        #
-        # g_circuit = tape.gradient(out_circuit, layer.trainable_variables)
-        #
-        # for i in range(len(out_layer)):
-        #     assert np.allclose(g_layer[i], g_circuit[i])
+        for g1, g2 in zip(g_layer, g_circuit):
+            assert np.allclose(g1, g2)
