@@ -32,6 +32,33 @@ def indices_up_to(n_max):
     return zip(*[a + 1, b + 1])
 
 
+@pytest.mark.usefixtures("get_circuit")
+@pytest.fixture
+def module(get_circuit, n_qubits, output_dim):
+    """Fixture for creating a hybrid Torch module. The module is composed of TorchLayers sandwiched
+    between Linear layers."""
+    c, w = get_circuit
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.clayer1 = torch.nn.Linear(n_qubits, n_qubits)
+            self.clayer2 = torch.nn.Linear(output_dim, n_qubits)
+            self.clayer3 = torch.nn.Linear(output_dim, output_dim)
+            self.qlayer1 = TorchLayer(c, w, output_dim)
+            self.qlayer2 = TorchLayer(c, w, output_dim)
+
+        def forward(self, x):
+            x = self.clayer1(x)
+            x = self.qlayer1(x).float()
+            x = self.clayer2(x)
+            x = self.qlayer2(x).float()
+            x = self.clayer3(x)
+            return x
+
+    return Net()
+
+
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
 class TestTorchLayer:
@@ -307,3 +334,83 @@ class TestTorchLayer:
 
         for g1, g2 in zip(g_layer, g_circuit):
             assert np.allclose(g1, g2)
+
+
+@pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+@pytest.mark.usefixtures("get_circuit")
+def test_interface_conversion(get_circuit, output_dim):
+    """Test if input QNodes with all types of interface are converted internally to the PyTorch
+    interface"""
+    c, w = get_circuit
+    layer = TorchLayer(c, w, output_dim)
+    assert layer.qnode.interface == "torch"
+
+
+@pytest.mark.parametrize("interface", ["torch"])
+@pytest.mark.usefixtures("get_circuit", "module")
+class TestTorchLayerIntegration:
+    """Integration tests for the pennylane.qnn.torch.TorchLayer class."""
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    @pytest.mark.parametrize("batch_size", [1])
+    def test_step_module(self, module, batch_size, n_qubits, output_dim):
+        """Test if a module that includes TorchLayers can perform one optimization step. This
+        test checks that some of the parameters in the module are different after one step.
+        The module is composed of two TorchLayers sandwiched between Linear neural network layers,
+        and the dataset is simply input and output vectors of zeros."""
+        loss_func = torch.nn.MSELoss()
+        optimizer = torch.optim.SGD(module.parameters(), lr=0.5)
+
+        x = torch.zeros((batch_size, n_qubits))
+        y = torch.zeros((batch_size, output_dim))
+
+        params_before = [w.detach().numpy().copy() for w in list(module.parameters())]
+
+        module_out = module(x)
+        optimizer.zero_grad()
+        loss = loss_func(module_out, y)
+        loss.backward()
+        optimizer.step()
+
+        params_after = [w.detach().numpy().copy() for w in list(module.parameters())]
+
+        params_similar = [np.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
+        assert not all(params_similar)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    def test_module_gradients(self, module, output_dim, n_qubits, get_circuit):
+        """Test if a gradient can be calculated with respect to all of the trainable variables in
+        the module"""
+        c, w = get_circuit
+
+        x = torch.zeros((2, n_qubits))
+        y = torch.zeros((2, output_dim))
+
+        module_out = module(x)
+        loss_func = torch.nn.MSELoss()
+        loss = loss_func(module_out, y)
+        loss.backward()
+
+        gradients = [w.grad for w in module.parameters()]
+        assert all([g.is_floating_point() for g in gradients])
+        assert len(gradients) == 2 * len(w) + 6  # six parameters come from classical layers
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    def test_module_state_dict(self, module, output_dim, n_qubits, get_circuit):
+        """TODO"""
+        c, w = get_circuit
+
+        state_dict = module.state_dict()
+        dict_keys = set(state_dict.keys())
+
+        clayer_weights = set("clayer{}.weight".format(i + 1) for i in range(3))
+        clayer_biases = set("clayer{}.bias".format(i + 1) for i in range(3))
+        qlayer_params = set("qlayer{}.w{}".format(i + 1, j + 1) for i in range(2) for j in range(
+            len(
+            w)))
+
+        all_params = clayer_weights | clayer_biases | qlayer_params
+
+        assert dict_keys == all_params
+        assert len(dict_keys) == len(all_params)

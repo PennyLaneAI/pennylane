@@ -363,9 +363,9 @@ class TestKerasLayerIntegration:
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model(self, model, batch_size, n_qubits, output_dim):
-        """Test if a model can train using the KerasLayer. The model is composed of a single
-        KerasLayer sandwiched between two Dense layers, and the dataset is simply input and output
-        vectors of zeros."""
+        """Test if a model can train using the KerasLayer. The model is composed of two
+        KerasLayers sandwiched between Dense neural network layers, and the dataset is simply
+        input and output vectors of zeros."""
 
         x = np.zeros((batch_size, n_qubits))
         y = np.zeros((batch_size, output_dim))
