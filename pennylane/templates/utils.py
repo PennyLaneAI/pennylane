@@ -86,7 +86,7 @@ def get_shape(inpt):
 
     else:
         # turn lists into array to get shape
-        if isinstance(inpt, Iterable):
+        if isinstance(inpt, list):
             inpt = np.array(inpt)
 
         try:
