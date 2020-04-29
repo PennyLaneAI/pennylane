@@ -35,7 +35,160 @@ except ImportError:
 
 
 class TorchLayer(Module):
-    """TODO"""
+    r"""Converts a :func:`~.QNode` to a Torch layer.
+
+    The result can be used within the ``torch.nn``
+    `Sequential <https://pytorch.org/docs/stable/nn.html#sequential>`__ or
+    `Module <https://pytorch.org/docs/stable/nn.html#module>`__ classes for
+    creating quantum and hybrid models.
+
+    Args:
+        qnode (qml.QNode): the PennyLane QNode to be converted into a Torch layer
+        weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
+            their corresponding shapes
+        output_dim (int): the output dimension of the QNode
+        init_method (callable): a ``torch.nn.init`` function for initializing the QNode weights.
+            If not specified, weights are randomly initialized using the uniform distribution
+            over :math:`[0, 2 \pi]`.
+
+    **Example**
+
+    .. code-block:: python
+
+        qlayer = qml.qnn.TorchLayer(qnode, weight_shapes, output_dim=2)
+        clayer = torch.nn.Linear(2, 2)
+        model = torch.nn.Sequential(qlayer, clayer)
+
+    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
+    with all other arguments to be treated as internal weights. A valid ``qnode`` for the example
+    above would be:
+
+    .. code-block:: python
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def qnode(inputs, weights_0, weight_1):
+            qml.RX(inputs[0], wires=0)
+            qml.RX(inputs[1], wires=1)
+            qml.Rot(*weights_0, wires=0)
+            qml.RY(weight_1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    The internal weights of the QNode are automatically initialized within the
+    :class:`~.TorchLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
+    For example:
+
+    .. code-block::
+
+        weight_shapes = {"weights_0": 3, "weight_1": 1}
+
+    .. UsageDetails::
+
+        The QNode must have a signature that satisfies the following conditions:
+
+        - Contain an ``inputs`` named argument for input data.
+        - All other arguments must accept an array or tensor and are treated as internal
+          weights of the QNode.
+        - All other arguments must have no default value.
+        - The ``inputs`` argument is permitted to have a default value provided the gradient with
+          respect to ``inputs`` is not required.
+        - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
+          or ``**kwargs`` present in the signature.
+
+        The optional ``init_method`` argument allows for the initialization method of the QNode
+        weights to be specified. The function passed to the argument must be from the
+        ``torch.nn.init`` module. For example, weights can be randomly initialized from the
+        normal distribution passing:
+
+        .. code-block::
+
+            init_method = torch.nn.init.normal_
+
+        If ``init_method`` is not specified, weights are randomly initialized from the uniform
+        distribution on the interval :math:`[0, 2 \pi]`.
+
+        **Additional example**
+
+        The code block below shows how a circuit composed of templates from the
+        :doc:`/code/qml_templates` module can be combined with classical
+        `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
+        the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
+        .datasets.make_moons.html>`__ dataset.
+
+        .. code-block:: python
+
+            import numpy as np
+            import pennylane as qml
+            import torch
+            import sklearn.datasets
+
+            n_qubits = 2
+            dev = qml.device("default.qubit", wires=n_qubits)
+
+            @qml.qnode(dev)
+            def qnode(inputs, weights):
+                qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+            weight_shapes = {"weights": (3, n_qubits, 3)}
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes, output_dim=2)
+            clayer1 = torch.nn.Linear(2, 2)
+            clayer2 = torch.nn.Linear(2, 2)
+            softmax = torch.nn.Softmax(dim=1)
+            model = torch.nn.Sequential(clayer1, qlayer, clayer2, softmax)
+
+            samples = 100
+            x, y = sklearn.datasets.make_moons(samples)
+            y_hot = np.zeros((samples, 2))
+            y_hot[np.arange(samples), y] = 1
+
+            X = torch.tensor(x).float()
+            Y = torch.tensor(y_hot).float()
+
+            opt = torch.optim.SGD(model.parameters(), lr=0.5)
+            loss = torch.nn.L1Loss()
+
+        The model can be trained using:
+
+        .. code-block:: python
+
+            epochs = 8
+            batch_size = 5
+            batches = samples / batch_size
+
+            data_loader = torch.utils.data.DataLoader(list(zip(X, Y)), batch_size=batch_size, shuffle=True)
+
+            for epoch in range(epochs):  # loop over the dataset multiple times
+
+                running_loss = 0
+
+                for x, y in data_loader:
+                    opt.zero_grad()
+
+                    loss_evaluated = loss(model(x), y)
+                    loss_evaluated.backward()
+
+                    opt.step()
+
+                    running_loss += loss_evaluated
+
+                avg_loss = torch.mean(running_loss / batches)
+                print("Average loss over epoch: {:.4f}".format(avg_loss))
+
+        Average loss over epoch: 0.4733
+        Average loss over epoch: 0.2748
+        Average loss over epoch: 0.1794
+        Average loss over epoch: 0.1839
+        Average loss over epoch: 0.1768
+        Average loss over epoch: 0.1532
+        Average loss over epoch: 0.1567
+        Average loss over epoch: 0.1699
+    """
 
     def __init__(self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] =
     None):
@@ -97,12 +250,29 @@ class TorchLayer(Module):
             self.register_parameter(name, self.qnode_weights[name])
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
+        """Evaluates a forward pass through the QNode based upon input data and the initialized
+        weights.
+
+        Args:
+            inputs (tensor): data to be processed
+
+        Returns:
+            tensor: output data
+        """
         if len(inputs.shape) == 1:
             return self._evaluate_qnode(inputs)
 
         return torch.stack([self._evaluate_qnode(x) for x in inputs])
 
     def _evaluate_qnode(self, x):
+        """Evaluates the QNode for a single input datapoint.
+
+        Args:
+            x (tensor): the datapoint
+
+        Returns:
+            tensor: output datapoint
+        """
         qnode = self.qnode
 
         for arg in self.sig:
@@ -125,5 +295,5 @@ class TorchLayer(Module):
 
     @property
     def input_arg(self):
-        """TODO"""
+        """Name of the argument to be used as the input to the Torch Layer. Set to ``"inputs"``."""
         return self._input_arg
