@@ -253,9 +253,7 @@ INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal,
                       ]
 # Functions returning a list of parameter arrays
 INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, {'n_layers': 2, 'n_wires': 3},
-                          [(2, 3), (2, 3), (2, 3), (2, 3), (2, 3),
-                           (2, 3), (2, 3), (2, 3), (2, 3), (2, 3),
-                           (2, 3)]),
+                          [(2, 3)]*11),
                          (qml.init.interferometer_all, {'n_wires': 3}, [(3,), (3,), (3,)])]
 
 # Without target shapes
