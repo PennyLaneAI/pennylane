@@ -409,9 +409,9 @@ class TestTorchLayerIntegration:
 
         clayer_weights = set("clayer{}.weight".format(i + 1) for i in range(3))
         clayer_biases = set("clayer{}.bias".format(i + 1) for i in range(3))
-        qlayer_params = set("qlayer{}.w{}".format(i + 1, j + 1) for i in range(2) for j in range(
-            len(
-            w)))
+        qlayer_params = set(
+            "qlayer{}.w{}".format(i + 1, j + 1) for i in range(2) for j in range(len(w))
+        )
 
         all_params = clayer_weights | clayer_biases | qlayer_params
 

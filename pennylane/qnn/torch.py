@@ -190,8 +190,9 @@ class TorchLayer(Module):
         Average loss over epoch: 0.1699
     """
 
-    def __init__(self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] =
-    None):
+    def __init__(
+            self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] = None
+    ):
         if not TORCH_IMPORTED:
             raise ImportError("TorchLayer requires PyTorch")
         super().__init__()
