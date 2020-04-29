@@ -156,7 +156,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             from pennylane import numpy as np
 
             pattern1 = [[1, 2], [0, 2], [1, 0]]
-            pattern2 = [[1, 0], [0, 2], [1, 2]]
+            pattern2 = [[1, 0], [0, 2], [1, 2]]  # a reshuffling of pattern1
 
             @qml.qnode(dev)
             def circuit(features=None, pattern=None):
