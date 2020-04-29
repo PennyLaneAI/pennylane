@@ -180,18 +180,18 @@ class TorchLayer(Module):
                 avg_loss = torch.mean(running_loss / batches)
                 print("Average loss over epoch: {:.4f}".format(avg_loss))
 
-        Average loss over epoch: 0.4733
-        Average loss over epoch: 0.2748
-        Average loss over epoch: 0.1794
-        Average loss over epoch: 0.1839
-        Average loss over epoch: 0.1768
-        Average loss over epoch: 0.1532
-        Average loss over epoch: 0.1567
-        Average loss over epoch: 0.1699
+        Average loss over epoch 0: 0.5089
+        Average loss over epoch 1: 0.4765
+        Average loss over epoch 2: 0.2710
+        Average loss over epoch 3: 0.1865
+        Average loss over epoch 4: 0.1670
+        Average loss over epoch 5: 0.1635
+        Average loss over epoch 6: 0.1528
+        Average loss over epoch 7: 0.1528
     """
 
     def __init__(
-            self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] = None
+        self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] = None
     ):
         if not TORCH_IMPORTED:
             raise ImportError("TorchLayer requires PyTorch")
@@ -288,7 +288,7 @@ class TorchLayer(Module):
                     qnode = functools.partial(qnode, x)
         return qnode().type(x.dtype)
 
-    def extra_repr(self):
+    def extra_repr(self):  # pylint: disable=missing-function-docstring
         detail = "Quantum Torch Layer: func={}"
         return detail.format(self.qnode.func.__name__)
 
