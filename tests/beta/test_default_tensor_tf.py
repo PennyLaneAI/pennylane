@@ -68,7 +68,12 @@ crz = lambda theta: np.array(
 single_qubit = [(qml.PauliX, X), (qml.PauliY, Y), (qml.PauliZ, Z), (qml.Hadamard, H)]
 
 
-single_qubit_param = [(qml.PhaseShift, phase_shift), (qml.RX, rx), (qml.RY, ry), (qml.RZ, rz)]
+single_qubit_param = [
+    (qml.PhaseShift, phase_shift),
+    (qml.RX, rx),
+    (qml.RY, ry),
+    (qml.RZ, rz),
+]
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP)]
 two_qubit_param = [(qml.CRZ, crz)]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
@@ -95,6 +100,7 @@ def init_state(scope="session"):
 #####################################################
 # Unit tests
 #####################################################
+
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestApply:
@@ -130,7 +136,9 @@ class TestApply:
         dev = DefaultTensorTF(wires=2, representation=rep)
         state = np.array([0, 123.432])
 
-        with pytest.raises(ValueError, match=r"can apply QubitStateVector only to all of the 2 wires"):
+        with pytest.raises(
+            ValueError, match=r"can apply QubitStateVector only to all of the 2 wires"
+        ):
             dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
 
     @pytest.mark.parametrize("op,mat", single_qubit)
@@ -492,7 +500,7 @@ class TestJacobianIntegration:
 
         res = circuit.jacobian([p])
         expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
+            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0,]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
