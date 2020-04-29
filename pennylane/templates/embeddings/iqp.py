@@ -189,10 +189,17 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
         **Non-consecutive wires**
 
-        In principle the user can also pass a non-consecutive wire list to the template, such as ``wires=[2, 0, 1]``.
-        In this case, the ``RZ` block applies the first feature to wire 2, the second feature to wire 0, etc.
-        Likewise, the entangler block applies the product of the first and second feature to the first wire pair
-        specified in ``pattern``, which for the default pattern is ``[2, 0]``.
+        In principle, the user can also pass a non-consecutive wire list to the template.
+        For single qubit gates, the i'th feature is applied to the i'th wire index (which may not be the i'th wire).
+        For the entanglers, the product of i'th and j'th features is applied to the wire indices at the i'th and j'th
+        position in ``wires``.
+
+        For example, for ``wires=[2, 0, 1]`` the ``RZ` block applies the first feature to wire 2,
+        the second feature to wire 0, and the third feature to wire 1.
+
+        Likewise, using the default pattern, the entangler block applies the product of the first and second
+        feature to the wire pair ``[2, 0]``, the product of the second and third feature to ``[2, 1]`` and so
+        forth.
 
     """
     #############
