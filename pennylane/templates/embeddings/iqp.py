@@ -194,11 +194,11 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         For the entanglers, the product of i'th and j'th features is applied to the wire indices at the i'th and j'th
         position in ``wires``.
 
-        For example, for ``wires=[2, 0, 1]`` the ``RZ` block applies the first feature to wire 2,
+        For example, for ``wires=[2, 0, 1]`` the ``RZ`` block applies the first feature to wire 2,
         the second feature to wire 0, and the third feature to wire 1.
 
         Likewise, using the default pattern, the entangler block applies the product of the first and second
-        feature to the wire pair ``[2, 0]``, the product of the second and third feature to ``[2, 1]`` and so
+        feature to the wire pair ``[2, 0]``, the product of the second and third feature to ``[2, 1]``, and so
         forth.
 
     """
