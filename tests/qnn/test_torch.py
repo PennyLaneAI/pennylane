@@ -398,7 +398,8 @@ class TestTorchLayerIntegration:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_module_state_dict(self, module, output_dim, n_qubits, get_circuit):
-        """TODO"""
+        """Test if the state dictionary output by the module contains all the expected trainable
+        parameters"""
         c, w = get_circuit
 
         state_dict = module.state_dict()
