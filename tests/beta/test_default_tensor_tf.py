@@ -107,7 +107,7 @@ class TestApply:
 
         dev.execute([qml.BasisState(state, wires=[0, 1, 2, 3])], [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = np.zeros([2 ** 4])
         expected[np.ravel_multi_index(state, [2] * 4)] = 1
 
@@ -120,7 +120,7 @@ class TestApply:
 
         dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -143,7 +143,7 @@ class TestApply:
         queue += [op(wires=0)]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -158,7 +158,7 @@ class TestApply:
         queue += [op(theta, wires=0)]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -175,7 +175,7 @@ class TestApply:
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = rot(a, b, c) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -189,7 +189,7 @@ class TestApply:
         queue += [op(wires=[0, 1])]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -204,7 +204,7 @@ class TestApply:
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -218,7 +218,7 @@ class TestApply:
         queue += [op(wires=[0, 1, 2])]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = mat @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -233,7 +233,7 @@ class TestApply:
         queue += [op(theta, wires=[0, 1])]
         dev.execute(queue, [], {})
 
-        res = dev._state.numpy().flatten()
+        res = dev._state().numpy().flatten()
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -420,7 +420,7 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.tensor.tf", wires=2)
 
-        state = dev._state
+        state = dev._state()
 
         expected = np.array([[1, 0], [0, 0]])
         assert np.allclose(state, expected, atol=tol, rtol=0)
@@ -431,7 +431,7 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         circuit()
-        state = dev._state
+        state = dev._state()
 
         expected = np.array([[1, 0], [1, 0]]) / np.sqrt(2)
         assert np.allclose(state, expected, atol=tol, rtol=0)
