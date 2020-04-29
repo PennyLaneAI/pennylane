@@ -130,7 +130,7 @@ class TestApply:
         dev = DefaultTensorTF(wires=2)
         state = np.array([0, 123.432])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
+        with pytest.raises(ValueError, match=r"can apply QubitStateVector only to all of the 2 wires"):
             dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
 
     @pytest.mark.parametrize("op,mat", single_qubit)
@@ -385,7 +385,6 @@ class TestQNodeIntegration:
         dev = qml.device("default.tensor.tf", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == 1000
-        assert dev.analytic
         assert dev.short_name == "default.tensor.tf"
         assert dev.capabilities()["provides_jacobian"]
 
@@ -406,13 +405,6 @@ class TestQNodeIntegration:
         expected = -np.sin(p)
 
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
-
-    def test_cannot_overwrite_state(self):
-        """Tests that _state is a property and cannot be overwritten."""
-        dev = qml.device("default.tensor.tf", wires=2)
-
-        with pytest.raises(AttributeError, match="can't set attribute"):
-            dev._state = np.array([[1, 0], [0, 0]])
 
     def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
