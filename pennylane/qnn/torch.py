@@ -115,7 +115,7 @@ class TorchLayer(Module):
                     qnode = functools.partial(qnode, **{self.input_arg: x})
                 else:
                     qnode = functools.partial(qnode, x)
-        return qnode()
+        return qnode().type(x.dtype)
 
     def extra_repr(self):
         detail = "Quantum Torch Layer: func={}"

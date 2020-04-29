@@ -50,9 +50,9 @@ def module(get_circuit, n_qubits, output_dim):
 
         def forward(self, x):
             x = self.clayer1(x)
-            x = self.qlayer1(x).float()
+            x = self.qlayer1(x)
             x = self.clayer2(x)
-            x = self.qlayer2(x).float()
+            x = self.qlayer2(x)
             x = self.clayer3(x)
             return x
 
@@ -352,18 +352,20 @@ def test_interface_conversion(get_circuit, output_dim):
 class TestTorchLayerIntegration:
     """Integration tests for the pennylane.qnn.torch.TorchLayer class."""
 
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    @pytest.mark.parametrize("batch_size", [1])
-    def test_step_module(self, module, batch_size, n_qubits, output_dim):
+    @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("batch_size", [2])
+    def test_step_module(self, module, batch_size, n_qubits, output_dim, dtype):
         """Test if a module that includes TorchLayers can perform one optimization step. This
         test checks that some of the parameters in the module are different after one step.
         The module is composed of two TorchLayers sandwiched between Linear neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+        module = module.type(dtype)
         loss_func = torch.nn.MSELoss()
         optimizer = torch.optim.SGD(module.parameters(), lr=0.5)
 
-        x = torch.zeros((batch_size, n_qubits))
-        y = torch.zeros((batch_size, output_dim))
+        x = torch.zeros((batch_size, n_qubits)).type(dtype)
+        y = torch.zeros((batch_size, output_dim)).type(dtype)
 
         params_before = [w.detach().numpy().copy() for w in list(module.parameters())]
 
@@ -396,7 +398,7 @@ class TestTorchLayerIntegration:
         assert all([g.is_floating_point() for g in gradients])
         assert len(gradients) == 2 * len(w) + 6  # six parameters come from classical layers
 
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_module_state_dict(self, module, output_dim, n_qubits, get_circuit):
         """Test if the state dictionary output by the module contains all the expected trainable
         parameters"""
