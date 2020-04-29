@@ -18,7 +18,7 @@ Experimental simulator plugin based on tensor network contractions
 import warnings
 from itertools import product
 
-from . import numpy_ops as ops
+from pennylane.beta.plugins import numpy_ops as ops
 
 import numpy as np
 
