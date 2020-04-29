@@ -35,8 +35,8 @@ def indices_up_to(n_max):
 @pytest.mark.usefixtures("get_circuit")
 @pytest.fixture
 def module(get_circuit, n_qubits, output_dim):
-    """Fixture for creating a hybrid Torch module. The module is composed of TorchLayers sandwiched
-    between Linear layers."""
+    """Fixture for creating a hybrid Torch module. The module is composed of quantum TorchLayers
+    sandwiched between Linear layers."""
     c, w = get_circuit
 
     class Net(torch.nn.Module):
@@ -66,8 +66,7 @@ class TestTorchLayer:
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_no_torch(self, get_circuit, output_dim, monkeypatch):
-        """Test if an ImportError is raised when instantiated with an incorrect version of
-        TensorFlow"""
+        """Test if an ImportError is raised when instantiated without PyTorch"""
         c, w = get_circuit
         with monkeypatch.context() as m:
             m.setattr(qml.qnn.torch, "TORCH_IMPORTED", False)

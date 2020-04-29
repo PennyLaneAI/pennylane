@@ -198,7 +198,6 @@ class TorchLayer(Module):
             Average loss over epoch 7: 0.1528
             Average loss over epoch 8: 0.1528
     """
-
     def __init__(
         self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] = None
     ):
