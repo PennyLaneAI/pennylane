@@ -211,6 +211,10 @@ class TestApply:
     @pytest.mark.parametrize("op, mat", three_qubit)
     def test_three_qubit_no_parameters(self, init_state, op, mat, rep, tol):
         """Test non-parametrized three qubit operations"""
+
+        if rep == "mps":
+            pytest.skip("Three-qubit gates not supported for `mps` representation.")
+
         dev = DefaultTensorTF(wires=3, representation=rep)
         state = init_state(3)
 
