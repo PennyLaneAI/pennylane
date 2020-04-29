@@ -16,6 +16,8 @@ Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Iterable
+from itertools import combinations
+
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, CNOT, Hadamard
 from pennylane.templates import broadcast
@@ -46,8 +48,10 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     r"""
     Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
 
-    The embedding has been proposed by `Havlicek et al. (2018) <https://arxiv.org/pdf/1804.11326.pdf>`_, and
-    can be repeated by specifying ``n_repeats``.
+    The embedding has been proposed by `Havlicek et al. (2018) <https://arxiv.org/pdf/1804.11326.pdf>`_.
+
+    The basic IQP circuit can be repeated by specifying ``n_repeats``. Repetitions can make the
+    embedding "richer" through interference.
 
     .. warning::
 
@@ -93,7 +97,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         features (array): array of features to encode
         wires (Sequence[int] or int): qubit indices that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
-        pattern (dict): specifies the wires and features of the entanglers
+        pattern (list): specifies the wires and features of the entanglers
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -133,6 +137,21 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
         >>> ValueError: 'features' cannot be differentiable
 
+        **Repeating the embedding**
+
+        The embedding can be repeated by specifying the ``n_repeats`` argument:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(features=None):
+                IQPEmbedding(features=features, wires=range(3), n_repeats=4)
+                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+            circuit(features=[1., 2., 3.])
+
+        Every repetition uses exactly the same quantum circuit.
+
         **Using a custom entangler pattern**
 
         A custom entangler pattern can be used by specifying the ``pattern`` argument. A pattern has to be
@@ -167,21 +186,6 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             res2 = circuit(features=[1., 2., 3.], pattern=pattern2)
 
             assert np.allclose(res1, res2)
-
-        **Repeating the embedding**
-
-        The embedding can be repeated by specifying the ``n_repeats`` argument:
-
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def circuit(features=None):
-                IQPEmbedding(features=features, wires=range(3), n_repeats=4)
-                return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
-            circuit(features=[1., 2., 3.])
-
-        Every repetition uses exactly the same quantum circuit.
 
     """
     #############
@@ -234,7 +238,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     if pattern is None:
         # default is an all-to-all pattern
-        pattern = [[i, j] for i in range(len(wires)) for j in range(len(wires)) if j > i]
+        pattern = list(combinations(wires, 2))
 
     for i in range(n_repeats):
 
