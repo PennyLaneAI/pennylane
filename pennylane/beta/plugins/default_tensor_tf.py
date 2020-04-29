@@ -252,6 +252,8 @@ class DefaultTensorTF(DefaultTensor):
     _real = staticmethod(tf.math.real)
     _imag = staticmethod(tf.math.imag)
     _abs = staticmethod(tf.abs)
+    _squeeze = staticmethod(tf.squeeze)
+    _expand_dims = staticmethod(tf.expand_dims)
 
     C_DTYPE = C_DTYPE
     R_DTYPE = R_DTYPE
