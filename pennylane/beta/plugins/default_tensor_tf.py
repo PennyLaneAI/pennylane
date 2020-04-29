@@ -35,6 +35,7 @@ from pennylane.beta.plugins import tf_ops as ops
 # tolerance for numerical errors
 tolerance = 1e-10
 
+
 class DefaultTensorTF(DefaultTensor):
     """Experimental TensorFlow Tensor Network simulator device for PennyLane.
 
@@ -126,7 +127,9 @@ class DefaultTensorTF(DefaultTensor):
         """tf.GradientTape: the gradient tape under which all tensor network
         modifications must be made"""
 
-        super().__init__(wires, shots=shots, representation=representation, contraction_method=contraction_method)
+        super().__init__(
+            wires, shots=shots, representation=representation, contraction_method=contraction_method
+        )
 
     def reset(self):
         self.res = None
