@@ -15,7 +15,7 @@ r"""
 Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
+from collections import Sequence
 from itertools import combinations
 
 from pennylane.templates.decorator import template
@@ -39,7 +39,7 @@ def zz(parameter, wires):
         wires (list[int]): qubit indices that the template acts on
     """
     CNOT(wires=wires)
-    RZ(2 * parameter, wires=wires[0])
+    RZ(2 * parameter, wires=wires[1])
     CNOT(wires=wires)
 
 
@@ -208,7 +208,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     check_type(
         pattern,
-        [Iterable, type(None)],
+        [Sequence, type(None)],
         msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
     )
 
@@ -218,7 +218,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         for p in pattern:
             check_type(
                 p,
-                [Iterable],
+                [Sequence],
                 msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
             )
 

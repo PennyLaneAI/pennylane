@@ -352,7 +352,7 @@ class TestIQPEmbedding:
     QUEUES = [(0, []),
               (1, [qml.Hadamard, qml.RZ]),
               (2, [qml.Hadamard, qml.Hadamard, qml.RZ, qml.RZ, *ZZ]),
-              (3, [qml.Hadamard, qml.Hadamard, qml.Hadamard, qml.RZ, qml.RZ,  qml.RZ, *ZZ, *ZZ, *ZZ])]
+              (3, [qml.Hadamard, qml.Hadamard, qml.Hadamard, qml.RZ, qml.RZ, qml.RZ, *ZZ, *ZZ, *ZZ])]
 
     @pytest.mark.parametrize('n_wires, expected_queue', QUEUES)
     @pytest.mark.parametrize('n_repeats', [1, 2])
@@ -362,15 +362,16 @@ class TestIQPEmbedding:
         with qml.utils.OperationRecorder() as rec:
             qml.templates.IQPEmbedding(features=list(range(n_wires)), wires=range(n_wires), n_repeats=n_repeats)
 
-        expected_queue = expected_queue*n_repeats
+        expected_queue = expected_queue * n_repeats
 
         for gate, expected_gate in zip(rec.queue, expected_queue):
             assert isinstance(gate, expected_gate)
 
     @pytest.mark.parametrize('features, expected_params', [([1., 2., 3.],
-                                                            [1., 2., 3., 2*1*2, 2*1*3, 2*2*3]),
+                                                            [1., 2., 3., 2 * 1 * 2, 2 * 1 * 3, 2 * 2 * 3]),
                                                            ([0.1, 0.2, 0.3],
-                                                            [0.1, 0.2, 0.3, 2*0.1*0.2, 2*0.1*0.3, 2*0.2*0.3])])
+                                                            [0.1, 0.2, 0.3, 2 * 0.1 * 0.2, 2 * 0.1 * 0.3,
+                                                             2 * 0.2 * 0.3])])
     @pytest.mark.parametrize('wires', [range(3),
                                        [2, 0, 1]])
     def test_queue_parameters(self, features, expected_params, wires):
@@ -386,20 +387,24 @@ class TestIQPEmbedding:
                 assert gate.parameters[0] == expected_params[counter]
                 counter += 1
 
-    @pytest.mark.parametrize('wires', [range(3),
-                                       [2, 0, 1]])
-    def test_queue_correct_wires(self, features, expected_params, wires):
-        """Checks the queued parameters, for consecutive and non-consecutive ``wires`` argument."""
+    @pytest.mark.parametrize('wires, expected_queue_wires', [(range(3), [[0], [1], [2], [0], [1], [2],
+                                                                         [0, 1], [1], [0, 1],
+                                                                         [0, 2], [2], [0, 2],
+                                                                         [1, 2], [2], [1, 2]]),
+                                                             ([2, 0, 1], [[2], [0], [1], [2], [0], [1],
+                                                                          [2, 0], [0], [2, 0],
+                                                                          [2, 1], [1], [2, 1],
+                                                                          [0, 1], [1], [0, 1]])])
+    def test_queue_correct_wires(self, wires, expected_queue_wires):
+        """Checks the queued wires for a consecutive and non-consecutive sequence
+           of indices in the ``wires`` argument."""
 
         with qml.utils.OperationRecorder() as rec:
-            qml.templates.IQPEmbedding(features=features, wires=wires)
+            qml.templates.IQPEmbedding(features=list(range(3)), wires=wires)
 
-        # compare all nonempty gate parameters to expected ones
-        counter = 0
-        for gate in rec.queue:
-            if gate.parameters:
-                assert gate.parameters[0] == expected_params[counter]
-                counter += 1
+        # compare all gate wires to expected ones
+        for idx, gate in enumerate(rec.queue):
+            assert np.allclose(gate.wires, expected_queue_wires[idx])
 
     @pytest.mark.parametrize('pattern', [[[0, 3], [1, 2], [2, 0]],
                                          [[2, 3], [0, 2], [1, 0]]])
@@ -414,7 +419,7 @@ class TestIQPEmbedding:
             # check wires of entanglers
             if len(gate.wires) == 2:
                 # //2 to account for the two CNOTs comprising one ZZ gate
-                assert gate.wires == pattern[counter//2]
+                assert gate.wires == pattern[counter // 2]
                 counter += 1
 
     @pytest.mark.parametrize('features', [[1., 2.],
