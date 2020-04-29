@@ -212,7 +212,8 @@ class DefaultTensor(Device):
                         "Tensor provided has shape={}, which is incompatible "
                         "with provided sequence of wires {}.".format(tensor.shape, wires_seq)
                     )
-                tensor = self._expand_dims(tensor, [0, -1])
+                tensor = self._expand_dims(tensor, 0)
+                tensor = self._expand_dims(tensor, -1)
                 if tensor.shape == (1, 2, 1):
                     # MPS form
                     node = self._add_node(tensor, wires=wires_seq, name=name)
@@ -226,7 +227,7 @@ class DefaultTensor(Device):
                     DV = tensor
                     for idx, wire in enumerate(wires_seq):
                         if idx < len(wires_seq) - 1:
-                            node = tn.Node(DV)
+                            node = tn.Node(DV, name=name, backend=self.backend)
                             U, DV, _error = tn.split_node(node, node[:2], node[2:])
                             node = self._add_node(U, wires=[wire], name=name)
                         else:

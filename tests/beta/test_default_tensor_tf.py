@@ -96,13 +96,13 @@ def init_state(scope="session"):
 # Unit tests
 #####################################################
 
-
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestApply:
     """Test application of PennyLane operations."""
 
-    def test_basis_state(self, tol):
+    def test_basis_state(self, tol, rep):
         """Test basis state initialization"""
-        dev = DefaultTensorTF(wires=4)
+        dev = DefaultTensorTF(wires=4, representation=rep)
         state = np.array([0, 0, 1, 0])
 
         dev.execute([qml.BasisState(state, wires=[0, 1, 2, 3])], [], {})
@@ -113,9 +113,9 @@ class TestApply:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_qubit_state_vector(self, init_state, tol):
+    def test_qubit_state_vector(self, init_state, tol, rep):
         """Test qubit state vector application"""
-        dev = DefaultTensorTF(wires=1)
+        dev = DefaultTensorTF(wires=1, representation=rep)
         state = init_state(1)
 
         dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
@@ -124,19 +124,19 @@ class TestApply:
         expected = state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_invalid_qubit_state_vector(self):
+    def test_invalid_qubit_state_vector(self, rep):
         """Test that an exception is raised if the state
         vector is the wrong size"""
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
         state = np.array([0, 123.432])
 
         with pytest.raises(ValueError, match=r"can apply QubitStateVector only to all of the 2 wires"):
             dev.execute([qml.QubitStateVector(state, wires=[0])], [], {})
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, init_state, op, mat, tol):
+    def test_single_qubit_no_parameters(self, init_state, op, mat, rep, tol):
         """Test non-parametrized single qubit operations"""
-        dev = DefaultTensorTF(wires=1)
+        dev = DefaultTensorTF(wires=1, representation=rep)
         state = init_state(1)
 
         queue = [qml.QubitStateVector(state, wires=[0])]
@@ -149,9 +149,9 @@ class TestApply:
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, init_state, op, func, theta, tol):
+    def test_single_qubit_parameters(self, init_state, op, func, theta, rep, tol):
         """Test parametrized single qubit operations"""
-        dev = DefaultTensorTF(wires=1)
+        dev = DefaultTensorTF(wires=1, representation=rep)
         state = init_state(1)
 
         queue = [qml.QubitStateVector(state, wires=[0])]
@@ -162,9 +162,9 @@ class TestApply:
         expected = func(theta) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_rotation(self, init_state, tol):
+    def test_rotation(self, init_state, rep, tol):
         """Test three axis rotation gate"""
-        dev = DefaultTensorTF(wires=1)
+        dev = DefaultTensorTF(wires=1, representation=rep)
         state = init_state(1)
 
         a = 0.542
@@ -180,9 +180,9 @@ class TestApply:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op,mat", two_qubit)
-    def test_two_qubit_no_parameters(self, init_state, op, mat, tol):
+    def test_two_qubit_no_parameters(self, init_state, op, mat, rep, tol):
         """Test non-parametrized two qubit operations"""
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
         state = init_state(2)
 
         queue = [qml.QubitStateVector(state, wires=[0, 1])]
@@ -194,10 +194,10 @@ class TestApply:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("mat", [U, U2])
-    def test_qubit_unitary(self, init_state, mat, tol):
+    def test_qubit_unitary(self, init_state, mat, rep, tol):
         """Test application of arbitrary qubit unitaries"""
         N = int(np.log2(len(mat)))
-        dev = DefaultTensorTF(wires=N)
+        dev = DefaultTensorTF(wires=N, representation=rep)
         state = init_state(N)
 
         queue = [qml.QubitStateVector(state, wires=range(N))]
@@ -209,9 +209,9 @@ class TestApply:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op, mat", three_qubit)
-    def test_three_qubit_no_parameters(self, init_state, op, mat, tol):
+    def test_three_qubit_no_parameters(self, init_state, op, mat, rep, tol):
         """Test non-parametrized three qubit operations"""
-        dev = DefaultTensorTF(wires=3)
+        dev = DefaultTensorTF(wires=3, representation=rep)
         state = init_state(3)
 
         queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
@@ -224,9 +224,9 @@ class TestApply:
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, init_state, op, func, theta, tol):
+    def test_two_qubit_parameters(self, init_state, op, func, theta, rep, tol):
         """Test two qubit parametrized operations"""
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
         state = init_state(2)
 
         queue = [qml.QubitStateVector(state, wires=[0, 1])]
@@ -259,14 +259,15 @@ single_wire_expval_test_data = [
 ]
 
 
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
 class TestExpval:
     """Test expectation values"""
 
     @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
-    def test_single_wire_expectation(self, gate, obs, expected, theta, phi, tol):
+    def test_single_wire_expectation(self, gate, obs, expected, theta, phi, rep, tol):
         """Test that identity expectation value (i.e. the trace) is 1"""
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
         queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [obs(wires=[i]) for i in range(2)]
 
@@ -276,9 +277,9 @@ class TestExpval:
         res = dev.execute(queue, observables, {})
         assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
 
-    def test_hermitian_expectation(self, theta, phi, tol):
+    def test_hermitian_expectation(self, theta, phi, rep, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
         queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [qml.Hermitian(A, wires=[i]) for i in range(2)]
 
@@ -296,7 +297,7 @@ class TestExpval:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multi_mode_hermitian_expectation(self, theta, phi, tol):
+    def test_multi_mode_hermitian_expectation(self, theta, phi, rep, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         A = np.array(
             [
@@ -307,7 +308,7 @@ class TestExpval:
             ]
         )
 
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
         queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
         observables = [qml.Hermitian(A, wires=[0, 1])]
 
@@ -329,13 +330,14 @@ class TestExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
 class TestVar:
     """Tests for the variance"""
 
-    def test_var(self, theta, phi, tol):
+    def test_var(self, theta, phi, rep, tol):
         """Tests for variance calculation"""
-        dev = DefaultTensorTF(wires=1)
+        dev = DefaultTensorTF(wires=1, representation=rep)
         # test correct variance for <Z> of a rotated state
 
         queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
@@ -348,9 +350,9 @@ class TestVar:
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_var_hermitian(self, theta, phi, tol):
+    def test_var_hermitian(self, theta, phi, rep, tol):
         """Tests for variance calculation using an arbitrary Hermitian observable"""
-        dev = DefaultTensorTF(wires=2)
+        dev = DefaultTensorTF(wires=2, representation=rep)
 
         # test correct variance for <H> of a rotated state
         H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
@@ -376,26 +378,27 @@ class TestVar:
 #####################################################
 
 
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestQNodeIntegration:
     """Integration tests for default.tensor.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
 
-    def test_load_tensornet_tf_device(self):
+    def test_load_tensornet_tf_device(self, rep):
         """Test that the tensor network plugin loads correctly"""
-        dev = qml.device("default.tensor.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2, representation=rep)
         assert dev.num_wires == 2
         assert dev.shots == 1000
         assert dev.short_name == "default.tensor.tf"
         assert dev.capabilities()["provides_jacobian"]
 
     @pytest.mark.parametrize("decorator", [qml.qnode, qnode])
-    def test_qubit_circuit(self, decorator, tol):
+    def test_qubit_circuit(self, decorator, rep, tol):
         """Test that the tensor network plugin provides correct
         result for a simple circuit using the old QNode.
         This test is parametrized for both the new and old QNode decorator."""
         p = 0.543
 
-        dev = qml.device("default.tensor.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
         @decorator(dev)
         def circuit(x):
@@ -406,11 +409,11 @@ class TestQNodeIntegration:
 
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol):
+    def test_correct_state(self, rep, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.tensor.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2, representation=rep)
 
         state = dev._state()
 
@@ -429,17 +432,18 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestJacobianIntegration:
     """Tests for the Jacobian calculation"""
 
-    def test_jacobian_variable_multiply(self, torch_support, tol):
+    def test_jacobian_variable_multiply(self, torch_support, rep, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         gives the correct result in the case of parameters multiplied by scalars"""
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
 
-        dev = qml.device("default.tensor.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
         @qnode(dev)
         def circuit(p):
@@ -463,14 +467,14 @@ class TestJacobianIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_repeated(self, torch_support, tol):
+    def test_jacobian_repeated(self, torch_support, rep, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         gives the correct result in the case of repeated parameters"""
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
         p = np.array([x, y, z])
-        dev = qml.device("default.tensor.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
         @qnode(dev)
         def circuit(x):
@@ -489,7 +493,7 @@ class TestJacobianIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
-    def test_jacobian_agrees(self, diff_method, torch_support, tol):
+    def test_jacobian_agrees(self, diff_method, torch_support, rep, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         returns the same result as default.qubit."""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
@@ -502,7 +506,7 @@ class TestJacobianIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.tensor.tf", wires=3)
+        dev1 = qml.device("default.tensor.tf", wires=3, representation=rep)
         dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = QNode(circuit, dev1, diff_method=diff_method)
@@ -512,6 +516,7 @@ class TestJacobianIntegration:
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestInterfaceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
@@ -530,12 +535,12 @@ class TestInterfaceIntegration:
     )
 
     @pytest.fixture
-    def circuit(self, interface, torch_support):
+    def circuit(self, interface, torch_support, rep):
         """Fixture to create cost function for the test class"""
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
 
-        dev = qml.device("default.tensor.tf", wires=2)
+        dev = qml.device("default.tensor.tf", wires=2, representation=rep)
 
         @qnode(dev, diff_method="best", interface=interface)
         def circuit_fn(a, b):
@@ -590,6 +595,7 @@ class TestInterfaceIntegration:
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("rep", ("exact", "mps"))
 class TestHybridInterfaceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
@@ -617,9 +623,9 @@ class TestHybridInterfaceIntegration:
     )
 
     @pytest.fixture
-    def cost(self, interface, torch_support):
+    def cost(self, interface, torch_support, rep):
         """Fixture to create cost function for the test class"""
-        dev = qml.device("default.tensor.tf", wires=1)
+        dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
