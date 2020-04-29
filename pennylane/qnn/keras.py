@@ -91,6 +91,8 @@ class KerasLayer(Layer):
 
     .. UsageDetails::
 
+        **QNode signature**
+
         The QNode must have a signature that satisfies the following conditions:
 
         - Contain an ``inputs`` named argument for input data.
@@ -102,9 +104,11 @@ class KerasLayer(Layer):
         - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
           or ``**kwargs`` present in the signature.
 
-        The optional ``weight_specs`` argument allows for a more fine-grained
-        specification of the QNode weights, such as the method of initialization and any
-        regularization or constraints. For example, the initialization method of the ``weights``
+        **Initializing weights**
+
+        The optional ``weight_specs`` argument of :class:`~.KerasLayer` allows for a more
+        fine-grained specification of the QNode weights, such as the method of initialization and
+        any regularization or constraints. For example, the initialization method of the ``weights``
         argument in the example above could be specified by:
 
         .. code-block::

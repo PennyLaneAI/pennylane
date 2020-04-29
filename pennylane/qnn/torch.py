@@ -47,9 +47,9 @@ class TorchLayer(Module):
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
             their corresponding shapes
         output_dim (int): the output dimension of the QNode
-        init_method (callable): a ``torch.nn.init`` function for initializing the QNode weights.
-            If not specified, weights are randomly initialized using the uniform distribution
-            over :math:`[0, 2 \pi]`.
+        init_method (callable): a `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__
+            function for initializing the QNode weights. If not specified, weights are randomly
+            initialized using the uniform distribution over :math:`[0, 2 \pi]`.
 
     **Example**
 
@@ -87,6 +87,8 @@ class TorchLayer(Module):
 
     .. UsageDetails::
 
+        **QNode signature**
+
         The QNode must have a signature that satisfies the following conditions:
 
         - Contain an ``inputs`` named argument for input data.
@@ -98,10 +100,12 @@ class TorchLayer(Module):
         - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
           or ``**kwargs`` present in the signature.
 
-        The optional ``init_method`` argument allows for the initialization method of the QNode
-        weights to be specified. The function passed to the argument must be from the
-        ``torch.nn.init`` module. For example, weights can be randomly initialized from the
-        normal distribution passing:
+        **Initializing weights**
+
+        The optional ``init_method`` argument of :class:`~.TorchLayer` allows for the initialization
+        method of the QNode weights to be specified. The function passed to the argument must be
+        from the `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__ module. For
+        example, weights can be randomly initialized from the normal distribution by passing:
 
         .. code-block::
 
@@ -114,7 +118,7 @@ class TorchLayer(Module):
 
         The code block below shows how a circuit composed of templates from the
         :doc:`/code/qml_templates` module can be combined with classical
-        `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
+        `Linear <https://pytorch.org/docs/stable/nn.html#linear>`__ layers to learn
         the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
         .datasets.make_moons.html>`__ dataset.
 
@@ -161,9 +165,10 @@ class TorchLayer(Module):
             batch_size = 5
             batches = samples / batch_size
 
-            data_loader = torch.utils.data.DataLoader(list(zip(X, Y)), batch_size=batch_size, shuffle=True)
+            data_loader = torch.utils.data.DataLoader(list(zip(X, Y)), batch_size=batch_size,
+                                                      shuffle=True)
 
-            for epoch in range(epochs):  # loop over the dataset multiple times
+            for epoch in range(epochs):
 
                 running_loss = 0
 
@@ -177,17 +182,21 @@ class TorchLayer(Module):
 
                     running_loss += loss_evaluated
 
-                avg_loss = torch.mean(running_loss / batches)
+                avg_loss = running_loss / batches
                 print("Average loss over epoch {}: {:.4f}".format(epoch + 1, avg_loss))
 
-        Average loss over epoch 1: 0.5089
-        Average loss over epoch 2: 0.4765
-        Average loss over epoch 3: 0.2710
-        Average loss over epoch 4: 0.1865
-        Average loss over epoch 5: 0.1670
-        Average loss over epoch 6: 0.1635
-        Average loss over epoch 7: 0.1528
-        Average loss over epoch 8: 0.1528
+        An example output is shown below:
+
+        .. code-block:: rst
+
+            Average loss over epoch 1: 0.5089
+            Average loss over epoch 2: 0.4765
+            Average loss over epoch 3: 0.2710
+            Average loss over epoch 4: 0.1865
+            Average loss over epoch 5: 0.1670
+            Average loss over epoch 6: 0.1635
+            Average loss over epoch 7: 0.1528
+            Average loss over epoch 8: 0.1528
     """
 
     def __init__(
@@ -296,5 +305,5 @@ class TorchLayer(Module):
 
     @property
     def input_arg(self):
-        """Name of the argument to be used as the input to the Torch Layer. Set to ``"inputs"``."""
+        """Name of the argument to be used as the input to the Torch layer. Set to ``"inputs"``."""
         return self._input_arg
