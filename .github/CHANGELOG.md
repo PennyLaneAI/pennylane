@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* The ``templates.broadcast`` function can now take custom patterns.
+  [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
+
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
@@ -227,6 +230,10 @@
   [(#548)](https://github.com/XanaduAI/pennylane/pull/548)
 
 <h3>Documentation</h3>
+
+* Updated the development section by creating a landing page with links to sub-pages
+  containing specific guides.
+  [(#596)](https://github.com/XanaduAI/pennylane/pull/596)
 
 * Extended the developer's guide by a section explaining how to add new templates.
   [(#564)](https://github.com/XanaduAI/pennylane/pull/564)
