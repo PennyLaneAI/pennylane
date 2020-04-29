@@ -62,9 +62,9 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     An IQP circuit is a quantum circuit of a block of Hadamards, followed by a block of gates that are
     diagonal in the computational basis. Here, the diagonal gates are single-qubit ``RZ`` rotations, applied to each
     qubit and encoding the :math:`n` features, followed by two-qubit ZZ entanglers,
-    :math:`e^{-i x_i x_j \sigma_z \otimes \sigma_z}`. The entangler applied to wires ``(i, j)`` encodes the
-    product of features ``features[i]*features[j]``. The pattern in which the entanglers are applied is either the
-    default, or a custom pattern:
+    :math:`e^{-i x_i x_j \sigma_z \otimes \sigma_z}`. The entangler applied to wires ``(wires[i], wires[j])``
+    encodes the product of features ``features[i]*features[j]``. The pattern in which the entanglers are
+    applied is either the default, or a custom pattern:
 
     * If ``pattern`` is not specified, the default pattern will be used, in which the entangling gates connect all
       pairs of neighbours:
@@ -186,6 +186,13 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             res2 = circuit(features=[1., 2., 3.], pattern=pattern2)
 
             assert np.allclose(res1, res2)
+
+        **Non-consecutive wires**
+
+        In principle the user can also pass a non-consecutive wire list to the template, such as ``wires=[2, 0, 1]``.
+        In this case, the ``RZ` block applies the first feature to wire 2, the second feature to wire 0, etc.
+        Likewise, the entangler block applies the product of the first and second feature to the first wire pair
+        specified in ``pattern``, which for the default pattern is ``[2, 0]``.
 
     """
     #############
