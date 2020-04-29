@@ -178,16 +178,16 @@ class TorchLayer(Module):
                     running_loss += loss_evaluated
 
                 avg_loss = torch.mean(running_loss / batches)
-                print("Average loss over epoch: {:.4f}".format(avg_loss))
+                print("Average loss over epoch {}: {:.4f}".format(epoch + 1, avg_loss))
 
-        Average loss over epoch 0: 0.5089
-        Average loss over epoch 1: 0.4765
-        Average loss over epoch 2: 0.2710
-        Average loss over epoch 3: 0.1865
-        Average loss over epoch 4: 0.1670
-        Average loss over epoch 5: 0.1635
-        Average loss over epoch 6: 0.1528
+        Average loss over epoch 1: 0.5089
+        Average loss over epoch 2: 0.4765
+        Average loss over epoch 3: 0.2710
+        Average loss over epoch 4: 0.1865
+        Average loss over epoch 5: 0.1670
+        Average loss over epoch 6: 0.1635
         Average loss over epoch 7: 0.1528
+        Average loss over epoch 8: 0.1528
     """
 
     def __init__(
