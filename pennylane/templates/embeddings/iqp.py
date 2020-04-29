@@ -250,6 +250,10 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         # entangling block
         products = []
         for wire_pair in pattern:
+            # get the position of the wire indices in the array
+            idx1 = wires.index(wire_pair[0])
+            idx2 = wires.index(wire_pair[1])
             # create products of parameters
-            products.append(features[wire_pair[0]] * features[wire_pair[1]])
+            products.append(features[idx1] * features[idx2])
+
         broadcast(unitary=zz, pattern=pattern, wires=wires, parameters=products)

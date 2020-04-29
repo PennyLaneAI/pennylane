@@ -371,11 +371,28 @@ class TestIQPEmbedding:
                                                             [1., 2., 3., 2*1*2, 2*1*3, 2*2*3]),
                                                            ([0.1, 0.2, 0.3],
                                                             [0.1, 0.2, 0.3, 2*0.1*0.2, 2*0.1*0.3, 2*0.2*0.3])])
-    def test_queue_parameters(self, features, expected_params):
-        """Checks the queued parameters."""
+    @pytest.mark.parametrize('wires', [range(3),
+                                       [2, 0, 1]])
+    def test_queue_parameters(self, features, expected_params, wires):
+        """Checks the queued parameters, for consecutive and non-consecutive ``wires`` argument."""
 
         with qml.utils.OperationRecorder() as rec:
-            qml.templates.IQPEmbedding(features=features, wires=range(3))
+            qml.templates.IQPEmbedding(features=features, wires=wires)
+
+        # compare all nonempty gate parameters to expected ones
+        counter = 0
+        for gate in rec.queue:
+            if gate.parameters:
+                assert gate.parameters[0] == expected_params[counter]
+                counter += 1
+
+    @pytest.mark.parametrize('wires', [range(3),
+                                       [2, 0, 1]])
+    def test_queue_correct_wires(self, features, expected_params, wires):
+        """Checks the queued parameters, for consecutive and non-consecutive ``wires`` argument."""
+
+        with qml.utils.OperationRecorder() as rec:
+            qml.templates.IQPEmbedding(features=features, wires=wires)
 
         # compare all nonempty gate parameters to expected ones
         counter = 0
