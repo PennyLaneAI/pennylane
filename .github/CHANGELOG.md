@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* The ``templates.broadcast`` function can now take custom patterns.
+  [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
+
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
@@ -148,7 +151,7 @@
   [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
 
   Currently the only such device supported by PennyLane is `default.tensor.tf`,
-  compatible with the `'tf'` inteface using TensorFlow 2:
+  compatible with the `'tf'` interface using TensorFlow 2:
 
   ```python
   from pennylane.qnodes import PassthruQNode
@@ -173,13 +176,13 @@
 
 <h3>Breaking changes</h3>
 
-* Probabilty methods are handled by `QubitDevice` and device method
+* Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
 
 <h3>Improvements</h3>
 
-* The input check functions in :mod:`pennylane.templates.utils` are now public
+* The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
   [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
 
@@ -223,10 +226,17 @@
 
 <h3>Documentation</h3>
 
+* Updated the development section by creating a landing page with links to sub-pages
+  containing specific guides.
+  [(#596)](https://github.com/XanaduAI/pennylane/pull/596)
+
 * Extended the developer's guide by a section explaining how to add new templates.
   [(#564)](https://github.com/XanaduAI/pennylane/pull/564)
   
 <h3>Bug fixes</h3>
+
+* `RandomLayers()` is now compatible with the qiskit devices.
+  [(#597)](https://github.com/XanaduAI/pennylane/pull/597)
 
 * `DefaultQubit.probability()` now returns the correct probability when called with
   `device.analytic=False`.
@@ -248,7 +258,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 # Release 0.8.1 (current release)
 

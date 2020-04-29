@@ -178,7 +178,6 @@ def probs(wires):
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
     Executing this QNode:
