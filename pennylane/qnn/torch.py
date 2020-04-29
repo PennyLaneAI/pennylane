@@ -297,9 +297,11 @@ class TorchLayer(Module):
                     qnode = functools.partial(qnode, x)
         return qnode().type(x.dtype)
 
-    def extra_repr(self):  # pylint: disable=missing-function-docstring
-        detail = "Quantum Torch Layer: func={}"
+    def __str__(self):
+        detail = "<Quantum Torch Layer: func={}>"
         return detail.format(self.qnode.func.__name__)
+
+    __repr__ = __str__
 
     _input_arg = "inputs"
 

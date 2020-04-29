@@ -307,11 +307,13 @@ class TestTorchLayer:
         assert layer_out.shape == torch.Size((2, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_extra_repr(self, get_circuit, output_dim):
-        """Test the extra_repr method"""
+    def test_str_repr(self, get_circuit, output_dim):
+        """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
         layer = TorchLayer(c, w, output_dim)
-        assert layer.__repr__() == "TorchLayer(Quantum Torch Layer: func=circuit)"
+
+        assert layer.__str__() == "<Quantum Torch Layer: func=circuit>"
+        assert layer.__repr__() == "<Quantum Torch Layer: func=circuit>"
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_gradients(self, get_circuit, output_dim, n_qubits):
