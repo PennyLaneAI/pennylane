@@ -240,6 +240,10 @@ takes single quantum operations or other templates and applies them to wires in 
     :description: broadcast (all-to-all)
     :figure: ../_static/templates/broadcast_alltoall.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (custom)
+    :figure: ../_static/templates/broadcast_custom.png
 
 .. raw:: html
 
@@ -332,5 +336,5 @@ The initialization functions can be found in the :mod:`~.pennylane.init` module.
 Adding a new template
 ---------------------
 
-Consult the :ref:`Developer's guide <adding_new_templates>` to learn how to grow the templates library by
+Consult the :ref:`Contributing templates<contributing_templates>` page to learn how to grow the templates library by
 adding your own template to PennyLane.
