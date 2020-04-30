@@ -38,6 +38,7 @@ class cd:
     def __exit__(self, etype, value, traceback):
         os.chdir(str(self.savedPath))
 
+
 def get_current_git_toplevel():
     """Finds the current git toplevel.
 
@@ -50,6 +51,7 @@ def get_current_git_toplevel():
         return Path(res.stdout.decode(locale.getpreferredencoding()).strip())
 
     return None
+
 
 def cli():
     """Parse the command line arguments, perform the requested action.
@@ -73,7 +75,9 @@ def cli():
         with cd(revisions_directory):
             # Make really sure we don't reset the current git
             if toplevel == Path.cwd():
-                raise Exception("Git accidently ended up in the current directory. Stopping to not cause any harm.")
+                raise Exception(
+                    "Git accidently ended up in the current directory. Stopping to not cause any harm."
+                )
 
             subprocess.run(["git", "fetch", "origin", "-q"], check=True)
             subprocess.run(["git", "reset", "--hard", "origin/master", "-q"], check=True)
@@ -112,7 +116,9 @@ def cli():
             with cd(pl_directory):
                 # Make really sure we don't reset the current git
                 if toplevel == Path.cwd():
-                    raise Exception("Git accidently ended up in the current directory. Stopping to not cause any harm.")
+                    raise Exception(
+                        "Git accidently ended up in the current directory. Stopping to not cause any harm."
+                    )
 
                 subprocess.run(["git", "fetch", "origin", "-q"], check=True)
                 subprocess.run(["git", "reset", "--hard", revision, "-q"], check=True)
