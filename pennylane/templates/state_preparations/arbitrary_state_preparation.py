@@ -24,16 +24,16 @@ from pennylane.templates.utils import check_wires, check_shape, get_shape
 def _state_preparation_pauli_words(num_wires):
     if num_wires == 1:
         return ["X", "Y"]
-    else:
-        sub_pauli_words = _state_preparation_pauli_words(num_wires - 1)
-        sub_id = "I" * (num_wires - 1)
 
-        single_qubit_words = ["X" + sub_id, "Y" + sub_id]
-        multi_qubit_words = list(map(lambda word: "I" + word, sub_pauli_words)) + list(
-            map(lambda word: "X" + word, sub_pauli_words)
-        )
+    sub_pauli_words = _state_preparation_pauli_words(num_wires - 1)
+    sub_id = "I" * (num_wires - 1)
 
-        return single_qubit_words + multi_qubit_words
+    single_qubit_words = ["X" + sub_id, "Y" + sub_id]
+    multi_qubit_words = list(map(lambda word: "I" + word, sub_pauli_words)) + list(
+        map(lambda word: "X" + word, sub_pauli_words)
+    )
+
+    return single_qubit_words + multi_qubit_words
 
 
 @template
