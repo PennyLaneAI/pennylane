@@ -236,8 +236,8 @@ class Operator(abc.ABC):
     """
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         """Matrix representation of the operator
         in the computational basis.
 
@@ -259,6 +259,30 @@ class Operator(abc.ABC):
 
         Returns:
             array: matrix representation
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the operator in the computational basis.
+
+        This is a *static method* that should be defined for all
+        new operations and observables, that returns the eigenvalues
+        of the operator in the computational basis.
+
+        This private method allows eigenvalues to be computed
+        directly without instantiating the operators first.
+
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.Operator.eigvals` property instead.
+
+        **Example:**
+
+        >>> qml.RZ._eigvals(0.5)
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigenvalue representation
         """
         raise NotImplementedError
 
