@@ -38,6 +38,18 @@ class cd:
     def __exit__(self, etype, value, traceback):
         os.chdir(str(self.savedPath))
 
+def get_current_git_toplevel():
+    """Finds the current git toplevel.
+
+    Returns:
+        Union[Path,NoneType]: The current git toplevel's path or None.
+    """
+    res = subprocess.run(["git", "rev-parse", "--show-toplevel", "-q"], stdout=subprocess.PIPE)
+
+    if res.returncode == 0:
+        return Path(res.stdout.decode(locale.getpreferredencoding()).strip())
+
+    return None
 
 def cli():
     """Parse the command line arguments, perform the requested action.
@@ -55,8 +67,14 @@ def cli():
 
     revisions_directory = Path.home() / ".pennylane" / "benchmarks" / "revisions"
 
+    toplevel = get_current_git_toplevel()
+
     if revisions_directory.exists():
         with cd(revisions_directory):
+            # Make really sure we don't reset the current git
+            if toplevel == Path.cwd():
+                raise Exception("Git accidently ended up in the current directory. Stopping to not cause any harm.")
+
             subprocess.run(["git", "fetch", "origin", "-q"], check=True)
             subprocess.run(["git", "reset", "--hard", "origin/master", "-q"], check=True)
     else:
@@ -76,20 +94,26 @@ def cli():
         print(">>> Running benchmark for revision {}".format(col(revision, "red")))
 
         if revision == "here":
-            res = subprocess.run(["git", "rev-parse", "--show-toplevel", "-q"], stdout=subprocess.PIPE)
+            toplevel = get_current_git_toplevel()
 
-            if res.returncode != 0:
+            if not toplevel:
                 print(
                     col(">>> Wasn't able to determine the current git toplevel, skipping...", "red")
                 )
 
                 continue
 
-            pl_directory = Path(res.stdout.decode(locale.getpreferredencoding()).strip())
+            pl_directory = toplevel
         else:
             pl_directory = revisions_directory
 
+            toplevel = get_current_git_toplevel()
+
             with cd(pl_directory):
+                # Make really sure we don't reset the current git
+                if toplevel == Path.cwd():
+                    raise Exception("Git accidently ended up in the current directory. Stopping to not cause any harm.")
+
                 subprocess.run(["git", "fetch", "origin", "-q"], check=True)
                 subprocess.run(["git", "reset", "--hard", revision, "-q"], check=True)
 
