@@ -6,6 +6,9 @@
   encountered in IQP circuits. This kind of gates can be evaluated much faster on
   a simulator device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
+  
+* The ``templates.broadcast`` function can now take custom patterns.
+  [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
 
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
