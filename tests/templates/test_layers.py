@@ -25,6 +25,7 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
+    ArbitraryUnitary,
 )
 from pennylane.templates.layers.arbitrary_unitary import (
     _all_pauli_words_but_identity,
@@ -707,3 +708,37 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+
+class TestArbitraryUnitary:
+    """Test the ArbitraryUnitary template."""
+
+    def test_correct_gates_single_wire(self):
+        """Test that the correct gates are applied on a single wire."""
+        angles = np.arange(3, dtype=float)
+
+        with qml.utils.OperationRecorder() as rec:
+            ArbitraryUnitary(angles, wires=[0])
+
+        assert all(op.name == "PauliRot" and op.wires == [0] for op in rec.queue)
+
+        pauli_words = ["X", "Y", "Z"]
+
+        for i, op in enumerate(rec.queue):
+            assert op.params[0] == angles[i]
+            assert op.params[1] == pauli_words[i]
+
+    def test_correct_gates_two_wires(self):
+        """Test that the correct gates are applied on two wires."""
+        angles = np.arange(15, dtype=float)
+
+        with qml.utils.OperationRecorder() as rec:
+            ArbitraryUnitary(angles, wires=[0, 1])
+
+        assert all(op.name == "PauliRot" and op.wires == [0, 1] for op in rec.queue)
+
+        pauli_words = ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"]
+
+        for i, op in enumerate(rec.queue):
+            assert op.params[0] == angles[i]
+            assert op.params[1] == pauli_words[i]

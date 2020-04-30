@@ -327,7 +327,6 @@ class TestArbitraryStatePreparation:
 
         with qml.utils.OperationRecorder() as rec:
             ArbitraryStatePreparation(angles, wires=[0, 1])
-        (2, ["XI", "YI", "IX", "IY", "XX", "XY"]),
 
         assert rec.queue[0].name == "PauliRot"
         assert rec.queue[0].params[0] == angles[0]
@@ -394,6 +393,3 @@ class TestArbitraryStatePreparation:
         circuit(angles)
 
         assert np.allclose(qubit_device_3_wires.state, even_superposition_state, atol=tol, rtol=0)
-
-
-
