@@ -190,7 +190,7 @@
     RZ(2 * parameter, wires=wires[0])
     CNOT(wires=[wires[0], wires[1]]) 
   
-  the ``MultiRZ`` uses 
+  the ``MultiRZ`` corresponds to 
 
   .. code-block:: python
   
@@ -199,7 +199,7 @@
     CNOT(wires=[wires[0], wires[1]]) 
       
   which differs in the factor of ``2``.
-  [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
+  [(#609)](https://github.com/XanaduAI/pennylane/pull/609)
 
 <h3>Improvements</h3>
 
