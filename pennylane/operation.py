@@ -262,6 +262,23 @@ class Operator(abc.ABC):
         """
         raise NotImplementedError
 
+    @property
+    def matrix(self):
+        r"""Matrix representation of an instantiated operator
+        in the computational basis.
+
+        **Example:**
+
+        >>> U = qml.RY(0.5, wires=1)
+        >>> U.matrix
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
+        """
+        return self._matrix(*self.parameters)
+
     @classmethod
     def _eigvals(cls, *params):
         """Eigenvalues of the operator in the computational basis.
@@ -285,6 +302,21 @@ class Operator(abc.ABC):
             array: eigenvalue representation
         """
         raise NotImplementedError
+
+    @property
+    def eigvals(self):
+        r"""Eigenvalues of an instantiated operator.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        return self._eigvals(*self.parameters)
 
     @property
     @abc.abstractmethod
@@ -312,23 +344,6 @@ class Operator(abc.ABC):
         """String for the name of the operator.
         """
         return self._name
-
-    @property
-    def matrix(self):
-        r"""Matrix representation of an instantiated operator
-        in the computational basis.
-
-        **Example:**
-
-        >>> U = qml.RY(0.5, wires=1)
-        >>> U.matrix
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
-
-        Returns:
-            array: matrix representation
-        """
-        return self._matrix(*self.parameters)
 
     @name.setter
     def name(self, value):
@@ -659,6 +674,15 @@ class Operation(Operator):
         return op_matrix
 
     @property
+    def eigvals(self):
+        op_eigvals = self._eigvals(*self.parameters)
+
+        if self.inverse:
+            return op_eigvals.conj()
+
+        return op_eigvals
+
+    @property
     def base_name(self):
         """Get base name of the operator.
         """
@@ -735,48 +759,9 @@ class DiagonalOperation(Operation):
     """
     # pylint: disable=abstract-method
 
-    @abc.abstractstaticmethod
-    def _eigvals(*params):
-        """Array representation of the operator's eigenvalues
-        in computational basis order.
-
-        This is a *static method* that should be defined for all
-        new diagonal operations, that returns the array representing
-        the operator's eigenvalues in the computational basis.
-
-        This private method allows diagonals to be computed
-        directly without instantiating the operators first.
-
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.DiagonalOperator.eigvals` property instead.
-
-        **Example:**
-
-        >>> qml.RZ._eigvals(0.5)
-        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
-        Returns:
-            array[complex]: eigenvalues of the representation in the computational basis
-        """
-
-    @property
-    def eigvals(self):
-        """Returns the eigenvalues of the operation.
-
-        Returns:
-            array[complex]: The eigenvalues of the operation.
-        """
-        evs = self._eigvals(*self.parameters)
-
-        if self.inverse:
-            return evs.conj()
-
-        return evs
-
-    # TODO: make matrix a classmethod to enable simpler calculation
-    # @classmethod
-    # def _matrix(cls, *params):
-    #    return np.diag(cls._eigvals(params))
+    @classmethod
+    def _matrix(cls, *params):
+        return np.diag(cls._eigvals(*params))
 
 
 # =============================================================================
@@ -838,15 +823,6 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
-    @property
-    def eigvals(self):
-        r"""Returns the eigenvalues of the observable.
-
-        Returns:
-            array[float]: The eigenvalues of the observable in order of diagonalization.
-        """
-        raise NotImplementedError
-
     def diagonalizing_gates(self):
         r"""Returns the list of operations such that they
         diagonalize the observable in the computational basis.
@@ -881,7 +857,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
 
-        self._eigvals = None
+        self._eigvals_cache = None
         self.obs = []
 
         for o in args:
@@ -999,13 +975,13 @@ class Tensor(Observable):
             array[float]: array containing the eigenvalues of the tensor product
             observable
         """
-        if self._eigvals is not None:
-            return self._eigvals
+        if self._eigvals_cache is not None:
+            return self._eigvals_cache
 
         standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
 
         # observable should be Z^{\otimes n}
-        self._eigvals = pauli_eigs(len(self.wires))
+        self._eigvals_cache = pauli_eigs(len(self.wires))
 
         # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
         # Hermitian(obs, wires=[1, 3, 4])
@@ -1017,18 +993,18 @@ class Tensor(Observable):
         if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
-            self._eigvals = np.array([1])
+            self._eigvals_cache = np.array([1])
             for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    self._eigvals = np.kron(self._eigvals, pauli_eigs(len(list(g))))
+                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
                 else:
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals = np.kron(self._eigvals, ns_ob.eigvals)
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals)
 
-        return self._eigvals
+        return self._eigvals_cache
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
