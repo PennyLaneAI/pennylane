@@ -19,7 +19,7 @@ from collections import Sequence
 from itertools import combinations
 
 from pennylane.templates.decorator import template
-from pennylane.ops import RZ, CNOT, Hadamard
+from pennylane.ops import RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
@@ -28,19 +28,6 @@ from pennylane.templates.utils import (
     get_shape,
     check_no_variable,
 )
-
-
-@template
-def zz(parameter, wires):
-    """Template for decomposition of ZZ coupling.
-
-    Args:
-        parameter (float): parameter of z rotation
-        wires (list[int]): qubit indices that the template acts on
-    """
-    CNOT(wires=wires)
-    RZ(2 * parameter, wires=wires[1])
-    CNOT(wires=wires)
 
 
 @template
@@ -97,7 +84,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         features (array): array of features to encode
         wires (Sequence[int] or int): qubit indices that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
-        pattern (list): specifies the wires and features of the entanglers
+        pattern (list[int]): specifies the wires and features of the entanglers
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -232,7 +219,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         for p in pattern:
             check_type(
                 p,
-                [Sequence],
+                [list],
                 msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
             )
 
@@ -270,4 +257,4 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
             # create products of parameters
             products.append(features[idx1] * features[idx2])
 
-        broadcast(unitary=zz, pattern=pattern, wires=wires, parameters=products)
+        broadcast(unitary=MultiRZ, pattern=pattern, wires=wires, parameters=products)
