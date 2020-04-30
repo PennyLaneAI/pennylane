@@ -35,7 +35,7 @@ Comparing Revisions
 -------------------
 
 An additional script ``benchmark_revisions.py`` enables the comparative benchmarking of different
-revisions of PennyLane. It calls upon ``benchmark.py`` and thus supports all its different arguments.
+git revisions of PennyLane. It calls upon ``benchmark.py`` and thus supports all its different arguments.
 The revisions -- including branches, tags and commits -- are specified via ``-r revision1[,revision2[,revision3...]]``,
 as in
 
