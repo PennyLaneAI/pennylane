@@ -820,6 +820,7 @@ class TensorNumberOperator(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    #pylint: disable=abstract-method
     num_wires = Any
     num_params = 0
     par_domain = None
