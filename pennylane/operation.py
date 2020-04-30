@@ -301,7 +301,7 @@ class Operator(abc.ABC):
         Returns:
             array: eigenvalue representation
         """
-        raise NotImplementedError
+        return np.linalg.eigvals(cls._matrix(*params))
 
     @property
     def eigvals(self):
