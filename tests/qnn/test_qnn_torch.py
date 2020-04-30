@@ -337,6 +337,7 @@ class TestTorchLayer:
             assert np.allclose(g1, g2)
 
 
+pytest.importorskip("tensorflow", minversion="2")
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")
