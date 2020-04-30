@@ -19,90 +19,242 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-# Fix inputs to create fixture parameters
-n_wires = 3
-repeat = 2
-n_rotations = 10
-n_if = n_wires * (n_wires - 1) / 2
-
-#######################################
-# Common keyword arguments
-
-base = {'n_wires': n_wires}
-rpt = {'n_layers': repeat, 'n_wires': n_wires}
-rpt_nrml = {'n_layers': repeat, 'n_wires': n_wires, 'mean': 0, 'std': 1}
-rpt_uni = {'n_layers': repeat, 'n_wires': n_wires, 'low': 0, 'high': 1}
-base_nrml = {'n_wires': n_wires, 'mean': 0, 'std': 1}
-base_uni = {'n_wires': n_wires, 'low': 0, 'high': 1}
-rnd_rpt_nrml1 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': n_rotations, 'mean': 0, 'std': 1}
-rnd_rpt_uni1 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': n_rotations, 'low': 0, 'high': 1}
-rnd_rpt_nrml2 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': None, 'mean': 0, 'std': 1}
-rnd_rpt_uni2 = {'n_layers': repeat, 'n_wires': n_wires, 'n_rots': None, 'low': 0, 'high': 1}
 
 #######################################
 # Functions and their signatures
 
 # Functions returning a single parameter array
 # function name, kwargs and target shape
-INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal, rnd_rpt_nrml1, (repeat, n_rotations)),
-                      (qml.init.random_layers_normal, rnd_rpt_nrml2, (repeat, n_wires)),
-                      (qml.init.strong_ent_layers_normal, rpt_nrml, (repeat, n_wires, 3)),
-                      (qml.init.cvqnn_layers_theta_normal, rpt_nrml, (repeat, n_if)),
-                      (qml.init.cvqnn_layers_phi_normal, rpt_nrml, (repeat, n_if)),
-                      (qml.init.cvqnn_layers_varphi_normal, rpt_nrml, (repeat, n_wires),),
-                      (qml.init.cvqnn_layers_r_normal, rpt_nrml, (repeat, n_wires),),
-                      (qml.init.cvqnn_layers_phi_r_normal, rpt_nrml, (repeat, n_wires),),
-                      (qml.init.cvqnn_layers_a_normal, rpt_nrml, (repeat, n_wires),),
-                      (qml.init.cvqnn_layers_phi_a_normal, rpt_nrml, (repeat, n_wires),),
-                      (qml.init.cvqnn_layers_kappa_normal, rpt_nrml, (repeat, n_wires),),
-                      (qml.init.interferometer_theta_normal, base_nrml, (n_if,)),
-                      (qml.init.interferometer_phi_normal, base_nrml, (n_if,)),
-                      (qml.init.interferometer_varphi_normal, base_nrml, (n_wires,)),
-                      (qml.init.random_layers_uniform, rnd_rpt_uni1, (repeat, n_rotations)),
-                      (qml.init.random_layers_uniform, rnd_rpt_uni2, (repeat, n_wires)),
-                      (qml.init.strong_ent_layers_uniform, rpt_uni, (repeat, n_wires, 3)),
-                      (qml.init.cvqnn_layers_theta_uniform, rpt_uni, (repeat, n_if)),
-                      (qml.init.cvqnn_layers_phi_uniform, rpt_uni, (repeat, n_if)),
-                      (qml.init.cvqnn_layers_varphi_uniform, rpt_uni, (repeat, n_wires)),
-                      (qml.init.cvqnn_layers_r_uniform, rpt_uni, (repeat, n_wires)),
-                      (qml.init.cvqnn_layers_phi_r_uniform, rpt_uni, (repeat, n_wires)),
-                      (qml.init.cvqnn_layers_a_uniform, rpt_uni, (repeat, n_wires)),
-                      (qml.init.cvqnn_layers_phi_a_uniform, rpt_uni, (repeat, n_wires)),
-                      (qml.init.cvqnn_layers_kappa_uniform, rpt_uni, (repeat, n_wires)),
-                      (qml.init.interferometer_theta_uniform, base_uni, (n_if,)),
-                      (qml.init.interferometer_phi_uniform, base_uni, (n_if,)),
-                      (qml.init.interferometer_varphi_uniform, base_uni, (n_wires,)),
-                      (qml.init.qaoa_embedding_normal, rpt_nrml, (repeat, 2*n_wires)),
-                      (qml.init.qaoa_embedding_uniform, rpt_uni, (repeat, 2*n_wires)),
-                      (qml.init.qaoa_embedding_uniform, {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1}, (2, 1)),
-                      (qml.init.qaoa_embedding_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1}, (2, 3)),
-                      (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1}, (2, 1)),
-                      (qml.init.qaoa_embedding_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1}, (2, 3)),
-                      (qml.init.simplified_two_design_initial_layer_uniform, {'n_wires': 1, 'low': 0, 'high': 1}, (1,)),
-                      (qml.init.simplified_two_design_initial_layer_uniform, {'n_wires': 3, 'low': 0, 'high': 1}, (3,)),
-                      (qml.init.simplified_two_design_initial_layer_normal, {'n_wires': 1, 'mean': 0, 'std': 1}, (1,)),
-                      (qml.init.simplified_two_design_initial_layer_normal, {'n_wires': 3, 'mean': 0, 'std': 1}, (3,)),
-                      (qml.init.simplified_two_design_weights_uniform, {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1}, (0,)),
-                      (qml.init.simplified_two_design_weights_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1}, (2, 1, 2)),
-                      (qml.init.simplified_two_design_weights_uniform, {'n_layers': 2, 'n_wires': 4, 'low': 0, 'high': 1}, (2, 3, 2)),
-                      (qml.init.simplified_two_design_weights_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1}, (0, )),
-                      (qml.init.simplified_two_design_weights_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1}, (2, 1, 2)),
-                      (qml.init.simplified_two_design_weights_normal, {'n_layers': 2, 'n_wires': 4, 'mean': 0, 'std': 1}, (2, 3, 2)),
-                      (qml.init.basic_entangler_layers_normal, {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+INIT_KWARGS_SHAPES = [(qml.init.random_layers_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'n_rots': 10, 'mean': 0, 'std': 1},
+                       (2, 10)),
+                      (qml.init.random_layers_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'n_rots': 10, 'mean': 0, 'std': 1},
+                       (2, 10)),
+                      (qml.init.random_layers_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'n_rots': None, 'mean': 0, 'std': 1},
+                       (2, 3)),
+                      (qml.init.strong_ent_layers_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3, 3)),
+                      (qml.init.strong_ent_layers_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1, 3)),
+                      (qml.init.cvqnn_layers_theta_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_theta_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 0)),
+                      (qml.init.cvqnn_layers_phi_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_phi_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 0)),
+                      (qml.init.cvqnn_layers_varphi_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3),),
+                      (qml.init.cvqnn_layers_varphi_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1),),
+                      (qml.init.cvqnn_layers_r_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3),),
+                      (qml.init.cvqnn_layers_r_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1),),
+                      (qml.init.cvqnn_layers_phi_r_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3),),
+                      (qml.init.cvqnn_layers_phi_r_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1),),
+                      (qml.init.cvqnn_layers_a_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3),),
+                      (qml.init.cvqnn_layers_a_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1),),
+                      (qml.init.cvqnn_layers_phi_a_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3),),
+                      (qml.init.cvqnn_layers_phi_a_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1),),
+                      (qml.init.cvqnn_layers_kappa_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 3),),
+                      (qml.init.cvqnn_layers_kappa_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1),),
+                      (qml.init.interferometer_theta_normal,
+                       {'n_wires': 3, 'mean': 0, 'std': 1},
+                       (3,)),
+                      (qml.init.interferometer_theta_normal,
+                       {'n_wires': 1, 'mean': 0, 'std': 1},
+                       (0,)),
+                      (qml.init.interferometer_phi_normal,
+                       {'n_wires': 3, 'mean': 0, 'std': 1},
+                       (3,)),
+                      (qml.init.interferometer_phi_normal,
+                       {'n_wires': 1, 'mean': 0, 'std': 1},
+                       (0,)),
+                      (qml.init.interferometer_varphi_normal,
+                       {'n_wires': 3, 'mean': 0, 'std': 1},
+                       (3,)),
+                      (qml.init.interferometer_varphi_normal,
+                       {'n_wires': 1, 'mean': 0, 'std': 1},
+                       (1,)),
+                      (qml.init.random_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'n_rots': 10, 'low': 0, 'high': 1},
+                       (2, 10)),
+                      (qml.init.random_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'n_rots': None, 'low': 0, 'high': 1},
+                       (2, 3)),
+                       (qml.init.random_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'n_rots': None, 'low': 0, 'high': 1},
                        (2, 1)),
-                      (qml.init.basic_entangler_layers_normal, {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1},
+                      (qml.init.random_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'n_rots': 10, 'low': 0, 'high': 1},
+                       (2, 10)),
+                      (qml.init.strong_ent_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3, 3)),
+                      (qml.init.strong_ent_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1, 3)),
+                      (qml.init.cvqnn_layers_theta_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_theta_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 0)),
+                      (qml.init.cvqnn_layers_phi_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_phi_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 0)),
+                      (qml.init.cvqnn_layers_varphi_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_varphi_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.cvqnn_layers_r_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_r_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.cvqnn_layers_phi_r_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_phi_r_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.cvqnn_layers_a_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_a_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.cvqnn_layers_phi_a_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_phi_a_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.cvqnn_layers_kappa_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.cvqnn_layers_kappa_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.interferometer_theta_uniform,
+                       {'n_wires': 3, 'low': 0, 'high': 1},
+                       (3,)),
+                      (qml.init.interferometer_theta_uniform,
+                       {'n_wires': 1, 'low': 0, 'high': 1},
+                       (0,)),
+                      (qml.init.interferometer_phi_uniform,
+                       {'n_wires': 3, 'low': 0, 'high': 1},
+                       (3,)),
+                      (qml.init.interferometer_phi_uniform,
+                       {'n_wires': 1, 'low': 0, 'high': 1},
+                       (0,)),
+                      (qml.init.interferometer_varphi_uniform,
+                       {'n_wires': 3, 'low': 0, 'high': 1},
+                       (3,)),
+                      (qml.init.interferometer_varphi_uniform,
+                       {'n_wires': 1, 'low': 0, 'high': 1},
+                       (1,)),
+                      (qml.init.qaoa_embedding_normal,
+                       {'n_layers': 2, 'n_wires': 3, 'mean': 0, 'std': 1},
+                       (2, 2*3)),
+                      (qml.init.qaoa_embedding_uniform,
+                       {'n_layers': 2, 'n_wires': 3, 'low': 0, 'high': 1},
+                       (2, 2*3)),
+                      (qml.init.qaoa_embedding_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (2, 1)),
+                      (qml.init.qaoa_embedding_uniform,
+                       {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
+                       (2, 3)),
+                      (qml.init.qaoa_embedding_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1)),
+                      (qml.init.qaoa_embedding_normal,
+                       {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1},
+                       (2, 3)),
+                      (qml.init.simplified_two_design_initial_layer_uniform,
+                       {'n_wires': 1, 'low': 0, 'high': 1},
+                       (1,)),
+                      (qml.init.simplified_two_design_initial_layer_uniform,
+                       {'n_wires': 3, 'low': 0, 'high': 1},
+                       (3,)),
+                      (qml.init.simplified_two_design_initial_layer_normal,
+                       {'n_wires': 1, 'mean': 0, 'std': 1},
+                       (1,)),
+                      (qml.init.simplified_two_design_initial_layer_normal,
+                       {'n_wires': 3, 'mean': 0, 'std': 1},
+                       (3,)),
+                      (qml.init.simplified_two_design_weights_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                       (0,)),
+                      (qml.init.simplified_two_design_weights_uniform,
+                       {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
+                       (2, 1, 2)),
+                      (qml.init.simplified_two_design_weights_uniform,
+                       {'n_layers': 2, 'n_wires': 4, 'low': 0, 'high': 1},
+                       (2, 3, 2)),
+                      (qml.init.simplified_two_design_weights_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (0, )),
+                      (qml.init.simplified_two_design_weights_normal,
+                       {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1},
+                       (2, 1, 2)),
+                      (qml.init.simplified_two_design_weights_normal,
+                       {'n_layers': 2, 'n_wires': 4, 'mean': 0, 'std': 1},
+                       (2, 3, 2)),
+                      (qml.init.basic_entangler_layers_normal,
+                       {'n_layers': 2, 'n_wires': 1, 'mean': 0, 'std': 1},
+                       (2, 1)),
+                      (qml.init.basic_entangler_layers_normal,
+                       {'n_layers': 2, 'n_wires': 2, 'mean': 0, 'std': 1},
                        (2, 2)),
-                      (qml.init.basic_entangler_layers_uniform, {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
+                      (qml.init.basic_entangler_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 1, 'low': 0, 'high': 1},
                        (2, 1)),
-                      (qml.init.basic_entangler_layers_uniform, {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
+                      (qml.init.basic_entangler_layers_uniform,
+                       {'n_layers': 2, 'n_wires': 2, 'low': 0, 'high': 1},
                        (2, 2)),
                       ]
 # Functions returning a list of parameter arrays
-INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, rpt,
-                          [(repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                           (repeat, n_if), (repeat, n_if), (repeat, n_wires), (repeat, n_wires), (repeat, n_wires),
-                           (repeat, n_wires)]),
-                         (qml.init.interferometer_all, base, [(n_if,), (n_if,), (n_wires,)])]
+INITALL_KWARGS_SHAPES = [(qml.init.cvqnn_layers_all, {'n_layers': 2, 'n_wires': 3},
+                          [(2, 3)]*11),
+                         (qml.init.interferometer_all, {'n_wires': 3}, [(3,), (3,), (3,)])]
 
 # Without target shapes
 INIT_KWARGS = [i[0:2] for i in INIT_KWARGS_SHAPES]
@@ -125,6 +277,7 @@ class TestInit:
     def test_all_shape(self, init, sgntr, shp, seed):
         """Confirm that ``all`` initialization functions
          return an array with the correct shape."""
+
         s = {**sgntr, 'seed': seed}
         p = init(**s)
         shapes = [p_.shape for p_ in p]
@@ -134,6 +287,11 @@ class TestInit:
     def test_same_output_for_same_seed(self, init, sgntr, seed, tol):
         """Confirm that initialization functions return a deterministic output
         for a fixed seed."""
+
+        # exclude case of empty parameter list
+        if len(init(**sgntr).flatten()) == 0:
+            pytest.skip("test is skipped for empty parameter array")
+
         s = {**sgntr, 'seed': seed}
         p1 = init(**s)
         p2 = init(**s)
@@ -143,6 +301,11 @@ class TestInit:
     def test_diff_output_for_diff_seed(self, init, sgntr, seed, tol):
         """Confirm that initialization function returns a different output for
         different seeds."""
+
+        # exclude case of empty parameter list
+        if len(init(**sgntr).flatten()) == 0:
+            pytest.skip("test is skipped for empty parameter array")
+
         s = {**sgntr, 'seed': seed}
         p1 = init(**s)
         s = {**s, 'seed': seed + 1}
@@ -156,23 +319,35 @@ class TestInit:
         """Test that sampled parameters lie in correct interval."""
 
         # exclude case of empty parameter list
-        if not init(**sgntr).shape == (0, ):
+        if len(init(**sgntr).flatten()) == 0:
+            pytest.skip("test is skipped for empty parameter array")
 
-            s = {**sgntr, 'seed': seed}
+        s = {**sgntr, 'seed': seed}
 
-            # Case A: Uniformly distributed parameters
-            if 'low' in s.keys() and 'high' in s.keys():
-                s['low'] = 1
-                s['high'] = 1
-                p = init(**s)
-                p_mean = np.mean(p)
-                assert np.isclose(p_mean, 1, atol=tol)
-
-            # Case B: Normally distributed parameters
-            if 'mean' in s.keys() and 'std' in s.keys():
-                s['mean'] = 1
-                s['std'] = 0
-
+        # Case A: Uniformly distributed parameters
+        if 'low' in s.keys() and 'high' in s.keys():
+            s['low'] = 1
+            s['high'] = 1
             p = init(**s)
             p_mean = np.mean(p)
             assert np.isclose(p_mean, 1, atol=tol)
+
+        # Case B: Normally distributed parameters
+        if 'mean' in s.keys() and 'std' in s.keys():
+            s['mean'] = 1
+            s['std'] = 0
+
+        p = init(**s)
+        p_mean = np.mean(p)
+        assert np.isclose(p_mean, 1, atol=tol)
+
+    @pytest.mark.parametrize("init, sgntr", INIT_KWARGS)
+    def test_zero_wires(self, init, sgntr):
+        """Test that edge case of zero wires returns empty parameter array."""
+
+        if "n_wires" in sgntr:
+            sgntr["n_wires"] = 0
+
+        p = init(**sgntr)
+
+        assert p.flatten().shape == (0,)
