@@ -41,90 +41,6 @@ class cd:
         os.chdir(str(self.savedPath))
 
 
-# benchmarking tool version
-__version__ = "0.1.0"
-
-
-def remove_readonly(func, path, excinfo):
-    """Remove readonly flag from file and retry.
-
-    This method is intended to be used with shutil.rmtree.
-    """
-    # pylint: disable=unused-argument
-    os.chmod(path, stat.S_IWRITE)
-    func(path)
-
-
-def update_repository(directory, revision):
-    """Update the target repository.
-
-    Args:
-        directory(pathlib.Path): Path to the directory where the revision is located
-        revision(str): Revision associated with the directory
-    """
-
-    print(">>> Revision found locally, updating...")
-    with cd(directory):
-        # Check if we're on a detached HEAD (i.e. for version revisions)
-        res = subprocess.run(
-            ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"],
-            stdout=subprocess.PIPE,
-            check=True,
-        )
-
-        if "HEAD" not in str(res.stdout.decode(locale.getpreferredencoding())):
-            subprocess.run(["git", "fetch", "-q"], check=True)
-            subprocess.run(["git", "checkout", revision, "-q"], check=True)
-
-
-def get_repository(pl_directory, revision):
-    """Get the target repository.
-
-    Args:
-        directory(pathlib.Path): Path to the directory where the revision shall be located
-        revision(str): Revision which shall be downloaded
-    """
-    try:
-        # If we already downloaded a revision we don't need to clone the whole
-        # PL repository. Instead we just copy the first revision in the directory
-        # checkout will then get the correct revision
-        first_revision = next((x for x in pl_directory.parent.iterdir() if x.is_dir()))
-        print(">>> Revision not found locally, copying...")
-        shutil.copytree(str(first_revision), str(pl_directory))
-
-    except StopIteration:
-        # Didn't find a local revision to copy, use git to clone
-        print(">>> Revision not found locally, cloning...")
-
-        pl_directory.mkdir()
-        subprocess.run(
-            ["git", "clone", "https://www.github.com/xanaduai/pennylane", str(pl_directory), "-q",],
-            check=True,
-        )
-
-    with cd(pl_directory):
-        subprocess.run(["git", "checkout", "master", "-q"], check=True)
-        subprocess.run(["git", "fetch", "-q"], check=True)
-        res = subprocess.run(["git", "checkout", revision, "-q"])
-
-    # An error occured during checkout, so the revision does not exist
-    if res.returncode != 0:
-        print(
-            col(
-                ">>> Couldn't check out revision {}, deleting temporary data".format(revision),
-                "red",
-            )
-        )
-
-        # Regular rmtree hickups with read-only files. We thus use an errorhandler that tries to mark them
-        # as writeable and retries. See also
-        # https://stackoverflow.com/questions/1889597/deleting-directory-in-python/1889686
-        shutil.rmtree(str(pl_directory), onerror=remove_readonly)
-        return False
-
-    return True
-
-
 def cli():
     """Parse the command line arguments, perform the requested action.
     """
@@ -139,16 +55,30 @@ def cli():
     # Only parse revisions, other args will go to the benchmarking script
     args, unknown_args = parser.parse_known_args()
 
-    revisions_directory = Path.home() / "pennylane.benchmarks" / "revisions"
+    revisions_directory = Path.home() / ".pennylane" / "benchmarks" / "revisions"
 
-    if not revisions_directory.exists():
+    if revisions_directory.exists():
+        with cd(revisions_directory):
+            subprocess.run(["git", "fetch", "origin", "-q"], check=True)
+            subprocess.run(["git", "reset", "--hard", "origin/master", "-q"], check=True)
+    else:
         revisions_directory.mkdir(parents=True)
+
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "https://www.github.com/xanaduai/pennylane",
+                str(revisions_directory),
+            ],
+            check=True,
+        )
 
     for revision in args.revisions:
         print(">>> Running benchmark for revision {}".format(col(revision, "red")))
 
         if revision == "here":
-            res = subprocess.run(["git", "rev-parse", "--show-toplevel"], stdout=subprocess.PIPE)
+            res = subprocess.run(["git", "rev-parse", "--show-toplevel", "-q"], stdout=subprocess.PIPE)
 
             if res.returncode != 0:
                 print(
@@ -158,36 +88,17 @@ def cli():
                 continue
 
             pl_directory = Path(res.stdout.decode(locale.getpreferredencoding()).strip())
-
         else:
-            pl_directory = revisions_directory / revision
+            pl_directory = revisions_directory
 
-            try:
-                # We first make sure we get the latest version of the desired revision
-                if pl_directory.exists():
-                    update_repository(pl_directory, revision)
-                else:
-                    success = get_repository(pl_directory, revision)
-
-                    if not success:
-                        continue
-            except:
-                print(
-                    col(
-                        ">>> An error occured during execution of the script. "
-                        + "Deleting the current revision folder to not leave junk.",
-                        "red",
-                    )
-                )
-
-                if pl_directory.exists():
-                    shutil.rmtree(str(pl_directory), onerror=remove_readonly)
-
-                raise
+            with cd(pl_directory):
+                subprocess.run(["git", "fetch", "origin", "-q"], check=True)
+                subprocess.run(["git", "reset", "--hard", revision, "-q"], check=True)
 
         benchmark_file_path = Path(__file__).parent / "benchmark.py"
         benchmark_env = os.environ.copy()
         benchmark_env["PYTHONPATH"] = str(pl_directory) + ";" + benchmark_env["PATH"]
+
         subprocess.run(
             ["python3", str(benchmark_file_path)] + unknown_args + ["--noinfo"],
             env=benchmark_env,
