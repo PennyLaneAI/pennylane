@@ -804,27 +804,18 @@ class NumberOperator(CVObservable):
 
 
 class TensorNumberOperator(CVObservable):
-    r"""pennylane.ops.NumberOperator(wires)
-    The photon number observable :math:`\langle \hat{n}\rangle`.
+    r"""pennylane.ops.TensorNumberOperator(wires)
+    The tensor product of the :class:`~.NumberOperator`.
 
-    The number operator is defined as
-    :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
-
-    When used with the :func:`~.expval` function, the mean
-    photon number :math:`\braket{\hat{n}}` is returned.
+    When used with the :func:`~.expval` function, the expectation value
+    :math:`\langle \hat{n}_{i_0} \hat{n}_{i_1}\dots \hat{n}_{i_{N-1}}\rangle`
+    for a (sub)set of modes :math:`[i_0, i_1, \dots, i_{N-1}]` of the system is
+    returned.
 
     **Details:**
 
-    * Number of wires: 1
+    * Number of wires: Any
     * Number of parameters: 0
-    * Observable order: 2nd order in the quadrature operators
-    * Heisenberg representation:
-
-      .. math:: M = \frac{1}{2\hbar}\begin{bmatrix}
-            -\hbar & 0 & 0\\
-            0 & 1 & 0\\
-            0 & 0 & 1
-        \end{bmatrix}
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -832,13 +823,6 @@ class TensorNumberOperator(CVObservable):
     num_wires = Any
     num_params = 0
     par_domain = None
-
-    ev_order = 2
-
-    @staticmethod
-    def _heisenberg_rep(p):
-        hbar = 2
-        return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
 
 class X(CVObservable):
