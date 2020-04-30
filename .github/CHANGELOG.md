@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
+  `PauliRot` gates to perform an arbitrary unitary and prepare an arbitrary basis
+  state with the minimal number of parameters.
+  [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
+
 * The ``templates.broadcast`` function can now take custom patterns.
   [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
 
