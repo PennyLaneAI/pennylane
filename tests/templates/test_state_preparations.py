@@ -359,17 +359,41 @@ class TestArbitraryStatePreparation:
         assert rec.queue[5].params[1] == "XY"
         assert rec.queue[5].wires == [0, 1]
 
-    # def test_draw(self):
-    #     dev = qml.device("default.qubit", wires=3)
-    #     @qml.qnode(dev)
-    #     def circuit(angles):
-    #         ArbitraryStatePreparation(angles, wires=[0, 1, 2])
+    def test_GHZ_generation(self, qubit_device_3_wires, tol):
+        """Test that the template prepares a GHZ state."""
+        GHZ_state = np.array([1/math.sqrt(2), 0, 0, 0, 0, 0, 0, 1/math.sqrt(2)])
 
-    #         return qml.expval(qml.PauliZ(0))
+        angles = np.zeros(14)
+        angles[13] = math.pi / 2
 
-    #     angles = np.random.uniform(0, 2*math.pi, 14)
+        @qml.qnode(qubit_device_3_wires)
+        def circuit(angles):
+            ArbitraryStatePreparation(angles, [0, 1, 2])
 
-    #     circuit(angles)
+            return qml.expval(qml.PauliZ(0))
 
-    #     print(circuit.draw())
-    #     assert False
+        circuit(angles)
+
+        assert np.allclose(qubit_device_3_wires.state, GHZ_state, atol=tol, rtol=0)
+
+    def test_even_superposition_generation(self, qubit_device_3_wires, tol):
+        """Test that the template prepares a even superposition state."""
+        even_superposition_state = np.ones(8)/math.sqrt(8)
+
+        angles = np.zeros(14)
+        angles[1] = math.pi / 2
+        angles[3] = math.pi / 2
+        angles[5] = math.pi / 2
+
+        @qml.qnode(qubit_device_3_wires)
+        def circuit(angles):
+            ArbitraryStatePreparation(angles, [0, 1, 2])
+
+            return qml.expval(qml.PauliZ(0))
+
+        circuit(angles)
+
+        assert np.allclose(qubit_device_3_wires.state, even_superposition_state, atol=tol, rtol=0)
+
+
+
