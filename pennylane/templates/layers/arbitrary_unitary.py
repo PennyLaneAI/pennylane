@@ -24,6 +24,7 @@ _PAULIS = ["I", "X", "Y", "Z"]
 def _tuple_to_word(index_tuple):
     return "".join([_PAULIS[i] for i in index_tuple])
 
+
 def _n_k_gray_code(n, k, start=0):
     """Iterates over a full n-ary Gray code with k digits.
 
@@ -46,7 +47,7 @@ def _n_k_gray_code(n, k, start=0):
         shift = 0
         for j in reversed(range(k)):
             codeword[j] = (base_repesentation[j] + shift) % n
-            shift += (n - codeword[j])
+            shift += n - codeword[j]
 
         yield codeword
 
