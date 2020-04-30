@@ -32,6 +32,8 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
+#pylint: disable=abstract-method
+
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -820,7 +822,6 @@ class TensorNumberOperator(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    #pylint: disable=abstract-method
     num_wires = Any
     num_params = 0
     par_domain = None
