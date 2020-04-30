@@ -32,7 +32,7 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
-#pylint: disable=abstract-method
+# pylint: disable=abstract-method
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -1036,7 +1036,15 @@ ops = {
 }
 
 
-obs = {"QuadOperator", "NumberOperator", "TensorNumberOperator", "P", "X", "PolyXP", "FockStateProjector"}
+obs = {
+    "QuadOperator",
+    "NumberOperator",
+    "TensorNumberOperator",
+    "P",
+    "X",
+    "PolyXP",
+    "FockStateProjector",
+}
 
 
 __all__ = list(ops | obs)
