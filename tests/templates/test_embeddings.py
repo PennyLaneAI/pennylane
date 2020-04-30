@@ -374,7 +374,7 @@ class TestQAOAEmbedding:
                                                                (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
                                                                (3, [[0, 0, 0, pi, pi/2, pi/4]], [-1, 0, 1/np.sqrt(2)])])
     def test_qaoa_embedding_state_zero_features_local_field_ry(self, n_subsystems, weights, target, tol):
-        """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RY local fields."""
+        """Checks the output if the features are zero. Uses RY local fields."""
 
         features = np.zeros(shape=(n_subsystems,))
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -391,7 +391,7 @@ class TestQAOAEmbedding:
                                                                (2, [[1, pi/2, pi/4]], [0, 1/np.sqrt(2)]),
                                                                (3, [[0, 0, 0, pi, pi/2, pi/4]], [-1, 0, 1/np.sqrt(2)])])
     def test_qaoa_embedding_state_zero_features_local_field_rx(self, n_subsystems, weights, target, tol):
-        """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RX local fields."""
+        """Checks the output if the features are zero. Uses RX local fields."""
 
         features = np.zeros(shape=(n_subsystems,))
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -408,7 +408,7 @@ class TestQAOAEmbedding:
                                                                (2, [[1, pi/2, pi/4]], [1, 1]),
                                                                (3, [[0, 0, 0, pi, pi/2, pi/4]], [1, 1, 1])])
     def test_qaoa_embedding_state_zero_features_local_field_rz(self, n_subsystems, weights, target, tol):
-        """Checks the state produced by QAOAEmbedding() is correct if the features are zero. Uses RZ local fields."""
+        """Checks the output if the features are zero. Uses RZ local fields."""
 
         features = np.zeros(shape=(n_subsystems,))
         dev = qml.device('default.qubit', wires=n_subsystems)
@@ -421,21 +421,24 @@ class TestQAOAEmbedding:
         res = circuit(x=features[:n_subsystems])
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('features, weights, target', [([np.pi/2, 0], [[np.pi, 0, 0]], [-1, 1]),
-                                                           ([0, np.pi/2], [[np.pi, 0, 0]], [1, -1]),
-                                                           ([np.pi/2, np.pi/2], [[np.pi, 0, 0]], [-1, -1])])
-    def test_qaoa_embedding_state_features_and_zz(self, features, weights, target, tol):
-        """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
+    @pytest.mark.parametrize('weights, target', [([[np.pi, 0, 0], [0, 0, 0]], [1, 1]),
+                                                           ([[np.pi/2, 0, 0], [0, 0, 0]], [0, 0]),
+                                                           ([[0, 0, 0], [0, 0, 0]], [-1, -1])])
+    def test_qaoa_embedding_state_features_and_zz(self, weights, target, tol):
+        """Checks the output if the features and entangler weights are nonzero.
         Uses RY local fields."""
 
         dev = qml.device('default.qubit', wires=2)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires=range(2), local_field='Y')
+            QAOAEmbedding(features=x, weights=weights, wires=range(2))
+            # Undo the final X block
+            qml.RX(-np.pi/2, wires=0)
+            qml.RX(-np.pi/2, wires=1)
             return [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
-        res = circuit(x=features)
+        res = circuit(x=[np.pi/2, np.pi/2])
         assert np.allclose(res, target, atol=tol, rtol=0)
 
     @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi/2]], [1, 0]),

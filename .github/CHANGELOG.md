@@ -180,10 +180,25 @@
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
   
-* The ``QAOAEmbedding`` now uses the new ``MultiRZ`` gate, instead of its 
-  decomposition, and the parameter convention was changed: While 
-  previously, the parameter of the ``ZZ`` entangler was 
-  multiplied by ``2``, now the parameter directly enters the gate.
+* The ``QAOAEmbedding`` now uses the new ``MultiRZ`` gate as a ``ZZ`` entangler, 
+  which changes the parameter convention: While 
+  previously, the ``ZZ`` gate in the embedding was implemented as
+  
+  .. code-block:: python
+  
+    CNOT(wires=[wires[0], wires[1]])
+    RZ(2 * parameter, wires=wires[0])
+    CNOT(wires=[wires[0], wires[1]]) 
+  
+  the ``MultiRZ`` uses 
+
+  .. code-block:: python
+  
+    CNOT(wires=[wires[0], wires[1]])
+    RZ(parameter, wires=wires[0])
+    CNOT(wires=[wires[0], wires[1]]) 
+      
+  which differs in the factor of ``2``.
   [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
 
 <h3>Improvements</h3>
