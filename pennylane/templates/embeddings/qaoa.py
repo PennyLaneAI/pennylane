@@ -16,7 +16,7 @@ Contains the ``QAOAEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
-from pennylane.ops import RX, RY, RZ, CNOT, Hadamard
+from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
@@ -25,18 +25,6 @@ from pennylane.templates.utils import (
     check_number_of_layers,
     get_shape,
 )
-
-
-@template
-def zz(weight, wires):
-    """Template for decomposition of ZZ coupling.
-
-    Args:
-        wires (list[int]): qubit indices that the template acts on
-    """
-    CNOT(wires=wires)
-    RZ(2 * weight, wires=wires[0])
-    CNOT(wires=wires)
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
@@ -78,7 +66,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
         weights_fields = weights[len(wires) :]
 
     # zz couplings
-    broadcast(unitary=zz, pattern="ring", wires=wires, parameters=weights_zz)
+    broadcast(unitary=MultiRZ, pattern="ring", wires=wires, parameters=weights_zz)
     # local fields
     broadcast(unitary=local_fields, pattern="single", wires=wires, parameters=weights_fields)
 

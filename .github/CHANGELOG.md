@@ -179,6 +179,12 @@
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
+  
+* The ``QAOAEmbedding`` now uses the new ``MultiRZ`` gate, instead of its 
+  decomposition, and the parameter convention was changed: While 
+  previously, the parameter of the ``ZZ`` entangler was 
+  multiplied by ``2``, now the parameter directly enters the gate.
+  [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
 
 <h3>Improvements</h3>
 
