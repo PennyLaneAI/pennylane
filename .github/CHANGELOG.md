@@ -187,7 +187,7 @@
 
 <h3>Improvements</h3>
 
-* Improvements to the performance of the `default.qubit` device.
+* Improvements to the speed/performance of the `default.qubit` device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
 
 * The input check functions in `pennylane.templates.utils` are now public
