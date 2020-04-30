@@ -29,6 +29,7 @@ from pennylane.templates.layers import (
 from pennylane.templates.layers.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _tuple_to_word,
+    _n_k_gray_code,
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
@@ -40,18 +41,32 @@ PAULI_WORD_TEST_DATA = [
     (1, ["X", "Y", "Z"]),
     (
         2,
-        ["IX", "IY", "IZ", "XI", "XX", "XY", "XZ", "YI", "YX", "YY", "YZ", "ZI", "ZX", "ZY", "ZZ",],
+        ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"],
     ),
     (
         3,
         [
-            "IIX", "IIY", "IIZ", "IXI", "IXX", "IXY", "IXZ", "IYI", "IYX", "IYY", "IYZ", "IZI", "IZX",
-            "IZY", "IZZ", "XII", "XIX", "XIY", "XIZ", "XXI", "XXX", "XXY", "XXZ", "XYI", "XYX", "XYY",
-            "XYZ", "XZI", "XZX", "XZY", "XZZ", "YII", "YIX", "YIY", "YIZ", "YXI", "YXX", "YXY", "YXZ",
-            "YYI", "YYX", "YYY", "YYZ", "YZI", "YZX", "YZY", "YZZ", "ZII", "ZIX", "ZIY", "ZIZ", "ZXI",
-            "ZXX", "ZXY", "ZXZ", "ZYI", "ZYX", "ZYY", "ZYZ", "ZZI", "ZZX", "ZZY", "ZZZ",    
+            "XII", "YII", "ZII", "ZXI", "IXI", "XXI", "YXI", "YYI", "ZYI", "IYI", "XYI", "XZI", "YZI",
+            "ZZI", "IZI", "IZX", "XZX", "YZX", "ZZX", "ZIX", "IIX", "XIX", "YIX", "YXX", "ZXX", "IXX",
+            "XXX", "XYX", "YYX", "ZYX", "IYX", "IYY", "XYY", "YYY", "ZYY", "ZZY", "IZY", "XZY", "YZY",
+            "YIY", "ZIY", "IIY", "XIY", "XXY", "YXY", "ZXY", "IXY", "IXZ", "XXZ", "YXZ", "ZXZ", "ZYZ",
+            "IYZ", "XYZ", "YYZ", "YZZ", "ZZZ", "IZZ", "XZZ", "XIZ", "YIZ", "ZIZ", "IIZ",
         ]
     ),
+]
+
+GRAY_CODE_TEST_DATA = [
+    (2, 2, [[0, 0], [1, 0], [1, 1], [0, 1]]),
+    (2, 3, [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 0, 1], [0, 0, 1]]),
+    (4, 2, [
+        [0, 0], [1, 0], [2, 0], [3, 0], [3, 1], [0, 1], [1, 1], [2, 1], 
+        [2, 2], [3, 2], [0, 2], [1, 2], [1, 3], [2, 3], [3, 3], [0, 3]
+    ]),
+    (3, 3, [
+        [0, 0, 0], [1, 0, 0], [2, 0, 0], [2, 1, 0], [0, 1, 0], [1, 1, 0], [1, 2, 0], [2, 2, 0], [0, 2, 0], 
+        [0, 2, 1], [1, 2, 1], [2, 2, 1], [2, 0, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1], [2, 1, 1], [0, 1, 1], 
+        [0, 1, 2], [1, 1, 2], [2, 1, 2], [2, 2, 2], [0, 2, 2], [1, 2, 2], [1, 0, 2], [2, 0, 2], [0, 0, 2]
+    ]),
 ]
 # fmt: on
 
@@ -59,11 +74,17 @@ PAULI_WORD_TEST_DATA = [
 class TestHelperFunctions:
     """Test the helper functions used in the layers."""
 
+    @pytest.mark.parametrize("n,k,expected_code", GRAY_CODE_TEST_DATA)
+    def test_n_k_gray_code(self, n, k, expected_code):
+        """Test that _n_k_gray_code produces the Gray code correctly."""
+        for expected_word, word in zip(expected_code, _n_k_gray_code(n, k)):
+            assert expected_word == word
+
     @pytest.mark.parametrize("num_wires,expected_pauli_words", PAULI_WORD_TEST_DATA)
     def test_all_pauli_words_but_identity(self, num_wires, expected_pauli_words):
         """Test that the correct Pauli words are returned."""
-        for idx, pauli_word in enumerate(_all_pauli_words_but_identity(num_wires)):
-            assert expected_pauli_words[idx] == pauli_word
+        for expected_pauli_word, pauli_word in zip(expected_pauli_words, _all_pauli_words_but_identity(num_wires)):
+            assert expected_pauli_word == pauli_word
 
     @pytest.mark.parametrize("tuple,expected_word", [
         ((0,), "I"),

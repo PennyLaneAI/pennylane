@@ -25,17 +25,36 @@ _PAULIS = ["I", "X", "Y", "Z"]
 def _tuple_to_word(index_tuple):
     return "".join([_PAULIS[i] for i in index_tuple])
 
+def _n_k_gray_code(n, k, start=0):
+    """Iterates over a full n-ary Gray code with k digits.
+
+    Args:
+        n (int): Base of the Gray code. Needs to be greater than one.
+        k (int): Number of digits of the Gray code. Needs to be greater than zero.
+        start (int, optional): Optional start of the Gray code. The generated code
+            will be shorter as the code does not wrap. Defaults to 0.
+    """
+    for i in range(start, n ** k):
+        codeword = [0] * k
+
+        base_repesentation = []
+        val = i
+
+        for j in range(k):
+            base_repesentation.append(val % n)
+            val //= n
+
+        shift = 0
+        for j in reversed(range(k)):
+            codeword[j] = (base_repesentation[j] + shift) % n
+            shift += (n - codeword[j])
+
+        yield codeword
+
 
 def _all_pauli_words_but_identity(num_wires):
-    # TODO: Replace this with a 4-ary Gray code. This will make only one letter
-    # change between each Pauli word and thus requires less gates. We would still
-    # need some gate fusion logic for this to take effect.
-    index_tuples = np.ndindex(tuple([4] * num_wires))
-
-    # The first index represents the all-identity-word which we skip
-    next(index_tuples)
-
-    yield from (_tuple_to_word(idx_tuple) for idx_tuple in index_tuples)
+    # Start at 1 to ignore identity
+    yield from (_tuple_to_word(idx_tuple) for idx_tuple in _n_k_gray_code(4, num_wires, start=1))
 
 
 @template
