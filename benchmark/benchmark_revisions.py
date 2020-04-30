@@ -18,10 +18,8 @@ Benchmarking tool for different commits
 import argparse
 import locale
 import os
-from pathlib import Path
-import stat
-import shutil
 import subprocess
+from pathlib import Path
 
 from benchmark import col
 
