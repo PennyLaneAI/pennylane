@@ -240,6 +240,10 @@ takes single quantum operations or other templates and applies them to wires in 
     :description: broadcast (all-to-all)
     :figure: ../_static/templates/broadcast_alltoall.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (custom)
+    :figure: ../_static/templates/broadcast_custom.png
 
 .. raw:: html
 

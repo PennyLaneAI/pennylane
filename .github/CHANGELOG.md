@@ -4,6 +4,9 @@
 
 * PennyLane's benchmarking tool now supports the comparison of different revisions.
   [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
+  
+* The ``templates.broadcast`` function can now take custom patterns.
+  [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
 
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
