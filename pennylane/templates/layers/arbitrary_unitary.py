@@ -14,7 +14,6 @@
 r"""
 Contains the ``ArbitraryUnitary`` template.
 """
-import numpy as np
 import pennylane as qml
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_wires, check_shape, get_shape
