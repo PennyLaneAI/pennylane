@@ -94,12 +94,12 @@ def cli():
             check=True,
         )
 
+    toplevel = get_current_git_toplevel()
+
     for revision in args.revisions:
         print(">>> Running benchmark for revision {}".format(col(revision, "red")))
 
         if revision == "here":
-            toplevel = get_current_git_toplevel()
-
             if not toplevel:
                 print(
                     col(">>> Wasn't able to determine the current git toplevel, skipping...", "red")
@@ -110,8 +110,6 @@ def cli():
             pl_directory = toplevel
         else:
             pl_directory = revisions_directory
-
-            toplevel = get_current_git_toplevel()
 
             with cd(pl_directory):
                 # Make really sure we don't reset the current git
