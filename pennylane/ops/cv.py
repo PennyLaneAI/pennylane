@@ -805,8 +805,8 @@ class NumberOperator(CVObservable):
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
 
-class TensorNumberOperator(CVObservable):
-    r"""pennylane.ops.TensorNumberOperator(wires)
+class TensorN(CVObservable):
+    r"""pennylane.ops.TensorN(wires)
     The tensor product of the :class:`~.NumberOperator`.
 
     When used with the :func:`~.expval` function, the expectation value
@@ -1039,7 +1039,7 @@ ops = {
 obs = {
     "QuadOperator",
     "NumberOperator",
-    "TensorNumberOperator",
+    "TensorN",
     "P",
     "X",
     "PolyXP",

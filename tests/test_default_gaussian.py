@@ -323,7 +323,7 @@ class TestDefaultGaussianDevice:
 
     def test_observable_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
-        assert set(qml.ops._cv__obs__)-{'TensorNumberOperator'}|{'Identity'}-{'Heterodyne'} == set(gaussian_dev._observable_map)
+        assert set(qml.ops._cv__obs__)-{'TensorN'}|{'Identity'}-{'Heterodyne'} == set(gaussian_dev._observable_map)
 
     def test_apply(self, gaussian_dev, tol):
         """Test the application of gates to a state"""

@@ -169,7 +169,7 @@ CV observables
 
     ~pennylane.FockStateProjector
     ~pennylane.NumberOperator
-    ~pennylane.TensorNumberOperator
+    ~pennylane.TensorN
     ~pennylane.P
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
