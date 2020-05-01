@@ -174,7 +174,9 @@ class JacobianQNode(BaseQNode):
           possible, otherwise finite difference.
 
         * Device method (``'device'``): Delegates the computation of the Jacobian to the
-          device executing the circuit.
+          device executing the circuit. Devices that have their ``'provides_jacobian'``
+          option set to ``True`` in their capabilities dictionary support this
+          method (for example the experimental `default.tensor.tf` device).
 
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
