@@ -40,20 +40,25 @@ and has the following format:
 
 .. code-block:: toml
 
+    # This is an example config.toml file, the options shown here appear as comments.
+    # Every line starting with a # character is a comment in TOML.
+    # For any of the options to take effect, uncomment the line of the option by
+    # removing the # character and modifying the value.
+
     [main]
     # Global PennyLane options.
     # Affects every loaded plugin if applicable.
-    shots = 1000
+    # shots = 1000
 
     [strawberryfields.global]
     # Options for the Strawberry Fields plugin
-    hbar = 1
-    shots = 100
+    # hbar = 1
+    # shots = 100
 
       [strawberryfields.fock]
-      # Options for the Strawberry Fields Fock plugin
-      cutoff_dim = 10
-      hbar = 0.5
+      # Options for the Fock device
+      # cutoff_dim = 10
+      # hbar = 0.5
 
       [strawberryfields.gaussian]
       # Indentation doesn't matter in TOML files,
@@ -63,14 +68,15 @@ and has the following format:
     # Options for the Project Q plugin
 
       [projectq.simulator]
-      gate_fusion = true
+      # gate_fusion = true
 
       [projectq.ibm]
-      user = "johnsmith"
-      password = "secret123"
-      use_hardware = true
-      device = "ibmqx4"
-      num_runs = 1024
+      # Specify authentication details for hardware access
+      # user = "johnsmith"
+      # password = "secret123"
+      # use_hardware = true
+      # device = "ibmqx4"
+      # num_runs = 1024
 
 Standard PennyLane options are provided under the ``[main]`` section. These apply to all loaded devices.
 Alternatively, options can be specified on a per-plugin basis, by setting the options under
