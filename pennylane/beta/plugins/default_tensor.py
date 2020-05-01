@@ -18,7 +18,7 @@ Experimental simulator plugin based on tensor network contractions
 import warnings
 from itertools import product
 
-from . import numpy_ops as ops
+from pennylane.beta.plugins import numpy_ops as ops
 
 import numpy as np
 
@@ -49,8 +49,8 @@ class DefaultTensor(Device):
 
     Args:
         wires (int): number of subsystems in the quantum state represented by the device
-        shots (int): Number of circuit evaluations/random samples used to estimate
-            expectation values of observables. Defaults to 1000 if not specified.
+        shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
+            Defaults to 1000 if not specified.
         representation (str): Underlying representation used for the tensor network simulation.
             Valid options are "exact" (no approximations made) or "mps" (simulated quantum
             state is approximated as a Matrix Product State).
@@ -102,8 +102,6 @@ class DefaultTensor(Device):
         "Identity": ops.identity,
     }
 
-    _operation_and_observable_map = {**_operation_map, **_observable_map}
-
     backend = "numpy"
     _reshape = staticmethod(np.reshape)
     _array = staticmethod(np.array)
@@ -123,6 +121,10 @@ class DefaultTensor(Device):
         super().__init__(wires, shots)
         if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")
+        self._operation_and_observable_map = {
+            **self._operation_map,
+            **self._observable_map,
+        }
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
@@ -213,7 +215,8 @@ class DefaultTensor(Device):
                         "Tensor provided has shape={}, which is incompatible "
                         "with provided sequence of wires {}.".format(tensor.shape, wires_seq)
                     )
-                tensor = self._expand_dims(tensor, [0, -1])
+                tensor = self._expand_dims(tensor, 0)
+                tensor = self._expand_dims(tensor, -1)
                 if tensor.shape == (1, 2, 1):
                     # MPS form
                     node = self._add_node(tensor, wires=wires_seq, name=name)
@@ -227,7 +230,7 @@ class DefaultTensor(Device):
                     DV = tensor
                     for idx, wire in enumerate(wires_seq):
                         if idx < len(wires_seq) - 1:
-                            node = tn.Node(DV)
+                            node = tn.Node(DV, name=name, backend=self.backend)
                             U, DV, _error = tn.split_node(node, node[:2], node[2:])
                             node = self._add_node(U, wires=[wire], name=name)
                         else:

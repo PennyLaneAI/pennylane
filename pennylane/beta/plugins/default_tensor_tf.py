@@ -30,158 +30,10 @@ except ImportError as e:
 
 from pennylane.variable import Variable
 from pennylane.beta.plugins.default_tensor import DefaultTensor
-from pennylane.beta.plugins.numpy_ops import I, X, Y, Z
-
+from pennylane.beta.plugins import tf_ops as ops
 
 # tolerance for numerical errors
 tolerance = 1e-10
-C_DTYPE = tf.complex128
-R_DTYPE = tf.float64
-
-
-I = tf.constant(I, dtype=C_DTYPE)
-X = tf.constant(X, dtype=C_DTYPE)
-
-II = tf.eye(4, dtype=C_DTYPE)
-ZZ = tf.constant(np.kron(Z, Z), dtype=C_DTYPE)
-
-IX = tf.constant(np.kron(I, X), dtype=C_DTYPE)
-IY = tf.constant(np.kron(I, Y), dtype=C_DTYPE)
-IZ = tf.constant(np.kron(I, Z), dtype=C_DTYPE)
-
-ZI = tf.constant(np.kron(Z, I), dtype=C_DTYPE)
-ZX = tf.constant(np.kron(Z, X), dtype=C_DTYPE)
-ZY = tf.constant(np.kron(Z, Y), dtype=C_DTYPE)
-
-
-def Rphi(phi):
-    r"""One-qubit phase shift.
-
-    Args:
-        phi (float): phase shift angle
-
-    Returns:
-        array: unitary 2x2 phase shift matrix
-    """
-    phi = tf.cast(phi, dtype=C_DTYPE)
-    return ((1 + tf.exp(1j * phi)) * I + (1 - tf.exp(1j * phi)) * Z) / 2
-
-
-def Rotx(theta):
-    r"""One-qubit rotation about the x axis.
-
-    Args:
-        theta (float): rotation angle
-
-    Returns:
-        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
-    """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * X
-
-
-def Roty(theta):
-    r"""One-qubit rotation about the y axis.
-
-    Args:
-        theta (float): rotation angle
-
-    Returns:
-        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
-    """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * Y
-
-
-def Rotz(theta):
-    r"""One-qubit rotation about the z axis.
-
-    Args:
-        theta (float): rotation angle
-
-    Returns:
-        array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
-    """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * Z
-
-
-def Rot3(a, b, c):
-    r"""Arbitrary one-qubit rotation using three Euler angles.
-
-    Args:
-        a,b,c (float): rotation angles
-
-    Returns:
-        array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
-    """
-    return Rotz(c) @ Roty(b) @ Rotz(a)
-
-
-def CRotx(theta):
-    r"""Two-qubit controlled rotation about the x axis.
-
-    Args:
-        theta (float): rotation angle
-
-    Returns:
-        array: unitary 4x4 rotation matrix
-        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_x(\theta)`
-    """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return (
-        tf.cos(theta / 4) ** 2 * II
-        - 1j * tf.sin(theta / 2) / 2 * IX
-        + tf.sin(theta / 4) ** 2 * ZI
-        + 1j * tf.sin(theta / 2) / 2 * ZX
-    )
-
-
-def CRoty(theta):
-    r"""Two-qubit controlled rotation about the y axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 4x4 rotation matrix :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_y(\theta)`
-    """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return (
-        tf.cos(theta / 4) ** 2 * II
-        - 1j * tf.sin(theta / 2) / 2 * IY
-        + tf.sin(theta / 4) ** 2 * ZI
-        + 1j * tf.sin(theta / 2) / 2 * ZY
-    )
-
-
-def CRotz(theta):
-    r"""Two-qubit controlled rotation about the z axis.
-
-    Args:
-        theta (float): rotation angle
-    Returns:
-        array: unitary 4x4 rotation matrix
-        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
-    """
-    theta = tf.cast(theta, dtype=C_DTYPE)
-    return (
-        tf.cos(theta / 4) ** 2 * II
-        - 1j * tf.sin(theta / 2) / 2 * IZ
-        + tf.sin(theta / 4) ** 2 * ZI
-        + 1j * tf.sin(theta / 2) / 2 * ZZ
-    )
-
-
-def CRot3(a, b, c):
-    r"""Arbitrary two-qubit controlled rotation using three Euler angles.
-
-    Args:
-        a,b,c (float): rotation angles
-    Returns:
-        array: unitary 4x4 rotation matrix
-        :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
-    """
-    return CRotz(c) @ (CRoty(b) @ CRotz(a))
 
 
 class DefaultTensorTF(DefaultTensor):
@@ -221,27 +73,39 @@ class DefaultTensorTF(DefaultTensor):
         It can also be used with the ``torch`` and the ``tf`` interface.
 
     Args:
-        wires (int): the number of modes to initialize the device in
-        shots (int): the number of shots used for returning samples
+        wires (int): number of subsystems in the quantum state represented by the device
+        shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
+            Defaults to 1000 if not specified.
+        representation (str): Underlying representation used for the tensor network simulation.
+            Valid options are "exact" (no approximations made) or "mps" (simulated quantum
+            state is approximated as a Matrix Product State).
+        contraction_method (str): Method used to perform tensor network contractions. Only applicable
+            for the "exact" representation. Valid options are "auto", "greedy", "branch", or "optimal".
+            See documentation of the `TensorNetwork library <https://tensornetwork.readthedocs.io/en/latest/>`_
+            for more information about contraction methods.
     """
 
     # pylint: disable=too-many-instance-attributes
     name = "PennyLane TensorNetwork (TensorFlow) simulator plugin"
     short_name = "default.tensor.tf"
-    _capabilities = {"model": "qubit", "tensor_observables": True, "provides_jacobian": True}
+    _capabilities = {
+        "model": "qubit",
+        "tensor_observables": True,
+        "provides_jacobian": True,
+    }
 
     _operation_map = copy.copy(DefaultTensor._operation_map)
     _operation_map.update(
         {
-            "PhaseShift": Rphi,
-            "RX": Rotx,
-            "RY": Roty,
-            "RZ": Rotz,
-            "Rot": Rot3,
-            "CRX": CRotx,
-            "CRY": CRoty,
-            "CRZ": CRotz,
-            "CRot": CRot3,
+            "PhaseShift": ops.Rphi,
+            "RX": ops.Rotx,
+            "RY": ops.Roty,
+            "RZ": ops.Rotz,
+            "Rot": ops.Rot3,
+            "CRX": ops.CRotx,
+            "CRY": ops.CRoty,
+            "CRZ": ops.CRotz,
+            "CRot": ops.CRot3,
         }
     )
 
@@ -252,11 +116,13 @@ class DefaultTensorTF(DefaultTensor):
     _real = staticmethod(tf.math.real)
     _imag = staticmethod(tf.math.imag)
     _abs = staticmethod(tf.abs)
+    _squeeze = staticmethod(tf.squeeze)
+    _expand_dims = staticmethod(tf.expand_dims)
 
-    C_DTYPE = C_DTYPE
-    R_DTYPE = R_DTYPE
+    C_DTYPE = ops.C_DTYPE
+    R_DTYPE = ops.R_DTYPE
 
-    def __init__(self, wires, shots=1000):
+    def __init__(self, wires, shots=1000, representation="exact", contraction_method="auto"):
         self.variables = []
         """List[tf.Variable]: Free parameters, cast to TensorFlow variables,
         for this circuit."""
@@ -273,7 +139,12 @@ class DefaultTensorTF(DefaultTensor):
         """tf.GradientTape: the gradient tape under which all tensor network
         modifications must be made"""
 
-        super().__init__(wires, shots=shots)
+        super().__init__(
+            wires,
+            shots=shots,
+            representation=representation,
+            contraction_method=contraction_method,
+        )
 
     def reset(self):
         self.res = None
@@ -373,6 +244,7 @@ class DefaultTensorTF(DefaultTensor):
         Returns:
             array[float]: Jacobian matrix of size (``num_params``, ``num_wires``)
         """
+        self.reset()
         self.execute(queue, observables, parameters=parameters)
         jac = self.tape.jacobian(self.res, self.variables, experimental_use_pfor=False)
         # TODO use unconnected_gradients=tf.UnconnectedGradients.ZERO instead of the following?
