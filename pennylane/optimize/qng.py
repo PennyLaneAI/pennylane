@@ -107,7 +107,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step(self, qnode, x, recompute_tensor=True):
+    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
         """Update x with one step of the optimizer.
 
         Args:
@@ -116,17 +116,23 @@ class QNGOptimizer(GradientDescentOptimizer):
             recompute_tensor (bool): Whether or not the metric tensor should
                 be recomputed. If not, the metric tensor from the previous
                 optimization step is used.
+            metric_tensor_fn (function): Optional metric tensor function
+                with respect to the variables ``x``.
+                If ``None``, the metric tensor function is computed automatically.
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
         # pylint: disable=arguments-differ
-        if not hasattr(qnode, "metric_tensor"):
+        if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
             raise ValueError("Objective function must be encoded as a single QNode")
 
         if recompute_tensor or self.metric_tensor is None:
-            # pseudo-inverse metric tensor
-            self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
+            if not metric_tensor_fn:
+                # pseudo-inverse metric tensor
+                self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
+            else:
+                self.metric_tensor = metric_tensor_fn([x], diag_approx=self.diag_approx)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g = self.compute_grad(qnode, x)
