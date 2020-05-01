@@ -10,8 +10,13 @@
 
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
-[main]
-shots = 1000
+##
+## Some example configuration settings are shown here in lines
+## commented with a single # character. For any of the options to take
+## effect, uncomment the line with a single # character and modify
+## the value (if desired).
+#[main]
+#shots = 1000
 
 # =================================================================
 #     PLUGIN AND DEVICE OPTIONS
@@ -21,11 +26,11 @@ shots = 1000
 ## to set global configuration options on a device-by-device basis.
 ## and to also set options specific to certain device.
 
-[default.gaussian]
-hbar = 2
+#[default.gaussian]
+#hbar = 2
 
 
-[strawberryfields.global]
+#[strawberryfields.global]
 ## Global options for the StrawberryFields plugin.
 ## If not specified, the PennyLane default is used.
 ##
@@ -33,18 +38,18 @@ hbar = 2
 ## the defaults for the Fock and Gaussian simulators below.
 
 ## Set the default value of hbar
-hbar = 1
+#hbar = 1
 
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
 # shots = 1000
 # analytic = True
 
-    [strawberryfields.fock]
+    #[strawberryfields.fock]
     ## Default options for the Fock simulator
 
     ## Set the default Fock space truncation
-    cutoff_dim = 10
+    #cutoff_dim = 10
 
     ## set the default number of shots
     # shots = 1000
@@ -52,7 +57,7 @@ hbar = 1
     ## Set the default value of hbar
     # hbar = 1
 
-    [strawberryfields.gaussian]
+    #[strawberryfields.gaussian]
     ## Default options for the Gaussian simulator
 
     ## set the default number of shots
@@ -61,18 +66,18 @@ hbar = 1
     ## Set the default value of hbar
     # hbar = 1
 
-[projectq.global]
+#[projectq.global]
 ## Options for the ProjectQ plugin.
 
-    [projectq.simulator]
+    #[projectq.simulator]
     ## If True, gates are cached and only executed once a
     ## certain gate-size has been reached
-    # gate_fusion =
+    # gate_fusion = True
 
     ## Random seed (uses random.randint(0, 4294967295) by default)
-    # rnd_seed =
+    # rnd_seed = 42
 
-    [projectq.ibm]
+    #[projectq.ibm]
     ## IBM Quantum Experience user name and password
     # user =
     # password =
@@ -81,7 +86,7 @@ hbar = 1
     # use_hardware = true
 
     ## Device to use (‘ibmqx4’, or ‘ibmqx5’)
-    # device =
+    # device = ‘ibmqx4’
 
     ## Number of runs used to collect statistics
     # num_runs = 1024
