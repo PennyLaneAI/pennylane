@@ -6,6 +6,9 @@
   encountered in IQP circuits. These kinds of gates can be evaluated much faster on
   a simulator device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
+
+* PennyLane's benchmarking tool now supports the comparison of different git revisions.
+  [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
   
 * The ``templates.broadcast`` function can now take custom patterns.
   [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
