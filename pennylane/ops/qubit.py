@@ -500,7 +500,9 @@ class RX(Operation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array([cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
+        p = cmath.exp(-0.5j * theta)
+
+        return np.array([p, p.conjugate()])
 
 
 class RY(Operation):
@@ -540,7 +542,9 @@ class RY(Operation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array([cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
+        p = cmath.exp(-0.5j * theta)
+
+        return np.array([p, p.conjugate()])
 
 
 class RZ(DiagonalOperation):
@@ -572,12 +576,16 @@ class RZ(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        return np.array([[cmath.exp(-0.5j * theta), 0], [0, cmath.exp(0.5j * theta)]])
+        p = cmath.exp(-0.5j * theta)
+
+        return np.array([[p, 0], [0, p.conjugate()]])
 
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array([cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
+        p = cmath.exp(-0.5j * theta)
+
+        return np.array([p, p.conjugate()])
 
 
 class PhaseShift(DiagonalOperation):
