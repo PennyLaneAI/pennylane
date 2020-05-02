@@ -7,6 +7,9 @@
   state with the minimal number of parameters.
   [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
 
+* PennyLane's benchmarking tool now supports the comparison of different git revisions.
+  [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
+
 * The ``templates.broadcast`` function can now take custom patterns.
   [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
 
