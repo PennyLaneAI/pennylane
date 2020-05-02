@@ -21,6 +21,7 @@ from functools import partial
 
 import numpy as np
 import torch
+from torch.autograd.function import once_differentiable
 
 from pennylane.utils import unflatten
 
@@ -135,6 +136,7 @@ def to_torch(qnode):
             return torch.from_numpy(res)
 
         @staticmethod
+        @once_differentiable
         def backward(ctx, grad_output):  # pragma: no cover
             """Implements the backwards pass QNode vector-Jacobian product"""
             # NOTE: This method is definitely tested by the `test_torch.py` test suite,
