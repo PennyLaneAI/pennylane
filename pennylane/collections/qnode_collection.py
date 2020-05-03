@@ -120,7 +120,7 @@ class QNodeCollection(Sequence):
         and gradient computation is limited to Autograd and PyTorch. **Quantum gradients
         using TensorFlow in asynchronous mode is currently not supported**.
 
-    By default, the QNodes within the QNode cluster are executed sequentially.
+    By default, the QNodes within the QNodeCollection are executed sequentially.
 
     However, experimental asynchronous support is now available using the
     `Dask <https://dask.org/>`_ parallelism library. This can be activated
@@ -216,7 +216,7 @@ class QNodeCollection(Sequence):
 
             if self.interface == "tf":
                 warnings.warn(
-                    "Parallel execution of QNode clusters is "
+                    "Parallel execution of QNodeCollections is "
                     "an experimental feature, and currently doesn't "
                     "work with TensorFlow backpropagation. Please use "
                     "the PyTorch or Autograd interfaces instead.",
