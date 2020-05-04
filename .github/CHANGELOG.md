@@ -185,6 +185,16 @@
 
 <h3>Improvements</h3>
 
+* The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
+  wires were renamed to ``AllWires`` and ``AnyWires`` and their class to
+  ``WireConstants``. 
+  [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
+
+  For example, ``AllWires`` can now be 
+  imported via
+  
+  >>> qml.operations.WireConstants.AllWires
+
 * The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
   [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
