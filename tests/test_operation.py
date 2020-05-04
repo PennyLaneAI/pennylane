@@ -526,7 +526,7 @@ class TestOperatorIntegration:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
-            num_wires = qml.operation.ActingOn.AllWires
+            num_wires = qml.operation.ActsOn.AllWires
             num_params = 0
             par_domain = 'R'
 

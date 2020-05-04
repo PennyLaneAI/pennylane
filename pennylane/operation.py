@@ -119,7 +119,7 @@ from .variable import Variable
 # =============================================================================
 
 
-class ActingOn(IntEnum):
+class ActsOn(IntEnum):
     """Integer enumeration class
     to represent the number of wires
     an operation acts on"""
@@ -128,11 +128,11 @@ class ActingOn(IntEnum):
     AllWires = 0
 
 
-AllWires = ActingOn.AllWires
+AllWires = ActsOn.AllWires
 """IntEnum: An enumeration which represents all wires in the
 subsystem. It is equivalent to an integer with value 0."""
 
-AnyWires = ActingOn.AnyWires
+AnyWires = ActsOn.AnyWires
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
 
