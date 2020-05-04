@@ -109,13 +109,14 @@ class APIClient:
     Allows the user to connect to the remote API.
 
     Keyword Args:
+        hostname (str): cloud platform hostname
         api_key (str): cloud platform API key
     """
 
     USER_AGENT = "pennylane-api-client/0.1"
 
-    def __init__(self, hostname, **kwargs):
-        self.HOSTNAME = hostname
+    def __init__(self, **kwargs):
+        self.HOSTNAME = kwargs.get("hostname", None)
         self.BASE_URL = "https://{}".format(self.HOSTNAME)
         self.AUTHENTICATION_TOKEN = os.getenv("API_KEY") or kwargs.get("api_key", None)
         self.DEBUG = False
@@ -129,7 +130,7 @@ class APIClient:
 
         self.HEADERS = {"User-Agent": self.USER_AGENT}
 
-        if self.AUTHENTICATION_TOKEN:
+        if self.AUTHENTICATION_TOKEN is not None:
             self.set_authorization_header(self.AUTHENTICATION_TOKEN)
         else:
             raise PermissionError("API key must be provided")
