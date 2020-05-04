@@ -179,21 +179,20 @@
 
 <h3>Breaking changes</h3>
 
+* The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
+  wires were refactored to ``AllWires`` and ``AnyWires`` and their class to
+  ``ActsOn``. 
+  [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
+
+  For example, ``AllWires`` can now be imported via
+  
+  >>> qml.operations.ActOn.AllWires
+                                                                                                                                                                                                                                                                                                      >
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
 
 <h3>Improvements</h3>
-
-* The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
-  wires were refactored to ``AllWires`` and ``AnyWires`` and their class to
-  ``ActOn``. 
-  [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
-
-  For example, ``AllWires`` can now be 
-  imported via
-  
-  >>> qml.operations.ActOn.AllWires
 
 * The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
