@@ -186,7 +186,7 @@
 
   For example, ``AllWires`` can now be imported via
   
-  >>> qml.operations.ActOn.AllWires
+  >>> qml.operations.ActsOn.AllWires
                                                                                                                                                                                                                                                                                                       >
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
