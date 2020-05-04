@@ -120,6 +120,9 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                               (qml.templates.BasicEntanglerLayers,
                                {'weights': [[1., 1.]]},
                                {'rotation': qml.RX}),
+                              (qml.templates.IQPEmbedding,
+                               {},
+                               {'features': [1., 1.]}),
                               ]
 
 CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
