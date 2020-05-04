@@ -187,13 +187,13 @@
 
 * The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
   wires were refactored to ``AllWires`` and ``AnyWires`` and their class to
-  ``ActsOn``. 
+  ``ActOn``. 
   [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
 
   For example, ``AllWires`` can now be 
   imported via
   
-  >>> qml.operations.ActsOn.AllWires
+  >>> qml.operations.ActOn.AllWires
 
 * The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
