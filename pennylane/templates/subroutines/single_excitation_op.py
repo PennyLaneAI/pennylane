@@ -17,6 +17,14 @@ Contains the ``SingleExcitationOp`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import RX, RZ, Hadamard, CNOT 
 from pennylane.templates.decorator import template
+from pennylane.templates.utils import (
+    check_shape,
+    check_no_variable,
+    check_wires,
+    check_type,
+    check_number_of_layers,
+    get_shape,
+)
 
 @template
 def SingleExcitationOp(weight, wires):
@@ -80,6 +88,27 @@ def SingleExcitationOp(weight, wires):
 
     ##############
     # Input checks
+
+    wires = check_wires(wires)
+
+    expected_shape = (2,)
+    check_shape(
+        wires,
+        expected_shape,
+        msg="'wires' must be of shape {}; got {}" "".format(expected_shape, get_shape(wires)),
+    )
+
+    expected_shape = ()
+    check_shape(
+        weight,
+        expected_shape,
+        msg="'weight' must be of shape {}; got {}" "".format(expected_shape, get_shape(weight)),
+    )
+
+    check_type(wires, [list], msg="'wires' must be a list; got {}" "".format(wires))
+    for w in wires:
+        check_type(w, [int], msg="'wires' must be a list of integers; got {}" "".format(wires)
+        )
 
     ###############
 
