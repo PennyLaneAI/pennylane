@@ -34,7 +34,7 @@ def SingleExcitationOp(weight, wires):
     creation operators and the indices :math:`r` and :math:`p` run over the occupied and
     unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation 
     <https://arxiv.org/abs/1208.5986>`_ the fermionic operator defined above can be written 
-    in terms of Pauli matrices `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.,
+    in terms of Pauli matrices `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
 
     .. math::
 
@@ -46,7 +46,7 @@ def SingleExcitationOp(weight, wires):
     A sketch of the quantum circuit to exponentiate the tensor product of Pauli matrices entering
     the latter equation is shown below:
 
-    .. figure:: ../../_static/uccsd_se_op.png
+    .. figure:: ../../_static/ucc_se_op.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -67,11 +67,12 @@ def SingleExcitationOp(weight, wires):
            \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
 
     #. For a given pair ``[r, p]`` ten single-qubit operations are applied. Notice also that 
-       CNOT gates act only on qubits with indices between ``r`` and ``p``.
+       CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations 
+       performed accross these qubits are shown in dashed lines in the figure above. 
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (sequence[int]): sequence with the qubit indices ``r, p``
+        wires (sequence[int]): two-element sequence with the qubit indices ``r, p``
 
     Raises:
         ValueError: if inputs do not have the correct format
