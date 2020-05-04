@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``SingleExcitatonOp`` template.
+Contains the ``SingleExcitationOp`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import RX, RZ, Hadamard, CNOT 
