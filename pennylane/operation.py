@@ -371,7 +371,11 @@ class Operator(abc.ABC):
                     )
                 )
 
-        if self.num_wires != AllWires and self.num_wires != AnyWires and len(wires) != self.num_wires:
+        if (
+            self.num_wires != AllWires
+            and self.num_wires != AnyWires
+            and len(wires) != self.num_wires
+        ):
             raise ValueError(
                 "{}: wrong number of wires. "
                 "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
