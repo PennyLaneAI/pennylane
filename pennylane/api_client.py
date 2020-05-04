@@ -139,15 +139,18 @@ class APIClient:
             self.errors = []
             self.responses = []
 
-    def set_authorization_header(self, authentication_token):
+    def set_authorization_header(self, authentication_token, header_key="Authorization"):
         """
         Adds the authorization header to the headers dictionary to be included
         with all API requests.
 
         Args:
             authentication_token (str): an authentication token used to access the API
+
+        Kwargs:
+            header_key (str): key to be used in header which has authentication_token as its value
         """
-        self.HEADERS["Authorization"] = "apiKey {}".format(authentication_token)
+        self.HEADERS[key] = authentication_token
 
     def join_path(self, path):
         """
