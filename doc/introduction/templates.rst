@@ -193,6 +193,11 @@ of other templates.
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationOp.html
+    :description: UCC-SingleExcitationOp
+    :figure: ../_static/templates/subroutines/ucc_se_op.png    
+
 .. raw:: html
 
         <div style='clear:both'></div>
