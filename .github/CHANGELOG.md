@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane's benchmarking tool now supports the comparison of different git revisions.
+  [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
+  
 * The ``templates.broadcast`` function can now take custom patterns.
   [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
 
@@ -176,6 +179,15 @@
 
 <h3>Breaking changes</h3>
 
+* The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
+  wires were refactored to ``AllWires`` and ``AnyWires`` and their class to
+  ``ActsOn``. 
+  [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
+
+  For example, ``AllWires`` can now be imported via
+  
+  >>> qml.operations.ActsOn.AllWires
+                                                                                                                                                                                                                                                                                                      >
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
