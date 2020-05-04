@@ -482,7 +482,7 @@ class TestQNodeExceptions:
         class DummyOp(qml.operation.Operation):
             """Dummy operation"""
 
-            num_wires = qml.operation.ActsOn.AllWires
+            num_wires = qml.operation.ActOn.AllWires
             num_params = 0
             par_domain = None
 
