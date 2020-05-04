@@ -34,7 +34,7 @@ def SingleExcitationOp(weight, wires):
     creation operators and the indices :math:`r` and :math:`p` run over the occupied and
     unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation 
     <https://arxiv.org/abs/1208.5986>`_ the fermionic operator defined above can be written 
-    in terms of Pauli matrices `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
+    in terms of Pauli matrices, (see Ref. `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
 
     .. math::
 
@@ -43,7 +43,7 @@ def SingleExcitationOp(weight, wires):
         \mathrm{exp} \Big\{ -\frac{i\theta}{2}
         \bigotimes_{a=r+1}^{p-1} \hat{Z}_a (\hat{X}_r \hat{Y}_p) \Big\}.
 
-    A sketch of the quantum circuit to exponentiate the tensor product of Pauli matrices entering
+    The quantum circuit to exponentiate the tensor product of Pauli matrices entering
     the latter equation is shown below:
 
     .. figure:: ../../_static/ucc_se_op.png
@@ -52,7 +52,7 @@ def SingleExcitationOp(weight, wires):
         :target: javascript:void(0);
 
     As explained in the paper by Seely *et al.* `arxiv:1208.5986 <https://arxiv.org/abs/1208.5986>`_
-    an :math:`n`-fold tensor product of Pauli-Z matrices require :math:`2(n-1)` CNOT gates and a
+    an :math:`n`-fold tensor product of Pauli-Z matrices requires :math:`2(n-1)` CNOT gates and a
     single-qubit Z-rotation to exponentiate on a quantum computer. If there are :math:`X` or 
     :math:`Y` Pauli matrices in the product, the Hadamard (:math:`H`) or :math:`R_x` gate has to 
     be applied to change to the :math:`X` or :math:`Y` basis, respectively.
@@ -60,7 +60,7 @@ def SingleExcitationOp(weight, wires):
     Notice that: 
 
     #. :math:`\hat{U}_{pr}^{(1)}(\theta)` involves two exponentiations where :math:`\hat{U}_1`,
-       , :math:`\hat{U}_2` and :math:`\hat{U}_\theta` are dfined for each of them as follows,
+       , :math:`\hat{U}_2` and :math:`\hat{U}_\theta` are dfined, for each of them, as follows,
 
        .. math::
            [U_1, U_2, U_{\theta})] = \Bigg\{\bigg[R_x(-\pi/2), H, R_z(\theta/2)\bigg], 
