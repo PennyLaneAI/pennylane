@@ -37,7 +37,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import Any, CVOperation, CVObservable
+from pennylane.operation import AnyWires, CVOperation, CVObservable
 
 
 def _rotation(phi, bare=False):
@@ -530,7 +530,7 @@ class Interferometer(CVOperation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
     grad_recipe = None
@@ -664,7 +664,7 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 2
     par_domain = "A"
     grad_method = "F"
@@ -704,7 +704,7 @@ class FockStateVector(CVOperation):
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -724,7 +724,7 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -949,7 +949,7 @@ class PolyXP(CVObservable):
     Args:
         q (array[float]): expansion coefficients
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
 
@@ -1003,7 +1003,7 @@ class FockStateProjector(CVObservable):
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
 
