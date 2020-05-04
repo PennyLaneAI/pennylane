@@ -179,6 +179,9 @@
 
 <h3>Breaking changes</h3>
 
+* A new ``Wires`` class was introduced for the bookkeeping of wire indices.
+  [(#XXX)](https://github.com/XanaduAI/pennylane/pull/XXX)
+
 * The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
   wires were refactored to ``AllWires`` and ``AnyWires`` and their class to
   ``ActsOn``. 
