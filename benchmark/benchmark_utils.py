@@ -87,11 +87,7 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
     """
     try:
         qnode = qml.qnodes.QNode(
-            qfunc,
-            device,
-            mutable=mutable,
-            diff_method="parameter-shift",
-            interface=interface,
+            qfunc, device, mutable=mutable, diff_method="parameter-shift", interface=interface,
         )
     except AttributeError:
         # versions before the "new-style" QNodes

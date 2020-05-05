@@ -8,7 +8,7 @@ Configuration
 
 Some important default settings for a device, such as your user credentials for quantum hardware
 access, the number of shots, or the cutoff dimension for continuous-variable simulators, are
-defined in a configuration file called `config.toml`.
+defined in a configuration file called ``config.toml``.
 
 Behaviour
 ---------
@@ -28,15 +28,27 @@ If no configuration file is found, a warning message will be displayed in the lo
 and all device parameters will need to be passed as keyword arguments when
 loading the device.
 
-The user can access the initialized configuration via `pennylane.config`, view the
+The loaded configuration can be accessed via ``pennylane.default_config``, view the
 loaded configuration filepath, print the configurations options, access and modify
-them via keys (i.e., ``pennylane.config['main.shots']``), and save/load new configuration files.
+them via keys (i.e., ``pennylane.default_config["main.shots"]``), and save/load new configuration files.
+
+For example:
+
+>>> import pennylane as qml
+>>> qml.default_config.path
+'config.toml'
+>>> print(qml.default_config)
+{'main': {'shots': 1000},
+ 'default': {'gaussian': {'hbar': 2}},
+ 'strawberryfields': {'fock': {'cutoff_dim': 10, 'shots': 1000, 'hbar': 2}}
+}
 
 Format
 ------
 
-The configuration file `config.toml` uses the `TOML standard <https://github.com/toml-lang/toml>`_,
-and has the following format:
+The configuration file ``config.toml`` uses the `TOML standard <https://github.com/toml-lang/toml>`_.
+See the following example configuration that configures some global options, as well as plugin
+and plugin device-specific options.
 
 .. code-block:: toml
 
@@ -44,34 +56,52 @@ and has the following format:
     # Global PennyLane options.
     # Affects every loaded plugin if applicable.
     shots = 1000
-    analytic = true
 
     [strawberryfields.global]
     # Options for the Strawberry Fields plugin
-    hbar = 1
+    # For more details, see the PennyLane-SF documentation:
+    # https://pennylane-sf.readthedocs.io
+    hbar = 2
     shots = 100
 
-      [strawberryfields.fock]
-      # Options for the Strawberry Fields Fock plugin
-      cutoff_dim = 10
-      hbar = 0.5
+        [strawberryfields.fock]
+        # Options for the strawberryfields.fock device
+        cutoff_dim = 10
+        hbar = 2
 
-      [strawberryfields.gaussian]
-      # Indentation doesn't matter in TOML files,
-      # but helps provide clarity.
+        [strawberryfields.gaussian]
+        # Indentation doesn't matter in TOML files,
+        # but helps provide clarity.
 
-    [projectq.global]
-    # Options for the Project Q plugin
+    [qiskit.global]
+    # Global options for the Qiskit plugin.
+    # For more details, see the PennyLane-Qiskit documentation:
+    # https://pennylaneqiskit.readthedocs.io/en/latest/index.html
 
-      [projectq.simulator]
-      gate_fusion = true
+    backend = "qasm_simulator"
 
-      [projectq.ibm]
-      user = "johnsmith"
-      password = "secret123"
-      use_hardware = true
-      device = "ibmqx4"
-      num_runs = 1024
+        [qiskit.aer]
+        # Default options for Qiskit Aer
+
+        # set the default backend options for the Qiskit Aer device
+        # Note that, in TOML, dictionary key-value pairs are defined
+        # using '=' rather than ':'.
+        backend_options = {"validation_threshold" = 1e-6}
+
+        [qiskit.ibmq]
+        Default options for IBMQ
+
+        # IBM Quantum Experience authentication token
+        ibmqx_token = "XXX"
+
+        # hardware backend device
+        backend = "ibmq_rome"
+
+        # pass (optional) provider information
+        hub = "MYHUB"
+        group = "MYGROUP"
+        project = "MYPROJECT"
+
 
 Standard PennyLane options are provided under the ``[main]`` section. These apply to all loaded devices.
 Alternatively, options can be specified on a per-plugin basis, by setting the options under

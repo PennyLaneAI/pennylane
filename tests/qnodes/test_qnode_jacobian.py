@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`JacobianQNode` class.
 """
+from unittest import mock
 
 import pytest
 import numpy as np
@@ -215,3 +216,26 @@ class TestBestMethod:
         q = JacobianQNode(circuit, operable_mock_device_2_wires)
         q._construct([np.array([1.0])], {})
         assert q.par_to_grad_method == {0: None}
+
+
+@pytest.mark.parametrize("order", [1, 2])
+@pytest.mark.parametrize("h", [0.01, 0.1])
+def test_finite_difference_options(qubit_device_1_wire, order, h, monkeypatch):
+    """Test that the _pd_finite_diff method for calculating the finite difference gradient
+    correctly receives the options set when the JacobianQNode was instantiated."""
+
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    q = JacobianQNode(circuit, qubit_device_1_wire, order=order, h=h)
+
+    _pd_finite_diff = mock.MagicMock(return_value=0)
+
+    with monkeypatch.context() as m:
+        m.setattr("pennylane.qnodes.jacobian.JacobianQNode._pd_finite_diff", _pd_finite_diff)
+        q.jacobian(0.2)
+        call_kwargs = _pd_finite_diff.call_args[1]
+
+        assert call_kwargs["order"] == order
+        assert call_kwargs["h"] == h

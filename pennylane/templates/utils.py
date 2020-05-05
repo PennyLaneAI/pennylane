@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Utility functions used in the templates.
+Utility functions provided for the templates. These are useful for standard input checks,
+for example to make sure that arguments have the right shape, range or type.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
@@ -21,11 +22,11 @@ import numpy as np
 from pennylane.variable import Variable
 
 
-def _check_no_variable(arg, msg):
-    """Checks that `arg` does not represent or contain a :func:`~.pennylane.Variable` object.
+def check_no_variable(arg, msg):
+    """Checks that ``arg`` does not represent or contain a :func:`~.pennylane.Variable` object.
 
-    This ensures that the user has not passed `arg` to the qnode as a
-    positional argument.
+    This ensures that the user has not passed ``arg`` to the qnode as a
+    primary argument.
 
     Args:
         arg: argument to check
@@ -40,12 +41,13 @@ def _check_no_variable(arg, msg):
             raise ValueError(msg)
 
 
-def _check_wires(wires):
-    """Standard checks for the wires argument.
+def check_wires(wires):
+    """Checks that ``wires`` is either a non-negative integer or a list of non-negative integers.
+
+    If ``wires`` is an integer, wrap it by a list.
 
     Args:
-        wires (int or list): (subset of) wires of a quantum node, a list of positive integers
-                             or a single positive integer
+        wires (int or list[int]): (subset of) wires of a quantum node
 
     Return:
         list: list of wire indices
@@ -68,16 +70,17 @@ def _check_wires(wires):
     return wires
 
 
-def _get_shape(inpt):
-    """Turn ``inpt`` to an array and return its shape.
+def get_shape(inpt):
+    """Turn ``inpt`` into an array and return its shape.
 
     Args:
-        inpt (list): input to a qnode
+        inpt (scalar, list or array): input to a qnode
 
     Returns:
         tuple: shape of ``inpt``
     """
 
+    # avoids incorrect assignment of shape
     if isinstance(inpt, (float, int, complex)):
         shape = ()
 
@@ -97,8 +100,8 @@ def _get_shape(inpt):
     return shape
 
 
-def _check_shape(inpt, target_shape, msg, bound=None):
-    """Checks that the shape of ``inpt`` is equal to the target shape.
+def check_shape(inpt, target_shape, msg, bound=None):
+    """Check that the shape of ``inpt`` is equal to ``target_shape``.
 
     Args:
         inpt (list): input to a qnode
@@ -110,7 +113,7 @@ def _check_shape(inpt, target_shape, msg, bound=None):
         ValueError
     """
 
-    shape = _get_shape(inpt)
+    shape = get_shape(inpt)
 
     if bound == "max":
         if shape > target_shape:
@@ -125,9 +128,9 @@ def _check_shape(inpt, target_shape, msg, bound=None):
     return shape
 
 
-def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
-    """Checks that the shape of elements in the ``inpt`` list are equal to the shapes of elements
-    in the ``target shape`` list.
+def check_shapes(inpt_list, target_shapes, msg, bounds=None):
+    """Check that the shape of elements in the ``inpt`` list are equal to the shapes of elements
+    in the ``target_shapes`` list.
 
     Args:
         inpt_list (list): list of elements of which to check the shape
@@ -144,13 +147,13 @@ def _check_shapes(inpt_list, target_shapes, msg, bounds=None):
         bounds = [None] * len(inpt_list)
 
     shape_list = [
-        _check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)
+        check_shape(l, t, bound=b, msg=msg) for l, t, b in zip(inpt_list, target_shapes, bounds)
     ]
     return shape_list
 
 
-def _check_is_in_options(element, options, msg):
-    """Checks that the value of ``element`` is in ``options``.
+def check_is_in_options(element, options, msg):
+    """Check that the value of ``element`` is in ``options``.
 
     Args:
         element: arbitraty variable
@@ -162,8 +165,8 @@ def _check_is_in_options(element, options, msg):
         raise ValueError(msg)
 
 
-def _check_type(element, types, msg):
-    """Checks that the type of ``element'' is one of ``types``.
+def check_type(element, types, msg):
+    """Check that the type of ``element`` is one of ``types``.
 
     Args:
         element: variable to check
@@ -175,9 +178,8 @@ def _check_type(element, types, msg):
         raise ValueError(msg)
 
 
-def _check_number_of_layers(list_of_weights):
-    """Checks that all weights in ``list_of_weights`` have the same first dimension, which is interpreted
-    as the number of layers.
+def check_number_of_layers(list_of_weights):
+    """Check that all sequences in ``list_of_weights`` have the same first dimension.
 
     Args:
         list_of_weights (list): list of all weights to the template
@@ -189,7 +191,7 @@ def _check_number_of_layers(list_of_weights):
         ValueError
     """
 
-    shapes = [_get_shape(weight) for weight in list_of_weights]
+    shapes = [get_shape(weight) for weight in list_of_weights]
 
     if any(len(s) == 0 for s in shapes):
         raise ValueError(

@@ -36,9 +36,26 @@ State preperations
 Custom templates
 ----------------
 
-Custom templates can be constructed using the template decorator.
+The template decorator can used to register a quantum function as a template.
 
 .. autosummary::
     :toctree:
 
     pennylane.templates.template
+
+Broadcasting function
+---------------------
+
+The broadcast function creates a new template by broadcasting templates (or normal gates) over wires in a
+predefined pattern. You can import this function both via ``qml.broadcast`` and ``qml.templates.broadcast``.
+
+.. autosummary::
+
+    pennylane.broadcast
+
+Utility functions for input checks
+----------------------------------
+
+.. automodapi:: pennylane.templates.utils
+    :no-heading:
+    :include-all-objects:

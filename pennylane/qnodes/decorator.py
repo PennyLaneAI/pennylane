@@ -82,6 +82,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
 
     Keyword Args:
         h (float): step size for the finite-difference method
+        order (int): order for the finite-difference method, must be 1 (default) or 2
     """
     # Set the default model to qubit, for backwards compatability with existing plugins
     # TODO: once all plugins have been updated to add `model` to their
@@ -256,6 +257,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
     Keyword Args:
         h (float): Step size for the finite difference method. Default is ``1e-7`` for analytic devices, or
             ``0.3`` for non-analytic devices (those that estimate expectation values with a finite number of shots).
+        order (int): order for the finite-difference method, must be 1 (default) or 2
    """
 
     @lru_cache()
