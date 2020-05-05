@@ -109,6 +109,10 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> cost_fn = qml.VQECost(circuit, H, dev)
+
+    Once constructed, the cost function can be passed directly to the
+    optimizers ``step`` function:
+
     >>> eta = 0.01
     >>> init_params = [0.011, 0.012]
     >>> opt = qml.QNGOptimizer(eta)
