@@ -496,7 +496,7 @@ class TestJacobianIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "device"])
     def test_jacobian_agrees(self, diff_method, torch_support, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         returns the same result as default.qubit."""
