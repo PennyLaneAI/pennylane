@@ -827,6 +827,7 @@ class TensorN(CVObservable):
     num_wires = AnyWires
     num_params = 0
     par_domain = None
+    ev_order=None
 
 
 class X(CVObservable):
