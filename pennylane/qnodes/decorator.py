@@ -44,7 +44,7 @@ def _get_qnode_class(device, interface, diff_method):
         ~.BaseQNode: the QNode class object that is compatible with the provided device and
         differentiation method
     """
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements,too-many-branches
     model = device.capabilities().get("model", "qubit")
     allows_passthru = device.capabilities().get("passthru", False)
     device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
@@ -76,7 +76,7 @@ def _get_qnode_class(device, interface, diff_method):
             if interface != passthru_interface:
                 raise ValueError(
                     "Device {} only supports the {} interface when "
-                    "diff_method='classical'".format(qnode_.device.short_name, passthru_interface)
+                    "diff_method='classical'".format(device.short_name, passthru_interface)
                 )
             return PassthruQNode
 
@@ -217,6 +217,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     qnode_ = qnode_class(func, device, mutable=mutable, **kwargs)
 
     if not isinstance(qnode_, PassthruQNode):
+        # PassthruQNode's do not support interface conversions
         qnode_ = _apply_interface(qnode_, interface, diff_method)
 
     return qnode_
