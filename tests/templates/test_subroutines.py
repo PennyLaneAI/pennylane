@@ -287,7 +287,7 @@ class TestSingleExcitationOp:
     )
     def test_single_ex_op_operations(self, ph, ref_gates):
         """Test the correctness of the SingleExcitationOp template including the gate count
-        and order, the wires each operation act on and the correct use of parameters 
+        and order, the wires each operation acts on and the correct use of parameters 
         in the circuit."""
 
         sqg = 10
