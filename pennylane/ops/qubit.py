@@ -22,7 +22,7 @@ import functools
 import numpy as np
 
 from pennylane.templates import template
-from pennylane.operation import Any, Observable, Operation, DiagonalOperation
+from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.utils import OperationRecorder, pauli_eigs, expand
 
@@ -704,7 +704,7 @@ class MultiRZ(DiagonalOperation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "R"
     grad_method = "A"
 
@@ -786,7 +786,7 @@ class PauliRot(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_params = 2
-    num_wires = Any
+    num_wires = AnyWires
     do_check_domain = False
     par_domain = "R"
     grad_method = "A"
@@ -1330,7 +1330,7 @@ class QubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1408,7 +1408,7 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1442,7 +1442,7 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1483,7 +1483,7 @@ class Hermitian(Observable):
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
     grad_method = "F"
