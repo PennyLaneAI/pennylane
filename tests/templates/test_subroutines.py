@@ -286,8 +286,9 @@ class TestSingleExcitationOp:
         ]
     )
     def test_single_ex_op_operations(self, ph, ref_gates):
-        """test the gate count and their order of appearance, the wires quantum operations act on 
-        and the weight usage for the SingleExcitationOp template."""
+        """Test the correctness of the SingleExcitationOp template including the gate count
+        and order, the wires each operation act on and the correct use of parameters 
+        in the circuit."""
 
         sqg = 10
         cnots = 4*(ph[1]-ph[0])
