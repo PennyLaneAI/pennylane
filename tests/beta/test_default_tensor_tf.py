@@ -520,10 +520,10 @@ class TestJacobianIntegration:
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
 
-class TestInterfaceIntegration:
+class TestInterfaceDeviceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
-    interfaces."""
+    interfaces, when using the 'device' differentiation method."""
 
     a = -0.234
     b = 0.654
@@ -545,7 +545,7 @@ class TestInterfaceIntegration:
 
         dev = qml.device("default.tensor.tf", wires=2)
 
-        @qnode(dev, diff_method="best", interface=interface)
+        @qnode(dev, diff_method="device", interface=interface)
         def circuit_fn(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
@@ -598,10 +598,11 @@ class TestInterfaceIntegration:
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
 
-class TestHybridInterfaceIntegration:
+class TestHybridInterfaceDeviceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
-    interfaces in the case of hybrid-classical computation."""
+    interfaces in the case of hybrid-classical computation, when using the
+    device differentiation option."""
 
     theta = 0.543
     phi = -0.234
@@ -632,7 +633,7 @@ class TestHybridInterfaceIntegration:
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
 
-        @qnode(dev, diff_method="best", interface=interface)
+        @qnode(dev, diff_method="device", interface=interface)
         def circuit(x, weights, w=None):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
