@@ -73,9 +73,10 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The QNG optimizer **only supports single QNodes** as objective functions.
+        The QNG optimizer supports single QNodes or VQECost objects as objective functions.
+        Alternatively, metric_tensor_fn can directly be provided to the optimizer.
 
-        In particular:
+        For the following cases, providing metric_tensor_fn may be useful:
 
         * For hybrid classical-quantum models, the "mixed geometry" of the model
           makes it unclear which metric should be used for which parameter.
@@ -85,6 +86,53 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
+
+        If the objective function is VQE/VQE-like, i.e. a function of a group
+        of QNodes that share an ansatz, there are two ways to use the optimizer:
+
+        * Realize the objective function as a VQECost object, which has
+          the metric_tensor function.
+
+        * Manually provide the metric_tensor_fn as the metric_tensor of
+          one of the QNodes in the group of QNodes involved in the objective function.
+
+    **Examples:**
+
+    For VQE/VQE-like problems, the objective function for the optimizer can be
+    realized as a VQECost object.
+
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> def circuit(params, wires=0):
+    >>>     qml.RX(params[0], wires=wires)
+    >>>     qml.RY(params[1], wires=wires)
+    >>> coeffs = [1, 1]
+    >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> cost_fn = qml.VQECost(circuit, H, dev)
+    >>> eta = 0.01
+    >>> init_params = [0.011, 0.012]
+    >>> opt = qml.QNGOptimizer(eta)
+    >>> theta_new = opt.step(cost_fn, init_params)
+    >>> print(theta_new)
+    [0.011445239214543481, -0.027519522461477233]
+
+    Alternatively, the same objective function can be used for the optimizer
+    by manually providing the metric_tensor_fn.
+
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> def circuit(params, wires=0):
+    >>>     qml.RX(params[0], wires=wires)
+    >>>     qml.RY(params[1], wires=wires)
+    >>> coeffs = [1, 1]
+    >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
+    >>> qnodes = qml.map(circuit, obs, dev, 'expval')
+    >>> cost_fn = qml.dot(coeffs, qnodes)
+    >>> eta = 0.01
+    >>> init_params = [0.011, 0.012]
+    >>> opt = qml.QNGOptimizer(eta)
+    >>> theta_new = opt.step(cost_fn, init_params, metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
+    >>> print(theta_new)
+    [0.011445239214543481, -0.027519522461477233]
 
     .. seealso::
 
@@ -127,7 +175,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "
-                "a VQECost object for the natural gradient to be automatically computed.
+                "a VQECost object for the natural gradient to be automatically computed."
                 "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
             )
 
