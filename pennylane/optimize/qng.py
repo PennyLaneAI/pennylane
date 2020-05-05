@@ -123,12 +123,6 @@ class QNGOptimizer(GradientDescentOptimizer):
     Alternatively, the same objective function can be used for the optimizer
     by manually providing the metric_tensor_fn.
 
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> def circuit(params, wires=0):
-    >>>     qml.RX(params[0], wires=wires)
-    >>>     qml.RY(params[1], wires=wires)
-    >>> coeffs = [1, 1]
-    >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
     >>> qnodes = qml.map(circuit, obs, dev, 'expval')
     >>> cost_fn = qml.dot(coeffs, qnodes)
     >>> eta = 0.01
