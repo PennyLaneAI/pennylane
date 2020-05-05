@@ -46,11 +46,10 @@ def _get_qnode_class(device, interface, diff_method):
     """
     # pylint: disable=too-many-return-statements,too-many-branches
     model = device.capabilities().get("model", "qubit")
-    allows_passthru = device.capabilities().get("passthru", False)
+    passthru_interface = device.capabilities().get("passthru_interface", None)
     device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
-    if allows_passthru:
-        passthru_interface = device.capabilities()["passthru_interface"]
+    allows_passthru = passthru_interface is not None
 
     if diff_method is None:
         # QNode is not differentiable
@@ -58,10 +57,9 @@ def _get_qnode_class(device, interface, diff_method):
 
     if diff_method == "best":
 
-        if allows_passthru:
-            if interface == passthru_interface:
-                # hand off differentiation to the device without type conversion
-                return PassthruQNode
+        if allows_passthru and interface == passthru_interface:
+            # hand off differentiation to the device without type conversion
+            return PassthruQNode
 
         if device_provides_jacobian:
             # hand off differentiation to the device

@@ -259,7 +259,6 @@ class DefaultTensorTF(DefaultTensor):
         "model": "qubit",
         "tensor_observables": True,
         "provides_jacobian": True,
-        "passthru": True,
         "passthru_interface": "tf",
     }
 
