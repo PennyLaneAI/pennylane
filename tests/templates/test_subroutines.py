@@ -19,7 +19,8 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines import Interferometer
+from pennylane.templates.subroutines import (Interferometer,
+                                             SingleExcitationOp)
 
 
 class TestInterferometer:
@@ -253,3 +254,59 @@ class TestInterferometer:
         jac_A = circuit.jacobian((theta, phi, varphi), method="A")
         jac_F = circuit.jacobian((theta, phi, varphi), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)
+
+
+class TestSingleExcitationOp:
+    """Tests for the SingleExcitationOp template from the pennylane.templates.subroutine module."""
+
+    @pytest.mark.parametrize(
+        ("ph", "ref_gates"),
+        [
+        ([0,2],   [[0 , qml.RX      , [0]  , [-np.pi/2]] , [1 , qml.Hadamard, [2], []],
+                   [7 , qml.RX      , [0]  , [ np.pi/2]] , [8 , qml.Hadamard, [2], []],
+                   [9 , qml.Hadamard, [0]  , []]         , [10, qml.RX      , [2], [-np.pi/2]],
+                   [16, qml.Hadamard, [0]  , []]         , [17, qml.RX      , [2], [ np.pi/2]],
+                   [4 , qml.RZ      , [2]  , [np.pi/6]]  , [13, qml.RZ      , [2], [-np.pi/6]]]
+                   ),
+
+        ([10,11], [[0 , qml.RX      , [10]  , [-np.pi/2]] , [1 , qml.Hadamard, [11], []],
+                   [12, qml.Hadamard, [10]  , []]         , [13, qml.RX      , [11], [ np.pi/2]],
+                   [3 , qml.RZ      , [11], [np.pi/6]]    , [10, qml.RZ      , [11], [-np.pi/6]]]
+                   ),        
+
+        ([1,4],   [[2 , qml.CNOT, [1,2], []], [3 , qml.CNOT, [2,3], []], [4 , qml.CNOT, [3,4], []],
+                   [6 , qml.CNOT, [3,4], []], [7 , qml.CNOT, [2,3], []], [8 , qml.CNOT, [1,2], []],
+                   [13, qml.CNOT, [1,2], []], [14, qml.CNOT, [2,3], []], [15, qml.CNOT, [3,4], []],
+                   [17, qml.CNOT, [3,4], []], [18, qml.CNOT, [2,3], []], [19, qml.CNOT, [1,2], []]]
+                   ),
+
+        ([10,11], [[2 , qml.CNOT, [10,11] , []], [4  , qml.CNOT, [10,11], []],
+                   [9 , qml.CNOT, [10,11] , []], [11 , qml.CNOT, [10,11], []]]
+                   )        
+        ]
+    )
+    def test_single_ex_op_operations(self, ph, ref_gates):
+        """test the gate count and their order of appearance, the wires quantum operations act on 
+        and the weight usage for the SingleExcitationOp template."""
+
+        sqg = 10
+        cnots = 4*(ph[1]-ph[0])
+        weight = np.pi/3
+        with qml.utils.OperationRecorder() as rec:
+            SingleExcitationOp(weight, wires=ph)
+
+        idx = ref_gates[0][0]
+
+        exp_gate = ref_gates[0][1]
+        res_gate = rec.queue[idx]
+
+        exp_wires = ref_gates[0][2]
+        res_wires = rec.queue[idx]._wires
+
+        exp_weight = ref_gates[0][3]
+        res_weight = rec.queue[idx].parameters        
+
+        assert len(rec.queue) == sqg + cnots
+        assert isinstance(res_gate, exp_gate) 
+        assert res_wires == exp_wires
+        assert res_weight == exp_weight
