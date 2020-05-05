@@ -1362,7 +1362,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
