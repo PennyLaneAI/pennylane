@@ -90,8 +90,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         If the objective function is VQE/VQE-like, i.e. a function of a group
         of QNodes that share an ansatz, there are two ways to use the optimizer:
 
-        * Realize the objective function as a VQECost object, which has
-          the metric_tensor function.
+        * Realize the objective function as a :class:`~.VQECost` object, which has
+          a ``metric_tensor`` method.
 
         * Manually provide the metric_tensor_fn as the metric_tensor of
           one of the QNodes in the group of QNodes involved in the objective function.
