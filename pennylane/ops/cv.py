@@ -809,7 +809,7 @@ class NumberOperator(CVObservable):
 
 class TensorN(CVObservable):
     r"""pennylane.ops.TensorN(wires)
-    The tensor product of the :class:`~.NumberOperator`.
+    The tensor product of the :class:`~.NumberOperator` acting on different wires.
 
     When used with the :func:`~.expval` function, the expectation value
     :math:`\langle \hat{n}_{i_0} \hat{n}_{i_1}\dots \hat{n}_{i_{N-1}}\rangle`
