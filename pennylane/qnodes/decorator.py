@@ -43,6 +43,7 @@ def _get_qnode_class(device, diff_method):
         ~.BaseQNode: the QNode class object that is compatible with the provided device and
         differentiation method
     """
+    # pylint: disable=too-many-return-statements
     model = device.capabilities().get("model", "qubit")
     allows_passthru = device.capabilities().get("passthru", False)
     device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
@@ -71,7 +72,7 @@ def _get_qnode_class(device, diff_method):
 
         raise ValueError(
             "The {} device does not support native computations with "
-            "autodifferentiation frameworks.".format(device)
+            "autodifferentiation frameworks.".format(device.short_name)
         )
 
     if diff_method == "device":
@@ -80,7 +81,7 @@ def _get_qnode_class(device, diff_method):
 
         raise ValueError(
             "The {} device does not provide a native method "
-            "for computing the jacobian.".format(device)
+            "for computing the jacobian.".format(device.short_name)
         )
 
     if diff_method == "parameter-shift":
@@ -90,7 +91,7 @@ def _get_qnode_class(device, diff_method):
 
         raise ValueError(
             "The {} device does not provide a native method "
-            "for computing the jacobian.".format(device)
+            "for computing the jacobian.".format(device.short_name)
         )
 
     if diff_method in ALLOWED_DIFF_METHODS:
@@ -103,11 +104,11 @@ def _get_qnode_class(device, diff_method):
     )
 
 
-def _apply_interface(qnode, interface, diff_method):
+def _apply_interface(qnode_, interface, diff_method):
     """Applies an interface to a specified QNode.
 
     Args:
-        qnode (~.BaseQNode): the QNode to which the interface is applied
+        qnode_ (~.BaseQNode): the QNode to which the interface is applied
         interface (str): the interface that will be used for classical backpropagation
         diff_method (str, None): the method of differentiation to use in the created QNode
 
@@ -117,26 +118,26 @@ def _apply_interface(qnode, interface, diff_method):
     Returns:
         callable: the QNode method that creates the interface
     """
-    if interface is None:
-        # if no interface is specified, return the 'bare' QNode
-        return qnode
-
-    if isinstance(qnode, PassthruQNode):
+    if diff_method == "classical" and interface is not None:
         raise ValueError(
             "When creating a classical backpropagation QNode, the interface "
             "should not be specified. Simply use the machine learning library "
             "supported by the device when using the QNode."
         )
 
+    if interface is None:
+        # if no interface is specified, return the 'bare' QNode
+        return qnode_
+
     if interface == "torch":
-        return qnode.to_torch()
+        return qnode_.to_torch()
 
     if interface == "tf":
-        return qnode.to_tf()
+        return qnode_.to_tf()
 
     if interface in ("autograd", "numpy"):
         # keep "numpy" for backwards compatibility
-        return qnode.to_autograd()
+        return qnode_.to_autograd()
 
     raise ValueError(
         "Interface {} not recognized. Allowed "
@@ -210,9 +211,9 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
         order (int): order for the finite-difference method, must be 1 (default) or 2
     """
     qnode_class = _get_qnode_class(device, diff_method)
-    qnode = qnode_class(func, device, mutable=mutable, **kwargs)
-    qnode = _apply_interface(qnode, interface, diff_method)
-    return qnode
+    qnode_ = qnode_class(func, device, mutable=mutable, **kwargs)
+    qnode_ = _apply_interface(qnode_, interface, diff_method)
+    return qnode_
 
 
 def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **kwargs):
