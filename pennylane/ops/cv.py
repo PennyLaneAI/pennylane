@@ -822,7 +822,7 @@ class TensorN(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 0
     par_domain = None
 
