@@ -29,84 +29,19 @@ ALLOWED_DIFF_METHODS = ("best", "classical", "device", "parameter-shift", "finit
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
-def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", **kwargs):
-    """QNode constructor for creating QNodes.
-
-    When applied to a quantum function and device, converts it into
-    a :class:`QNode` instance.
-
-    **Example:**
-
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=0)
-    >>>     return qml.expval(qml.PauliZ(0))
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> qnode = QNode(circuit, dev)
-
-    Args:
-        func (callable): a quantum function
-        device (~.Device): a PennyLane-compatible device
-        interface (str): The interface that will be used for classical backpropagation.
-            This affects the types of objects that can be passed to/returned from the QNode:
-
-            * ``interface='autograd'``: Allows autograd to backpropogate
-              through the QNode. The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
-              and returns NumPy arrays.
-
-            * ``interface='torch'``: Allows PyTorch to backpropogate
-              through the QNode.The QNode accepts and returns Torch tensors.
-
-            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
-              through the QNode.The QNode accepts and returns
-              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
-
-            * ``None``: The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
-              and returns NumPy arrays. It does not connect to any
-              machine learning library automatically for backpropagation.
-
-        mutable (bool): whether the QNode circuit is mutable
-        diff_method (str, None): the method of differentiation to use in the created QNode.
-
-            * ``"best"``: Best available method. Uses the device directly to compute
-              the gradient if supported, otherwise will use the analytic parameter-shift
-              rule where possible with finite-difference as a fallback.
-
-            * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible with finite-difference as a fallback.
-
-            * ``"finite-diff"``: Uses numerical finite-differences.
-
-            * ``None``: a non-differentiable QNode is returned.
-
-    Keyword Args:
-        h (float): step size for the finite-difference method
-        order (int): order for the finite-difference method, must be 1 (default) or 2
-    """
-    # Set the default model to qubit, for backwards compatability with existing plugins
-    # TODO: once all plugins have been updated to add `model` to their
-    # capabilities dictionary, update the logic here
-    qnode_class = _get_qnode_class(device, diff_method)
-    qnode = qnode_class(func, device, mutable=mutable, **kwargs)
-
-    qnode = _apply_interface(qnode, interface, diff_method)
-    return qnode
-
-
 def _get_qnode_class(device, diff_method):
     """Returns the class for the specified QNode.
 
     Args:
         device (~.Device): a PennyLane-compatible device
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str, None): the method of differentiation to use in the created QNode
 
     Raises:
-        ValueError: if an unrecognized ``diff_method`` is defined
+        ValueError: if an unrecognized ``diff_method`` is provided
 
     Returns:
-       ~.BaseQNode: the QNode class object that is compatible with the provided device and
-           differentiation method
+        ~.BaseQNode: the QNode class object that is compatible with the provided device and
+        differentiation method
     """
     model = device.capabilities().get("model", "qubit")
     allows_passthru = device.capabilities().get("passthru", False)
@@ -173,17 +108,26 @@ def _apply_interface(qnode, interface, diff_method):
 
     Args:
         qnode (~.BaseQNode): the QNode to which the interface is applied
-        device_provides_jacobian (bool): specifies whether or not the device
-            provides a jacobian
-        model (str): the quantum information model the device is using.
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        interface (str): the interface that will be used for classical backpropagation
+        diff_method (str, None): the method of differentiation to use in the created QNode
 
     Raises:
-        ValueError: if an unrecognized ``interface`` is defined
+        ValueError: if an unrecognized or invalid ``interface`` is provided
 
     Returns:
-       callable: the QNode method that creates the interface
+        callable: the QNode method that creates the interface
     """
+    if interface is None:
+        # if no interface is specified, return the 'bare' QNode
+        return qnode
+
+    if isinstance(qnode, PassthruQNode):
+        raise ValueError(
+            "When creating a classical backpropagation QNode, the interface "
+            "should not be specified. Simply use the machine learning library "
+            "supported by the device when using the QNode."
+        )
+
     if interface == "torch":
         return qnode.to_torch()
 
@@ -194,14 +138,81 @@ def _apply_interface(qnode, interface, diff_method):
         # keep "numpy" for backwards compatibility
         return qnode.to_autograd()
 
-    if interface is None:
-        # if no interface is specified, return the 'bare' QNode
-        return qnode
-
     raise ValueError(
         "Interface {} not recognized. Allowed "
         "interfaces are {}".format(diff_method, ALLOWED_INTERFACES)
     )
+
+
+def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best", **kwargs):
+    """QNode constructor for creating QNodes.
+
+    When applied to a quantum function and device, converts it into
+    a :class:`QNode` instance.
+
+    **Example**
+
+    >>> def circuit(x):
+    >>>     qml.RX(x, wires=0)
+    >>>     return qml.expval(qml.PauliZ(0))
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> qnode = QNode(circuit, dev)
+
+    Args:
+        func (callable): a quantum function
+        device (~.Device): a PennyLane-compatible device
+        interface (str): The interface that will be used for classical backpropagation.
+            This affects the types of objects that can be passed to/returned from the QNode:
+
+            * ``interface='autograd'``: Allows autograd to backpropogate
+              through the QNode. The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``interface='torch'``: Allows PyTorch to backpropogate
+              through the QNode. The QNode accepts and returns Torch tensors.
+
+            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+              through the QNode. The QNode accepts and returns
+              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
+
+            * ``None``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays. It does not connect to any
+              machine learning library automatically for backpropagation.
+
+        mutable (bool): whether the QNode circuit is mutable
+        diff_method (str, None): the method of differentiation to use in the created QNode.
+
+            * ``"best"``: Best available method. Uses the device directly to compute
+              the gradient if supported, otherwise will use the analytic parameter-shift
+              rule where possible with finite-difference as a fallback.
+
+            * ``"classical"``: Use classical backpropagation. Only allowed on simulator
+              devices that are classically end-to-end differentiable, for example
+              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
+              QNode can only be used with the machine learning framework supported
+              by the device; a separate ``interface`` argument should not be passed.
+
+            * ``"device"``: Queries the device directly for the gradient.
+              Only allowed on devices that provide their own gradient rules.
+
+            * ``"parameter-shift"``: Use the analytic parameter-shift
+              rule where possible, with finite-difference as a fallback.
+
+            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
+
+            * ``None``: a non-differentiable QNode is returned.
+
+    Keyword Args:
+        h (float): Step size for the finite difference method. Default is ``1e-7`` for analytic devices, or
+            ``0.3`` for non-analytic devices (those that estimate expectation values with a finite number of shots).
+        order (int): order for the finite-difference method, must be 1 (default) or 2
+    """
+    qnode_class = _get_qnode_class(device, diff_method)
+    qnode = qnode_class(func, device, mutable=mutable, **kwargs)
+    qnode = _apply_interface(qnode, interface, diff_method)
+    return qnode
 
 
 def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **kwargs):
@@ -210,7 +221,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
     When applied to a quantum function, this decorator converts it into
     a :class:`QNode` instance.
 
-    **Example:**
+    **Example**
 
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
@@ -229,10 +240,10 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
               and returns NumPy arrays.
 
             * ``interface='torch'``: Allows PyTorch to backpropogate
-              through the QNode.The QNode accepts and returns Torch tensors.
+              through the QNode. The QNode accepts and returns Torch tensors.
 
             * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
-              through the QNode.The QNode accepts and returns
+              through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
             * ``None``: The QNode accepts default Python types
@@ -247,10 +258,19 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
               the gradient if supported, otherwise will use the analytic parameter-shift
               rule where possible with finite-difference as a fallback.
 
-            * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible with finite-difference as a fallback.
+            * ``"classical"``: Use classical backpropagation. Only allowed on simulator
+              devices that are classically end-to-end differentiable, for example
+              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
+              QNode can only be used with the machine learning framework supported
+              by the device; a separate ``interface`` argument should not be passed.
 
-            * ``"finite-diff"``: Uses numerical finite-differences.
+            * ``"device"``: Queries the device directly for the gradient.
+              Only allowed on devices that provide their own gradient rules.
+
+            * ``"parameter-shift"``: Use the analytic parameter-shift
+              rule where possible, with finite-difference as a fallback.
+
+            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
 
             * ``None``: a non-differentiable QNode is returned.
 
