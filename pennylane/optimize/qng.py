@@ -93,8 +93,8 @@ class QNGOptimizer(GradientDescentOptimizer):
         * Realize the objective function as a :class:`~.VQECost` object, which has
           a ``metric_tensor`` method.
 
-        * Manually provide the metric_tensor_fn as the metric_tensor of
-          one of the QNodes in the group of QNodes involved in the objective function.
+        * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
+          of the QNode(s) involved in the objective function.
 
     **Examples:**
 
