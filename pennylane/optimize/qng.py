@@ -103,8 +103,8 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     >>> dev = qml.device("default.qubit", wires=1)
     >>> def circuit(params, wires=0):
-    >>>     qml.RX(params[0], wires=wires)
-    >>>     qml.RY(params[1], wires=wires)
+    ...     qml.RX(params[0], wires=wires)
+    ...     qml.RY(params[1], wires=wires)
     >>> coeffs = [1, 1]
     >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
     >>> H = qml.Hamiltonian(coeffs, obs)
