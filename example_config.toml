@@ -7,90 +7,100 @@
 ##
 ## To overide these default configuration settings per device/plugin,
 ## please use the per-device settings below.
-
-## set the default number of shots/runs used
-## to determine expectation value statistics
 ##
 ## Some example configuration settings are shown here in lines
 ## commented with a single # character. For any of the options to take
 ## effect, uncomment the line with a single # character and modify
 ## the value (if desired).
-#[main]
-#shots = 1000
 
-# =================================================================
-#     PLUGIN AND DEVICE OPTIONS
-# =================================================================
+[main]
+# shots = 1000
+
+## =================================================================
+##     PLUGIN AND DEVICE OPTIONS
+## =================================================================
 ## This section contains the PennyLane configuration options for each
 ## installed plugin or device. These configuration options allow you
 ## to set global configuration options on a device-by-device basis.
 ## and to also set options specific to certain device.
+##
+## You may add additional plugin- and device-specific options here.
+## Options that apply globally to all devices within a single plugin
+## are grouped under the
+##
+##   [plugin.global]
+##
+## heading. Options that apply only to a specific device are grouped
+## under the
+##
+##   [plugin.device]
+##
+## heading.
 
-#[default.gaussian]
-#hbar = 2
+[default.gaussian]
+# hbar = 2
 
 
-#[strawberryfields.global]
+[strawberryfields.global]
 ## Global options for the StrawberryFields plugin.
 ## If not specified, the PennyLane default is used.
 ##
 ## These global options may be overwritten by specifying
 ## the defaults for the Fock and Gaussian simulators below.
+##
+## For more details, see the PennyLane-SF documentation:
+## https://pennylane-sf.readthedocs.io
 
 ## Set the default value of hbar
-#hbar = 1
+# hbar = 2
 
 ## set the default number of shots/runs used
 ## to determine expectation value statistics
 # shots = 1000
-# analytic = True
+# analytic = true
 
-    #[strawberryfields.fock]
+    [strawberryfields.fock]
     ## Default options for the Fock simulator
 
     ## Set the default Fock space truncation
-    #cutoff_dim = 10
+    # cutoff_dim = 10
 
     ## set the default number of shots
     # shots = 1000
 
-    ## Set the default value of hbar
-    # hbar = 1
-
-    #[strawberryfields.gaussian]
+    [strawberryfields.gaussian]
     ## Default options for the Gaussian simulator
 
     ## set the default number of shots
     # shots = 1000
 
     ## Set the default value of hbar
-    # hbar = 1
+    # hbar = 2
 
-#[projectq.global]
-## Options for the ProjectQ plugin.
+[qiskit.global]
+## Global options for the Qiskit plugin.
+## For more details, see the PennyLane-Qiskit documentation:
+## https://pennylaneqiskit.readthedocs.io/en/latest/index.html
 
-    #[projectq.simulator]
-    ## If True, gates are cached and only executed once a
-    ## certain gate-size has been reached
-    # gate_fusion = True
+# backend = "qasm_simulator"
 
-    ## Random seed (uses random.randint(0, 4294967295) by default)
-    # rnd_seed = 42
+    [qiskit.aer]
+    ## Default options for Qiskit Aer
 
-    #[projectq.ibm]
-    ## IBM Quantum Experience user name and password
-    # user =
-    # password =
+    ## set the default backend for the Qiskit Aer device
+    # backend = "unitary_simulator"
+    # backend_options = {"validation_threshold" = 1e-6}
 
-    ## Whether to use the IBM quantum chip instead of the IBM simulator
-    # use_hardware = true
+    [qiskit.ibmq]
+    ## Default options for IBMQ
 
-    ## Device to use (‘ibmqx4’, or ‘ibmqx5’)
-    # device = ‘ibmqx4’
+    ## IBM Quantum Experience authentication token
+    # ibmqx_token = "XXX"
 
-    ## Number of runs used to collect statistics
-    # num_runs = 1024
+    ## hardware backend device
+    # backend = "ibmq_rome"
 
-    ## If True, statistics are printed, in addition to the
-    ## measurement result being registered (at the end of the circuit).
-    # verbose = false
+    ## pass optional provider information
+    # hub = "MYHUB"
+    # group = "MYGROUP"
+    # project = "MYPROJECT"
