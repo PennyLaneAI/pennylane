@@ -846,8 +846,8 @@ class TensorN(CVObservable):
     ev_order = None
 
     def __new__(cls, *params, wires=None, do_queue=True):
-        # Defining the new constructor for the case when a single
-        # NumberOperator is defined
+        # Custom definition for __new__ needed such that a NumberOperator can
+        # be returned when a single mode is defined
 
         if wires is None:
             wires = params[-1]
@@ -858,6 +858,8 @@ class TensorN(CVObservable):
         else:
             instance = super().__new__(cls)
 
+        # Need to call __init__ as it is not being invoked with a custom
+        # __new__ method
         instance.__init__(*params, wires=wires, do_queue=do_queue)
         return instance
 
