@@ -227,6 +227,6 @@ class VQECost:
             array[float]: metric tensor
         """
         # We know that for VQE, all the qnodes share the same ansatz so we select the first
-        return self.qnodes.qnodes[0].metric_tensor(args=args, kwargs=kwargs,
-                                                   diag_approx=diag_approx,
-                                                   only_construct=only_construct)
+        return self.qnodes.qnodes[0].metric_tensor(
+            args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
+        )
