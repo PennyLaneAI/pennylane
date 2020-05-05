@@ -7,11 +7,45 @@
   state with the minimal number of parameters.
   [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
 
+* Added the ``IQPEmbeddings`` template, which encodes inputs into the diagonal gates of an 
+  IQP circuit. 
+  [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
+  
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/iqp.png"
+  width=50%></img>
+  
+  A typical usage example of the template is the following:
+
+  ```python
+    dev = qml.device('default.qubit', wires=3)
+
+    @qml.qnode(dev)
+    def circuit(features=None):
+        qml.templates.IQPEmbedding(features=features, wires=range(3))
+        return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+    circuit(features=[1., 2., 3.])
+  ```
+  
 * PennyLane's benchmarking tool now supports the comparison of different git revisions.
   [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
-
-* The ``templates.broadcast`` function can now take custom patterns.
+  
+* The ``templates.broadcast`` function can now take custom patterns. 
+  A custom pattern specifies the wires to which ``unitary`` is applied.
   [(#603)](https://github.com/XanaduAI/pennylane/pull/603)
+  
+  ```python
+      dev = qml.device('default.qubit', wires=5)
+
+      pattern = [[0, 1], [3, 4]]
+
+      @qml.qnode(dev)
+      def circuit():
+          broadcast(unitary=qml.CNOT, pattern=pattern, wires=range(5))
+          return qml.expval(qml.PauliZ(0))
+
+      circuit()
+    ```
 
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
@@ -184,6 +218,15 @@
 
 <h3>Breaking changes</h3>
 
+* The internal variables ``All`` and ``Any`` to mark a gate to act on all or any 
+  wires were refactored to ``AllWires`` and ``AnyWires`` and their class to
+  ``ActsOn``. 
+  [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
+
+  For example, ``AllWires`` can now be imported via
+  
+  >>> qml.operations.ActsOn.AllWires
+                                                                                                                                                                                                                                                                                                      >
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
