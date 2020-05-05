@@ -125,7 +125,11 @@ class QNGOptimizer(GradientDescentOptimizer):
         """
         # pylint: disable=arguments-differ
         if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
-            raise ValueError("Objective function must be encoded as a single QNode")
+            raise ValueError(
+                "The objective function must either be encoded as a single QNode or "
+                "a VQECost object for the natural gradient to be automatically computed.
+                "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
+            )
 
         if recompute_tensor or self.metric_tensor is None:
             if not metric_tensor_fn:
