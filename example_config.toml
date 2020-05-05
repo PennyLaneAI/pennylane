@@ -1,0 +1,106 @@
+## =================================================================
+##     MAIN PENNYLANE CONFIGURATION OPTIONS
+## =================================================================
+## This section contains the main PennyLane configuration options.
+## These options apply globally to PennyLane and all loaded plugins
+## and devices which support them.
+##
+## To overide these default configuration settings per device/plugin,
+## please use the per-device settings below.
+##
+## Some example configuration settings are shown here in lines
+## commented with a single # character. For any of the options to take
+## effect, uncomment the line with a single # character and modify
+## the value (if desired).
+
+[main]
+# shots = 1000
+
+## =================================================================
+##     PLUGIN AND DEVICE OPTIONS
+## =================================================================
+## This section contains the PennyLane configuration options for each
+## installed plugin or device. These configuration options allow you
+## to set global configuration options on a device-by-device basis.
+## and to also set options specific to certain device.
+##
+## You may add additional plugin- and device-specific options here.
+## Options that apply globally to all devices within a single plugin
+## are grouped under the
+##
+##   [plugin.global]
+##
+## heading. Options that apply only to a specific device are grouped
+## under the
+##
+##   [plugin.device]
+##
+## heading.
+
+[default.gaussian]
+# hbar = 2
+
+
+[strawberryfields.global]
+## Global options for the StrawberryFields plugin.
+## If not specified, the PennyLane default is used.
+##
+## These global options may be overwritten by specifying
+## the defaults for the Fock and Gaussian simulators below.
+##
+## For more details, see the PennyLane-SF documentation:
+## https://pennylane-sf.readthedocs.io
+
+## Set the default value of hbar
+# hbar = 2
+
+## set the default number of shots/runs used
+## to determine expectation value statistics
+# shots = 1000
+# analytic = true
+
+    [strawberryfields.fock]
+    ## Default options for the Fock simulator
+
+    ## Set the default Fock space truncation
+    # cutoff_dim = 10
+
+    ## set the default number of shots
+    # shots = 1000
+
+    [strawberryfields.gaussian]
+    ## Default options for the Gaussian simulator
+
+    ## set the default number of shots
+    # shots = 1000
+
+    ## Set the default value of hbar
+    # hbar = 2
+
+[qiskit.global]
+## Global options for the Qiskit plugin.
+## For more details, see the PennyLane-Qiskit documentation:
+## https://pennylaneqiskit.readthedocs.io/en/latest/index.html
+
+# backend = "qasm_simulator"
+
+    [qiskit.aer]
+    ## Default options for Qiskit Aer
+
+    ## set the default backend for the Qiskit Aer device
+    # backend = "unitary_simulator"
+    # backend_options = {"validation_threshold" = 1e-6}
+
+    [qiskit.ibmq]
+    ## Default options for IBMQ
+
+    ## IBM Quantum Experience authentication token
+    # ibmqx_token = "XXX"
+
+    ## hardware backend device
+    # backend = "ibmq_rome"
+
+    ## pass optional provider information
+    # hub = "MYHUB"
+    # group = "MYGROUP"
+    # project = "MYPROJECT"

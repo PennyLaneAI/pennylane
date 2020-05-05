@@ -174,7 +174,11 @@ class JacobianQNode(BaseQNode):
           possible, otherwise finite difference.
 
         * Device method (``'device'``): Delegates the computation of the Jacobian to the
-          device executing the circuit.
+          device executing the circuit. Only supported by devices that provide their
+          own method for computing derivatives; support can be checked by
+          querying the device capabilities: ``dev.capabilities()['provides_jacobian']`` must
+          return ``True``. Examples of supported devices include the experimental
+          :class:`"default.tensor.tf" <~.DefaultTensorTF>` device.
 
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
