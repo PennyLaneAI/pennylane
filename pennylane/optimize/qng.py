@@ -74,7 +74,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     .. note::
 
         The QNG optimizer supports single QNodes or :class:`~.VQECost` objects as objective functions.
-        Alternatively, the metric tensor can directly be provided to the :func:`step` metho of the optimizer, 
+        Alternatively, the metric tensor can directly be provided to the :func:`step` method of the optimizer,
         using the ``metric_tensor_fn`` argument.
 
         For the following cases, providing metric_tensor_fn may be useful:
