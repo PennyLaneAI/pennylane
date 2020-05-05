@@ -88,7 +88,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
 
-        If the objective function is VQE/VQE-like, i.e. a function of a group
+        If the objective function is VQE/VQE-like, i.e., a function of a group
         of QNodes that share an ansatz, there are two ways to use the optimizer:
 
         * Realize the objective function as a :class:`~.VQECost` object, which has
@@ -112,7 +112,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> cost_fn = qml.VQECost(circuit, H, dev)
 
     Once constructed, the cost function can be passed directly to the
-    optimizers ``step`` function:
+    optimizer's ``step`` function:
 
     >>> eta = 0.01
     >>> init_params = [0.011, 0.012]
@@ -122,7 +122,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     [0.011445239214543481, -0.027519522461477233]
 
     Alternatively, the same objective function can be used for the optimizer
-    by manually providing the metric_tensor_fn.
+    by manually providing the ``metric_tensor_fn``.
 
     >>> qnodes = qml.map(circuit, obs, dev, 'expval')
     >>> cost_fn = qml.dot(coeffs, qnodes)
