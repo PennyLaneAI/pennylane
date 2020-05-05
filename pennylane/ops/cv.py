@@ -32,6 +32,8 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
+# Disabling as the qubit based ``decomposition``, ``_matrix``,
+# ``diagonalizing_gates`` abstract methods are not defined
 # pylint: disable=abstract-method
 
 import numpy as np
