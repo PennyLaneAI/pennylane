@@ -569,12 +569,11 @@ class TestQAOAEmbedding:
         res = circuit(x=features[:n_subsystems])
         assert np.allclose(res, target, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize('features, weights, target', [([np.pi / 2, 0], [[np.pi, 0, 0]], [-1, 1]),
-                                                           ([0, np.pi / 2], [[np.pi, 0, 0]], [1, -1]),
-                                                           ([np.pi / 2, np.pi / 2], [[np.pi, 0, 0]], [-1, -1])])
-    def test_qaoa_embedding_state_features_and_zz(self, features, weights, target, tol):
-        """Checks the state produced by QAOAEmbedding() is correct if the features and weights are nonzero.
-        Uses RY local fields."""
+    @pytest.mark.parametrize('weights, target', [([[np.pi, 0, 0], [0, 0, 0]], [1, 1]),
+                                                 ([[np.pi / 2, 0, 0], [0, 0, 0]], [0, 0]),
+                                                 ([[0, 0, 0], [0, 0, 0]], [-1, -1])])
+    def test_qaoa_embedding_state_features_and_zz(self, weights, target, tol):
+        """Checks the output if the features and entangler weights are nonzero."""
 
         dev = qml.device('default.qubit', wires=2)
 
@@ -586,7 +585,8 @@ class TestQAOAEmbedding:
             qml.RX(-np.pi/2, wires=1)
             return [qml.expval(qml.PauliZ(i)) for i in range(2)]
 
-        res = circuit(x=features)
+        res = circuit(x=[np.pi/2, np.pi/2])
+        
         assert np.allclose(res, target, atol=tol, rtol=0)
 
     @pytest.mark.parametrize('n_wires, features, weights, target', [(2, [0], [[0, 0, np.pi / 2]], [1, 0]),
