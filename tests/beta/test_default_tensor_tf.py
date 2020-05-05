@@ -388,6 +388,7 @@ class TestQNodeIntegration:
         assert dev.analytic
         assert dev.short_name == "default.tensor.tf"
         assert dev.capabilities()["provides_jacobian"]
+        assert dev.capabilities()["passthru_interface"] == "tf"
 
     @pytest.mark.parametrize("decorator", [qml.qnode, qnode])
     def test_qubit_circuit(self, decorator, tol):
