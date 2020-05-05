@@ -514,7 +514,7 @@ class TestJacobianIntegration:
         dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = QNode(circuit, dev1, diff_method=diff_method)
-        circuit2 = QNode(circuit, dev2, diff_method=diff_method)
+        circuit2 = QNode(circuit, dev2, diff_method="parameter-shift")
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
