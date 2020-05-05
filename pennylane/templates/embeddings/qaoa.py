@@ -80,7 +80,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     A single layer applies two circuits or "Hamiltonians": The first encodes the features, and the second is
     a variational ansatz inspired by a 1-dimensional Ising model. The feature-encoding circuit associates features with
     the angles of :class:`RX` rotations. The Ising ansatz consists of trainable two-qubit ZZ interactions
-    :math:`e^{-i \frac{\alpha}{2} \sigma_z \otimes \sigma_z}` (in PennyLane represented by the ``MultiRZ`` gate),
+    :math:`e^{-i \frac{\alpha}{2} \sigma_z \otimes \sigma_z}` (in PennyLane represented by the :class:`~.MultiRZ` gate),
     and trainable local fields :math:`e^{-i \frac{\beta}{2} \sigma_{\mu}}`, where :math:`\sigma_{\mu}`
     can be chosen to be :math:`\sigma_{x}`, :math:`\sigma_{y}` or :math:`\sigma_{z}`
     (default choice is :math:`\sigma_{y}` or the ``RY`` gate), and :math:`\alpha, \beta` are adjustable gate parameters.
