@@ -171,13 +171,13 @@ class APIClient:
         ``self.responses`` if a response is returned from the server.
 
         Args:
-            method: one of ``requests.get`` or ``requests.post``
+            method: one of ``requests.get``, ``requests.post``, or ``requests.put``
             **params: the parameters to pass on to the method (e.g. ``url``, ``data``, etc.)
 
         Returns:
             requests.Response: a response object, or None if no response could be fetched
         """
-        supported_methods = (requests.get, requests.post)
+        supported_methods = (requests.get, requests.post, requests.put)
         if method not in supported_methods:
             raise TypeError("Unexpected or unsupported method provided")
 
@@ -266,16 +266,17 @@ class ResourceManager:
             response = self.client.get(self.resource.PATH)
         self.handle_response(response)
 
-    def create(self, **params):
+    def create(self, method, **params):
         """
         Attempts to create a new instance of a resource by sending a POST
         request to the appropriate endpoint.
 
         Args:
+            method (str): one of "POST" or "PUT"
             **params: arbitrary parameters to be passed on to the POST request
         """
-        if "POST" not in self.resource.SUPPORTED_METHODS:
-            raise MethodNotSupportedException("POST method on this resource is not supported")
+        if method not in self.resource.SUPPORTED_METHODS:
+            raise MethodNotSupportedException("{} method on this resource is not supported".format(method))
 
         if self.resource.id:
             raise ObjectAlreadyCreatedException("ID must be None when calling create")
@@ -434,7 +435,7 @@ class Job(Resource):
     API resource corresponding to jobs.
     """
 
-    SUPPORTED_METHODS = ("GET", "POST")
+    SUPPORTED_METHODS = ("GET", "POST", "PUT")
     PATH = "jobs"
 
     def __init__(self, client=None):
