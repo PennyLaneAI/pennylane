@@ -57,15 +57,7 @@ class KerasLayer(Layer):
 
     **Example**
 
-    .. code-block:: python
-
-        qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-        clayer = tf.keras.layers.Dense(2)
-        model = tf.keras.models.Sequential([qlayer, clayer])
-
-    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
-    with all other arguments to be treated as internal weights. A valid ``qnode`` for the example
-    above would be:
+    First let's define the QNode that we want to convert into a Keras Layer_:
 
     .. code-block:: python
 
@@ -81,13 +73,21 @@ class KerasLayer(Layer):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
+    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
+    with all other arguments to be treated as internal weights. We can then convert to a Keras
+    Layer_ with:
+
+    >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
+    >>> qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+
     The internal weights of the QNode are automatically initialized within the
     :class:`~.KerasLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
-    For example:
+    It is then easy to combine with other neural network layers from the
+    `tensorflow.keras.layers <https://www.tensorflow.org/api_docs/python/tf/keras/layers>`__ module
+    and create a hybrid:
 
-    .. code-block::
-
-        weight_shapes = {"weights_0": 3, "weight_1": 1}
+    >>> clayer = tf.keras.layers.Dense(2)
+    >>> model = tf.keras.models.Sequential([qlayer, clayer])
 
     .. UsageDetails::
 
