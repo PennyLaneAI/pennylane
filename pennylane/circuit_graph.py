@@ -206,6 +206,84 @@ class CircuitGraph:
         """
         return hash(self.serialize())
 
+    def to_qasm(self, rotations=True):
+        """Serialize the circuit as an OpenQASM program.
+
+        Note that only operations are serialized; all measurements
+        are assumed to take place in the computational basis.
+
+        Args:
+            rotations (bool): in addition to serializing user-specified
+                operations, also include the gates that diagonalize the
+                measured wires such that they are in the eigenbasis of the circuit observables.
+
+        Returns:
+            str: OpenQASM serialization of the circuit
+        """
+        from pennylane.qnodes.base import decompose_queue
+
+        qasm_str = "OPENQASM 2.0;\n"
+        qasm_str += "include \"qelib1.inc\";\n"
+
+        N = len(self._grid)
+
+        qasm_str += "qreg q[{}];\n".format(N)
+        qasm_str += "creg q[{}];\n".format(N)
+
+        native_qasm_gates = {
+            "CNOT": "cx",
+            "CZ": "cz",
+            "U3": "u3",
+            "U2": "u2",
+            "U1": "u1",
+            "Identity": "id",
+            "PauliX": "x",
+            "PauliY": "y",
+            "PauliZ": "z",
+            "Hadamard": "h",
+            "S": "s",
+            "S.inv": "sdg",
+            "T": "t",
+            "T.inv": "tdg",
+            "RX": "rx",
+            "RY": "ry",
+            "RZ": "rz",
+            "CRZ": "crx",
+            "CRY": "cry",
+            "CRZ": "crz",
+            "SWAP": "swap",
+            "Toffoli": "ccx",
+            "CSWAP": "cswap",
+            "PhaseShift": "u1",
+        }
+
+        operations = self.operations
+
+        if rotations:
+            operations += self.diagonalizing_gates
+
+        # decompose the queue
+        class QASMDevice:
+            short_name = "QASM serializer"
+            supports_operation = staticmethod(lambda x: x in native_qasm_gates)
+
+        operations = decompose_queue(operations, QASMDevice)
+
+        for op in operations:
+            gate = native_qasm_gates[op.name]
+            wires = ",".join(["q[{}]".format(w) for w in op.wires])
+            params = ""
+
+            if op.num_params > 0:
+                params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
+
+            qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wires)
+
+        for wire in range(N):
+            qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
+
+        return qasm_str
+
     @property
     def observables_in_order(self):
         """Observables in the circuit, in a fixed topological order.
