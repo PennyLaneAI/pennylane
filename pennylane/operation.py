@@ -870,8 +870,8 @@ class Observable(Operator):
 
         **Example:**
 
-        >>> qml.Z._eigvals()
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> qml.PauliZ._eigvals()
+        >>> array([1, -1])
 
         Returns:
             array: eigenvalue representation
@@ -888,9 +888,9 @@ class Observable(Operator):
 
         **Example:**
 
-        >>> U = qml.RZ(0.5, wires=1)
+        >>> U = qml.PauliZ(wires=1)
         >>> U.eigvals
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> array([1, -1])
 
         Returns:
             array: eigvals representation
