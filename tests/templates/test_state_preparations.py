@@ -306,55 +306,55 @@ class TestArbitraryStatePreparation:
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied on a single wire."""
-        angles = np.array([0, 1], dtype=float)
+        weights = np.array([0, 1], dtype=float)
 
         with qml.utils.OperationRecorder() as rec:
-            ArbitraryStatePreparation(angles, wires=[0])
+            ArbitraryStatePreparation(weights, wires=[0])
 
         assert rec.queue[0].name == "PauliRot"
-        assert rec.queue[0].params[0] == angles[0]
+        assert rec.queue[0].params[0] == weights[0]
         assert rec.queue[0].params[1] == "X"
         assert rec.queue[0].wires == [0]
 
         assert rec.queue[1].name == "PauliRot"
-        assert rec.queue[1].params[0] == angles[1]
+        assert rec.queue[1].params[0] == weights[1]
         assert rec.queue[1].params[1] == "Y"
         assert rec.queue[1].wires == [0]
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on on two wires."""
-        angles = np.array([0, 1, 2, 3, 4, 5], dtype=float)
+        weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
         with qml.utils.OperationRecorder() as rec:
-            ArbitraryStatePreparation(angles, wires=[0, 1])
+            ArbitraryStatePreparation(weights, wires=[0, 1])
 
         assert rec.queue[0].name == "PauliRot"
-        assert rec.queue[0].params[0] == angles[0]
+        assert rec.queue[0].params[0] == weights[0]
         assert rec.queue[0].params[1] == "XI"
         assert rec.queue[0].wires == [0, 1]
 
         assert rec.queue[1].name == "PauliRot"
-        assert rec.queue[1].params[0] == angles[1]
+        assert rec.queue[1].params[0] == weights[1]
         assert rec.queue[1].params[1] == "YI"
         assert rec.queue[1].wires == [0, 1]
 
         assert rec.queue[2].name == "PauliRot"
-        assert rec.queue[2].params[0] == angles[2]
+        assert rec.queue[2].params[0] == weights[2]
         assert rec.queue[2].params[1] == "IX"
         assert rec.queue[2].wires == [0, 1]
 
         assert rec.queue[3].name == "PauliRot"
-        assert rec.queue[3].params[0] == angles[3]
+        assert rec.queue[3].params[0] == weights[3]
         assert rec.queue[3].params[1] == "IY"
         assert rec.queue[3].wires == [0, 1]
 
         assert rec.queue[4].name == "PauliRot"
-        assert rec.queue[4].params[0] == angles[4]
+        assert rec.queue[4].params[0] == weights[4]
         assert rec.queue[4].params[1] == "XX"
         assert rec.queue[4].wires == [0, 1]
 
         assert rec.queue[5].name == "PauliRot"
-        assert rec.queue[5].params[0] == angles[5]
+        assert rec.queue[5].params[0] == weights[5]
         assert rec.queue[5].params[1] == "XY"
         assert rec.queue[5].wires == [0, 1]
 
@@ -362,16 +362,16 @@ class TestArbitraryStatePreparation:
         """Test that the template prepares a GHZ state."""
         GHZ_state = np.array([1/math.sqrt(2), 0, 0, 0, 0, 0, 0, 1/math.sqrt(2)])
 
-        angles = np.zeros(14)
-        angles[13] = math.pi / 2
+        weights = np.zeros(14)
+        weights[13] = math.pi / 2
 
         @qml.qnode(qubit_device_3_wires)
-        def circuit(angles):
-            ArbitraryStatePreparation(angles, [0, 1, 2])
+        def circuit(weights):
+            ArbitraryStatePreparation(weights, [0, 1, 2])
 
             return qml.expval(qml.PauliZ(0))
 
-        circuit(angles)
+        circuit(weights)
 
         assert np.allclose(qubit_device_3_wires.state, GHZ_state, atol=tol, rtol=0)
 
@@ -379,17 +379,17 @@ class TestArbitraryStatePreparation:
         """Test that the template prepares a even superposition state."""
         even_superposition_state = np.ones(8)/math.sqrt(8)
 
-        angles = np.zeros(14)
-        angles[1] = math.pi / 2
-        angles[3] = math.pi / 2
-        angles[5] = math.pi / 2
+        weights = np.zeros(14)
+        weights[1] = math.pi / 2
+        weights[3] = math.pi / 2
+        weights[5] = math.pi / 2
 
         @qml.qnode(qubit_device_3_wires)
-        def circuit(angles):
-            ArbitraryStatePreparation(angles, [0, 1, 2])
+        def circuit(weights):
+            ArbitraryStatePreparation(weights, [0, 1, 2])
 
             return qml.expval(qml.PauliZ(0))
 
-        circuit(angles)
+        circuit(weights)
 
         assert np.allclose(qubit_device_3_wires.state, even_superposition_state, atol=tol, rtol=0)
