@@ -7,7 +7,7 @@
   a simulator device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
 
-  The gate can for example can used to efficiently simulate oracles:
+  The gate can for example be used to efficiently simulate oracles:
 
   ```python
     dev = qml.device('default.qubit', wires=3)
