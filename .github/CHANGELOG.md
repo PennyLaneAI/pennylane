@@ -7,6 +7,11 @@
   state with the minimal number of parameters.
   [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
 
+* Added `metric_tensor` function to the `VQECost` class and 
+  `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
+  VQE-like cost functions with quantum natural gradient. 
+  [(#618)](https://github.com/XanaduAI/pennylane/pull/618)
+
 * Added the `IQPEmbeddings` template, which encodes inputs into the diagonal gates of an
   IQP circuit.
   [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
@@ -226,6 +231,28 @@
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
+  
+* The `QAOAEmbedding` now uses the new `MultiRZ` gate as a `ZZ` entangler, 
+  which changes the convention: While 
+  previously, the `ZZ` gate in the embedding was implemented as
+  
+  .. code-block:: python
+  
+    CNOT(wires=[wires[0], wires[1]])
+    RZ(2 * parameter, wires=wires[0])
+    CNOT(wires=[wires[0], wires[1]]) 
+  
+  the `MultiRZ` corresponds to 
+
+  .. code-block:: python
+  
+    CNOT(wires=[wires[1], wires[0]])
+    RZ(parameter, wires=wires[0])
+    CNOT(wires=[wires[1], wires[0]]) 
+      
+  which differs in the factor of `2`, and fixes a bug in the 
+  wires that the `CNOT` was applied to.
+  [(#609)](https://github.com/XanaduAI/pennylane/pull/609)
 
 <h3>Improvements</h3>
 
@@ -305,7 +332,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Lana Bozanic, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, 
+Maggie Li, Johannes Jakob Meyer, Maria Schuld, Sukin Sim, Antal Száva.
 
 # Release 0.8.1 (current release)
 
