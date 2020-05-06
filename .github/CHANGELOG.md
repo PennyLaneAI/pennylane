@@ -327,7 +327,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Lana Bozanic, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, 
+Maggie Li, Johannes Jakob Meyer, Maria Schuld, Sukin Sim, Antal Száva.
 
 # Release 0.8.1 (current release)
 
@@ -589,9 +590,9 @@ Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ville Bergholm, Lana Bozanic, Alain Delgado Gran, Olivia Di Matteo,
-Theodor Isacsson, Josh Izaac, Soran Jahangiri, Nathan Killoran, Maggie Li,
-Johannes Jakob Meyer, Zeyue Niu, Maria Schuld, Sukin Sim, Antal Száva.
+Juan Miguel Arrazola, Ville Bergholm, Alain Delgado Gran, Olivia Di Matteo,
+Theodor Isacsson, Josh Izaac, Soran Jahangiri, Nathan Killoran, Johannes Jakob Meyer,
+Zeyue Niu, Maria Schuld, Antal Száva.
 
 # Release 0.7.0
 
