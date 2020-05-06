@@ -13,10 +13,10 @@
     dev = qml.device('default.qubit', wires=3)
 
     @qml.device(dev)
-    def circuit(angles1, angles2, x):
-          qml.templates.ArbitraryStatePreparation(angles1, wires=[0, 1, 2])
+    def circuit(weights1, weights2, x):
+          qml.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
           qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
-          qml.templates.ArbitraryUnitary(angles2, wires=[0, 1, 2])
+          qml.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
           return qml.probs(wires=[0, 1, 2])
 
 * Added `metric_tensor` function to the `VQECost` class and 
