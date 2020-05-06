@@ -28,9 +28,9 @@ try:
 except ImportError:
     # The following allows this module to be imported even if PyTorch is not installed. Users
     # will instead see an ImportError when instantiating the TorchLayer.
-    from abc import ABC
+    from unittest.mock import Mock
 
-    Module = ABC
+    Module = Mock
     TORCH_IMPORTED = False
 
 
@@ -53,15 +53,7 @@ class TorchLayer(Module):
 
     **Example**
 
-    .. code-block:: python
-
-        qlayer = qml.qnn.TorchLayer(qnode, weight_shapes, output_dim=2)
-        clayer = torch.nn.Linear(2, 2)
-        model = torch.nn.Sequential(qlayer, clayer)
-
-    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
-    with all other arguments to be treated as internal weights. A valid ``qnode`` for the example
-    above would be:
+    First let's define the QNode that we want to convert into a Torch layer:
 
     .. code-block:: python
 
@@ -77,13 +69,20 @@ class TorchLayer(Module):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
+    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
+    with all other arguments to be treated as internal weights. We can then convert to a Torch
+    layer with:
+
+    >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
+    >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes, output_dim=2)
+
     The internal weights of the QNode are automatically initialized within the
     :class:`~.TorchLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
-    For example:
+    It is then easy to combine with other neural network layers from the
+    `torch.nn <https://pytorch.org/docs/stable/nn.html>`__ module and create a hybrid:
 
-    .. code-block::
-
-        weight_shapes = {"weights_0": 3, "weight_1": 1}
+    >>> clayer = torch.nn.Linear(2, 2)
+    >>> model = torch.nn.Sequential(qlayer, clayer)
 
     .. UsageDetails::
 
