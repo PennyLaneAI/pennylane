@@ -818,20 +818,6 @@ class TensorN(CVObservable):
     for a (sub)set of modes :math:`[i_0, i_1, \dots, i_{N-1}]` of the system is
     returned.
 
-    **Example:**
-
-    >>> cv_obs = qml.TensorN(wires=[0, 1])
-    >>> cv_obs
-    TensorN(wires=[0, 1])
-    >>> cv_obs.ev_order is None
-    True
-
-    >>> cv_obs = qml.TensorN(wires=[1])
-    >>> cv_obs
-    NumberOperator(wires=[1])
-    >>> cv_obs.ev_order
-    2
-
     **Details:**
 
     * Number of wires: Any
@@ -839,6 +825,24 @@ class TensorN(CVObservable):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. UsageDetails::
+
+        Example for multiple modes:
+
+        >>> cv_obs = qml.TensorN(wires=[0, 1])
+        >>> cv_obs
+        TensorN(wires=[0, 1])
+        >>> cv_obs.ev_order is None
+        True
+
+        Example for a single mode (yields a :class:`~.NumberOperator`):
+
+        >>> cv_obs = qml.TensorN(wires=[1])
+        >>> cv_obs
+        NumberOperator(wires=[1])
+        >>> cv_obs.ev_order
+        2
     """
     num_wires = AnyWires
     num_params = 0
