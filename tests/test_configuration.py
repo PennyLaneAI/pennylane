@@ -25,15 +25,57 @@ from pennylane import Configuration
 
 log.getLogger('defaults')
 
-config_path = 'default_config.toml'
+
+config_path = "default_config.toml"
+
+
+test_config = """\
+[main]
+shots = 1000
+
+[default.gaussian]
+hbar = 2
+
+[strawberryfields.global]
+hbar = 1
+shots = 1000
+analytic = true
+
+    [strawberryfields.fock]
+    cutoff_dim = 10
+
+    [strawberryfields.gaussian]
+    shots = 1000
+    hbar = 1
+
+[qiskit.global]
+backend = "qasm_simulator"
+
+    [qiskit.aer]
+    backend = "unitary_simulator"
+    backend_options = {"validation_threshold" = 1e-6}
+
+    [qiskit.ibmq]
+    ibmqx_token = "XXX"
+    backend = "ibmq_rome"
+    hub = "MYHUB"
+    group = "MYGROUP"
+    project = "MYPROJECT"
+"""
+
 
 @pytest.fixture(scope="function")
 def default_config():
     return Configuration(name=config_path)
 
-@pytest.fixture(scope="session")
-def default_config_toml():
+
+@pytest.fixture(scope="function")
+def default_config_toml(tmpdir):
+    with open(config_path, "w") as f:
+        f.write(test_config)
+
     return toml.load(config_path)
+
 
 class TestConfigurationFileInteraction:
     """Test the interaction with the configuration file."""
@@ -114,7 +156,7 @@ class TestProperties:
         assert default_config['strawberryfields.fock'] == {'cutoff_dim': 10}
 
         # get key that doesn't exist
-        assert default_config['projectq.ibm.idonotexist'] == {}
+        assert default_config['qiskit.ibmq.idonotexist'] == {}
 
     def test_set_item(self, default_config):
         """Test setting items."""
@@ -129,8 +171,8 @@ class TestProperties:
         assert default_config['strawberryfields.global']['hbar'] == 5
 
         # set new options
-        default_config['projectq.ibm']['device'] = 'ibmqx4'
-        assert default_config['projectq.ibm.device'] == 'ibmqx4'
+        default_config['qiskit.ibmq']['backend'] = 'ibmq_rome'
+        assert default_config['qiskit.ibmq.backend'] == 'ibmq_rome'
 
         # set nested dictionaries
         default_config['strawberryfields.tf'] = {'batched': True, 'cutoff_dim': 6}
