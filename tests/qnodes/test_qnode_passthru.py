@@ -55,6 +55,15 @@ class TestPassthruBasics:
         """String representation."""
         assert repr(mock_qnode) == "<PassthruQNode: device='mock_device', func=circuit, wires=2>"
 
+    def test_immutable_error(self, mock_device):
+        """Test that an error is raised if the mutable=False option is passed
+        upon instantiation"""
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=r"PassthruQNode does not support immutable mode"):
+            node = PassthruQNode(circuit, mock_device, mutable=False)
 
 @pytest.mark.skipif(tf is None, reason="TensorFlow 2.0 not found.")
 @pytest.fixture(scope="function")

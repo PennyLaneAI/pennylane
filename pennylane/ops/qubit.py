@@ -16,12 +16,17 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import math
+import cmath
+import functools
 import numpy as np
-from scipy.linalg import block_diag
 
-from pennylane.operation import Any, Observable, Operation
+from pennylane.templates import template
+from pennylane.operation import AnyWires, Observable, Operation, DiagonalOperation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder, pauli_eigs
+from pennylane.utils import OperationRecorder, pauli_eigs, expand
+
+INV_SQRT2 = 1 / math.sqrt(2)
 
 
 class Hadamard(Observable, Operation):
@@ -42,10 +47,15 @@ class Hadamard(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -82,10 +92,15 @@ class PauliX(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[0, 1], [1, 0]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[0, 1], [1, 0]])
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -120,10 +135,15 @@ class PauliY(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[0, -1j], [1j, 0]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[0, -1j], [1j, 0]])
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -142,7 +162,7 @@ class PauliY(Observable, Operation):
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
 
-class PauliZ(Observable, Operation):
+class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
     The Pauli Z operator
 
@@ -160,16 +180,21 @@ class PauliZ(Observable, Operation):
     num_wires = 1
     par_domain = None
     eigvals = pauli_eigs(1)
+    matrix = np.array([[1, 0], [0, -1]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[1, 0], [0, -1]])
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         return []
 
 
-class S(Operation):
+class S(DiagonalOperation):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -190,12 +215,16 @@ class S(Operation):
     num_wires = 1
     par_domain = None
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         return np.array([[1, 0], [0, 1j]])
 
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1, 1j])
 
-class T(Operation):
+
+class T(DiagonalOperation):
     r"""T(wires)
     The single-qubit T gate
 
@@ -216,9 +245,13 @@ class T(Operation):
     num_wires = 1
     par_domain = None
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[1, 0], [0, np.exp(1j * np.pi / 4)]])
+    @classmethod
+    def _matrix(cls, *params):
+        return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return np.array([1, cmath.exp(1j * np.pi / 4)])
 
 
 class CNOT(Operation):
@@ -245,13 +278,14 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    @classmethod
+    def _matrix(cls, *params):
+        return CNOT.matrix
 
 
-class CZ(Operation):
+class CZ(DiagonalOperation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -275,10 +309,16 @@ class CZ(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    eigvals = np.array([1, 1, 1, -1])
+    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
 
 
 class SWAP(Operation):
@@ -303,10 +343,11 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
+    matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
 
 
 class CSWAP(Operation):
@@ -337,21 +378,22 @@ class CSWAP(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    matrix = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
 
-    @staticmethod
-    def _matrix(*params):
-        return np.array(
-            [
-                [1, 0, 0, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0, 0, 0],
-                [0, 0, 0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1],
-            ]
-        )
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
 
 
 class Toffoli(Operation):
@@ -383,12 +425,22 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
+    matrix = np.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+        ]
+    )
 
-    @staticmethod
-    def _matrix(*params):
-        mat = np.diag([1 for i in range(8)])
-        mat[6:8, 6:8] = np.array([[0, 1], [1, 0]])
-        return mat
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
 
 
 class RX(Operation):
@@ -417,10 +469,13 @@ class RX(Operation):
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         theta = params[0]
-        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliX._matrix()
+        c = math.cos(theta / 2)
+        js = 1j * math.sin(-theta / 2)
+
+        return np.array([[c, js], [js, c]])
 
 
 class RY(Operation):
@@ -449,13 +504,16 @@ class RY(Operation):
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         theta = params[0]
-        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliY._matrix()
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[c, -s], [s, c]])
 
 
-class RZ(Operation):
+class RZ(DiagonalOperation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -481,13 +539,22 @@ class RZ(Operation):
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         theta = params[0]
-        return np.cos(theta / 2) * np.eye(2) + 1j * np.sin(-theta / 2) * PauliZ._matrix()
+        p = cmath.exp(-0.5j * theta)
+
+        return np.array([[p, 0], [0, p.conjugate()]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        theta = params[0]
+        p = cmath.exp(-0.5j * theta)
+
+        return np.array([p, p.conjugate()])
 
 
-class PhaseShift(Operation):
+class PhaseShift(DiagonalOperation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -513,10 +580,15 @@ class PhaseShift(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0], [0, np.exp(1j * phi)]])
+        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        phi = params[0]
+        return np.array([1, cmath.exp(1j * phi)])
 
 
 class Rot(Operation):
@@ -554,15 +626,229 @@ class Rot(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    @staticmethod
-    def _matrix(*params):
-        a, b, c = params
-        return RZ._matrix(c) @ (RY._matrix(b) @ RZ._matrix(a))
+    @classmethod
+    def _matrix(cls, *params):
+        phi, theta, omega = params
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
+                [cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+            ]
+        )
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
         decomp_ops = [RZ(phi, wires=wires), RY(theta, wires=wires), RZ(omega, wires=wires)]
         return decomp_ops
+
+
+class MultiRZ(DiagonalOperation):
+    r"""MultiRZ(theta, wires)
+    Arbitrary multi Z rotation.
+
+    .. math::
+
+        MultiRZ(\theta) = \exp(-i \frac{\theta}{2} Z^{\otimes n})
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\theta}f(MultiRZ(\theta)) = \frac{1}{2}\left[f(MultiRZ(\theta +\pi/2)) - f(MultiRZ(\theta-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`MultiRZ(\theta)`.
+
+    .. note::
+
+        If the ``MultiRZ`` gate is not supported on the targeted device, PennyLane
+        will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "R"
+    grad_method = "A"
+
+    @classmethod
+    def _matrix(cls, theta, n):
+        """Matrix representation of a MultiRZ gate.
+
+        Args:
+            theta (float): Rotation angle.
+            n (int): Number of wires the rotation acts on. This has
+                to be given explicitly in the static method as the
+                wires object is not available.
+
+        Returns:
+            array[complex]: The matrix representation
+        """
+        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
+        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+
+        return multi_Z_rot_matrix
+
+    @property
+    def matrix(self):
+        # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
+        if self.inverse:
+            # The matrix is diagonal, so there is no need to transpose
+            return self._matrix(*self.parameters, len(self.wires)).conj()
+
+        return self._matrix(*self.parameters, len(self.wires))
+
+    @classmethod
+    def _eigvals(cls, theta, n):
+        return np.exp(-1j * theta / 2 * pauli_eigs(n))
+
+    @property
+    def eigvals(self):
+        # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
+        if self.inverse:
+            return self._eigvals(*self.parameters, len(self.wires)).conj()
+
+        return self._eigvals(*self.parameters, len(self.wires))
+
+    @staticmethod
+    @template
+    def decomposition(theta, wires):
+        for i in range(len(wires) - 1, 0, -1):
+            CNOT(wires=[wires[i], wires[i - 1]])
+
+        RZ(theta, wires=wires[0])
+
+        for i in range(len(wires) - 1):
+            CNOT(wires=[wires[i + 1], wires[i]])
+
+
+class PauliRot(Operation):
+    r"""PauliRot(theta, pauli_word, wires)
+    Arbitrary Pauli word rotation.
+
+    .. math::
+
+        RP(\theta, P) = \exp(-i \frac{\theta}{2} P)
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 2 (1 differentiable parameter)
+    * Gradient recipe: :math:`\frac{d}{d\theta}f(RP(\theta)) = \frac{1}{2}\left[f(RP(\theta +\pi/2)) - f(RP(\theta-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`RP(\theta)`.
+
+    .. note::
+
+        If the ``PauliRot`` gate is not supported on the targeted device, PennyLane
+        will decompose the gate using :class:`~.RX`, :class:`~.Hadamard`, :class:`~.RZ`
+        and :class:`~.CNOT` gates.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        pauli_word (string): the Pauli word defining the rotation
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 2
+    num_wires = AnyWires
+    do_check_domain = False
+    par_domain = "R"
+    grad_method = "A"
+
+    _ALLOWED_CHARACTERS = "IXYZ"
+
+    _PAULI_CONJUGATION_MATRICES = {
+        "X": Hadamard._matrix(),
+        "Y": RX._matrix(np.pi / 2),
+        "Z": np.array([[1, 0], [0, 1]]),
+    }
+
+    def __init__(self, *params, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=True)
+
+        pauli_word = params[1]
+
+        if not PauliRot._check_pauli_word(pauli_word):
+            raise ValueError(
+                'The given Pauli word "{}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z".format(pauli_word)
+            )
+
+        if not len(pauli_word) == len(wires):
+            raise ValueError(
+                "The given Pauli word has length {}, length {} was expected for wires {}".format(
+                    len(pauli_word), len(wires), wires
+                )
+            )
+
+    @staticmethod
+    def _check_pauli_word(pauli_word):
+        """Check that the given Pauli word has correct structure.
+
+        Args:
+            pauli_word (str): Pauli word to be checked
+
+        Returns:
+            bool: Whether the Pauli word has correct structure.
+        """
+        return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        pauli_word = params[1]
+
+        if not PauliRot._check_pauli_word(pauli_word):
+            raise ValueError(
+                'The given Pauli word "{}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z".format(pauli_word)
+            )
+
+        # We first generate the matrix excluding the identity parts and expand it afterwards.
+        # To this end, we have to store on which wires the non-identity parts act
+        non_identity_wires, non_identity_gates = zip(
+            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+        )
+
+        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(non_identity_gates))
+
+        # now we conjugate with Hadamard and RX to create the Pauli string
+        conjugation_matrix = functools.reduce(
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+        )
+
+        return expand(
+            conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix,
+            non_identity_wires,
+            list(range(len(pauli_word))),
+        )
+
+    @classmethod
+    def _eigvals(cls, theta, pauli_word):
+        return MultiRZ._eigvals(theta, len(pauli_word))
+
+    @staticmethod
+    @template
+    def decomposition(theta, pauli_word, wires):
+        active_wires, active_gates = zip(
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        )
+
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                Hadamard(wires=[wire])
+            elif gate == "Y":
+                RX(np.pi / 2, wires=[wire])
+
+        MultiRZ(theta, wires=list(active_wires))
+
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                Hadamard(wires=[wire])
+            elif gate == "Y":
+                RX(-np.pi / 2, wires=[wire])
 
 
 class CRX(Operation):
@@ -613,9 +899,13 @@ class CRX(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), -1 / 2]
 
-    @staticmethod
-    def _matrix(*params):
-        return block_diag(np.eye(2), RX._matrix(*params))
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        js = 1j * math.sin(-theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -676,9 +966,13 @@ class CRY(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]), -1 / 2]
 
-    @staticmethod
-    def _matrix(*params):
-        return block_diag(np.eye(2), RY._matrix(*params))
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
 
     @staticmethod
     def decomposition(theta, wires):
@@ -691,7 +985,7 @@ class CRY(Operation):
         return decomp_ops
 
 
-class CRZ(Operation):
+class CRZ(DiagonalOperation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
@@ -737,9 +1031,22 @@ class CRZ(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]), -1 / 2]
 
-    @staticmethod
-    def _matrix(*params):
-        return block_diag(np.eye(2), RZ._matrix(*params))
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, cmath.exp(-0.5j * theta), 0],
+                [0, 0, 0, cmath.exp(0.5j * theta)],
+            ]
+        )
+
+    @classmethod
+    def _eigvals(cls, *params):
+        theta = params[0]
+        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
     @staticmethod
     def decomposition(lam, wires):
@@ -784,10 +1091,20 @@ class CRot(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    @staticmethod
-    def _matrix(*params):
-        a, b, c = params
-        return CRZ._matrix(c) @ (CRY._matrix(b) @ CRZ._matrix(a))
+    @classmethod
+    def _matrix(cls, *params):
+        phi, theta, omega = params
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, cmath.exp(-0.5j * (phi + omega)) * c, -cmath.exp(0.5j * (phi - omega)) * s],
+                [0, 0, cmath.exp(-0.5j * (phi - omega)) * s, cmath.exp(0.5j * (phi + omega)) * c],
+            ]
+        )
 
 
 class U1(Operation):
@@ -820,9 +1137,10 @@ class U1(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
-    @staticmethod
-    def _matrix(*params):
-        return PhaseShift._matrix(*params)
+    @classmethod
+    def _matrix(cls, *params):
+        phi = params[0]
+        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -868,10 +1186,12 @@ class U2(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         phi, lam = params
-        return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, np.pi / 2, -lam)
+        return INV_SQRT2 * np.array(
+            [[1, -cmath.exp(1j * lam)], [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))]]
+        )
 
     @staticmethod
     def decomposition(phi, lam, wires):
@@ -923,10 +1243,18 @@ class U3(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         theta, phi, lam = params
-        return PhaseShift._matrix(phi + lam) @ Rot._matrix(lam, theta, -lam)
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
+
+        return np.array(
+            [
+                [c, -s * cmath.exp(1j * lam)],
+                [s * cmath.exp(1j * phi), c * cmath.exp(1j * (phi + lam))],
+            ]
+        )
 
     @staticmethod
     def decomposition(theta, phi, lam, wires):
@@ -958,12 +1286,12 @@ class QubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         U = np.asarray(params[0])
 
         if U.shape[0] != U.shape[1]:
@@ -973,6 +1301,39 @@ class QubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         return U
+
+
+class DiagonalQubitUnitary(DiagonalOperation):
+    r"""DiagonalQubitUnitary(D, wires)
+    Apply an arbitrary fixed diagonal unitary matrix.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        D (array[complex]): diagonal of unitary matrix
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "A"
+    grad_method = None
+
+    @classmethod
+    def _eigvals(cls, *params):
+        D = np.asarray(params[0])
+
+        if not np.allclose(D * D.conj(), np.ones_like(D)):
+            raise ValueError("Operator must be unitary.")
+
+        return D
+
+    @staticmethod
+    def decomposition(D, wires):
+        return [QubitUnitary(np.diag(D), wires=wires)]
 
 
 # =============================================================================
@@ -1003,7 +1364,7 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1037,7 +1398,7 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1078,14 +1439,14 @@ class Hermitian(Observable):
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
     grad_method = "F"
     _eigs = {}
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         A = np.asarray(params[0])
 
         if A.shape[0] != A.shape[1]:
@@ -1147,6 +1508,8 @@ ops = {
     "PauliX",
     "PauliY",
     "PauliZ",
+    "PauliRot",
+    "MultiRZ",
     "S",
     "T",
     "CNOT",
@@ -1169,6 +1532,7 @@ ops = {
     "BasisState",
     "QubitStateVector",
     "QubitUnitary",
+    "DiagonalQubitUnitary",
 }
 
 

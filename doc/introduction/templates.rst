@@ -108,6 +108,11 @@ trainable parameters, and they may consist of repeated layers.
     :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.IQPEmbedding.html
+    :description: IQPEmbedding
+    :figure: ../_static/templates/embeddings/iqp.png
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.templates.embeddings.QAOAEmbedding.html
     :description: QAOAEmbedding
     :figure: ../_static/templates/embeddings/qaoa.png
@@ -144,6 +149,11 @@ Layer architectures define sequences of trainable gates that are repeated like t
     :link: ../code/api/pennylane.templates.layers.StronglyEntanglingLayers.html
     :description: StronglyEntanglingLayers
     :figure: ../_static/templates/layers/strongly_entangling.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.layers.SimplifiedTwoDesign.html
+    :description: SimplifiedTwoDesign
+    :figure: ../_static/templates/layers/simplified_two_design.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.layers.BasicEntanglerLayers.html
@@ -235,6 +245,10 @@ takes single quantum operations or other templates and applies them to wires in 
     :description: broadcast (all-to-all)
     :figure: ../_static/templates/broadcast_alltoall.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (custom)
+    :figure: ../_static/templates/broadcast_custom.png
 
 .. raw:: html
 
@@ -323,3 +337,9 @@ respective interfaces.
     init_tf = tf.Variable(init_pars)
 
 The initialization functions can be found in the :mod:`~.pennylane.init` module.
+
+Adding a new template
+---------------------
+
+Consult the :ref:`Contributing templates<contributing_templates>` page to learn how to grow the templates library by
+adding your own template to PennyLane.

@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adam optimizer"""
-
-import numpy as np
+import math
 
 from pennylane.utils import _flatten, unflatten
 from .gradient_descent import GradientDescentOptimizer
@@ -96,11 +95,11 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
-            self._stepsize * np.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
+            self._stepsize * math.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
         )
 
         x_new_flat = [
-            e - new_stepsize * f / (np.sqrt(s) + self.eps)
+            e - new_stepsize * f / (math.sqrt(s) + self.eps)
             for f, s, e in zip(self.fm, self.sm, x_flat)
         ]
 

@@ -73,9 +73,11 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The QNG optimizer **only supports single QNodes** as objective functions.
+        The QNG optimizer supports single QNodes or :class:`~.VQECost` objects as objective functions.
+        Alternatively, the metric tensor can directly be provided to the :func:`step` method of the optimizer,
+        using the ``metric_tensor_fn`` argument.
 
-        In particular:
+        For the following cases, providing metric_tensor_fn may be useful:
 
         * For hybrid classical-quantum models, the "mixed geometry" of the model
           makes it unclear which metric should be used for which parameter.
@@ -85,6 +87,51 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
+
+        If the objective function is VQE/VQE-like, i.e., a function of a group
+        of QNodes that share an ansatz, there are two ways to use the optimizer:
+
+        * Realize the objective function as a :class:`~.VQECost` object, which has
+          a ``metric_tensor`` method.
+
+        * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
+          of the QNode(s) involved in the objective function.
+
+    **Examples:**
+
+    For VQE/VQE-like problems, the objective function for the optimizer can be
+    realized as a VQECost object.
+
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> def circuit(params, wires=0):
+    ...     qml.RX(params[0], wires=wires)
+    ...     qml.RY(params[1], wires=wires)
+    >>> coeffs = [1, 1]
+    >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> cost_fn = qml.VQECost(circuit, H, dev)
+
+    Once constructed, the cost function can be passed directly to the
+    optimizer's ``step`` function:
+
+    >>> eta = 0.01
+    >>> init_params = [0.011, 0.012]
+    >>> opt = qml.QNGOptimizer(eta)
+    >>> theta_new = opt.step(cost_fn, init_params)
+    >>> print(theta_new)
+    [0.011445239214543481, -0.027519522461477233]
+
+    Alternatively, the same objective function can be used for the optimizer
+    by manually providing the ``metric_tensor_fn``.
+
+    >>> qnodes = qml.map(circuit, obs, dev, 'expval')
+    >>> cost_fn = qml.dot(coeffs, qnodes)
+    >>> eta = 0.01
+    >>> init_params = [0.011, 0.012]
+    >>> opt = qml.QNGOptimizer(eta)
+    >>> theta_new = opt.step(cost_fn, init_params, metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
+    >>> print(theta_new)
+    [0.011445239214543481, -0.027519522461477233]
 
     .. seealso::
 
@@ -107,7 +154,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step(self, qnode, x, recompute_tensor=True):
+    def step(self, qnode, x, recompute_tensor=True, metric_tensor_fn=None):
         """Update x with one step of the optimizer.
 
         Args:
@@ -116,17 +163,27 @@ class QNGOptimizer(GradientDescentOptimizer):
             recompute_tensor (bool): Whether or not the metric tensor should
                 be recomputed. If not, the metric tensor from the previous
                 optimization step is used.
+            metric_tensor_fn (function): Optional metric tensor function
+                with respect to the variables ``x``.
+                If ``None``, the metric tensor function is computed automatically.
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`
         """
         # pylint: disable=arguments-differ
-        if not hasattr(qnode, "metric_tensor"):
-            raise ValueError("Objective function must be encoded as a single QNode")
+        if not hasattr(qnode, "metric_tensor") and not metric_tensor_fn:
+            raise ValueError(
+                "The objective function must either be encoded as a single QNode or "
+                "a VQECost object for the natural gradient to be automatically computed. "
+                "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
+            )
 
         if recompute_tensor or self.metric_tensor is None:
-            # pseudo-inverse metric tensor
-            self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
+            if not metric_tensor_fn:
+                # pseudo-inverse metric tensor
+                self.metric_tensor = qnode.metric_tensor([x], diag_approx=self.diag_approx)
+            else:
+                self.metric_tensor = metric_tensor_fn([x], diag_approx=self.diag_approx)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g = self.compute_grad(qnode, x)

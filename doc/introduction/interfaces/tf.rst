@@ -100,8 +100,8 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = Variable([0.5, 0.1])
-    theta = Variable(0.2)
+    phi = tf.Variable([0.5, 0.1])
+    theta = tf.Variable(0.2)
 
     with tf.GradientTape() as tape:
         # Use the circuit to calculate the loss value
