@@ -209,8 +209,13 @@ class CircuitGraph:
     def to_qasm(self, rotations=True):
         """Serialize the circuit as an OpenQASM program.
 
-        Note that only operations are serialized; all measurements
+        Only operations are serialized; all measurements
         are assumed to take place in the computational basis.
+
+        .. note::
+
+            The serialized OpenQASM program assumes that gate definitions
+            in ``qelib1.inc`` is available.
 
         Args:
             rotations (bool): in addition to serializing user-specified
@@ -245,6 +250,9 @@ class CircuitGraph:
         #
         # Question: do other implementations of QASM exist that
         # don't use the qelib1.inc gate definitions?
+        # Perhaps we allow developers to pass their own native_qasm_gates dictionary
+        # to this method, which is used instead of the default below
+        # if provided.
         native_qasm_gates = {
             "CNOT": "cx",
             "CZ": "cz",
