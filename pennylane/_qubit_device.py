@@ -177,7 +177,7 @@ class QubitDevice(Device):
         """Apply quantum operations, rotate the circuit into the measurement
         basis, and compile and execute the quantum circuit.
 
-        This method recieves a list of quantum operations queued by the QNode,
+        This method receives a list of quantum operations queued by the QNode,
         and should be responsible for:
 
         * Constructing the quantum program
