@@ -291,6 +291,9 @@ class Operator(abc.ABC):
         This private method allows eigenvalues to be computed
         directly without instantiating the operators first.
 
+        The default implementation relies on the presence of the
+        :attr:`_matrix` method.
+
         To return the eigenvalues of *instantiated* operators,
         please use the :attr:`~.Operator.eigvals` property instead.
 
