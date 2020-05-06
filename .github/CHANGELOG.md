@@ -226,6 +226,28 @@
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
+  
+* The `QAOAEmbedding` now uses the new `MultiRZ` gate as a `ZZ` entangler, 
+  which changes the convention: While 
+  previously, the `ZZ` gate in the embedding was implemented as
+  
+  .. code-block:: python
+  
+    CNOT(wires=[wires[0], wires[1]])
+    RZ(2 * parameter, wires=wires[0])
+    CNOT(wires=[wires[0], wires[1]]) 
+  
+  the `MultiRZ` corresponds to 
+
+  .. code-block:: python
+  
+    CNOT(wires=[wires[1], wires[0]])
+    RZ(parameter, wires=wires[0])
+    CNOT(wires=[wires[1], wires[0]]) 
+      
+  which differs in the factor of `2`, and fixes a bug in the 
+  wires that the `CNOT` was applied to.
+  [(#609)](https://github.com/XanaduAI/pennylane/pull/609)
 
 <h3>Improvements</h3>
 
