@@ -92,7 +92,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     The number of layers :math:`L` is derived from the first dimension of ``weights``, which has the following
     shape:
 
-    * :math:`(L, )`, if the embedding acts on a single wire,
+    * :math:`(L, 1)`, if the embedding acts on a single wire,
     * :math:`(L, 3)`, if the embedding acts on two wires,
     * :math:`(L, 2n)` else.
 
