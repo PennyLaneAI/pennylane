@@ -269,6 +269,53 @@
 
 <h3>Improvements</h3>
 
+* Added the `"classical"` and `"device"` differentiation methods to the `qnode`
+  decorator.
+  [(#552)](https://github.com/XanaduAI/pennylane/pull/552)
+
+  Using the `"classical"` differentiation method with the `default.tensor.tf`
+  device, the created QNode is a 'white-box', and is tightly integrated with
+  your TensorFlow computation:
+
+  ```python
+    >>> dev = qml.device("default.tensor.tf", wires=1)
+    >>> @qml.qnode(dev, interface="tf", diff_method="classical")
+    >>> def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> vars = tf.Variable([0.2, 0.5, 0.1])
+    >>> with tf.GradientTape() as tape:
+    ...     res = circuit(vars)
+    >>> tape.gradient(res, vars)
+    <tf.Tensor: shape=(3,), dtype=float32, numpy=array([-2.2526717e-01, -1.0086454e+00,  1.3877788e-17], dtype=float32)>
+  ```
+
+  In this mode, you must use the ``"tf"`` interface, as TensorFlow
+  is used as the device backend.
+
+  Using the `"device"` differentiation method with the `default.tensor.tf` the
+  created QNode is a 'black-box' to your classical computation. PennyLane will
+  automatically accept classical tensors from any supported interface, and
+  query the device directly for the quantum gradient when required.
+
+  ```python
+    >>> dev = qml.device("default.tensor.tf", wires=1)
+    >>> @qml.qnode(dev, interface="autograd", diff_method="device")
+    >>> def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> grad_fn = qml.grad(circuit, argnum=[0])
+    >>> print(grad_fn([0.2, 0.5, 0.1]))
+    ([array(-0.22526717), array(-1.00864546), array(6.9388939e-18)],)
+  ```
+
+  In this mode, even though TensorFlow is used as the device backend, it
+  is independent of the chosen QNode interface. In the example above, we combine
+  ``default.tensor.tf`` with the ``autograd`` interface.
+  It can also be used with the ``torch`` and the ``tf`` interface.
+
 * The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
   [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
