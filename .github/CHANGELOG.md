@@ -2,6 +2,30 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now provides `DiagonalQubitUnitary` for diagonal gates, that are e.g.,
+  encountered in IQP circuits. These kinds of gates can be evaluated much faster on
+  a simulator device.
+  [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
+  
+  The gate can for example be used to efficiently simulate oracles:
+
+  ```python
+    dev = qml.device('default.qubit', wires=3)
+
+    # Function as a bitstring
+    f = np.array([1, 0, 0, 1, 1, 0, 1, 0])
+
+    @qml.qnode(dev)
+    def circuit(weights1, weights2):
+        qml.templates.StronglyEntanglingLayers(weights1, wires=[0, 1, 2])
+
+        # Implements the function as a phase-kickback oracle
+        qml.DiagonalQubitUnitary((-1)**f, wires=[0, 1, 2])
+
+        qml.templates.StronglyEntanglingLayers(weights2, wires=[0, 1, 2])
+        return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+  ```
+
 * Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
   `PauliRot` gates to perform an arbitrary unitary and prepare an arbitrary basis
   state with the minimal number of parameters.
@@ -12,7 +36,7 @@
   ```python
     dev = qml.device('default.qubit', wires=3)
 
-    @qml.device(dev)
+    @qml.qnode(dev)
     def circuit(weights1, weights2, x):
           qml.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
           qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
@@ -272,6 +296,9 @@
   [(#609)](https://github.com/XanaduAI/pennylane/pull/609)
 
 <h3>Improvements</h3>
+
+* Improvements to the speed/performance of the `default.qubit` device.
+  [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
 
 * Added the `"classical"` and `"device"` differentiation methods to the `qnode`
   decorator.

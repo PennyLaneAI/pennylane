@@ -35,7 +35,7 @@ quantum operations supported by PennyLane, as well as their conventions.
 # As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
-
+import math
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -60,8 +60,8 @@ def _rotation(phi, bare=False):
     Returns:
         array[float]: transformation matrix
     """
-    c = np.cos(phi)
-    s = np.sin(phi)
+    c = math.cos(phi)
+    s = math.sin(phi)
     temp = np.array([[c, -s], [s, c]])
     if bare:
         return temp
@@ -138,12 +138,12 @@ class Squeezing(CVOperation):
     grad_method = "A"
 
     shift = 0.1
-    grad_recipe = [(0.5 / np.sinh(shift), shift), None]
+    grad_recipe = [(0.5 / math.sinh(shift), shift), None]
 
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
-        return R @ np.diag([1, np.exp(-p[0]), np.exp(p[0])]) @ R.T
+        return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
 
 
 class Displacement(CVOperation):
@@ -184,8 +184,8 @@ class Displacement(CVOperation):
 
     @staticmethod
     def _heisenberg_rep(p):
-        c = np.cos(p[1])
-        s = np.sin(p[1])
+        c = math.cos(p[1])
+        s = math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
@@ -231,8 +231,8 @@ class Beamsplitter(CVOperation):
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
-        c = np.cos(p[0])
-        s = np.sin(p[0])
+        c = math.cos(p[0])
+        s = math.sin(p[0])
         U = c * np.eye(5)
         U[0, 0] = 1
         U[1:3, 3:5] = -s * R.T
@@ -279,14 +279,14 @@ class TwoModeSqueezing(CVOperation):
 
     grad_method = "A"
     shift = 0.1
-    grad_recipe = [(0.5 / np.sinh(shift), shift), None]
+    grad_recipe = [(0.5 / math.sinh(shift), shift), None]
 
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1], bare=True)
 
-        S = np.sinh(p[0]) * np.diag([1, -1])
-        U = np.cosh(p[0]) * np.identity(5)
+        S = math.sinh(p[0]) * np.diag([1, -1])
+        U = math.cosh(p[0]) * np.identity(5)
 
         U[0, 0] = 1
         U[1:3, 3:5] = S @ R.T
@@ -957,7 +957,7 @@ class QuadOperator(CVObservable):
     @staticmethod
     def _heisenberg_rep(p):
         phi = p[0]
-        return np.array([0, np.cos(phi), np.sin(phi)])  # TODO check
+        return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
 
 
 class PolyXP(CVObservable):
