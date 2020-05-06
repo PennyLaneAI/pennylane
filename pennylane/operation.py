@@ -241,7 +241,7 @@ class Operator(abc.ABC):
         """Matrix representation of the operator
         in the computational basis.
 
-        This is a *static method* that should be defined for all
+        This is a *class method* that should be defined for all
         new operations and observables, that returns the matrix representing
         the operator in the computational basis.
 
@@ -283,7 +283,7 @@ class Operator(abc.ABC):
     def _eigvals(cls, *params):
         """Eigenvalues of the operator in the computational basis.
 
-        This is a *static method* that should be defined for all
+        This is a *class method* that should be defined for all
         new operations and observables, that returns the eigenvalues
         of the operator in the computational basis.
 
@@ -292,6 +292,9 @@ class Operator(abc.ABC):
 
         To return the eigenvalues of *instantiated* operators,
         please use the :attr:`~.Operator.eigvals` property instead.
+
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
 
         **Example:**
 
@@ -306,6 +309,9 @@ class Operator(abc.ABC):
     @property
     def eigvals(self):
         r"""Eigenvalues of an instantiated operator.
+
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
 
         **Example:**
 
