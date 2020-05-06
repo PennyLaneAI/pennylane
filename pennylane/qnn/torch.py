@@ -197,14 +197,14 @@ class TorchLayer(Module):
             Average loss over epoch 8: 0.1528
     """
 
-    def __init__(
-        self, qnode, weight_shapes: dict, init_method: Optional[Callable] = None
-    ):
+    def __init__(self, qnode, weight_shapes: dict, init_method: Optional[Callable] = None):
         if not TORCH_IMPORTED:
-            raise ImportError("TorchLayer requires PyTorch. PyTorch can be installed using:\n"
-                              "pip install torch\nAlternatively, "
-                              "visit https://pytorch.org/get-started/locally/ for detailed "
-                              "instructions.")
+            raise ImportError(
+                "TorchLayer requires PyTorch. PyTorch can be installed using:\n"
+                "pip install torch\nAlternatively, "
+                "visit https://pytorch.org/get-started/locally/ for detailed "
+                "instructions."
+            )
         super().__init__()
 
         self.sig = qnode.func.sig
