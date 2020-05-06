@@ -53,24 +53,52 @@ class DefaultTensorTF(DefaultTensor):
 
         pip install tensornetwork>=0.2 tensorflow>=2.0
 
-    **Example:**
+    **Example**
 
-    >>> dev = qml.device("default.tensor.tf", wires=1)
-    >>> @qml.qnode(dev, interface="autograd", diff_method="best")
-    >>> def circuit(x):
-    ...     qml.RX(x[1], wires=0)
-    ...     qml.Rot(x[0], x[1], x[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> grad_fn = qml.grad(circuit, argnum=[0])
-    >>> print(grad_fn([0.2, 0.5, 0.1]))
-    ([array(-0.22526717), array(-1.00864546), array(6.9388939e-18)],)
+    The ``default.tensor.tf`` device supports various differentiation modes.
 
-    .. note::
+    * *End-to-end classical backpropagation with the TensorFlow interface*.
+      Using this method, the created QNode is a 'white-box', and is
+      tightly integrated with your TensorFlow computation:
 
-        TensorFlow is used as the device backend, and is independent
-        of the chosen QNode interface. In the example above, we combine
-        ``default.tensor.tf`` with the ``autograd`` interface.
-        It can also be used with the ``torch`` and the ``tf`` interface.
+      >>> dev = qml.device("default.tensor.tf", wires=1)
+      >>> @qml.qnode(dev, interface="tf", diff_method="classical")
+      >>> def circuit(x):
+      ...     qml.RX(x[1], wires=0)
+      ...     qml.Rot(x[0], x[1], x[2], wires=0)
+      ...     return qml.expval(qml.PauliZ(0))
+      >>> vars = tf.Variable([0.2, 0.5, 0.1])
+      >>> with tf.GradientTape() as tape:
+      ...     res = circuit(vars)
+      >>> tape.gradient(res, vars)
+      <tf.Tensor: shape=(3,), dtype=float32, numpy=array([-2.2526717e-01, -1.0086454e+00,  1.3877788e-17], dtype=float32)>
+
+      In this mode, you must use the ``"tf"`` interface, as TensorFlow
+      is used as the device backend.
+
+    * *Device differentiation*. Using this method, the created QNode
+      is a 'black-box' to your classical computation. PennyLane will automatically
+      accept classical tensors from any supported interface, and query the
+      device directly for the quantum gradient when required.
+
+      >>> dev = qml.device("default.tensor.tf", wires=1)
+      >>> @qml.qnode(dev, interface="autograd", diff_method="device")
+      >>> def circuit(x):
+      ...     qml.RX(x[1], wires=0)
+      ...     qml.Rot(x[0], x[1], x[2], wires=0)
+      ...     return qml.expval(qml.PauliZ(0))
+      >>> grad_fn = qml.grad(circuit, argnum=[0])
+      >>> print(grad_fn([0.2, 0.5, 0.1]))
+      ([array(-0.22526717), array(-1.00864546), array(6.9388939e-18)],)
+
+      In this mode, even though TensorFlow is used as the device backend, it
+      is independent of the chosen QNode interface. In the example above, we combine
+      ``default.tensor.tf`` with the ``autograd`` interface.
+      It can also be used with the ``torch`` and the ``tf`` interface.
+
+    In addition to end-to-end classical backpropagation and device differentiation,
+    the ``default.tensor.tf`` device also supports ``parameter-shift`` and
+    ``finite-diff`` differentiation methods.
 
     Args:
         wires (int): number of subsystems in the quantum state represented by the device

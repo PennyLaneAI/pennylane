@@ -40,7 +40,7 @@ class TestExceptions:
         params = 0.5
 
         with pytest.raises(
-            ValueError, match="Objective function must be encoded as a single QNode"
+            ValueError, match="The objective function must either be encoded as a single QNode or a VQECost object"
         ):
             opt.step(cost, params)
 
@@ -90,3 +90,105 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(circuit(theta), -0.9963791, atol=tol, rtol=0)
+
+    def test_single_qubit_vqe(self, tol):
+        """Test single-qubit VQE has the correct QNG value
+        every step, the correct parameter updates,
+        and correct cost after 200 steps"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(params, wires=0):
+            qml.RX(params[0], wires=wires)
+            qml.RY(params[1], wires=wires)
+
+        coeffs = [1, 1]
+        obs_list = [
+            qml.PauliX(0),
+            qml.PauliZ(0)
+        ]
+
+        qnodes = qml.map(circuit, obs_list, dev, measure='expval')
+        cost_fn = qml.dot(coeffs, qnodes)
+
+        def gradient(params):
+            """Returns the gradient"""
+            da = -np.sin(params[0]) * (np.cos(params[1]) + np.sin(params[1]))
+            db = np.cos(params[0]) * (np.cos(params[1]) - np.sin(params[1]))
+            return np.array([da, db])
+
+        eta = 0.01
+        init_params = np.array([0.011, 0.012])
+        num_steps = 200
+
+        opt = qml.QNGOptimizer(eta)
+        theta = init_params
+
+        # optimization for 200 steps total
+        for t in range(num_steps):
+            theta_new = opt.step(cost_fn, theta,
+                                 metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
+
+            # check metric tensor
+            res = opt.metric_tensor
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            assert np.allclose(res, exp, atol=tol, rtol=0)
+
+            # check parameter update
+            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
+            assert np.allclose(dtheta, theta - theta_new, atol=tol, rtol=0)
+
+            theta = theta_new
+
+        # check final cost
+        assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
+
+    def test_single_qubit_vqe_using_vqecost(self, tol):
+        """Test single-qubit VQE using VQECost 
+        has the correct QNG value every step, the correct parameter updates,
+        and correct cost after 200 steps"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(params, wires=0):
+            qml.RX(params[0], wires=wires)
+            qml.RY(params[1], wires=wires)
+
+        coeffs = [1, 1]
+        obs_list = [
+            qml.PauliX(0),
+            qml.PauliZ(0)
+        ]
+
+        h = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
+
+        cost_fn = qml.VQECost(ansatz=circuit, hamiltonian=h, device=dev)
+
+        def gradient(params):
+            """Returns the gradient"""
+            da = -np.sin(params[0]) * (np.cos(params[1]) + np.sin(params[1]))
+            db = np.cos(params[0]) * (np.cos(params[1]) - np.sin(params[1]))
+            return np.array([da, db])
+
+        eta = 0.01
+        init_params = np.array([0.011, 0.012])
+        num_steps = 200
+
+        opt = qml.QNGOptimizer(eta)
+        theta = init_params
+
+        # optimization for 200 steps total
+        for t in range(num_steps):
+            theta_new = opt.step(cost_fn, theta)
+
+            # check metric tensor
+            res = opt.metric_tensor
+            exp = np.diag([0.25, (np.cos(theta[0]) ** 2)/4])
+            assert np.allclose(res, exp, atol=tol, rtol=0)
+
+            # check parameter update
+            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
+            assert np.allclose(dtheta, theta - theta_new, atol=tol, rtol=0)
+
+            theta = theta_new
+
+        # check final cost
+        assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
