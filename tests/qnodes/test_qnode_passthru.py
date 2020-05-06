@@ -56,8 +56,8 @@ class TestPassthruBasics:
         assert repr(mock_qnode) == "<PassthruQNode: device='mock_device', func=circuit, wires=2>"
 
     def test_immutable_error(self, mock_device):
-        """Test that an error is raised if the mutable=False upon
-        instantiation"""
+        """Test that an error is raised if the mutable=False option is passed
+        upon instantiation"""
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
