@@ -216,6 +216,10 @@
   grad = tape.gradient(res, params)
   ```
 
+* Added the `TensorN` CVObservable that can represent the tensor product of the
+  `NumberOperator`.
+  [(#608)](https://github.com/XanaduAI/pennylane/pull/608)
+
 <h3>Breaking changes</h3>
 
 * The internal variables `All` and `Any` to mark an `Operation` as acting on all or any
