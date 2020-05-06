@@ -245,8 +245,8 @@
     RZ(parameter, wires=wires[0])
     CNOT(wires=[wires[1], wires[0]]) 
       
-  which differs in the factor of ``2``, and fixes a bug in the 
-  wires that the ``CNOT`` was applied to.
+  which differs in the factor of `2`, and fixes a bug in the 
+  wires that the `CNOT` was applied to.
   [(#609)](https://github.com/XanaduAI/pennylane/pull/609)
 
 <h3>Improvements</h3>
