@@ -514,6 +514,33 @@ class TestObservableConstruction:
         assert issubclass(DummyObserv, qml.operation.Observable)
         assert issubclass(DummyObserv, qml.operation.Operation)
 
+    def test_tensor_n_multiple_modes(self):
+        """Checks that the TensorN operator was constructed correctly when
+        multiple modes were specified."""
+        cv_obs = qml.TensorN(wires=[0, 1])
+
+        assert isinstance(cv_obs, qml.TensorN)
+        assert cv_obs.wires == [0, 1]
+        assert cv_obs.ev_order is None
+
+    def test_tensor_n_single_mode_wires_explicit(self):
+        """Checks that instantiating a TensorN when passing a single mode as a
+        keyword argument returns a NumberOperator."""
+        cv_obs = qml.TensorN(wires=[0])
+
+        assert isinstance(cv_obs, qml.NumberOperator)
+        assert cv_obs.wires == [0]
+        assert cv_obs.ev_order == 2
+
+    def test_tensor_n_single_mode_wires_implicit(self):
+        """Checks that instantiating TensorN when passing a single mode as a
+        positional argument returns a NumberOperator."""
+        cv_obs = qml.TensorN(1)
+
+        assert isinstance(cv_obs, qml.NumberOperator)
+        assert cv_obs.wires == [1]
+        assert cv_obs.ev_order == 2
+
 
 class TestOperatorIntegration:
     """ Integration tests for the Operator class"""
