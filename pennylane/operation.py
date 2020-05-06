@@ -790,6 +790,24 @@ class DiagonalOperation(Operation):
         """
         raise NotImplementedError
 
+    @property
+    def eigvals(self):
+        r"""Eigenvalues of an instantiated diagonal operation.
+
+        The order of the eigenvalues needs matches the order of
+        the computational basis vectors.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        return super().eigvals
+
     @classmethod
     def _matrix(cls, *params):
         return np.diag(cls._eigvals(*params))
@@ -824,6 +842,53 @@ class Observable(Operator):
 
     # pylint: disable=abstract-method
     return_type = None
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the observable.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using :attr:`diagonalizing_gates`.
+
+        This is a *class method* that must be defined for all
+        new diagonal operations, that returns the eigenvalues
+        of the operator in the computational basis.
+
+        This private method allows eigenvalues to be computed
+        directly without instantiating the operators first.
+
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.Operator.eigvals` property instead.
+
+        **Example:**
+
+        >>> qml.Z._eigvals()
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigenvalue representation
+        """
+        raise NotImplementedError
+
+    @property
+    def eigvals(self):
+        r"""Eigenvalues of an instantiated observable.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using :attr:`diagonalizing_gates`.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        return super().eigvals
 
     def __init__(self, *params, wires=None, do_queue=True):
         # extract the arguments
