@@ -54,7 +54,8 @@ def ArbitraryStatePreparation(angles, wires):
 
     **Example**
 
-    ArbitraryStatePreparation can be used to train state preparations:
+    ArbitraryStatePreparation can be used to train state preparations, 
+    for example using a circuit with some measurement observable ``H``:
 
     .. code-block:: python
 
