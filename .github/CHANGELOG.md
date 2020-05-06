@@ -7,6 +7,26 @@
   state with the minimal number of parameters.
   [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
 
+  An example usage of the templates would be to define a trainable quantum kernel:
+
+  ```python
+    dev = qml.device('default.qubit', wires=3)
+
+    @qml.template
+    def kernel_embedding(angles1, angles2, x):
+      qml.templates.ArbitraryStatePreparation(angles1, wires=[0, 1, 2])
+      qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
+      qml.templates.ArbitraryUnitary(angles2, wires=[0, 1, 2])
+      qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
+
+    @qml.qnode(dev)
+    def circuit(angles1, angles2, x, y):
+        kernel_embedding(angles1, angles2, x)
+        qml.inv(kernel_embedding(angles1, angles2, y))
+
+        return qml.probs([0, 1, 2])
+  ```
+
 * Added `metric_tensor` function to the `VQECost` class and 
   `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
   VQE-like cost functions with quantum natural gradient. 
