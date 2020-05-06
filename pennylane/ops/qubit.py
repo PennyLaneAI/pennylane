@@ -1330,7 +1330,6 @@ class Hermitian(Observable):
             w, U = np.linalg.eigh(Hmat)
             Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
-        Hmat = self.matrix
         return Hermitian._eigs[Hkey]
 
     @property
