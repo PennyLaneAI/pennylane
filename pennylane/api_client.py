@@ -150,7 +150,7 @@ class APIClient:
         Kwargs:
             header_key (str): key to be used in header which has authentication_token as its value
         """
-        self.HEADERS[key] = authentication_token
+        self.HEADERS[header_key] = authentication_token
 
     def join_path(self, path):
         """
@@ -280,6 +280,7 @@ class ResourceManager:
 
         if self.resource.id:
             raise ObjectAlreadyCreatedException("ID must be None when calling create")
+            # TODO: determine if this exception makes sense with PUT
 
         response = self.client.post(self.resource.PATH, params)
 
@@ -436,7 +437,7 @@ class Job(Resource):
     """
 
     SUPPORTED_METHODS = ("GET", "POST", "PUT")
-    PATH = "jobs"
+    PATH = "/"
 
     def __init__(self, client=None):
         """
