@@ -25,79 +25,11 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
-    ArbitraryUnitary,
-)
-from pennylane.templates.layers.arbitrary_unitary import (
-    _all_pauli_words_but_identity,
-    _tuple_to_word,
-    _n_k_gray_code,
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 
 TOLERANCE = 1e-8
-
-# fmt: off
-PAULI_WORD_TEST_DATA = [
-    (1, ["X", "Y", "Z"]),
-    (
-        2,
-        ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"],
-    ),
-    (
-        3,
-        [
-            "XII", "YII", "ZII", "ZXI", "IXI", "XXI", "YXI", "YYI", "ZYI", "IYI", "XYI", "XZI", "YZI",
-            "ZZI", "IZI", "IZX", "XZX", "YZX", "ZZX", "ZIX", "IIX", "XIX", "YIX", "YXX", "ZXX", "IXX",
-            "XXX", "XYX", "YYX", "ZYX", "IYX", "IYY", "XYY", "YYY", "ZYY", "ZZY", "IZY", "XZY", "YZY",
-            "YIY", "ZIY", "IIY", "XIY", "XXY", "YXY", "ZXY", "IXY", "IXZ", "XXZ", "YXZ", "ZXZ", "ZYZ",
-            "IYZ", "XYZ", "YYZ", "YZZ", "ZZZ", "IZZ", "XZZ", "XIZ", "YIZ", "ZIZ", "IIZ",
-        ]
-    ),
-]
-
-GRAY_CODE_TEST_DATA = [
-    (2, 2, [[0, 0], [1, 0], [1, 1], [0, 1]]),
-    (2, 3, [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 0, 1], [0, 0, 1]]),
-    (4, 2, [
-        [0, 0], [1, 0], [2, 0], [3, 0], [3, 1], [0, 1], [1, 1], [2, 1], 
-        [2, 2], [3, 2], [0, 2], [1, 2], [1, 3], [2, 3], [3, 3], [0, 3]
-    ]),
-    (3, 3, [
-        [0, 0, 0], [1, 0, 0], [2, 0, 0], [2, 1, 0], [0, 1, 0], [1, 1, 0], [1, 2, 0], [2, 2, 0], [0, 2, 0], 
-        [0, 2, 1], [1, 2, 1], [2, 2, 1], [2, 0, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1], [2, 1, 1], [0, 1, 1], 
-        [0, 1, 2], [1, 1, 2], [2, 1, 2], [2, 2, 2], [0, 2, 2], [1, 2, 2], [1, 0, 2], [2, 0, 2], [0, 0, 2]
-    ]),
-]
-# fmt: on
-
-
-class TestHelperFunctions:
-    """Test the helper functions used in the layers."""
-
-    @pytest.mark.parametrize("n,k,expected_code", GRAY_CODE_TEST_DATA)
-    def test_n_k_gray_code(self, n, k, expected_code):
-        """Test that _n_k_gray_code produces the Gray code correctly."""
-        for expected_word, word in zip(expected_code, _n_k_gray_code(n, k)):
-            assert expected_word == word
-
-    @pytest.mark.parametrize("num_wires,expected_pauli_words", PAULI_WORD_TEST_DATA)
-    def test_all_pauli_words_but_identity(self, num_wires, expected_pauli_words):
-        """Test that the correct Pauli words are returned."""
-        for expected_pauli_word, pauli_word in zip(expected_pauli_words, _all_pauli_words_but_identity(num_wires)):
-            assert expected_pauli_word == pauli_word
-
-    @pytest.mark.parametrize("tuple,expected_word", [
-        ((0,), "I"),
-        ((1,), "X"),
-        ((2,), "Y"),
-        ((3,), "Z"),
-        ((0, 0, 0), "III"),
-        ((1, 2, 3), "XYZ"),
-        ((1, 2, 3, 0, 0, 3, 2, 1), "XYZIIZYX"),
-    ])
-    def test_tuple_to_word(self, tuple, expected_word):
-        assert _tuple_to_word(tuple) == expected_word
 
 
 class TestCVNeuralNet:
@@ -708,37 +640,3 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
-
-
-class TestArbitraryUnitary:
-    """Test the ArbitraryUnitary template."""
-
-    def test_correct_gates_single_wire(self):
-        """Test that the correct gates are applied on a single wire."""
-        angles = np.arange(3, dtype=float)
-
-        with qml.utils.OperationRecorder() as rec:
-            ArbitraryUnitary(angles, wires=[0])
-
-        assert all(op.name == "PauliRot" and op.wires == [0] for op in rec.queue)
-
-        pauli_words = ["X", "Y", "Z"]
-
-        for i, op in enumerate(rec.queue):
-            assert op.params[0] == angles[i]
-            assert op.params[1] == pauli_words[i]
-
-    def test_correct_gates_two_wires(self):
-        """Test that the correct gates are applied on two wires."""
-        angles = np.arange(15, dtype=float)
-
-        with qml.utils.OperationRecorder() as rec:
-            ArbitraryUnitary(angles, wires=[0, 1])
-
-        assert all(op.name == "PauliRot" and op.wires == [0, 1] for op in rec.queue)
-
-        pauli_words = ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"]
-
-        for i, op in enumerate(rec.queue):
-            assert op.params[0] == angles[i]
-            assert op.params[1] == pauli_words[i]
