@@ -754,7 +754,7 @@ class TestTensor:
         assert np.array_equal(t.eigvals, np.kron([1, -1], [1, -1]))
 
         # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals, t.eigvals)
+        assert np.array_equal(t._eigvals_cache, t.eigvals)
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):

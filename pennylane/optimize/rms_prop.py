@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Root mean square propagation optimizer"""
-
-import numpy as np
+import math
 
 from pennylane.utils import _flatten, unflatten
 from .adagrad import AdagradOptimizer
@@ -74,7 +73,7 @@ class RMSPropOptimizer(AdagradOptimizer):
             ]
 
         x_new_flat = [
-            e - (self._stepsize / np.sqrt(a + self.eps)) * g
+            e - (self._stepsize / math.sqrt(a + self.eps)) * g
             for a, g, e in zip(self.accumulation, grad_flat, x_flat)
         ]
 

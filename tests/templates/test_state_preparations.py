@@ -202,7 +202,7 @@ class TestMottonenStatePreparation:
 
         circuit()
 
-        state = qubit_device_3_wires._state
+        state = qubit_device_3_wires._state.ravel()
         fidelity = abs(np.vdot(state, target_state))**2
 
         # We test for fidelity here, because the vector themselves will hardly match
@@ -266,7 +266,7 @@ class TestMottonenStatePreparation:
 
         circuit()
 
-        state = qubit_device_3_wires._state
+        state = qubit_device_3_wires._state.ravel()
 
         probabilities = np.abs(state)**2
         target_probabilities = np.abs(target_state)**2

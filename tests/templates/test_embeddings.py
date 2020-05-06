@@ -62,7 +62,7 @@ class TestAmplitudeEmbedding:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
-        state = dev._state
+        state = dev._state.ravel()
         assert np.allclose(state, inpt)
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
@@ -79,7 +79,7 @@ class TestAmplitudeEmbedding:
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
-        state = dev._state
+        state = dev._state.ravel()
         assert len(set(state[len(inpt):])) == 1
 
     @pytest.mark.parametrize("inpt", INPT)
