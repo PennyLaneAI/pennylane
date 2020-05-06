@@ -92,6 +92,7 @@ class DefaultTensorTF(DefaultTensor):
         "model": "qubit",
         "tensor_observables": True,
         "provides_jacobian": True,
+        "passthru_interface": "tf",
     }
 
     _operation_map = copy.copy(DefaultTensor._operation_map)
