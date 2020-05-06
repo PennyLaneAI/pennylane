@@ -15,15 +15,17 @@
 Unit tests for the :mod:`pennylane.utils` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
-import pytest
+import operator
+import functools
+import itertools
 from unittest.mock import MagicMock
+import pytest
 
 import numpy as np
 
 import pennylane as qml
 import pennylane.utils as pu
-import functools
-import itertools
+
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -61,6 +63,33 @@ U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.
 
 U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+
+
+test_Hamiltonians = [np.array([[2.5, -0.5], [-0.5, 2.5]]), np.array(np.diag([0, 0, 0, 1]))]
+
+
+class TestDecomposition:
+    """Tests the decompose_hamiltonian function"""
+
+    @pytest.mark.parametrize("H", test_Hamiltonians)
+    def test_decomp(self, H):
+        """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into Pauli matrices"""
+        N = int(np.log2(len(H)))
+        coeff, combs = pu.decompose_hamiltonian(H)
+        result = np.zeros((2 ** N, 2 ** N))
+        matrices = []
+        for term in combs:
+            base = [qml.Identity] * N
+            if term.num_wires == N:
+                matrices.append(term.matrix)
+            else:
+                base[term.wires[0]] = term.__class__
+                matrices.append(
+                    functools.reduce(operator.matmul, [t(i) for i, t in enumerate(base)]).matrix
+                )
+        for term in zip(coeff, matrices):
+            result = result + term[0] * term[1]
+        assert (H == result).all
 
 
 class TestFlatten:
