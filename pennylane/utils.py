@@ -32,14 +32,14 @@ from pennylane.variable import Variable
 
 
 def decompose_hamiltonian(H):
-    """Decomposes a hamiltonian into tensor product of pauli matrices
+    """Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
         Args:
-            H (matrix): dimensions 2**n
+            H (array[complex]): an Hermitian matrix of dimension :math:`2^N\times 2^N`
 
-        Yields:
-            list: coefficients for every tensor product of pauli matrix combinations
-            list: tensor product of pauli matrix combinations
+        Returns:
+            tuple[list[float], list[~.Observable]]: Returns a list of tensor products of PennyLane Pauli observables, as
+            well as the corresponding coefficients for each tensor product.
         """
     N = int(np.log2(len(H)))
     if len(H) - 2 ** N != 0:
@@ -52,6 +52,7 @@ def decompose_hamiltonian(H):
     for term in itertools.product(paulis, repeat=N):
         matrices = [i._matrix() for i in term]
         coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / (2 ** N)
+        coeff = np.real_if_close(coeff).item()
         #
         if not np.allclose(coeff, 0):
             coeffs.append(coeff)
@@ -64,7 +65,6 @@ def decompose_hamiltonian(H):
                 )
             else:
                 obs.append(functools.reduce(operator.matmul, [t(i) for i, t in enumerate(term)]))
-        # obs.append(functools.reduce(operator.matmul, [t(i) for i, t in enumerate(term)]))
     #
     return coeffs, obs
 
