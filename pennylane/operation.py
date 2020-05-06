@@ -801,7 +801,7 @@ class DiagonalOperation(Operation):
     def eigvals(self):
         r"""Eigenvalues of an instantiated diagonal operation.
 
-        The order of the eigenvalues needs matches the order of
+        The order of the eigenvalues needs to match the order of
         the computational basis vectors.
 
         **Example:**
