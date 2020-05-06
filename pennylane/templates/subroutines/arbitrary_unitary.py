@@ -76,6 +76,17 @@ def ArbitraryUnitary(angles, wires):
     independent real parameters. This templates uses Pauli word rotations to
     parametrize the unitary.
 
+    **Example**
+
+    ArbitraryUnitary can be used as a building block, e.g. to parametrize arbitrary
+    two-qubit operations in a circuit:
+
+    .. code-block:: python
+
+        @qml.template
+        def arbitrary_nearest_neighbour_interaction(angles, wires):
+            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=angles)
+
     Args:
         angles (array[float]): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
             where :math:`n` is the number of wires the template acts upon.
