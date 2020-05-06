@@ -7,6 +7,28 @@
   a simulator device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
 
+  The gate can for example can used to efficiently simulate oracles:
+
+  ```python
+    dev = qml.device('default.qubit', wires=3)
+
+    # Function as a bitstring
+    f = np.array([-1, 1, 1, -1, -1, 1, -1, 1])
+
+    @qml.qnode(dev)
+    def circuit(weights1, weights2):
+        qml.templates.StronglyEntanglingLayers(weights1, wires=[0, 1, 2])
+
+        # Implements the function as a phase-kickback oracle
+        qml.DiagonalQubitUnitary(f, wires=[0, 1, 2])
+
+        qml.templates.StronglyEntanglingLayers(weights2, wires=[0, 1, 2])
+
+        return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+    circuit(features=[1., 2., 3.])
+  ```
+
 * Added `metric_tensor` function to the `VQECost` class and 
   `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
   VQE-like cost functions with quantum natural gradient. 
