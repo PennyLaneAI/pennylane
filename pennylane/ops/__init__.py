@@ -55,6 +55,10 @@ class Identity(CVObservable):
     eigvals = np.array([1, 1])
 
     @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
+
+    @classmethod
     def _matrix(cls, *params):
         return np.eye(2)
 
