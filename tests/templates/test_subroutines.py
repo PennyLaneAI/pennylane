@@ -311,3 +311,28 @@ class TestSingleExcitationOp:
         assert isinstance(res_gate, exp_gate) 
         assert res_wires == exp_wires
         assert res_weight == exp_weight
+
+    @pytest.mark.parametrize(
+        ("weight", "ph", "msg_match"),
+        [
+            ( 0.2      , [0]         , "'wires' must be of shape") ,
+            ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
+            ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
+            ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
+            ( 0.2      , [3, 3]      , "wires_1 must be > wires_0"),
+            ( 0.2      , [3, 1]      , "wires_1 must be > wires_0")
+        ]
+    )
+    def test_single_excitation_op_exceptions(self, weight, ph, msg_match):
+        """Test that SingleExcitationOp throws an exception if ``weight`` or 
+        ``ph`` parameter has illegal shapes, types or values."""
+        dev = qml.device("default.qubit", wires=5)
+
+        def circuit(weight=weight):
+            SingleExcitationOp(weight=weight, wires=ph)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match=msg_match):
+            qnode(weight=weight)
