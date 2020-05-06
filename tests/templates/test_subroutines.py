@@ -328,11 +328,41 @@ class TestSingleExcitationOp:
         ``ph`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=5)
 
-        def circuit(weight=weight):
+        def circuit(weight=weight, ph=ph):
             SingleExcitationOp(weight=weight, wires=ph)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
-            qnode(weight=weight)
+            qnode(weight=weight, ph=ph)
+
+    @pytest.mark.parametrize(
+        ("weight", "ph", "expected"),
+        [
+            ( 2.21375586 , [0, 2], [-0.59956665, 1.        , 0.59956665, -1.]),
+            ( -5.93892805, [1, 3], [ 1.        , 0.94132639, -1.       , -0.94132639])
+        ]
+    )
+    def test_integration(self, weight, ph, expected, tol):
+        """Test integration with PennyLane and gradient calculations"""
+
+        N = 4
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weight):
+            init_state = np.flip(np.array([1,1,0,0]))
+            qml.BasisState(init_state, wires=wires)
+            SingleExcitationOp(weight, ph=ph)
+
+        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(weight)
+        assert np.allclose(res, np.array(expected), atol=tol)
+
+        # compare the two methods of computing the Jacobian
+        jac_A = circuit.jacobian((weight), method="A")
+        jac_F = circuit.jacobian((weight), method="F")
+        assert jac_A == pytest.approx(jac_F, abs=tol)
