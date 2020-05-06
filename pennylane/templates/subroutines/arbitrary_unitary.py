@@ -69,7 +69,7 @@ def _all_pauli_words_but_identity(num_wires):
 
 
 @template
-def ArbitraryUnitary(angles, wires):
+def ArbitraryUnitary(weights, wires):
     """Implements an arbitrary unitary on the specified wires.
 
     An arbitrary unitary on :math:`n` wires is parametrized by :math:`4^n - 1`
@@ -84,11 +84,11 @@ def ArbitraryUnitary(angles, wires):
     .. code-block:: python
 
         @qml.template
-        def arbitrary_nearest_neighbour_interaction(angles, wires):
-            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=angles)
+        def arbitrary_nearest_neighbour_interaction(weights, wires):
+            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=weights)
 
     Args:
-        angles (array[float]): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
+        weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
             where :math:`n` is the number of wires the template acts upon.
         wires (List[int]): The wires on which the arbitrary unitary acts.
     """
@@ -97,10 +97,10 @@ def ArbitraryUnitary(angles, wires):
     n_wires = len(wires)
     expected_shape = (4 ** n_wires - 1,)
     check_shape(
-        angles,
+        weights,
         expected_shape,
-        msg="'angles' must be of shape {}; got {}." "".format(expected_shape, get_shape(angles)),
+        msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
 
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
-        qml.PauliRot(angles[i], pauli_word, wires=wires)
+        qml.PauliRot(weights[i], pauli_word, wires=wires)

@@ -45,7 +45,7 @@ def _state_preparation_pauli_words(num_wires):
 
 
 @template
-def ArbitraryStatePreparation(angles, wires):
+def ArbitraryStatePreparation(weights, wires):
     """Implements an arbitrary state preparation on the specified wires.
 
     An arbitrary state on :math:`n` wires is parametrized by :math:`2^{n+1} - 2`
@@ -62,13 +62,13 @@ def ArbitraryStatePreparation(angles, wires):
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
-        def vqe(angles):
-            qml.ArbitraryStatePreparations(angles, wires=[0, 1, 2, 3])
+        def vqe(weights):
+            qml.ArbitraryStatePreparations(weights, wires=[0, 1, 2, 3])
 
             return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
 
     Args:
-        angles (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^n - 2`
+        weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^n - 2`
             where :math:`n` is the number of wires the template acts upon.
         wires (List[int]): The wires on which the arbitrary unitary acts.
     """
@@ -77,10 +77,10 @@ def ArbitraryStatePreparation(angles, wires):
     n_wires = len(wires)
     expected_shape = (2 ** (n_wires + 1) - 2,)
     check_shape(
-        angles,
+        weights,
         expected_shape,
-        msg="'angles' must be of shape {}; got {}." "".format(expected_shape, get_shape(angles)),
+        msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
 
     for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
-        qml.PauliRot(angles[i], pauli_word, wires=wires)
+        qml.PauliRot(weights[i], pauli_word, wires=wires)
