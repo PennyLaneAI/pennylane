@@ -18,6 +18,7 @@
           qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
           qml.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
           return qml.probs(wires=[0, 1, 2])
+  ```
 
 * Added `metric_tensor` function to the `VQECost` class and 
   `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
