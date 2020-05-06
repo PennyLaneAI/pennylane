@@ -202,7 +202,10 @@ class TorchLayer(Module):
         self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] = None
     ):
         if not TORCH_IMPORTED:
-            raise ImportError("TorchLayer requires PyTorch")
+            raise ImportError("TorchLayer requires PyTorch. PyTorch can be installed using:\n"
+                              "pip install torch\nAlternatively, "
+                              "visit https://pytorch.org/get-started/locally/ for detailed "
+                              "instructions.")
         super().__init__()
 
         self.sig = qnode.func.sig
