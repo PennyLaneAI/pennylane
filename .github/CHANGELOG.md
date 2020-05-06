@@ -23,7 +23,6 @@
         qml.DiagonalQubitUnitary(f, wires=[0, 1, 2])
 
         qml.templates.StronglyEntanglingLayers(weights2, wires=[0, 1, 2])
-
         return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
     circuit(features=[1., 2., 3.])
