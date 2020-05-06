@@ -22,6 +22,14 @@ from pennylane.templates.utils import check_wires, check_shape, get_shape
 
 @functools.lru_cache()
 def _state_preparation_pauli_words(num_wires):
+    """Pauli words necessary for a state preparation.
+
+    Args:
+        num_wires (int): Number of wires of the state preparation
+
+    Returns:
+        List[str]: List of all necessary Pauli words for the state preparation
+    """
     if num_wires == 1:
         return ["X", "Y"]
 
