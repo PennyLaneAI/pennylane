@@ -124,9 +124,10 @@ def SingleExcitationOp(weight, wires=None):
     r, p = wires
 
 #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [[l,l+1] for l in range(r,p)]  
-
-    for i in range(2):
+    set_cnot_wires = [[l,l+1] for l in range(r,p)]
+      
+    n_layers = 2
+    for i in range(n_layers):
 
         # U_1, U_2 acting on wires 'r' and 'p'
         if i==0:
