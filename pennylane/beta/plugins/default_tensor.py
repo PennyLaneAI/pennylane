@@ -14,14 +14,13 @@
 r"""
 Experimental simulator plugin based on tensor network contractions
 """
-import math
-import cmath
 import warnings
 from itertools import product
 
-from pennylane.beta.plugins import numpy_ops as ops
-
 import numpy as np
+
+from pennylane._device import Device
+from pennylane.beta.plugins import numpy_ops as ops
 
 try:
     import tensornetwork as tn
@@ -32,7 +31,6 @@ try:
 except ImportError as e:
     raise ImportError("default.tensor device requires TensorNetwork>=0.3")
 
-from pennylane._device import Device
 
 # tolerance for numerical errors
 TOL = 1e-10

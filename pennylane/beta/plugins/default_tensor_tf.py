@@ -17,7 +17,6 @@ using the TensorFlow backend for Jacobian computations.
 """
 import copy
 
-import numpy as np
 
 try:
     import tensorflow as tf
