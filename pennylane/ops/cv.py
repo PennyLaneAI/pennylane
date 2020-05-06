@@ -32,6 +32,10 @@ quantum operations supported by PennyLane, as well as their conventions.
    :math:`(\hat{\mathbb{1}}, \hat{x}, \hat{p})` for single modes
    and :math:`(\hat{\mathbb{1}}, \hat{x}_1, \hat{p}_2, \hat{x}_1,\hat{p}_2)` for two modes .
 """
+# As the qubit based ``decomposition``, ``_matrix``, ``diagonalizing_gates``
+# abstract methods are not defined in the CV case, disabling the related check
+# pylint: disable=abstract-method
+
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -803,6 +807,62 @@ class NumberOperator(CVObservable):
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
 
+class TensorN(CVObservable):
+    r"""pennylane.ops.TensorN(wires)
+    The tensor product of the :class:`~.NumberOperator` acting on different wires.
+
+    If a single wire is defined, returns a :class:`~.NumberOperator` instance for convenient gradient computations.
+
+    When used with the :func:`~.expval` function, the expectation value
+    :math:`\langle \hat{n}_{i_0} \hat{n}_{i_1}\dots \hat{n}_{i_{N-1}}\rangle`
+    for a (sub)set of modes :math:`[i_0, i_1, \dots, i_{N-1}]` of the system is
+    returned.
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+
+    .. UsageDetails::
+
+        Example for multiple modes:
+
+        >>> cv_obs = qml.TensorN(wires=[0, 1])
+        >>> cv_obs
+        TensorN(wires=[0, 1])
+        >>> cv_obs.ev_order is None
+        True
+
+        Example for a single mode (yields a :class:`~.NumberOperator`):
+
+        >>> cv_obs = qml.TensorN(wires=[1])
+        >>> cv_obs
+        NumberOperator(wires=[1])
+        >>> cv_obs.ev_order
+        2
+    """
+    num_wires = AnyWires
+    num_params = 0
+    par_domain = None
+    ev_order = None
+
+    def __new__(cls, *params, wires=None, do_queue=True):
+        # Custom definition for __new__ needed such that a NumberOperator can
+        # be returned when a single mode is defined
+
+        if wires is None:
+            wires = params[-1]
+            params = params[:-1]
+
+        if isinstance(wires, int) or len(wires) == 1:
+            return NumberOperator(*params, wires=wires, do_queue=do_queue)
+
+        return super().__new__(cls)
+
+
 class X(CVObservable):
     r"""pennylane.ops.X(wires)
     The position quadrature observable :math:`\hat{x}`.
@@ -1012,7 +1072,15 @@ ops = {
 }
 
 
-obs = {"QuadOperator", "NumberOperator", "P", "X", "PolyXP", "FockStateProjector"}
+obs = {
+    "QuadOperator",
+    "NumberOperator",
+    "TensorN",
+    "P",
+    "X",
+    "PolyXP",
+    "FockStateProjector",
+}
 
 
 __all__ = list(ops | obs)

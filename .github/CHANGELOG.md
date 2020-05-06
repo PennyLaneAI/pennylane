@@ -2,6 +2,29 @@
 
 <h3>New features since last release</h3>
 
+* Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
+  `PauliRot` gates to perform an arbitrary unitary and prepare an arbitrary basis
+  state with the minimal number of parameters.
+  [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
+
+  The templates could be used as follows:
+
+  ```python
+    dev = qml.device('default.qubit', wires=3)
+
+    @qml.device(dev)
+    def circuit(weights1, weights2, x):
+          qml.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
+          qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
+          qml.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
+          return qml.probs(wires=[0, 1, 2])
+  ```
+
+* Added `metric_tensor` function to the `VQECost` class and 
+  `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
+  VQE-like cost functions with quantum natural gradient. 
+  [(#618)](https://github.com/XanaduAI/pennylane/pull/618)
+
 * Added the `IQPEmbeddings` template, which encodes inputs into the diagonal gates of an
   IQP circuit.
   [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
@@ -211,6 +234,10 @@
   grad = tape.gradient(res, params)
   ```
 
+* Added the `TensorN` CVObservable that can represent the tensor product of the
+  `NumberOperator`.
+  [(#608)](https://github.com/XanaduAI/pennylane/pull/608)
+
 <h3>Breaking changes</h3>
 
 * The internal variables `All` and `Any` to mark an `Operation` as acting on all or any
@@ -221,8 +248,77 @@
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
+  
+* The `QAOAEmbedding` now uses the new `MultiRZ` gate as a `ZZ` entangler, 
+  which changes the convention: While 
+  previously, the `ZZ` gate in the embedding was implemented as
+  
+  .. code-block:: python
+  
+    CNOT(wires=[wires[0], wires[1]])
+    RZ(2 * parameter, wires=wires[0])
+    CNOT(wires=[wires[0], wires[1]]) 
+  
+  the `MultiRZ` corresponds to 
+
+  .. code-block:: python
+  
+    CNOT(wires=[wires[1], wires[0]])
+    RZ(parameter, wires=wires[0])
+    CNOT(wires=[wires[1], wires[0]]) 
+      
+  which differs in the factor of `2`, and fixes a bug in the 
+  wires that the `CNOT` was applied to.
+  [(#609)](https://github.com/XanaduAI/pennylane/pull/609)
 
 <h3>Improvements</h3>
+
+* Added the `"classical"` and `"device"` differentiation methods to the `qnode`
+  decorator.
+  [(#552)](https://github.com/XanaduAI/pennylane/pull/552)
+
+  Using the `"classical"` differentiation method with the `default.tensor.tf`
+  device, the created QNode is a 'white-box', and is tightly integrated with
+  your TensorFlow computation:
+
+  ```python
+    >>> dev = qml.device("default.tensor.tf", wires=1)
+    >>> @qml.qnode(dev, interface="tf", diff_method="classical")
+    >>> def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> vars = tf.Variable([0.2, 0.5, 0.1])
+    >>> with tf.GradientTape() as tape:
+    ...     res = circuit(vars)
+    >>> tape.gradient(res, vars)
+    <tf.Tensor: shape=(3,), dtype=float32, numpy=array([-2.2526717e-01, -1.0086454e+00,  1.3877788e-17], dtype=float32)>
+  ```
+
+  In this mode, you must use the ``"tf"`` interface, as TensorFlow
+  is used as the device backend.
+
+  Using the `"device"` differentiation method with the `default.tensor.tf` the
+  created QNode is a 'black-box' to your classical computation. PennyLane will
+  automatically accept classical tensors from any supported interface, and
+  query the device directly for the quantum gradient when required.
+
+  ```python
+    >>> dev = qml.device("default.tensor.tf", wires=1)
+    >>> @qml.qnode(dev, interface="autograd", diff_method="device")
+    >>> def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> grad_fn = qml.grad(circuit, argnum=[0])
+    >>> print(grad_fn([0.2, 0.5, 0.1]))
+    ([array(-0.22526717), array(-1.00864546), array(6.9388939e-18)],)
+  ```
+
+  In this mode, even though TensorFlow is used as the device backend, it
+  is independent of the chosen QNode interface. In the example above, we combine
+  ``default.tensor.tf`` with the ``autograd`` interface.
+  It can also be used with the ``torch`` and the ``tf`` interface.
 
 * The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
@@ -300,7 +396,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Lana Bozanic, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, 
+Maggie Li, Johannes Jakob Meyer, Maria Schuld, Sukin Sim, Antal Száva.
 
 # Release 0.8.1 (current release)
 
