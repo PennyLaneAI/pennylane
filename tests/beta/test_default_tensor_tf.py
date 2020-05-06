@@ -678,6 +678,24 @@ class TestHybridInterfaceDeviceIntegration:
         res = params.grad
         assert np.allclose(res.detach().numpy(), self.expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("diff_method", ["device"])
+    def test_tf_interface_device_diff(self, cost, interface, diff_method, tol):
+        """Tests that the gradient of an arbitrary U3 gate is correct
+        using the TensorFlow interface"""
+        import tensorflow as tf
+
+        params = tf.Variable(self.p, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch(params)
+            res = cost(params)
+
+        assert np.allclose(res.numpy(), self.expected_cost, atol=tol, rtol=0)
+
+        res = tape.gradient(res, params)
+        assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
+
     @pytest.fixture
     def cost_with_decomposition(self, diff_method, interface, torch_support):
         """Fixture to create cost function for the test class"""
