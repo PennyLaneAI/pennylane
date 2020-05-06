@@ -227,9 +227,9 @@
   requirements are modified to simplify plugin development.
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
   
-* The ``QAOAEmbedding`` now uses the new ``MultiRZ`` gate as a ``ZZ`` entangler, 
+* The `QAOAEmbedding` now uses the new `MultiRZ` gate as a `ZZ` entangler, 
   which changes the convention: While 
-  previously, the ``ZZ`` gate in the embedding was implemented as
+  previously, the `ZZ` gate in the embedding was implemented as
   
   .. code-block:: python
   
