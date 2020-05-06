@@ -46,7 +46,6 @@ class TorchLayer(Module):
         qnode (qml.QNode): the PennyLane QNode to be converted into a Torch layer
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
             their corresponding shapes
-        output_dim (int): the output dimension of the QNode
         init_method (callable): a `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__
             function for initializing the QNode weights. If not specified, weights are randomly
             initialized using the uniform distribution over :math:`[0, 2 \pi]`.
@@ -74,7 +73,7 @@ class TorchLayer(Module):
     layer with:
 
     >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
-    >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes, output_dim=2)
+    >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
 
     The internal weights of the QNode are automatically initialized within the
     :class:`~.TorchLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
@@ -139,7 +138,7 @@ class TorchLayer(Module):
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
-            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes, output_dim=2)
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
             clayer1 = torch.nn.Linear(2, 2)
             clayer2 = torch.nn.Linear(2, 2)
             softmax = torch.nn.Softmax(dim=1)
@@ -199,7 +198,7 @@ class TorchLayer(Module):
     """
 
     def __init__(
-        self, qnode, weight_shapes: dict, output_dim, init_method: Optional[Callable] = None
+        self, qnode, weight_shapes: dict, init_method: Optional[Callable] = None
     ):
         if not TORCH_IMPORTED:
             raise ImportError("TorchLayer requires PyTorch. PyTorch can be installed using:\n"
@@ -237,9 +236,6 @@ class TorchLayer(Module):
             weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
         }
-
-        # Allows output_dim to be specified as an int, e.g., 5, or as a length-1 tuple, e.g., (5,)
-        self.output_dim = output_dim[0] if isinstance(output_dim, Iterable) else output_dim
 
         defaults = {
             name for name, sig in self.sig.items() if sig.par.default != inspect.Parameter.empty
