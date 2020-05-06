@@ -884,7 +884,7 @@ class Observable(Operator):
 
         The order of the eigenvalues needs to match the order of
         the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`.
+        diagonalized using :attr:`diagonalizing_gates`. This is a requirement for using qubit observables in quantum functions.
 
         **Example:**
 
