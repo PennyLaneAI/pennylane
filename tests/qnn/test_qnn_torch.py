@@ -32,7 +32,7 @@ def indices_up_to(n_max):
     return zip(*[a + 1, b + 1])
 
 
-@pytest.mark.usefixtures("get_circuit")
+@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 @pytest.fixture
 def module(get_circuit, n_qubits, output_dim):
     """Fixture for creating a hybrid Torch module. The module is composed of quantum TorchLayers
@@ -60,7 +60,7 @@ def module(get_circuit, n_qubits, output_dim):
 
 
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
-@pytest.mark.usefixtures("get_circuit")
+@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
     """Unit tests for the pennylane.qnn.torch.TorchLayer class."""
 
@@ -331,7 +331,7 @@ class TestTorchLayer:
 pytest.importorskip("tensorflow", minversion="2")
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")
+@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 def test_interface_conversion(get_circuit):
     """Test if input QNodes with all types of interface are converted internally to the PyTorch
     interface"""
