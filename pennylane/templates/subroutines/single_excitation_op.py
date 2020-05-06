@@ -18,16 +18,17 @@ Contains the ``SingleExcitationOp`` template.
 from pennylane.ops import RX, RZ, Hadamard, CNOT 
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (
-    check_shape,
     check_no_variable,
+    check_shape,
     check_wires,
     check_type,
-    check_number_of_layers,
     get_shape,
 )
 
+from pennylane import numpy as np
+
 @template
-def SingleExcitationOp(weight, wires):
+def SingleExcitationOp(weight, wires=None):
 
     r"""Circuit to exponentiate the coupled-cluster (CC) single-excitation operator
 
@@ -89,6 +90,8 @@ def SingleExcitationOp(weight, wires):
     ##############
     # Input checks
 
+    check_no_variable(wires, msg="'wires' cannot be differentiable")
+
     wires = check_wires(wires)
 
     expected_shape = (2,)
@@ -110,9 +113,15 @@ def SingleExcitationOp(weight, wires):
         check_type(w, [int], msg="'wires' must be a list of integers; got {}" "".format(wires)
         )
 
+    if wires[1] <= wires[0]:
+        raise ValueError(
+            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}" ""
+            .format(wires[1], wires[0])
+        )    
+
     ###############
 
-    r, p = ph
+    r, p = wires
 
 #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
     set_cnot_wires = [[l,l+1] for l in range(r,p)]  
