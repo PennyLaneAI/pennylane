@@ -16,14 +16,69 @@ This module contains the :func:`to_torch` function to convert Numpy-interfacing 
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name,arguments-differ
+from collections import Iterable
 import inspect
 from functools import partial
+import numbers
 
 import numpy as np
 import torch
 from torch.autograd.function import once_differentiable
 
-from pennylane.utils import unflatten
+
+def _unflatten_torch(flat, model):
+    """Restores an arbitrary nested structure to a flattened Torch tensor.
+
+    See also :func:`_flatten`.
+
+    Args:
+        flat (torch.Tensor): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Raises:
+        TypeError: if ``model`` contains an object of unsupported type
+
+    Returns:
+        Union[torch.Tensor, list, Any], array: first elements of flat arranged into the nested
+        structure of model, unused elements of flat
+    """
+    if isinstance(model, (numbers.Number, str)):
+        return flat[0], flat[1:]
+
+    if isinstance(model, torch.Tensor):
+        idx = model.size
+        res = flat[:idx].view(model.shape)
+        return res, flat[idx:]
+
+    if isinstance(model, Iterable):
+        res = []
+        for x in model:
+            val, flat = _unflatten_torch(flat, x)
+            res.append(val)
+        return res, flat
+
+    raise TypeError("Unsupported type in the model: {}".format(type(model)))
+
+
+def unflatten_torch(flat, model):
+    """Wrapper for :func:`_unflatten_torch`.
+
+    Args:
+        flat (torch.Tensor): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Returns:
+        Union[torch.Tensor, list, Any], array: first elements of flat arranged into the nested
+        structure of model, unused elements of flat
+
+    Raises:
+        ValueError: if ``flat`` has more elements than ``model``
+    """
+    # pylint:disable=len-as-condition
+    res, tail = _unflatten_torch(flat, model)
+    if len(tail) != 0:
+        raise ValueError("Flattened iterable has more elements than the model.")
+    return [torch.as_tensor(i) for i in res]
 
 
 def _get_default_args(func):
@@ -146,29 +201,18 @@ def to_torch(qnode):
 
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
+            jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
-            if grad_output.is_cuda:  # pragma: no cover
-                grad_output_np = grad_output.cpu().detach().numpy()
-            else:
-                grad_output_np = grad_output.detach().numpy()
-
-            # perform the vector-Jacobian product
-            if not grad_output_np.shape:
-                temp = grad_output_np * jacobian
-            else:
-                temp = grad_output_np.T @ jacobian
+            vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
 
             # restore the nested structure of the input args
-            temp = [
-                np.array(i) if not isinstance(i, np.ndarray) else i
-                for i in unflatten(temp.flat, ctx.args)
-            ]
+            grad_input_list = list(unflatten_torch(vjp.flatten(), ctx.args))
 
-            # convert the result to torch tensors, matching
-            # the type of the input tensors
             grad_input = []
-            for i, j in zip(temp, ctx.saved_tensors):
-                res = torch.as_tensor(torch.from_numpy(i), dtype=j.dtype)
+
+            # match the type and device of the input tensors
+            for i, j in zip(grad_input_list, ctx.saved_tensors):
+                res = torch.as_tensor(i, dtype=j.dtype)
                 if j.is_cuda:  # pragma: no cover
                     cuda_device = j.get_device()
                     res = torch.as_tensor(res, device=cuda_device)
