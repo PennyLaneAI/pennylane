@@ -504,7 +504,7 @@ class TestJacobianIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "device"])
     def test_jacobian_agrees(self, diff_method, torch_support, rep, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         returns the same result as default.qubit."""
@@ -522,14 +522,14 @@ class TestJacobianIntegration:
         dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = QNode(circuit, dev1, diff_method=diff_method, h=1e-7)
-        circuit2 = QNode(circuit, dev2, diff_method=diff_method, h=1e-7)
+        circuit2 = QNode(circuit, dev2, diff_method="parameter-shift", h=1e-7)
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
-class TestInterfaceIntegration:
+class TestInterfaceDeviceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
     interfaces."""
@@ -608,7 +608,7 @@ class TestInterfaceIntegration:
 
 
 @pytest.mark.parametrize("rep", ("exact", "mps"))
-class TestHybridInterfaceIntegration:
+class TestHybridInterfaceDeviceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
     interfaces in the case of hybrid-classical computation."""
@@ -635,7 +635,7 @@ class TestHybridInterfaceIntegration:
     )
 
     @pytest.fixture
-    def cost(self, interface, torch_support, rep):
+    def cost(self, diff_method, interface, torch_support):
         """Fixture to create cost function for the test class"""
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
