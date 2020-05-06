@@ -19,11 +19,11 @@ across the PennyLane submodules.
 from collections.abc import Iterable
 from collections import OrderedDict
 import copy
-import numbers
 import functools
 import inspect
 import itertools
-import operator
+import numbers
+from operator import matmul
 
 import numpy as np
 
@@ -34,55 +34,56 @@ from pennylane.variable import Variable
 def decompose_hamiltonian(H):
     """Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
-        Args:
-            H (array[complex]): an Hermitian matrix of dimension :math:`2^N\times 2^N`
+    Args:
+        H (array[complex]): an Hermitian matrix of dimension :math:`2^N\times 2^N`
 
-        Returns:
-            tuple[list[float], list[~.Observable]]: Returns a list of tensor products of PennyLane Pauli observables, as
-            well as the corresponding coefficients for each tensor product.
-            
-            **Example**
+    Returns:
+        tuple[list[float], list[~.Observable]]: Returns a list of tensor products of PennyLane Pauli observables, as
+        well as the corresponding coefficients for each tensor product.
 
-            We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
-            matrix:
+    **Example:**
 
-            >>> A = np.array([[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-            >>>  coeffs, obs_list = decompose_hamiltonian(A)
-            >>> coeffs
-            [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5]
+    We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
+    matrix:
 
-            We can use the output coefficients and tensor Pauli terms to construct a :class:`~.Hamiltonian`:
-            >>> H = qml.Hamiltonian(coeffs, obs_list)
-            >>> print(H)
-            (-1.0) [I0 I1]
-            + (-1.5) [X1]
-            + (-0.5) [Y1]
-            + (-1.0) [Z1]
-            + (-1.5) [X0]
-            + (-1.0) [X0 X1]
-            + (-0.5) [X0 Z1]
-            + (1.0) [Y0 Y1]
-            + (-0.5) [Z0 X1]
-            + (-0.5) [Z0 Y1]
+    >>> A = np.array([[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
+    >>>  coeffs, obs_list = decompose_hamiltonian(A)
+    >>> coeffs
+    [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5]
 
-            This Hamiltonian can then be used in defining VQE problems using :class:`~VQECost`.
-        """
+    We can use the output coefficients and tensor Pauli terms to construct a :class:`~.Hamiltonian`:
+    >>> H = qml.Hamiltonian(coeffs, obs_list)
+    >>> print(H)
+    (-1.0) [I0 I1]
+    + (-1.5) [X1]
+    + (-0.5) [Y1]
+    + (-1.0) [Z1]
+    + (-1.5) [X0]
+    + (-1.0) [X0 X1]
+    + (-0.5) [X0 Z1]
+    + (1.0) [Y0 Y1]
+    + (-0.5) [Z0 X1]
+    + (-0.5) [Z0 Y1]
+
+    This Hamiltonian can then be used in defining VQE problems using :class:`~VQECost`.
+    """
     N = int(np.log2(len(H)))
+
     if len(H) - 2 ** N != 0:
         raise ValueError("Hamiltonian should be in the form (n^2 x n^2), for any n>=1")
-    #
+
     paulis = [qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ]
     obs = []
     coeffs = []
-    #
+
     for term in itertools.product(paulis, repeat=N):
         matrices = [i._matrix() for i in term]
         coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / (2 ** N)
         coeff = np.real_if_close(coeff).item()
-        #
+
         if not np.allclose(coeff, 0):
             coeffs.append(coeff)
-            #
+
             if not all(t is qml.Identity for t in term):
                 obs.append(
                     functools.reduce(
@@ -90,8 +91,8 @@ def decompose_hamiltonian(H):
                     )
                 )
             else:
-                obs.append(functools.reduce(operator.matmul, [t(i) for i, t in enumerate(term)]))
-    #
+                obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
+
     return coeffs, obs
 
 
