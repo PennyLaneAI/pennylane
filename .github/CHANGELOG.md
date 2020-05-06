@@ -24,7 +24,6 @@
 
         qml.templates.StronglyEntanglingLayers(weights2, wires=[0, 1, 2])
         return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
   ```
 
 * Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
