@@ -344,8 +344,8 @@ acts on. For example, to define a custom gate depending on parameter :math:`\phi
         grad_method = 'A'
         grad_recipe = None
 
-        @staticmethod
-        def _matrix(*params):
+        @classmethod
+        def _matrix(cls, *params):
             """Returns the matrix representation of the operator for the
             provided parameter values, in the computational basis."""
             return np.array([[params[0], 1], [1, -params[1]]]) / math.sqrt(2)
@@ -408,6 +408,28 @@ The user can then import this operation directly from your plugin, and use it wh
     If you are providing custom operations not natively supported by PennyLane, it is recommended
     that the plugin unit tests **do** provide tests to ensure that PennyLane returns the correct
     gradient for the custom operations.
+
+If the custom operation is diagonal in the computational basis, it is recommended to subclass
+:class:`~.DiagonalOperation`. For diagonal operations, :attr:`_eigvals` has to be overridden
+instead of :attr:`_matrix`. 
+
+.. code-block:: python
+
+    class CustomDiagonalGate(DiagonalOperation):
+        """Custom gate"""
+        num_params = 0
+        num_wires = 2
+
+        @classmethod
+        def _eigvals(cls, *params):
+            """Returns the eigenvalues of the operation in the computational basis."""
+            return np.array([1j, 1j, -1j, -1j])
+
+        @staticmethod
+        def decomposition(*params, wires):
+            """(Optional) Returns a list of PennyLane operations that decompose
+            the custom gate."""
+            return [qml.DiagonalQubitUnitary([1j, 1j, -1j, -1j], wires=wires)]
 
 Supporting new observables
 --------------------------
