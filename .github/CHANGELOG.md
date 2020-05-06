@@ -237,7 +237,7 @@
     RZ(2 * parameter, wires=wires[0])
     CNOT(wires=[wires[0], wires[1]]) 
   
-  the ``MultiRZ`` corresponds to 
+  the `MultiRZ` corresponds to 
 
   .. code-block:: python
   
