@@ -220,16 +220,31 @@ class CircuitGraph:
         Returns:
             str: OpenQASM serialization of the circuit
         """
+        # We import decompose_queue here to avoid a circular import
         from pennylane.qnodes.base import decompose_queue
 
+        # number of qubits
+        N = len(self._grid)
+
+        # add the QASM headers
         qasm_str = "OPENQASM 2.0;\n"
         qasm_str += "include \"qelib1.inc\";\n"
 
-        N = len(self._grid)
-
+        # create the quantum and classical registers
         qasm_str += "qreg q[{}];\n".format(N)
         qasm_str += "creg q[{}];\n".format(N)
 
+        # Map PennyLane gate names to equivalent QASM gate names.
+        # Note that QASM has two native gates:
+        #
+        # - U (equivalent to qml.U3)
+        # - CX (equivalent to qml.CNOT)
+        #
+        # All other gates are defined in the file qelib1.inc:
+        # https://github.com/Qiskit/openqasm/blob/master/examples/generic/qelib1.inc
+        #
+        # Question: do other implementations of QASM exist that
+        # don't use the qelib1.inc gate definitions?
         native_qasm_gates = {
             "CNOT": "cx",
             "CZ": "cz",
@@ -257,28 +272,42 @@ class CircuitGraph:
             "PhaseShift": "u1",
         }
 
+        # get the user applied circuit operations
         operations = self.operations
 
         if rotations:
+            # if requested, append on diagonalizing gates corresponding
+            # to circuit observables
             operations += self.diagonalizing_gates
 
-        # decompose the queue
+        # Create a mock QASMDevice, to be used when performing the decomposition.
+        # The short_name is not strictly necessary, but it used in error messages
+        # if the decomposition fails.
         class QASMDevice:
             short_name = "QASM serializer"
             supports_operation = staticmethod(lambda x: x in native_qasm_gates)
 
+        # decompose the queue
         operations = decompose_queue(operations, QASMDevice)
 
+        # create the QASM code representing the operations
         for op in operations:
             gate = native_qasm_gates[op.name]
             wires = ",".join(["q[{}]".format(w) for w in op.wires])
             params = ""
 
             if op.num_params > 0:
+                # If the operation takes parameters, construct a string
+                # with parameter values.
                 params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
             qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wires)
 
+        # apply computational basis measurements to each quantum register
+        # NOTE: This is not strictly necessary, we could inspect self.observables,
+        # and then only measure wires which are requested by the user. However,
+        # some devices which consume QASM require all registers be measured, so
+        # measure all wires to be safe.
         for wire in range(N):
             qasm_str += "measure q[{wire}] -> c[{wire}];\n".format(wire=wire)
 
