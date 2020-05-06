@@ -315,8 +315,10 @@ class TestSingleExcitationOp:
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
         [
-            ( 0.2      , [0]         , "'wires' must be of shape") ,
+            ( 0.2      , [0]         , "'wires' must be of shape"),
+            ( 0.2      , []          , "'wires' must be of shape"),
             ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
+            ( 0.2      , None        , "wires must be a positive integer"),
             ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
             ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
             ( 0.2      , [3, 3]      , "wires_1 must be > wires_0"),
