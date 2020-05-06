@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added `metric_tensor` function to the `VQECost` class and 
+  `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
+  VQE-like cost functions with quantum natural gradient. 
+  [(#618)](https://github.com/XanaduAI/pennylane/pull/618)
+
 * Added the `IQPEmbeddings` template, which encodes inputs into the diagonal gates of an
   IQP circuit.
   [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
@@ -322,7 +327,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ville Bergholm, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
+Ville Bergholm, Lana Bozanic, Thomas Bromley, Theodor Isacsson, Josh Izaac, Nathan Killoran, 
+Maggie Li, Johannes Jakob Meyer, Maria Schuld, Sukin Sim, Antal Száva.
 
 # Release 0.8.1 (current release)
 
