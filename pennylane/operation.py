@@ -281,20 +281,18 @@ class Operator(abc.ABC):
 
     @classmethod
     def _eigvals(cls, *params):
-        """Eigenvalues of the operator in the computational basis.
+        """Eigenvalues of the operator.
 
         This is a *class method* that should be defined for all
-        new operations and observables, that returns the eigenvalues
-        of the operator in the computational basis.
+        new operations and observables that returns the eigenvalues
+        of the operator. Note that the eigenvalues are not guaranteed
+        to be in any particular order.
 
         This private method allows eigenvalues to be computed
         directly without instantiating the operators first.
 
         To return the eigenvalues of *instantiated* operators,
         please use the :attr:`~.Operator.eigvals` property instead.
-
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
 
         **Example:**
 
@@ -764,6 +762,33 @@ class DiagonalOperation(Operation):
             outside of a BaseQNode context.
     """
     # pylint: disable=abstract-method
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the operator.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors.
+
+        This is a *class method* that must be defined for all
+        new diagonal operations, that returns the eigenvalues
+        of the operator in the computational basis.
+
+        This private method allows eigenvalues to be computed
+        directly without instantiating the operators first.
+
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.Operator.eigvals` property instead.
+
+        **Example:**
+
+        >>> qml.RZ._eigvals(0.5)
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigenvalue representation
+        """
+        raise NotImplementedError
 
     @classmethod
     def _matrix(cls, *params):
