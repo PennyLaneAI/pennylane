@@ -98,8 +98,7 @@ def _get_qnode_class(device, interface, diff_method):
             return PARAMETER_SHIFT_QNODES[model]
 
         raise ValueError(
-            "The {} device does not provide a native method "
-            "for computing the jacobian.".format(device.short_name)
+            "The parameter shift rule is not available for devices with model {}.".format(model)
         )
 
     if diff_method in ALLOWED_DIFF_METHODS:
