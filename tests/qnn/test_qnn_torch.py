@@ -45,8 +45,8 @@ def module(get_circuit, n_qubits, output_dim):
             self.clayer1 = torch.nn.Linear(n_qubits, n_qubits)
             self.clayer2 = torch.nn.Linear(output_dim, n_qubits)
             self.clayer3 = torch.nn.Linear(output_dim, output_dim)
-            self.qlayer1 = TorchLayer(c, w, output_dim)
-            self.qlayer2 = TorchLayer(c, w, output_dim)
+            self.qlayer1 = TorchLayer(c, w)
+            self.qlayer2 = TorchLayer(c, w)
 
         def forward(self, x):
             x = self.clayer1(x)
@@ -65,25 +65,25 @@ class TestTorchLayer:
     """Unit tests for the pennylane.qnn.torch.TorchLayer class."""
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_torch(self, get_circuit, output_dim, monkeypatch):
+    def test_no_torch(self, get_circuit, monkeypatch):
         """Test if an ImportError is raised when instantiated without PyTorch"""
         c, w = get_circuit
         with monkeypatch.context() as m:
             m.setattr(qml.qnn.torch, "TORCH_IMPORTED", False)
             with pytest.raises(ImportError, match="TorchLayer requires PyTorch"):
-                TorchLayer(c, w, output_dim)
+                TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_no_input(self, get_circuit, output_dim):
+    def test_no_input(self, get_circuit):
         """Test if a TypeError is raised when instantiated with a QNode that does not have an
         argument with name equal to the input_arg class attribute of TorchLayer"""
         c, w = get_circuit
         del c.func.sig[qml.qnn.torch.TorchLayer._input_arg]
         with pytest.raises(TypeError, match="QNode must include an argument with name"):
-            TorchLayer(c, w, output_dim)
+            TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_input_in_weight_shapes(self, get_circuit, n_qubits, output_dim):
+    def test_input_in_weight_shapes(self, get_circuit, n_qubits):
         """Test if a ValueError is raised when instantiated with a weight_shapes dictionary that
         contains the shape of the input argument given by the input_arg class attribute of
         TorchLayer"""
@@ -95,19 +95,19 @@ class TestTorchLayer:
                 qml.qnn.torch.TorchLayer._input_arg
             ),
         ):
-            TorchLayer(c, w, output_dim)
+            TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_weight_shape_unspecified(self, get_circuit, output_dim):
+    def test_weight_shape_unspecified(self, get_circuit):
         """Test if a ValueError is raised when instantiated with a weight missing from the
         weight_shapes dictionary"""
         c, w = get_circuit
         del w["w1"]
         with pytest.raises(ValueError, match="Must specify a shape for every non-input parameter"):
-            TorchLayer(c, w, output_dim)
+            TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_pos(self, get_circuit, monkeypatch, output_dim):
+    def test_var_pos(self, get_circuit, monkeypatch):
         """Test if a TypeError is raised when instantiated with a variable number of positional
         arguments"""
         c, w = get_circuit
@@ -123,10 +123,10 @@ class TestTorchLayer:
             m.setattr(c, "func", FuncPatch)
 
             with pytest.raises(TypeError, match="Cannot have a variable number of positional"):
-                TorchLayer(c, w, output_dim)
+                TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_var_keyword(self, get_circuit, monkeypatch, output_dim):
+    def test_var_keyword(self, get_circuit, monkeypatch):
         """Test if a TypeError is raised when instantiated with a variable number of keyword
         arguments"""
         c, w = get_circuit
@@ -142,31 +142,22 @@ class TestTorchLayer:
             m.setattr(c, "func", FuncPatch)
 
             with pytest.raises(TypeError, match="Cannot have a variable number of keyword"):
-                TorchLayer(c, w, output_dim)
-
-    @pytest.mark.parametrize("n_qubits", [1])
-    @pytest.mark.parametrize("output_dim", zip(*[[[1], (1,), 1], [1, 1, 1]]))
-    def test_output_dim(self, get_circuit, output_dim):
-        """Test if the output_dim is correctly processed, i.e., that an iterable is mapped to
-        its first element while an int is left unchanged"""
-        c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim[0])
-        assert layer.output_dim == output_dim[1]
+                TorchLayer(c, w)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_nonspecified_init(self, get_circuit, output_dim, n_qubits, monkeypatch):
+    def test_nonspecified_init(self, get_circuit, n_qubits, monkeypatch):
         """Test if weights are initialized according to the uniform distribution in [0, 2 pi]"""
         c, w = get_circuit
 
         uniform_ = mock.MagicMock(return_value=torch.Tensor(1))
         with monkeypatch.context() as m:
             m.setattr(torch.nn.init, "uniform_", uniform_)
-            TorchLayer(c, w, output_dim)
+            TorchLayer(c, w)
             kwargs = uniform_.call_args[1]
             assert kwargs["b"] == 2 * math.pi
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_non_input_defaults(self, get_circuit, output_dim, n_qubits):
+    def test_non_input_defaults(self, get_circuit, n_qubits):
         """Test if a TypeError is raised when default arguments that are not the input argument are
         present in the QNode"""
         c, w = get_circuit
@@ -180,13 +171,13 @@ class TestTorchLayer:
             TypeError,
             match="Only the argument {} is permitted".format(qml.qnn.torch.TorchLayer._input_arg),
         ):
-            TorchLayer(c_dummy, {**w, **{"w8": 1}}, output_dim)
+            TorchLayer(c_dummy, {**w, **{"w8": 1}})
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_qnode_weights_shapes(self, get_circuit, output_dim, n_qubits):
+    def test_qnode_weights_shapes(self, get_circuit, n_qubits):
         """Test if the weights in qnode_weights have the correct shape"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
 
         ideal_shapes = {
             "w1": torch.Size((3, n_qubits, 3)),
@@ -202,22 +193,22 @@ class TestTorchLayer:
             assert weight.shape == ideal_shapes[name]
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_qnode_weights_registered(self, get_circuit, output_dim, n_qubits):
+    def test_qnode_weights_registered(self, get_circuit, n_qubits):
         """Test if the weights in qnode_weights are registered to the internal _parameters
         dictionary and that requires_grad == True"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
 
         for name, weight in layer.qnode_weights.items():
             assert torch.allclose(weight, layer._parameters[name])
             assert weight.requires_grad
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_evaluate_qnode(self, get_circuit, output_dim, n_qubits):
+    def test_evaluate_qnode(self, get_circuit, n_qubits):
         """Test if the _evaluate_qnode() method works correctly, i.e., that it gives the same
         result as calling the QNode directly"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
@@ -246,7 +237,7 @@ class TestTorchLayer:
             qml.RX(w7, wires=0)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = TorchLayer(c_shuffled, w, output_dim)
+        layer = TorchLayer(c_shuffled, w)
         x = torch.Tensor(np.ones(n_qubits))
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
@@ -274,7 +265,7 @@ class TestTorchLayer:
             qml.RX(w7, wires=0)
             return [qml.expval(qml.PauliZ(i)) for i in range(output_dim)]
 
-        layer = TorchLayer(c_default, w, output_dim)
+        layer = TorchLayer(c_default, w)
         x = torch.Tensor(np.ones(n_qubits))
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
@@ -288,7 +279,7 @@ class TestTorchLayer:
         """Test if the forward() method accepts a single input (i.e., not with an extra batch
         dimension) and returns a tensor of the right shape"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
         x = torch.Tensor(np.ones(n_qubits))
 
         layer_out = layer.forward(x)
@@ -299,27 +290,27 @@ class TestTorchLayer:
         """Test if the forward() method accepts a batched input and returns a tensor of the right
         shape"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
         x = torch.Tensor(np.ones((2, n_qubits)))
 
         layer_out = layer.forward(x)
         assert layer_out.shape == torch.Size((2, output_dim))
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_str_repr(self, get_circuit, output_dim):
+    def test_str_repr(self, get_circuit):
         """Test the __str__ and __repr__ representations"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
 
         assert layer.__str__() == "<Quantum Torch Layer: func=circuit>"
         assert layer.__repr__() == "<Quantum Torch Layer: func=circuit>"
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_gradients(self, get_circuit, output_dim, n_qubits):
+    def test_gradients(self, get_circuit, n_qubits):
         """Test if the gradients of the TorchLayer are equal to the gradients of the circuit when
         taken with respect to the trainable variables"""
         c, w = get_circuit
-        layer = TorchLayer(c, w, output_dim)
+        layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
         weights = list(layer.parameters())
 
@@ -341,11 +332,11 @@ pytest.importorskip("tensorflow", minversion="2")
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")
-def test_interface_conversion(get_circuit, output_dim):
+def test_interface_conversion(get_circuit):
     """Test if input QNodes with all types of interface are converted internally to the PyTorch
     interface"""
     c, w = get_circuit
-    layer = TorchLayer(c, w, output_dim)
+    layer = TorchLayer(c, w)
     assert layer.qnode.interface == "torch"
 
 
@@ -401,7 +392,7 @@ class TestTorchLayerIntegration:
         assert len(gradients) == 2 * len(w) + 6  # six parameters come from classical layers
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_module_state_dict(self, module, output_dim, n_qubits, get_circuit):
+    def test_module_state_dict(self, module, n_qubits, get_circuit):
         """Test if the state dictionary output by the module contains all the expected trainable
         parameters"""
         c, w = get_circuit
