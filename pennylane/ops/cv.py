@@ -854,14 +854,9 @@ class TensorN(CVObservable):
             params = params[:-1]
 
         if isinstance(wires, int) or len(wires) == 1:
-            instance = NumberOperator.__new__(NumberOperator)
-        else:
-            instance = super().__new__(cls)
+            return NumberOperator(*params, wires=wires, do_queue=do_queue)
 
-        # Need to call __init__ as it is not being invoked with a custom
-        # __new__ method
-        instance.__init__(*params, wires=wires, do_queue=do_queue)
-        return instance
+        return super().__new__(cls)
 
 
 class X(CVObservable):
