@@ -44,6 +44,20 @@ def ArbitraryStatePreparation(angles, wires):
     independent real parameters. This templates uses Pauli word rotations to
     parametrize the unitary.
 
+    **Example**
+
+    ArbitraryStatePreparation can be used to train state preparations:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def vqe(angles):
+            qml.ArbitraryStatePreparations(angles, wires=[0, 1, 2, 3])
+
+            return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
+
     Args:
         angles (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^n - 2`
             where :math:`n` is the number of wires the template acts upon.
