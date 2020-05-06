@@ -51,11 +51,11 @@ class Hadamard(Observable, Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return Hadamard.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return Hadamard.eigvals
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -96,11 +96,11 @@ class PauliX(Observable, Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return PauliX.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return PauliX.eigvals
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -139,11 +139,11 @@ class PauliY(Observable, Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return PauliY.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return PauliY.eigvals
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         r"""Rotates the specified wires such that they
@@ -184,11 +184,11 @@ class PauliZ(Observable, DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        return PauliZ.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return PauliZ.eigvals
+        return cls.eigvals
 
     def diagonalizing_gates(self):
         return []
@@ -319,11 +319,11 @@ class CZ(DiagonalOperation):
 
     @classmethod
     def _matrix(cls, *params):
-        return CZ.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return CZ.eigvals
+        return cls.eigvals
 
 
 class SWAP(Operation):
@@ -353,11 +353,11 @@ class SWAP(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return SWAP.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return SWAP.eigvals
+        return cls.eigvals
 
 
 class CSWAP(Operation):
@@ -404,11 +404,11 @@ class CSWAP(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return CSWAP.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return CSWAP.eigvals
+        return cls.eigvals
 
 
 class Toffoli(Operation):
@@ -456,11 +456,11 @@ class Toffoli(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        return Toffoli.matrix
+        return cls.matrix
 
     @classmethod
     def _eigvals(cls, *params):
-        return Toffoli.eigvals
+        return cls.eigvals
 
 
 class RX(Operation):
