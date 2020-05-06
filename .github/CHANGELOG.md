@@ -2,6 +2,24 @@
 
 <h3>New features since last release</h3>
 
+* Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
+  `PauliRot` gates to perform an arbitrary unitary and prepare an arbitrary basis
+  state with the minimal number of parameters.
+  [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
+
+  The templates could be used as follows:
+
+  ```python
+    dev = qml.device('default.qubit', wires=3)
+
+    @qml.device(dev)
+    def circuit(weights1, weights2, x):
+          qml.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
+          qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
+          qml.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
+          return qml.probs(wires=[0, 1, 2])
+  ```
+
 * Added `metric_tensor` function to the `VQECost` class and 
   `metric_tensor_fn` to `QNGOptimizer.step`, allowing users to optimize
   VQE-like cost functions with quantum natural gradient. 
