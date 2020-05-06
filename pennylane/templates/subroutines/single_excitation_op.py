@@ -125,12 +125,12 @@ def SingleExcitationOp(weight, wires=None):
 
 #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
     set_cnot_wires = [[l,l+1] for l in range(r,p)]
-      
+
     n_layers = 2
-    for i in range(n_layers):
+    for layer in range(n_layers):
 
         # U_1, U_2 acting on wires 'r' and 'p'
-        if i==0:
+        if layer==0:
             RX(-np.pi/2, wires=r)
             Hadamard(wires=p)
         else:
@@ -142,7 +142,7 @@ def SingleExcitationOp(weight, wires=None):
             CNOT(wires=cnot_wires)
 
         # Z rotation acting on wire 'p'
-        if i == 0:
+        if layer == 0:
             RZ(weight/2, wires=p)
         else:
             RZ(-weight/2, wires=p)
@@ -152,7 +152,7 @@ def SingleExcitationOp(weight, wires=None):
             CNOT(wires=cnot_wires)  
 
         # U_1^+, U_2^+ acting on wires 'r' and 'p'
-        if i == 0:
+        if layer == 0:
             RX(np.pi/2, wires=r)
             Hadamard(wires=p)
         else:
