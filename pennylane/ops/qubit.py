@@ -278,16 +278,11 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @classmethod
     def _matrix(cls, *params):
         return CNOT.matrix
-
-    @classmethod
-    def _eigvals(cls, *params):
-        return CNOT.eigvals
 
 
 class CZ(DiagonalOperation):
@@ -348,16 +343,11 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
-
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
 
 
 class CSWAP(Operation):
@@ -388,7 +378,6 @@ class CSWAP(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    eigvals = np.array([1, 1, 1, 1, 1, 1, 1, -1])
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -405,10 +394,6 @@ class CSWAP(Operation):
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
-
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
 
 
 class Toffoli(Operation):
@@ -440,7 +425,6 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    eigvals = np.array([1, 1, 1, 1, 1, 1, 1, -1])
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -457,10 +441,6 @@ class Toffoli(Operation):
     @classmethod
     def _matrix(cls, *params):
         return cls.matrix
-
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
 
 
 class RX(Operation):
@@ -497,13 +477,6 @@ class RX(Operation):
 
         return np.array([[c, js], [js, c]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
-        p = cmath.exp(-0.5j * theta)
-
-        return np.array([p, p.conjugate()])
-
 
 class RY(Operation):
     r"""RY(phi, wires)
@@ -538,13 +511,6 @@ class RY(Operation):
         s = math.sin(theta / 2)
 
         return np.array([[c, -s], [s, c]])
-
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
-        p = cmath.exp(-0.5j * theta)
-
-        return np.array([p, p.conjugate()])
 
 
 class RZ(DiagonalOperation):
@@ -941,11 +907,6 @@ class CRX(Operation):
 
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
-        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
-
     @staticmethod
     def decomposition(theta, wires):
         decomp_ops = [
@@ -1012,11 +973,6 @@ class CRY(Operation):
         s = math.sin(theta / 2)
 
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
-
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
-        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
 
     @staticmethod
     def decomposition(theta, wires):
