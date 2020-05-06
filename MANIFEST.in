@@ -3,4 +3,4 @@ include doc/*
 include LICENSE
 include examples/*
 include tests/*
-include default_config.toml
+include example_config.toml
