@@ -29,6 +29,7 @@ import pennylane.operation
 
 import pennylane.init
 import pennylane.templates
+import pennylane.qnn
 from pennylane.templates import template, broadcast
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, VQECost

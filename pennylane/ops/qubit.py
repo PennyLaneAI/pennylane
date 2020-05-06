@@ -16,12 +16,14 @@ This module contains the available built-in discrete-variable
 quantum operations supported by PennyLane, as well as their conventions.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import functools
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import Any, Observable, Operation
+from pennylane.templates import template
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.utils import OperationRecorder, pauli_eigs
+from pennylane.utils import OperationRecorder, pauli_eigs, expand
 
 
 class Hadamard(Observable, Operation):
@@ -565,6 +567,220 @@ class Rot(Operation):
         return decomp_ops
 
 
+class MultiRZ(Operation):
+    r"""MultiRZ(theta, wires)
+    Arbitrary multi Z rotation.
+
+    .. math::
+
+        MultiRZ(\theta) = \exp(-i \frac{\theta}{2} Z^{\otimes n})
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\theta}f(MultiRZ(\theta)) = \frac{1}{2}\left[f(MultiRZ(\theta +\pi/2)) - f(MultiRZ(\theta-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`MultiRZ(\theta)`.
+
+    .. note::
+
+        If the ``MultiRZ`` gate is not supported on the targeted device, PennyLane
+        will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "R"
+    grad_method = "A"
+
+    @staticmethod
+    def _matrix(theta, n):
+        """Matrix representation of a MultiRZ gate.
+
+        Args:
+            theta (float): Rotation angle.
+            n (int): Number of wires the rotation acts on. This has
+                to be given explicitly in the static method as the
+                wires object is not available.
+
+        Returns:
+            array[complex]: The matrix representation
+        """
+        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
+        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+
+        return multi_Z_rot_matrix
+
+    @property
+    def matrix(self):
+        # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
+        if self.inverse:
+            # The matrix is diagonal, so there is no need to transpose
+            return self._matrix(*self.parameters, len(self.wires)).conj()
+
+        return self._matrix(*self.parameters, len(self.wires))
+
+    @staticmethod
+    def _eigvals(theta, n):
+        """Return the eigenvalues corresponding to a specific rotation angle.
+
+        Args:
+            theta (float): Rotation angle
+
+        Returns:
+            (array[float]): Eigenvalues of the transformation
+        """
+        return np.exp(-1j * theta / 2 * pauli_eigs(n))
+
+    @property
+    def eigvals(self):
+        """Return the eigenvalues of this operation.
+
+        Returns:
+            (array[float]): Eigenvalues of the transformation
+        """
+        if self.inverse:
+            return self._eigvals(self.parameters[0], len(self.wires)).conj()
+
+        return self._eigvals(self.parameters[0], len(self.wires))
+
+    @staticmethod
+    @template
+    def decomposition(theta, wires):
+        for i in range(len(wires) - 1, 0, -1):
+            CNOT(wires=[wires[i], wires[i - 1]])
+
+        RZ(theta, wires=wires[0])
+
+        for i in range(len(wires) - 1):
+            CNOT(wires=[wires[i + 1], wires[i]])
+
+
+class PauliRot(Operation):
+    r"""PauliRot(theta, pauli_word, wires)
+    Arbitrary Pauli word rotation.
+
+    .. math::
+
+        RP(\theta, P) = \exp(-i \frac{\theta}{2} P)
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 2 (1 differentiable parameter)
+    * Gradient recipe: :math:`\frac{d}{d\theta}f(RP(\theta)) = \frac{1}{2}\left[f(RP(\theta +\pi/2)) - f(RP(\theta-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`RP(\theta)`.
+
+    .. note::
+
+        If the ``PauliRot`` gate is not supported on the targeted device, PennyLane
+        will decompose the gate using :class:`~.RX`, :class:`~.Hadamard`, :class:`~.RZ`
+        and :class:`~.CNOT` gates.
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        pauli_word (string): the Pauli word defining the rotation
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_params = 2
+    num_wires = AnyWires
+    do_check_domain = False
+    par_domain = "R"
+    grad_method = "A"
+
+    _ALLOWED_CHARACTERS = "IXYZ"
+
+    _PAULI_CONJUGATION_MATRICES = {
+        "X": Hadamard._matrix(),
+        "Y": RX._matrix(np.pi / 2),
+        "Z": np.array([[1, 0], [0, 1]]),
+    }
+
+    def __init__(self, *params, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=True)
+
+        pauli_word = params[1]
+
+        if not PauliRot._check_pauli_word(pauli_word):
+            raise ValueError(
+                'The given Pauli word "{}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z".format(pauli_word)
+            )
+
+        if not len(pauli_word) == len(wires):
+            raise ValueError(
+                "The given Pauli word has length {}, length {} was expected for wires {}".format(
+                    len(pauli_word), len(wires), wires
+                )
+            )
+
+    @staticmethod
+    def _check_pauli_word(pauli_word):
+        """Check that the given Pauli word has correct structure.
+
+        Args:
+            pauli_word (str): Pauli word to be checked
+
+        Returns:
+            bool: Whether the Pauli word has correct structure.
+        """
+        return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
+
+    @staticmethod
+    def _matrix(*params):
+        theta = params[0]
+        pauli_word = params[1]
+
+        if not PauliRot._check_pauli_word(pauli_word):
+            raise ValueError(
+                'The given Pauli word "{}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z".format(pauli_word)
+            )
+
+        # We first generate the matrix excluding the identity parts and expand it afterwards.
+        # To this end, we have to store on which wires the non-identity parts act
+        non_identity_wires, non_identity_gates = zip(
+            *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
+        )
+
+        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(non_identity_gates))
+
+        # now we conjugate with Hadamard and RX to create the Pauli string
+        conjugation_matrix = functools.reduce(
+            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+        )
+
+        return expand(
+            conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix,
+            non_identity_wires,
+            list(range(len(pauli_word))),
+        )
+
+    @staticmethod
+    @template
+    def decomposition(theta, pauli_word, wires):
+        active_wires, active_gates = zip(
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        )
+
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                Hadamard(wires=[wire])
+            elif gate == "Y":
+                RX(np.pi / 2, wires=[wire])
+
+        MultiRZ(theta, wires=list(active_wires))
+
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                Hadamard(wires=[wire])
+            elif gate == "Y":
+                RX(-np.pi / 2, wires=[wire])
+
+
 class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
@@ -958,7 +1174,7 @@ class QubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1003,7 +1219,7 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1037,7 +1253,7 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
-    num_wires = Any
+    num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
@@ -1078,7 +1294,7 @@ class Hermitian(Observable):
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 1
     par_domain = "A"
     grad_method = "F"
@@ -1147,6 +1363,8 @@ ops = {
     "PauliX",
     "PauliY",
     "PauliZ",
+    "PauliRot",
+    "MultiRZ",
     "S",
     "T",
     "CNOT",
