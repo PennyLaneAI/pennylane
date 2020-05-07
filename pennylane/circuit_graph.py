@@ -103,6 +103,7 @@ class CircuitGraph:
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
     """
+    # pylint: disable=too-many-public-methods
 
     def __init__(self, ops, variable_deps):
         self.variable_deps = variable_deps
@@ -228,7 +229,7 @@ class CircuitGraph:
             str: OpenQASM serialization of the circuit
         """
         # We import decompose_queue here to avoid a circular import
-        from pennylane.qnodes.base import decompose_queue
+        from pennylane.qnodes.base import decompose_queue # pylint: disable=import-outside-toplevel
 
         # add the QASM headers
         qasm_str = "OPENQASM 2.0;\n"
@@ -274,7 +275,7 @@ class CircuitGraph:
             "RX": "rx",
             "RY": "ry",
             "RZ": "rz",
-            "CRZ": "crx",
+            "CRX": "crx",
             "CRY": "cry",
             "CRZ": "crz",
             "SWAP": "swap",
@@ -291,10 +292,11 @@ class CircuitGraph:
             # to circuit observables
             operations += self.diagonalizing_gates
 
-        # Create a mock QASMDevice, to be used when performing the decomposition.
-        # The short_name is not strictly necessary, but it used in error messages
-        # if the decomposition fails.
         class QASMDevice:
+            """A mock device, to be used when performing the decomposition.
+            The short_name is used in error messages if the decomposition fails.
+            """
+            # pylint: disable=too-few-public-methods
             short_name = "QASM serializer"
             supports_operation = staticmethod(lambda x: x in native_qasm_gates)
 
