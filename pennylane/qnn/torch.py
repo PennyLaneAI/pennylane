@@ -161,10 +161,10 @@ class TorchLayer(Module):
 
             epochs = 8
             batch_size = 5
-            batches = samples / batch_size
+            batches = samples // batch_size
 
             data_loader = torch.utils.data.DataLoader(list(zip(X, Y)), batch_size=batch_size,
-                                                      shuffle=True)
+                                                      shuffle=True, drop_last=True)
 
             for epoch in range(epochs):
 
