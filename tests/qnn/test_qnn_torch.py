@@ -59,6 +59,9 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
+ordered_weights = ["w{}".format(i) for i in range(1, 8)]  # we do this for Python 3.5
+
+
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
@@ -213,7 +216,8 @@ class TestTorchLayer:
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
 
-        weights = [w.detach().numpy() for w in layer.qnode_weights.values()]
+        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
+
         circuit_out = c(x, *weights)
         assert np.allclose(layer_out, circuit_out)
 
@@ -242,7 +246,8 @@ class TestTorchLayer:
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
 
-        weights = [w.detach().numpy() for w in layer.qnode_weights.values()]
+        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
+
         circuit_out = c(x, *weights)
         assert np.allclose(layer_out, circuit_out)
 
@@ -270,7 +275,8 @@ class TestTorchLayer:
 
         layer_out = layer._evaluate_qnode(x).detach().numpy()
 
-        weights = [w.detach().numpy() for w in layer.qnode_weights.values()]
+        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
+
         circuit_out = c(x, *weights)
         assert np.allclose(layer_out, circuit_out)
 
@@ -312,7 +318,8 @@ class TestTorchLayer:
         c, w = get_circuit
         layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
-        weights = list(layer.parameters())
+
+        weights = [layer.qnode_weights[weight] for weight in ordered_weights]
 
         out_layer = layer(x)
         out_layer.backward()
@@ -326,6 +333,7 @@ class TestTorchLayer:
 
         for g1, g2 in zip(g_layer, g_circuit):
             assert np.allclose(g1, g2)
+        assert len(weights) == len(list(layer.parameters()))
 
 
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
