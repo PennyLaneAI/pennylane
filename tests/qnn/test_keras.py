@@ -347,7 +347,8 @@ class TestKerasLayer:
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")
-def test_interface_conversion(get_circuit, output_dim):
+@pytest.mark.usefixtures("skip_if_no_torch_support")
+def test_interface_conversion(get_circuit, output_dim, skip_if_no_torch_support):
     """Test if input QNodes with all types of interface are converted internally to the TensorFlow
     interface"""
     c, w = get_circuit
