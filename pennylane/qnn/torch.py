@@ -112,7 +112,7 @@ class TorchLayer(Module):
         If ``init_method`` is not specified, weights are randomly initialized from the uniform
         distribution on the interval :math:`[0, 2 \pi]`.
 
-        **Additional example**
+        **Full code example**
 
         The code block below shows how a circuit composed of templates from the
         :doc:`/code/qml_templates` module can be combined with classical
