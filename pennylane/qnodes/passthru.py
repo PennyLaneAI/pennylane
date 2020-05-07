@@ -79,7 +79,12 @@ class PassthruQNode(BaseQNode):
         # make the device return the result in its native type
         kwargs = kwargs or {}
         kwargs.setdefault("use_native_type", True)
-        super().__init__(func, device, mutable=True, **kwargs)
+        kwargs.setdefault("mutable", True)
+
+        if not kwargs.get("mutable"):
+            raise ValueError("PassthruQNode does not support immutable mode.")
+
+        super().__init__(func, device, **kwargs)
 
     def __repr__(self):
         """String representation."""
