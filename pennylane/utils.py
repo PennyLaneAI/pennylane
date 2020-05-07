@@ -24,7 +24,7 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
-
+import pytest
 import numpy as np
 
 import pennylane as qml
