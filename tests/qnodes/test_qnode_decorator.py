@@ -214,3 +214,48 @@ def test_invalid_interface():
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
+
+def test_classical_diff_method_unsupported():
+    """Test exception raised if an the classical diff method is specified for a
+    device that does not support it"""
+    dev = qml.device('default.qubit', wires=1)
+
+    with pytest.raises(ValueError, match=r"device does not support native computations with "
+            "autodifferentiation frameworks"):
+
+        @qnode(dev, diff_method="classical")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+def test_device_diff_method_unsupported():
+    """Test exception raised if an the device diff method is specified for a
+    device that does not support it"""
+    dev = qml.device('default.qubit', wires=1)
+
+    with pytest.raises(ValueError, match=r"device does not provide a native method "
+            "for computing the jacobian"):
+
+        @qnode(dev, diff_method="device")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+def test_parameter_shift_diff_method_unsupported():
+    """Test exception raised if an the device diff method is specified for a
+    device that does not support it"""
+    class DummyDevice(qml.plugins.DefaultQubit):
+
+        @classmethod
+        def capabilities(cls):
+            return { "model": "NotSupportedModel"}
+
+
+    dev = DummyDevice(wires=2)
+
+    with pytest.raises(ValueError, match=r"The parameter shift rule is not available for devices with model"):
+
+        @qnode(dev, diff_method="parameter-shift")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))

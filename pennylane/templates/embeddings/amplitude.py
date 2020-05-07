@@ -15,6 +15,7 @@ r"""
 Contains the ``AmplitudeEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import math
 import numpy as np
 from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
@@ -223,7 +224,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     if not np.isclose(norm, 1.0, atol=TOLERANCE):
         if normalize or pad:
-            features = features / np.sqrt(norm)
+            features = features / math.sqrt(norm)
         else:
             raise ValueError(
                 "'features' must be a vector of length 1.0; got length {}."
