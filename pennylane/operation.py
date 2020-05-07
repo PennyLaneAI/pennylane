@@ -119,20 +119,20 @@ from .variable import Variable
 # =============================================================================
 
 
-class ActsOn(IntEnum):
+class Wires(IntEnum):
     """Integer enumeration class
     to represent the number of wires
     an operation acts on"""
 
-    AnyWires = -1
-    AllWires = 0
+    Any = -1
+    All = 0
 
 
-AllWires = ActsOn.AllWires
+All = Wires.All
 """IntEnum: An enumeration which represents all wires in the
 subsystem. It is equivalent to an integer with value 0."""
 
-AnyWires = ActsOn.AnyWires
+Any = Wires.Any
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
 
@@ -418,8 +418,8 @@ class Operator(abc.ABC):
                 )
 
         if (
-            self.num_wires != AllWires
-            and self.num_wires != AnyWires
+            self.num_wires != All
+            and self.num_wires != Any
             and len(wires) != self.num_wires
         ):
             raise ValueError(
