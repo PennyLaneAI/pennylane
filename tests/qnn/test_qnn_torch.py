@@ -328,13 +328,11 @@ class TestTorchLayer:
             assert np.allclose(g1, g2)
 
 
-pytest.importorskip("tensorflow", minversion="2")
-
-
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
-def test_interface_conversion(get_circuit):
+@pytest.mark.usefixtures("skip_if_no_tf_support")
+def test_interface_conversion(get_circuit, skip_if_no_tf_support):
     """Test if input QNodes with all types of interface are converted internally to the PyTorch
     interface"""
     c, w = get_circuit
