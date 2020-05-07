@@ -108,12 +108,12 @@ class CircuitGraph:
 
     def __init__(self, ops, variable_deps):
         self.variable_deps = variable_deps
-        self.num_wires = 0
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
+        self.num_wires = 0
         for k, op in enumerate(ops):
             self.num_wires = max(self.num_wires, max(list(_flatten(op.wires))) + 1)
             op.queue_idx = k  # store the queue index in the Operator
