@@ -113,7 +113,7 @@ class CircuitGraph:
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(op.wires)+1)
+            self.num_wires = max(self.num_wires, max(op.wires) + 1)
             op.queue_idx = k  # store the queue index in the Operator
             for w in set(
                 _flatten(op.wires)
@@ -232,7 +232,7 @@ class CircuitGraph:
 
         # add the QASM headers
         qasm_str = "OPENQASM 2.0;\n"
-        qasm_str += "include \"qelib1.inc\";\n"
+        qasm_str += 'include "qelib1.inc";\n'
 
         if self.num_wires == 0:
             # empty circuit

@@ -32,7 +32,7 @@ class TestToQasmUnitTests:
         serialized into an empty QASM program."""
         circuit = CircuitGraph([], {})
         res = circuit.to_qasm()
-        expected = "OPENQASM 2.0;\ninclude \"qelib1.inc\";\n"
+        expected = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
         assert res == expected
 
     def test_native_qasm_gates(self):
@@ -51,7 +51,8 @@ class TestToQasmUnitTests:
         circuit = CircuitGraph(ops, {})
         res = circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -84,7 +85,8 @@ class TestToQasmUnitTests:
         circuit = CircuitGraph(ops, {})
         res = circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[1];
@@ -109,7 +111,8 @@ class TestToQasmUnitTests:
         circuit = CircuitGraph(ops, {})
         res = circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[5];
@@ -137,7 +140,8 @@ class TestToQasmUnitTests:
         circuit2 = CircuitGraph(ops2, {})
         qasm2 = circuit2.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -166,7 +170,8 @@ class TestToQasmUnitTests:
         circuit2 = CircuitGraph(ops2, {})
         qasm2 = circuit2.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -201,7 +206,8 @@ class TestToQasmUnitTests:
         circuit2 = CircuitGraph(ops2, {})
         qasm2 = circuit2.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[4];
@@ -223,14 +229,13 @@ class TestToQasmUnitTests:
         """Test an exception is raised if an unsupported operation is
         applied."""
         U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        ops = [
-            qml.S(wires=0),
-            qml.QubitUnitary(U, wires=[0, 1])
-        ]
+        ops = [qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])]
 
         circuit = CircuitGraph(ops, {})
 
-        with pytest.raises(qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"):
+        with pytest.raises(
+            qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"
+        ):
             res = circuit.to_qasm()
 
     def test_rotations(self):
@@ -246,7 +251,8 @@ class TestToQasmUnitTests:
         circuit = CircuitGraph(ops, {})
         res = circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -287,7 +293,8 @@ class TestQNodeQasmIntegrationTests:
         qnode()
 
         res = qnode.circuit.to_qasm()
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[1];
@@ -317,7 +324,8 @@ class TestQNodeQasmIntegrationTests:
         qnode()
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -355,7 +363,8 @@ class TestQNodeQasmIntegrationTests:
             qml.PauliX(wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -402,7 +411,8 @@ class TestQNodeQasmIntegrationTests:
         qnode()
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[1];
@@ -431,7 +441,8 @@ class TestQNodeQasmIntegrationTests:
         qnode()
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[5];
@@ -462,7 +473,8 @@ class TestQNodeQasmIntegrationTests:
         qnode()
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -491,7 +503,8 @@ class TestQNodeQasmIntegrationTests:
         qnode(state=np.array([1, -1, -1, 1]) / np.sqrt(4))
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[2];
@@ -526,7 +539,8 @@ class TestQNodeQasmIntegrationTests:
         qnode(state=np.array([1, 0, 1, 1]))
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[4];
@@ -557,7 +571,9 @@ class TestQNodeQasmIntegrationTests:
 
         qnode()
 
-        with pytest.raises(qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"):
+        with pytest.raises(
+            qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"
+        ):
             qnode.circuit.to_qasm()
 
     def test_rotations(self):
@@ -577,7 +593,8 @@ class TestQNodeQasmIntegrationTests:
         qnode()
         res = qnode.circuit.to_qasm()
 
-        expected = dedent("""\
+        expected = dedent(
+            """\
             OPENQASM 2.0;
             include "qelib1.inc";
             qreg q[3];
@@ -628,7 +645,7 @@ class TestQASMConformanceTests:
 
         # Note: Qiskit hardcodes in pi as a QASM constant.
         # Here, we replace it with its numerical value.
-        expected = dev._circuit.qasm().replace("pi/4", str(np.pi/4))
+        expected = dev._circuit.qasm().replace("pi/4", str(np.pi / 4))
 
         assert res == expected
 
@@ -699,4 +716,4 @@ class TestQASMConformanceTests:
 
         assert gates[5].name == "ry"
         assert gates[5].wires == [2]
-        assert gates[5].params == [-np.pi/4]
+        assert gates[5].params == [-np.pi / 4]
