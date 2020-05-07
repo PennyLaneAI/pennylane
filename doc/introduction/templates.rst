@@ -199,8 +199,8 @@ of other templates.
     :figure: ../_static/templates/subroutines/interferometer.png
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationOp.html
-    :description: UCC-SingleExcitationOp
+    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
+    :description: UCC-SingleExcitationUnitary
     :figure: ../_static/templates/subroutines/ucc_se_op.png    
 
 .. raw:: html

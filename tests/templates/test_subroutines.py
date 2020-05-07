@@ -23,7 +23,7 @@ from pennylane import numpy as np
 from pennylane.templates.subroutines import (
 	Interferometer, 
 	ArbitraryUnitary,
-	SingleExcitationOp
+	SingleExcitationUnitary
 )
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
@@ -326,8 +326,8 @@ class TestInterferometer:
         assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
-class TestSingleExcitationOp:
-    """Tests for the SingleExcitationOp template from the pennylane.templates.subroutine module."""
+class TestSingleExcitationUnitary:
+    """Tests for the SingleExcitationUnitary template from the pennylane.templates.subroutine module."""
 
     @pytest.mark.parametrize(
         ("ph", "ref_gates"),
@@ -355,8 +355,8 @@ class TestSingleExcitationOp:
                    )        
         ]
     )
-    def test_single_ex_op_operations(self, ph, ref_gates):
-        """Test the correctness of the SingleExcitationOp template including the gate count
+    def test_single_ex_unitary_operations(self, ph, ref_gates):
+        """Test the correctness of the SingleExcitationUnitary template including the gate count
         and order, the wires each operation acts on and the correct use of parameters 
         in the circuit."""
 
@@ -364,7 +364,7 @@ class TestSingleExcitationOp:
         cnots = 4*(ph[1]-ph[0])
         weight = np.pi/3
         with qml.utils.OperationRecorder() as rec:
-            SingleExcitationOp(weight, wires=ph)
+            SingleExcitationUnitary(weight, wires=ph)
 
         idx = ref_gates[0][0]
 
@@ -395,13 +395,13 @@ class TestSingleExcitationOp:
             ( 0.2      , [3, 1]      , "wires_1 must be > wires_0")
         ]
     )
-    def test_single_excitation_op_exceptions(self, weight, ph, msg_match):
-        """Test that SingleExcitationOp throws an exception if ``weight`` or 
+    def test_single_excitation_unitary_exceptions(self, weight, ph, msg_match):
+        """Test that SingleExcitationUnitary throws an exception if ``weight`` or 
         ``ph`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=5)
 
         def circuit(weight=weight, ph=ph):
-            SingleExcitationOp(weight=weight, wires=ph)
+            SingleExcitationUnitary(weight=weight, wires=ph)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -427,7 +427,7 @@ class TestSingleExcitationOp:
         def circuit(weight):
             init_state = np.flip(np.array([1,1,0,0]))
             qml.BasisState(init_state, wires=wires)
-            SingleExcitationOp(weight, ph=ph)
+            SingleExcitationUnitary(weight, ph=ph)
 
         return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 

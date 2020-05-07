@@ -18,4 +18,4 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 
 from .interferometer import Interferometer
 from .arbitrary_unitary import ArbitraryUnitary
-from .single_excitation_op import SingleExcitationOp
+from .single_excitation_op import SingleExcitationUnitary

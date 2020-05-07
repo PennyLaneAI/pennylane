@@ -14,40 +14,39 @@
 r"""
 Contains the ``SingleExcitationOp`` template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.ops import RX, RZ, Hadamard, CNOT 
-from pennylane.templates.decorator import template
-from pennylane.templates.utils import (
-    check_no_variable,
-    check_shape,
-    check_wires,
-    check_type,
-    get_shape,
-)
-
 from pennylane import numpy as np
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+from pennylane.ops import CNOT, RX, RZ, Hadamard
+from pennylane.templates.decorator import template
+from pennylane.templates.utils import (check_no_variable, check_shape,
+                                       check_type, check_wires, get_shape)
+
 
 @template
-def SingleExcitationOp(weight, wires=None):
-    r"""Circuit to exponentiate the coupled-cluster (CC) single-excitation operator.
+def SingleExcitationUnitary(weight, wires=None):
+    r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
+    fermionic single-excitation operator entering the Unitary Coupled-Cluster Singles
+    and Doubles (UCCSD) ansatz. UCCSD is one of the VQE ansatz commonly used to run quantum
+    chemistry simulations.
 
     The CC single-excitation operator is given by
 
     .. math::
 
-        \hat{U}_{pr}^{(1)}(\theta) = \mathrm{exp} \{ \theta_{pr} (\hat{c}_p^\dagger \hat{c}_r - 
-        \mathrm{H.c.}) \},
+        \hat{U}_{pr}^{(1)}(\theta) = \mathrm{exp} \{ \theta_{pr} (\hat{c}_p^\dagger \hat{c}_r
+        -\mathrm{H.c.}) \},
 
     where :math:`\hat{c}` and :math:`\hat{c}^\dagger` are the fermionic annihilation and
     creation operators and the indices :math:`r` and :math:`p` run over the occupied and
-    unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation 
-    <https://arxiv.org/abs/1208.5986>`_ the fermionic operator defined above can be written 
-    in terms of Pauli matrices (for more details see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_).
+    unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation
+    <https://arxiv.org/abs/1208.5986>`_ the fermionic operator defined above can be written
+    in terms of Pauli matrices (for more details see
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_).
 
     .. math::
 
-        \hat{U}_{pr}^{(1)}(\theta) = \mathrm{exp} \Big\{ \frac{i\theta}{2} 
-        \bigotimes_{a=r+1}^{p-1}\hat{Z}_a (\hat{Y}_r \hat{X}_p) \Big\} 
+        \hat{U}_{pr}^{(1)}(\theta) = \mathrm{exp} \Big\{ \frac{i\theta}{2}
+        \bigotimes_{a=r+1}^{p-1}\hat{Z}_a (\hat{Y}_r \hat{X}_p) \Big\}
         \mathrm{exp} \Big\{ -\frac{i\theta}{2}
         \bigotimes_{a=r+1}^{p-1} \hat{Z}_a (\hat{X}_r \hat{Y}_p) \Big\}.
 
@@ -59,24 +58,11 @@ def SingleExcitationOp(weight, wires=None):
         :width: 60%
         :target: javascript:void(0);
 
-    As explained in `Seely et al. (2012) <https://arxiv.org/abs/1208.5986>`_
-    an :math:`n`-fold tensor product of Pauli-Z matrices requires :math:`2(n-1)` CNOT gates and a
-    single-qubit Z-rotation to exponentiate on a quantum computer. If there are :math:`X` or 
-    :math:`Y` Pauli matrices in the product, the Hadamard (:math:`H`) or :math:`R_x` gate has to 
-    be applied to change to the :math:`X` or :math:`Y` basis, respectively.
-
-    Notice that: 
-
-    #. :math:`\hat{U}_{pr}^{(1)}(\theta)` involves two exponentiations where :math:`\hat{U}_1`,
-       :math:`\hat{U}_2`, and :math:`\hat{U}_\theta` are defined as follows,
-
-       .. math::
-           [U_1, U_2, U_{\theta})] = \Bigg\{\bigg[R_x(-\pi/2), H, R_z(\theta/2)\bigg], 
-           \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
-
-    #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that 
-       CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations 
-       performed accross these qubits are shown in dashed lines in the figure above. 
+    As explained in `Seely et al. (2012) <https://arxiv.org/abs/1208.5986>`_,
+    the exponential of a tensor product of Pauli-Z operators can be decomposed in terms of
+    :math:`2(n-1)` CNOT gates and a single-qubit Z-rotation. If there are :math:`X` or
+    :math:`Y` Pauli matrices in the product, the Hadamard (:math:`H`) or :math:`R_x` gate has
+    to be applied to change to the :math:`X` or :math:`Y` basis, respectively.
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
@@ -84,6 +70,22 @@ def SingleExcitationOp(weight, wires=None):
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    .. UsageDetails::
+
+        Notice that:
+
+        #. :math:`\hat{U}_{pr}^{(1)}(\theta)` involves two exponentiations where :math:`\hat{U}_1`,
+           :math:`\hat{U}_2`, and :math:`\hat{U}_\theta` are defined as follows,
+
+           .. math::
+               [U_1, U_2, U_{\theta})] = \Bigg\{\bigg[R_x(-\pi/2), H, R_z(\theta/2)\bigg],
+               \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
+
+        #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that
+           CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations
+           performed accross these qubits are shown in dashed lines in the figure above.
+
     """
 
     ##############
@@ -109,51 +111,61 @@ def SingleExcitationOp(weight, wires=None):
 
     check_type(wires, [list], msg="'wires' must be a list; got {}" "".format(wires))
     for w in wires:
-        check_type(w, [int], msg="'wires' must be a list of integers; got {}" "".format(wires)
-        )
+        check_type(w, [int], msg="'wires' must be a list of integers; got {}" "".format(wires))
 
     if wires[1] <= wires[0]:
         raise ValueError(
             "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}" ""
             .format(wires[1], wires[0])
-        )    
+        )
 
     ###############
 
     r, p = wires
 
 #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [[l, l+1] for l in range(r,p)]
+    set_cnot_wires = [[l, l+1] for l in range(r, p)]
 
-    n_layers = 2
-    for layer in range(n_layers):
+    #------------------------------------------------------------------
+    # Apply the first layer
 
-        # U_1, U_2 acting on wires 'r' and 'p'
-        if layer == 0:
-            RX(-np.pi/2, wires=r)
-            Hadamard(wires=p)
-        else:
-            Hadamard(wires=r)
-            RX(-np.pi/2, wires=p)
+    # U_1, U_2 acting on wires 'r' and 'p'
+    RX(-np.pi/2, wires=r)
+    Hadamard(wires=p)
 
-        # Applying CNOTs between wires 'r' and 'p'
-        for cnot_wires in set_cnot_wires:
-            CNOT(wires=cnot_wires)
+    # Applying CNOTs between wires 'r' and 'p'
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
 
-        # Z rotation acting on wire 'p'
-        if layer == 0:
-            RZ(weight/2, wires=p)
-        else:
-            RZ(-weight/2, wires=p)
+    # Z rotation acting on wire 'p'
+    RZ(weight/2, wires=p)
 
-        # Applying CNOTs in reverse order
-        for cnot_wires in reversed(set_cnot_wires):
-            CNOT(wires=cnot_wires)  
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
 
-        # U_1^+, U_2^+ acting on wires 'r' and 'p'
-        if layer == 0:
-            RX(np.pi/2, wires=r)
-            Hadamard(wires=p)
-        else:
-            Hadamard(wires=r)
-            RX(np.pi/2, wires=p)
+    # U_1^+, U_2^+ acting on wires 'r' and 'p'
+    RX(np.pi/2, wires=r)
+    Hadamard(wires=p)
+
+    #------------------------------------------------------------------
+    # Apply the second layer
+
+    # U_1, U_2 acting on wires 'r' and 'p'
+    Hadamard(wires=r)
+    RX(-np.pi/2, wires=p)
+
+    # Applying CNOTs between wires 'r' and 'p'
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight/2, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+ acting on wires 'r' and 'p'
+    Hadamard(wires=r)
+    RX(np.pi/2, wires=p)
