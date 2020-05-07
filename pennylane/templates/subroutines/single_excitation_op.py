@@ -29,10 +29,9 @@ from pennylane import numpy as np
 
 @template
 def SingleExcitationOp(weight, wires=None):
+    r"""Circuit to exponentiate the coupled-cluster (CC) single-excitation operator.
 
-    r"""Circuit to exponentiate the coupled-cluster (CC) single-excitation operator
-
-    The CC single-excitation operator reads as
+    The CC single-excitation operator is given by
 
     .. math::
 
@@ -43,7 +42,7 @@ def SingleExcitationOp(weight, wires=None):
     creation operators and the indices :math:`r` and :math:`p` run over the occupied and
     unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation 
     <https://arxiv.org/abs/1208.5986>`_ the fermionic operator defined above can be written 
-    in terms of Pauli matrices, (see Ref. `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_)
+    in terms of Pauli matrices (for more details see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_).
 
     .. math::
 
@@ -60,7 +59,7 @@ def SingleExcitationOp(weight, wires=None):
         :width: 60%
         :target: javascript:void(0);
 
-    As explained in the paper by Seely *et al.* `arxiv:1208.5986 <https://arxiv.org/abs/1208.5986>`_
+    As explained in `Seely et al. (2012) <https://arxiv.org/abs/1208.5986>`_
     an :math:`n`-fold tensor product of Pauli-Z matrices requires :math:`2(n-1)` CNOT gates and a
     single-qubit Z-rotation to exponentiate on a quantum computer. If there are :math:`X` or 
     :math:`Y` Pauli matrices in the product, the Hadamard (:math:`H`) or :math:`R_x` gate has to 
@@ -69,13 +68,13 @@ def SingleExcitationOp(weight, wires=None):
     Notice that: 
 
     #. :math:`\hat{U}_{pr}^{(1)}(\theta)` involves two exponentiations where :math:`\hat{U}_1`,
-       , :math:`\hat{U}_2` and :math:`\hat{U}_\theta` are dfined, for each of them, as follows,
+       :math:`\hat{U}_2`, and :math:`\hat{U}_\theta` are defined as follows,
 
        .. math::
            [U_1, U_2, U_{\theta})] = \Bigg\{\bigg[R_x(-\pi/2), H, R_z(\theta/2)\bigg], 
            \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
 
-    #. For a given pair ``[r, p]`` ten single-qubit operations are applied. Notice also that 
+    #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that 
        CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations 
        performed accross these qubits are shown in dashed lines in the figure above. 
 
@@ -124,13 +123,13 @@ def SingleExcitationOp(weight, wires=None):
     r, p = wires
 
 #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [[l,l+1] for l in range(r,p)]
+    set_cnot_wires = [[l, l+1] for l in range(r,p)]
 
     n_layers = 2
     for layer in range(n_layers):
 
         # U_1, U_2 acting on wires 'r' and 'p'
-        if layer==0:
+        if layer == 0:
             RX(-np.pi/2, wires=r)
             Hadamard(wires=p)
         else:
