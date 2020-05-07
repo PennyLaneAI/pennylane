@@ -14,7 +14,6 @@
 """
 Pytest configuration file for PennyLane test suite.
 """
-import torch
 import os
 
 import pytest
