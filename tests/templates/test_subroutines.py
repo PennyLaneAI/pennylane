@@ -427,7 +427,7 @@ class TestSingleExcitationUnitary:
         def circuit(weight):
             init_state = np.flip(np.array([1,1,0,0]))
             qml.BasisState(init_state, wires=wires)
-            SingleExcitationUnitary(weight, ph=ph)
+            SingleExcitationUnitary(weight, wires=ph)
 
         return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
