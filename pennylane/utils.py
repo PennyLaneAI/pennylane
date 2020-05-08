@@ -27,6 +27,7 @@ from operator import matmul
 import pytest # for testing functions produce accurate results
 import numpy as np
 
+
 import pennylane as qml
 from pennylane.variable import Variable
 
@@ -95,6 +96,8 @@ def decompose_hamiltonian(H):
 
     return coeffs, obs
 
+# Example to test: H = [[5,2-3i],[2+3i,-3]]
+# should decompose into I + 2Sx + 3Sy + 4Sz
 
 def _flatten(x):
     """Iterate recursively through an arbitrarily nested structure in depth-first order.
