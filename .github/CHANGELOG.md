@@ -263,11 +263,6 @@
   [(#608)](https://github.com/XanaduAI/pennylane/pull/608)
 
 <h3>Breaking changes</h3>
-
-* The internal variables `All` and `Any` to mark an `Operation` as acting on all or any
-  wires have been renamed to `AllWires` and `AnyWires` and their class to
-  `ActsOn`.
-  [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
                                                                                                                                                                                                                                                                                                       >
 * Probability methods are handled by `QubitDevice` and device method
   requirements are modified to simplify plugin development.
