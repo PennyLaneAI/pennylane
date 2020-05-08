@@ -117,7 +117,7 @@ Getting started
 For an introduction to quantum machine learning, we have several guides and resources available
 on PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
 
-* `What is Quantum machine learning? <https://pennylane.ai/qml/whatisqml.html>`_
+* `What is quantum machine learning? <https://pennylane.ai/qml/whatisqml.html>`_
 * `Frequently asked questions <https://pennylane.ai/faq.html>`_
 * `Glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_
 * `Curated selection of QML videos <https://pennylane.ai/qml/videos.html>`_
@@ -125,7 +125,7 @@ on PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
 Then, take a deeper dive into quantum machine learning by
 exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
 with our collection of
-`QML demonstrations <https://pennylane.ai/qml/demonstrations.html>`_.
+`QML tutorials and demonstrations <https://pennylane.ai/qml/demonstrations.html>`_.
 
 You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
 `quickstart guides <https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html>`_
