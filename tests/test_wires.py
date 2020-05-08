@@ -29,27 +29,33 @@ class TestWires:
     def test_error_for_repeated_indices(self, iterable):
         """Tests that a Wires object cannot have repeated indices."""
 
-        with pytest.raises(WireError, match="XXX"):
-            wires = Wires(iterable)
+        with pytest.raises(WireError, match="Each wire must be represented by a unique index"):
+            Wires(iterable)
 
-    @pytest.mark.parametrize("iterable", [np.array([4., 1., 0., 3.]),
-                                          [4., 1., 0., 3.],
-                                          (4., 1., 0., 3.)])
-    def test_error_for_noninteger_floats(self, iterable):
-        """Tests that a Wires object converts floats to integer elements."""
+    @pytest.mark.parametrize("iterable", [np.array([4., 1., 0., 3.]),  # entries are np.int64
+                                          [4., 1., 0., 3.]  # entries are floats
+                                          ])
+    def test_integerlike_indices_converted_to_integers(self, iterable):
+        """Tests that a Wires object converts integer-like floats to integer elements."""
 
-        with pytest.raises(WireError, match="XXX"):
-            wires = Wires(iterable)
+        wires = Wires(iterable)
+        for w in wires:
+            assert isinstance(w, int)
 
     @pytest.mark.parametrize("iterable", [np.array([4., 1.2, 0., 3.]),
                                           [4., 1., 0., 3.0001],
-                                          (4.00000002, 1., 0., 3.)])
-    def test_error_for_noninteger_floats(self, iterable):
-        """Tests that a Wires object throws an error if the rounding error of float indices
-        is not larger than the tolerance of 1e-8."""
+                                          ['a', 'b', 'c', 'd']])
+    def test_error_for_non_integerlike_indices(self, iterable):
+        """Tests that a Wires object throws error when indices are not integer-like."""
 
-        with pytest.raises(WireError, match="XXX"):
-            wires = Wires(iterable)
+        with pytest.raises(WireError, match="Wire indices must be integers"):
+            Wires(iterable)
+
+    def test_error_for_negative_indices(self):
+        """Tests that a Wires object throws error when indices are negative."""
+
+        with pytest.raises(WireError, match="Wire indices must be non-negative"):
+            Wires([8, -1, 0, 5])
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 0, 3]),
                                           [4, 1, 0, 3],
@@ -60,36 +66,33 @@ class TestWires:
 
         wires = Wires(iterable)
 
-    @pytest.mark.parametrize("iterable", [np.array([4, 1, 0, 3]),
-                                          [4, 1, 0, 3],
-                                          (4, 1, 0, 3),
-                                          range(4)])
-    def test_iteration(self, iterable):
-        """Tests that a Wires object can be iterated over."""
+        for i in range(len(iterable)):
+            assert wires[i] == iterable[i]
 
-        wires = Wires(iterable)
-
-    def test_slicing(self, iterable):
+    def test_slicing(self):
         """Tests that a Wires object can be sliced."""
 
-        wires = Wires(iterable)
+        wires = Wires([1, 2, 3])
+        assert wires[:2] == [1, 2]
 
-    def test_length(self, iterable):
+    def test_length(self):
         """Tests that a Wires object returns the correct length."""
 
-        wires = Wires(iterable)
+        wires = Wires([1, 2, 3, 4, 5])
+        assert len(wires) == 5
 
-    def test_comparison_operation(self, iterable):
-        """Tests that a Wires can be compared with another."""
-
-        wires = Wires(iterable)
-
-    def test_retrieving_index(self, iterable):
+    def test_retrieving_index(self):
         """Tests that the correct index of a Wires object is retrieved."""
 
-        wires = Wires(iterable)
+        wires = Wires([1, 2, 3, 4, 5])
+        assert wires.index(4) == 3
 
-    def test_min_max(self, iterable):
-        """Tests that the min() and max() functions of a Wires object work."""
+    def test_min_max(self):
+        """Tests that the min() and max() functions of a Wires object return correct index."""
 
-        wires = Wires(iterable)
+        wires = Wires([1, 2, 13, 4, 5])
+        assert max(wires) == 13
+        assert min(wires) == 1
+
+    def test_XXX(self):
+        """Tests that XXX."""

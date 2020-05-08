@@ -16,6 +16,8 @@ This module contains the :class:`Wires` class.
 """
 from collections import Set, Sequence
 
+# tolerance for wire indices
+TOLERANCE = 1e-8
 
 class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` when it is unable to process wire objects.
@@ -36,11 +38,32 @@ class Wires(Sequence, Set):
                 throwing an error if the rounding error exceeds TOLERANCE.
         """
 
-        if len(set(wires)) != len(wires):
-            raise WireError("Each wire must be represented by a unique index; got {}.".format(wires))
-
         if wires is not None:
             self._wires = list(wires)
+
+        # Turn elements into integers, if possible
+        for idx, w in enumerate(self._wires):
+
+            if not isinstance(w, int):
+                # Try to parse to int
+                try:
+                    # This works for floats and numpy.int
+                    difference = abs(w - round(w))
+                    if difference < TOLERANCE:
+                        self._wires[idx] = int(w)
+                    else:
+                        raise TypeError
+                except TypeError:
+                    raise WireError("Wire indices must be integers; got type {}.".format(type(w)))
+
+        # Check that indices are non-negative
+        for w in self._wires:
+            if w < 0:
+                raise WireError("Wire indices must be non-negative; got index {}.".format(w))
+
+        # Check that indices are unique
+        if len(set(wires)) != len(wires):
+            raise WireError("Each wire must be represented by a unique index; got {}.".format(wires))
 
     def __getitem__(self, idx):
         return self._wires[idx]
