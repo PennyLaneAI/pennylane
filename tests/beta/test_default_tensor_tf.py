@@ -388,6 +388,7 @@ class TestQNodeIntegration:
         assert dev.analytic
         assert dev.short_name == "default.tensor.tf"
         assert dev.capabilities()["provides_jacobian"]
+        assert dev.capabilities()["passthru_interface"] == "tf"
 
     @pytest.mark.parametrize("decorator", [qml.qnode, qnode])
     def test_qubit_circuit(self, decorator, tol):
@@ -496,7 +497,7 @@ class TestJacobianIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("diff_method", ALLOWED_DIFF_METHODS)
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "device"])
     def test_jacobian_agrees(self, diff_method, torch_support, tol):
         """Test that qnode.jacobian applied to the tensornet.tf device
         returns the same result as default.qubit."""
@@ -514,16 +515,16 @@ class TestJacobianIntegration:
         dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = QNode(circuit, dev1, diff_method=diff_method)
-        circuit2 = QNode(circuit, dev2, diff_method=diff_method)
+        circuit2 = QNode(circuit, dev2, diff_method="parameter-shift")
 
         assert np.allclose(circuit1(p), circuit2(p), atol=tol, rtol=0)
         assert np.allclose(circuit1.jacobian([p]), circuit2.jacobian([p]), atol=tol, rtol=0)
 
 
-class TestInterfaceIntegration:
+class TestInterfaceDeviceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
-    interfaces."""
+    interfaces, when using the 'device' differentiation method."""
 
     a = -0.234
     b = 0.654
@@ -545,7 +546,7 @@ class TestInterfaceIntegration:
 
         dev = qml.device("default.tensor.tf", wires=2)
 
-        @qnode(dev, diff_method="best", interface=interface)
+        @qnode(dev, diff_method="device", interface=interface)
         def circuit_fn(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
@@ -598,10 +599,11 @@ class TestInterfaceIntegration:
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
 
-class TestHybridInterfaceIntegration:
+class TestHybridInterfaceDeviceIntegration:
     """Integration tests for default.tensor.tf. This test class ensures it integrates
     properly with the PennyLane UI, in particular the classical machine learning
-    interfaces in the case of hybrid-classical computation."""
+    interfaces in the case of hybrid-classical computation, when using the
+    device differentiation option."""
 
     theta = 0.543
     phi = -0.234
@@ -625,14 +627,14 @@ class TestHybridInterfaceIntegration:
     )
 
     @pytest.fixture
-    def cost(self, interface, torch_support):
+    def cost(self, diff_method, interface, torch_support):
         """Fixture to create cost function for the test class"""
         dev = qml.device("default.tensor.tf", wires=1)
 
         if interface == "torch" and not torch_support:
             pytest.skip("Skipped, no torch support")
 
-        @qnode(dev, diff_method="best", interface=interface)
+        @qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x, weights, w=None):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
@@ -649,7 +651,8 @@ class TestHybridInterfaceIntegration:
         return cost_fn
 
     @pytest.mark.parametrize("interface", ["autograd"])
-    def test_autograd_interface(self, cost, interface, tol):
+    @pytest.mark.parametrize("diff_method", ["device"])
+    def test_autograd_interface(self, cost, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the autograd interface"""
         res = cost(self.p)
@@ -660,7 +663,8 @@ class TestHybridInterfaceIntegration:
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_torch_interface(self, cost, interface, tol):
+    @pytest.mark.parametrize("diff_method", ["device"])
+    def test_torch_interface(self, cost, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the Torch interface"""
         import torch
@@ -675,7 +679,8 @@ class TestHybridInterfaceIntegration:
         assert np.allclose(res.detach().numpy(), self.expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_tf_interface(self, cost, interface, tol):
+    @pytest.mark.parametrize("diff_method", ["device"])
+    def test_tf_interface_device_diff(self, cost, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the TensorFlow interface"""
         import tensorflow as tf
@@ -690,3 +695,99 @@ class TestHybridInterfaceIntegration:
 
         res = tape.gradient(res, params)
         assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
+
+    @pytest.fixture
+    def cost_with_decomposition(self, diff_method, interface, torch_support):
+        """Fixture to create cost function for the test class"""
+        dev = qml.device("default.tensor.tf", wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface=interface)
+        def circuit(x, weights, w=None):
+            """In this example, a mixture of scalar
+            arguments, array arguments, and keyword arguments are used."""
+            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
+            # the parameterized gate is one that gets decomposed
+            # via a template
+            qml.U3.decomposition(x, weights[0], weights[1], wires=w)   # <--- decomposition is used
+            return qml.expval(qml.PauliX(w))
+
+        def cost_fn(params):
+            """Perform some classical processing"""
+            return circuit(params[0], params[1:], w=0) ** 2
+
+        return cost_fn
+
+    @pytest.mark.parametrize("interface", ["tf"])
+    @pytest.mark.parametrize("diff_method", ["classical"])
+    def test_tf_interface_classical_diff(self, cost_with_decomposition, interface, diff_method, tol):
+        """Tests that the gradient of an arbitrary U3 gate (that gets
+        decomposed) is correct using the TensorFlow interface and the classical
+        diff method"""
+        # TODO: once the decomposition of operations and the PassThruQNode are
+        # compatible, merge this case into the previous one
+        import tensorflow as tf
+
+        params = tf.Variable(self.p, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch(params)
+            res = cost_with_decomposition(params)
+
+        assert np.allclose(res.numpy(), self.expected_cost, atol=tol, rtol=0)
+
+        res = tape.gradient(res, params)
+        assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
+
+
+    def test_error_classical_diff_torch(self, torch_support, tol):
+        """Tests that an error is raised if for the classical differentiation
+        method when using the Torch interface"""
+        if not torch_support:
+            pytest.skip("Skipped, no torch support")
+
+        import torch
+        from torch.autograd import Variable
+
+        interface = "torch"
+        diff_method = "classical"
+
+        params = Variable(torch.tensor(self.p), requires_grad=True)
+
+        def cost_raising_error(params):
+            # Cost within the test case such that the error can be caught
+            dev = qml.device("default.tensor.tf", wires=1)
+
+            if interface == "torch" and not torch_support:
+                pytest.skip("Skipped, no torch support")
+
+            @qnode(dev, diff_method=diff_method, interface=interface)
+            def circuit(x, w=None):
+                qml.RZ(x, wires=w)
+                return qml.expval(qml.PauliX(w))
+
+            return circuit(params[0], w=0)
+
+        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='classical'"):
+            res = cost_raising_error(params)
+
+    def test_error_classical_diff_autograd(self, tol):
+        """Tests that an error is raised if for the classical differentiation
+        method when using the autograd interface"""
+        interface = "autograd"
+        diff_method = "classical"
+
+        params = self.p
+
+        def cost_raising_error(params):
+            # Cost within the test case such that the error can be caught
+            dev = qml.device("default.tensor.tf", wires=1)
+
+            @qnode(dev, diff_method=diff_method, interface=interface)
+            def circuit(x, w=None):
+                qml.RZ(x, wires=w)
+                return qml.expval(qml.PauliX(w))
+
+            return circuit(params[0], w=0)
+
+        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='classical'"):
+            res = cost_raising_error(params)
