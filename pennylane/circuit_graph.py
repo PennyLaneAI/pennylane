@@ -219,7 +219,7 @@ class CircuitGraph:
         .. note::
 
             The serialized OpenQASM program assumes that gate definitions
-            in ``qelib1.inc`` is available.
+            in ``qelib1.inc`` are available.
 
         Args:
             rotations (bool): in addition to serializing user-specified
