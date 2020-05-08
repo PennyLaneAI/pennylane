@@ -56,12 +56,11 @@ Key Features
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
 - **Device independent**.
-  *Run the same quantum computing circuit on different backends*. `Plugins <https://pennylane.ai/plugins.html>`__ give access to quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
+  `Plugins <https://pennylane.ai/plugins.html>`__ give access to quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
 
 - **Best of both worlds**.
-  *Support for hybrid quantum and classical models*; connect quantum
-  hardware with **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
+  Build hybrid models by connecting quantum hardware to **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
 
 - **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
 
@@ -72,7 +71,7 @@ Available plugins
 
 * `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_: Supports integration with
   `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack
-  Python library for simulating continuous variable (CV) quantum optical circuits.
+  Python library for simulating photonic quantum computing.
 
 
 * `PennyLane-qiskit <https://github.com/XanaduAI/pennylane-qiskit>`_: Supports
@@ -116,9 +115,9 @@ Getting started
 ===============
 
 For an introduction to quantum machine learning, we have several guides and resources available
-on our `QML website <https://pennylane.ai/qml/>`_:
+on PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
 
-* `What is QML? <https://pennylane.ai/qml/whatisqml.html>`_
+* `What is Quantum machine learning? <https://pennylane.ai/qml/whatisqml.html>`_
 * `Frequently asked questions <https://pennylane.ai/faq.html>`_
 * `Glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_
 * `Curated selection of QML videos <https://pennylane.ai/qml/videos.html>`_
