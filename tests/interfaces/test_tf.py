@@ -19,9 +19,9 @@ import pytest
 
 import numpy as np
 
-try:
-    import tensorflow as tf
+tf = pytest.importorskip("tensorflow", minversion="1.12")
 
+try:
     if tf.__version__[0] == "1":
         import tensorflow.contrib.eager as tfe
         tf.enable_eager_execution()
