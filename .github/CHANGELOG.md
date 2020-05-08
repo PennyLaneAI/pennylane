@@ -2,6 +2,39 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
+  hybrid models using the `torch.nn` API.
+  [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
+
+  ```python
+  n_qubits = 2
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def qnode(inputs, weights_0, weight_1):
+      qml.RX(inputs[0], wires=0)
+      qml.RX(inputs[1], wires=1)
+      qml.Rot(*weights_0, wires=0)
+      qml.RY(weight_1, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+  ```
+
+  The above QNode can be converted into a Torch layer using the `TorchLayer` class:
+
+  ```python
+  from pennylane.qnn import TorchLayer
+
+  weight_shapes = {"weights_0": 3, "weight_1": 1}
+  qlayer = TorchLayer(qnode, weight_shapes)
+  ```
+
+  A hybrid model can then be easily constructed:
+
+  ```python
+  model = torch.nn.Sequential([qlayer, torch.nn.Linear(2, 2)])
+  ```
+
 * PennyLane now provides `DiagonalQubitUnitary` for diagonal gates, that are e.g.,
   encountered in IQP circuits. These kinds of gates can be evaluated much faster on
   a simulator device.
@@ -113,7 +146,7 @@
   from pennylane.qnn import KerasLayer
 
   weight_shapes = {"weights_0": 3, "weight_1": 1}
-  qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+  qlayer = KerasLayer(qnode, weight_shapes, output_dim=2)
   ```
 
   A hybrid model can then be easily constructed:
