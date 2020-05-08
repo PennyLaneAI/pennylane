@@ -148,6 +148,29 @@ class TestAmplitudeEmbedding:
         with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(x=inpt)
 
+    def test_amplitude_embedding_tolerance_value(self):
+        """Tests that a small enough tolerance value is used for Amplitude
+        Embedding."""
+        inputs = np.array([0.25895178024895, 0.115997030111517, 0.175840500169049, 0.16545033015906,
+                            0.016337370015706, 0.006616800006361, 0.22326375021464, 0.161815530155566,
+                            0.234776190225708, 0.082623190079432, 0.291982110280705, 0.295344560283937,
+                            0.05998731005767, 0.056911140054713, 0.274260680263668, 0.163596590157278,
+                            0.048460970046589, 0.292306260281016, 0.292451040281155, 0.007849840007547,
+                            0.218302930209871, 0.326763300314142, 0.163634550157314, 0.275472160264832,
+                            0.105510810101436])
+
+        tolerance = 10e-10
+        num_qubits = 5
+        dev = qml.device('default.qubit', wires=num_qubits)
+        assert np.isclose(np.sum(np.abs(inputs) ** 2), 1, tolerance)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            AmplitudeEmbedding(x, list(range(num_qubits)), pad=0., normalize=True)
+            return qml.expval(qml.PauliZ(0))
+
+        # No normalization error is raised
+        circuit(x=inputs)
 
 class TestAngleEmbedding:
     """ Tests the AngleEmbedding method."""
