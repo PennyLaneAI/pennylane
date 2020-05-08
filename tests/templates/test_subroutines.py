@@ -364,7 +364,7 @@ class TestSingleExcitationUnitary:
         cnots = 4*(ph[1]-ph[0])
         weight = np.pi/3
         with qml.utils.OperationRecorder() as rec:
-            SingleExcitationUnitary(weight, wires_rp=ph)
+            SingleExcitationUnitary(weight, wires=ph)
 
         idx = ref_gates[0][0]
 
@@ -385,14 +385,14 @@ class TestSingleExcitationUnitary:
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
         [
-            ( 0.2      , [0]         , "'wires_rp' must be of shape"),
-            ( 0.2      , []          , "'wires_rp' must be of shape"),
+            ( 0.2      , [0]         , "'wires' must be of shape"),
+            ( 0.2      , []          , "'wires' must be of shape"),
             ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
             ( 0.2      , None        , "wires must be a positive integer"),
             ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
             ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
-            ( 0.2      , [3, 3]      , "wires_rp_1 must be > wires_rp_0"),
-            ( 0.2      , [3, 1]      , "wires_rp_1 must be > wires_rp_0")
+            ( 0.2      , [3, 3]      , "wires_1 must be > wires_0"),
+            ( 0.2      , [3, 1]      , "wires_1 must be > wires_0")
         ]
     )
     def test_single_excitation_unitary_exceptions(self, weight, ph, msg_match):
@@ -400,14 +400,14 @@ class TestSingleExcitationUnitary:
         ``ph`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=5)
 
-        def circuit(weight=weight, wires_rp=ph):
-            SingleExcitationUnitary(weight=weight, wires_rp=ph)
+        def circuit(weight=weight, wires=ph):
+            SingleExcitationUnitary(weight=weight, wires=ph)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
-            qnode(weight=weight, wires_rp=ph)
+            qnode(weight=weight, wires=ph)
 
     @pytest.mark.parametrize(
         ("weight", "ph", "expected"),
@@ -427,7 +427,7 @@ class TestSingleExcitationUnitary:
         def circuit(weight):
             init_state = np.flip(np.array([1,1,0,0]))
             qml.BasisState(init_state, wires=wires)
-            SingleExcitationUnitary(weight, wires_rp=ph)
+            SingleExcitationUnitary(weight, wires=ph)
 
         return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 

@@ -23,7 +23,7 @@ from pennylane.templates.utils import (check_no_variable, check_shape,
 
 
 @template
-def SingleExcitationUnitary(weight, wires_rp=None):
+def SingleExcitationUnitary(weight, wires=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     fermionic single-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is one of the VQE ansatz commonly used to run quantum
@@ -66,7 +66,7 @@ def SingleExcitationUnitary(weight, wires_rp=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires_rp (sequence[int]): two-element sequence with the qubit indices ``r, p``
+        wires (sequence[int]): two-element sequence with the qubit indices ``r, p``
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -91,15 +91,15 @@ def SingleExcitationUnitary(weight, wires_rp=None):
     ##############
     # Input checks
 
-    check_no_variable(wires_rp, msg="'wires_rp' cannot be differentiable")
+    check_no_variable(wires, msg="'wires' cannot be differentiable")
 
-    wires_rp = check_wires(wires_rp)
+    wires = check_wires(wires)
 
     expected_shape = (2,)
     check_shape(
-        wires_rp,
+        wires,
         expected_shape,
-        msg="'wires_rp' must be of shape {}; got {}" "".format(expected_shape, get_shape(wires_rp)),
+        msg="'wires' must be of shape {}; got {}" "".format(expected_shape, get_shape(wires)),
     )
 
     expected_shape = ()
@@ -109,19 +109,19 @@ def SingleExcitationUnitary(weight, wires_rp=None):
         msg="'weight' must be of shape {}; got {}" "".format(expected_shape, get_shape(weight)),
     )
 
-    check_type(wires_rp, [list], msg="'wires_rp' must be a list; got {}" "".format(wires_rp))
-    for w in wires_rp:
-        check_type(w, [int], msg="'wires_rp' must be a list of integers; got {}" "".format(wires_rp))
+    check_type(wires, [list], msg="'wires' must be a list; got {}" "".format(wires))
+    for w in wires:
+        check_type(w, [int], msg="'wires' must be a list of integers; got {}" "".format(wires))
 
-    if wires_rp[1] <= wires_rp[0]:
+    if wires[1] <= wires[0]:
         raise ValueError(
-            "wires_rp_1 must be > wires_rp_0; got wires_rp[1]={}, wires_rp[0]={}" ""
-            .format(wires_rp[1], wires_rp[0])
+            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}" ""
+            .format(wires[1], wires[0])
         )
 
     ###############
 
-    r, p = wires_rp
+    r, p = wires
 
 #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
     set_cnot_wires = [[l, l+1] for l in range(r, p)]
