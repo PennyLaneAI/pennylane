@@ -37,15 +37,16 @@
 
 |CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
-`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for **differentiable quantum programming**. Train a quantum computer the same way as a neural network.
+`PennyLane <https://pennylane.ai>`_ is a cross-platform Python library for `differentiable programming <https://en.wikipedia.org/wiki/Differentiable_programming>`__ of quantum computers. 
 
 .. raw:: html
 
     <p align="center">
+    <b>Train a quantum computer the same way as a neural network.</b>
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
     </p>
 
-You can use PennyLane for quantum computing, quantum machine learning, quantum chemistry, and hybrid quantum-classical computations. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
+PennyLane provides open-source tools for quantum machine learning, quantum computing, quantum chemistry, and hybrid quantum-classical computing. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
 
 Key Features
 ============
@@ -55,18 +56,16 @@ Key Features
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
 - **Device independent**.
-  The same quantum circuit model can be **run on different backends**. Install
-  `plugins <https://pennylane.ai/plugins.html>`__ to access even more
-  devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
+  *Run the same quantum computing circuit on different backends*. `Plugins <https://pennylane.ai/plugins.html>`__ give access to quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
 
 - **Best of both worlds**.
-  Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, TensorFlow, and NumPy.
+  *Support for hybrid quantum and classical models*; connect quantum
+  hardware with **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
 
 - **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
 
-- **Batteries included**. Built-in tools for **optimization, machine learning, and quantum chemistry**.
+- **Batteries included**. Built-in tools for **quantum machine learning**, **optimization**, and **quantum chemistry**.
 
 Available plugins
 =================
