@@ -15,11 +15,17 @@ r"""
 Contains the ``SingleExcitationOp`` template.
 """
 from pennylane import numpy as np
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import (check_no_variable, check_shape,
-                                       check_type, check_wires, get_shape)
+from pennylane.templates.utils import (
+    check_no_variable,
+    check_shape,
+    check_type,
+    check_wires,
+    get_shape,
+)
 
 
 @template
@@ -115,22 +121,21 @@ def SingleExcitationUnitary(weight, wires=None):
 
     if wires[1] <= wires[0]:
         raise ValueError(
-            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}" ""
-            .format(wires[1], wires[0])
+            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}" "".format(wires[1], wires[0])
         )
 
     ###############
 
     r, p = wires
 
-#   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [[l, l+1] for l in range(r, p)]
+    #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
+    set_cnot_wires = [[l, l + 1] for l in range(r, p)]
 
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Apply the first layer
 
     # U_1, U_2 acting on wires 'r' and 'p'
-    RX(-np.pi/2, wires=r)
+    RX(-np.pi / 2, wires=r)
     Hadamard(wires=p)
 
     # Applying CNOTs between wires 'r' and 'p'
@@ -138,29 +143,29 @@ def SingleExcitationUnitary(weight, wires=None):
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(weight/2, wires=p)
+    RZ(weight / 2, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
         CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+ acting on wires 'r' and 'p'
-    RX(np.pi/2, wires=r)
+    RX(np.pi / 2, wires=r)
     Hadamard(wires=p)
 
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Apply the second layer
 
     # U_1, U_2 acting on wires 'r' and 'p'
     Hadamard(wires=r)
-    RX(-np.pi/2, wires=p)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs between wires 'r' and 'p'
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(-weight/2, wires=p)
+    RZ(-weight / 2, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
@@ -168,4 +173,4 @@ def SingleExcitationUnitary(weight, wires=None):
 
     # U_1^+, U_2^+ acting on wires 'r' and 'p'
     Hadamard(wires=r)
-    RX(np.pi/2, wires=p)
+    RX(np.pi / 2, wires=p)
