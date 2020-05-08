@@ -639,7 +639,47 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
              if (sz[p] + sz[q] - sz[r] - sz[s]) == delta_sz
     ]
 
-    return ph, pphh    
+    return ph, pphh
+
+
+def hf_state(n_electrons, m_spin_orbitals):
+    r"""Represents the Hartree-Fock (HF) state of :math:`N` electrons by an occupation-
+    number vector in a basis of :math:`M` spin orbitals.
+
+    The many-particle wave functon in the HF approximation simplifies to a Slater determinant:
+
+    .. math: 
+        \Phi({\bf x}_1, {\bf x}_2, \dots ,{\bf x}_N) = \left|\begin{array}{cccc}
+        \varphi_1({\bf x}_1) & \varphi_2({\bf x}_1) & \cdots & \varphi_N({\bf x}_1) \\
+        \varphi_1({\bf x}_2) & \varphi_2({\bf x}_2) & \cdots & \varphi_N({\bf x}_2) \\
+        \vdots               & \vdots               & \ddots & \vdots            \\
+        \varphi_1({\bf x}_N) & \varphi_2({\bf x}_N) & \cdots & \varphi_N({\bf x}_N),
+
+	where :math:`\varphi_i` denotes the single-particle wave function of the :math:`ith` HF 
+	orbital. In Fock space, this determinant is represented by an occupation-number vector:
+
+    .. math: 
+        \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_M \rangle,
+
+        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N_e \\ 0 & i > N_e \end{array} \right..
+
+    **Example**
+
+    >>> init_state = hf_state(2, 6)
+    >>> print(init_state)
+    [1 1 0 0 0 0]
+    
+    Args: 
+        n_electrons (int): number of electrons 
+        m_spin_orbitals (int): number of spin-orbitals
+
+    Returns:
+        array: NumPy array containing the vector :math:`{\bf n}`
+    """	
+
+	hf_state_on = [1 if i < n_electrons else 0 for i in range(m_spin_orbitals)]
+
+	return np.array(hf_state_on)
 
 
 __all__ = [
@@ -653,4 +693,5 @@ __all__ = [
     "convert_hamiltonian",
     "generate_hamiltonian",
     "sd_excitations",
+    "hf_state",
 ]
