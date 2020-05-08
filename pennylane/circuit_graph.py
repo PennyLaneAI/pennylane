@@ -289,7 +289,7 @@ class CircuitGraph:
         operations = self.operations
 
         if rotations:
-            # if requested, append on diagonalizing gates corresponding
+            # if requested, append diagonalizing gates corresponding
             # to circuit observables
             operations += self.diagonalizing_gates
 
