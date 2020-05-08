@@ -56,7 +56,7 @@ Key Features
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
 - **Device independent**.
-  `Plugins <https://pennylane.ai/plugins.html>`__ give access to quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
+  Access quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
 
 - **Best of both worlds**.
@@ -65,6 +65,24 @@ Key Features
 - **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
 
 - **Batteries included**. Built-in tools for **quantum machine learning**, **optimization**, and **quantum chemistry**.
+
+Getting started
+===============
+
+For an introduction to quantum machine learning, we have several guides and resources available
+on PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
+
+* `What is quantum machine learning? <https://pennylane.ai/qml/whatisqml.html>`_
+* `QML tutorials and demonstrations <https://pennylane.ai/qml/demonstrations.html>`_
+* `Frequently asked questions <https://pennylane.ai/faq.html>`_
+* `Glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_
+* `Curated selection of QML videos <https://pennylane.ai/qml/videos.html>`_
+
+You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
+`quickstart guides <https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html>`_
+to using PennyLane, and detailed developer guides on
+`how to write your own <https://pennylane.readthedocs.io/en/stable/development/plugins.html>`_
+PennyLane-compatible quantum device.
 
 Available plugins
 =================
@@ -109,34 +127,6 @@ as all dependencies, can be done using pip:
 .. code-block:: bash
 
     $ python -m pip install pennylane
-
-
-Getting started
-===============
-
-For an introduction to quantum machine learning, we have several guides and resources available
-on PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
-
-* `What is quantum machine learning? <https://pennylane.ai/qml/whatisqml.html>`_
-* `Frequently asked questions <https://pennylane.ai/faq.html>`_
-* `Glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_
-* `Curated selection of QML videos <https://pennylane.ai/qml/videos.html>`_
-
-Then, take a deeper dive into quantum machine learning by
-exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
-with our collection of
-`QML tutorials and demonstrations <https://pennylane.ai/qml/demonstrations.html>`_.
-
-You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
-`quickstart guides <https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html>`_
-to using PennyLane, and detailed developer guides on
-`how to write your own <https://pennylane.readthedocs.io/en/stable/development/plugins.html>`_
-PennyLane-compatible quantum device.
-
-Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
-available for running your hybrid optimizations — these include
-IBM Q, provided by the PennyLane-Qiskit plugin, as well as the Rigetti Aspen QPU.
-
 
 Contributing to PennyLane
 =========================
