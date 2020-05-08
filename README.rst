@@ -55,16 +55,16 @@ Key Features
 
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
-- **Device independent**.
+- *Device independent*.
   Access quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
 
-- **Best of both worlds**.
+- *Best of both worlds*.
   Build hybrid models by connecting quantum hardware to **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
 
-- **Follow the gradient**. Hardware-friendly **automatic differentiation** of quantum circuits.
+- *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
 
-- **Batteries included**. Built-in tools for **quantum machine learning**, **optimization**, and **quantum chemistry**.
+- *Batteries included*. Built-in tools for **quantum machine learning**, **optimization**, and **quantum chemistry**.
 
 Getting started
 ===============
