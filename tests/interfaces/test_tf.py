@@ -775,6 +775,7 @@ class TestUnflattenTF:
         model = [tf.ones(3), tf.ones((2, 2)), tf.ones((3, 1)), tf.ones((1, 2))]
         unflattened = unflatten_tf(self.flat, model)
 
-        assert all([u.numpy().shape == model[i].numpy().shape for i, u in enumerate(unflattened[
-                                                                                        0])])
+        assert all(
+            [u.numpy().shape == model[i].numpy().shape for i, u in enumerate(unflattened[0])]
+        )
         assert unflattened[1].numpy().size == 0
