@@ -94,5 +94,11 @@ class TestWires:
         assert max(wires) == 13
         assert min(wires) == 1
 
-    def test_XXX(self):
-        """Tests that XXX."""
+    @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
+                                                (Wires([2, 1]), False)])  # incorrect number of wires
+    def test_injective_map_exists_method(self, wires2, target):
+        """Tests that the ``injective_map_exists()`` method produces the right output."""
+
+        wires1 = Wires([0, 1, 2])
+        res = wires1.injective_map_exists(wires2)
+        assert res == target

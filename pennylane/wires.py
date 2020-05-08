@@ -71,3 +71,19 @@ class Wires(Sequence, Set):
     def __len__(self):
         return len(self._wires)
 
+    def injective_map_exists(self, wires):
+        """
+        Checks that there is an injective mapping between ``wires`` and this object.
+
+        Since :class:`pennylane.wires.Wires`` objects are by definition collections of unique elements, we
+        only need to check the length of both sequences.
+        """
+
+        if not isinstance(wires, Wires):
+            raise WireError("Expected a pennylane.wires.Wires object; got input of type {}.".format(type(wires)))
+
+        if len(self._wires) == len(wires):
+            return True
+        else:
+            return False
+
