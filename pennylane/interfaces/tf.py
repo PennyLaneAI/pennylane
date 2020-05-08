@@ -134,10 +134,10 @@ def to_tf(qnode, dtype=None):
             variables = tfkwargs.get("variables", None)
             jacobian = qnode.jacobian(args, kwargs)
             jacobian = tf.constant(jacobian, dtype=dtype)
-            
+
             # Reshape gradient output array as a 2D row-vector.
             grad_output_row = tf.transpose(tf.reshape(grad_output, [-1, 1]))
-            
+
             # Calculate the vector-Jacobian matrix product, and flatten the output.
             grad_input = tf.matmul(grad_output_row, jacobian)
             grad_input = tf.reshape(grad_input, [-1])
