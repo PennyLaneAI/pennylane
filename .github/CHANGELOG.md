@@ -32,7 +32,7 @@
   A hybrid model can then be easily constructed:
 
   ```python
-  model = torch.nn.Sequential([qlayer, torch.nn.Linear(2, 2)])
+  model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
 
 * PennyLane now provides `DiagonalQubitUnitary` for diagonal gates, that are e.g.,
