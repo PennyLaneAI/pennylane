@@ -210,8 +210,8 @@ class CircuitGraph:
         """
         return hash(self.serialize())
 
-    def to_qasm(self, rotations=True):
-        """Serialize the circuit as an OpenQASM program.
+    def to_openqasm(self, rotations=True):
+        """Serialize the circuit as an OpenQASM 2.0 program.
 
         Only operations are serialized; all measurements
         are assumed to take place in the computational basis.
