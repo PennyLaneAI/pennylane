@@ -54,7 +54,7 @@ def random_iqp_wires(n_wires):
     # The global seed was fixed during benchmark construction
     # so this is actually deterministic
     a = random.random()
-    return random.sample(range(n_wires), math.ceil(min(3, n_wires) * a))
+    return random.sample(range(n_wires), math.ceil(min(2, n_wires) * a))
 
 
 class Benchmark(bu.BaseBenchmark):
@@ -64,7 +64,7 @@ class Benchmark(bu.BaseBenchmark):
     """
 
     name = "IQP circuit"
-    min_wires = 2
+    min_wires = 1
     n_vals = range(3, 27, 3)
         
 
@@ -83,13 +83,13 @@ class Benchmark(bu.BaseBenchmark):
 
             for i in range(n * self.n_wires):
                 wires = random_iqp_wires(self.n_wires)
-
                 if len(wires) == 1:
                     qml.PauliZ(wires=wires)
                 elif len(wires) == 2:
                     qml.CZ(wires=wires)
                 elif len(wires) == 3:
                     CCZ(wires)
+
 
             for i in range(self.n_wires):
                 qml.Hadamard(i)
