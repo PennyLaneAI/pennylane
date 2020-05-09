@@ -646,7 +646,7 @@ def hf_state(n_electrons, m_spin_orbitals):
     r"""Represents the Hartree-Fock (HF) state of :math:`N` electrons by an occupation-
     number vector in a basis of :math:`M` spin orbitals.
 
-    The many-particle wave functon in the HF approximation simplifies to a Slater determinant:
+    The many-particle wave functon in the HF approximation is a Slater determinant:
 
     .. math:
         \Phi({\bf x}_1, {\bf x}_2, \dots ,{\bf x}_N) = \left|\begin{array}{cccc}
