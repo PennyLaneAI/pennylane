@@ -1,10 +1,10 @@
 import os
 
 import numpy as np
-
 import pytest
 
 from pennylane import qchem
+
 
 @pytest.mark.parametrize(
     ("n_electrons", "m_spin_orbitals", "exp_init_state"),
