@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pytest
 
@@ -27,9 +25,9 @@ def test_hf_state(n_electrons, m_spin_orbitals, exp_init_state):
 @pytest.mark.parametrize(
     ("n_electrons", "m_spin_orbitals", "msg_match"),
     [
-        ( 0, 5, "number of active electrons has to be > 0"),
+        (0, 5, "number of active electrons has to be > 0"),
         (-1, 5, "number of active electrons has to be > 0"),
-        ( 6, 5, "number of active orbitals has to be >= the number of active electrons"),
+        (6, 5, "number of active orbitals has to be >= the number of active electrons"),
     ]
 )
 def test_inconsistent_input(n_electrons, m_spin_orbitals, msg_match):
