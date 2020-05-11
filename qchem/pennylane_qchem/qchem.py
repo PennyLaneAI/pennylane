@@ -678,7 +678,7 @@ def hf_state(n_electrons, m_spin_orbitals):
     if n_electrons > m_spin_orbitals:
         raise ValueError(
             "The number of active orbitals has to be >= the number of active electrons;"
-            " got 'm_orbitals'={} < 'n_electrons'={}".format(m_spin_orbitals, n_electrons)
+            " got 'm_spin_orbitals'={} < 'n_electrons'={}".format(m_spin_orbitals, n_electrons)
         )        
 
     hf_state_on = [1 if i < n_electrons else 0 for i in range(m_spin_orbitals)]
