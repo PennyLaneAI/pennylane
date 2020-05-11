@@ -90,7 +90,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
         #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that
            CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations
-           performed accross these qubits are shown in dashed lines in the figure above.
+           performed across these qubits are shown in dashed lines in the figure above.
 
     """
 
