@@ -653,7 +653,7 @@ def hf_state(n_electrons, m_spin_orbitals):
     .. math:
         \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_M \rangle,
 
-        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N_e \\ 0 & i > N_e \end{array} \right..
+        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right..
 
     **Example**
 
