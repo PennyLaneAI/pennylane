@@ -662,12 +662,24 @@ def hf_state(n_electrons, m_spin_orbitals):
     [1 1 0 0 0 0]
 
     Args:
-        n_electrons (int): number of electrons
-        m_spin_orbitals (int): number of spin-orbitals
+        n_electrons (int): number of active electrons
+        m_spin_orbitals (int): number of active **spin-orbitals**
 
     Returns:
-        array: NumPy array containing the vector :math:`{\bf n}`
+        array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
     """
+
+    if not n_electrons > 0:
+        raise ValueError(
+            "The number of active electrons has to be > 0; got 'n_electrons' = {}"
+            .format(n_electrons)
+        )
+
+    if n_electrons > m_orbitals:
+        raise ValueError(
+            "The number of active orbitals has to be >= the number of active electrons;"
+            " got 'm_orbitals'={} < 'n_electrons'={}".format(m_orbitals, n_electrons)
+        )        
 
     hf_state_on = [1 if i < n_electrons else 0 for i in range(m_spin_orbitals)]
 
