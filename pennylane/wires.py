@@ -32,8 +32,9 @@ class Wires(Sequence):
         represent the index of a quantum subsystem such as a qubit or qmode.
 
         Args:
-             wires (iterable): Ordered collection of unique wire indices. Takes common types of iterables,
-                such as lists, tuples, ranges and numpy arrays. The elements of the iterable must be
+             wires (int or iterable): Single wire index represented by a non-negative integer,
+                or a ordered collection of unique wire indices represented by any common type of iterables,
+                such as list, tuple, range and numpy array. The elements of the iterable must be
                 non-negative integers. If elements are floats, they are internally converted to integers,
                 throwing an error if the rounding error exceeds TOLERANCE.
         """
@@ -41,11 +42,7 @@ class Wires(Sequence):
         if isinstance(wires, Iterable):
             self._wires = list(wires)
         else:
-            raise WireError(
-                "Expected an iterable to represent wires; got {} of type {}".format(
-                    wires, type(wires)
-                )
-            )
+            self._wires = [wires]
 
         # Turn elements into integers, if possible
         for idx, w in enumerate(self._wires):
@@ -68,9 +65,9 @@ class Wires(Sequence):
                 raise WireError("Wire indices must be non-negative; got index {}.".format(w))
 
         # Check that indices are unique
-        if len(set(wires)) != len(wires):
+        if len(set(self._wires)) != len(self._wires):
             raise WireError(
-                "Each wire must be represented by a unique index; got {}.".format(wires)
+                "Each wire must be represented by a unique index; got {}.".format(self._wires)
             )
 
     def __getitem__(self, idx):

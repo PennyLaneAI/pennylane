@@ -29,6 +29,7 @@ from pennylane.operation import (
     Tensor,
 )
 from pennylane.qnodes import QuantumFunctionError
+from pennylane.wires import Wires
 
 
 class DeviceError(Exception):

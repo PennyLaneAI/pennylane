@@ -32,11 +32,11 @@ class TestWires:
 
         Wires(iterable)
 
-    def test_error_for_non_iterable(self):
-        """Tests that a Wires object cannot be created from a non-iterable input."""
+    @pytest.mark.parametrize("iterable", [1, 0, 4])
+    def test_integer_as_inputs(self, iterable):
+        """Tests that a Wires object can be created from integer representing a single wire."""
 
-        with pytest.raises(WireError, match="Expected an iterable to represent wires"):
-            Wires(1)
+        Wires(iterable)
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
@@ -57,14 +57,31 @@ class TestWires:
         for w in wires:
             assert isinstance(w, int)
 
-    @pytest.mark.parametrize("iterable", [np.array([4., 1.2, 0., 3.]),  # non-integer-like floats
-                                          [4., 1., 0., 3.0001], # non-integer-like floats
-                                          ['a', 'b', 'c', 'd']]) # non-integer-like characters
+    @pytest.mark.parametrize("scalar", [np.array([4.])[0],  # entry is np.int64
+                                        4.])  # entry is float
+    def test_integerlike_index_converted_to_integer(self, scalar):
+        """Tests that a Wires object converts a scalar integer-like float to integer element."""
+
+        wires = Wires(scalar)
+        for w in wires:
+            assert isinstance(w, int)
+
+    @pytest.mark.parametrize("iterable", [np.array([4., 1.2, 0., 3.]),  # non-integer-like np.int64
+                                          [4., 1., 0., 3.0001],  # non-integer-like floats
+                                          ['a', 'b', 'c', 'd']])  # non-integer-like characters
     def test_error_for_non_integerlike_indices(self, iterable):
         """Tests that a Wires object throws error when indices are not integer-like."""
 
         with pytest.raises(WireError, match="Wire indices must be integers"):
             Wires(iterable)
+
+    @pytest.mark.parametrize("scalar", [np.array([4.3])[0],  # non-integer-like np.int64
+                                        4.1])  # non-integer-like float
+    def test_integerlike_index_converted_to_integer(self, scalar):
+        """Tests that a Wires object converts a scalar integer-like float to list of integer element."""
+
+        with pytest.raises(WireError, match="Wire indices must be integers"):
+            Wires(scalar)
 
     def test_error_for_negative_indices(self):
         """Tests that a Wires object throws error when indices are negative."""
