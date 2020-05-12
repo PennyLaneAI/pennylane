@@ -126,6 +126,18 @@ class TestWires:
         assert max(wires) == 13
         assert min(wires) == 1
 
+    def test_extend_method(self):
+        """Tests that a Wires object can be extended by another."""
+
+        wires = Wires([1, 2, 3])
+        wires2 = Wires([4, 5])
+
+        wires.extend(wires2)
+        assert wires.wire_list == [1, 2, 3, 4, 5]
+
+        with pytest.raises(WireError, match="Expected wires object to extend this Wires object"):
+            wires.extend([8, 5])
+
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
                                                 (Wires([2, 1]), False)])  # incorrect number of wires
     def test_injective_map_exists_method(self, wires2, target):

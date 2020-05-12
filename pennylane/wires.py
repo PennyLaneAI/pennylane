@@ -42,10 +42,10 @@ class Wires(Sequence):
         if isinstance(wires, Iterable):
             # If input is an iterable, interpret as a collection
             # of wire indices
-            self._wires = list(wires)
+            self.wire_list = list(wires)
 
             # Turn elements into integers, if possible
-            for idx, w in enumerate(self._wires):
+            for idx, w in enumerate(self.wire_list):
 
                 if not isinstance(w, int):
                     # Try to parse integer-like elements to int
@@ -53,28 +53,28 @@ class Wires(Sequence):
                         # This works for floats and numpy.int
                         difference = abs(w - round(w))
                         if difference < TOLERANCE:
-                            self._wires[idx] = int(w)
+                            self.wire_list[idx] = int(w)
                         else:
                             raise TypeError
                     except TypeError:
                         raise WireError("Wire indices must be integers; got type {}.".format(type(w)))
 
             # Check that indices are non-negative
-            for w in self._wires:
+            for w in self.wire_list:
                 if w < 0:
                     raise WireError("Wire indices must be non-negative; got index {}.".format(w))
 
             # Check that indices are unique
-            if len(set(self._wires)) != len(self._wires):
+            if len(set(self.wire_list)) != len(self.wire_list):
                 raise WireError(
-                    "Each wire must be represented by a unique index; got {}.".format(self._wires)
+                    "Each wire must be represented by a unique index; got {}.".format(self.wire_list)
                 )
 
         elif isinstance(wires, int):
             if wires >= 0:
                 # If input is non-negative integer, interpret it as the
                 # number of consecutive wires
-                self._wires = list(range(wires))
+                self.wire_list = list(range(wires))
             else:
                 raise WireError("Number of wires cannot be negative; got {}.".format(wires))
         else:
@@ -82,10 +82,23 @@ class Wires(Sequence):
                             "representing the wire indices; got {} of type {}.".format(wires, type(wires)))
 
     def __getitem__(self, idx):
-        return self._wires[idx]
+        return self.wire_list[idx]
 
     def __len__(self):
-        return len(self._wires)
+        return len(self.wire_list)
+
+    def extend(self, wires):
+        """Extend this ``Wires`` object by the indices of another.
+
+        Args:
+            wires (Wires): A Wires object whose unique indices are supposed to be added to this one.
+        """
+
+        if not isinstance(wires, Wires):
+            raise WireError("Expected wires object to extend this Wires object; "
+                            "got {} of type {}".format(wires, type(wires)))
+
+        self.wire_list.extend(wires.wire_list)
 
     def injective_map_exists(self, wires):
         """
@@ -100,7 +113,7 @@ class Wires(Sequence):
                 "Expected a pennylane.wires.Wires object; got input of type {}.".format(type(wires))
             )
 
-        if len(self._wires) == len(wires):
+        if len(self.wire_list) == len(wires):
             return True
         else:
             return False
