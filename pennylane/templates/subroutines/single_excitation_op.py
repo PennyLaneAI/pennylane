@@ -32,7 +32,7 @@ from pennylane.templates.utils import (
 def SingleExcitationUnitary(weight, wires=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     fermionic single-excitation operator entering the Unitary Coupled-Cluster Singles
-    and Doubles (UCCSD) ansatz. UCCSD is one of the VQE ansatz commonly used to run quantum
+    and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
     chemistry simulations.
 
     The CC single-excitation operator is given by
@@ -112,16 +112,16 @@ def SingleExcitationUnitary(weight, wires=None):
     check_shape(
         weight,
         expected_shape,
-        msg="'weight' must be of shape {}; got {}" "".format(expected_shape, get_shape(weight)),
+        msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
     )
 
-    check_type(wires, [list], msg="'wires' must be a list; got {}" "".format(wires))
+    check_type(wires, [list], msg="'wires' must be a list; got {}".format(wires))
     for w in wires:
-        check_type(w, [int], msg="'wires' must be a list of integers; got {}" "".format(wires))
+        check_type(w, [int], msg="'wires' must be a list of integers; got {}".format(wires))
 
     if wires[1] <= wires[0]:
         raise ValueError(
-            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}" "".format(wires[1], wires[0])
+            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}".format(wires[1], wires[0])
         )
 
     ###############
