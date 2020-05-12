@@ -26,7 +26,6 @@ class WireError(Exception):
 
 
 class Wires(Sequence):
-
     def __init__(self, wires):
         """
         A bookkeeping class for wires, which are ordered collections of unique non-negative integers that
@@ -42,7 +41,11 @@ class Wires(Sequence):
         if isinstance(wires, Iterable):
             self._wires = list(wires)
         else:
-            raise WireError("Expected an iterable to represent wires; got {} of type {}".format(wires, type(wires)))
+            raise WireError(
+                "Expected an iterable to represent wires; got {} of type {}".format(
+                    wires, type(wires)
+                )
+            )
 
         # Turn elements into integers, if possible
         for idx, w in enumerate(self._wires):
@@ -66,7 +69,9 @@ class Wires(Sequence):
 
         # Check that indices are unique
         if len(set(wires)) != len(wires):
-            raise WireError("Each wire must be represented by a unique index; got {}.".format(wires))
+            raise WireError(
+                "Each wire must be represented by a unique index; got {}.".format(wires)
+            )
 
     def __getitem__(self, idx):
         return self._wires[idx]
@@ -83,10 +88,11 @@ class Wires(Sequence):
         """
 
         if not isinstance(wires, Wires):
-            raise WireError("Expected a pennylane.wires.Wires object; got input of type {}.".format(type(wires)))
+            raise WireError(
+                "Expected a pennylane.wires.Wires object; got input of type {}.".format(type(wires))
+            )
 
         if len(self._wires) == len(wires):
             return True
         else:
             return False
-
