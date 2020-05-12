@@ -30,13 +30,30 @@ class TestWires:
     def test_common_iterables_as_inputs(self, iterable):
         """Tests that a Wires object can be created from standard iterable inputs."""
 
-        Wires(iterable)
+        wires = Wires(iterable)
+        assert len(wires) == len(iterable)
 
-    @pytest.mark.parametrize("iterable", [1, 0, 4])
-    def test_integer_as_inputs(self, iterable):
-        """Tests that a Wires object can be created from integer representing a single wire."""
+    @pytest.mark.parametrize("length", [1, 0, 4])
+    def test_integer_as_inputs(self, length):
+        """Tests that a Wires object can be created from integer representing the number of wires."""
 
-        Wires(iterable)
+        wires = Wires(length)
+        assert length == len(wires)
+
+    @pytest.mark.parametrize("wrong_length", [-1, -2])
+    def test_exception_for_negative_integer_input(self, wrong_length):
+        """Tests that a Wires object cannot be created from negative integer."""
+
+        with pytest.raises(WireError, match="Number of wires cannot be negative"):
+            Wires(wrong_length)
+
+    @pytest.mark.parametrize("wrong_input", [1.2,
+                                             None])
+    def test_error_for_repeated_indices(self, wrong_input):
+        """Tests that a Wires object cannot be created from inputs that are neither integers nor iterables."""
+
+        with pytest.raises(WireError, match="Expected either an integer representing the"):
+            Wires(wrong_input)
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
@@ -57,15 +74,6 @@ class TestWires:
         for w in wires:
             assert isinstance(w, int)
 
-    @pytest.mark.parametrize("scalar", [np.array([4.])[0],  # entry is np.int64
-                                        4.])  # entry is float
-    def test_integerlike_index_converted_to_integer(self, scalar):
-        """Tests that a Wires object converts a scalar integer-like float to integer element."""
-
-        wires = Wires(scalar)
-        for w in wires:
-            assert isinstance(w, int)
-
     @pytest.mark.parametrize("iterable", [np.array([4., 1.2, 0., 3.]),  # non-integer-like np.int64
                                           [4., 1., 0., 3.0001],  # non-integer-like floats
                                           ['a', 'b', 'c', 'd']])  # non-integer-like characters
@@ -74,14 +82,6 @@ class TestWires:
 
         with pytest.raises(WireError, match="Wire indices must be integers"):
             Wires(iterable)
-
-    @pytest.mark.parametrize("scalar", [np.array([4.3])[0],  # non-integer-like np.int64
-                                        4.1])  # non-integer-like float
-    def test_integerlike_index_converted_to_integer(self, scalar):
-        """Tests that a Wires object converts a scalar integer-like float to list of integer element."""
-
-        with pytest.raises(WireError, match="Wire indices must be integers"):
-            Wires(scalar)
 
     def test_error_for_negative_indices(self):
         """Tests that a Wires object throws error when indices are negative."""
@@ -125,6 +125,18 @@ class TestWires:
         wires = Wires([1, 2, 13, 4, 5])
         assert max(wires) == 13
         assert min(wires) == 1
+
+    def test_extend_method(self):
+        """Tests that a Wires object can be extended by another."""
+
+        wires = Wires([1, 2, 3])
+        wires2 = Wires([4, 5])
+
+        wires.extend(wires2)
+        assert wires.wire_list == [1, 2, 3, 4, 5]
+
+        with pytest.raises(WireError, match="Expected wires object to extend this Wires object"):
+            wires.extend([8, 5])
 
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
                                                 (Wires([2, 1]), False)])  # incorrect number of wires
