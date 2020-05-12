@@ -47,7 +47,8 @@ class TestWires:
         with pytest.raises(WireError, match="Number of wires cannot be negative"):
             Wires(wrong_length)
 
-    @pytest.mark.parametrize("wrong_input", [])
+    @pytest.mark.parametrize("wrong_input", [1.2,
+                                             None])
     def test_error_for_repeated_indices(self, wrong_input):
         """Tests that a Wires object cannot be created from inputs that are neither integers nor iterables."""
 
