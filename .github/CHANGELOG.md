@@ -433,6 +433,9 @@
 
 <h3>Bug fixes</h3>
 
+* `tf.GradientTape().jacobian()` can now be evaluated on QNodes using the TensorFlow interface.
+  [(#626)](https://github.com/XanaduAI/pennylane/pull/626)
+
 * `RandomLayers()` is now compatible with the qiskit devices.
   [(#597)](https://github.com/XanaduAI/pennylane/pull/597)
 
