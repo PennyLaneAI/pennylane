@@ -52,7 +52,7 @@ class TestWires:
     def test_error_for_repeated_indices(self, wrong_input):
         """Tests that a Wires object cannot be created from inputs that are neither integers nor iterables."""
 
-        with pytest.raises(WireError, match="Expected either an integer representing the"):
+        with pytest.raises(WireError, match="Unexpected wires input"):
             Wires(wrong_input)
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),

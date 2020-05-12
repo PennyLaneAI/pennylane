@@ -25,8 +25,56 @@ class WireError(Exception):
     """
 
 
+def _clean(iterable):
+    """Turns 'iterable' into list of non-negative integers, and checks that all integers are unique.
+
+        Args:
+            iterable (Iterable): iterable of wire indices
+
+        Returns:
+            list[int]: cleaned wire index sequence
+
+        Raises:
+            WireError if elements cannot be turned into integers, if they are negative or not unique.
+        """
+
+    iterable = list(iterable)
+
+    # Turn elements into integers, if possible
+    for idx, w in enumerate(iterable):
+
+        if not isinstance(w, int):
+            # Try to parse integer-like elements to int
+            try:
+                # This works for floats and numpy.int
+                difference = abs(w - round(w))
+                if difference < TOLERANCE:
+                    iterable[idx] = int(w)
+                else:
+                    raise TypeError
+            except TypeError:
+                raise WireError(
+                    "Wire indices must be integers; got type {}.".format(type(w))
+                )
+
+    # Check that indices are non-negative
+    for w in iterable:
+        if w < 0:
+            raise WireError("Wire indices must be non-negative; got index {}.".format(w))
+
+    # Check that indices are unique
+    if len(set(iterable)) != len(iterable):
+        raise WireError(
+            "Each wire must be represented by a unique index; got {}.".format(
+                iterable
+            )
+        )
+
+    return iterable
+
+
 class Wires(Sequence):
-    def __init__(self, wires):
+    def __init__(self, wires, accept_integer=True):
         """
         A bookkeeping class for wires, which are ordered collections of unique non-negative integers that
         represent the index of a quantum subsystem such as a qubit or qmode.
@@ -37,44 +85,14 @@ class Wires(Sequence):
                 (such as list, tuple, range and numpy array). The elements of the iterable must be
                 non-negative integers. If elements are floats, they are internally converted to integers,
                 throwing an error if the rounding error exceeds TOLERANCE.
+             accept_integer (bool): If False, only an iterable is accepted as argument
         """
 
         if isinstance(wires, Iterable):
-            # If input is an iterable, interpret as a collection
-            # of wire indices
-            self.wire_list = list(wires)
+            # If input is an iterable, interpret as a collection of wire indices
+            self.wire_list = _clean(wires)
 
-            # Turn elements into integers, if possible
-            for idx, w in enumerate(self.wire_list):
-
-                if not isinstance(w, int):
-                    # Try to parse integer-like elements to int
-                    try:
-                        # This works for floats and numpy.int
-                        difference = abs(w - round(w))
-                        if difference < TOLERANCE:
-                            self.wire_list[idx] = int(w)
-                        else:
-                            raise TypeError
-                    except TypeError:
-                        raise WireError(
-                            "Wire indices must be integers; got type {}.".format(type(w))
-                        )
-
-            # Check that indices are non-negative
-            for w in self.wire_list:
-                if w < 0:
-                    raise WireError("Wire indices must be non-negative; got index {}.".format(w))
-
-            # Check that indices are unique
-            if len(set(self.wire_list)) != len(self.wire_list):
-                raise WireError(
-                    "Each wire must be represented by a unique index; got {}.".format(
-                        self.wire_list
-                    )
-                )
-
-        elif isinstance(wires, int):
+        elif accept_integer and isinstance(wires, int):
             if wires >= 0:
                 # If input is non-negative integer, interpret it as the
                 # number of consecutive wires
@@ -83,8 +101,7 @@ class Wires(Sequence):
                 raise WireError("Number of wires cannot be negative; got {}.".format(wires))
         else:
             raise WireError(
-                "Expected either an integer representing the number of wires, or an iterable "
-                "representing the wire indices; got {} of type {}.".format(wires, type(wires))
+                "Unexpected wires input; got {} of type {}.".format(wires, type(wires))
             )
 
     def __getitem__(self, idx):
