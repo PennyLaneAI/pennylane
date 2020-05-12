@@ -12,34 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :class:`Wires` class.
+This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
-from collections import Set, Sequence
+from collections import Sequence, Iterable
 
 # tolerance for wire indices
 TOLERANCE = 1e-8
 
+
 class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` when it is unable to process wire objects.
+    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires.
     """
 
 
-class Wires(Sequence, Set):
+class Wires(Sequence):
 
     def __init__(self, wires):
         """
         A bookkeeping class for wires, which are ordered collections of unique non-negative integers that
-        represent the index of a wire.
+        represent the index of a quantum subsystem such as a qubit or qmode.
 
         Args:
              wires (iterable): Ordered collection of unique wire indices. Takes common types of iterables,
-                such as lists, tuples and numpy arrays. The element of the iterable must be a
-                non-negative integer. If elements are floats, they are internally converted to integers,
+                such as lists, tuples, ranges and numpy arrays. The elements of the iterable must be
+                non-negative integers. If elements are floats, they are internally converted to integers,
                 throwing an error if the rounding error exceeds TOLERANCE.
         """
 
-        if wires is not None:
+        if isinstance(wires, Iterable):
             self._wires = list(wires)
+        else:
+            raise WireError("Expected an iterable to represent wires; got {} of type {}".format(wires, type(wires)))
 
         # Turn elements into integers, if possible
         for idx, w in enumerate(self._wires):

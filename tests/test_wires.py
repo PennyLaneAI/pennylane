@@ -23,6 +23,21 @@ from pennylane.wires import Wires, WireError
 class TestWires:
     """Wires class tests."""
 
+    @pytest.mark.parametrize("iterable", [np.array([0, 2, 1, 3]),
+                                          [0, 1, 2],
+                                          (4, 1, 3),
+                                          range(3)])
+    def test_common_iterables_as_inputs(self, iterable):
+        """Tests that a Wires object can be created from standard iterable inputs."""
+
+        Wires(iterable)
+
+    def test_error_for_non_iterable(self):
+        """Tests that a Wires object cannot be created from a non-iterable input."""
+
+        with pytest.raises(WireError, match="Expected an iterable to represent wires"):
+            Wires(1)
+
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
                                           (4, 1, 1, 3)])
@@ -42,9 +57,9 @@ class TestWires:
         for w in wires:
             assert isinstance(w, int)
 
-    @pytest.mark.parametrize("iterable", [np.array([4., 1.2, 0., 3.]),
-                                          [4., 1., 0., 3.0001],
-                                          ['a', 'b', 'c', 'd']])
+    @pytest.mark.parametrize("iterable", [np.array([4., 1.2, 0., 3.]),  # non-integer-like floats
+                                          [4., 1., 0., 3.0001], # non-integer-like floats
+                                          ['a', 'b', 'c', 'd']]) # non-integer-like characters
     def test_error_for_non_integerlike_indices(self, iterable):
         """Tests that a Wires object throws error when indices are not integer-like."""
 
