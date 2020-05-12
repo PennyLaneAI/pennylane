@@ -57,7 +57,9 @@ class Wires(Sequence):
                         else:
                             raise TypeError
                     except TypeError:
-                        raise WireError("Wire indices must be integers; got type {}.".format(type(w)))
+                        raise WireError(
+                            "Wire indices must be integers; got type {}.".format(type(w))
+                        )
 
             # Check that indices are non-negative
             for w in self.wire_list:
@@ -67,7 +69,9 @@ class Wires(Sequence):
             # Check that indices are unique
             if len(set(self.wire_list)) != len(self.wire_list):
                 raise WireError(
-                    "Each wire must be represented by a unique index; got {}.".format(self.wire_list)
+                    "Each wire must be represented by a unique index; got {}.".format(
+                        self.wire_list
+                    )
                 )
 
         elif isinstance(wires, int):
@@ -78,8 +82,10 @@ class Wires(Sequence):
             else:
                 raise WireError("Number of wires cannot be negative; got {}.".format(wires))
         else:
-            raise WireError("Expected either an integer representing the number of wires, or an iterable "
-                            "representing the wire indices; got {} of type {}.".format(wires, type(wires)))
+            raise WireError(
+                "Expected either an integer representing the number of wires, or an iterable "
+                "representing the wire indices; got {} of type {}.".format(wires, type(wires))
+            )
 
     def __getitem__(self, idx):
         return self.wire_list[idx]
@@ -95,8 +101,10 @@ class Wires(Sequence):
         """
 
         if not isinstance(wires, Wires):
-            raise WireError("Expected wires object to extend this Wires object; "
-                            "got {} of type {}".format(wires, type(wires)))
+            raise WireError(
+                "Expected wires object to extend this Wires object; "
+                "got {} of type {}".format(wires, type(wires))
+            )
 
         self.wire_list.extend(wires.wire_list)
 
