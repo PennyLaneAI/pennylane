@@ -201,7 +201,7 @@ of other templates.
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
     :description: SingleExcitationUnitary
-    :figure: ../_static/templates/subroutines/ucc_se_op.png    
+    :figure: ../_static/templates/subroutines/single_excitation_unitary.png
 
 .. raw:: html
 
