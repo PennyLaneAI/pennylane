@@ -26,6 +26,7 @@ import numpy as np
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
+from pennylane.wires import Wires, WireError
 
 
 class QubitDevice(Device):
@@ -223,13 +224,13 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            set[int]: the set of wires activated by the specified operators
+            Wires: wires activated by the specified operators
         """
-        wires = []
+        active = Wires([])
         for op in operators:
-            wires.extend(op.wires)
+            active.extend(op.wires)
 
-        return set(wires)
+        return active
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
@@ -259,7 +260,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))
+                results.append(self.probability(wires=obs.wires))  # TODO: prob function must accept Wires object
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -380,7 +381,7 @@ class QubitDevice(Device):
             List[float]: list of the probabilities
         """
         # consider only the requested wires
-        wires = np.hstack(wires)
+        wires = np.hstack(wires)  # TODO: Do we need to use wires objects here?
 
         samples = self._samples[:, np.array(wires)]
 
@@ -402,14 +403,22 @@ class QubitDevice(Device):
         estimated probability.
 
         Args:
-            wires (Sequence[int]): Sequence of wires to return
+            wires (Iterable[int]): Wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
         Returns:
             List[float]: list of the probabilities
         """
-        wires = wires or range(self.num_wires)
+        if wires is None:
+            wires = self.user_wires
+        else:
+            try:
+                wires = Wires(wires, accept_integer=False)
+            except WireError:
+                # To print out a more relevant message
+                raise ValueError("'wires' must be an iterable of non-negative integers representing wire indices; "
+                                 "got {} of type {}.".format(wires, type(wires)))
 
         if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)

@@ -110,6 +110,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+from pennylane.wires import Wires
 
 from .utils import _flatten, pauli_eigs
 from .variable import Variable
@@ -376,11 +377,7 @@ class Operator(abc.ABC):
                 self.check_domain(p)
         self.params = list(params)  #: list[Any]: parameters of the operator
 
-        # apply the operator on the given wires
-        if not isinstance(wires, Sequence):
-            wires = [wires]
-        self._check_wires(wires)
-        self._wires = wires  #: tuple[int]: wires on which the operator acts
+        self._wires = Wires(wires)  #: Wires: wires on which the operator acts
 
         if do_queue:
             self.queue()
@@ -997,17 +994,21 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len(list(_flatten(self.wires)))
+        return len(self.wires)
 
     @property
     def wires(self):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[list[Any]]: nested list containing the wires per observable
+            list[Wires]: list containing the wires per observable
             in the tensor product
         """
-        return [o.wires for o in self.obs]
+        all_wires = Wires([])
+        for o in self.obs:
+            all_wires.extend(o.wires)
+
+        return all_wires
 
     @property
     def params(self):
