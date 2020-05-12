@@ -111,7 +111,6 @@ class PassthruQNode(BaseQNode):
                 pennylane.operation.Operator.do_check_domain = False
                 # generate the program queue by executing the quantum circuit function
                 res = self.func(*args, **kwargs)
-
             finally:
                 pennylane.operation.Operator.do_check_domain = True
 
