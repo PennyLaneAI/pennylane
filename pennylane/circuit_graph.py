@@ -114,6 +114,7 @@ class CircuitGraph:
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
         self.num_wires = 0
+        """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
             self.num_wires = max(self.num_wires, max(list(_flatten(op.wires))) + 1)
             op.queue_idx = k  # store the queue index in the Operator
