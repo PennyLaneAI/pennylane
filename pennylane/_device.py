@@ -42,7 +42,8 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int): number of subsystems in the quantum state represented by the device.
+        wires (int or iterable[int]): number of subsystems in the quantum state represented by the device,
+            or iterable of integers representing custom wire indices.
             Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
@@ -55,7 +56,7 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1000):
 
-        self.user_wires = Wires(wires)
+        self.user_wires = Wires(wires)  # Wires object is a Sequence of unique non-negative wire indices
         self.num_wires = len(self.user_wires)
         self.shots = shots
 
