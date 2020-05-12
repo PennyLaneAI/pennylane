@@ -54,7 +54,9 @@ class Device(abc.ABC):
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000):
-        self.num_wires = wires
+
+        self.user_wires = Wires(wires)
+        self.num_wires = len(self.user_wires)
         self.shots = shots
 
         self._op_queue = None
