@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``SingleExcitationOp`` template.
+Contains the ``SingleExcitationUnitary`` template.
 """
 from pennylane import numpy as np
 
@@ -59,7 +59,7 @@ def SingleExcitationUnitary(weight, wires=None):
     The quantum circuit to exponentiate the tensor product of Pauli matrices entering
     the latter equation is shown below:
 
-    .. figure:: ../../_static/ucc_se_op.png
+    .. figure:: ../../_static/templates/subroutines/ucc_se_op.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
