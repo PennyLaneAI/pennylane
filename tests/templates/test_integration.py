@@ -125,7 +125,7 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                                {'features': [1., 1.]}),
                               (qml.templates.SingleExcitationUnitary,
                                {'weight': 0.56},
-                               {'wires': [0, 1]}),
+                               {}),
                               ]
 
 CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
