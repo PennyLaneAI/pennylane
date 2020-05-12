@@ -26,7 +26,7 @@ class WireError(Exception):
 
 
 def _clean(iterable):
-    """Turns 'iterable' into list of non-negative integers, and checks that all integers are unique.
+    """Converts 'iterable' into list of integers, and checks that all integers are unique and non-negative.
 
         Args:
             iterable (Iterable): iterable of wire indices
