@@ -85,7 +85,7 @@ def SingleExcitationUnitary(weight, wires=None):
            :math:`\hat{U}_2`, and :math:`\hat{U}_\theta` are defined as follows,
 
            .. math::
-               [U_1, U_2, U_{\theta})] = \Bigg\{\bigg[R_x(-\pi/2), H, R_z(\theta/2)\bigg],
+               [U_1, U_2, U_{\theta}] = \Bigg\{\bigg[R_x(-\pi/2), H, R_z(\theta/2)\bigg],
                \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
 
         #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that
@@ -121,7 +121,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
     if wires[1] <= wires[0]:
         raise ValueError(
-            "wires_1 must be > wires_0; got wires[1]={}, wires[0]={}".format(wires[1], wires[0])
+            "wires_1 must be larger than wires_0; got wires[1]={}, wires[0]={}".format(wires[1], wires[0])
         )
 
     ###############

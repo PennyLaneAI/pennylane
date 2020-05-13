@@ -391,8 +391,8 @@ class TestSingleExcitationUnitary:
             ( 0.2      , None        , "wires must be a positive integer"),
             ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
             ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
-            ( 0.2      , [3, 3]      , "wires_1 must be > wires_0"),
-            ( 0.2      , [3, 1]      , "wires_1 must be > wires_0")
+            ( 0.2      , [3, 3]      , "wires_1 must be larger than wires_0"),
+            ( 0.2      , [3, 1]      , "wires_1 must be larger than wires_0")
         ]
     )
     def test_single_excitation_unitary_exceptions(self, weight, ph, msg_match):
