@@ -110,7 +110,7 @@ class Wires(Sequence):
         """Extend this ``Wires`` object by the indices of another.
 
         Args:
-            wires (Wires): A Wires object whose unique indices are supposed to be added to this one.
+            wires (Wires): A Wires object whose unique indices are added to this one.
         """
 
         if not isinstance(wires, Wires):
@@ -119,6 +119,27 @@ class Wires(Sequence):
             )
 
         self.wire_list.extend(wires.wire_list)
+
+    def get_indices(self, wires):
+        """
+        Return the indices of the wires in this wires object.
+
+        For example, for ``self.wire_list = [4, 0, 1]`` and ``wires.wire_list = [1, 4]``, this method returns
+        the list of indices for wire "1" and wire "4", which is [2, 0].
+
+        Args:
+            wires (Wires): A Wires class object
+
+        Returns:
+            List: index list
+        """
+
+        if not isinstance(wires, Wires):
+            raise WireError(
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+            )
+
+        return [self.index(w) for w in wires]
 
     def injective_map_exists(self, wires):
         """

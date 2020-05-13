@@ -115,7 +115,7 @@ class TestWires:
         assert min(wires) == 1
 
     def test_extend_method(self):
-        """Tests that a Wires object can be extended by another."""
+        """Tests the ``test_extend_method()`` method."""
 
         wires = Wires([1, 2, 3])
         wires2 = Wires([4, 5])
@@ -129,7 +129,7 @@ class TestWires:
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
                                                 (Wires([2, 1]), False)])  # incorrect number of wires
     def test_injective_map_exists_method(self, wires2, target):
-        """Tests that the ``injective_map_exists()`` method produces the right output."""
+        """Tests the ``injective_map_exists()`` method."""
 
         wires = Wires([0, 1, 2])
         res = wires.injective_map_exists(wires2)
@@ -137,3 +137,14 @@ class TestWires:
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             wires.injective_map_exists([8, 5])
+
+    def test_get_index_method(self):
+        """Tests the ``get_indices()`` method."""
+
+        wires = Wires([4, 0, 1])
+        wires2 = Wires([1, 4])
+        res = wires.get_indices(wires2)
+        assert res == [2, 0]
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            wires.get_indices([8, 5])
