@@ -101,10 +101,26 @@ class Wires(Sequence):
             )
 
     def __getitem__(self, idx):
+        """Method to support indexing"""
         return self.wire_list[idx]
 
     def __len__(self):
+        """Method to support ``len()``"""
         return len(self.wire_list)
+
+    def __eq__(self, other):
+        """Method to support the '==' operator"""
+        if isinstance(other, self.__class__):
+            return self.wire_list == other.wire_list
+        else:
+            return False
+
+    def __repr__(self):
+        return "<Wires {}>".format(self.wire_list)
+
+    def __ne__(self, other):
+        """Method to support the '!=' operator"""
+        return not self.__eq__(other)
 
     def extend(self, wires):
         """Extend this ``Wires`` object by the indices of another.
@@ -119,6 +135,62 @@ class Wires(Sequence):
             )
 
         self.wire_list.extend(wires.wire_list)
+
+    def intersection(self, wires):
+        """
+        Creates a wires object that is the intersection of wires between 'wires' and this object.
+
+        For example:
+
+        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires2 = Wires([0, 4, 3])
+        >>> wires1.intersection(wires2)
+        <Wires [4, 0]> # TODO: print nicely
+
+        The returned wire sequence is ordered according to the order of this wires object.
+
+        Args:
+            wires (Wires): A Wires class object
+
+        Returns:
+            Wires: intersection of this Wires object and 'wires'
+        """
+
+        if not isinstance(wires, Wires):
+            raise WireError(
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+            )
+
+        intersect = [w for w in self.wire_list if w in wires.wire_list]
+        return Wires(intersect)
+
+    def difference(self, wires):
+        """
+        Creates a wires object that is the difference of wires between 'wires' and this object.
+
+        For example:
+
+        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires2 = Wires([0, 2, 3])
+        >>> wires1.difference(wires2)
+        <Wires [4, 1]> # TODO: print nicely
+
+        The returned wire sequence is ordered according to the order of this wires object.
+
+        Args:
+            wires (Wires): A Wires class object
+
+        Returns:
+            Wires: difference of this Wires object and 'wires'
+        """
+
+        if not isinstance(wires, Wires):
+            raise WireError(
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+            )
+
+        diff = [w for w in self.wire_list if w not in wires.wire_list]
+        return Wires(diff)
 
     def get_indices(self, wires):
         """
@@ -147,6 +219,12 @@ class Wires(Sequence):
 
         Since :class:`pennylane.wires.Wires`` objects are by definition collections of unique elements, we
         only need to check the length of both sequences.
+
+        Args:
+            wires (Wires): A Wires class object
+
+        Returns:
+            bool: whether injective mapping exists or not
         """
 
         if not isinstance(wires, Wires):
