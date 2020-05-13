@@ -105,7 +105,7 @@ def SingleExcitationUnitary(weight, wires=None):
     check_shape(
         wires,
         expected_shape,
-        msg="'wires' must be of shape {}; got {}" "".format(expected_shape, get_shape(wires)),
+        msg="'wires' must be of shape {}; got {}".format(expected_shape, get_shape(wires)),
     )
 
     expected_shape = ()
