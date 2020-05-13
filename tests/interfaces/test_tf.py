@@ -19,9 +19,9 @@ import pytest
 
 import numpy as np
 
-try:
-    import tensorflow as tf
+tf = pytest.importorskip("tensorflow", minversion="1.12")
 
+try:
     if tf.__version__[0] == "1":
         import tensorflow.contrib.eager as tfe
         tf.enable_eager_execution()
@@ -34,9 +34,8 @@ except ImportError as e:
 
 import pennylane as qml
 
-from pennylane.utils import _flatten, unflatten
-from pennylane.qnodes import QNode, QuantumFunctionError
-from pennylane._device import DeviceError
+from pennylane.qnodes import QuantumFunctionError
+from pennylane.interfaces.tf import unflatten_tf
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
@@ -463,8 +462,9 @@ class TestTFQNodeParameterHandling:
 class TestIntegration:
     """Integration tests to ensure the TensorFlow QNode agrees with the NumPy QNode"""
 
-    def test_qnode_evaluation_agrees(self, qubit_device_2_wires, tol):
-        """Tests that simple example is consistent."""
+    @pytest.fixture
+    def qnodes(self, qubit_device_2_wires):
+        """Two QNodes to be used for the gradient tests"""
 
         @qml.qnode(qubit_device_2_wires, interface='autograd')
         def circuit(phi, theta):
@@ -481,6 +481,12 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta[0], wires=0)
             return qml.expval(qml.PauliZ(0))
+
+        return circuit, circuit_tf
+
+    def test_qnode_evaluation_agrees(self, qnodes, tol):
+        """Tests that simple example is consistent."""
+        circuit, circuit_tf = qnodes
 
         phi = [0.5, 0.1]
         theta = [0.2]
@@ -492,24 +498,9 @@ class TestIntegration:
         tf_eval = circuit_tf(phi_t, theta_t)
         assert np.allclose(autograd_eval, tf_eval.numpy(), atol=tol, rtol=0)
 
-    def test_qnode_gradient_agrees(self, qubit_device_2_wires, tol):
+    def test_qnode_gradient_agrees(self, qnodes, tol):
         """Tests that simple gradient example is consistent."""
-
-        @qml.qnode(qubit_device_2_wires, interface='autograd')
-        def circuit(phi, theta):
-            qml.RX(phi[0], wires=0)
-            qml.RY(phi[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta[0], wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(qubit_device_2_wires, interface='tf')
-        def circuit_tf(phi, theta):
-            qml.RX(phi[0], wires=0)
-            qml.RY(phi[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(theta[0], wires=0)
-            return qml.expval(qml.PauliZ(0))
+        circuit, circuit_tf = qnodes
 
         phi = [0.5, 0.1]
         theta = [0.2]
@@ -527,6 +518,28 @@ class TestIntegration:
 
         assert np.allclose(autograd_grad[0], tf_grad[0], atol=tol, rtol=0)
         assert np.allclose(autograd_grad[1], tf_grad[1], atol=tol, rtol=0)
+
+    def test_qnode_jacobian_agrees(self, qnodes, tol):
+        """Tests that simple jacobian example is consistent."""
+        circuit, circuit_tf = qnodes
+
+        phi = [0.5, 0.1]
+        theta = [0.2]
+
+        phi_t = Variable(phi)
+        theta_t = Variable(theta)
+
+        jac = qml.grad(circuit, [0, 1])
+        autograd_jac = jac(phi, theta)
+
+        with tf.GradientTape() as g:
+            g.watch([phi_t, theta_t])
+            y = circuit_tf(phi_t, theta_t)
+
+        tf_jac = g.jacobian(y, [phi_t, theta_t])
+
+        assert np.allclose(autograd_jac[0], tf_jac[0], atol=tol, rtol=0)
+        assert np.allclose(autograd_jac[1], tf_jac[1], atol=tol, rtol=0)
 
 
 gradient_test_data = [
@@ -721,3 +734,48 @@ class TestTFGradients:
             grad2 = tape.gradient(y, b)
 
         assert tf.equal(grad1, grad2)
+
+
+class TestUnflattenTF:
+    """Tests for pennylane.interfaces.tf.unflatten_tf"""
+
+    flat = tf.constant([i for i in range(12)])
+
+    def test_model_number(self):
+        """Test that the function simply splits flat between its first and remaining elements
+        when the model is a number"""
+        unflattened = unflatten_tf(self.flat, 0)
+        assert tf.equal(unflattened[0], 0)
+        assert all(tf.equal(unflattened[1], tf.constant([i for i in range(1, 12)])))
+
+    def test_model_tensor(self):
+        """Test that function correctly takes the first elements of flat and reshapes it into the
+        model tensor, while leaving the remaining elements as a flat tensor"""
+        model = tf.ones((3, 3))
+        unflattened = unflatten_tf(self.flat, model)
+
+        target = tf.reshape(self.flat[:9], (3, 3))
+        remaining = self.flat[-3:]
+
+        assert np.allclose(unflattened[0].numpy(), target.numpy())
+        assert np.allclose(unflattened[1].numpy(), remaining.numpy())
+
+    def test_model_iterable(self):
+        """Test that the function correctly unflattens when the model is a list of numbers,
+        which should result in unflatten_tf returning a list of tensors"""
+        model = [1] * 12
+        unflattened = unflatten_tf(self.flat, model)
+
+        assert all([i.numpy().shape == () for i in unflattened[0]])
+        assert unflattened[1].numpy().size == 0
+
+    def test_model_nested_tensor(self):
+        """Test that the function correctly unflattens when the model is a nested tensor,
+        which should result in unflatten_tf returning a list of tensors of the same shape"""
+        model = [tf.ones(3), tf.ones((2, 2)), tf.ones((3, 1)), tf.ones((1, 2))]
+        unflattened = unflatten_tf(self.flat, model)
+
+        assert all(
+            [u.numpy().shape == model[i].numpy().shape for i, u in enumerate(unflattened[0])]
+        )
+        assert unflattened[1].numpy().size == 0
