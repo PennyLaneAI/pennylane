@@ -121,7 +121,9 @@ def SingleExcitationUnitary(weight, wires=None):
 
     if wires[1] <= wires[0]:
         raise ValueError(
-            "wires_1 must be larger than wires_0; got wires[1]={}, wires[0]={}".format(wires[1], wires[0])
+            "wires_1 must be larger than wires_0; got wires[1]={}, wires[0]={}".format(
+                wires[1], wires[0]
+            )
         )
 
     ###############
