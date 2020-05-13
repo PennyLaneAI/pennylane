@@ -68,10 +68,10 @@ class Device(abc.ABC):
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nShort name: {}\nAPI version: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
+        return "{}\nShort name: {}\nPackage: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
             self.name,
             self.short_name,
-            self.pennylane_requires,
+            self.__module__.split(".")[0],
             self.version,
             self.author,
             self.num_wires,
