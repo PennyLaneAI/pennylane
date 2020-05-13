@@ -294,7 +294,7 @@ class CircuitGraph:
             # to circuit observables
             operations += self.diagonalizing_gates
 
-        class QASMDevice:
+        class QASMSerializerDevice:
             """A mock device, to be used when performing the decomposition.
             The short_name is used in error messages if the decomposition fails.
             """
@@ -304,10 +304,10 @@ class CircuitGraph:
             supports_operation = staticmethod(lambda x: x in native_qasm_gates)
 
         # decompose the queue
-        operations = decompose_queue(operations, QASMDevice)
+        decomposed_ops = decompose_queue(operations, QASMSerializerDevice)
 
         # create the QASM code representing the operations
-        for op in operations:
+        for op in decomposed_ops:
             gate = native_qasm_gates[op.name]
             wires = ",".join(["q[{}]".format(w) for w in op.wires])
             params = ""

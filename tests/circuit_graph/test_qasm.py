@@ -194,7 +194,8 @@ class TestToQasmUnitTests:
         assert qasm1 == qasm2
 
     def test_basis_state_initialization_decomposition(self):
-        """Test that the basis state prepration decomposition
+        """Test that the basis state preparation decomposition
+
         is correctly applied."""
         basis_state = np.array([1, 0, 1, 1])
 
@@ -637,7 +638,8 @@ class TestQASMConformanceTests:
     """Conformance tests to ensure that the CircuitGraph
     serialized QASM conforms to the QASM standard as implemented
     by Qiskit. Note that this test class requires Qiskit and
-    pennylane-qiskit as a dependency."""
+    PennyLane-Qiskit as a dependency."""
+
 
     @pytest.fixture
     def check_dependencies(self):
@@ -714,6 +716,9 @@ class TestQASMConformanceTests:
         gates = [g for g, _, _ in qc.data]
 
         for idx, g in enumerate(gates):
+            # attach a wires attribute to each gate, containing
+            # a list of wire integers it acts on, so we can assert
+            # correctness below.
             g.wires = [q.index for q in qc.data[idx][1]]
 
         # operations
