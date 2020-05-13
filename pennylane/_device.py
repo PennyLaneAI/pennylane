@@ -18,6 +18,7 @@ This module contains the :class:`Device` abstract base class.
 import abc
 
 import numpy as np
+from collections import Iterable
 
 from pennylane.operation import (
     Operation,
@@ -29,7 +30,7 @@ from pennylane.operation import (
     Tensor,
 )
 from pennylane.qnodes import QuantumFunctionError
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 
 class DeviceError(Exception):
@@ -56,7 +57,18 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1000):
 
-        self.user_wires = Wires(wires)  # Wires object is a Sequence of unique non-negative wire indices
+        # Create wire ordering defined by the user
+        if isinstance(wires, int) and wires > 0:
+            # interpret 'wires' as length of consecutive wire index sequence
+            self.user_wires = Wires(range(wires))
+
+        elif isinstance(wires, Iterable):
+            # interpret 'wires' as wire index sequence
+            self.user_wires = Wires(wires)
+
+        else:
+            raise WireError("received invalid wires input {} of type {}".format(wires, type(wires)))
+
         self.num_wires = len(self.user_wires)
         self.shots = shots
 

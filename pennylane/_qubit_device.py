@@ -224,7 +224,7 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            Wires: wires activated by the specified operators
+            Wires: wires object representing the wires activated by the specified operators
         """
         active = Wires([])
         for op in operators:
@@ -260,7 +260,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))  # TODO: prob function must accept Wires object
+                results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -373,17 +373,27 @@ class QubitDevice(Device):
         using the generated samples.
 
         Args:
-            wires (Sequence[int]): Sequence of wires to return
+            wires (Wires or Iterable[int]): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
         Returns:
             List[float]: list of the probabilities
         """
+
+        # convert input to Wires object if necessary
+        if not isinstance(wires, Wires):
+            wires = Wires(wires)
+
         # consider only the requested wires
         wires = np.hstack(wires)  # TODO: Do we need to use wires objects here?
 
-        samples = self._samples[:, np.array(wires)]
+
+        # translate user wire ordering to consecutive ordering;
+        # for example, self.user_wires = [4, 0, 2] and wires = [4, 2], then
+        wire_indices = # TODO implement function
+
+        samples = self._samples[:, np.array(wires)]  
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(wires)
@@ -410,15 +420,10 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
-        if wires is None:
-            wires = self.user_wires
-        else:
-            try:
-                wires = Wires(wires, accept_integer=False)
-            except WireError:
-                # To print out a more relevant message
-                raise ValueError("'wires' must be an iterable of non-negative integers representing wire indices; "
-                                 "got {} of type {}.".format(wires, type(wires)))
+
+        # convert input to Wires object if necessary
+        if not isinstance(wires, Wires):
+            wires = Wires(wires)
 
         if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)
@@ -455,11 +460,16 @@ class QubitDevice(Device):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
+
         if wires is None:
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)
+        # convert input to Wires object if necessary
+        if not isinstance(wires, Wires):
+            wires = Wires(wires)
+
+        wires = np.hstack(wires)  # TODO: what happens herre?
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
