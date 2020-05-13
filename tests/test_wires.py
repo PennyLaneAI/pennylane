@@ -31,28 +31,22 @@ class TestWires:
         """Tests that a Wires object can be created from standard iterable inputs."""
 
         wires = Wires(iterable)
-        assert len(wires) == len(iterable)
+        assert wires.wire_list == list(iterable)
 
-    @pytest.mark.parametrize("length", [1, 0, 4])
-    def test_integer_as_inputs(self, length):
-        """Tests that a Wires object can be created from integer representing the number of wires."""
+    @pytest.mark.parametrize("index", [1, 0, 4])
+    def test_integer_as_inputs(self, index):
+        """Tests that a Wires object can be created from integer representing a single wire index."""
 
-        wires = Wires(length)
-        assert length == len(wires)
-
-    @pytest.mark.parametrize("wrong_length", [-1, -2])
-    def test_exception_for_negative_integer_input(self, wrong_length):
-        """Tests that a Wires object cannot be created from negative integer."""
-
-        with pytest.raises(WireError, match="Number of wires cannot be negative"):
-            Wires(wrong_length)
+        wires = Wires(index)
+        assert wires.wire_list == [index]
 
     @pytest.mark.parametrize("wrong_input", [1.2,
+                                             -1,
                                              None])
     def test_error_for_repeated_indices(self, wrong_input):
-        """Tests that a Wires object cannot be created from inputs that are neither integers nor iterables."""
+        """Tests that a Wires object cannot be created from illegal inputs."""
 
-        with pytest.raises(WireError, match="Unexpected wires input"):
+        with pytest.raises(WireError, match="received unexpected wires input"):
             Wires(wrong_input)
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
@@ -82,12 +76,6 @@ class TestWires:
 
         with pytest.raises(WireError, match="Wire indices must be integers"):
             Wires(iterable)
-
-    def test_error_for_negative_indices(self):
-        """Tests that a Wires object throws error when indices are negative."""
-
-        with pytest.raises(WireError, match="Wire indices must be non-negative"):
-            Wires([8, -1, 0, 5])
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 0, 3]),
                                           [4, 1, 0, 3],
@@ -135,7 +123,7 @@ class TestWires:
         wires.extend(wires2)
         assert wires.wire_list == [1, 2, 3, 4, 5]
 
-        with pytest.raises(WireError, match="Expected wires object to extend this Wires object"):
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             wires.extend([8, 5])
 
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
@@ -143,6 +131,9 @@ class TestWires:
     def test_injective_map_exists_method(self, wires2, target):
         """Tests that the ``injective_map_exists()`` method produces the right output."""
 
-        wires1 = Wires([0, 1, 2])
-        res = wires1.injective_map_exists(wires2)
+        wires = Wires([0, 1, 2])
+        res = wires.injective_map_exists(wires2)
         assert res == target
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            wires.injective_map_exists([8, 5])
