@@ -74,34 +74,30 @@ def _clean(iterable):
 
 
 class Wires(Sequence):
-    def __init__(self, wires, accept_integer=True):
+    def __init__(self, wires):
         """
         A bookkeeping class for wires, which are ordered collections of unique non-negative integers that
         represent the index of a quantum subsystem such as a qubit or qmode.
 
         Args:
-             wires (int or iterable): Integer specifying the number of consecutive wire indices,
-                or a ordered collection of unique wire indices represented by any common type of iterable
-                (such as list, tuple, range and numpy array). The elements of the iterable must be
-                non-negative integers. If elements are floats, they are internally converted to integers,
-                throwing an error if the rounding error exceeds TOLERANCE.
-             accept_integer (bool): If False, only an iterable is accepted as argument
+             wires (int or iterable): Iterable representing an ordered collection of unique wire indices.
+                The iterable can be of any common type such as list, tuple, range or numpy array.
+                The elements of the iterable must be non-negative integers. If elements are floats,
+                they are internally converted to integers, throwing an error if the rounding error exceeds TOLERANCE.
         """
 
         if isinstance(wires, Iterable):
             # If input is an iterable, interpret as a collection of wire indices
             self.wire_list = _clean(wires)
 
-        elif accept_integer and isinstance(wires, int):
-            if wires >= 0:
-                # If input is non-negative integer, interpret it as the
-                # number of consecutive wires
-                self.wire_list = list(range(wires))
-            else:
-                raise WireError("Number of wires cannot be negative; got {}.".format(wires))
+        elif isinstance(wires, int) and wires >= 0:
+            # If input is non-negative integer, interpret as single wire index
+            # and wrap as a list
+            self.wire_list = [wires]
+
         else:
             raise WireError(
-                "Unexpected wires input; got {} of type {}.".format(wires, type(wires))
+                "received unexpected wires input {} of type {}.".format(wires, type(wires))
             )
 
     def __getitem__(self, idx):
@@ -114,16 +110,36 @@ class Wires(Sequence):
         """Extend this ``Wires`` object by the indices of another.
 
         Args:
-            wires (Wires): A Wires object whose unique indices are supposed to be added to this one.
+            wires (Wires): A Wires object whose unique indices are added to this one.
         """
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "Expected wires object to extend this Wires object; "
-                "got {} of type {}".format(wires, type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}".format(wires, type(wires))
             )
 
         self.wire_list.extend(wires.wire_list)
+
+    def get_indices(self, wires):
+        """
+        Return the indices of the wires in this wires object.
+
+        For example, for ``self.wire_list = [4, 0, 1]`` and ``wires.wire_list = [1, 4]``, this method returns
+        the list of indices for wire "1" and wire "4", which is [2, 0].
+
+        Args:
+            wires (Wires): A Wires class object
+
+        Returns:
+            List: index list
+        """
+
+        if not isinstance(wires, Wires):
+            raise WireError(
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+            )
+
+        return [self.index(w) for w in wires]
 
     def injective_map_exists(self, wires):
         """
@@ -135,7 +151,7 @@ class Wires(Sequence):
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "Expected a pennylane.wires.Wires object; got input of type {}.".format(type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
             )
 
         if len(self.wire_list) == len(wires):
