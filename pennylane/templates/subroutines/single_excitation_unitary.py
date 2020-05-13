@@ -130,7 +130,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
     r, p = wires
 
-    #   Sequence of the wires entering the CNOTs between wires 'r' and 'p'
+    # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
     set_cnot_wires = [[l, l + 1] for l in range(r, p)]
 
     # ------------------------------------------------------------------
