@@ -92,6 +92,24 @@ def SingleExcitationUnitary(weight, wires=None):
            CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations
            performed across these qubits are shown in dashed lines in the figure above.
 
+        An example of how to use this template is shown below:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import SingleExcitationUnitary
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(weight, ph=None):
+                SingleExcitationUnitary(weight, wires=ph)
+                return qml.expval(qml.PauliZ(0))
+
+            weight = 0.56
+            single_excitation = [0, 2]
+            print(circuit(weight, ph=single_excitation))
+
     """
 
     ##############
@@ -121,7 +139,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
     if wires[1] <= wires[0]:
         raise ValueError(
-            "wires_1 must be larger than wires_0; got wires[1]={}, wires[0]={}".format(
+            "wires_1 must be greater than wires_0; got wires[1]={}, wires[0]={}".format(
                 wires[1], wires[0]
             )
         )
