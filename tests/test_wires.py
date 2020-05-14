@@ -205,6 +205,7 @@ class TestWires:
 
         assert wires.select([2, 3, 0]) == Wires([1, 5, 4])
         assert wires.select(1) == Wires([0])
+        assert wires.select([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
