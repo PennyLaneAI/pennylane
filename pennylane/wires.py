@@ -245,7 +245,7 @@ class Wires(Sequence):
         else:
             return False
 
-    def select(self, indices):
+    def select(self, indices, periodic_boundary=False):
         """
         Returns a subset of the Wires specified by the 'indices'.
 
@@ -267,6 +267,14 @@ class Wires(Sequence):
 
         if isinstance(indices, int):
             indices = [indices]
+
+        if periodic_boundary:
+            # replace indices by their modulo
+            indices = [i % len(self) for i in indices]
+
+        for i in indices:
+            if i > len(self):
+                raise WireError("cannot select wire at index {} from {} wires.".format(i, len(self)))
 
         subset = [self.wire_list[i] for i in indices]
         return Wires(subset)
