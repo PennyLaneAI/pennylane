@@ -51,13 +51,9 @@ def cv_neural_net_layer(
             :class:`pennylane.wires.Wires` objects.
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
-
     broadcast(unitary=Squeezing, pattern="single", wires=wires, parameters=list(zip(r, phi_r)))
-
     Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
-
     broadcast(unitary=Displacement, pattern="single", wires=wires, parameters=list(zip(a, phi_a)))
-
     broadcast(unitary=Kerr, pattern="single", wires=wires, parameters=k)
 
 

@@ -38,10 +38,11 @@ def wires_ring(wires):
     elif len(wires) == 2:
         # exception: for 2 wires ring is set equal to chain,
         # to avoid duplication of gate
-        return [[wires[0], wires[1]]]
+        return [wires.select([0, 1])]
     else:
-        ring = list(wires) + list(wires[0:1])
-        sequence = [[ring[i], ring[i + 1]] for i in range(len(wires))]
+        # add first wire to end for periodic boundary condition
+        ring = wires.extend(wires.select(0))
+        sequence = [ring.select([i, i+1]) for i in range(len(wires))]
         return sequence
 
 
@@ -49,8 +50,8 @@ def wires_pyramid(wires):
     """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
-        temp = wires[layer : len(wires) - layer]
-        sequence += [[temp[i], temp[i + 1]] for i in range(0, len(temp) - 1, 2)]
+        temp = Wires(wires[layer: len(wires) - layer])
+        sequence += [temp.select([i, i+1]) for i in range(0, len(temp) - 1, 2)]
     return sequence
 
 
@@ -59,7 +60,7 @@ def wires_all_to_all(wires):
     sequence = []
     for i in range(len(wires)):
         for j in range(i + 1, len(wires)):
-            sequence += [[wires[i], wires[j]]]
+            sequence += [wires.select([i, j])]
     return sequence
 
 ###################
@@ -517,29 +518,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
         )
     else:
-        check_type(
-            pattern,
-            [Iterable],
-            msg="a custom pattern must be a list of lists of wire indices"
-            "; got {}".format(parameters),
-        )
-        for wire_set in pattern:
-            check_type(
-                wire_set,
-                [Iterable],
-                msg="a custom pattern must be a list of lists of wire indices"
-                "; got {}".format(parameters),
-            )
-            for wire in wire_set:
-                check_type(
-                    wire,
-                    [int],
-                    msg="a custom pattern must be a list of lists of wire indices"
-                    "; got {}".format(parameters),
-                )
-
-        # remember the wire pattern
-        custom_pattern = pattern
+        # turn custom pattern into list of Wires objects
+        custom_pattern = [Wires(w) for w in pattern]
         # set "pattern" to "custom", indicating that custom settings have to be used
         pattern = "custom"
 
@@ -551,12 +531,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
         "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
         "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
+        "custom": len(custom_pattern) if custom_pattern is not None else None
     }
 
-    if pattern == "custom":
-        n_parameters["custom"] = len(custom_pattern)
-
-    # check that enough parameters for pattern
+    # check that there are enough parameters for pattern
     if parameters is not None:
         shape = get_shape(parameters)
 
@@ -581,12 +559,12 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     #########
 
-    # define wire sequence for patterns
+    # define wire sequences for patterns
     wire_sequence = {
-        "single": wires.wire_list,
-        "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
-        "chain": [[wires[i], wires[i + 1]] for i in range(len(wires) - 1)],
+        "single": wires,
+        "double": [wires.select([i, i+1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [wires.select([i, i+1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": [wires.select([i, i+1]) for i in range(len(wires) - 1)],
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
         "all_to_all": wires_all_to_all(wires),
@@ -595,5 +573,4 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # broadcast the unitary
     for w, p in zip(wire_sequence[pattern], parameters):
-        # TODO: Should we turn into Wires here?
         unitary(*p, wires=w, **kwargs)

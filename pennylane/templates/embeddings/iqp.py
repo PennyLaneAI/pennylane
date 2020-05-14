@@ -249,7 +249,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         # encode features into block of RZ rotations
         broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
 
-        # entangling block
+        # create new features for entangling block
         products = []
         for wire_pair in pattern:
             # get the position of the wire indices in the array
