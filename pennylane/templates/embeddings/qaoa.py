@@ -20,11 +20,11 @@ from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_wires,
     check_is_in_options,
     check_number_of_layers,
     get_shape,
 )
+from pennylane.wires import Wires
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
@@ -36,7 +36,7 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
     """
 
     feature_encoding_wires = wires[: len(features)]
-    remaining_wires = wires[len(features) :]
+    remaining_wires = wires[len(features):]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
@@ -116,7 +116,8 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     Args:
         features (array): array of features to encode
         weights (array): array of weights
-        wires (Sequence[int] or int): `n` qubit indices that the template acts on
+        wires (Sequence[int] or int): `n` qubit indices that the template acts on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
         local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
 
     Raises:
@@ -214,7 +215,8 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     #############
     # Input checks
 
-    wires = check_wires(wires)
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
 
     expected_shape = (len(wires),)
     check_shape(

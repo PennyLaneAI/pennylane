@@ -22,11 +22,11 @@ from pennylane.ops import QubitStateVector
 from pennylane.templates.utils import (
     check_shape,
     check_no_variable,
-    check_wires,
     check_type,
     get_shape,
 )
 from pennylane.variable import Variable
+from pennylane.wires import Wires
 
 # tolerance for normalization
 TOLERANCE = 1e-10
@@ -57,7 +57,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     Args:
         features (array): input array of shape ``(2^n,)``
-        wires (Sequence[int] or int): :math:`n` qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
         pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (Boolean): controls the activation of automatic normalization
 
@@ -171,10 +172,11 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     #############
     # Input checks
 
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
+
     check_no_variable(pad, msg="'pad' cannot be differentiable")
     check_no_variable(normalize, msg="'normalize' cannot be differentiable")
-
-    wires = check_wires(wires)
 
     n_amplitudes = 2 ** len(wires)
     expected_shape = (n_amplitudes,)
@@ -232,6 +234,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             )
 
     ###############
+
+    wires = wires.wire_list  # TODO: remove this line when QubitStateVector accepts wires
 
     features = np.array(features)
     QubitStateVector(features, wires=wires)

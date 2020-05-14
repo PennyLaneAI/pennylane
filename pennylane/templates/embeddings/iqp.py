@@ -17,17 +17,16 @@ Contains the ``IQPEmbedding`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections import Sequence
 from itertools import combinations
-
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_wires,
     check_type,
     get_shape,
     check_no_variable,
 )
+from pennylane.wires import Wires
 
 
 @template
@@ -82,7 +81,8 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     Args:
         features (array): array of features to encode
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
         n_repeats (int): number of times the basic embedding is repeated
         pattern (list[int]): specifies the wires and features of the entanglers
 
@@ -192,7 +192,8 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     #############
     # Input checks
 
-    wires = check_wires(wires)
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
 
     check_no_variable(features, msg="'features' cannot be differentiable")
 

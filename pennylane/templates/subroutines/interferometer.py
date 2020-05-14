@@ -20,10 +20,9 @@ from pennylane.ops import Beamsplitter, Rotation
 from pennylane.templates.utils import (
     check_shapes,
     check_no_variable,
-    check_wires,
     check_is_in_options,
 )
-
+from pennylane.wires import Wires
 
 @template
 def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="pennylane"):
@@ -95,7 +94,8 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
         phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
         varphi (array): length :math:`M` array of rotation angles :math:`\varphi`
-        wires (Sequence[int]): wires the interferometer should act on
+        wires (Sequence[int]): wires the interferometer should act on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
         mesh (string): the type of mesh to use
         beamsplitter (str): if ``clements``, the beamsplitter convention from
           Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used; if ``pennylane``, the
@@ -107,10 +107,12 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     #############
     # Input checks
+
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
+
     check_no_variable(beamsplitter, msg="'beamsplitter' cannot be differentiable")
     check_no_variable(mesh, msg="'mesh' cannot be differentiable")
-
-    wires = check_wires(wires)
 
     weights_list = [theta, phi, varphi]
     n_wires = len(wires)
@@ -147,10 +149,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 # skip even or odd pairs depending on layer
                 if (l + k) % 2 != 1:
                     if beamsplitter == "clements":
-                        Rotation(phi[n], wires=[w1])
-                        Beamsplitter(theta[n], 0, wires=[w1, w2])
+                        Rotation(phi[n], wires=[w1])  # TODO: use select function
+                        Beamsplitter(theta[n], 0, wires=[w1, w2])  # TODO: use select function
                     else:
-                        Beamsplitter(theta[n], phi[n], wires=[w1, w2])
+                        Beamsplitter(theta[n], phi[n], wires=[w1, w2])  # TODO: use select function
                     n += 1
 
     elif mesh == "triangular":
@@ -160,11 +162,11 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
             for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
                 if beamsplitter == "clements":
                     Rotation(phi[n], wires=[wires[k]])
-                    Beamsplitter(theta[n], 0, wires=[wires[k], wires[k + 1]])
+                    Beamsplitter(theta[n], 0, wires=[wires[k], wires[k + 1]])  # TODO: use select function
                 else:
-                    Beamsplitter(theta[n], phi[n], wires=[wires[k], wires[k + 1]])
+                    Beamsplitter(theta[n], phi[n], wires=[wires[k], wires[k + 1]])  # TODO: use select function
                 n += 1
 
     # apply the final local phase shifts to all modes
     for i, p in enumerate(varphi):
-        Rotation(p, wires=[wires[i]])
+        Rotation(p, wires=[wires[i]])    # TODO: use select function

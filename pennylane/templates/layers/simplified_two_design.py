@@ -21,11 +21,11 @@ from pennylane.ops import CZ, RY
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_wires,
     check_number_of_layers,
     check_type,
     get_shape,
 )
+from pennylane.wires import Wires
 
 
 @template
@@ -80,7 +80,8 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     Args:
         initial_layer_weights (array[float]): array of weights for the initial rotation block, shape ``(M,)``
         weights (array[float]): array of rotation angles for the layers, shape ``(L, M-1, 2)``
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -140,7 +141,8 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     #############
     # Input checks
 
-    wires = check_wires(wires)
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
 
     repeat = check_number_of_layers([weights])
 

@@ -23,11 +23,12 @@ To add a new pattern:
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_wires, check_type, get_shape, check_is_in_options
+from pennylane.templates.utils import check_type, get_shape, check_is_in_options
+from pennylane.wires import Wires
 
 
+###################
 # helpers to define pattern wire sequences
-
 
 def wires_ring(wires):
     """Wire sequence for the ring pattern"""
@@ -60,6 +61,8 @@ def wires_all_to_all(wires):
         for j in range(i + 1, len(wires)):
             sequence += [[wires[i], wires[j]]]
     return sequence
+
+###################
 
 
 @template
@@ -142,7 +145,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         unitary (func): quantum gate or template
         pattern (str): specifies the wire pattern of the broadcast
         parameters (list): sequence of parameters for each gate applied
-        wires (Sequence[int] or int): wire indices that the unitaries act upon
+        wires (Sequence[int] or int): wire indices that the unitaries act upon. Also accepts
+            :class:`pennylane.wires.Wires` objects.
         kwargs (dict): dictionary of auxilliary parameters for ``unitary``
 
     Raises:
@@ -489,7 +493,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     #########
     # Input checks
 
-    wires = check_wires(wires)
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
 
     check_type(
         parameters,
@@ -578,7 +583,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # define wire sequence for patterns
     wire_sequence = {
-        "single": wires,
+        "single": wires.wire_list,
         "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
         "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
         "chain": [[wires[i], wires[i + 1]] for i in range(len(wires) - 1)],
@@ -590,4 +595,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # broadcast the unitary
     for w, p in zip(wire_sequence[pattern], parameters):
+        # TODO: Should we turn into Wires here?
         unitary(*p, wires=w, **kwargs)
