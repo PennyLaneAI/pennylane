@@ -573,4 +573,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # broadcast the unitary
     for w, p in zip(wire_sequence[pattern], parameters):
+        w = w.wire_list  # TODO: Delete if operator takes Wires
         unitary(*p, wires=w, **kwargs)
