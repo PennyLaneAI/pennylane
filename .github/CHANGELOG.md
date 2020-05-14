@@ -132,25 +132,22 @@
 
 <h4>New templates</h4>
 
-* Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
+* Added the `ArbitraryUnitary` and `ArbitraryStatePreparation` templates, which use
   `PauliRot` gates to perform an arbitrary unitary and prepare an arbitrary basis
   state with the minimal number of parameters.
   [(#590)](https://github.com/XanaduAI/pennylane/pull/590)
-
-  The templates could be used as follows:
 
   ```python
     dev = qml.device('default.qubit', wires=3)
 
     @qml.qnode(dev)
-    def circuit(weights1, weights2, x):
+    def circuit(weights1, weights2):
           qml.templates.ArbitraryStatePreparation(weights1, wires=[0, 1, 2])
-          qml.templates.IQPEmbedding(features=x, wires=[0, 1, 2])
           qml.templates.ArbitraryUnitary(weights2, wires=[0, 1, 2])
           return qml.probs(wires=[0, 1, 2])
   ```
 
-* Added the `IQPEmbeddings` template, which encodes inputs into the diagonal gates of an
+* Added the `IQPEmbedding` template, which encodes inputs into the diagonal gates of an
   IQP circuit.
   [(#605)](https://github.com/XanaduAI/pennylane/pull/605)
 
@@ -196,11 +193,7 @@
   def circuit(pars):
       qml.broadcast(mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
       return qml.expval(qml.PauliZ(0))
-  ```
 
-  Executing this circuit:
-
-  ```python
   >>> circuit([1, 1, 0.1])
   -0.841470984807896
   >>> print(circuit.draw())
