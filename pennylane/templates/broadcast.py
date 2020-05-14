@@ -50,8 +50,8 @@ def wires_pyramid(wires):
     """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
-        temp = Wires(wires[layer: len(wires) - layer])
-        sequence += [temp.select([i, i+1]) for i in range(0, len(temp) - 1, 2)]
+        subset = Wires(wires[layer: len(wires) - layer])
+        sequence += [subset.select([i, i+1]) for i in range(0, len(subset) - 1, 2)]
     return sequence
 
 
