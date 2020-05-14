@@ -140,17 +140,18 @@ class TestWires:
         assert max(wires) == 13
         assert min(wires) == 1
 
-    def test_extend_method(self):
-        """Tests the ``test_extend_method()`` method."""
+    def test_combine_method(self):
+        """Tests the ``combine()`` method."""
 
         wires = Wires([1, 2, 3])
         wires2 = Wires([4, 5])
 
-        wires.extend(wires2)
-        assert wires.wire_list == [1, 2, 3, 4, 5]
+        new_wires = wires.combine(wires2)
+        assert wires.wire_list == [1, 2, 3]
+        assert new_wires.wire_list == [1, 2, 3, 4, 5]
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires.extend([8, 5])
+            wires.combine([8, 5])
 
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
                                                 (Wires([2, 1]), False)])  # incorrect number of wires
