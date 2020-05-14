@@ -8,27 +8,18 @@
   hybrid models using the Keras API.
   [(#529)](https://github.com/XanaduAI/pennylane/pull/529)
 
-  ```python
-  n_qubits = 2
-  dev = qml.device("default.qubit", wires=n_qubits)
-
-  @qml.qnode(dev)
-  def qnode(inputs, weights_0, weight_1):
-      qml.RX(inputs[0], wires=0)
-      qml.RX(inputs[1], wires=1)
-      qml.Rot(*weights_0, wires=0)
-      qml.RY(weight_1, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-  ```
-
-  The above QNode can be converted into a Keras layer using the `KerasLayer` class:
+  A PennyLane QNode can be converted into a Keras layer using the `KerasLayer` class:
 
   ```python
   from pennylane.qnn import KerasLayer
 
+  @qml.qnode(dev)
+  def circuit(inputs, weights_0, weight_1):
+     # define the circuit
+     # ...
+
   weight_shapes = {"weights_0": 3, "weight_1": 1}
-  qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+  qlayer = qml.qnn.KerasLayer(circuit, weight_shapes, output_dim=2)
   ```
 
   A hybrid model can then be easily constructed:
@@ -37,11 +28,10 @@
   model = tf.keras.models.Sequential([qlayer, tf.keras.layers.Dense(2)])
   ```
 
-* Added the `qml.qnodes.PassthruQNode` class for simulated QNodes that support classical
-  backpropagation via an external autodifferentiation framework.
+* Added a new type of QNode, `qml.qnodes.PassthruQNode`. For simulators which are coded in an external library which supports automatic differentiation, PennyLane will treat a PassthruQNode as a "white box", and rely on the external library to directly provide gradients via backpropagation. This can be more efficient than the using parameter-shift rule.
   [(#488)](https://github.com/XanaduAI/pennylane/pull/488)
-
-  Currently the only such device supported by PennyLane is `default.tensor.tf`,
+  
+  Currently this behaviour is supported by PennyLane's `default.tensor.tf` device backend,
   compatible with the `'tf'` interface using TensorFlow 2:
 
   ```python
