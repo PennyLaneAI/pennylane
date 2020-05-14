@@ -36,8 +36,8 @@ def wires_ring(wires):
     if len(wires) in [0, 1]:
         return []
     elif len(wires) == 2:
-        # exception: for 2 wires ring is set equal to chain,
-        # to avoid duplication of gate
+        # deviation from the rule: for 2 wires ring is set equal to chain,
+        # to avoid duplication of single gate
         return [wires.select([0, 1])]
     else:
         # add first wire to end for periodic boundary condition
