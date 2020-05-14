@@ -377,7 +377,10 @@ class Operator(abc.ABC):
                 self.check_domain(p)
         self.params = list(params)  #: list[Any]: parameters of the operator
 
-        self._wires = Wires(wires)  #: Wires: wires on which the operator acts
+        # turn wires into Wires object
+        self._wires = Wires(wires)
+        # check if wires compatible with requirements of this operator
+        self._check_wires(self._wires)
 
         if do_queue:
             self.queue()
@@ -400,19 +403,10 @@ class Operator(abc.ABC):
         """Check the validity of the operator wires.
 
         Args:
-            wires (Sequence[Any]): wires to check
+            wires (Wires): wires to check
         Raises:
-            TypeError, ValueError: list of wires is invalid
-        Returns:
-            tuple[int]: wires converted to integers
+            ValueError: list of wires is invalid
         """
-        for w in wires:
-            if not isinstance(w, numbers.Integral):
-                raise TypeError(
-                    "{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.".format(
-                        self.name
-                    )
-                )
 
         if (
             self.num_wires != AllWires
@@ -423,11 +417,6 @@ class Operator(abc.ABC):
                 "{}: wrong number of wires. "
                 "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
             )
-
-        if len(set(wires)) != len(wires):
-            raise ValueError("{}: wires must be unique, got {}.".format(self.name, wires))
-
-        return tuple(int(w) for w in wires)
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -487,10 +476,10 @@ class Operator(abc.ABC):
 
     @property
     def wires(self):
-        """Wire values.
+        """Wire representation.
 
         Returns:
-            tuple[int]: wire values
+            Wires: object representing wires
         """
         return self._wires
 
@@ -1001,7 +990,7 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[Wires]: list containing the wires per observable
+            Wires: All wires of the observables
             in the tensor product
         """
         all_wires = Wires([])
@@ -1091,7 +1080,7 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires)  # TODO: Need to use indices here?
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1165,7 +1154,7 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires):  # TODO: use indices?
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1256,7 +1245,7 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
-        if num_wires == 0 or list(self.wires) == list(range(num_wires)):
+        if num_wires == 0 or self.wires.wire_list == list(range(num_wires)):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
