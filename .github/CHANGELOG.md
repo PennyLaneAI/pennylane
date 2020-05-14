@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-*New machine learning integrations:*
+<h4>New machine learning integrations</h4>
 
 * PennyLane QNodes can now be converted into Keras layers, allowing for creation of quantum and
   hybrid models using the Keras API.
@@ -64,7 +64,7 @@
   grad = tape.gradient(res, params)
   ```
 
-*New operations:*
+<h4>New operations</h4>
 
 * Added the gate `PauliRot(angle, pauli_word)` that performs an arbitrary
   Pauli rotation specified by the Pauli word in string form and the gate
@@ -146,7 +146,7 @@
   `NumberOperator`.
   [(#608)](https://github.com/XanaduAI/pennylane/pull/608)
 
-*New templates:*
+<h4>New templates</h4>
 
 * Added the templates `ArbitraryUnitary` and `ArbitraryStatePreparation` that use
   `PauliRot` gates to perform an arbitrary unitary and prepare an arbitrary basis
