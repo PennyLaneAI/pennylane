@@ -55,7 +55,7 @@ def _clean(iterable):
                     raise TypeError
             except TypeError:
                 raise WireError(
-                    "Wire indices must be integers; got type {}.".format(type(w))
+                    "Wire indices must be integers; got {} of type {}.".format(w, type(w))
                 )
 
     # Check that indices are non-negative
