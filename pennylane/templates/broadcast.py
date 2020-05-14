@@ -40,9 +40,7 @@ def wires_ring(wires):
         # to avoid duplication of single gate
         return [wires.select([0, 1])]
     else:
-        # add first wire to end for periodic boundary condition
-        ring = wires.extend(wires.select(0))
-        sequence = [ring.select([i, i+1]) for i in range(len(wires))]
+        sequence = [wires.select([i, i+1], periodic_boundary=True) for i in range(len(wires))]
         return sequence
 
 
