@@ -62,8 +62,8 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return "<{} ({}, wires={}, shots={}) at {}>".format(
-            self.__class__.__name__, self.short_name, self.num_wires, self.shots, hex(id(self))
+        return "<{} device (wires={}, shots={}) at {}>".format(
+            self.__class__.__name__, self.num_wires, self.shots, hex(id(self))
         )
 
     def __str__(self):
