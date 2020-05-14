@@ -208,7 +208,7 @@
 <h3>Breaking changes</h3>
 
 * The `QAOAEmbedding` now uses the new `MultiRZ` gate as a `ZZ` entangler,
-  which changes the convention: While
+  which changes the convention. While
   previously, the `ZZ` gate in the embedding was implemented as
 
   ```python
@@ -234,8 +234,7 @@
   [(#573)](https://github.com/XanaduAI/pennylane/pull/573)
 
 * The internal variables `All` and `Any` to mark an `Operation` as acting on all or any
-  wires have been renamed to `AllWires` and `AnyWires` and their class to
-  `ActsOn`.
+  wires have been renamed to `AllWires` and `AnyWires`.
   [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
 
 <h3>Improvements</h3>
@@ -244,30 +243,20 @@
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
 
-* You can now evaluate the metric tensor of a VQE Hamiltonian via the new
-  `VQECost.metric_tensor` method. This allows `VQECost` objects to be directly
-  optimized by the quantum natural gradient optimizer (`qml.QNGOptimizer`).
-  [(#618)](https://github.com/XanaduAI/pennylane/pull/618)
-
-* PennyLane's benchmarking tool now supports the comparison of different git revisions.
-  [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
-
 * Added the `"backprop"` and `"device"` differentiation methods to the `qnode`
-  decorator. If the device supports it, `"backprop"` backpropagation is now the
-  new default differentiation method.
+  decorator. 
   [(#552)](https://github.com/XanaduAI/pennylane/pull/552)
 
-  - `"backprop"`: Use classical backpropagation. Only allowed on simulator
-    devices that are classically end-to-end differentiable, for example
-    ``default.tensor.tf``. The returned QNode can only be used with the
-    machine learning framework supported by the device.
+  - `"backprop"`: Use classical backpropagation. Default on simulator
+    devices that are classically end-to-end differentiable.
+    The returned QNode can only be used with the same machine learning 
+    framework (e.g., ``default.tensor.tf`` simulator with the ``tensorflow`` interface).
 
   - `"device"`: Queries the device directly for the gradient.
-    Only allowed on devices that provide their own gradient rules.
 
   Using the `"backprop"` differentiation method with the `default.tensor.tf`
   device, the created QNode is a 'white-box', and is tightly integrated with
-  your TensorFlow computation:
+  the overall TensorFlow computation:
 
   ```python
     >>> dev = qml.device("default.tensor.tf", wires=1)
@@ -282,9 +271,6 @@
     >>> tape.gradient(res, vars)
     <tf.Tensor: shape=(3,), dtype=float32, numpy=array([-2.2526717e-01, -1.0086454e+00,  1.3877788e-17], dtype=float32)>
   ```
-
-  In this mode, you must use the ``"tf"`` interface, as TensorFlow
-  is used as the device backend.
 
 * The circuit drawer now displays inverted operations, as well as wires
   where probabilities are returned from the device:
@@ -304,14 +290,19 @@
   1: ───────────╰X──S⁻¹──╰┤ Probs
   ```
 
+* You can now evaluate the metric tensor of a VQE Hamiltonian via the new
+  `VQECost.metric_tensor` method. This allows `VQECost` objects to be directly
+  optimized by the quantum natural gradient optimizer (`qml.QNGOptimizer`).
+  [(#618)](https://github.com/XanaduAI/pennylane/pull/618)
+  
 * The input check functions in `pennylane.templates.utils` are now public
   and visible in the API documentation.
   [(#566)](https://github.com/XanaduAI/pennylane/pull/566)
 
-* Added keyword arguments for step size and order to the `qnode` decorator, `QNode` and
-  `JacobianQNode` classes to enable setting the step size and order when using finite
-  difference methods. These options are also exposed when creating QNode collections.
-  of QNodes.
+* Added keyword arguments for step size and order to the `qnode` decorator, as well as
+  the `QNode` and `JacobianQNode` classes. This enables the user to set the step size 
+  and order when using finite difference methods. These options are also exposed when 
+  creating QNode collections.
   [(#530)](https://github.com/XanaduAI/pennylane/pull/530)
   [(#585)](https://github.com/XanaduAI/pennylane/pull/585)
   [(#587)](https://github.com/XanaduAI/pennylane/pull/587)
@@ -324,6 +315,11 @@
   objects that expose a queue for operations inherit from `QueuingContext` and
   register their queue globally.
   [(#548)](https://github.com/XanaduAI/pennylane/pull/548)
+
+* The PennyLane repository has a new benchmarking tool which supports the comparison of different git revisions.
+  [(#568)](https://github.com/XanaduAI/pennylane/pull/568)
+  [(#560)](https://github.com/XanaduAI/pennylane/pull/560)
+  [(#516)](https://github.com/XanaduAI/pennylane/pull/516)
 
 <h3>Documentation</h3>
 
