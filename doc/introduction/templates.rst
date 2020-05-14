@@ -203,6 +203,11 @@ of other templates.
     :description: SingleExcitationUnitary
     :figure: ../_static/templates/subroutines/single_excitation_unitary.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.DoubleExcitationUnitary.html
+    :description: DoubleExcitationUnitary
+    :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
+
 .. raw:: html
 
         <div style='clear:both'></div>
