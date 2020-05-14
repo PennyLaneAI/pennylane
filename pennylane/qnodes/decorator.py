@@ -25,7 +25,7 @@ from .passthru import PassthruQNode
 
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
-ALLOWED_DIFF_METHODS = ("best", "classical", "device", "parameter-shift", "finite-diff")
+ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
@@ -69,12 +69,12 @@ def _get_qnode_class(device, interface, diff_method):
             # parameter-shift analytic differentiation
             return PARAMETER_SHIFT_QNODES[model]
 
-    if diff_method == "classical":
+    if diff_method == "backprop":
         if allows_passthru:
             if interface != passthru_interface:
                 raise ValueError(
                     "Device {} only supports the {} interface when "
-                    "diff_method='classical'".format(device.short_name, passthru_interface)
+                    "diff_method='backprop'".format(device.short_name, passthru_interface)
                 )
             return PassthruQNode
 
@@ -189,7 +189,7 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
               device directly to compute the gradient if supported, otherwise will use
               the analytic parameter-shift rule where possible with finite-difference as a fallback.
 
-            * ``"classical"``: Use classical backpropagation. Only allowed on simulator
+            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine learning framework supported
@@ -263,7 +263,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
               device directly to compute the gradient if supported, otherwise will use
               the analytic parameter-shift rule where possible with finite-difference as a fallback.
 
-            * ``"classical"``: Use classical backpropagation. Only allowed on simulator
+            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine learning framework supported
