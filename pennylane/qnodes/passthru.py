@@ -106,6 +106,10 @@ class PassthruQNode(BaseQNode):
 
         # set up the context for Operator entry
         with self:
+            # use a try/finally block such that if any errors arise during
+            # checking, and the user manually catches the exception, the class
+            # attribute pennylane.operation.Operator.do_check_domain is
+            # properly reset to True
             try:
                 # turn off domain checking since PassthruQNode qfuncs can take any class as input
                 pennylane.operation.Operator.do_check_domain = False
@@ -114,8 +118,16 @@ class PassthruQNode(BaseQNode):
             finally:
                 pennylane.operation.Operator.do_check_domain = True
 
-        # check the validity of the circuit
-        self._check_circuit(res)
+        # use a try/finally block here too
+        try:
+            # check the validity of the circuit
+            # turn off domain checking, but outside of the context such that no
+            # queuing takes place (e.g. from decompositions)
+            pennylane.operation.Operator.do_check_domain = False
+            self._check_circuit(res)
+        finally:
+            pennylane.operation.Operator.do_check_domain = True
+
         del self.queue
         del self.obs_queue
 
