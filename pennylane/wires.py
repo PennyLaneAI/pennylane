@@ -19,6 +19,7 @@ import numpy as np  # for random functions
 
 # tolerance for wire indices
 TOLERANCE = 1e-8
+from copy import deepcopy
 
 
 class WireError(Exception):
@@ -123,11 +124,14 @@ class Wires(Sequence):
         """Method to support the '!=' operator"""
         return not self.__eq__(other)
 
-    def extend(self, wires):
-        """Extend this ``Wires`` object by the indices of another.
+    def combine(self, wires):
+        """Return a copy of this ``Wires`` object extended by the unique wires of ``wires``.
 
         Args:
-            wires (Wires): A Wires object whose unique indices are added to this one.
+            wires (Wires): A Wires object whose unique indices are combined with this one.
+
+        Returns:
+            Wires: combined wires
         """
 
         if not isinstance(wires, Wires):
@@ -135,7 +139,10 @@ class Wires(Sequence):
                 "expected a `pennylane.wires.Wires` object; got {} of type {}".format(wires, type(wires))
             )
 
-        self.wire_list.extend(wires.wire_list)
+        this_wire_list = deepcopy(self.wire_list)
+        this_wire_list.extend(wires.wire_list)
+
+        return Wires(this_wire_list)
 
     def intersection(self, wires):
         """
