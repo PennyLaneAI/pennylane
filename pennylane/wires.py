@@ -15,6 +15,7 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 from collections import Sequence, Iterable
+import numpy as np  # for random functions
 
 # tolerance for wire indices
 TOLERANCE = 1e-8
@@ -236,3 +237,51 @@ class Wires(Sequence):
             return True
         else:
             return False
+
+    def select(self, indices):
+        """
+        Returns a subset of the Wires specified by the 'indices'.
+
+        For example:
+
+        >>> wires = Wires([4, 0, 1, 5, 6])
+        >>> wires.select([2, 3, 0]) == Wires([1, 5, 4])
+        True
+
+        >>> wires.select(1) == Wires([0])
+        True
+
+        Args:
+            indices (List[int] or int): indices or index of the wires we want to select
+
+        Returns:
+            Wires: subset of wires
+        """
+
+        if isinstance(indices, int):
+            indices = [indices]
+
+        subset = [self.wire_list[i] for i in indices]
+        return Wires(subset)
+
+    def select_random(self, n_samples, seed=None):
+        """
+        Returns a randomly sampled subset of Wires of length 'n_samples'.
+
+        Args:
+            n_samples (int): number of subsampled wires
+            seed (int): optional random seed used for selecting the wires
+
+        Returns:
+            Wires: random subset of wires
+        """
+
+        if n_samples > len(self):
+            raise WireError("cannot sample {} wires from {} wires.".format(n_samples, len(self)))
+
+        if seed is not None:
+            np.random.seed(seed)
+
+        indices = np.random.choice(len(self), size=n_samples, replace=False)
+        subset = [self.wire_list[i] for i in indices]
+        return Wires(subset)

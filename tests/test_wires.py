@@ -196,3 +196,23 @@ class TestWires:
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             wires1.difference([8, 5])
+
+    def test_select_method(self):
+        """Tests the ``select()`` method."""
+
+        wires = Wires([4, 0, 1, 5, 6])
+
+        assert wires.select([2, 3, 0]) == Wires([1, 5, 4])
+        assert wires.select(1) == Wires([0])
+
+    def test_select_random_method(self):
+        """Tests the ``select_random()`` method."""
+
+        wires = Wires([4, 0, 1, 5, 6])
+
+        assert len(wires.select_random(2)) == 2
+        # check that seed makes call deterministic
+        assert wires.select_random(4, seed=1) == wires.select_random(4, seed=1)
+
+        with pytest.raises(WireError, match="cannot sample"):
+            wires.select_random(6)
