@@ -223,7 +223,7 @@ def test_classical_diff_method_unsupported():
     with pytest.raises(ValueError, match=r"device does not support native computations with "
             "autodifferentiation frameworks"):
 
-        @qnode(dev, diff_method="classical")
+        @qnode(dev, diff_method="backprop")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))

@@ -718,7 +718,7 @@ class TestHybridInterfaceDeviceIntegration:
         return cost_fn
 
     @pytest.mark.parametrize("interface", ["tf"])
-    @pytest.mark.parametrize("diff_method", ["classical"])
+    @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_tf_interface_classical_diff(self, cost_with_decomposition, interface, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate (that gets
         decomposed) is correct using the TensorFlow interface and the classical
@@ -749,7 +749,7 @@ class TestHybridInterfaceDeviceIntegration:
         from torch.autograd import Variable
 
         interface = "torch"
-        diff_method = "classical"
+        diff_method = "backprop"
 
         params = Variable(torch.tensor(self.p), requires_grad=True)
 
@@ -767,14 +767,14 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='classical'"):
+        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='backprop'"):
             res = cost_raising_error(params)
 
     def test_error_classical_diff_autograd(self, tol):
         """Tests that an error is raised if for the classical differentiation
         method when using the autograd interface"""
         interface = "autograd"
-        diff_method = "classical"
+        diff_method = "backprop"
 
         params = self.p
 
@@ -789,5 +789,5 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='classical'"):
+        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='backprop'"):
             res = cost_raising_error(params)
