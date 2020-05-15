@@ -20,7 +20,6 @@ from collections import Counter, OrderedDict, namedtuple
 import networkx as nx
 
 import pennylane as qml
-import pennylane.qnodes.base
 from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
@@ -270,6 +269,9 @@ class CircuitGraph:
         Returns:
             str: OpenQASM serialization of the circuit
         """
+        # We import decompose_queue here to avoid a circular import
+        from pennylane.qnodes.base import decompose_queue  # pylint: disable=import-outside-toplevel
+
         class QASMSerializerDevice:
             """A mock device, to be used when performing the decomposition.
             The short_name is used in error messages if the decomposition fails.
@@ -300,7 +302,7 @@ class CircuitGraph:
             operations += self.diagonalizing_gates
 
         # decompose the queue
-        decomposed_ops = pennylane.qnodes.base.decompose_queue(operations, QASMSerializerDevice)
+        decomposed_ops = decompose_queue(operations, QASMSerializerDevice)
 
         # create the QASM code representing the operations
         for op in decomposed_ops:
