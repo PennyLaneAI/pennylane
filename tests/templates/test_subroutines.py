@@ -23,7 +23,8 @@ from pennylane import numpy as np
 from pennylane.templates.subroutines import (
 	Interferometer, 
 	ArbitraryUnitary,
-	SingleExcitationUnitary
+	SingleExcitationUnitary,
+    DoubleExcitationUnitary
 )
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
@@ -472,3 +473,102 @@ class TestArbitraryUnitary:
         for i, op in enumerate(rec.queue):
             assert op.params[0] == weights[i]
             assert op.params[1] == pauli_words[i]
+
+
+class TestDoubleExcitationUnitary:
+    """Tests for the DoubleExcitationUnitary template from the pennylane.templates.subroutine module."""
+
+    @pytest.mark.parametrize(
+        ("pphh", "ref_gates"),
+        [
+        ([0,2,4,6],   [[0,  qml.Hadamard, [0], []]        , [1, qml.Hadamard, [2], []],
+                       [2,  qml.RX,       [4], [-np.pi/2]], [3, qml.Hadamard, [6], []],
+                       [9,  qml.RZ, [6], [np.pi/24]]      ,
+                       [15, qml.Hadamard, [0], []]        , [16, qml.Hadamard, [2], []],
+                       [17, qml.RX,       [4], [np.pi/2]] , [18, qml.Hadamard, [6], []]]
+                   ),
+        ([0,1,4,5],   [[15, qml.RX, [0], [-np.pi/2]], [16, qml.Hadamard, [1], []],
+                       [17, qml.RX, [4], [-np.pi/2]], [18, qml.RX,       [5], [-np.pi/2]],
+                       [22, qml.RZ, [5], [np.pi/24]],
+                       [26, qml.RX, [0], [np.pi/2]] , [27, qml.Hadamard, [1], []],
+                       [28, qml.RX, [4], [np.pi/2]] , [29, qml.RX,       [5], [np.pi/2]]]
+                   ),
+        ([1,3,7,11],  [[46, qml.Hadamard, [1], []]         , [47, qml.RX, [3],  [-np.pi/2]],
+                       [48, qml.RX      , [7], [-np.pi/2]] , [49, qml.RX, [11], [-np.pi/2]],
+                       [57, qml.RZ, [11], [np.pi/24]]      ,
+                       [65, qml.Hadamard, [1], []]         , [66, qml.RX, [3] , [np.pi/2]],
+                       [67, qml.RX      , [7], [np.pi/2]]  , [68, qml.RX, [11], [np.pi/2]]]
+                   ),
+        ([2,4,8,10],  [[57, qml.Hadamard, [2], []], [58, qml.Hadamard, [4] , []],
+                       [59, qml.Hadamard, [8], []], [60, qml.RX,       [10], [-np.pi/2]],
+                       [66, qml.RZ, [10], [np.pi/24]]  ,
+                       [72, qml.Hadamard, [2], []], [73, qml.Hadamard, [4], []],
+                       [74, qml.Hadamard, [8], []], [75, qml.RX,      [10], [np.pi/2]]]
+                   ),
+        ([3,5,11,15], [[92,  qml.RX,       [3],  [-np.pi/2]], [93, qml.Hadamard, [5] , []],
+                       [94,  qml.Hadamard, [11], []]        , [95, qml.Hadamard, [15], []],
+                       [103, qml.RZ, [15], [-np.pi/24]]     ,
+                       [111, qml.RX,       [3],  [np.pi/2]] , [112, qml.Hadamard, [5] , []],
+                       [113, qml.Hadamard, [11], []]        , [114, qml.Hadamard, [15], []]]
+                   ),
+        ([4,7,9,10] , [[95,  qml.Hadamard, [4], []]     , [96, qml.RX,       [7],  [-np.pi/2]],
+                       [97,  qml.Hadamard, [9], []]     , [98, qml.Hadamard, [10], []],
+                       [104, qml.RZ, [10], [-np.pi/24]] ,
+                       [110, qml.Hadamard, [4], []]     , [111, qml.RX,       [7] , [np.pi/2]],
+                       [112, qml.Hadamard, [9], []]     , [113, qml.Hadamard, [10], []]]
+                   ),
+        ([5,6,10,12], [[102, qml.RX, [5],  [-np.pi/2]]  , [103, qml.RX,       [6],  [-np.pi/2]],
+                       [104, qml.RX, [10], [-np.pi/2]]  , [105, qml.Hadamard, [12], []],
+                       [110, qml.RZ, [12], [-np.pi/24]] ,
+                       [115, qml.RX, [5],  [np.pi/2]]   , [116, qml.RX,       [6],  [np.pi/2]],
+                       [117, qml.RX, [10], [np.pi/2]]   , [118, qml.Hadamard, [12], []]]
+                   ),
+        ([3,6,17,19], [[147, qml.RX,       [3],  [-np.pi/2]], [148, qml.RX, [6],  [-np.pi/2]],
+                       [149, qml.Hadamard, [17], []]        , [150, qml.RX, [19], [-np.pi/2]],
+                       [157, qml.RZ, [19], [-np.pi/24]]     ,
+                       [164, qml.RX, [3],  [np.pi/2]]       , [165, qml.RX, [6],  [np.pi/2]],
+                       [166, qml.Hadamard, [17], []]        , [167, qml.RX, [19], [np.pi/2]]]
+                   ),
+        ([6,7,8,9]  , [[4, qml.CNOT, [6, 7], []], [5,  qml.CNOT, [7, 8], []], 
+                       [6, qml.CNOT, [8, 9], []], [8,  qml.CNOT, [8, 9], []],
+                       [9, qml.CNOT, [7, 8], []], [10, qml.CNOT, [6, 7], []]]
+                   ),
+        ([4,7,8,13] , [[58,  qml.CNOT, [4, 5],   []], [59, qml.CNOT, [5, 6],   []], 
+                       [60,  qml.CNOT, [6, 7],   []], [61, qml.CNOT, [7, 8],   []],
+                       [62,  qml.CNOT, [8, 9],   []], [63, qml.CNOT, [9, 10],  []],
+                       [64,  qml.CNOT, [10, 11], []], [65, qml.CNOT, [11, 12], []],
+                       [66,  qml.CNOT, [12,13],  []],
+                       [122, qml.CNOT, [12, 13], []], [123, qml.CNOT, [11, 12], []], 
+                       [124, qml.CNOT, [10, 11], []], [125, qml.CNOT, [9, 10],  []],
+                       [126, qml.CNOT, [8, 9],   []], [127, qml.CNOT, [7, 8],   []],
+                       [128, qml.CNOT, [6, 7],   []], [129, qml.CNOT, [5, 6],   []],
+                       [130, qml.CNOT, [4,5],    []]]
+                   ),
+        ]
+    )
+    def test_double_ex_unitary_operations(self, pphh, ref_gates):
+        """Test the correctness of the DoubleExcitationUnitary template including the gate count
+        and order, the wires each operation acts on and the correct use of parameters 
+        in the circuit."""
+
+        sqg = 72
+        cnots = 16*(pphh[1]-pphh[0] + pphh[3]-pphh[2] + 1)
+        weight = np.pi/3
+        with qml.utils.OperationRecorder() as rec:
+            DoubleExcitationUnitary(weight, wires=pphh)
+
+        idx = ref_gates[0][0]
+
+        exp_gate = ref_gates[0][1]
+        res_gate = rec.queue[idx]
+
+        exp_wires = ref_gates[0][2]
+        res_wires = rec.queue[idx]._wires
+
+        exp_weight = ref_gates[0][3]
+        res_weight = rec.queue[idx].parameters        
+
+        assert len(rec.queue) == sqg + cnots
+        assert isinstance(res_gate, exp_gate) 
+        assert res_wires == exp_wires
+        assert res_weight == exp_weight
