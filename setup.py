@@ -31,7 +31,7 @@ info = {
     'name': 'PennyLane',
     'version': version,
     'maintainer': 'Xanadu Inc.',
-    'maintainer_email': 'nathan@xanadu.ai',
+    'maintainer_email': 'software@xanadu.ai',
     'url': 'https://github.com/XanaduAI/pennylane',
     'license': 'Apache License 2.0',
     'packages': find_packages(where="."),
