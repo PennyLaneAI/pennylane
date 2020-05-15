@@ -9,6 +9,11 @@
   where not all qubits become entangled. 
   [#572](https://github.com/XanaduAI/pennylane/pull/572)
 
+* The ``CircuitGraph`` class now supports serializing contained circuit operations
+  and measurement basis rotations to an OpenQASM2.0 script via the new
+  ``CircuitGraph.to_openqasm()`` method.
+  [(#623)](https://github.com/XanaduAI/pennylane/pull/623)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -19,7 +24,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Nathan Killoran
+Josh Izaac, Nathan Killoran
 
 
 # Release 0.9.0 (current release)
