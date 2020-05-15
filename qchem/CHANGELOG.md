@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* The function ``hf_state`` generates the occupation-number representation of the 
+* The function ``hf_state`` outputs an array with the occupation-number representation of the 
   Hartree-Fock (HF) state. This function can be used to set the qubit register to encode the HF state which is the typical starting point for quantum chemistry simulations using the VQE algorithm.
   [(#629)](https://github.com/XanaduAI/pennylane/pull/629)
 
