@@ -572,3 +572,34 @@ class TestDoubleExcitationUnitary:
         assert isinstance(res_gate, exp_gate) 
         assert res_wires == exp_wires
         assert res_weight == exp_weight
+
+    @pytest.mark.parametrize(
+        ("weight", "pphh", "msg_match"),
+        [
+            ( 0.2      , [0]                  , "'wires' must be of shape"),
+            ( 0.2      , [0, 1]               , "'wires' must be of shape"),
+            ( 0.2      , [0, 1, 2, 3, 4]      , "'wires' must be of shape"),
+            ( 0.2      , []                   , "'wires' must be of shape"),
+            ([0.2, 1.1], [0, 2, 4, 6]         , "'weight' must be of shape"),
+            ( 0.2      , None                 , "wires must be a positive integer"),
+            ( 0.2      , ["a", "b", "c", "d"] , "wires must be a positive integer"),
+            ( 0.2      , [1.1, 5.2, 6, 7]     , "wires must be a positive integer"),
+            ( 0.2      , [1, 0, 6, 3]         , "wires_3 > wires_2 > wires_1 > wires_0"),
+            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0"),
+            ( 0.2      , [0, 1, 3, 3]         , "wires_1 > wires_0 and wires_3 > wires_2"),
+            ( 0.2      , [0, 0, 2, 2]         , "wires_1 > wires_0 and wires_3 > wires_2"),
+        ]
+    )
+    def test_double_excitation_unitary_exceptions(self, weight, pphh, msg_match):
+        """Test that DoubleExcitationUnitary throws an exception if ``weight`` or 
+        ``pphh`` parameter has illegal shapes, types or values."""
+        dev = qml.device("default.qubit", wires=10)
+
+        def circuit(weight=weight, wires=pphh):
+            DoubleExcitationUnitary(weight=weight, wires=pphh)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match=msg_match):
+            qnode(weight=weight, wires=pphh)

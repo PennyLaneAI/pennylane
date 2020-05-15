@@ -153,13 +153,13 @@ def DoubleExcitationUnitary(weight, wires=None):
     if wires != sorted(wires):
         raise ValueError(
             "Elements of 'wires' must satisfy that wires_3 > wires_2 > wires_1 > wires_0.\n" \
-            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(wires)
+            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
         )        
 
     if (wires[1] <= wires[0]) or (wires[3] <= wires[2]):
         raise ValueError(
-            "Elements of 'wires' must satisfy that wires_3 > wires_2 and wires_1 > wires_0.\n" \
-            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(wires)
+            "Elements of 'wires' must satisfy that wires_1 > wires_0 and wires_3 > wires_2.\n" \
+            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
         )
 
     ###############
