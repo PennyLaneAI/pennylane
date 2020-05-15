@@ -4,6 +4,11 @@
 
 <h3>Improvements</h3>
 
+* The ``CircuitGraph`` class now supports serializing contained circuit operations
+  and measurement basis rotations to an OpenQASM2.0 script via the new
+  ``CircuitGraph.to_openqasm()`` method.
+  [(#623)](https://github.com/XanaduAI/pennylane/pull/623)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -14,6 +19,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Josh Izaac
 
 # Release 0.9.0 (current release)
 
