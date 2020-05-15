@@ -1,6 +1,7 @@
 # Release 0.10.0 (development release)
 
 <h3>New features since last release</h3>
+
 * PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
   hybrid models using the `torch.nn` API.
   [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
