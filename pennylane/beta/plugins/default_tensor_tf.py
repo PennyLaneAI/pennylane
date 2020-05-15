@@ -61,7 +61,7 @@ class DefaultTensorTF(DefaultTensor):
       tightly integrated with your TensorFlow computation:
 
       >>> dev = qml.device("default.tensor.tf", wires=1)
-      >>> @qml.qnode(dev, interface="tf", diff_method="classical")
+      >>> @qml.qnode(dev, interface="tf", diff_method="backprop")
       >>> def circuit(x):
       ...     qml.RX(x[1], wires=0)
       ...     qml.Rot(x[0], x[1], x[2], wires=0)

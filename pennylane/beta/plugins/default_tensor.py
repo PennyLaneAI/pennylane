@@ -61,8 +61,8 @@ class DefaultTensor(Device):
 
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.9"
-    version = "0.9.0"
+    pennylane_requires = "0.10"
+    version = "0.10.0"
     author = "Xanadu Inc."
     _capabilities = {"model": "qubit", "tensor_observables": True}
 

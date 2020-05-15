@@ -476,9 +476,9 @@ class TestOptimizer:
             x = np.array([x])
 
         # helper function for x[d] = theta
-        def insert(x, d, theta):
-            x[d] = theta
-            return x
+        def insert(xf, d, theta):
+            xf[d] = theta
+            return xf
 
         for d, _ in enumerate(x):
             H_0 = float(f(insert(x, d, 0)))
@@ -509,28 +509,36 @@ class TestOptimizer:
 
             assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    def test_rotosolve_optimizer_multivar(self, bunch, tol):
+    @pytest.mark.parametrize('x_start', [[1.2, 0.2],
+                                         [-0.62, -2.1],
+                                         [0.05, 0.8],
+                                         [[0.3], [0.25]],
+                                         [[-0.6], [0.45]],
+                                         [[1.3], [-0.9]]])
+    def test_rotosolve_optimizer_multivar(self, x_start, bunch, tol):
         """Tests that rotosolve optimizer takes one and two steps correctly
         for multi-variate functions."""
 
-        for f in multivariate_funcs:
-            for jdx in range(len(x_vals[:-1])):
-                x_vec = x_vals[jdx:jdx + 2]
+        for func in multivariate_funcs:
+            # alter multivariate_func to accept nested lists of parameters
+            f = lambda x: func(np.ravel(x))
 
-                x_onestep = bunch.rotosolve_opt.step(f, x_vec)
-                x_onestep_target = self.rotosolve_step(f, x_vec)
+            x_onestep = bunch.rotosolve_opt.step(f, x_start)
+            x_onestep_target = self.rotosolve_step(f, x_start)
 
-                assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
+            assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
-                x_twosteps = bunch.rotosolve_opt.step(f, x_onestep)
-                x_twosteps_target = self.rotosolve_step(f, x_onestep_target)
+            x_twosteps = bunch.rotosolve_opt.step(f, x_onestep)
+            x_twosteps_target = self.rotosolve_step(f, x_onestep_target)
 
-                assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
+            assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
-    @pytest.mark.parametrize('x_start', [[0.3, 0.25], [-0.6, 0.45], [1.3, -0.9]])
+    @pytest.mark.parametrize('x_start', [[1.2, 0.2],
+                                         [-0.62, -2.1],
+                                         [0.05, 0.8]])
     @pytest.mark.parametrize('generators', [list(tup) for tup in it.product([qml.RX, qml.RY, qml.RZ], repeat=2)])
     def test_rotoselect_optimizer(self, x_start, generators, bunch, tol):
-        """Tests that rotoselect optimizer takes one and two steps correctly for the VQE circuit
+        """Tests that rotoselect optimizer finds the optimal generators and parameters for the VQE circuit
         defined in `this rotoselect tutorial <https://pennylane.ai/qml/demos/tutorial_rotoselect.html>`_."""
 
         # the optimal generators for the 2-qubit VQE circuit
@@ -557,23 +565,21 @@ class TestOptimizer:
             return qml.expval(qml.PauliX(0))
 
         def cost_fn(params, generators):
-            # test single parameter inputs
-            if np.ndim(params) == 1:
-                params = [params[0], params[0]]
             Z_1, Y_2 = circuit_1(params, generators=generators)
             X_1 = circuit_2(params, generators=generators)
             return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
 
-        x_onestep, generators = bunch.rotoselect_opt.step(cost_fn, x_start, generators)
-        f_best_gen = lambda x: cost_fn(x, generators=optimal_generators)
-        x_onestep_target = self.rotosolve_step(f_best_gen, x_start)
+        f_best_gen = lambda x: cost_fn(x, optimal_generators)
+        optimal_x_start = x_start.copy()
 
-        assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
+        # after four steps the optimzer should find the optimal generators/x_start values
+        for _ in range(4):
+            x_start, generators = bunch.rotoselect_opt.step(cost_fn, x_start, generators)
+            optimal_x_start = self.rotosolve_step(f_best_gen, optimal_x_start)
 
-        x_twosteps, generators = bunch.rotoselect_opt.step(cost_fn, x_onestep, generators)
-        x_twosteps_target = self.rotosolve_step(f_best_gen, x_onestep_target)
+        assert x_start == pytest.approx(optimal_x_start, abs=tol)
+        assert generators == optimal_generators
 
-        assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
     def test_update_stepsize(self):
         """Tests that the stepsize correctly updates"""
