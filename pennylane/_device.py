@@ -62,12 +62,20 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return "{}.\nInstance: ".format(self.__module__, self.__class__.__name__, self.name)
+        return "<{} device (wires={}, shots={}) at {}>".format(
+            self.__class__.__name__, self.num_wires, self.shots, hex(id(self))
+        )
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(
-            self.name, self.pennylane_requires, self.version, self.author
+        return "{}\nShort name: {}\nPackage: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
+            self.name,
+            self.short_name,
+            self.__module__.split(".")[0],
+            self.version,
+            self.author,
+            self.num_wires,
+            self.shots,
         )
 
     @property
