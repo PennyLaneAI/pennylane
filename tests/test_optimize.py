@@ -520,7 +520,7 @@ class TestOptimizer:
         for multi-variate functions."""
 
         for func in multivariate_funcs:
-            # alter multivariate_func to accpt nested list
+            # alter multivariate_func to accept nested lists of parameters
             f = lambda x: func(np.ravel(x))
 
             x_onestep = bunch.rotosolve_opt.step(f, x_start)

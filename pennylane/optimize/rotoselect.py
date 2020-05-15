@@ -107,6 +107,7 @@ class RotoselectOptimizer:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
+        # wrap the objective function so that it accepts the flattened parameter array
         objective_fn_flat = lambda x_flat, gen: objective_fn(unflatten(x_flat, x), generators=gen)
 
         try:
