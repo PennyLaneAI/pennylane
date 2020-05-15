@@ -19,11 +19,13 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.layers import (CVNeuralNetLayers,
-                                        StronglyEntanglingLayers,
-                                        RandomLayers,
-                                        BasicEntanglerLayers,
-                                        SimplifiedTwoDesign)
+from pennylane.templates.layers import (
+    CVNeuralNetLayers,
+    StronglyEntanglingLayers,
+    RandomLayers,
+    BasicEntanglerLayers,
+    SimplifiedTwoDesign,
+)
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
 
@@ -135,7 +137,7 @@ class TestCVNeuralNet:
             # loop through expected gates
             for idx, g in enumerate(gates):
                 # loop through where these gates should be in the queue
-                for opidx, op in enumerate(rec.queue[gc[idx, 0]: gc[idx, 1]]):
+                for opidx, op in enumerate(rec.queue[gc[idx, 0] : gc[idx, 1]]):
                     # check that op in queue is correct gate
                     assert isinstance(op, g)
 
@@ -212,7 +214,7 @@ class TestStronglyEntangling:
         # test the device parameters
         for l in range(n_layers):
 
-            layer_ops = rec.queue[2 * l * num_wires: 2 * (l + 1) * num_wires]
+            layer_ops = rec.queue[2 * l * num_wires : 2 * (l + 1) * num_wires]
 
             # check each rotation gate parameter
             for n in range(num_wires):
@@ -349,7 +351,7 @@ class TestRandomLayers:
         same circuit for immutable qnodes."""
 
         dev = qml.device("default.qubit", wires=2)
-        weights = [[0.1]*100]
+        weights = [[0.1] * 100]
 
         @qml.qnode(dev, mutable=False)
         def circuit(weights):
@@ -477,10 +479,10 @@ class TestRandomLayers:
 class TestSimplifiedTwoDesign:
     """Tests for the SimplifiedTwoDesign method from the pennylane.templates.layers module."""
 
-    @pytest.mark.parametrize("n_wires, n_layers, shape_weights", [(1, 2, (0,)),
-                                                                  (2, 2, (2, 1, 2)),
-                                                                  (3, 2, (2, 2, 2)),
-                                                                  (4, 2, (2, 3, 2))])
+    @pytest.mark.parametrize(
+        "n_wires, n_layers, shape_weights",
+        [(1, 2, (0,)), (2, 2, (2, 1, 2)), (3, 2, (2, 2, 2)), (4, 2, (2, 3, 2))],
+    )
     def test_circuit_queue(self, n_wires, n_layers, shape_weights):
         """Tests the gate types in the circuit."""
         np.random.seed(42)
@@ -500,10 +502,10 @@ class TestSimplifiedTwoDesign:
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
 
-    @pytest.mark.parametrize("n_wires, n_layers, shape_weights", [(1, 2, (0,)),
-                                                                  (2, 2, (2, 1, 2)),
-                                                                  (3, 2, (2, 2, 2)),
-                                                                  (4, 2, (2, 3, 2))])
+    @pytest.mark.parametrize(
+        "n_wires, n_layers, shape_weights",
+        [(1, 2, (0,)), (2, 2, (2, 1, 2)), (3, 2, (2, 2, 2)), (4, 2, (2, 3, 2))],
+    )
     def test_circuit_parameters(self, n_wires, n_layers, shape_weights):
         """Tests the parameter values in the circuit."""
         np.random.seed(42)
@@ -531,21 +533,24 @@ class TestSimplifiedTwoDesign:
                 res_param = o.parameters[0]
                 assert res_param == exp_param
 
-    @pytest.mark.parametrize("initial_layer_weights, weights, n_wires, target", [([np.pi], [], 1, [-1]),
-                                                                                 ([np.pi] * 2, [[[np.pi] * 2]], 2,
-                                                                                  [1, 1]),
-                                                                                 ([np.pi] * 3, [[[np.pi] * 2] * 2], 3,
-                                                                                  [1, -1, 1]),
-                                                                                 ([np.pi] * 4, [[[np.pi] * 2] * 3], 4,
-                                                                                  [1, -1, -1, 1]),
-                                                                                 ])
+    @pytest.mark.parametrize(
+        "initial_layer_weights, weights, n_wires, target",
+        [
+            ([np.pi], [], 1, [-1]),
+            ([np.pi] * 2, [[[np.pi] * 2]], 2, [1, 1]),
+            ([np.pi] * 3, [[[np.pi] * 2] * 2], 3, [1, -1, 1]),
+            ([np.pi] * 4, [[[np.pi] * 2] * 3], 4, [1, -1, -1, 1]),
+        ],
+    )
     def test_correct_target_output(self, initial_layer_weights, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(initial_layer, weights):
-            SimplifiedTwoDesign(initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires))
+            SimplifiedTwoDesign(
+                initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
+            )
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         expectations = circuit(initial_layer_weights, weights)
@@ -556,10 +561,7 @@ class TestSimplifiedTwoDesign:
 class TestBasicEntangler:
     """Tests for the BasicEntanglerLayers method from the pennylane.templates.layers module."""
 
-    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0),
-                                                  (2, 1),
-                                                  (3, 3),
-                                                  (4, 4)])
+    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
     def test_circuit_queue(self, n_wires, n_cnots):
         """Tests the gate types in the circuit."""
         np.random.seed(42)
@@ -578,10 +580,7 @@ class TestBasicEntangler:
         for op1, op2 in zip(res_gates, exp_gates):
             assert isinstance(op1, op2)
 
-    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0),
-                                                  (2, 1),
-                                                  (3, 3),
-                                                  (4, 4)])
+    @pytest.mark.parametrize("n_wires, n_cnots", [(1, 0), (2, 1), (3, 3), (4, 4)])
     def test_circuit_parameters(self, n_wires, n_cnots):
         """Tests the parameter values in the circuit."""
         np.random.seed(42)
@@ -595,7 +594,7 @@ class TestBasicEntangler:
         # test the device parameters
         for l in range(n_layers):
             # only select the rotation gates
-            layer_ops = rec.queue[l * (n_wires + n_cnots): l * (n_wires + n_cnots) + n_wires]
+            layer_ops = rec.queue[l * (n_wires + n_cnots) : l * (n_wires + n_cnots) + n_wires]
 
             # check each rotation gate parameter
             for n in range(n_wires):
@@ -619,15 +618,19 @@ class TestBasicEntangler:
             if not isinstance(op, CNOT):
                 assert isinstance(op, rotation)
 
-    @pytest.mark.parametrize("weights, n_wires, target", [([[np.pi]], 1, [-1]),
-                                                          ([[np.pi] * 2], 2, [-1, 1]),
-                                                          ([[np.pi] * 3], 3, [1, 1, -1]),
-                                                          ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
-                                                          ])
+    @pytest.mark.parametrize(
+        "weights, n_wires, target",
+        [
+            ([[np.pi]], 1, [-1]),
+            ([[np.pi] * 2], 2, [-1, 1]),
+            ([[np.pi] * 3], 3, [1, 1, -1]),
+            ([[np.pi] * 4], 4, [-1, 1, -1, 1]),
+        ],
+    )
     def test_simple_target_outputs(self, weights, n_wires, target):
         """Tests the result of the template for simple cases."""
 
-        dev = qml.device('default.qubit', wires=n_wires)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit(weights):

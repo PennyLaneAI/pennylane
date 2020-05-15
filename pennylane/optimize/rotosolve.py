@@ -90,9 +90,10 @@ class RotosolveOptimizer:
             array: The new variable values :math:`x^{(t+1)}`.
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
+        objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
 
         for d, _ in enumerate(x_flat):
-            x_flat = self._rotosolve(objective_fn, x_flat, d)
+            x_flat = self._rotosolve(objective_fn_flat, x_flat, d)
 
         return unflatten(x_flat, x)
 
