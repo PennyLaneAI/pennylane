@@ -20,11 +20,51 @@ from collections import Counter, OrderedDict, namedtuple
 import networkx as nx
 
 import pennylane as qml
+import pennylane.qnodes.base
 from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
 from .utils import _flatten
 from .variable import Variable
+
+
+OPENQASM_GATES = {
+    "CNOT": "cx",
+    "CZ": "cz",
+    "U3": "u3",
+    "U2": "u2",
+    "U1": "u1",
+    "Identity": "id",
+    "PauliX": "x",
+    "PauliY": "y",
+    "PauliZ": "z",
+    "Hadamard": "h",
+    "S": "s",
+    "S.inv": "sdg",
+    "T": "t",
+    "T.inv": "tdg",
+    "RX": "rx",
+    "RY": "ry",
+    "RZ": "rz",
+    "CRX": "crx",
+    "CRY": "cry",
+    "CRZ": "crz",
+    "SWAP": "swap",
+    "Toffoli": "ccx",
+    "CSWAP": "cswap",
+    "PhaseShift": "u1",
+}
+"""
+dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
+
+Note that QASM has two native gates:
+
+- ``U`` (equivalent to :class:`~.U3`)
+- ``CX`` (equivalent to :class:`~.CNOT`)
+
+All other gates are defined in the file qelib1.inc:
+https://github.com/Qiskit/openqasm/blob/master/examples/generic/qelib1.inc
+"""
 
 
 def _by_idx(x):
@@ -230,8 +270,14 @@ class CircuitGraph:
         Returns:
             str: OpenQASM serialization of the circuit
         """
-        # We import decompose_queue here to avoid a circular import
-        from pennylane.qnodes.base import decompose_queue  # pylint: disable=import-outside-toplevel
+        class QASMSerializerDevice:
+            """A mock device, to be used when performing the decomposition.
+            The short_name is used in error messages if the decomposition fails.
+            """
+
+            # pylint: disable=too-few-public-methods
+            short_name = "QASM serializer"
+            supports_operation = staticmethod(lambda x: x in OPENQASM_GATES)
 
         # add the QASM headers
         qasm_str = "OPENQASM 2.0;\n"
@@ -245,47 +291,6 @@ class CircuitGraph:
         qasm_str += "qreg q[{}];\n".format(self.num_wires)
         qasm_str += "creg c[{}];\n".format(self.num_wires)
 
-        # Map PennyLane gate names to equivalent QASM gate names.
-        # Note that QASM has two native gates:
-        #
-        # - U (equivalent to qml.U3)
-        # - CX (equivalent to qml.CNOT)
-        #
-        # All other gates are defined in the file qelib1.inc:
-        # https://github.com/Qiskit/openqasm/blob/master/examples/generic/qelib1.inc
-        #
-        # Question: do other implementations of QASM exist that
-        # don't use the qelib1.inc gate definitions?
-        # Perhaps we allow developers to pass their own native_qasm_gates dictionary
-        # to this method, which is used instead of the default below
-        # if provided.
-        native_qasm_gates = {
-            "CNOT": "cx",
-            "CZ": "cz",
-            "U3": "u3",
-            "U2": "u2",
-            "U1": "u1",
-            "Identity": "id",
-            "PauliX": "x",
-            "PauliY": "y",
-            "PauliZ": "z",
-            "Hadamard": "h",
-            "S": "s",
-            "S.inv": "sdg",
-            "T": "t",
-            "T.inv": "tdg",
-            "RX": "rx",
-            "RY": "ry",
-            "RZ": "rz",
-            "CRX": "crx",
-            "CRY": "cry",
-            "CRZ": "crz",
-            "SWAP": "swap",
-            "Toffoli": "ccx",
-            "CSWAP": "cswap",
-            "PhaseShift": "u1",
-        }
-
         # get the user applied circuit operations
         operations = self.operations
 
@@ -294,21 +299,12 @@ class CircuitGraph:
             # to circuit observables
             operations += self.diagonalizing_gates
 
-        class QASMSerializerDevice:
-            """A mock device, to be used when performing the decomposition.
-            The short_name is used in error messages if the decomposition fails.
-            """
-
-            # pylint: disable=too-few-public-methods
-            short_name = "QASM serializer"
-            supports_operation = staticmethod(lambda x: x in native_qasm_gates)
-
         # decompose the queue
-        decomposed_ops = decompose_queue(operations, QASMSerializerDevice)
+        decomposed_ops = pennylane.qnodes.base.decompose_queue(operations, QASMSerializerDevice)
 
         # create the QASM code representing the operations
         for op in decomposed_ops:
-            gate = native_qasm_gates[op.name]
+            gate = OPENQASM_GATES[op.name]
             wires = ",".join(["q[{}]".format(w) for w in op.wires])
             params = ""
 
