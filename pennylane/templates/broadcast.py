@@ -559,7 +559,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # define wire sequences for patterns
     wire_sequence = {
-        "single": wires,
+        "single": [wires.select(i) for i in range(len(wires))],
         "double": [wires.select([i, i+1]) for i in range(0, len(wires) - 1, 2)],
         "double_odd": [wires.select([i, i+1]) for i in range(1, len(wires) - 1, 2)],
         "chain": [wires.select([i, i+1]) for i in range(len(wires) - 1)],
