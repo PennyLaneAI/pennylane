@@ -22,7 +22,6 @@ import copy
 import numbers
 import functools
 import inspect
-import itertools
 
 import numpy as np
 
@@ -136,56 +135,6 @@ def _get_default_args(func):
     }
 
 
-def expand(U, wires, num_wires):
-    r"""Expand a multi-qubit operator into a full system operator.
-
-    Args:
-        U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
-        wires (Sequence[int]): Target subsystems (order matters! the
-            left-most Hilbert space is at index 0).
-
-    Raises:
-        ValueError: if wrong wires of the system were targeted or
-            the size of the unitary is incorrect
-
-    Returns:
-        array: :math:`2^N\times 2^N` matrix. The full system operator.
-    """
-    if num_wires == 1:
-        # total number of wires is 1, simply return the matrix
-        return U
-
-    N = num_wires
-    wires = np.asarray(wires)
-
-    if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-        raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
-    if U.shape != (2 ** len(wires), 2 ** len(wires)):
-        raise ValueError("Matrix parameter must be of size (2**len(wires), 2**len(wires))")
-
-    # generate N qubit basis states via the cartesian product
-    tuples = np.array(list(itertools.product([0, 1], repeat=N)))
-
-    # wires not acted on by the operator
-    inactive_wires = list(set(range(N)) - set(wires))
-
-    # expand U to act on the entire system
-    U = np.kron(U, np.identity(2 ** len(inactive_wires)))
-
-    # move active wires to beginning of the list of wires
-    rearranged_wires = np.array(list(wires) + inactive_wires)
-
-    # convert to computational basis
-    # i.e., converting the list of basis state bit strings into
-    # a list of decimal numbers that correspond to the computational
-    # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
-    perm = np.ravel_multi_index(tuples[:, rearranged_wires].T, [2] * N)
-
-    # permute U to take into account rearranged wires
-    return U[:, perm][perm]
-
-
 @functools.lru_cache()
 def pauli_eigs(n):
     r"""Eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
@@ -204,54 +153,7 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-class Recorder:
-    """Recorder class used by the :class:`~.OperationRecorder`.
-
-    The Recorder class is a very minimal QNode, that simply
-    provides a QNode context for operator queueing."""
-
-    # pylint: disable=too-few-public-methods
-    def __init__(self, old_context):
-        self._old_context = old_context
-        self._ops = []
-        self.num_wires = 1
-
-    def _append_op(self, op):
-        """:class:`~.Operator` objects call this method
-        and append themselves upon initialization."""
-        self._ops.append(op)
-
-        # this ensure the recorder does not interfere with
-        # any QNode contexts
-        if self._old_context:
-            self._old_context._append_op(op)
-
-    def _remove_op(self, op):
-        """Remove an Operation from the queue."""
-        self._ops.remove(op)
-
-        # this ensure the recorder does not interfere with
-        # any QNode contexts
-        if self._old_context:
-            self._old_context._remove_op(op)
-
-    @property
-    def queue(self):
-        """Queue of the underlying QNode if existant, otherwise the internal operator list."""
-        if self._old_context:
-            return self._old_context.queue
-
-        return self._ops
-
-    # Spoof all attributes of the underlying QNode if there is one
-    def __getattr__(self, name):
-        if self._old_context:
-            return self._old_context.__getattribute__(name)
-
-        raise AttributeError("Attribute {} of Recorder mock QNode does not exist.".format(name))
-
-
-class OperationRecorder:
+class OperationRecorder(qml.QueuingContext):
     """A template and quantum function inspector,
     allowing easy introspection of operators that have been
     applied without requiring a QNode.
@@ -280,8 +182,6 @@ class OperationRecorder:
     objects.
 
     Attributes:
-        rec (~.Recorder): a very minimal QNode, that simply
-            acts as a QNode context for operator queueing
         queue (List[~.Operators]): list of operators applied within
             the OperatorRecorder context, includes operations and observables
         operations (List[~.Operations]): list of operations applied within
@@ -291,32 +191,21 @@ class OperationRecorder:
     """
 
     def __init__(self):
-        self.rec = None
-
-        self.queue = None
+        self.queue = []
         self.operations = None
         self.observables = None
 
-        self.old_context = None
+    def _append_operator(self, operator):
+        self.queue.append(operator)
 
-    def __enter__(self):
-        self.rec = Recorder(qml._current_context)
+    def _remove_operator(self, operator):
+        self.queue.remove(operator)
 
-        # store the old context to be returned later
-        self.old_context = qml._current_context
+    def __exit__(self, exception_type, exception_value, traceback):
+        super().__exit__(exception_type, exception_value, traceback)
 
-        # set the recorder as the QNode context
-        qml._current_context = self.rec
-
-        self.queue = None
-        self.operations = None
-        self.observables = None
-
-        return self
-
-    def __exit__(self, *args, **kwargs):
         # Remove duplicates that might have arisen from measurements
-        self.queue = list(OrderedDict.fromkeys(self.rec._ops))
+        self.queue = list(OrderedDict.fromkeys(self.queue))
         self.operations = list(
             filter(
                 lambda op: not (
@@ -332,35 +221,18 @@ class OperationRecorder:
             )
         )
 
-        qml._current_context = self.old_context
-
     def __str__(self):
         output = ""
         output += "Operations\n"
         output += "==========\n"
         for op in self.operations:
-            if op.parameters:
-                params = ", ".join([str(p) for p in op.parameters])
-                output += "{}({}, wires={})\n".format(op.name, params, op.wires)
-            else:
-                output += "{}(wires={})\n".format(op.name, op.wires)
+            output += repr(op) + "\n"
 
-        return_map = {
-            qml.operation.Expectation: "expval",
-            qml.operation.Variance: "var",
-            qml.operation.Sample: "sample",
-        }
         output += "\n"
         output += "Observables\n"
         output += "==========\n"
         for op in self.observables:
-            if op.parameters:
-                params = ", ".join([str(p) for p in op.parameters])
-                output += "{}({}({}, wires={}))\n".format(
-                    return_map[op.return_type], op.name, params, op.wires
-                )
-            else:
-                output += "{}({}(wires={}))\n".format(return_map[op.return_type], op.name, op.wires)
+            output += repr(op) + "\n"
 
         return output
 
@@ -455,14 +327,111 @@ def inv(operation_list):
 
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
-    if qml._current_context is not None:
-        ops_in_queue = {op for op in operation_list if op in qml._current_context.queue}
+    for op in operation_list:
+        qml.QueuingContext.remove_operator(op)
 
-        for op in ops_in_queue:
-            qml._current_context._remove_op(op)
-
-        for inv_op in inv_ops:
-            qml._current_context._append_op(inv_op)
-            inv_op.queue_idx = qml._current_context.queue.index(inv_op)
+    for inv_op in inv_ops:
+        qml.QueuingContext.append_operator(inv_op)
 
     return inv_ops
+
+
+def expand(matrix, original_wires, expanded_wires):
+    r"""Expand a an operator matrix to more wires.
+
+    Args:
+        matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of matrix
+        expanded_wires (Union[Sequence[int], int]): expanded wires of matrix, can be shuffled.
+            If a single int m is given, corresponds to list(range(m))
+
+    Returns:
+        array: :math:`2^m \times 2^m` matrix where m = len(expanded_wires).
+    """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
+    N = len(original_wires)
+    M = len(expanded_wires)
+    D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if matrix.shape != (2 ** N, 2 ** N):
+        raise ValueError(
+            "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
+        )
+
+    dims = [2] * (2 * N)
+    tensor = matrix.reshape(dims)
+
+    if D > 0:
+        extra_dims = [2] * (2 * D)
+        identity = np.eye(2 ** D).reshape(extra_dims)
+        expanded_tensor = np.tensordot(tensor, identity, axes=0)
+        # Fix order of tensor factors
+        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
+    else:
+        expanded_tensor = tensor
+
+    wire_indices = []
+    for wire in original_wires:
+        wire_indices.append(expanded_wires.index(wire))
+
+    wire_indices = np.array(wire_indices)
+
+    # Order tensor factors according to wires
+    original_indices = np.array(range(N))
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
+
+    return expanded_tensor.reshape((2 ** M, 2 ** M))
+
+
+def expand_vector(vector, original_wires, expanded_wires):
+    r"""Expand a vector to more wires.
+
+    Args:
+        vector (array): :math:`2^n` vector where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of vector
+        expanded_wires (Union[Sequence[int], int]): expanded wires of vector, can be shuffled
+            If a single int m is given, corresponds to list(range(m))
+
+    Returns:
+        array: :math:`2^m` vector where m = len(expanded_wires).
+    """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
+    N = len(original_wires)
+    M = len(expanded_wires)
+    D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if vector.shape != (2 ** N,):
+        raise ValueError("Vector parameter must be of length 2**len(original_wires)")
+
+    dims = [2] * N
+    tensor = vector.reshape(dims)
+
+    if D > 0:
+        extra_dims = [2] * D
+        ones = np.ones(2 ** D).reshape(extra_dims)
+        expanded_tensor = np.tensordot(tensor, ones, axes=0)
+    else:
+        expanded_tensor = tensor
+
+    wire_indices = []
+    for wire in original_wires:
+        wire_indices.append(expanded_wires.index(wire))
+
+    wire_indices = np.array(wire_indices)
+
+    # Order tensor factors according to wires
+    original_indices = np.array(range(N))
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+
+    return expanded_tensor.reshape(2 ** M)

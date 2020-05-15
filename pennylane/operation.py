@@ -119,20 +119,20 @@ from .variable import Variable
 # =============================================================================
 
 
-class Wires(IntEnum):
+class ActsOn(IntEnum):
     """Integer enumeration class
     to represent the number of wires
     an operation acts on"""
 
-    Any = -1
-    All = 0
+    AnyWires = -1
+    AllWires = 0
 
 
-All = Wires.All
+AllWires = ActsOn.AllWires
 """IntEnum: An enumeration which represents all wires in the
 subsystem. It is equivalent to an integer with value 0."""
 
-Any = Wires.Any
+AnyWires = ActsOn.AnyWires
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
 
@@ -143,14 +143,16 @@ subsystem. It is equivalent to an integer with value -1."""
 
 
 class ObservableReturnTypes(Enum):
-    """Enumeration class to
-    represent the type of
-    return types of an observable."""
+    """Enumeration class to represent the return types of an observable."""
 
-    Sample = 1
-    Variance = 2
-    Expectation = 3
-    Probability = 4
+    Sample = "sample"
+    Variance = "var"
+    Expectation = "expval"
+    Probability = "probs"
+
+    def __repr__(self):
+        """String representation of the return types."""
+        return self.value
 
 
 Sample = ObservableReturnTypes.Sample
@@ -167,6 +169,7 @@ value of an observable on specified wires."""
 Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
+
 
 # =============================================================================
 # Class property
@@ -229,19 +232,16 @@ class Operator(abc.ABC):
         wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
-            immediately pushed into a :class:`BaseQNode` circuit queue.
-            The circuit queue is determined by the presence of an
-            applicable `qml._current_context`. If no context is
-            available, this argument is ignored.
+            immediately pushed into the Operator queue.
     """
     do_check_domain = True  #: bool: flag: should we perform a domain check for the parameters?
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _matrix(cls, *params):
         """Matrix representation of the operator
         in the computational basis.
 
-        This is a *static method* that should be defined for all
+        This is a *class method* that should be defined for all
         new operations and observables, that returns the matrix representing
         the operator in the computational basis.
 
@@ -261,6 +261,69 @@ class Operator(abc.ABC):
             array: matrix representation
         """
         raise NotImplementedError
+
+    @property
+    def matrix(self):
+        r"""Matrix representation of an instantiated operator
+        in the computational basis.
+
+        **Example:**
+
+        >>> U = qml.RY(0.5, wires=1)
+        >>> U.matrix
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
+        """
+        return self._matrix(*self.parameters)
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the operator.
+
+        This is a *class method* that should be defined for all
+        new operations and observables that returns the eigenvalues
+        of the operator. Note that the eigenvalues are not guaranteed
+        to be in any particular order.
+
+        This private method allows eigenvalues to be computed
+        directly without instantiating the operators first.
+
+        The default implementation relies on the presence of the
+        :attr:`_matrix` method.
+
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.Operator.eigvals` property instead.
+
+        **Example:**
+
+        >>> qml.RZ._eigvals(0.5)
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigenvalue representation
+        """
+        return np.linalg.eigvals(cls._matrix(*params))
+
+    @property
+    def eigvals(self):
+        r"""Eigenvalues of an instantiated operator.
+
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        return self._eigvals(*self.parameters)
 
     @property
     @abc.abstractmethod
@@ -288,23 +351,6 @@ class Operator(abc.ABC):
         """String for the name of the operator.
         """
         return self._name
-
-    @property
-    def matrix(self):
-        r"""Matrix representation of an instantiated operator
-        in the computational basis.
-
-        **Example:**
-
-        >>> U = qml.RY(0.5, wires=1)
-        >>> U.matrix
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
-
-        Returns:
-            array: matrix representation
-        """
-        return self._matrix(*self.parameters)
 
     @name.setter
     def name(self, value):
@@ -336,12 +382,22 @@ class Operator(abc.ABC):
         self._check_wires(wires)
         self._wires = wires  #: tuple[int]: wires on which the operator acts
 
-        if do_queue and (qml._current_context is not None):
+        if do_queue:
             self.queue()
 
     def __str__(self):
-        """Print the operator name and some information."""
+        """Operator name and some information."""
         return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
+
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        # FIXME using self.parameters here instead of self.params is dangerous, it assumes the params can be evaluated
+        # which is only true if something suitable happens to remain in VariableRef.positional_arg_values etc. after
+        # the last evaluation.
+        if self.parameters:
+            params = ", ".join([repr(p) for p in self.parameters])
+            return "{}({}, wires={})".format(self.name, params, self.wires)
+        return "{}(wires={})".format(self.name, self.wires)
 
     def _check_wires(self, wires):
         """Check the validity of the operator wires.
@@ -361,7 +417,11 @@ class Operator(abc.ABC):
                     )
                 )
 
-        if self.num_wires != All and self.num_wires != Any and len(wires) != self.num_wires:
+        if (
+            self.num_wires != AllWires
+            and self.num_wires != AnyWires
+            and len(wires) != self.num_wires
+        ):
             raise ValueError(
                 "{}: wrong number of wires. "
                 "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
@@ -464,9 +524,9 @@ class Operator(abc.ABC):
         return [evaluate(p) for p in self.params]
 
     def queue(self):
-        """Append the operator to a BaseQNode queue."""
+        """Append the operator to the Operator queue."""
+        qml.QueuingContext.append_operator(self)
 
-        qml._current_context._append_op(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
 
@@ -617,10 +677,21 @@ class Operation(Operator):
 
     @property
     def matrix(self):
-        if self.inverse:
-            return np.linalg.inv(self._matrix(*self.parameters))
+        op_matrix = self._matrix(*self.parameters)
 
-        return self._matrix(*self.parameters)
+        if self.inverse:
+            return op_matrix.conj().T
+
+        return op_matrix
+
+    @property
+    def eigvals(self):
+        op_eigvals = self._eigvals(*self.parameters)
+
+        if self.inverse:
+            return op_eigvals.conj()
+
+        return op_eigvals
 
     @property
     def base_name(self):
@@ -664,6 +735,91 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
 
+class DiagonalOperation(Operation):
+    r"""Base class for diagonal quantum operations supported by a device.
+
+    As with :class:`~.Operation`, the following class attributes must be
+    defined for all operations:
+
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
+
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
+
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
+
+    Args:
+        params (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`BaseQNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a BaseQNode context.
+    """
+    # pylint: disable=abstract-method
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the operator.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors.
+
+        This is a *class method* that must be defined for all
+        new diagonal operations, that returns the eigenvalues
+        of the operator in the computational basis.
+
+        This private method allows eigenvalues to be computed
+        directly without instantiating the operators first.
+
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.Operator.eigvals` property instead.
+
+        **Example:**
+
+        >>> qml.RZ._eigvals(0.5)
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigenvalue representation
+        """
+        raise NotImplementedError
+
+    @property
+    def eigvals(self):
+        r"""Eigenvalues of an instantiated diagonal operation.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        return super().eigvals
+
+    @classmethod
+    def _matrix(cls, *params):
+        return np.diag(cls._eigvals(*params))
+
+
 # =============================================================================
 # Base Observable class
 # =============================================================================
@@ -688,14 +844,58 @@ class Observable(Operator):
         wires (Sequence[int]): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`BaseQNode` observable queue.
-            The observable queue is determined by the presence of an
-            applicable `qml._current_context`. If no context is
-            available, this argument is ignored.
+            immediately pushed into the Operator queue.
     """
 
     # pylint: disable=abstract-method
     return_type = None
+
+    @classmethod
+    def _eigvals(cls, *params):
+        """Eigenvalues of the observable.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using :attr:`diagonalizing_gates`.
+
+        This is a *class method* that must be defined for all
+        new diagonal operations, that returns the eigenvalues
+        of the operator in the computational basis.
+
+        This private method allows eigenvalues to be computed
+        directly without instantiating the operators first.
+
+        To return the eigenvalues of *instantiated* operators,
+        please use the :attr:`~.Operator.eigvals` property instead.
+
+        **Example:**
+
+        >>> qml.PauliZ._eigvals()
+        >>> array([1, -1])
+
+        Returns:
+            array: eigenvalue representation
+        """
+        raise NotImplementedError
+
+    @property
+    def eigvals(self):
+        r"""Eigenvalues of an instantiated observable.
+
+        The order of the eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using :attr:`diagonalizing_gates`. This is a requirement for using qubit observables in quantum functions.
+
+        **Example:**
+
+        >>> U = qml.PauliZ(wires=1)
+        >>> U.eigvals
+        >>> array([1, -1])
+
+        Returns:
+            array: eigvals representation
+        """
+        return super().eigvals
 
     def __init__(self, *params, wires=None, do_queue=True):
         # extract the arguments
@@ -705,6 +905,18 @@ class Observable(Operator):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        temp = super().__repr__()
+
+        if self.return_type is None:
+            return temp
+
+        if self.return_type is Probability:
+            return repr(self.return_type) + "(wires={})".format(self.wires)
+
+        return repr(self.return_type) + "(" + temp + ")"
+
     def __matmul__(self, other):
         if isinstance(other, Tensor):
             return other.__rmatmul__(self)
@@ -713,11 +925,6 @@ class Observable(Operator):
             return Tensor(self, other)
 
         raise ValueError("Can only perform tensor products between observables.")
-
-    @property
-    def eigvals(self):
-        r"""Returns the eigenvalues of the observable"""
-        raise NotImplementedError
 
     def diagonalizing_gates(self):
         r"""Returns the list of operations such that they
@@ -753,7 +960,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
 
-        self._eigvals = None
+        self._eigvals_cache = None
         self.obs = []
 
         for o in args:
@@ -769,6 +976,10 @@ class Tensor(Observable):
         return "Tensor product {}: {} params, wires {}".format(
             [i.name for i in self.obs], len(self.params), self.wires
         )
+
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        return "Tensor(" + ", ".join([repr(o) for o in self.obs]) + ")"
 
     @property
     def name(self):
@@ -867,13 +1078,13 @@ class Tensor(Observable):
             array[float]: array containing the eigenvalues of the tensor product
             observable
         """
-        if self._eigvals is not None:
-            return self._eigvals
+        if self._eigvals_cache is not None:
+            return self._eigvals_cache
 
         standard_observables = {"PauliX", "PauliY", "PauliZ", "Hadamard"}
 
         # observable should be Z^{\otimes n}
-        self._eigvals = pauli_eigs(len(self.wires))
+        self._eigvals_cache = pauli_eigs(len(self.wires))
 
         # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
         # Hermitian(obs, wires=[1, 3, 4])
@@ -885,18 +1096,18 @@ class Tensor(Observable):
         if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
-            self._eigvals = np.array([1])
+            self._eigvals_cache = np.array([1])
             for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
-                    self._eigvals = np.kron(self._eigvals, pauli_eigs(len(list(g))))
+                    self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))
                 else:
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals = np.kron(self._eigvals, ns_ob.eigvals)
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals)
 
-        return self._eigvals
+        return self._eigvals_cache
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the

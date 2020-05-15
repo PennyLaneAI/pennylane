@@ -35,6 +35,9 @@ op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 
+op_classes_param_testable = op_classes.copy()
+op_classes_param_testable.remove(qml.ops.PauliRot)
+
 def U3(theta, phi, lam):
     return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
 
@@ -109,7 +112,7 @@ class TestOperation:
             U_high_order = np.array([U] * 3)
             op.heisenberg_expand(U_high_order, len(op.wires))
 
-    @pytest.mark.parametrize("test_class", op_classes)
+    @pytest.mark.parametrize("test_class", op_classes_param_testable)
     def test_operation_init(self, test_class, monkeypatch):
         "Operation subclass initialization."
 
@@ -154,32 +157,33 @@ class TestOperation:
             return
 
         # wrong parameter types
-        if test_class.par_domain == 'A':
-            # params must be arrays
-            with pytest.raises(TypeError, match='Array parameter expected'):
-                test_class(*n*[0.0], wires=ww)
-            # params must not be Variables
-            with pytest.raises(TypeError, match='Array parameter expected'):
-                test_class(*n*[qml.variable.Variable(0)], wires=ww)
-        elif test_class.par_domain == 'N':
-            # params must be natural numbers
-            with pytest.raises(TypeError, match='Natural number'):
-                test_class(*n*[0.7], wires=ww)
-            with pytest.raises(TypeError, match='Natural number'):
-                test_class(*n*[-1], wires=ww)
-        elif test_class.par_domain == 'R':
-            # params must be real numbers
-            with pytest.raises(TypeError, match='Real scalar parameter expected'):
-                test_class(*n*[1j], wires=ww)
+        if test_class.do_check_domain:
+            if test_class.par_domain == 'A':
+                # params must be arrays
+                with pytest.raises(TypeError, match='Array parameter expected'):
+                    test_class(*n*[0.0], wires=ww)
+                # params must not be Variables
+                with pytest.raises(TypeError, match='Array parameter expected'):
+                    test_class(*n*[qml.variable.Variable(0)], wires=ww)
+            elif test_class.par_domain == 'N':
+                # params must be natural numbers
+                with pytest.raises(TypeError, match='Natural number'):
+                    test_class(*n*[0.7], wires=ww)
+                with pytest.raises(TypeError, match='Natural number'):
+                    test_class(*n*[-1], wires=ww)
+            elif test_class.par_domain == 'R':
+                # params must be real numbers
+                with pytest.raises(TypeError, match='Real scalar parameter expected'):
+                    test_class(*n*[1j], wires=ww)
 
-        # if par_domain ever gets overridden to an unsupported value, should raise exception
-        monkeypatch.setattr(test_class, 'par_domain', 'junk')
-        with pytest.raises(ValueError, match='Unknown parameter domain'):
-            test_class(*pars, wires=ww)
+            # if par_domain ever gets overridden to an unsupported value, should raise exception
+            monkeypatch.setattr(test_class, 'par_domain', 'junk')
+            with pytest.raises(ValueError, match='Unknown parameter domain'):
+                test_class(*pars, wires=ww)
 
-        monkeypatch.setattr(test_class, 'par_domain', 7)
-        with pytest.raises(ValueError, match='Unknown parameter domain'):
-            test_class(*pars, wires=ww)
+            monkeypatch.setattr(test_class, 'par_domain', 7)
+            with pytest.raises(ValueError, match='Unknown parameter domain'):
+                test_class(*pars, wires=ww)
 
     @pytest.fixture(scope="function")
     def qnode(self, mock_device):
@@ -510,6 +514,33 @@ class TestObservableConstruction:
         assert issubclass(DummyObserv, qml.operation.Observable)
         assert issubclass(DummyObserv, qml.operation.Operation)
 
+    def test_tensor_n_multiple_modes(self):
+        """Checks that the TensorN operator was constructed correctly when
+        multiple modes were specified."""
+        cv_obs = qml.TensorN(wires=[0, 1])
+
+        assert isinstance(cv_obs, qml.TensorN)
+        assert cv_obs.wires == [0, 1]
+        assert cv_obs.ev_order is None
+
+    def test_tensor_n_single_mode_wires_explicit(self):
+        """Checks that instantiating a TensorN when passing a single mode as a
+        keyword argument returns a NumberOperator."""
+        cv_obs = qml.TensorN(wires=[0])
+
+        assert isinstance(cv_obs, qml.NumberOperator)
+        assert cv_obs.wires == [0]
+        assert cv_obs.ev_order == 2
+
+    def test_tensor_n_single_mode_wires_implicit(self):
+        """Checks that instantiating TensorN when passing a single mode as a
+        positional argument returns a NumberOperator."""
+        cv_obs = qml.TensorN(1)
+
+        assert isinstance(cv_obs, qml.NumberOperator)
+        assert cv_obs.wires == [1]
+        assert cv_obs.ev_order == 2
+
 
 class TestOperatorIntegration:
     """ Integration tests for the Operator class"""
@@ -522,7 +553,7 @@ class TestOperatorIntegration:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
-            num_wires = qml.operation.Wires.All
+            num_wires = qml.operation.ActsOn.AllWires
             num_params = 0
             par_domain = 'R'
 
@@ -723,7 +754,7 @@ class TestTensor:
         assert np.array_equal(t.eigvals, np.kron([1, -1], [1, -1]))
 
         # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals, t.eigvals)
+        assert np.array_equal(t._eigvals_cache, t.eigvals)
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
@@ -1031,16 +1062,16 @@ class TestDecomposition:
 
         assert len(rec.queue) == 4
 
-        assert rec.queue[0].name == "U3"
-        assert rec.queue[0].parameters == [phi/2, 0, 0]
+        assert rec.queue[0].name == "RY"
+        assert rec.queue[0].parameters == [phi/2]
         assert rec.queue[0].wires == [1]
 
         assert rec.queue[1].name == "CNOT"
         assert rec.queue[1].parameters == []
         assert rec.queue[1].wires == operation_wires
 
-        assert rec.queue[2].name == "U3"
-        assert rec.queue[2].parameters == [-phi/2, 0, 0]
+        assert rec.queue[2].name == "RY"
+        assert rec.queue[2].parameters == [-phi/2]
         assert rec.queue[2].wires == [1]
 
         assert rec.queue[3].name == "CNOT"

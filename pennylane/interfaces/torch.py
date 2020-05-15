@@ -200,6 +200,7 @@ def to_torch(qnode):
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         _qnode = qnode
+        func = qnode.func
 
     @qnode_str
     def custom_apply(*args, **kwargs):

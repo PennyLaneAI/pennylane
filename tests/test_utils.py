@@ -207,6 +207,23 @@ class TestExpand:
         expected = np.kron(np.kron(I, I), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_expand_one_wires_list(self, tol):
+        """Test that a 1 qubit gate correctly expands to 3 qubits."""
+        # test applied to wire 0
+        res = pu.expand(U, [0], [0, 4, 9])
+        expected = np.kron(np.kron(U, I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 4
+        res = pu.expand(U, [4], [0, 4, 9])
+        expected = np.kron(np.kron(I, U), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 9
+        res = pu.expand(U, [9], [0, 4, 9])
+        expected = np.kron(np.kron(I, I), U)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_expand_two_consecutive_wires(self, tol):
         """Test that a 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
@@ -239,7 +256,7 @@ class TestExpand:
     def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'wires' argument."
+            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
         ):
             pu.expand(U2, [-1, 5], 4)
 
@@ -302,127 +319,74 @@ class TestExpand:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    VECTOR1 = np.array([1, -1])
+    ONES = np.array([1, 1])
 
-class TestRecorder:
-    """Test the Recorder QNode replacement"""
+    @pytest.mark.parametrize(
+        "original_wires,expanded_wires,expected",
+        [
+            ([0], 3, np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([1], 3, np.kron(np.kron(ONES, VECTOR1), ONES)),
+            ([2], 3, np.kron(np.kron(ONES, ONES), VECTOR1)),
+            ([0], [0, 4, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([4], [0, 4, 7], np.kron(np.kron(ONES, VECTOR1), ONES)),
+            ([7], [0, 4, 7], np.kron(np.kron(ONES, ONES), VECTOR1)),
+            ([0], [0, 4, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([4], [4, 0, 7], np.kron(np.kron(VECTOR1, ONES), ONES)),
+            ([7], [7, 4, 0], np.kron(np.kron(VECTOR1, ONES), ONES)),
+        ],
+    )
+    def test_expand_vector_single_wire(self, original_wires, expanded_wires, expected, tol):
+        """Test that expand_vector works with a single-wire vector."""
 
-    def test_append_op_calls_underlying_context(self):
-        """Test that the underlying context is called in _append_op."""
-        qnode_mock = MagicMock()
+        res = pu.expand_vector(TestExpand.VECTOR1, original_wires, expanded_wires)
 
-        rec = pu.Recorder(qnode_mock)
-        op = qml.PauliZ(3)
-        rec._append_op(op)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        assert qnode_mock._append_op.call_args[0][0] == op
-        assert rec._ops == [op]
+    VECTOR2 = np.array([1, 2, 3, 4])
+    ONES = np.array([1, 1])
 
-    def test_append_op_no_context(self):
-        """Test that the operation is appended when no context is supplied."""
-        rec = pu.Recorder(None)
+    @pytest.mark.parametrize(
+        "original_wires,expanded_wires,expected",
+        [
+            ([0, 1], 3, np.kron(VECTOR2, ONES)),
+            ([1, 2], 3, np.kron(ONES, VECTOR2)),
+            ([0, 2], 3, np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([0, 5], [0, 5, 9], np.kron(VECTOR2, ONES)),
+            ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
+            ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
+            ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
+        ],
+    )
+    def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):
+        """Test that expand_vector works with a single-wire vector."""
 
-        op = qml.PauliZ(3)
-        rec._append_op(op)
+        res = pu.expand_vector(TestExpand.VECTOR2, original_wires, expanded_wires)
 
-        assert rec._ops == [op]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_remove_op_calls_underlying_context(self):
-        """Test that the underlying context is called in _remove_op."""
-        qnode_mock = MagicMock()
-
-        rec = pu.Recorder(qnode_mock)
-        op = qml.PauliZ(3)
-        rec._append_op(op)
-        rec._remove_op(op)
-
-        assert qnode_mock._remove_op.call_args[0][0] == op
-        assert rec._ops == []
-
-    def test_remove_op_no_context(self):
-        """Test that the operation is removed when no context is supplied."""
-        rec = pu.Recorder(None)
-
-        op = qml.PauliZ(3)
-        rec._append_op(op)
-        assert rec._ops == [op]
-
-        rec._remove_op(op)
-
-        assert rec._ops == []
-
-    def test_context_method_spoofing(self):
-        """Test that unknown methods are properly relayed to the underlying context."""
-
-        class MethodMock:
-            args = []
-
-            def construct(self, arg):
-                self.args.append(arg)
-
-        qnode_mock = MethodMock()
-
-        rec = pu.Recorder(qnode_mock)
-
-        rec.construct("Test")
-        assert qnode_mock.args[0] == "Test"
-
-    def test_context_attribute_spoofing(self):
-        """Test that unknown attributes are properly relayed to the underlying context."""
-
-        class AssignmentMock:
-            queue = ["A"]
-
-        qnode_mock = AssignmentMock()
-        rec = pu.Recorder(qnode_mock)
-
-        assert rec.queue == ["A"]
-        assert qnode_mock.queue == ["A"]
-
-        rec.queue.append("B")
-
-        assert rec.queue == ["A", "B"]
-        assert qnode_mock.queue == ["A", "B"]
-
-    def test_attribute_spoofing_error(self):
-        """Test that the proper error is raised if attribute spoofing is attemped
-        with no underlying QNode."""
-        rec = pu.Recorder(None)
-
+    def test_expand_vector_invalid_wires(self):
+        """Test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            AttributeError, match="Attribute test of Recorder mock QNode does not exist"
+            ValueError, match="Invalid target subsystems provided in 'original_wires' argument"
         ):
-            rec.test
+            pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
 
-    def test_queue_no_context(self):
-        """Test that the queue property returns an empty list if there is no underlying context."""
-        qnode_mock = MagicMock()
-        qnode_mock.queue = ["A"]
-
-        rec = pu.Recorder(qnode_mock)
-
-        assert rec.queue == ["A"]
-
-    def test_queue_no_context(self):
-        """Test that the queue property returns an empty list if there is no underlying context."""
-        rec = pu.Recorder(None)
-
-        assert rec.queue == []
+    def test_expand_vector_invalid_vector(self):
+        """Test exception raised if incorrect sized vector provided."""
+        with pytest.raises(ValueError, match="Vector parameter must be of length"):
+            pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
 
 
 class TestOperationRecorder:
     """Test the OperationRecorder class."""
 
-    def test_context_switching(self, monkeypatch):
-        """Test that the current QNode context is properly switched."""
-        monkeypatch.setattr(qml, "_current_context", "Test")
-
-        assert qml._current_context == "Test"
-
+    def test_context_adding(self, monkeypatch):
+        """Test that the OperationRecorder is added to the list of contexts."""
         with pu.OperationRecorder() as recorder:
-            assert recorder.old_context == "Test"
-            assert qml._current_context == recorder.rec
+            assert recorder in qml.QueuingContext._active_contexts
 
-        assert qml._current_context == "Test"
+        assert recorder not in qml.QueuingContext._active_contexts
 
     def test_circuit_integration(self):
         """Tests that the OperationRecorder integrates well with the

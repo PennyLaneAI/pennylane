@@ -19,7 +19,7 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates import broadcast
-from pennylane.templates.utils import _check_wires, _check_number_of_layers, _check_shapes
+from pennylane.templates.utils import check_wires, check_number_of_layers, check_shapes
 
 
 def cv_neural_net_layer(
@@ -111,12 +111,12 @@ def CVNeuralNetLayers(
     #############
     # Input checks
 
-    wires = _check_wires(wires)
+    wires = check_wires(wires)
 
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2
     weights_list = [theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k]
-    repeat = _check_number_of_layers(weights_list)
+    repeat = check_number_of_layers(weights_list)
 
     expected_shapes = [
         (repeat, n_if),
@@ -131,7 +131,7 @@ def CVNeuralNetLayers(
         (repeat, n_wires),
         (repeat, n_wires),
     ]
-    _check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
+    check_shapes(weights_list, expected_shapes, msg="wrong shape of weight input(s) detected")
 
     ###############
 

@@ -32,6 +32,8 @@ Some of these are specific to quantum optimization, such as the :mod:`~.QNGOptim
     ~pennylane.NesterovMomentumOptimizer
     ~pennylane.QNGOptimizer
     ~pennylane.RMSPropOptimizer
+    ~pennylane.RotosolveOptimizer
+    ~pennylane.RotoselectOptimizer
 
 :html:`</div>`
 

@@ -37,39 +37,59 @@
 
 |CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
-`PennyLane <https://pennylane.readthedocs.io>`_ is a cross-platform Python library for quantum machine learning,
-automatic differentiation, and optimization of hybrid quantum-classical computations.
+`PennyLane <https://pennylane.ai>`_ is a cross-platform Python library for `differentiable programming <https://en.wikipedia.org/wiki/Differentiable_programming>`__ of quantum computers. 
 
-Learn more about quantum machine learning with PennyLane: view and download QML examples
-and demos over at https://pennylane.ai/qml.
+.. raw:: html
 
-Features
-========
+    <p align="center">
+    <b>Train a quantum computer the same way as a neural network.</b>
+    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
+    </p>
+
+PennyLane provides open-source tools for quantum machine learning, quantum computing, quantum chemistry, and hybrid quantum-classical computing. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
+
+Key Features
+============
 
 .. raw:: html
 
     <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
-- **Follow the gradient**. Built-in **automatic differentiation** of quantum circuits
-
-- **Best of both worlds**.
-  Support for **hybrid quantum and classical** models; connect quantum
-  hardware with PyTorch, TensorFlow, and NumPy.
-
-- **Batteries included**. Provides **optimization and machine learning** tools
-
-- **Device independent**.
-  The same quantum circuit model can be **run on different backends**. Install
-  `plugins <https://pennylane.ai/plugins.html>`__ to access even more
-  devices, including **Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
+- *Device independent*.
+  Access quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
   **Microsoft QDK**.
+
+- *Best of both worlds*.
+  Build hybrid models by connecting quantum hardware to **PyTorch**, **TensorFlow**, **Keras**, and **NumPy**.
+
+- *Follow the gradient*. Hardware-friendly **automatic differentiation** of quantum circuits.
+
+- *Batteries included*. Built-in tools for **quantum machine learning**, **optimization**, and **quantum chemistry**.
+
+Getting started
+===============
+
+For an introduction to quantum machine learning, we have several guides and resources available
+on PennyLane's `quantum machine learning page <https://pennylane.ai/qml/>`_:
+
+* `What is quantum machine learning? <https://pennylane.ai/qml/whatisqml.html>`_
+* `QML tutorials and demonstrations <https://pennylane.ai/qml/demonstrations.html>`_
+* `Frequently asked questions <https://pennylane.ai/faq.html>`_
+* `Glossary of key concepts <https://pennylane.ai/qml/glossary.html>`_
+* `Curated selection of QML videos <https://pennylane.ai/qml/videos.html>`_
+
+You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
+`quickstart guides <https://pennylane.readthedocs.io/en/stable/introduction/pennylane.html>`_
+to using PennyLane, and detailed developer guides on
+`how to write your own <https://pennylane.readthedocs.io/en/stable/development/plugins.html>`_
+PennyLane-compatible quantum device.
 
 Available plugins
 =================
 
 * `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_: Supports integration with
   `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack
-  Python library for simulating continuous variable (CV) quantum optical circuits.
+  Python library for simulating photonic quantum computing.
 
 
 * `PennyLane-qiskit <https://github.com/XanaduAI/pennylane-qiskit>`_: Supports
@@ -108,30 +128,6 @@ as all dependencies, can be done using pip:
 
     $ python -m pip install pennylane
 
-
-Getting started
-===============
-
-For getting started with PennyLane, check out some of the
-`key concepts <https://pennylane.ai/qml/concepts.html>`_ behind quantum machine
-learning, before moving on to some `introductory tutorials <https://pennylane.ai/qml/beginner.html>`_.
-
-Then, take a deeper dive into quantum machine learning by
-exploring cutting-edge algorithms using PennyLane and near-term quantum hardware,
-with our collection of
-`QML tutorials <https://pennylane.ai/qml/implementations.html>`_.
-
-You can also check out our `documentation <https://pennylane.readthedocs.io>`_ for
-more details on the quantum operations, and to explore the available optimization
-tools provided by PennyLane, and detailed guides on
-`how to write your own <https://pennylane.readthedocs.io/en/latest/development/plugins.html>`_
-PennyLane-compatible quantum device.
-
-Finally, play around with the numerous `devices and plugins <https://pennylane.ai/plugins.html>`_
-available for running your hybrid optimizations — these include
-IBM Q, provided by the PennyLane-Qiskit plugin, as well as the Rigetti Aspen-1 QPU.
-
-
 Contributing to PennyLane
 =========================
 
@@ -150,7 +146,7 @@ for more details.
 Authors
 =======
 
-PennyLane is the work of [many contributors](https://github.com/XanaduAI/pennylane/graphs/contributors).
+PennyLane is the work of `many contributors <https://github.com/XanaduAI/pennylane/graphs/contributors>`_.
 
 If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1811.04968>`_:
 
