@@ -77,7 +77,7 @@
   the Rotoselect optimizer will, at each step, update both the parameter
   values and the list of rotation gates to minimize the loss:
 
-  ```python
+  ```pycon
   >>> opt = qml.optimize.RotoselectOptimizer()
   >>> x = [0.3, 0.7]
   >>> generators = [qml.RX, qml.RY]
@@ -101,7 +101,9 @@
   def circuit(angle):
       qml.PauliRot(angle, "IXYZ", wires=[0, 1, 2, 3])
       return [qml.expval(qml.PauliZ(wire)) for wire in [0, 1, 2, 3]]
+  ```
 
+  ```pycon
   >>> circuit(0.4)
   [1.         0.92106099 0.92106099 1.        ]
   >>> print(circuit.draw())
@@ -115,7 +117,7 @@
   be decomposed into `Hadamard`, `RX` and `MultiRZ` gates. Note that
   identity gates in the Pauli word result in untouched wires:
 
-  ```python
+  ```pycon
   >>> print(circuit.draw())
    0: ───────────────────────────────────┤ ⟨Z⟩
    1: ──H──────────╭RZ(0.4)──H───────────┤ ⟨Z⟩
@@ -126,7 +128,7 @@
   If the `MultiRZ` gate is not supported, it will be decomposed into
   `CNOT` and `RZ` gates:
 
-  ```python
+  ```pycon
   >>> print(circuit.draw())
    0: ──────────────────────────────────────────────────┤ ⟨Z⟩
    1: ──H──────────────╭X──RZ(0.4)──╭X──────H───────────┤ ⟨Z⟩
@@ -225,7 +227,9 @@
   def circuit(pars):
       qml.broadcast(mytemplate, pattern="single", wires=[0,1,2], parameters=pars)
       return qml.expval(qml.PauliZ(0))
+  ```
 
+  ```pycon
   >>> circuit([1, 1, 0.1])
   -0.841470984807896
   >>> print(circuit.draw())
