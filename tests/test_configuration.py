@@ -17,11 +17,16 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import pytest
 import os
 import logging as log
+import sys
 
 import toml
 
 import pennylane as qml
 from pennylane import Configuration
+
+
+pytestmark = pytest.mark.skipif(sys.version_info < (3, 6), reason="tmpdir fixture requires Python 3.6 or higher")
+
 
 log.getLogger('defaults')
 
@@ -66,7 +71,7 @@ backend = "qasm_simulator"
 
 @pytest.fixture(scope="function")
 def default_config(tmpdir):
-    config_path = tmpdir + config_filename
+    config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
         f.write(test_config)
@@ -76,7 +81,7 @@ def default_config(tmpdir):
 
 @pytest.fixture(scope="function")
 def default_config_toml(tmpdir):
-    config_path = tmpdir + config_filename
+    config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
         f.write(test_config)
