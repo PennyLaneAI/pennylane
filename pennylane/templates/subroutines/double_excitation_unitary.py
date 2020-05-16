@@ -152,13 +152,13 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     if wires != sorted(wires):
         raise ValueError(
-            "Elements of 'wires' must satisfy that wires_3 > wires_2 > wires_1 > wires_0.\n" \
+            "Elements of 'wires' must satisfy that wires_3 > wires_2 > wires_1 > wires_0.\n"
             "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
-        )        
+        )
 
     if (wires[1] <= wires[0]) or (wires[3] <= wires[2]):
         raise ValueError(
-            "Elements of 'wires' must satisfy that wires_1 > wires_0 and wires_3 > wires_2.\n" \
+            "Elements of 'wires' must satisfy that wires_1 > wires_0 and wires_3 > wires_2.\n"
             "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
         )
 
@@ -167,7 +167,9 @@ def DoubleExcitationUnitary(weight, wires=None):
     s, r, q, p = wires
 
     # Sequence of the wires entering the CNOTs between wires 's' and 'p'
-    set_cnot_wires = [[l, l+1] for l in range(s,r)] + [[r, q]] + [[l, l+1] for l in range(q,p)]
+    set_cnot_wires = (
+        [[l, l + 1] for l in range(s, r)] + [[r, q]] + [[l, l + 1] for l in range(q, p)]
+    )
 
     # ------------------------------------------------------------------
     # Apply the first layer
@@ -175,7 +177,7 @@ def DoubleExcitationUnitary(weight, wires=None):
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
     Hadamard(wires=r)
-    RX(-np.pi/2, wires=q)
+    RX(-np.pi / 2, wires=q)
     Hadamard(wires=p)
 
     # Applying CNOTs between wires 's' and 'p'
@@ -183,7 +185,7 @@ def DoubleExcitationUnitary(weight, wires=None):
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(weight/8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
@@ -192,50 +194,50 @@ def DoubleExcitationUnitary(weight, wires=None):
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
     Hadamard(wires=r)
-    RX(np.pi/2, wires=q)
+    RX(np.pi / 2, wires=q)
     Hadamard(wires=p)
 
     # ------------------------------------------------------------------
     # Apply the second layer
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi/2, wires=s)
+    RX(-np.pi / 2, wires=s)
     Hadamard(wires=r)
-    RX(-np.pi/2, wires=q)
-    RX(-np.pi/2, wires=p)
+    RX(-np.pi / 2, wires=q)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs between wires 's' and 'p'
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(weight/8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
         CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi/2, wires=s)
+    RX(np.pi / 2, wires=s)
     Hadamard(wires=r)
-    RX(np.pi/2, wires=q)
-    RX(np.pi/2, wires=p)
+    RX(np.pi / 2, wires=q)
+    RX(np.pi / 2, wires=p)
 
     # ------------------------------------------------------------------
     # Apply the third layer
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
-    RX(-np.pi/2, wires=r)
-    RX(-np.pi/2, wires=q)
-    RX(-np.pi/2, wires=p)
+    RX(-np.pi / 2, wires=r)
+    RX(-np.pi / 2, wires=q)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs between wires 's' and 'p'
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(weight/8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
@@ -243,9 +245,9 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
-    RX(np.pi/2, wires=r)
-    RX(np.pi/2, wires=q)
-    RX(np.pi/2, wires=p)
+    RX(np.pi / 2, wires=r)
+    RX(np.pi / 2, wires=q)
+    RX(np.pi / 2, wires=p)
 
     # ------------------------------------------------------------------
     # Apply the fourth layer
@@ -254,14 +256,14 @@ def DoubleExcitationUnitary(weight, wires=None):
     Hadamard(wires=s)
     Hadamard(wires=r)
     Hadamard(wires=q)
-    RX(-np.pi/2, wires=p)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs between wires 's' and 'p'
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(weight/8, wires=p)
+    RZ(weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
@@ -271,13 +273,13 @@ def DoubleExcitationUnitary(weight, wires=None):
     Hadamard(wires=s)
     Hadamard(wires=r)
     Hadamard(wires=q)
-    RX(np.pi/2, wires=p)
+    RX(np.pi / 2, wires=p)
 
     # ------------------------------------------------------------------
     # Apply the fifth layer
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi/2, wires=s)
+    RX(-np.pi / 2, wires=s)
     Hadamard(wires=r)
     Hadamard(wires=q)
     Hadamard(wires=p)
@@ -287,14 +289,14 @@ def DoubleExcitationUnitary(weight, wires=None):
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(-weight/8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
         CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi/2, wires=s)
+    RX(np.pi / 2, wires=s)
     Hadamard(wires=r)
     Hadamard(wires=q)
     Hadamard(wires=p)
@@ -304,7 +306,7 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
-    RX(-np.pi/2, wires=r)
+    RX(-np.pi / 2, wires=r)
     Hadamard(wires=q)
     Hadamard(wires=p)
 
@@ -313,7 +315,7 @@ def DoubleExcitationUnitary(weight, wires=None):
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(-weight/8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
@@ -321,7 +323,7 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
-    RX(np.pi/2, wires=r)
+    RX(np.pi / 2, wires=r)
     Hadamard(wires=q)
     Hadamard(wires=p)
 
@@ -329,9 +331,9 @@ def DoubleExcitationUnitary(weight, wires=None):
     # Apply the seventh layer
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi/2, wires=s)
-    RX(-np.pi/2, wires=r)
-    RX(-np.pi/2, wires=q)
+    RX(-np.pi / 2, wires=s)
+    RX(-np.pi / 2, wires=r)
+    RX(-np.pi / 2, wires=q)
     Hadamard(wires=p)
 
     # Applying CNOTs between wires 's' and 'p'
@@ -339,40 +341,40 @@ def DoubleExcitationUnitary(weight, wires=None):
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(-weight/8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
         CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi/2, wires=s)
-    RX(np.pi/2, wires=r)
-    RX(np.pi/2, wires=q)
+    RX(np.pi / 2, wires=s)
+    RX(np.pi / 2, wires=r)
+    RX(np.pi / 2, wires=q)
     Hadamard(wires=p)
 
     # ------------------------------------------------------------------
-    # Apply the eighth layer    
+    # Apply the eighth layer
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi/2, wires=s)
-    RX(-np.pi/2, wires=r)
+    RX(-np.pi / 2, wires=s)
+    RX(-np.pi / 2, wires=r)
     Hadamard(wires=q)
-    RX(-np.pi/2, wires=p)
+    RX(-np.pi / 2, wires=p)
 
     # Applying CNOTs between wires 's' and 'p'
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
     # Z rotation acting on wire 'p'
-    RZ(-weight/8, wires=p)
+    RZ(-weight / 8, wires=p)
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
         CNOT(wires=cnot_wires)
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi/2, wires=s)
-    RX(np.pi/2, wires=r)
+    RX(np.pi / 2, wires=s)
+    RX(np.pi / 2, wires=r)
     Hadamard(wires=q)
-    RX(np.pi/2, wires=p)
+    RX(np.pi / 2, wires=p)
