@@ -25,9 +25,6 @@ from tensorflow import Variable
 if tf.__version__[0] == "1":
     tf.executing_eagerly()
 
-except ImportError as e:
-    pass
-
 import pennylane as qml
 
 from pennylane.qnodes import QuantumFunctionError
