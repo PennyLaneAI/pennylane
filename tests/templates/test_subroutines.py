@@ -603,3 +603,33 @@ class TestDoubleExcitationUnitary:
 
         with pytest.raises(ValueError, match=msg_match):
             qnode(weight=weight, wires=pphh)
+
+    @pytest.mark.parametrize(
+        ("weight", "pphh", "expected"),
+        [
+            (1.34817, [0, 1, 3, 4], [0.22079189, 0.22079189, 1.,         -0.22079189, -0.22079189]),
+            (0.84817, [1, 2, 3, 4], [1.,         0.66135688, 0.66135688, -0.66135688, -0.66135688])
+        ]
+    )
+    def test_integration(self, weight, pphh, expected, tol):
+        """Test integration with PennyLane and gradient calculations"""
+
+        N = 5
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        @qml.qnode(dev)
+        def circuit(weight):
+            init_state = np.flip(np.array([1,1,0,0,0]))
+            qml.BasisState(init_state, wires=wires)
+            DoubleExcitationUnitary(weight, wires=pphh)
+
+        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(weight)
+        assert np.allclose(res, np.array(expected), atol=tol)
+
+        # compare the two methods of computing the Jacobian
+        jac_A = circuit.jacobian((weight), method="A")
+        jac_F = circuit.jacobian((weight), method="F")
+        assert jac_A == pytest.approx(jac_F, abs=tol)

@@ -112,15 +112,15 @@ def DoubleExcitationUnitary(weight, wires=None):
             import pennylane as qml
             from pennylane.templates import DoubleExcitationUnitary
 
-            dev = qml.device('default.qubit', wires=4)
+            dev = qml.device('default.qubit', wires=5)
 
             @qml.qnode(dev)
             def circuit(weight, pphh=None):
                 DoubleExcitationUnitary(weight, wires=pphh)
                 return qml.expval(qml.PauliZ(0))
 
-            weight = 0.56
-            double_excitation = [0, 1, 2, 3]
+            weight = 1.34817
+            double_excitation = [0, 1, 3, 4]
             print(circuit(weight, pphh=double_excitation))
 
     """
