@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Contains the new template ``DoubleExcitationUnitary`` implementing the quantum circuit to
+  exponentiate the Coupled-Cluster double excitation operator. This template is required to
+  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
+  [(#)]()
+
 * Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
   exponentiate the Coupled-Cluster single excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
