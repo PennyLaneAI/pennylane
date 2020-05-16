@@ -21,11 +21,12 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.templates.subroutines import (
-	Interferometer, 
-	ArbitraryUnitary,
-	SingleExcitationUnitary,
+    Interferometer, 
+    ArbitraryUnitary,
+    SingleExcitationUnitary,
     DoubleExcitationUnitary
 )
+
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _tuple_to_word,
