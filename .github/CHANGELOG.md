@@ -24,7 +24,17 @@
   model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
 
+* Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
+  exponentiate the Coupled-Cluster single excitation operator. This template is required to
+  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
+  [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
+
 <h3>Improvements</h3>
+
+* The ``CircuitGraph`` class now supports serializing contained circuit operations
+  and measurement basis rotations to an OpenQASM2.0 script via the new
+  ``CircuitGraph.to_openqasm()`` method.
+  [(#623)](https://github.com/XanaduAI/pennylane/pull/623)
 
 <h3>Breaking changes</h3>
 
@@ -36,7 +46,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley
+Thomas Bromley, Alain Delgado Gran, Josh Izaac
 
 
 # Release 0.9.0 (current release)
