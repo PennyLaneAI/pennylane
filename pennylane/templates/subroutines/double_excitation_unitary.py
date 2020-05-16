@@ -38,6 +38,7 @@ def DoubleExcitationUnitary(weight, wires=None):
     The CC double-excitation operator is given by
 
     .. math::
+
         \hat{U}_{pqrs}^{(2)}(\theta) = \mathrm{exp} \{ \theta (\hat{c}_p^\dagger \hat{c}_q^\dagger
         \hat{c}_r \hat{c}_s - \mathrm{H.c.}) \},
 
@@ -50,7 +51,7 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     .. math::
 
-        \hat{U}_{pqrs}^{(2)}(\theta) = \mathrm{exp} \Big\{ 
+        \hat{U}_{pqrs}^{(2)}(\theta) = \mathrm{exp} \Big\{
         \frac{i\theta}{8} \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1}
         \hat{Z}_a (\hat{X}_s \hat{X}_r \hat{Y}_q \hat{X}_p +
         \hat{Y}_s \hat{X}_r \hat{Y}_q \hat{Y}_p + \hat{X}_s \hat{Y}_r \hat{Y}_q \hat{Y}_p +
@@ -86,7 +87,8 @@ def DoubleExcitationUnitary(weight, wires=None):
            :math:`\hat{U}_\theta` are defined as follows,
 
            .. math::
-               [U_1, && U_2, U_3, U_4, U_{\theta}] = \\ 
+
+               [U_1, && U_2, U_3, U_4, U_{\theta}] = \\
                && \Bigg\{\bigg[H, H, R_x(-\frac{\pi}{2}), H, R_z(\theta/8)\bigg],
                \bigg[R_x(-\frac{\pi}{2}), H, R_x(-\frac{\pi}{2}), R_x(-\frac{\pi}{2}),
                R_z(\frac{\theta}{8}) \bigg], \\
