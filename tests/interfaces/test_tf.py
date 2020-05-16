@@ -23,7 +23,7 @@ tf = pytest.importorskip("tensorflow", minversion="1.15")
 from tensorflow import Variable
 
 if tf.__version__[0] == "1":
-    tf.executing_eagerly()
+    tf.enable_eager_execution()
 
 import pennylane as qml
 
