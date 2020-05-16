@@ -19,7 +19,7 @@ import pytest
 
 import numpy as np
 
-tf = pytest.importorskip("tensorflow", minversion="1.1")
+torch = pytest.importorskip("torch", minversion="1.1")
 from torch.autograd import Variable
 
 import pennylane as qml
