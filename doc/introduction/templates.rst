@@ -198,6 +198,11 @@ of other templates.
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
+    :description: SingleExcitationUnitary
+    :figure: ../_static/templates/subroutines/single_excitation_unitary.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
