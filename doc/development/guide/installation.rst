@@ -48,7 +48,7 @@ requirements are required.
 
   This includes:
 
-  - If ``tf.__version__[0] == "1"``, running ``tf.executing_eagerly()``
+  - If ``tf.__version__[0] == "1"``, running ``tf.enable_eager_execution()``
     before execution.
 
   - Only using the ``tf.GradientTape`` context for gradient computation.

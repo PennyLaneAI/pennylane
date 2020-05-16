@@ -29,8 +29,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        import tensorflow.contrib.eager as tfe
-        tf.executing_eagerly()
+        tf.enable_eager_execution()
 
     from tensorflow import Variable
 except ImportError as e:
