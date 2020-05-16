@@ -66,7 +66,7 @@ backend = "qasm_simulator"
 
 @pytest.fixture(scope="function")
 def default_config(tmpdir):
-    config_path = tmpdir + config_filename
+    config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
         f.write(test_config)
@@ -76,7 +76,7 @@ def default_config(tmpdir):
 
 @pytest.fixture(scope="function")
 def default_config_toml(tmpdir):
-    config_path = tmpdir + config_filename
+    config_path = os.path.join(tmpdir + config_filename)
 
     with open(config_path, "w") as f:
         f.write(test_config)
