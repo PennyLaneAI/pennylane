@@ -19,15 +19,11 @@ import pytest
 
 import numpy as np
 
-tf = pytest.importorskip("tensorflow", minversion="1.12")
+tf = pytest.importorskip("tensorflow", minversion="1.15")
+from tensorflow import Variable
 
-try:
-    if tf.__version__[0] == "1":
-        import tensorflow.contrib.eager as tfe
-        tf.enable_eager_execution()
-        Variable = tfe.Variable
-    else:
-        from tensorflow import Variable
+if tf.__version__[0] == "1":
+    tf.executing_eagerly()
 
 except ImportError as e:
     pass
@@ -44,7 +40,6 @@ def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFQNodeExceptions():
     """TFQNode basic tests."""
 
@@ -153,7 +148,6 @@ class TestTFQNodeExceptions():
             qf(Variable(0.5))
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFQNodeParameterHandling:
     """Test that the TFQNode properly handles the parameters of qfuncs"""
 
@@ -458,7 +452,6 @@ class TestTFQNodeParameterHandling:
         assert np.allclose(grads, -expected_grad, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestIntegration:
     """Integration tests to ensure the TensorFlow QNode agrees with the NumPy QNode"""
 
@@ -550,7 +543,6 @@ gradient_test_data = [
 ]
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
 class TestTFGradients:
     """Integration tests involving gradients of QNodes and hybrid computations using the tf interface"""
 
