@@ -1,3 +1,7 @@
+"""
+This submodule contains frequently used cost functions.
+"""
+# pylint: disable=too-many-arguments, too-few-public-methods
 import pennylane as qml
 
 
