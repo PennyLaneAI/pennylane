@@ -24,7 +24,7 @@ class TestMSECost:
 
         cost = qml.qnn.MSECost(layer_ansatz, observables, dev, interface=interface)
         weights = np.ones((num_qubits, 3, 3))
-        res = cost(weights, x=np.array([1., 2., 1.]), target=np.array([1.1, 2., 1.1]))
+        res = cost(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.1, 2.0, 1.1]))
 
         assert np.allclose(res, np.array([1.0, 5.8, 1.5]), atol=0.1, rtol=0.1)
 
@@ -38,6 +38,6 @@ class TestMSECost:
         cost = qml.qnn.MSECost(rx_ansatz, observables, dev, interface=interface)
         phis = np.ones(num_qubits)
 
-        res = cost(phis, target=np.array([1.1, 2., 1.1]))
+        res = cost(phis, target=np.array([1.1, 2.0, 1.1]))
 
-        assert np.allclose(res, np.array([0.3, 4., 0.6]), atol=0.1, rtol=0.1)
+        assert np.allclose(res, np.array([0.3, 4.0, 0.6]), atol=0.1, rtol=0.1)
