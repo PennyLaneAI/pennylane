@@ -422,6 +422,28 @@ If you are making a contribution to the PennyLane source code, **all new and mod
 functions and code must be clearly commented and documented**. See below for guidelines
 on code docstrings, as well as how to add a new module or package to the API documentation.
 
+In addition, specific additions to the code base must also be reflected in the
+introductory quickstarts:
+
+* **Operations**: new operations should be added to the :doc:`/introduction/operations` quickstart
+  located at ``doc/introduction/operations.rst``.
+
+* **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
+  located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_templates`.
+
+* **Optimizers**: new optimizers should be added to the :doc:`/introduction/optimizers` quickstart,
+  located at ``doc/introduction/optimizers.rst``.
+
+* **Measurement**: new measurement functions should be added to the :doc:`/introduction/measurements` quickstart,
+  located at ``doc/introduction/measurements.rst``.
+
+* **Interfaces**: new interfaces should include a quickstart guide in the ``introduction/interfaces``
+  directory, with a link and table of contents entry added to the ``introduction/interfaces.rst`` page.
+
+Finally, any underlying logic change, new feature, or UI change to the core PennyLane QNode interface
+should be reflected on the :doc:`/introduction/circuits` quickstart, located at
+``doc/introduction/circuits.rst``.
+
 
 Adding a new module to the docs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
