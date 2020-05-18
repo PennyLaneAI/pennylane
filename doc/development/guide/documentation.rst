@@ -35,8 +35,8 @@ The API.
     to automatically generate API documentation pages for public classes and functions
     in ``doc/code/api``.
 
-    PennyLane displays the API using the **import path** --- rather than absolute path
-    --- of the documented code object.
+    PennyLane displays the API using the **import path**---rather than absolute 
+    path---of the documented code object.
 
 .. note::
 
