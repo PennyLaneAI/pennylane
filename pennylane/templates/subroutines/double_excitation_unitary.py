@@ -40,10 +40,10 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -84,10 +84,10 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -128,10 +128,10 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -172,10 +172,10 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -216,10 +216,10 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -260,10 +260,10 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -304,10 +304,10 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
@@ -348,10 +348,10 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        s (int): index of qubit ``s``
-        r (int): index of qubit ``r``
-        q (int): index of qubit ``q``
-        p (int): index of qubit ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
         set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
             the CNOT gates act on
     """
