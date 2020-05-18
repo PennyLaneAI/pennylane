@@ -14,7 +14,7 @@
 r"""
 Contains the ``DoubleExcitationUnitary`` template.
 """
-from pennylane import numpy as np
+import numpy as np
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import CNOT, RX, RZ, Hadamard
@@ -47,7 +47,7 @@ def DoubleExcitationUnitary(weight, wires=None):
     unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation
     <https://arxiv.org/abs/1208.5986>`_ the fermionic operator defined above can be written
     in terms of Pauli matrices (for more details see
-    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_).
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_):
 
     .. math::
 
