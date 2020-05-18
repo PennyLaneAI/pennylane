@@ -10,10 +10,12 @@ class MSECost:
     derive a cost function from their expectation values."""
 
     def __init__(
-            self, ansatz, observables, device, measure='expval', interface='autograd', diff_method='best', **kwargs
+            self, ansatz, observables, device, measure='expval', interface='autograd',
+            diff_method='best', **kwargs
     ):
         self.qnodes = qml.map(
-            ansatz, observables, device, measure=measure, interface=interface, diff_method=diff_method, **kwargs
+            ansatz, observables, device, measure=measure, interface=interface,
+            diff_method=diff_method, **kwargs
         )
 
     def __call__(self, *args, target=None, **kwargs):
