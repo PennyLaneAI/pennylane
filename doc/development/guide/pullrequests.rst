@@ -15,7 +15,7 @@ Before submitting a pull request, please make sure the following is done:
   the easiest approach is to simply copy an existing docstring and modify it as appropriate.
 
   If you do make documentation changes, make sure that the docs build and render correctly by
-  running ``make docs``.
+  running ``make docs``. See our :doc:`documentation guidelines <documentation>` for more details.
 
 * **Ensure that the test suite passes**, by running ``make test``.
 
