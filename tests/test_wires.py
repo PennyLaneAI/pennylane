@@ -85,17 +85,14 @@ class TestWires:
         """Tests that a Wires object can be indexed."""
 
         wires = Wires(iterable)
-
         for i in range(len(iterable)):
             assert wires[i] == iterable[i]
 
     def test_is_ordered(self):
-        """Tests that a Wires object is not equal to another Wires object with a different ordering of the indices,
-        but equal to another object of the same ordering."""
+        """Tests that a Wires object is not equal to another Wires object with a different ordering of the indices."""
 
         wires1 = Wires([1, 2, 3])
         wires2 = Wires([3, 2, 1])
-
         assert wires1 != wires2
 
     def test_slicing(self):
@@ -131,7 +128,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
 
-        assert wires_str == "<Wires {}>".format([1, 2, 3])
+        assert wires_str == "<Wires = {}>".format([1, 2, 3])
         
     def test_min_max(self):
         """Tests that the min() and max() functions of a Wires object return correct index."""
@@ -177,15 +174,15 @@ class TestWires:
             wires.get_indices([8, 5])
 
     def test_intersection_method(self):
-        """Tests the ``intersection()`` method."""
+        """Tests the ``intersect()`` method."""
 
         wires1 = Wires([4, 0, 1])
         wires2 = Wires([0, 4, 3])
-        res = wires1.intersection(wires2)
+        res = wires1.intersect(wires2)
         assert res == Wires([4, 0])
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires1.intersection([8, 5])
+            wires1.intersect([8, 5])
 
     def test_difference_method(self):
         """Tests the ``difference()`` method."""
