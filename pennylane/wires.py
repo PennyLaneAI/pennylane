@@ -15,9 +15,11 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 from collections import Sequence, Iterable
+import numpy as np  # for random functions
 
 # tolerance for wire indices
 TOLERANCE = 1e-8
+from copy import deepcopy
 
 
 class WireError(Exception):
@@ -54,7 +56,7 @@ def _clean(iterable):
                     raise TypeError
             except TypeError:
                 raise WireError(
-                    "Wire indices must be integers; got type {}.".format(type(w))
+                    "Wire indices must be integers; got {} of type {}.".format(w, type(w))
                 )
 
     # Check that indices are non-negative
@@ -122,11 +124,14 @@ class Wires(Sequence):
         """Method to support the '!=' operator"""
         return not self.__eq__(other)
 
-    def extend(self, wires):
-        """Extend this ``Wires`` object by the indices of another.
+    def combine(self, wires):
+        """Return a copy of this ``Wires`` object extended by the unique wires of ``wires``.
 
         Args:
-            wires (Wires): A Wires object whose unique indices are added to this one.
+            wires (Wires): A Wires object whose unique indices are combined with this one.
+
+        Returns:
+            Wires: combined wires
         """
 
         if not isinstance(wires, Wires):
@@ -134,7 +139,10 @@ class Wires(Sequence):
                 "expected a `pennylane.wires.Wires` object; got {} of type {}".format(wires, type(wires))
             )
 
-        self.wire_list.extend(wires.wire_list)
+        this_wire_list = deepcopy(self.wire_list)
+        this_wire_list.extend(wires.wire_list)
+
+        return Wires(this_wire_list)
 
     def intersection(self, wires):
         """
@@ -236,3 +244,59 @@ class Wires(Sequence):
             return True
         else:
             return False
+
+    def select(self, indices, periodic_boundary=False):
+        """
+        Returns a subset of the Wires specified by the 'indices'.
+
+        For example:
+
+        >>> wires = Wires([4, 0, 1, 5, 6])
+        >>> wires.select([2, 3, 0]) == Wires([1, 5, 4])
+        True
+
+        >>> wires.select(1) == Wires([0])
+        True
+
+        Args:
+            indices (List[int] or int): indices or index of the wires we want to select
+
+        Returns:
+            Wires: subset of wires
+        """
+
+        if isinstance(indices, int):
+            indices = [indices]
+
+        if periodic_boundary:
+            # replace indices by their modulo
+            indices = [i % len(self) for i in indices]
+
+        for i in indices:
+            if i > len(self):
+                raise WireError("cannot select wire at index {} from {} wires.".format(i, len(self)))
+
+        subset = [self.wire_list[i] for i in indices]
+        return Wires(subset)
+
+    def select_random(self, n_samples, seed=None):
+        """
+        Returns a randomly sampled subset of Wires of length 'n_samples'.
+
+        Args:
+            n_samples (int): number of subsampled wires
+            seed (int): optional random seed used for selecting the wires
+
+        Returns:
+            Wires: random subset of wires
+        """
+
+        if n_samples > len(self):
+            raise WireError("cannot sample {} wires from {} wires.".format(n_samples, len(self)))
+
+        if seed is not None:
+            np.random.seed(seed)
+
+        indices = np.random.choice(len(self), size=n_samples, replace=False)
+        subset = [self.wire_list[i] for i in indices]
+        return Wires(subset)

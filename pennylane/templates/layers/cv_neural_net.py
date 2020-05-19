@@ -19,7 +19,8 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Squeezing, Displacement, Kerr
 from pennylane.templates.subroutines import Interferometer
 from pennylane.templates import broadcast
-from pennylane.templates.utils import check_wires, check_number_of_layers, check_shapes
+from pennylane.templates.utils import check_number_of_layers, check_shapes
+from pennylane.wires import Wires
 
 
 def cv_neural_net_layer(
@@ -46,16 +47,13 @@ def cv_neural_net_layer(
         phi_a (array[float]): length :math:`(M, )` array of displacement angles for
             :class:`~pennylane.ops.Displacement` operations
         k (array[float]): length :math:`(M, )` array of kerr parameters for :class:`~pennylane.ops.Kerr` operations
-        wires (Sequence[int]): sequence of mode indices that the template acts on
+        wires (Sequence[int]): sequence of mode indices that the template acts on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
     """
     Interferometer(theta=theta_1, phi=phi_1, varphi=varphi_1, wires=wires)
-
     broadcast(unitary=Squeezing, pattern="single", wires=wires, parameters=list(zip(r, phi_r)))
-
     Interferometer(theta=theta_2, phi=phi_2, varphi=varphi_2, wires=wires)
-
     broadcast(unitary=Displacement, pattern="single", wires=wires, parameters=list(zip(a, phi_a)))
-
     broadcast(unitary=Kerr, pattern="single", wires=wires, parameters=k)
 
 
@@ -111,7 +109,8 @@ def CVNeuralNetLayers(
     #############
     # Input checks
 
-    wires = check_wires(wires)
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
 
     n_wires = len(wires)
     n_if = n_wires * (n_wires - 1) // 2

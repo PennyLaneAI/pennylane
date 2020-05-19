@@ -140,17 +140,18 @@ class TestWires:
         assert max(wires) == 13
         assert min(wires) == 1
 
-    def test_extend_method(self):
-        """Tests the ``test_extend_method()`` method."""
+    def test_combine_method(self):
+        """Tests the ``combine()`` method."""
 
         wires = Wires([1, 2, 3])
         wires2 = Wires([4, 5])
 
-        wires.extend(wires2)
-        assert wires.wire_list == [1, 2, 3, 4, 5]
+        new_wires = wires.combine(wires2)
+        assert wires.wire_list == [1, 2, 3]
+        assert new_wires.wire_list == [1, 2, 3, 4, 5]
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires.extend([8, 5])
+            wires.combine([8, 5])
 
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
                                                 (Wires([2, 1]), False)])  # incorrect number of wires
@@ -196,3 +197,24 @@ class TestWires:
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             wires1.difference([8, 5])
+
+    def test_select_method(self):
+        """Tests the ``select()`` method."""
+
+        wires = Wires([4, 0, 1, 5, 6])
+
+        assert wires.select([2, 3, 0]) == Wires([1, 5, 4])
+        assert wires.select(1) == Wires([0])
+        assert wires.select([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
+
+    def test_select_random_method(self):
+        """Tests the ``select_random()`` method."""
+
+        wires = Wires([4, 0, 1, 5, 6])
+
+        assert len(wires.select_random(2)) == 2
+        # check that seed makes call deterministic
+        assert wires.select_random(4, seed=1) == wires.select_random(4, seed=1)
+
+        with pytest.raises(WireError, match="cannot sample"):
+            wires.select_random(6)

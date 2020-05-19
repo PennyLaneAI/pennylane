@@ -20,7 +20,7 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-from pennylane.ops import RY
+from pennylane.wires import WireError
 from pennylane.templates.embeddings import (AngleEmbedding,
                                             BasisEmbedding,
                                             AmplitudeEmbedding,
@@ -270,10 +270,10 @@ class TestAngleEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AngleEmbedding(features=x, wires='a')
+            AngleEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="wires must be a positive"):
+        with pytest.raises(WireError, match="received unexpected wires input"):
             circuit(x=[1])
 
 
@@ -331,10 +331,10 @@ class TestBasisEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            BasisEmbedding(features=x, wires="a")
+            BasisEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="wires must be a positive"):
+        with pytest.raises(WireError, match="received unexpected wires input"):
             circuit(x=[1, 0])
 
     def test_basis_embedding_input_not_binary_exception(self):
@@ -683,10 +683,10 @@ class TestQAOAEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires='a')
+            QAOAEmbedding(features=x, weights=weights, wires=qml.RX)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="wires must be a positive"):
+        with pytest.raises(WireError, match="received unexpected wires input"):
             circuit(x=[1])
 
 
@@ -764,10 +764,10 @@ class TestDisplacementEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires='a')
+            DisplacementEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match="wires must be a positive"):
+        with pytest.raises(WireError, match="received unexpected wires input"):
             circuit(x=[1])
 
 
@@ -844,8 +844,8 @@ class TestSqueezingEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            DisplacementEmbedding(features=x, wires='a')
+            DisplacementEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.X(0))
 
-        with pytest.raises(ValueError, match="wires must be a positive"):
+        with pytest.raises(WireError, match="received unexpected wires input"):
             circuit(x=[1])

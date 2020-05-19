@@ -17,7 +17,8 @@ Contains the ``ArbitraryStatePreparation`` template.
 import functools
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_wires, check_shape, get_shape
+from pennylane.templates.utils import check_shape, get_shape
+from pennylane.wires import Wires
 
 
 @functools.lru_cache()
@@ -70,9 +71,12 @@ def ArbitraryStatePreparation(weights, wires):
     Args:
         weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^n - 2`
             where :math:`n` is the number of wires the template acts upon.
-        wires (List[int]): The wires on which the arbitrary unitary acts.
+        wires (List[int]): The wires on which the arbitrary unitary acts. Also accepts
+            :class:`pennylane.wires.Wires` objects.
     """
-    wires = check_wires(wires)
+
+    if not isinstance(wires, Wires):
+        wires = Wires(wires)  # turn wires into Wires object
 
     n_wires = len(wires)
     expected_shape = (2 ** (n_wires + 1) - 2,)
@@ -81,6 +85,8 @@ def ArbitraryStatePreparation(weights, wires):
         expected_shape,
         msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
+
+    wires = wires.wire_list  # Todo: remove when ops take wires
 
     for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)
