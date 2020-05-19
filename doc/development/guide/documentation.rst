@@ -79,7 +79,7 @@ for various PennyLane objects.
   be viewing the docstring via the Sphinx-rendered website, or in a terminal/Jupyter environment.
   For documenting how the code itself works, favour comments.
 
-* **Cross reference where applicable.** Use the roles ``:class:``, ``:func:``, ``:attr:``,
+* **Cross reference code units where applicable.** Use the roles ``:class:``, ``:func:``, ``:attr:``,
   ``:meth:``, and ``:mod:`` where applicable to have Sphinx automatically include a cross-reference
   to the specified code object.
 
@@ -93,8 +93,10 @@ for various PennyLane objects.
   of the object (``pennylane.map()``). To use custom text, you may use the syntax
   ``:func:`map function <~.map>```.
 
-* **Favour document links over reference links.** If linking to a particular page, use
-  ``:doc:`relative/path/filename``` or ``:doc:`/absolute/path/filename``` rather than ``:ref:``.
+* **Cross reference internal links.** Internal links should *not* use the URL of the built documentation,
+  this is unmaintainable and URLs might change in the future. If linking to a particular page, always use
+  ``:doc:`relative/path/filename``` or ``:doc:`/absolute/path/filename``` instead of ``:ref:``. Only
+  use ``:ref:`` if linking to a particular subsection, and only when necessary.
 
 
 Modules
@@ -128,7 +130,7 @@ Most functions or methods should have the following structure:
 
 .. code-block:: python
 
-    def func(arg1, arg2, **kwargs):
+    def func(arg1, arg2, arg3="default_value", **kwargs):
         """Single sentence that summarizes the function.
 
         Multi-line description of the function (optional, if required).
@@ -137,9 +139,11 @@ Most functions or methods should have the following structure:
             arg1 (type): Description.
                 Continuation line is indented if needed.
             arg2 (type): description
+            arg3 (str): Description. Do not provide the default
+                value, as this is already present in the signature.
 
         Keyword Args:
-            kwarg1 (type): description
+            kwarg1 (type): Description. Provide the default value if applicable.
 
         Returns:
             type: Description.
@@ -175,7 +179,7 @@ Some notes on the above structure:
   include the function or argument names in the summary. It is important that the initial summary
   be a single sentence; Sphinx will truncate the summary at the first period otherwise.
 
-* **Arguments:** To describe function arguments in the signature. If the type is a PennyLane class or
+* **Arguments:** To describe named function arguments in the signature. If the type is a PennyLane class or
   function, use the syntax ``(~.Operation)``; do **not** use a Sphinx role such as ``:class:`` or ``:func:``.
   The level of type description is up to the discretion of the code author and reviewers; acceptable
   examples include ``(array)``, ``(array[float])``, ``(dict)``, ``(dict[str, int])``, ``(Sequence[int] or int)``.
@@ -185,8 +189,8 @@ Some notes on the above structure:
   in the signature. Sphinx will automatically extract the default and render it with the argument
   description.
 
-* **Keyword Arguments:** To describe arbitrary keyword arguments provided via ``**kwargs``. Provide
-  the default values if relevant.
+* **Keyword Arguments:** To describe variable length named keyword arguments provided via
+  ``**kwargs``. Provide the default values if relevant.
 
 * **Returns:/Yields:** To describe the return (yielded) value of the function (generator). This may
   be omitted if the function signature/summary already sufficiently describe both the return value
@@ -258,7 +262,8 @@ Docstrings for classes follow a similar structure as functions, with a few diffe
 
 * **List attributes if relevant.**
 
-Document all methods and properties as you would for functions above. However, there are two
+Document all methods and properties with docstrings below the method declaration,
+as you would for functions above. However, there are two
 exemptions, where docstrings should *not* be provided:
 
 * **Magic or special methods.** This includes methods such as ``__init__``, ``__call__``,
@@ -400,7 +405,8 @@ Punctuation and spelling
       wires (List[int]): subsystems the operation is applied to
       diff_method (str or None): the method of differentiation to use in the created QNode
 
-  Longer argument descriptions should use capitalization and punctuation:
+  Multi-sentence argument descriptions, or longer sentence fragments with mid-sentence punctuation marks,
+  should use full capitalization and punctuation:
 
   .. code-block:: rest
 
