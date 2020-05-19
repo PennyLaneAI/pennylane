@@ -33,6 +33,7 @@ from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
 
 
+
 class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.

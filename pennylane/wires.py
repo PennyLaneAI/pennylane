@@ -16,10 +16,10 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 from collections import Sequence, Iterable
 import numpy as np  # for random functions
-
-# tolerance for wire indices
-TOLERANCE = 1e-8
 from copy import deepcopy
+
+# tolerance for integer-like wire indices
+TOLERANCE = 1e-8
 
 
 class WireError(Exception):
@@ -31,7 +31,7 @@ def _clean(iterable):
     """Converts 'iterable' into list of integers, and checks that all integers are unique and non-negative.
 
         Args:
-            iterable (Iterable): iterable of wire indices
+            iterable (Iterable): some iterable object that represents a sequence of wire indices
 
         Returns:
             list[int]: cleaned wire index sequence
@@ -72,17 +72,18 @@ def _clean(iterable):
 
 
 class Wires(Sequence):
-    def __init__(self, wires):
-        """
-        A bookkeeping class for wires, which are ordered collections of unique non-negative integers that
-        represent the index of a quantum subsystem such as a qubit or qmode.
+    """
+    A bookkeeping class for wires, which are ordered collections of unique non-negative integers that
+    represent the index of a quantum subsystem such as a qubit or qmode.
 
-        Args:
-             wires (int or iterable): Iterable representing an ordered collection of unique wire indices.
-                The iterable can be of any common type such as list, tuple, range or numpy array.
-                The elements of the iterable must be non-negative integers. If elements are floats,
-                they are internally converted to integers, throwing an error if the rounding error exceeds TOLERANCE.
-        """
+    Args:
+         wires (int or iterable): Iterable representing an ordered collection of unique wire indices.
+            The iterable can be of any common type such as list, tuple, range or numpy array.
+            The elements of the iterable must be non-negative integers. If elements are floats,
+            they are internally converted to integers, throwing an error if the rounding error exceeds TOLERANCE.
+    """
+
+    def __init__(self, wires):
 
         if isinstance(wires, Iterable):
             # If input is an iterable, interpret as a collection of wire indices
@@ -99,32 +100,40 @@ class Wires(Sequence):
             )
 
     def __getitem__(self, idx):
-        """Method to support indexing"""
+        """Method to support indexing."""
         return self.wire_list[idx]
 
     def __len__(self):
-        """Method to support ``len()``"""
+        """Method to support ``len()``."""
         return len(self.wire_list)
 
+    def __repr__(self):
+        """Method defining the string representation of this class."""
+        return "<Wires = {}>".format(self.wire_list)
+
     def __eq__(self, other):
-        """Method to support the '==' operator"""
+        """Method to support the '==' operator."""
         if isinstance(other, self.__class__):
             return self.wire_list == other.wire_list
         else:
             return False
 
-    def __repr__(self):
-        return "<Wires {}>".format(self.wire_list)
-
     def __ne__(self, other):
-        """Method to support the '!=' operator"""
+        """Method to support the '!=' operator."""
         return not self.__eq__(other)
 
     def combine(self, wires):
         """Return a copy of this ``Wires`` object extended by the unique wires of ``wires``.
 
+        For example:
+
+        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires2 = Wires([3, 0, 4])
+        >>> wires1.combine(wires2)
+        <Wires [4, 0, 1, 3]>
+
         Args:
-            wires (Wires): A Wires object whose unique indices are combined with this one.
+            wires (Wires): A Wires object whose unique indices are combined with this Wires object.
 
         Returns:
             Wires: combined wires
@@ -137,12 +146,11 @@ class Wires(Sequence):
                 )
             )
 
-        this_wire_list = deepcopy(self.wire_list)
-        this_wire_list.extend(wires.wire_list)
+        combined_wire_list = deepcopy(self.wire_list)
+        combined_wire_list.extend(wires.wire_list)
+        return Wires(combined_wire_list)
 
-        return Wires(this_wire_list)
-
-    def intersection(self, wires):
+    def intersect(self, wires):
         """
         Creates a wires object that is the intersection of wires between 'wires' and this object.
 
@@ -150,10 +158,10 @@ class Wires(Sequence):
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([0, 4, 3])
-        >>> wires1.intersection(wires2)
-        <Wires [4, 0]> # TODO: print nicely
+        >>> wires1.intersect(wires2)
+        <Wires = [4, 0]>
 
-        The returned wire sequence is ordered according to the order of this wires object.
+        The returned wire sequence is ordered according to the order of this Wires object.
 
         Args:
             wires (Wires): A Wires class object
@@ -181,9 +189,9 @@ class Wires(Sequence):
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([0, 2, 3])
         >>> wires1.difference(wires2)
-        <Wires [4, 1]> # TODO: print nicely
+        <Wires = [4, 1]>
 
-        The returned wire sequence is ordered according to the order of this wires object.
+        The returned wire sequence is ordered according to the order of this Wires object.
 
         Args:
             wires (Wires): A Wires class object
@@ -204,10 +212,14 @@ class Wires(Sequence):
 
     def get_indices(self, wires):
         """
-        Return the indices of the wires in this wires object.
+        Return the indices of the wires in this Wires object.
 
-        For example, for ``self.wire_list = [4, 0, 1]`` and ``wires.wire_list = [1, 4]``, this method returns
-        the list of indices for wire "1" and wire "4", which is [2, 0].
+        For example,
+
+        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires2 = Wires([1, 4])
+        >>> wires1.get_indices(wires2)
+        [2, 0]
 
         Args:
             wires (Wires): A Wires class object
