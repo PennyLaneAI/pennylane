@@ -146,8 +146,8 @@ class Wires(Sequence):
                 )
             )
 
-        combined_wire_list = deepcopy(self.wire_list)
-        combined_wire_list.extend(wires.wire_list)
+        additional_wires = [w for w in wires if w not in self.wire_list]
+        combined_wire_list = self.wire_list + additional_wires
         return Wires(combined_wire_list)
 
     def intersect(self, wires):
