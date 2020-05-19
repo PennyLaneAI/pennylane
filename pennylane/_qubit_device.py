@@ -385,17 +385,11 @@ class QubitDevice(Device):
         if not isinstance(wires, Wires):
             wires = Wires(wires)
 
-        # get the indices of the wires that the user wants to address
-        # this translation is necessary because the user wire ordering is not necessarily consecutive
-        wire_indices = self.user_wires.get_indices(wires)
-
         # consider only the requested wires
-        wire_indices = np.hstack(wire_indices)
-
-        samples = self._samples[:, np.array(wire_indices)]
+        samples = self._samples[:, np.array(wires)]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        unraveled_indices = [2] * len(wire_indices)
+        unraveled_indices = [2] * len(wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
 
         # count the basis state occurrences, and construct the probability vector
@@ -467,8 +461,6 @@ class QubitDevice(Device):
         # convert input to Wires object if necessary
         if not isinstance(wires, Wires):
             wires = Wires(wires)
-
-        wires = np.hstack(wires)  # TODO: what happens here?
 
         # determine which wires are to be summed over
         inactive_wires = self.user_wires.difference(wires).wire_list

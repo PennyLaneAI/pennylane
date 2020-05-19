@@ -16,7 +16,9 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args
 import abc
+
 import numpy as np
+
 from pennylane.operation import (
     Operation,
     Observable,
@@ -28,7 +30,6 @@ from pennylane.operation import (
 )
 from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires, WireError
-
 
 
 class DeviceError(Exception):
@@ -53,6 +54,7 @@ class Device(abc.ABC):
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000):
+        self.num_wires = wires
 
         # Create wire ordering defined by the user
         if isinstance(wires, int) and wires > 0:
@@ -61,7 +63,6 @@ class Device(abc.ABC):
         else:
             raise WireError("received invalid wires input {} of type {}".format(wires, type(wires)))
 
-        self.num_wires = len(self.user_wires)
         self.shots = shots
 
         self._op_queue = None
