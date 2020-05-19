@@ -177,15 +177,15 @@ class TestWires:
             wires.get_indices([8, 5])
 
     def test_intersection_method(self):
-        """Tests the ``intersection()`` method."""
+        """Tests the ``intersect()`` method."""
 
         wires1 = Wires([4, 0, 1])
         wires2 = Wires([0, 4, 3])
-        res = wires1.intersection(wires2)
+        res = wires1.intersect(wires2)
         assert res == Wires([4, 0])
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires1.intersection([8, 5])
+            wires1.intersect([8, 5])
 
     def test_difference_method(self):
         """Tests the ``difference()`` method."""
