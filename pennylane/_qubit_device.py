@@ -385,9 +385,6 @@ class QubitDevice(Device):
         if not isinstance(wires, Wires):
             wires = Wires(wires)
 
-
-
-
         # get the indices of the wires that the user wants to address
         # this translation is necessary because the user wire ordering is not necessarily consecutive
         wire_indices = self.user_wires.get_indices(wires)
