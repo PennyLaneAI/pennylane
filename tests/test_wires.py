@@ -129,6 +129,16 @@ class TestWires:
         wires_str = str(Wires([1, 2, 3]))
 
         assert wires_str == "<Wires = {}>".format([1, 2, 3])
+
+    def test_convert_to_numpy_array(self):
+        """Tests that Wires object can be converted to a standard numpy array."""
+
+        wires = Wires([4, 0, 1])
+        array = np.array(wires)
+        assert isinstance(array, np.ndarray)
+        assert array.shape == (3, )
+        for w1, w2 in zip(array, np.array([4, 0, 1])):
+            assert w1 == w2
         
     def test_min_max(self):
         """Tests that the min() and max() functions of a Wires object return correct index."""
@@ -141,14 +151,36 @@ class TestWires:
         """Tests the ``combine()`` method."""
 
         wires = Wires([1, 2, 3])
-        wires2 = Wires([4, 5])
+        wires2 = Wires([1, 4, 5, 2])
 
         new_wires = wires.combine(wires2)
-        assert wires.wire_list == [1, 2, 3]
+        assert wires.wire_list == [1, 2, 3]  # check original object remains the same
         assert new_wires.wire_list == [1, 2, 3, 4, 5]
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             wires.combine([8, 5])
+
+    def test_intersection_method(self):
+        """Tests the ``intersect()`` method."""
+
+        wires1 = Wires([4, 0, 1])
+        wires2 = Wires([0, 4, 3])
+        res = wires1.intersect(wires2)
+        assert res == Wires([4, 0])
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            wires1.intersect([8, 5])
+
+    def test_difference_method(self):
+        """Tests the ``difference()`` method."""
+
+        wires1 = Wires([4, 0, 1])
+        wires2 = Wires([0, 2, 3])
+        res = wires1.difference(wires2)
+        assert res == Wires([4, 1])
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            wires1.difference([8, 5])
 
     @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
                                                 (Wires([2, 1]), False)])  # incorrect number of wires
@@ -172,28 +204,6 @@ class TestWires:
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             wires.get_indices([8, 5])
-
-    def test_intersection_method(self):
-        """Tests the ``intersect()`` method."""
-
-        wires1 = Wires([4, 0, 1])
-        wires2 = Wires([0, 4, 3])
-        res = wires1.intersect(wires2)
-        assert res == Wires([4, 0])
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires1.intersect([8, 5])
-
-    def test_difference_method(self):
-        """Tests the ``difference()`` method."""
-
-        wires1 = Wires([4, 0, 1])
-        wires2 = Wires([0, 2, 3])
-        res = wires1.difference(wires2)
-        assert res == Wires([4, 1])
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires1.difference([8, 5])
 
     def test_select_method(self):
         """Tests the ``select()`` method."""
