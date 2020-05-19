@@ -228,7 +228,7 @@ class QubitDevice(Device):
         """
         active = Wires([])
         for op in operators:
-            active.extend(op.wires)
+            active = active.combine(op.wires)
 
         return active
 
@@ -463,7 +463,7 @@ class QubitDevice(Device):
             wires = Wires(wires)
 
         # determine which wires are to be summed over
-        inactive_wires = self.user_wires.difference(wires).wire_list
+        inactive_wires = self._user_wires.difference(wires)
 
         # reshape the probability so that each axis corresponds to a wire
         prob = prob.reshape([2] * self.num_wires)

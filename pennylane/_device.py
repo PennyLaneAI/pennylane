@@ -55,16 +55,9 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1000):
         self.num_wires = wires
-
-        # Create wire ordering defined by the user
-        if isinstance(wires, int) and wires > 0:
-            # interpret 'wires' as length of consecutive wire index sequence
-            self.user_wires = Wires(range(wires))
-        else:
-            raise WireError("received invalid wires input {} of type {}".format(wires, type(wires)))
-
         self.shots = shots
 
+        self._user_wires = Wires(range(wires))  # create consecutive user wire ordering
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None

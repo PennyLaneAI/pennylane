@@ -141,7 +141,7 @@ class TestWires:
         """Tests the ``combine()`` method."""
 
         wires = Wires([1, 2, 3])
-        wires2 = Wires([4, 5])
+        wires2 = Wires([1, 4, 5])
 
         new_wires = wires.combine(wires2)
         assert wires.wire_list == [1, 2, 3]
