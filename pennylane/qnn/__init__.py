@@ -15,3 +15,4 @@
 
 from .cost import MSECost
 from .keras import KerasLayer
+from .torch import TorchLayer
