@@ -689,10 +689,10 @@ class TestHybridInterfaceDeviceIntegration:
         assert np.allclose(res.detach().numpy(), self.expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf"])
-    @pytest.mark.parametrize("diff_method", ["device"])
-    def test_tf_interface_device_diff(self, cost, interface, diff_method, tol):
-        """Tests that the gradient of an arbitrary U3 gate is correct
-        using the TensorFlow interface"""
+    @pytest.mark.parametrize("diff_method", ["backprop", "device"])
+    def test_tf_interface(self, cost, interface, diff_method, tol):
+        """Tests that the gradient of an arbitrary U3 gate is correct using the
+        TensorFlow interface with the allowed differentiation methods"""
         import tensorflow as tf
 
         params = tf.Variable(self.p, dtype=tf.float64)
@@ -706,51 +706,8 @@ class TestHybridInterfaceDeviceIntegration:
         res = tape.gradient(res, params)
         assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
 
-    @pytest.fixture
-    def cost_with_decomposition(self, diff_method, interface, torch_support, rep):
-        """Fixture to create cost function for the test class"""
-        dev = qml.device("default.tensor.tf", wires=1)
-
-        @qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(x, weights, w=None):
-            """In this example, a mixture of scalar
-            arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
-            # the parameterized gate is one that gets decomposed
-            # via a template
-            qml.U3.decomposition(x, weights[0], weights[1], wires=w)   # <--- decomposition is used
-            return qml.expval(qml.PauliX(w))
-
-        def cost_fn(params):
-            """Perform some classical processing"""
-            return circuit(params[0], params[1:], w=0) ** 2
-
-        return cost_fn
-
-    @pytest.mark.parametrize("interface", ["tf"])
-    @pytest.mark.parametrize("diff_method", ["backprop"])
-    def test_tf_interface_classical_diff(self, cost_with_decomposition, interface, diff_method, tol):
-        """Tests that the gradient of an arbitrary U3 gate (that gets
-        decomposed) is correct using the TensorFlow interface and the classical
-        diff method"""
-        # TODO: once the decomposition of operations and the PassThruQNode are
-        # compatible, merge this case into the previous one
-        import tensorflow as tf
-
-        params = tf.Variable(self.p, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            tape.watch(params)
-            res = cost_with_decomposition(params)
-
-        assert np.allclose(res.numpy(), self.expected_cost, atol=tol, rtol=0)
-
-        res = tape.gradient(res, params)
-        assert np.allclose(res.numpy(), self.expected_grad, atol=tol, rtol=0)
-
-
-    def test_error_classical_diff_torch(self, torch_support, tol, rep):
-        """Tests that an error is raised if for the classical differentiation
+    def test_error_backprop_diff_torch(self, torch_support, tol, rep):
+        """Tests that an error is raised if for the backprop differentiation
         method when using the Torch interface"""
         if not torch_support:
             pytest.skip("Skipped, no torch support")
@@ -780,8 +737,8 @@ class TestHybridInterfaceDeviceIntegration:
         with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='backprop'"):
             res = cost_raising_error(params)
 
-    def test_error_classical_diff_autograd(self, tol, rep):
-        """Tests that an error is raised if for the classical differentiation
+    def test_error_backprop_diff_autograd(self, tol, rep):
+        """Tests that an error is raised if for the backprop differentiation
         method when using the autograd interface"""
         interface = "autograd"
         diff_method = "backprop"
