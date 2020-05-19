@@ -16,10 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args
 import abc
-
 import numpy as np
-from collections import Iterable
-
 from pennylane.operation import (
     Operation,
     Observable,
@@ -44,8 +41,7 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int or iterable[int]): number of subsystems in the quantum state represented by the device,
-            or iterable of integers representing custom wire indices.
+        wires (int): number of subsystems in the quantum state represented by the device.
             Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
@@ -62,11 +58,6 @@ class Device(abc.ABC):
         if isinstance(wires, int) and wires > 0:
             # interpret 'wires' as length of consecutive wire index sequence
             self.user_wires = Wires(range(wires))
-
-        elif isinstance(wires, Iterable):
-            # interpret 'wires' as wire index sequence
-            self.user_wires = Wires(wires)
-
         else:
             raise WireError("received invalid wires input {} of type {}".format(wires, type(wires)))
 
