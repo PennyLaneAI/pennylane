@@ -148,13 +148,13 @@ class TestOperations:
 
         assert len(call_history) == 3
         assert isinstance(call_history[0], qml.PauliX)
-        assert call_history[0].wires == [0]
+        assert call_history[0].wires.wire_list == [0]
 
         assert isinstance(call_history[1], qml.PauliY)
-        assert call_history[1].wires == [1]
+        assert call_history[1].wires.wire_list == [1]
 
         assert isinstance(call_history[2], qml.PauliZ)
-        assert call_history[2].wires == [2]
+        assert call_history[2].wires.wire_list == [2]
 
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -615,4 +615,4 @@ class TestActiveWires:
         ]
 
         res = mock_qubit_device.active_wires(queue)
-        assert res == {0, 2, 5}
+        assert res == qml.wires.Wires([0, 2, 5])

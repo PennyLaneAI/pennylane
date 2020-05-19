@@ -995,7 +995,7 @@ class Tensor(Observable):
         """
         all_wires = Wires([])
         for o in self.obs:
-            all_wires.extend(o.wires)
+            all_wires = all_wires.combine(o.wires)
 
         return all_wires
 
@@ -1080,7 +1080,7 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires)  # TODO: Need to use indices here?
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires.wire_list)  # TODO: Need to use indices here?
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:

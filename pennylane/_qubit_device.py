@@ -453,7 +453,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
-
         if wires is None:
             # no need to marginalize
             return prob
@@ -463,6 +462,8 @@ class QubitDevice(Device):
             wires = Wires(wires)
 
         # determine which wires are to be summed over
+
+        print(self._user_wires)
         inactive_wires = self._user_wires.difference(wires)
 
         # reshape the probability so that each axis corresponds to a wire
