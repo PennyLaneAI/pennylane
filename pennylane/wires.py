@@ -16,10 +16,10 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 from collections import Sequence, Iterable
 import numpy as np  # for random functions
-
-# tolerance for wire indices
-TOLERANCE = 1e-8
 from copy import deepcopy
+
+# tolerance for integer-like wire indices
+TOLERANCE = 1e-8
 
 
 class WireError(Exception):
