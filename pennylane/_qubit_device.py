@@ -508,17 +508,13 @@ class QubitDevice(Device):
         wires = observable.wires
         name = observable.name
 
-        # translate user wire ordering to consecutive wire ordering
-        wire_indices = self.user_wires.indices(wires)
-
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, wire_indices[0]]
+            return 1 - 2 * self._samples[:, wires[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        wire_indices = np.hstack(wire_indices)
-        samples = self._samples[:, np.array(wire_indices)]
-        unraveled_indices = [2] * len(wire_indices)
+        samples = self._samples[:, np.array(wires)]
+        unraveled_indices = [2] * len(wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
