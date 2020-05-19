@@ -260,8 +260,8 @@ class Wires(Sequence):
 
         if len(self.wire_list) == len(wires):
             return True
-        else:
-            return False
+        
+        return False
 
     def select(self, indices, periodic_boundary=False):
         """
