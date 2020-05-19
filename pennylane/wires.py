@@ -59,8 +59,7 @@ def _clean(iterable):
                     "Wire indices must be integers; got {} of type {}.".format(w, type(w))
                 )
 
-    # Check that indices are non-negative
-    for w in iterable:
+        # Check that indices are non-negative
         if w < 0:
             raise WireError("Wire indices must be non-negative; got index {}.".format(w))
 
@@ -80,7 +79,7 @@ class Wires(Sequence):
          wires (int or iterable): Iterable representing an ordered collection of unique wire indices.
             The iterable can be of any common type such as list, tuple, range or numpy array.
             The elements of the iterable must be non-negative integers. If elements are floats,
-            they are internally converted to integers, throwing an error if the rounding error exceeds TOLERANCE.
+            they are internally converted to integers, throwing an error if the rounding error exceeds 1e-8.
     """
 
     def __init__(self, wires):
