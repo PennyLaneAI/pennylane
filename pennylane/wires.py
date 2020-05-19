@@ -115,8 +115,8 @@ class Wires(Sequence):
         """Method to support the '==' operator."""
         if isinstance(other, self.__class__):
             return self.wire_list == other.wire_list
-        else:
-            return False
+        
+        return False
 
     def __ne__(self, other):
         """Method to support the '!=' operator."""
