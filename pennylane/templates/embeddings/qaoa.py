@@ -35,8 +35,10 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (list[int]): qubit indices that the template acts on
     """
 
-    feature_encoding_wires = Wires(wires[: len(features)])  # TODO: can we solve this more elegantly?
-    remaining_wires = Wires(wires[len(features):])
+    feature_encoding_wires = Wires(
+        wires[: len(features)]
+    )  # TODO: can we solve this more elegantly?
+    remaining_wires = Wires(wires[len(features) :])
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
@@ -63,7 +65,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
 
     else:
         weights_zz = weights[: len(wires)]
-        weights_fields = weights[len(wires):]
+        weights_fields = weights[len(wires) :]
 
     # zz couplings
     broadcast(unitary=MultiRZ, pattern="ring", wires=wires, parameters=weights_zz)
