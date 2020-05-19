@@ -66,11 +66,7 @@ def _clean(iterable):
 
     # Check that indices are unique
     if len(set(iterable)) != len(iterable):
-        raise WireError(
-            "Each wire must be represented by a unique index; got {}.".format(
-                iterable
-            )
-        )
+        raise WireError("Each wire must be represented by a unique index; got {}.".format(iterable))
 
     return iterable
 
@@ -136,7 +132,9 @@ class Wires(Sequence):
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "expected a `pennylane.wires.Wires` object; got {} of type {}".format(wires, type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
+                    wires, type(wires)
+                )
             )
 
         this_wire_list = deepcopy(self.wire_list)
@@ -166,7 +164,9 @@ class Wires(Sequence):
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(
+                    wires, type(wires)
+                )
             )
 
         intersect = [w for w in self.wire_list if w in wires.wire_list]
@@ -194,7 +194,9 @@ class Wires(Sequence):
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(
+                    wires, type(wires)
+                )
             )
 
         diff = [w for w in self.wire_list if w not in wires.wire_list]
@@ -216,7 +218,9 @@ class Wires(Sequence):
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(
+                    wires, type(wires)
+                )
             )
 
         return [self.index(w) for w in wires]
@@ -237,7 +241,9 @@ class Wires(Sequence):
 
         if not isinstance(wires, Wires):
             raise WireError(
-                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(wires, type(wires))
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(
+                    wires, type(wires)
+                )
             )
 
         if len(self.wire_list) == len(wires):
@@ -274,7 +280,9 @@ class Wires(Sequence):
 
         for i in indices:
             if i > len(self):
-                raise WireError("cannot select wire at index {} from {} wires.".format(i, len(self)))
+                raise WireError(
+                    "cannot select wire at index {} from {} wires.".format(i, len(self))
+                )
 
         subset = [self.wire_list[i] for i in indices]
         return Wires(subset)

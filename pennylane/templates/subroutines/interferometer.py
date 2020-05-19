@@ -24,6 +24,7 @@ from pennylane.templates.utils import (
 )
 from pennylane.wires import Wires
 
+
 @template
 def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="pennylane"):
     r"""General linear interferometer, an array of beamsplitters and phase shifters.
@@ -152,7 +153,9 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                         Rotation(phi[n], wires=[w1])  # TODO: use select function ?
                         Beamsplitter(theta[n], 0, wires=[w1, w2])  # TODO: use select function ?
                     else:
-                        Beamsplitter(theta[n], phi[n], wires=[w1, w2])  # TODO: use select function ?
+                        Beamsplitter(
+                            theta[n], phi[n], wires=[w1, w2]
+                        )  # TODO: use select function ?
                     n += 1
 
     elif mesh == "triangular":
@@ -161,10 +164,16 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         for l in range(2 * M - 3):
             for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
                 if beamsplitter == "clements":
-                    Rotation(phi[n], wires=wires[k])  # wires.select(k)) # TODO: use select function ?
-                    Beamsplitter(theta[n], 0, wires=[wires[k], wires[k+1]]) # wires.select([k, k+1])) # TODO: use select function ?
+                    Rotation(
+                        phi[n], wires=wires[k]
+                    )  # wires.select(k)) # TODO: use select function ?
+                    Beamsplitter(
+                        theta[n], 0, wires=[wires[k], wires[k + 1]]
+                    )  # wires.select([k, k+1])) # TODO: use select function ?
                 else:
-                    Beamsplitter(theta[n], phi[n], wires=[wires[k], wires[k+1]]) # wires.select([k, k+1])) # TODO: use select function ?
+                    Beamsplitter(
+                        theta[n], phi[n], wires=[wires[k], wires[k + 1]]
+                    )  # wires.select([k, k+1])) # TODO: use select function ?
                 n += 1
 
     # apply the final local phase shifts to all modes
