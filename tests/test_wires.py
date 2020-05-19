@@ -85,17 +85,14 @@ class TestWires:
         """Tests that a Wires object can be indexed."""
 
         wires = Wires(iterable)
-
         for i in range(len(iterable)):
             assert wires[i] == iterable[i]
 
     def test_is_ordered(self):
-        """Tests that a Wires object is not equal to another Wires object with a different ordering of the indices,
-        but equal to another object of the same ordering."""
+        """Tests that a Wires object is not equal to another Wires object with a different ordering of the indices."""
 
         wires1 = Wires([1, 2, 3])
         wires2 = Wires([3, 2, 1])
-
         assert wires1 != wires2
 
     def test_slicing(self):
@@ -131,7 +128,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
 
-        assert wires_str == "<Wires {}>".format([1, 2, 3])
+        assert wires_str == "<Wires = {}>".format([1, 2, 3])
         
     def test_min_max(self):
         """Tests that the min() and max() functions of a Wires object return correct index."""
