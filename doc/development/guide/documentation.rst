@@ -29,14 +29,14 @@ Developer guides.
     Developer guides are in ``doc/development``, formatted as reStructuredText documents.
 
 The API.
-    Automatically generated from docstrings in the PennyLane sourced code. Code stubs, one per
+    Automatically generated from docstrings in the PennyLane source code. Code stubs, one per
     module, are placed in ``doc/code``. The Sphinx extension
     `sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`__ is then used
     to automatically generate API documentation pages for public classes and functions
     in ``doc/code/api``.
 
-    PennyLane displays the API using the **import path** --- rather than absolute path
-    --- of the documented code object.
+    PennyLane displays the API using the **import path**---rather than absolute 
+    path---of the documented code object.
 
 .. note::
 
@@ -125,7 +125,7 @@ Functions and methods
 ~~~~~~~~~~~~~~~~~~~~~
 
 The docstring should provide enough information for the reader to call and use the
-function or method without having access tot he code.
+function or method without having access to the code.
 Most functions or methods should have the following structure:
 
 .. code-block:: python
@@ -133,7 +133,7 @@ Most functions or methods should have the following structure:
     def func(arg1, arg2, arg3="default_value", **kwargs):
         """Single sentence that summarizes the function.
 
-        Multi-line description of the function (optional, if required).
+        Multi-line description of the function (optional, only if necessary).
 
         Args:
             arg1 (type): Description.
@@ -283,7 +283,7 @@ exemptions, where docstrings should *not* be provided:
 Variables
 ~~~~~~~~~
 
-Module level variables may also be optionally documented, by providing a triple-quote docstring
+Module-level variables may also be optionally documented, by providing a triple-quote docstring
 **below** the variable definition. For example,
 
 .. code-block:: python
@@ -364,7 +364,7 @@ your code easy to follow and understand, keeping to the following guidelines.
   programming patterns alongside sensible variable and function names.
 
   Note that this does not exclude the use of code comments; comments are particularly valuable
-  in quantum software, where the underlying algorithm can be high non-trivial. Rather,
+  in quantum software, where the underlying algorithm can be highly non-trivial. Rather,
   self-documented code simply excludes *unnecessary* comments.
 
 * **Comments should be as close to the described code as possible.** These can either be
@@ -386,7 +386,7 @@ your code easy to follow and understand, keeping to the following guidelines.
 * **Avoid markup and complex formatting in comments.** Markup, such as text formatting and
   hyperlink markup, are unnecessary in comments as they are not rendered, and will simply
   be read in plain text. Use text formatting sparingly for emphasis, and simply insert URLs
-  directly. In addition, avoid complex formatting such as tables --- these are difficult
+  directly. In addition, avoid complex formatting such as tables---these are difficult
   to maintain and modify.
 
 
