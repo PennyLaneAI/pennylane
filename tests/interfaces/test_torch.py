@@ -19,11 +19,8 @@ import pytest
 
 import numpy as np
 
-try:
-    import torch
-    from torch.autograd import Variable
-except ImportError as e:
-    pass
+torch = pytest.importorskip("torch", minversion="1.1")
+from torch.autograd import Variable
 
 import pennylane as qml
 
@@ -38,7 +35,6 @@ def expZ(state):
     return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
 
-@pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchQNodeExceptions():
     """TorchQNode basic tests."""
 
@@ -147,7 +143,6 @@ class TestTorchQNodeExceptions():
             qf(torch.tensor(0.5))
 
 
-@pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchQNodeParameterHandling:
     """Test that the TorchQNode properly handles the parameters of qfuncs"""
 
@@ -456,7 +451,6 @@ class TestTorchQNodeParameterHandling:
         assert np.allclose(y_t.grad.numpy(), [-np.sin(y)*np.cos(x)], atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestIntegration():
     """Integration tests to ensure the Torch QNode agrees with the NumPy QNode"""
 
@@ -532,7 +526,6 @@ gradient_test_data = [
 ]
 
 
-@pytest.mark.usefixtures("skip_if_no_torch_support")
 class TestTorchGradients:
     """Integration tests involving gradients of QNodes and hybrid computations using the torch interface"""
 

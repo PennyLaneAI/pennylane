@@ -30,13 +30,9 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        print(tf.__version__)
-        import tensorflow.contrib.eager as tfe
-
         tf.enable_eager_execution()
-        Variable = tfe.Variable
-    else:
-        from tensorflow import Variable
+
+    from tensorflow import Variable
 except ImportError as e:
     tf = None
     Variable = None

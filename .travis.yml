@@ -18,11 +18,6 @@ matrix:
     env:
     - TF=2
     - TORCH=1
-  - python: 3.5
-    dist: xenial
-    env:
-    - TF=1
-    - TORCH=1
   - python: 3.8
     dist: xenial
     env:
@@ -43,8 +38,8 @@ env:
 install:
 - pip install -r requirements.txt
 - pip install wheel pytest pytest-cov absl-py --upgrade
-- if [ "$TF" = "2" ]; then pip install tensorflow==2.1; fi
-- if [ "$TF" = "1" ]; then pip install tensorflow==1.13.2; fi
+- if [ "$TF" = "2" ]; then pip install tensorflow==2.2; fi
+- if [ "$TF" = "1" ]; then pip install tensorflow==1.15; fi
 - if [ "$TORCH" = "1" ]; then pip install torch==1.5.0+cpu torchvision==0.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; fi
 - python3 setup.py bdist_wheel
 - pip install dist/PennyLane*.whl

@@ -25,9 +25,6 @@ import pennylane as qml
 from pennylane import Configuration
 
 
-pytestmark = pytest.mark.skipif(sys.version_info < (3, 6), reason="tmpdir fixture requires Python 3.6 or higher")
-
-
 log.getLogger('defaults')
 
 
@@ -149,8 +146,7 @@ class TestConfigurationFileInteraction:
         # make a change
         config['strawberryfields.global']['shots'] = 10
 
-        # Need to convert to string for Python 3.5 compatibility
-        temp_config_path = str(tmp_path / 'test_config.toml')
+        temp_config_path = tmp_path / 'test_config.toml'
         config.save(temp_config_path)
 
         result = toml.load(temp_config_path)

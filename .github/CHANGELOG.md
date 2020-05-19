@@ -38,6 +38,9 @@
 
 <h3>Breaking changes</h3>
 
+* Removes support for Python 3.5.
+  [(#639)](https://github.com/XanaduAI/pennylane/pull/639)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
