@@ -411,7 +411,7 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     The quantum circuit to exponentiate the tensor product of Pauli matrices entering
     the latter equation is shown below:
-    
+
     |
 
     .. figure:: ../../_static/templates/subroutines/double_excitation_unitary.png
