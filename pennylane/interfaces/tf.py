@@ -23,12 +23,7 @@ from functools import partial
 import numpy as np
 import tensorflow as tf
 
-if tf.__version__[0] == "1":
-    import tensorflow.contrib.eager as tfe  # pylint: disable=unused-import,ungrouped-imports
-
-    Variable = tfe.Variable
-else:
-    from tensorflow import Variable  # pylint: disable=unused-import,ungrouped-imports
+from tensorflow import Variable  # pylint: disable=unused-import,ungrouped-imports
 
 
 def unflatten_tf(flat, model):
