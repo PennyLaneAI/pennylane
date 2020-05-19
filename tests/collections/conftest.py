@@ -16,22 +16,6 @@ import pytest
 
 import pennylane as qml
 
-try:
-    import torch
-except ImportError as e:
-    torch = None
-
-try:
-    import tensorflow as tf
-
-    if tf.__version__[0] == "1":
-        tf.enable_eager_execution()
-
-    from tensorflow import Variable
-except ImportError as e:
-    tf = None
-    Variable = None
-
 
 @pytest.fixture
 def qnodes(interface, tf_support, torch_support):
