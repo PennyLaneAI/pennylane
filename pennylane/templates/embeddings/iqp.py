@@ -209,7 +209,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     if pattern is None:
         # default is an all-to-all pattern
-        pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
+        pattern = [Wires.merge(wire_pair) for wire_pair in combinations(wires, 2)]
     else:
         # do some checks
         check_type(
