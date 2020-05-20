@@ -94,8 +94,7 @@ def ArbitraryUnitary(weights, wires):
         wires (List[int]): The wires on which the arbitrary unitary acts. Also accepts
             :class:`pennylane.wires.Wires` objects.
     """
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     n_wires = len(wires)
     expected_shape = (4 ** n_wires - 1,)
@@ -105,7 +104,7 @@ def ArbitraryUnitary(weights, wires):
         msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
 
-    wires = wires.wire_list  # Todo: remove when ops take wires
+    wires = wires.wire_list  # Todo: remove when ops take Wires object
 
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

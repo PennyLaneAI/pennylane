@@ -59,8 +59,7 @@ def AngleEmbedding(features, wires, rotation="X"):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 

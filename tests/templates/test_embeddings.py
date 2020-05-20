@@ -273,7 +273,7 @@ class TestAngleEmbedding:
             AngleEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(WireError, match="received unexpected wires input"):
+        with pytest.raises(WireError, match="Received unexpected wires input"):
             circuit(x=[1])
 
 
@@ -334,7 +334,7 @@ class TestBasisEmbedding:
             BasisEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(WireError, match="received unexpected wires input"):
+        with pytest.raises(WireError, match="Received unexpected wires input"):
             circuit(x=[1, 0])
 
     def test_basis_embedding_input_not_binary_exception(self):
@@ -422,7 +422,7 @@ class TestIQPEmbedding:
 
         # compare all gate wires to expected ones
         for idx, gate in enumerate(rec.queue):
-            assert np.allclose(gate.wires, expected_queue_wires[idx])
+            assert np.allclose(gate.wires, expected_queue_wires[idx]) # TODO use Wires object here
 
     @pytest.mark.parametrize('pattern', [[[0, 3], [1, 2], [2, 0]],
                                          [[2, 3], [0, 2], [1, 0]]])
@@ -468,7 +468,7 @@ class TestIQPEmbedding:
             qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=pattern)
             return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-        with pytest.raises(ValueError, match="'pattern' must be None or a list of wire pairs"):
+        with pytest.raises(ValueError, match="'pattern' must be a list of pairs of wires"):
             circuit(f=[1., 2., 3.])
 
     @pytest.mark.parametrize('pattern', [[[1], [2]],
@@ -686,7 +686,7 @@ class TestQAOAEmbedding:
             QAOAEmbedding(features=x, weights=weights, wires=qml.RX)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(WireError, match="received unexpected wires input"):
+        with pytest.raises(WireError, match="Received unexpected wires input"):
             circuit(x=[1])
 
 
@@ -767,7 +767,7 @@ class TestDisplacementEmbedding:
             DisplacementEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.X(0))
 
-        with pytest.raises(WireError, match="received unexpected wires input"):
+        with pytest.raises(WireError, match="Received unexpected wires input"):
             circuit(x=[1])
 
 
@@ -847,5 +847,5 @@ class TestSqueezingEmbedding:
             DisplacementEmbedding(features=x, wires=qml.RX)
             return qml.expval(qml.X(0))
 
-        with pytest.raises(WireError, match="received unexpected wires input"):
+        with pytest.raises(WireError, match="Received unexpected wires input"):
             circuit(x=[1])

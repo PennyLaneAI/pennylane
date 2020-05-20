@@ -48,8 +48,7 @@ def BasisEmbedding(features, wires):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_type(
         features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features))

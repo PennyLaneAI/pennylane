@@ -141,8 +141,7 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
     if rotation is None:
         rotation = RX
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 

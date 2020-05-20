@@ -39,9 +39,9 @@ def wires_ring(wires):
     elif len(wires) == 2:
         # deviation from the rule: for 2 wires ring is set equal to chain,
         # to avoid duplication of single gate
-        return [wires.select([0, 1])]
+        return [wires.subset([0, 1])]
     else:
-        sequence = [wires.select([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
+        sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
         return sequence
 
 
@@ -49,8 +49,8 @@ def wires_pyramid(wires):
     """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
-        subset = Wires(wires[layer : len(wires) - layer])
-        sequence += [subset.select([i, i + 1]) for i in range(0, len(subset) - 1, 2)]
+        subset = wires[layer: len(wires) - layer]
+        sequence += [subset.subset([i, i + 1]) for i in range(0, len(subset) - 1, 2)]
     return sequence
 
 
@@ -59,7 +59,7 @@ def wires_all_to_all(wires):
     sequence = []
     for i in range(len(wires)):
         for j in range(i + 1, len(wires)):
-            sequence += [wires.select([i, j])]
+            sequence += [wires.subset([i, j])]
     return sequence
 
 
@@ -494,8 +494,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     #########
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_type(
         parameters,
@@ -561,10 +560,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # define wire sequences for patterns
     wire_sequence = {
-        "single": [wires.select(i) for i in range(len(wires))],
-        "double": [wires.select([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [wires.select([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
-        "chain": [wires.select([i, i + 1]) for i in range(len(wires) - 1)],
+        "single": [wires[i] for i in range(len(wires))],
+        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
         "all_to_all": wires_all_to_all(wires),
@@ -573,5 +572,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # broadcast the unitary
     for w, p in zip(wire_sequence[pattern], parameters):
-        w = w.wire_list  # TODO: Delete if operator takes Wires
+        w = w.wire_list  # TODO: Delete once operator takes Wires objects
         unitary(*p, wires=w, **kwargs)

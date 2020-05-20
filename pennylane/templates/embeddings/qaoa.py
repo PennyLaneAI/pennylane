@@ -35,10 +35,8 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
         wires (list[int]): qubit indices that the template acts on
     """
 
-    feature_encoding_wires = Wires(
-        wires[: len(features)]
-    )  # TODO: can we solve this more elegantly?
-    remaining_wires = Wires(wires[len(features) :])
+    feature_encoding_wires = wires[: len(features)]
+    remaining_wires = wires[len(features):]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
@@ -217,8 +215,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     expected_shape = (len(wires),)
     check_shape(
