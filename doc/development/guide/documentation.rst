@@ -309,14 +309,14 @@ When writing code examples for docstrings, use the following guidelines:
 
 - For single line statements and associated output, use Python console syntax (``pycon``):
 
-  .. code-block:: rest
+  .. code-block:: pycon
 
       >>> circuit(0.5, 0.1)
       [0.43241234312, -0.543534534]
 
   Multi-line statements should use ``...`` to indicate continuation lines:
 
-  .. code-block:: rest
+  .. code-block:: pycon
 
       >>> dev = qml.device("default.qubit", wires=1)
       >>> @qml.qnode(dev)
