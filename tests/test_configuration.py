@@ -17,23 +17,74 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import pytest
 import os
 import logging as log
+import sys
 
 import toml
 
 import pennylane as qml
 from pennylane import Configuration
 
+
 log.getLogger('defaults')
 
-config_path = 'default_config.toml'
+
+config_filename = "default_config.toml"
+
+
+test_config = """\
+[main]
+shots = 1000
+
+[default.gaussian]
+hbar = 2
+
+[strawberryfields.global]
+hbar = 1
+shots = 1000
+analytic = true
+
+    [strawberryfields.fock]
+    cutoff_dim = 10
+
+    [strawberryfields.gaussian]
+    shots = 1000
+    hbar = 1
+
+[qiskit.global]
+backend = "qasm_simulator"
+
+    [qiskit.aer]
+    backend = "unitary_simulator"
+    backend_options = {"validation_threshold" = 1e-6}
+
+    [qiskit.ibmq]
+    ibmqx_token = "XXX"
+    backend = "ibmq_rome"
+    hub = "MYHUB"
+    group = "MYGROUP"
+    project = "MYPROJECT"
+"""
+
 
 @pytest.fixture(scope="function")
-def default_config():
+def default_config(tmpdir):
+    config_path = os.path.join(tmpdir, config_filename)
+
+    with open(config_path, "w") as f:
+        f.write(test_config)
+
     return Configuration(name=config_path)
 
-@pytest.fixture(scope="session")
-def default_config_toml():
-    return toml.load(config_path)
+
+@pytest.fixture(scope="function")
+def default_config_toml(tmpdir):
+    config_path = os.path.join(tmpdir, config_filename)
+
+    with open(config_path, "w") as f:
+        f.write(test_config)
+
+    return toml.load(config_path), config_path
+
 
 class TestConfigurationFileInteraction:
     """Test the interaction with the configuration file."""
@@ -41,37 +92,40 @@ class TestConfigurationFileInteraction:
     def test_loading_current_directory(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from the current directory."""
+        config_toml, config_path = default_config_toml
 
         monkeypatch.chdir(".")
         monkeypatch.setenv("PENNYLANE_CONF", "")
         config = Configuration(name=config_path)
 
         assert config.path == os.path.join(os.curdir, config_path)
-        assert config._config == default_config_toml
+        assert config._config == config_toml
 
     def test_loading_environment_variable(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from an environment variable."""
+        config_toml, config_path = default_config_toml
 
         os.curdir = "None"
         monkeypatch.setenv("PENNYLANE_CONF", os.getcwd())
 
         config = Configuration(name=config_path)
 
-        assert config._config == default_config_toml
+        assert config._config == config_toml
         assert config._env_config_dir == os.environ["PENNYLANE_CONF"]
         assert config.path == os.path.join(os.environ["PENNYLANE_CONF"], config_path)
 
     def test_loading_absolute_path(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from an absolute path."""
+        config_toml, config_path = default_config_toml
 
         os.curdir = "None"
         monkeypatch.setenv("PENNYLANE_CONF", "")
 
         config = Configuration(name=os.path.join(os.getcwd(), config_path))
 
-        assert config._config == default_config_toml
+        assert config._config == config_toml
         assert config.path == os.path.join(os.getcwd(), config_path)
 
     def test_not_found_warning(self, caplog):
@@ -87,13 +141,12 @@ class TestConfigurationFileInteraction:
 
     def test_save(self, tmp_path):
         """Test saving a configuration file."""
-        config = Configuration(name=config_path)
+        config = Configuration(name=config_filename)
 
         # make a change
         config['strawberryfields.global']['shots'] = 10
 
-        # Need to convert to string for Python 3.5 compatibility
-        temp_config_path = str(tmp_path / 'test_config.toml')
+        temp_config_path = tmp_path / 'test_config.toml'
         config.save(temp_config_path)
 
         result = toml.load(temp_config_path)
@@ -114,7 +167,7 @@ class TestProperties:
         assert default_config['strawberryfields.fock'] == {'cutoff_dim': 10}
 
         # get key that doesn't exist
-        assert default_config['projectq.ibm.idonotexist'] == {}
+        assert default_config['qiskit.ibmq.idonotexist'] == {}
 
     def test_set_item(self, default_config):
         """Test setting items."""
@@ -129,8 +182,8 @@ class TestProperties:
         assert default_config['strawberryfields.global']['hbar'] == 5
 
         # set new options
-        default_config['projectq.ibm']['device'] = 'ibmqx4'
-        assert default_config['projectq.ibm.device'] == 'ibmqx4'
+        default_config['qiskit.ibmq']['backend'] = 'ibmq_rome'
+        assert default_config['qiskit.ibmq.backend'] == 'ibmq_rome'
 
         # set nested dictionaries
         default_config['strawberryfields.tf'] = {'batched': True, 'cutoff_dim': 6}

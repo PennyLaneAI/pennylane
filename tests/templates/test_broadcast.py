@@ -121,8 +121,8 @@ GATE_PARAMETERS = [("single", 0, T, []),
                    ]
 
 
-class TestConstructorBroadcast:
-    """Tests the broadcast template constructor."""
+class TestBuiltinPatterns:
+    """Tests the built-in patterns ("single", "ring", etc) of the broadcast template constructor."""
 
     @pytest.mark.parametrize("unitary, parameters", [(RX, [[0.1], [0.2], [0.3]]),
                                                      (Rot,
@@ -288,3 +288,65 @@ class TestConstructorBroadcast:
 
         sequence = function(wires)
         assert sequence == target
+
+
+class TestCustomPattern:
+    """Additional tests for using broadcast with a custom pattern."""
+
+    @pytest.mark.parametrize("custom_pattern, pattern", [([[0, 1], [1, 2], [2, 3], [3, 0]], "ring"),
+                                                         ([[0, 1], [1, 2], [2, 3]], "chain"),
+                                                         ([[0, 1], [2, 3]], "double")
+                                                         ])
+    def test_reproduce_builtin_patterns(self, custom_pattern, pattern):
+        """Tests that the custom pattern can reproduce the built in patterns."""
+
+        dev = qml.device('default.qubit', wires=4)
+
+        # qnode using custom pattern
+        @qml.qnode(dev)
+        def circuit1():
+            broadcast(unitary=qml.CNOT, pattern=custom_pattern, wires=range(4))
+            return [qml.expval(qml.PauliZ(wires=w)) for w in range(4)]
+
+        # qnode using built-in pattern
+        @qml.qnode(dev)
+        def circuit2():
+            broadcast(unitary=qml.CNOT, pattern=pattern, wires=range(4))
+            return [qml.expval(qml.PauliZ(wires=w)) for w in range(4)]
+
+        custom = circuit1()
+        built_in = circuit2()
+        assert np.allclose(custom, built_in)
+
+    @pytest.mark.parametrize("custom_pattern", [1,
+                                                [1, 2],
+                                                [['a'], ['b']]
+                                                ])
+    def test_exception_custom_pattern_not_valid(self, custom_pattern):
+        """Tests that an exception is raised if the pattern is not a list of lists of integers."""
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            broadcast(unitary=qml.Hadamard, wires=[0, 1], pattern=custom_pattern)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="a custom pattern must be a list"):
+            circuit()
+
+    @pytest.mark.parametrize("custom_pattern, expected", [([[0], [2], [3], [2]], [-1., 1., 1., -1.]),
+                                                          ([[3], [2], [0]], [-1., 1., -1., -1.]),
+                                                         ])
+    def test_correct_output(self, custom_pattern, expected):
+        """Tests the output for simple cases."""
+
+        dev = qml.device('default.qubit', wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            broadcast(unitary=qml.PauliX, wires=range(4), pattern=custom_pattern)
+            return [qml.expval(qml.PauliZ(w)) for w in range(4)]
+
+        res = circuit()
+        assert np.allclose(res, expected)

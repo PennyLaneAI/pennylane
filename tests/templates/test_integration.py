@@ -53,12 +53,9 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        import tensorflow.contrib.eager as tfe
-
         tf.enable_eager_execution()
-        TFVariable = tfe.Variable
-    else:
-        from tensorflow import Variable as TFVariable
+
+    from tensorflow import Variable as TFVariable
     INTERFACES.append(('tf', TFVariable))
 
 except ImportError as e:
@@ -120,6 +117,12 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                               (qml.templates.BasicEntanglerLayers,
                                {'weights': [[1., 1.]]},
                                {'rotation': qml.RX}),
+                              (qml.templates.IQPEmbedding,
+                               {},
+                               {'features': [1., 1.]}),
+                              (qml.templates.SingleExcitationUnitary,
+                               {'weight': 0.56},
+                               {}),
                               ]
 
 CV_DIFFABLE_NONDIFFABLE = [(qml.templates.DisplacementEmbedding,
@@ -311,7 +314,7 @@ class TestIntegrationQnode:
             all_args.update(nondiffable)
 
             # Add number of wires
-            all_args['wires'] = range(2)
+            all_args['wires'] = [0, 1]
 
             template(**all_args)
             return qml.expval(qml.Identity(0))
@@ -343,7 +346,7 @@ class TestIntegrationQnode:
             all_args.update(nondiffable)
 
             # Add number of wires
-            all_args['wires'] = range(2)
+            all_args['wires'] = [0, 1]
 
             template(**all_args)
             return qml.expval(qml.Identity(0))
@@ -371,7 +374,7 @@ class TestIntegrationQnode:
         @qml.qnode(dev, interface=interface)
         def circuit(all_args=None):
             # Add wires
-            all_args['wires'] = range(2)
+            all_args['wires'] = [0, 1]
 
             template(**all_args)
             return qml.expval(qml.Identity(0))
@@ -397,7 +400,7 @@ class TestIntegrationQnode:
         @qml.qnode(gaussian_device_2_wires, interface=interface)
         def circuit(all_args=None):
             # Add wires
-            all_args['wires'] = range(2)
+            all_args['wires'] = [0, 1]
 
             template(**all_args)
             return qml.expval(qml.Identity(0))
@@ -443,7 +446,7 @@ class TestIntegrationOtherOps:
         @qml.qnode(dev)
         def circuit(nondiffable=None):
             # Add wires
-            nondiffable['wires'] = range(2)
+            nondiffable['wires'] = [0, 1]
 
             # Circuit with operations before and
             # after the template is called
@@ -476,7 +479,7 @@ class TestIntegrationOtherOps:
         @qml.qnode(gaussian_device_2_wires)
         def circuit(nondiffable=None):
             # Add wires
-            nondiffable['wires'] = range(2)
+            nondiffable['wires'] = [0, 1]
 
             # Circuit with operations before and
             # after the template is called

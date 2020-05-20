@@ -20,7 +20,7 @@ such as gates, state preparations and observables.
 """
 import numpy as np
 
-from pennylane.operation import Any, Observable, CVObservable
+from pennylane.operation import AnyWires, Observable, CVObservable
 
 from .cv import *
 from .qubit import *
@@ -46,7 +46,7 @@ class Identity(CVObservable):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
-    num_wires = Any
+    num_wires = AnyWires
     num_params = 0
     par_domain = None
     grad_method = None
@@ -54,8 +54,12 @@ class Identity(CVObservable):
     ev_order = 1
     eigvals = np.array([1, 1])
 
-    @staticmethod
-    def _matrix(*params):
+    @classmethod
+    def _eigvals(cls, *params):
+        return cls.eigvals
+
+    @classmethod
+    def _matrix(cls, *params):
         return np.eye(2)
 
     @staticmethod
