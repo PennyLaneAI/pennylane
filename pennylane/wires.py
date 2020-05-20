@@ -412,6 +412,6 @@ class Wires(Sequence):
             if any([w in merged_wires for w in wires.wire_list]):
                 raise WireError("Cannot merge Wires objects that contain the same wires; got {}.".format(list_of_wires))
             else:
-                merged_wires.append(wires.wire_list)
+                merged_wires += wires.wire_list
 
         return Wires(merged_wires)

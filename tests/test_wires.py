@@ -275,7 +275,7 @@ class TestWires:
         with pytest.raises(WireError, match="cannot sample"):
             wires.select_random(6)
 
-    def test_merge_methos(self):
+    def test_merge_method(self):
         """Tests the static ``merge()`` method."""
 
         list_of_wires = [Wires([0, 1]), Wires([2]), Wires([3, 4])]
@@ -285,7 +285,7 @@ class TestWires:
 
         # check error for merging the same wires
         with pytest.raises(WireError, match="Cannot merge Wires objects that contain"):
-            Wires.merge(Wires(0), Wires(0))
+            Wires.merge([Wires(0), Wires(0)])
 
         # check error for wrong inputs
         with pytest.raises(WireError, match="Expected list of Wires objects"):
