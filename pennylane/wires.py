@@ -114,7 +114,7 @@ class Wires(Sequence):
         """Method to support the '==' operator."""
         if isinstance(other, self.__class__):
             return self.wire_list == other.wire_list
-        
+
         return False
 
     def __ne__(self, other):
@@ -259,7 +259,7 @@ class Wires(Sequence):
 
         if len(self.wire_list) == len(wires):
             return True
-        
+
         return False
 
     def select(self, indices, periodic_boundary=False):
