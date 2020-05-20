@@ -112,7 +112,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .utils import _flatten, pauli_eigs
+from .utils import pauli_eigs
 from .variable import Variable
 
 # =============================================================================
@@ -827,7 +827,7 @@ class Observable(Operator):
         params (tuple[float, int, array, Variable]): observable parameters
 
     Keyword Args:
-        wires (Sequence[int]): subsystems it acts on.
+        wires (Sequence[int] or Wires): subsystems it acts on.
             Currently, only one subsystem is supported.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into the Operator queue.
@@ -899,7 +899,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires)
+            return repr(self.return_type) + "(wires={})".format(self.wires.wire_list)
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -990,14 +990,11 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            Wires: All wires of the observables
-            in the tensor product
+            Wires: Combined wires of the observables in the tensor product
         """
-        all_wires = Wires([])
-        for o in self.obs:
-            all_wires = all_wires.combine(o.wires)
 
-        return all_wires
+        list_of_wires = [o.wires for o in self.obs] # TODO: Check that there must not be overlapping wires in the obs
+        return Wires.merge(list_of_wires)
 
     @property
     def params(self):
@@ -1152,9 +1149,9 @@ class Tensor(Observable):
         Returns:
             array: matrix representation
         """
-        # group the observables based on what wires they act on
+        # group the observables based on what wires they act on # TODO: what about 2-qubit observables?
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires):  # TODO: use indices?
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 

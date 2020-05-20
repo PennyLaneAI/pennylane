@@ -381,9 +381,7 @@ class QubitDevice(Device):
             List[float]: list of the probabilities
         """
 
-        # convert input to Wires object if necessary
-        if not isinstance(wires, Wires):
-            wires = Wires(wires)
+        wires = Wires(wires)
 
         # consider only the requested wires
         samples = self._samples[:, np.array(wires)]
@@ -414,9 +412,7 @@ class QubitDevice(Device):
             List[float]: list of the probabilities
         """
 
-        # convert input to Wires object if necessary
-        if not isinstance(wires, Wires):
-            wires = Wires(wires)
+        wires = Wires(wires)
 
         if hasattr(self, "analytic") and self.analytic:
             return self.analytic_probability(wires=wires)
@@ -446,7 +442,7 @@ class QubitDevice(Device):
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
-            wires (Sequence[int]): Sequence of wires to return
+            wires (Sequence[int] or Wires): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
@@ -457,12 +453,9 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        # convert input to Wires object if necessary
-        if not isinstance(wires, Wires):
-            wires = Wires(wires)
+        wires = Wires(wires)
 
         # determine which wires are to be summed over
-
         print(self._user_wires)
         inactive_wires = self._user_wires.difference(wires)
 
