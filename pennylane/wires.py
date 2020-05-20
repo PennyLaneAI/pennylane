@@ -264,7 +264,8 @@ class Wires(Sequence):
 
     def select(self, indices, periodic_boundary=False):
         """
-        Returns a subset of the Wires specified by the 'indices'.
+        Returns a new Wires object which is a subset of this Wires object. The wires of the new
+        object are the wires at positions specified by 'indices'.
 
         For example:
 
@@ -277,6 +278,9 @@ class Wires(Sequence):
 
         Args:
             indices (List[int] or int): indices or index of the wires we want to select
+            periodic_boundary (bool): whether the modulo of the number of wires of an index is used instead of an index.
+                implements periodic boundary conditions in the indexing,
+                so that for example ``wires.select(len(wires)) == wires.select(0)``.
 
         Returns:
             Wires: subset of wires
