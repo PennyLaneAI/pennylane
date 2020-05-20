@@ -22,7 +22,7 @@ The introductory 'quickstarts'.
 
     All introductory quickstarts are in ``doc/introduction``, formatted as reStructuredText documents.
 
-Developer guides.
+Development guides.
     Similar to the introductory quickstarts, but focused on information
     regarding how to contribute to the PennyLane codebase.
 
@@ -42,7 +42,7 @@ The API.
 
     Long-form tutorials, as well as quantum machine learning theory and background information,
     is not part of the PennyLane documentation. Instead, this content is available over in the
-    `XanaduAI/QML <https://github.com/XanaduAI/qml>`_` GitHub repository (viewable at
+    `XanaduAI/QML <https://github.com/XanaduAI/qml>`_ GitHub repository (viewable at
     https://pennylane.ai/qml).
 
 .. _docstrings:
