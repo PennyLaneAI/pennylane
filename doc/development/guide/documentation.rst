@@ -26,7 +26,7 @@ Development guides.
     Similar to the introductory quickstarts, but focused on information
     regarding how to contribute to the PennyLane codebase.
 
-    Developer guides are in ``doc/development``, formatted as reStructuredText documents.
+    Development guides are in ``doc/development``, formatted as reStructuredText documents.
 
 The API.
     Automatically generated from docstrings in the PennyLane source code. Code stubs, one per
@@ -35,7 +35,7 @@ The API.
     to automatically generate API documentation pages for public classes and functions
     in ``doc/code/api``.
 
-    PennyLane displays the API using the **import path**---rather than absolute 
+    PennyLane displays the API using the **import path**---rather than absolute
     path---of the documented code object.
 
 .. note::
@@ -107,7 +107,7 @@ Every module should begin with the license boilerplate, followed by a module doc
 The module docstring must contain a short, single sentence summary of the module, followed
 by an (optional) multi-line description of the contents and usage.
 
-.. code-block:: rest
+.. code-block:: python
 
     """
     Single sentence that summarizes the module and its contents.
@@ -116,9 +116,11 @@ by an (optional) multi-line description of the contents and usage.
     foremost, and implementation details or background theory afterwards if required.
     """
 
-Do not manually list the contents of the module; PennyLane uses
-`sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`__ to automatically
-create module listings.
+.. warning::
+
+    Do not manually list the contents of the module; PennyLane uses
+    `sphinx-automodapi <https://github.com/astropy/sphinx-automodapi>`__ to automatically
+    create module listings.
 
 
 Functions and methods
@@ -376,7 +378,6 @@ your code easy to follow and understand, keeping to the following guidelines.
       # and wires as *default arguments* to named parameters. This is to avoid
       # Python's late binding closure behaviour
       # (see https://docs.python-guide.org/writing/gotchas/#late-binding-closures)
-
       def circuit(params, _obs=obs, _m=m, _wires=wires, **kwargs):
           template(params, wires=_wires, **kwargs)
           return MEASURE_MAP[_m](_obs)
