@@ -14,6 +14,7 @@ def layer_ansatz(weights, x=None, **kwargs):
 
 
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
+@pytest.mark.usefixtures("skip_if_no_torch_support", "skip_if_no_tf_support")
 class TestMSECost:
     def test_layer_circuit(self, interface):
         num_qubits = 3
