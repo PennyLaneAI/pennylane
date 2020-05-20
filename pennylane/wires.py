@@ -15,11 +15,9 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 from collections import Sequence, Iterable
+from numbers import Number
 import numpy as np  # for random functions
-from copy import deepcopy
-
-# tolerance for integer-like wire indices
-TOLERANCE = 1e-8
+TOLERANCE = 1e-8 # tolerance for integer-like wire indices
 
 
 class WireError(Exception):
@@ -84,23 +82,24 @@ class Wires(Sequence):
 
     def __init__(self, wires):
 
-        if isinstance(wires, Iterable):
+        if isinstance(wires, Number):
+            # If input is a number, interpret as single wire index and wrap as a list
+            wires = [wires]
+
+        if isinstance(wires, Wires):
+            # If input is already a Wires object, just copy its wire list
+            self.wire_list = wires.wire_list
+        elif isinstance(wires, Iterable):
             # If input is an iterable, interpret as a collection of wire indices
             self.wire_list = _clean(wires)
-
-        elif isinstance(wires, int) and wires >= 0:
-            # If input is non-negative integer, interpret as single wire index
-            # and wrap as a list
-            self.wire_list = [wires]
-
         else:
             raise WireError(
-                "received unexpected wires input {} of type {}.".format(wires, type(wires))
+                "Received unexpected wires input {} of type {}.".format(wires, type(wires))
             )
 
     def __getitem__(self, idx):
         """Method to support indexing."""
-        return self.wire_list[idx]
+        return Wires(self.wire_list[idx])
 
     def __len__(self):
         """Method to support ``len()``."""
@@ -117,9 +116,75 @@ class Wires(Sequence):
 
         return False
 
-    def __ne__(self, other):
-        """Method to support the '!=' operator."""
-        return not self.__eq__(other)
+    def __lt__(self, other):
+        """Implements the '<' operator for Wires objects of length 1."""
+        if len(self.wire_list) == 1 and len(other.wire_list) == 1:
+            return self.wire_list[0] < other.wire_list[0]
+        else:
+            raise WireError("Cannot compare Wires objects of length larger than 1 with '<' operator.")
+
+    def __le__(self, other):
+        """Implements the '<=' operator for Wires objects of length 1."""
+        if len(self.wire_list) == 1 and len(other.wire_list) == 1:
+            return self.wire_list[0] <= other.wire_list[0]
+        else:
+            raise WireError("Cannot compare Wires objects of length larger than 1 with '<=' operator.")
+
+    def __gt__(self, other):
+        """Implements the '>' operator for Wires objects of length 1."""
+        if len(self.wire_list) == 1 and len(other.wire_list) == 1:
+            return self.wire_list[0] > other.wire_list[0]
+        else:
+            raise WireError("Cannot compare Wires objects of length larger than 1 with '>' operator.")
+
+    def __ge__(self, other):
+        """Implements the '>=' operator for Wires objects of length 1."""
+        if len(self.wire_list) == 1 and len(other.wire_list) == 1:
+            return self.wire_list[0] < other.wire_list[0]
+        else:
+            raise WireError("Cannot compare Wires objects of length larger than 1 with '<' operator.")
+
+    def index(self, wire):
+        """Overwrites the ``index()`` function which returns the index of 'wire'.
+
+        Args:
+            Wire (int): Wires object of a single wire
+
+        Returns:
+            int: index of wire
+        """
+        if not isinstance(wire, Wires):
+            raise WireError(
+                "expected a `pennylane.wires.Wires` object; got {} of type {}.".format(
+                    wire, type(wire)
+                )
+            )
+
+        if len(wire) != 1:
+            raise WireError("Can only retrieve an index of a Wires object of length 1.")
+
+        try:
+            idx = self.wire_list.index(wire.wire_list[0])
+        # if wire is not in wire_list of this object
+        except ValueError:
+            idx = None
+        return idx
+
+    def as_ndarray(self):
+        """Returns a numpy array representation of the Wires object.
+
+        Returns:
+            ndarray: array representing Wires object
+        """
+        return np.array(self.wire_list)
+
+    def as_list(self):
+        """Returns a list representation of the Wires object.
+
+        Returns:
+            List: list representing Wires object
+        """
+        return self.wire_list
 
     def combine(self, wires):
         """Return a copy of this ``Wires`` object extended by the unique wires of ``wires``.
@@ -145,7 +210,7 @@ class Wires(Sequence):
                 )
             )
 
-        additional_wires = [w for w in wires if w not in self.wire_list]
+        additional_wires = [w for w in wires.wire_list if w not in self.wire_list]
         combined_wire_list = self.wire_list + additional_wires
         return Wires(combined_wire_list)
 
@@ -262,7 +327,7 @@ class Wires(Sequence):
 
         return False
 
-    def select(self, indices, periodic_boundary=False):
+    def subset(self, indices, periodic_boundary=False):
         """
         Returns a new Wires object which is a subset of this Wires object. The wires of the new
         object are the wires at positions specified by 'indices'.
@@ -270,10 +335,10 @@ class Wires(Sequence):
         For example:
 
         >>> wires = Wires([4, 0, 1, 5, 6])
-        >>> wires.select([2, 3, 0]) == Wires([1, 5, 4])
+        >>> wires.subset([2, 3, 0]) == Wires([1, 5, 4])
         True
 
-        >>> wires.select(1) == Wires([0])
+        >>> wires.subset(1) == Wires([0])
         True
 
         Args:
@@ -296,7 +361,7 @@ class Wires(Sequence):
         for i in indices:
             if i > len(self):
                 raise WireError(
-                    "cannot select wire at index {} from {} wires.".format(i, len(self))
+                    "cannot subset wire at index {} from {} wires.".format(i, len(self))
                 )
 
         subset = [self.wire_list[i] for i in indices]

@@ -517,7 +517,7 @@ class TestSimplifiedTwoDesign:
 
         # test the device parameters
         for l in range(n_layers):
-            # only select the rotation gates
+            # only subset the rotation gates
             ops = [gate for gate in rec.queue if isinstance(gate, qml.RY)]
 
             # check each initial_layer gate parameters
@@ -593,7 +593,7 @@ class TestBasicEntangler:
 
         # test the device parameters
         for l in range(n_layers):
-            # only select the rotation gates
+            # only subset the rotation gates
             layer_ops = rec.queue[l * (n_wires + n_cnots) : l * (n_wires + n_cnots) + n_wires]
 
             # check each rotation gate parameter
