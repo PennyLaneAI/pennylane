@@ -388,3 +388,30 @@ class Wires(Sequence):
         indices = np.random.choice(len(self), size=n_samples, replace=False)
         subset = [self.wire_list[i] for i in indices]
         return Wires(subset)
+
+    @staticmethod
+    def merge(list_of_wires):
+        """Merge Wires objects in list to one
+
+        Args:
+            list_of_wires (List[Wires]): list of Wires objects
+
+        Return:
+            Wires: new Wires object that contains all wires of the list's Wire objects
+
+        Raises:
+            WireError: for incorrect input or if Wires objects contain the same wires
+        """
+
+        merged_wires = []
+        for wires in list_of_wires:
+
+            if not isinstance(wires, Wires):
+                raise WireError("Expected list of Wires objects; got {}.".format(list_of_wires))
+
+            if any([w in merged_wires for w in wires.wire_list]):
+                raise WireError("Cannot merge Wires objects that contain the same wires; got {}.".format(list_of_wires))
+            else:
+                merged_wires.append(wires.wire_list)
+
+        return Wires(merged_wires)
