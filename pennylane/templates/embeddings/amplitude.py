@@ -234,7 +234,5 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     ###############
 
-    wires = wires.wire_list  # TODO: remove this line when QubitStateVector accepts Wires object
-
     features = np.array(features)
     QubitStateVector(features, wires=wires)

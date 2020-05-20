@@ -51,14 +51,12 @@ def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
             rnd1 = np.random.choice(range(len(rotations)))
             gate = rotations[rnd1]
             rnd_wire = wires.select_random(1)
-            rnd_wire = rnd_wire.wire_list  # TODO: Remove when operator takes Wires object
             gate(weights[i], wires=rnd_wire)
             i += 1
         else:
             # Apply the imprimitive to two random wires
             if len(wires) > 1:
                 rnd_wires = wires.select_random(2)
-                rnd_wires = rnd_wires.wire_list  # TODO: Remove when operator takes Wires object
                 imprimitive(wires=rnd_wires)
 
 
@@ -241,7 +239,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
         msg="'ratio_imprim' must be a float; got {}".format(ratio_imprim),
     )
     check_type(n_rots, [int, type(None)], msg="'n_rots' must be an integer; got {}".format(n_rots))
-    # TODO: Check that 'rotations' contains operations
+
     check_type(
         rotations,
         [list, type(None)],

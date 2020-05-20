@@ -93,6 +93,7 @@ class TestHelperFunctions:
     def test_tuple_to_word(self, tuple, expected_word):
         assert _tuple_to_word(tuple) == expected_word
 
+
 class TestInterferometer:
     """Tests for the Interferometer from the pennylane.template.layers module."""
 
@@ -385,8 +386,8 @@ class TestSingleExcitationUnitary:
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
         [
-            ( 0.2      , [0]         , "'wires' must be of shape"),
-            ( 0.2      , []          , "'wires' must be of shape"),
+            ( 0.2      , [0]         , "Can only act on 2 wires"),
+            ( 0.2      , []          , "Can only act on 2 wires"),
             ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
             ( 0.2      , None        , "wires must be a positive integer"),
             ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),

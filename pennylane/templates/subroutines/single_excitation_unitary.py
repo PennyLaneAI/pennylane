@@ -20,12 +20,11 @@ from pennylane import numpy as np
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (
-    check_no_variable,
     check_shape,
     check_type,
-    check_wires,
     get_shape,
 )
+from pennylane.wires import Wires
 
 
 @template
@@ -115,16 +114,10 @@ def SingleExcitationUnitary(weight, wires=None):
     ##############
     # Input checks
 
-    check_no_variable(wires, msg="'wires' cannot be differentiable")
+    wires = Wires(wires)
 
-    wires = check_wires(wires)
-
-    expected_shape = (2,)
-    check_shape(
-        wires,
-        expected_shape,
-        msg="'wires' must be of shape {}; got {}".format(expected_shape, get_shape(wires)),
-    )
+    if len(wires) != 2:
+        raise ValueError("Can only act on 2 wires but got {}".format(len(wires)))
 
     expected_shape = ()
     check_shape(
@@ -132,10 +125,6 @@ def SingleExcitationUnitary(weight, wires=None):
         expected_shape,
         msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
     )
-
-    check_type(wires, [list], msg="'wires' must be a list; got {}".format(wires))
-    for w in wires:
-        check_type(w, [int], msg="'wires' must be a list of integers; got {}".format(wires))
 
     if wires[1] <= wires[0]:
         raise ValueError(
@@ -146,10 +135,11 @@ def SingleExcitationUnitary(weight, wires=None):
 
     ###############
 
-    r, p = wires
+    r = wires[0]
+    p = wires[1]
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [[l, l + 1] for l in range(r, p)]
+    set_cnot_wires = [Wires([l, l + 1]) for l in range(r.wire_list[0], p.wire_list[0])] # TODO: This is rather unelegant
 
     # ------------------------------------------------------------------
     # Apply the first layer
