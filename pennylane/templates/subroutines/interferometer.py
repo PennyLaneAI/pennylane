@@ -179,6 +179,5 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     # apply the final local phase shifts to all modes
     for i, p in enumerate(varphi):
-        act_on = wires.select(i)
-        act_on = act_on.wire_list  # Todo: remove when Rotation takes Wires
+        act_on = wires[i]
         Rotation(p, wires=act_on)

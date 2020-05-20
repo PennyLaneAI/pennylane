@@ -455,21 +455,21 @@ class TestIQPEmbedding:
         with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(f=features)
 
-    @pytest.mark.parametrize('pattern', [qml.RZ,
-                                         [qml.RZ, qml.RZ],
-                                         [[qml.RZ, qml.RZ], [qml.RZ, qml.RZ]]])
-    def test_exception_wrong_type_pattern(self, pattern):
+    def test_exception_wrong_type_pattern(self, ):
         """Verifies that an exception is raised if 'pattern' is of a wrong type."""
 
         dev = qml.device('default.qubit', wires=3)
 
         @qml.qnode(dev)
-        def circuit(f=None):
+        def circuit(f=None, pattern=None):
             qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=pattern)
             return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
+        with pytest.raises(WireError, match="Wire indices must be integers"):
+            circuit(f=[1., 2., 3.], pattern=[[qml.RZ, qml.RZ], [qml.RZ, qml.RZ]])
+
         with pytest.raises(ValueError, match="'pattern' must be a list of pairs of wires"):
-            circuit(f=[1., 2., 3.])
+            circuit(f=[1., 2., 3.], pattern=qml.RZ)
 
     @pytest.mark.parametrize('pattern', [[[1], [2]],
                                          [[0, 1, 2], [0, 1, 2]]])

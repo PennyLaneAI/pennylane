@@ -66,6 +66,8 @@ def BasisEmbedding(features, wires):
 
     ###############
 
+    wires = wires.wire_list  # TODO: Remove when operators take Wires objects
+
     for wire, bit in zip(wires, features):
         if bit == 1:
             qml.PauliX(wire)

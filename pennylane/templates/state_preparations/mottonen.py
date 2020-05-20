@@ -293,7 +293,7 @@ def MottonenStatePreparation(state_vector, wires):
         control = wires[k:]
         target = wires[k - 1]
         control = control.wire_list  # TODO: remove when operators accept Wires object
-        target = target.wire_list  # TODO: remove when operators accept Wires object
+        target = target.wire_list[0]  # TODO: remove when operators accept Wires object
         _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
@@ -302,6 +302,6 @@ def MottonenStatePreparation(state_vector, wires):
         control = wires[k:]
         target = wires[k - 1]
         control = control.wire_list  # TODO: remove when operators accept Wires object
-        target = target.wire_list  # TODO: remove when operators accept Wires object
+        target = target.wire_list[0]  # TODO: remove when operators accept Wires object
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)
