@@ -48,8 +48,7 @@ def BasisEmbedding(features, wires):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_type(
         features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features))
@@ -66,6 +65,8 @@ def BasisEmbedding(features, wires):
         raise ValueError("'basis_state' must only consist of 0s and 1s; got {}".format(features))
 
     ###############
+
+    wires = wires.wire_list  # TODO: Remove when operators take Wires objects
 
     for wire, bit in zip(wires, features):
         if bit == 1:

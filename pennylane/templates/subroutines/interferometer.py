@@ -109,8 +109,7 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(beamsplitter, msg="'beamsplitter' cannot be differentiable")
     check_no_variable(mesh, msg="'mesh' cannot be differentiable")
@@ -134,6 +133,8 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
     ###############
 
     M = len(wires)
+
+    wires = wires.wire_list # Todo: remove when ops take Wires object
 
     if M == 1:
         # the interferometer is a single rotation
@@ -178,6 +179,5 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     # apply the final local phase shifts to all modes
     for i, p in enumerate(varphi):
-        act_on = wires.select(i)
-        act_on = act_on.wire_list  # Todo: remove when Rotation takes Wires
+        act_on = wires[i]
         Rotation(p, wires=act_on)

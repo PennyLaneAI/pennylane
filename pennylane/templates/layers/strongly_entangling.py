@@ -43,8 +43,8 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
     n_wires = len(wires)
     if n_wires > 1:
         for i in range(n_wires):
-            act_on = wires.select([i, (i + r) % n_wires])
-            act_on = act_on.wire_list  # Todo: remove when operator takes Wires
+            act_on = wires.subset([i, (i + r) % n_wires])
+            act_on = act_on.wire_list  # Todo: remove when operator takes Wires object
             imprimitive(wires=act_on)
 
 
@@ -85,8 +85,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(ranges, msg="'ranges' cannot be differentiable")
     check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")

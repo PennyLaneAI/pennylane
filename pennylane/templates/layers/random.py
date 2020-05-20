@@ -33,7 +33,7 @@ def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
 
     Args:
         weights (array[float]): array of weights of shape ``(k,)``
-        wires (Wires): sequence of qubit indices that the template acts on
+        wires (Wires): wires that the template acts on
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency
@@ -51,14 +51,14 @@ def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
             rnd1 = np.random.choice(range(len(rotations)))
             gate = rotations[rnd1]
             rnd_wire = wires.select_random(1)
-            rnd_wire = rnd_wire.wire_list  # TODO: Remove when operator takes Wires
+            rnd_wire = rnd_wire.wire_list  # TODO: Remove when operator takes Wires object
             gate(weights[i], wires=rnd_wire)
             i += 1
         else:
             # Apply the imprimitive to two random wires
             if len(wires) > 1:
                 rnd_wires = wires.select_random(2)
-                rnd_wires = rnd_wires.wire_list  # TODO: Remove when operator takes Wires
+                rnd_wires = rnd_wires.wire_list  # TODO: Remove when operator takes Wires object
                 imprimitive(wires=rnd_wires)
 
 
@@ -218,8 +218,7 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(ratio_imprim, msg="'ratio_imprim' cannot be differentiable")
     check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")

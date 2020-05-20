@@ -58,8 +58,7 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(method, msg="'method' cannot be differentiable")
     check_no_variable(c, msg="'c' cannot be differentiable")

@@ -172,8 +172,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     check_no_variable(pad, msg="'pad' cannot be differentiable")
     check_no_variable(normalize, msg="'normalize' cannot be differentiable")
@@ -235,7 +234,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     ###############
 
-    wires = wires.wire_list  # TODO: remove this line when QubitStateVector accepts wires
+    wires = wires.wire_list  # TODO: remove this line when QubitStateVector accepts Wires object
 
     features = np.array(features)
     QubitStateVector(features, wires=wires)

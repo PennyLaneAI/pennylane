@@ -46,8 +46,7 @@ def BasisStatePreparation(basis_state, wires):
     ######################
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     expected_shape = (len(wires),)
     check_shape(
@@ -71,6 +70,8 @@ def BasisStatePreparation(basis_state, wires):
         )
 
     ######################
+
+    wires = wires.wire_list # TODO: remove when operator takes Wires object
 
     for wire, state in zip(wires, basis_state):
         if state == 1:

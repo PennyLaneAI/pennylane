@@ -141,8 +141,7 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     #############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     repeat = check_number_of_layers([weights])
 

@@ -164,7 +164,7 @@ def _get_alpha_z(omega, n, k):
     Args:
         omega (float): phase of the input
         n (int): total number of qubits
-        k (int): current qubit
+        k (int): index of current qubit
 
     Returns:
         scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
@@ -187,11 +187,12 @@ def _get_alpha_y(a, n, k):
     Args:
         omega (float): phase of the input
         n (int): total number of qubits
-        k (int): current qubit
+        k (int): index of current qubit
 
     Returns:
         scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^y_k`
     """
+
     alpha = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
 
     numerator = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
@@ -247,8 +248,7 @@ def MottonenStatePreparation(state_vector, wires):
     ###############
     # Input checks
 
-    if not isinstance(wires, Wires):
-        wires = Wires(wires)  # turn wires into Wires object
+    wires = Wires(wires)
 
     n_wires = len(wires)
     expected_shape = (2 ** n_wires,)
@@ -291,13 +291,17 @@ def MottonenStatePreparation(state_vector, wires):
     for k in range(n_wires, 0, -1):  # Todo: use actual wire ordering!
         alpha_y_k = _get_alpha_y(a, n_wires, k)  # type: sparse.dok_matrix
         control = wires[k:]
-        target = wires[k - 1]  # TODO: use pick function ?
+        target = wires[k - 1]
+        control = control.wire_list  # TODO: remove when operators accept Wires object
+        target = target.wire_list[0]  # TODO: remove when operators accept Wires object
         _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
     for k in range(n_wires, 0, -1):  # Todo: use actual wire ordering!
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
-        target = wires[k - 1]  # TODO: use pick function ?
+        target = wires[k - 1]
+        control = control.wire_list  # TODO: remove when operators accept Wires object
+        target = target.wire_list[0]  # TODO: remove when operators accept Wires object
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)
