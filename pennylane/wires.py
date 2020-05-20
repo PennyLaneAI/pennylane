@@ -59,8 +59,7 @@ def _clean(iterable):
                     "Wire indices must be integers; got {} of type {}.".format(w, type(w))
                 )
 
-    # Check that indices are non-negative
-    for w in iterable:
+        # Check that indices are non-negative
         if w < 0:
             raise WireError("Wire indices must be non-negative; got index {}.".format(w))
 
@@ -80,7 +79,7 @@ class Wires(Sequence):
          wires (int or iterable): Iterable representing an ordered collection of unique wire indices.
             The iterable can be of any common type such as list, tuple, range or numpy array.
             The elements of the iterable must be non-negative integers. If elements are floats,
-            they are internally converted to integers, throwing an error if the rounding error exceeds TOLERANCE.
+            they are internally converted to integers, throwing an error if the rounding error exceeds 1e-8.
     """
 
     def __init__(self, wires):
@@ -115,8 +114,8 @@ class Wires(Sequence):
         """Method to support the '==' operator."""
         if isinstance(other, self.__class__):
             return self.wire_list == other.wire_list
-        else:
-            return False
+
+        return False
 
     def __ne__(self, other):
         """Method to support the '!=' operator."""
@@ -260,12 +259,13 @@ class Wires(Sequence):
 
         if len(self.wire_list) == len(wires):
             return True
-        else:
-            return False
+
+        return False
 
     def select(self, indices, periodic_boundary=False):
         """
-        Returns a subset of the Wires specified by the 'indices'.
+        Returns a new Wires object which is a subset of this Wires object. The wires of the new
+        object are the wires at positions specified by 'indices'.
 
         For example:
 
@@ -278,6 +278,9 @@ class Wires(Sequence):
 
         Args:
             indices (List[int] or int): indices or index of the wires we want to select
+            periodic_boundary (bool): whether the modulo of the number of wires of an index is used instead of an index.
+                implements periodic boundary conditions in the indexing,
+                so that for example ``wires.select(len(wires)) == wires.select(0)``.
 
         Returns:
             Wires: subset of wires

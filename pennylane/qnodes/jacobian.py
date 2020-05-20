@@ -248,7 +248,7 @@ class JacobianQNode(BaseQNode):
 
         def inds_using(m):
             """Intersection of ``wrt`` with free params indices whose best grad method is m."""
-            return method_map.get(m, set()).intersect(wrt)
+            return method_map.get(m, set()).intersection(wrt)
 
         # are we trying to differentiate wrt. params that don't support any method?
         bad = inds_using(None)
