@@ -61,7 +61,7 @@ class TestWires:
     def test_error_for_repeated_wires(self, iterable):
         """Tests that a Wires object cannot be created from iterables with repeated indices."""
 
-        with pytest.raises(WireError, match="Each wire must be represented by a unique index"):
+        with pytest.raises(WireError, match="Wires must be unique"):
             Wires(iterable)
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
@@ -236,3 +236,18 @@ class TestWires:
         # check error for wrong inputs
         with pytest.raises(WireError, match="Expected list of Wires objects"):
             Wires.merge([[0, 1], [2]])
+
+    def test_all_unique_method(self):
+        """Tests the ``all_unique()`` method."""
+
+        wires1 = Wires([1, 2])
+        wires2 = Wires([3, 0])
+        wires3 = Wires([6, 10])
+        res = Wires.all_unique([wires1, wires2, wires3])
+        assert res
+
+        res = Wires.all_unique([wires1, wires2, Wires([1, 11])])
+        assert not res
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            Wires.all_unique([[2, 1], [8, 5]])
