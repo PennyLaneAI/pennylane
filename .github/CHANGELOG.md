@@ -23,6 +23,10 @@
   ```python
   model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
+* Contains the new template ``DoubleExcitationUnitary`` implementing the quantum circuit to
+  exponentiate the Coupled-Cluster double excitation operator. This template is required to
+  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
+  [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
 
 * Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
   exponentiate the Coupled-Cluster single excitation operator. This template is required to
