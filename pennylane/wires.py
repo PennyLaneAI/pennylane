@@ -87,8 +87,8 @@ class Wires(Sequence):
 
     def __hash__(self):
         """Implements the hash function, used for example by ``set()``."""
-        # hash the representation
-        return hash(repr(self))
+        # hash the string representation
+        return hash(str(repr(self)))
 
     def as_ndarray(self):
         """Returns a numpy array representation of the Wires object.
