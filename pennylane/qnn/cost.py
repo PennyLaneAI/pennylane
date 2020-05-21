@@ -30,4 +30,10 @@ class MSECost:
         )
 
     def __call__(self, *args, target=None, **kwargs):
+        if target is None:
+            raise ValueError("The target cannot be None")
+
+        if len(target) != len(self.qnodes):
+            raise ValueError("Invalid target")
+
         return (self.qnodes(*args, **kwargs) - target) ** 2
