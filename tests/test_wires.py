@@ -178,49 +178,48 @@ class TestWires:
         assert wires.subset(1) == Wires([0])
         assert wires.subset([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
 
-    def test_combined_method(self):
-        """Tests the ``combined()`` method."""
+    def test_all_wires_method(self):
+        """Tests the ``all_wires()`` method."""
 
         wires1 = Wires([1, 2, 3])
         wires2 = Wires([1, 4, 5, 2])
+        wires3 = Wires([6, 5])
 
-        new_wires = Wires.combined(wires1, wires2)
-        assert new_wires.wire_list == [1, 2, 3, 4, 5]
-
-        new_wires = Wires.combined(wires1, wires2, order_by_first=False)
-        assert new_wires.wire_list == [1, 4, 5, 2, 3]
+        new_wires = Wires.all_wires([wires1, wires2, wires3])
+        assert new_wires.wire_list == [1, 2, 3, 4, 5, 6]
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            Wires.combined([3, 4], [8, 5])
+            Wires.all_wires([[3, 4], [8, 5]])
 
-    def test_shared_method(self):
-        """Tests the ``shared()`` method."""
+    def test_shared_wires_method(self):
+        """Tests the ``shared_wires()`` method."""
 
         wires1 = Wires([4, 0, 1])
-        wires2 = Wires([0, 4, 3])
-
-        res = Wires.shared(wires1, wires2)
+        wires2 = Wires([3, 0, 4])
+        wires3 = Wires([4, 0])
+        res = Wires.shared_wires([wires1, wires2, wires3])
         assert res == Wires([4, 0])
 
-        res = Wires.shared(wires1, wires2, order_by_first=False)
+        res = Wires.shared_wires([wires2, wires1, wires3])
         assert res == Wires([0, 4])
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            Wires.shared([2, 1], [8, 5])
+            Wires.shared_wires([[3, 4], [8, 5]])
 
-    def test_unique_method(self):
-        """Tests the ``unique()`` method."""
+    def test_unique_wires_method(self):
+        """Tests the ``unique_wires()`` method."""
 
         wires1 = Wires([4, 0, 1])
-        wires2 = Wires([0, 2, 3])
-        res = Wires.unique(wires1, wires2)
-        assert res == Wires([4, 1, 2, 3])
+        wires2 = Wires([3, 0, 4])
+        wires3 = Wires([4, 0])
+        res = Wires.unique_wires([wires1, wires2, wires3])
+        assert res == Wires([1, 3])
 
-        res = Wires.unique(wires1, wires2, order_by_first=False)
-        assert res == Wires([2, 3, 4, 1])
+        res = Wires.unique_wires([wires2, wires1, wires3])
+        assert res == Wires([3, 1])
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            Wires.unique([2, 1], [8, 5])
+            Wires.unique_wires([[2, 1], [8, 5]])
 
     def test_merge_method(self):
         """Tests the ``merge()`` method."""

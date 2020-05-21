@@ -67,8 +67,10 @@ class Wires(Sequence):
 
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
-        if item in self.wire_list:
-            return True
+        if isinstance(item, Wires):
+            # If all wires can be found in this object, return True
+            if all(wire in self.wire_list for wire in item.wire_list):
+                return True
         return False
 
     def __repr__(self):
@@ -129,7 +131,7 @@ class Wires(Sequence):
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([1, 4])
-        >>> wires1.get_indices(wires2)
+        >>> wires1.indices(wires2)
         [2, 0]
         >>> wires1.indices([1, 4])
         [2, 0]
@@ -206,28 +208,30 @@ class Wires(Sequence):
         return Wires(subset)
 
     @staticmethod
-    def shared(wires1, wires2, order_by_first=True):
-        """Return the wires that appear both in wires1 and wires2.
+    def shared_wires(list_of_wires):
+        """Return only the wires that appear in each Wires object in the list.
+
+        This is similar to a set intersection method, but keeps the order of wires as they appear in the list.
 
         For example:
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([3, 0, 4])
-        >>> Wires.shared_wires(wires1, wires2)
+        >>> wires3 = Wires([4, 0])
+        >>> Wires.shared_wires([wires1, wires2, wires3])
         <Wires [4, 0]>
-        >>> Wires.shared_wires(wires1, wires2, order_by_first=False)
+
+        >>> Wires.shared_wires([wires2, wires1, wires3])
         <Wires [0, 4]>
 
         Args:
-            wires1 (Wires): First Wires object
-            wires2 (Wires): Second Wires object
-            order_by_first (bool): Whether to follow the ordering of wires1, else follow the order of wires2
+            list_of_wires (List[Wires]): List of Wires objects
 
         Returns:
             Wires: shared wires
         """
 
-        for wires in [wires1, wires2]:
+        for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
                     "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
@@ -235,36 +239,39 @@ class Wires(Sequence):
                     )
                 )
 
-        if order_by_first:
-            shared = [w for w in wires1.wire_list if w in wires2.wire_list]
-        else:
-            shared = [w for w in wires2.wire_list if w in wires1.wire_list]
+        shared = []
+        # only need to iterate through the first object,
+        # since any wire not in this object will also not be shared
+        for wire in list_of_wires[0]:
+            if all(wire in wires_ for wires_ in list_of_wires):
+                shared.append(wire)
 
-        return Wires(shared)
+        return Wires.merge(shared)
 
     @staticmethod
-    def combined(wires1, wires2, order_by_first=True):
-        """Return the wires that appear either in wires1 or in wires2.
+    def all_wires(list_of_wires):
+        """Return the wires that appear in any of the Wires objects in the list.
+
+        This is similar to a set combine method, but keeps the order of wires as they appear in the list.
 
         For example:
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([3, 0, 4])
-        >>> Wires.combined_wires(wires1, wires2)
-        <Wires = [4, 0, 1, 3]>
-        >>> Wires.combined_wires(wires1, wires2, order_by_first=False)
-        <Wires = [3, 0, 4, 1]>
+        >>> wires3 = Wires([5, 3])
+        >>> list_of_wires = [wires1, wires2, wires3]
+        >>> Wires.all_wires(list_of_wires)
+        <Wires = [4, 0, 1, 3, 5]>
 
         Args:
-            wires1 (Wires): First Wires object
-            wires2 (Wires): Second Wires object
-            order_by_first (bool): Whether to follow the ordering of wires1, else follow the order of wires2
+            list_of_wires (List[Wires]): List of Wires objects
 
         Returns:
             Wires: combined wires
         """
 
-        for wires in [wires1, wires2]:
+        combined = []
+        for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
                     "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
@@ -272,37 +279,31 @@ class Wires(Sequence):
                     )
                 )
 
-        if order_by_first:
-            additional_wires = [w for w in wires2.wire_list if w not in wires1.wire_list]
-            combined = wires1.wire_list + additional_wires
-        else:
-            additional_wires = [w for w in wires1.wire_list if w not in wires2.wire_list]
-            combined = wires2.wire_list + additional_wires
+            combined.extend(wire for wire in wires.wire_list if wire not in combined)
+
         return Wires(combined)
 
     @staticmethod
-    def unique(wires1, wires2, order_by_first=True):
-        """Return the wires that are unique to wires1 and wires2.
+    def unique_wires(list_of_wires):
+        """Return the wires that are unique to any Wire object in the list.
 
         For example:
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([0, 2, 3])
-        >>> Wires.unique_wires(wires1, wires2)
-        <Wires = [4, 1, 2, 3]>
-        >>> Wires.unique_wires(wires1, wires2, order_by_first=False)
-        <Wires = [2, 3, 4, 1]>
+        >>> wires3 = Wires([5, 3])
+        >>> list_of_wires = [wires1, wires2, wires3]
+        >>> Wires.unique_wires(list_of_wires)
+        <Wires = [4, 2, 5]>
 
         Args:
-            wires1 (Wires): First Wires object
-            wires2 (Wires): Second Wires object
-            order_by_first (bool): Whether to follow the ordering of wires1, else follow the order of wires2
+            list_of_wires (List[Wires]): List of Wires objects
 
         Returns:
             Wires: unique wires
         """
 
-        for wires in [wires1, wires2]:
+        for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
                     "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
@@ -310,17 +311,14 @@ class Wires(Sequence):
                     )
                 )
 
-        # unique wires in wires1
-        unique1 = [w for w in wires1.wire_list if w not in wires2.wire_list]
-        # unique wires in wires2
-        unique2 = [w for w in wires2.wire_list if w not in wires1.wire_list]
+        unique = []
+        for wires in list_of_wires:
+            for wire in wires:
+                # check that wire is only contained in one of the Wires objects
+                if sum([1 for wires_ in list_of_wires if wire in wires_]) == 1:
+                    unique.append(wire)
 
-        if order_by_first:
-            unique = unique1 + unique2
-        else:
-            unique = unique2 + unique1
-
-        return Wires(unique)
+        return Wires.merge(unique)
 
     @staticmethod
     def merge(list_of_wires):
