@@ -50,6 +50,7 @@ class Wires(Sequence):
             # If input is an iterable, check that entries are unique and convert to a list
             if len(set(wires)) != len(wires):
                 raise WireError("Each wire must be represented by a unique index; got {}.".format(wires))
+
             self.wire_list = list(wires)
 
         else:
