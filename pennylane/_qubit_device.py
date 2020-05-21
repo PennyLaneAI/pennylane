@@ -226,11 +226,8 @@ class QubitDevice(Device):
         Returns:
             Wires: wires object representing the wires activated by the specified operators
         """
-        active = Wires([])
-        for op in operators:
-            active = active.combine(op.wires)
 
-        return active
+        return Wires.combined([op.wires for op in operators])
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
