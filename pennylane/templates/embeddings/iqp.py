@@ -224,7 +224,6 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         # convert wire pairs to Wires object
         pattern = [Wires(wire_pair) for wire_pair in pattern]
 
-
     #####################
 
     for i in range(n_repeats):

@@ -36,7 +36,7 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
     """
 
     feature_encoding_wires = wires[: len(features)]
-    remaining_wires = wires[len(features):]
+    remaining_wires = wires[len(features) :]
 
     broadcast(unitary=RX, pattern="single", wires=feature_encoding_wires, parameters=features)
     broadcast(unitary=Hadamard, pattern="single", wires=remaining_wires)
