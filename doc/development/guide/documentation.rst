@@ -45,6 +45,35 @@ The API.
     `XanaduAI/QML <https://github.com/XanaduAI/qml>`_ GitHub repository (viewable at
     https://pennylane.ai/qml).
 
+
+Punctuation and spelling
+------------------------
+
+* Use Canadian spellings. That is, "centre" instead of "center", "realize" instead of "realise",
+  "acknowledgement" instead of "acknowledgment", "colour" instead of "color", etc.
+
+* Use complete sentences with capitalization and punctuation. The one exemption
+  is when describing arguments, return values, attributes, and exceptions; sentence fragments
+  may be used for short descriptions:
+
+  .. code-block:: rest
+
+      wires (List[int]): subsystems the operation is applied to
+      diff_method (str or None): the method of differentiation to use in the created QNode
+
+  Multi-sentence argument descriptions, or longer sentence fragments with mid-sentence punctuation marks,
+  should use full capitalization and punctuation:
+
+  .. code-block:: rest
+
+      device (Device, Sequence[Device]): Corresponding device(s) where the
+          ``QNodeCollection`` should be executed. This can either be a single device, or a list
+          of devices of length ``len(observables)``.
+
+* Comments may written more informally then docstrings, as long as consistency and clarity is maintained.
+  Capitalization and punctuation should be used with multi-sentence comments to aid with readability.
+
+
 .. _docstrings:
 
 Docstrings
@@ -389,34 +418,6 @@ your code easy to follow and understand, keeping to the following guidelines.
   be read in plain text. Use text formatting sparingly for emphasis, and simply insert URLs
   directly. In addition, avoid complex formatting such as tables---these are difficult
   to maintain and modify.
-
-
-Punctuation and spelling
-------------------------
-
-* Use Canadian spellings. That is, "centre" instead of "center", "realize" instead of "realise",
-  "acknowledgement" instead of "acknowledgment", "colour" instead of "color", etc.
-
-* Use complete sentences with capitalization and punctuation. The one exemption
-  is when describing arguments, return values, attributes, and exceptions; sentence fragments
-  may be used for short descriptions:
-
-  .. code-block:: rest
-
-      wires (List[int]): subsystems the operation is applied to
-      diff_method (str or None): the method of differentiation to use in the created QNode
-
-  Multi-sentence argument descriptions, or longer sentence fragments with mid-sentence punctuation marks,
-  should use full capitalization and punctuation:
-
-  .. code-block:: rest
-
-      device (Device, Sequence[Device]): Corresponding device(s) where the
-          ``QNodeCollection`` should be executed. This can either be a single device, or a list
-          of devices of length ``len(observables)``.
-
-* Comments may written more informally then docstrings, as long as consistency and clarity is maintained.
-  Capitalization and punctuation should be used with multi-sentence comments to aid with readability.
 
 
 Contributing documentation
