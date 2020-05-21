@@ -16,83 +16,58 @@ Unit tests for :mod:`pennylane.wires`.
 """
 import pytest
 import numpy as np
-
 from pennylane.wires import Wires, WireError
 
 
 class TestWires:
-    """Wires class tests."""
+    """Tests for the ``Wires`` class."""
 
     @pytest.mark.parametrize("iterable", [Wires([0, 1, 2]),
                                           np.array([0, 1, 2]),
                                           [0, 1, 2],
                                           (0, 1, 2),
-                                          range(3)])
-    def test_common_iterables_as_inputs(self, iterable):
+                                          range(3)
+                                          ])
+    def test_creation_from_common_iterables(self, iterable):
         """Tests that a Wires object can be created from standard iterable inputs."""
 
         wires = Wires(iterable)
         assert wires.wire_list == [0, 1, 2]
 
-    @pytest.mark.parametrize("index", [1, 0, 4])
-    def test_integer_as_inputs(self, index):
-        """Tests that a Wires object can be created from integer representing a single wire index."""
+    @pytest.mark.parametrize("iterable", [[1, 0, 4],
+                                          ['a', 'b', 'c'],
+                                          ['a', 1, "ancilla"],
+                                          [Wires(['a']), Wires([1, 2])]])
+    def test_creation_from_different_wire_types(self, iterable):
+        """Tests that a Wires object can be created from iterables of different
+        objects representing a single wire index."""
 
-        wires = Wires(index)
-        assert wires.wire_list == [index]
+        wires = Wires(iterable)
+        assert wires.wire_list == list(iterable)
 
-    @pytest.mark.parametrize("wrong_input", [lambda x: x,
-                                             None])
-    def test_error_for_illegal_inputs(self, wrong_input):
-        """Tests that a Wires object cannot be created from illegal inputs."""
+    @pytest.mark.parametrize("wire", [1, 'a', -1.4])
+    def test_creation_from_single_object(self, wire):
+        """Tests that a Wires object can be created from a non-iterable object
+        representing a single wire index."""
 
-        with pytest.raises(WireError, match="Received unexpected wires input"):
-            Wires(wrong_input)
-
-    @pytest.mark.parametrize("wrong_input", [-1, [-1, 2]])
-    def test_error_for_negative_wires(self, wrong_input):
-        """Tests that a Wires object cannot be created from negative wires."""
-
-        with pytest.raises(WireError, match="Wire indices must be non-negative"):
-            Wires(wrong_input)
+        wires = Wires(wire)
+        assert wires.wire_list == [wire]
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
-                                          (4, 1, 1, 3)])
-    def test_error_for_repeated_indices(self, iterable):
-        """Tests that a Wires object cannot have repeated indices."""
+                                          (4, 1, 1, 3),
+                                          ['a', 'a', 'b'],
+                                          [Wires([1, 0]), Wires([1, 0]), Wires([3])]])
+    def test_error_for_repeated_wires(self, iterable):
+        """Tests that a Wires object cannot be created from iterables with repeated indices."""
 
         with pytest.raises(WireError, match="Each wire must be represented by a unique index"):
             Wires(iterable)
 
-    @pytest.mark.parametrize("iterable", [1.,
-                                          np.array([4.])[0],  # np.int64
-                                          np.array([4., 1., 0., 3.]),  # entries are np.int64
-                                          [4., 1., 0., 3.]  # entries are floats
-                                          ])
-    def test_integerlike_indices_converted_to_integers(self, iterable):
-        """Tests that a Wires object converts integer-like floats to integer elements."""
-
-        wires = Wires(iterable)
-        for w in wires.wire_list:
-            assert isinstance(w, int)
-
-    @pytest.mark.parametrize("iterable", [1.2,
-                                          np.array([4., 1.2, 0., 3.]),  # non-integer-like np.int64
-                                          [4., 1., 0., 3.0001],  # non-integer-like floats
-                                          ['a', 'b', 'c', 'd']])  # non-integer-like characters
-    def test_error_for_non_integerlike_indices(self, iterable):
-        """Tests that a Wires object throws error when indices are not integer-like."""
-
-        with pytest.raises(WireError, match="Wire indices must be integers"):
-            Wires(iterable)
-
-    @pytest.mark.parametrize("iterable", [np.array([4, 1, 0, 3]),
-                                          [4, 1, 0, 3],
-                                          (4, 1, 0, 3),
-                                          range(4)])
-    def test_indexing(self, iterable):
-        """Tests the indexing of Wires objects."""
+    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
+                                          ['a', 'b', 'c']])
+    def test_indexing_and_slicing(self, iterable):
+        """Tests the indexing and slicing of Wires objects."""
 
         wires = Wires(iterable)
 
@@ -101,6 +76,15 @@ class TestWires:
             assert wires[i] == Wires(iterable[i])
         # check slicing
         assert wires[:2] == Wires(iterable[:2])
+
+    def test_equality(self):
+        """Tests that we can compare Wires objects with the '==' and '!=' operators."""
+
+        wires1 = Wires([1, 2, 3])
+        wires2 = Wires([3, 2, 1])
+        wires3 = Wires([1, 2, 3])
+        assert wires1 != wires2
+        assert wires1 == wires3
 
     def test_is_ordered(self):
         """Tests that a Wires object is not equal to another Wires object with a different ordering of the indices."""
@@ -115,61 +99,21 @@ class TestWires:
         wires = Wires([1, 2, 3, 4, 5])
         assert len(wires) == 5
 
-    def test_retrieving_index(self):
-        """Tests that the correct index of a Wires object is retrieved."""
-
-        wires = Wires([1, 2, 3, 4, 5])
-        assert wires.index(Wires(4)) == 3
-
-    def test_equality(self):
-        """Tests that we can compare Wires objects with the '==' and '!=' operators."""
-
-        wires1 = Wires([1, 2, 3])
-        wires2 = Wires([3, 2, 1])
-        wires3 = Wires([1, 2, 3])
-
-        assert wires1 != wires2
-        assert wires1 == wires3
-
-    def test_comparison(self):
-        """Tests that we can compare Wires objects with '>','<', '>=', '<=' if they consist of 1 wire.
-
-           This property allows other functions such as ``min(wires)`` and ``max(wires)`` to be implemented.
-        """
-
-        wires1 = Wires([1])
-        wires2 = Wires([2])
-        wires3 = Wires([2])
-        wires4 = Wires([0, 1, 2])
-
-        assert wires1 < wires2
-        #assert wires2 <= wires3
-        #assert wires2 >= wires3
-        assert wires2 > wires1
-
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires4 > wires1
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires4 < wires1
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires4 <= wires1
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires4 >= wires1
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires1 > wires4
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires1 < wires4
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires1 <= wires4
-        with pytest.raises(WireError, match="Cannot compare Wires objects of length"):
-            wires1 >= wires4
-
     def test_representation(self):
         """Tests the string representation."""
 
         wires_str = str(Wires([1, 2, 3]))
 
         assert wires_str == "<Wires = {}>".format([1, 2, 3])
+
+    def test_set(self):
+        """Tests that the implementation of __hash__ allows for the set() function to work."""
+
+        wires = Wires([0, 1, 2])
+        list_of_wires = [Wires([1]), Wires([1]), Wires([1, 2, 3]), Wires([4])]
+
+        assert set(wires) == {Wires([0]), Wires([1]), Wires([2])}
+        assert set(list_of_wires) == {Wires([1]), Wires([1, 2, 3]), Wires([4])}
 
     def test_convert_to_numpy_array(self):
         """Tests that Wires object can be converted to a numpy array."""
@@ -189,79 +133,29 @@ class TestWires:
         assert isinstance(lst, list)
         assert wires.wire_list == lst
 
-    def test_min_max(self):
-        """Tests that the min() and max() functions of a Wires object return correct index."""
+    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
+                                          ['a', 'b', 'c']])
+    def test_index_method(self, iterable):
+        """Tests the ``index()`` method."""
 
-        wires = Wires([1, 2, 13, 4, 5])
-        assert max(wires) == Wires(13)
-        assert min(wires) == Wires(1)
+        wires = Wires(iterable)
+        element = iterable[1]
+        # check for non-Wires inputs
+        assert wires.index(element) == 1
+        # check for Wires inputs
+        assert wires.index(Wires([element])) == 1
+        # check that Wires of length >1 produce an error
+        with pytest.raises(WireError, match="Can only retrieve index"):
+            wires.index(Wires([1, 2]))
 
-    def test_combine_method(self):
-        """Tests the ``combine()`` method."""
-
-        wires = Wires([1, 2, 3])
-        wires2 = Wires([1, 4, 5, 2])
-
-        new_wires = wires.combine(wires2)
-        assert wires.wire_list == [1, 2, 3]  # check original object remains the same
-        assert new_wires.wire_list == [1, 2, 3, 4, 5]
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires.combine([8, 5])
-
-    def test_intersection_method(self):
-        """Tests the ``intersect()`` method."""
-
-        wires1 = Wires([4, 0, 1])
-        wires2 = Wires([0, 4, 3])
-        res = wires1.intersect(wires2)
-        assert res == Wires([4, 0])
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires1.intersect([8, 5])
-
-    def test_difference_method(self):
-        """Tests the ``difference()`` method."""
-
-        wires1 = Wires([4, 0, 1])
-        wires2 = Wires([0, 2, 3])
-        res = wires1.difference(wires2)
-        assert res == Wires([4, 1])
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires1.difference([8, 5])
-
-    @pytest.mark.parametrize("wires2, target", [(Wires([1, 0, 3]), True),  # correct number of wires
-                                                (Wires([2, 1]), False)])  # incorrect number of wires
-    def test_injective_map_exists_method(self, wires2, target):
-        """Tests the ``injective_map_exists()`` method."""
-
-        wires = Wires([0, 1, 2])
-        res = wires.injective_map_exists(wires2)
-        assert res == target
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires.injective_map_exists([8, 5])
-
-    def test_get_indices_method(self):
-        """Tests the ``get_indices()`` method."""
+    def test_indices_method(self):
+        """Tests the ``indices()`` method."""
 
         wires = Wires([4, 0, 1])
-        wires2 = Wires([1, 4])
-        res = wires.get_indices(wires2)
-        assert res == [2, 0]
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            wires.get_indices([8, 5])
-
-    def test_subset_method(self):
-        """Tests the ``subset()`` method."""
-
-        wires = Wires([4, 0, 1, 5, 6])
-
-        assert wires.subset([2, 3, 0]) == Wires([1, 5, 4])
-        assert wires.subset(1) == Wires([0])
-        assert wires.subset([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
+        # for non-Wires inputs
+        assert wires.indices(Wires([1, 4])) == [2, 0]
+        # for Wires inputs
+        assert wires.indices([1, 4]) == [2, 0]
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
@@ -275,8 +169,61 @@ class TestWires:
         with pytest.raises(WireError, match="cannot sample"):
             wires.select_random(6)
 
+    def test_subset_method(self):
+        """Tests the ``subset()`` method."""
+
+        wires = Wires([4, 0, 1, 5, 6])
+
+        assert wires.subset([2, 3, 0]) == Wires([1, 5, 4])
+        assert wires.subset(1) == Wires([0])
+        assert wires.subset([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
+
+    def test_combined_method(self):
+        """Tests the ``combined()`` method."""
+
+        wires1 = Wires([1, 2, 3])
+        wires2 = Wires([1, 4, 5, 2])
+
+        new_wires = Wires.combined(wires1, wires2)
+        assert new_wires.wire_list == [1, 2, 3, 4, 5]
+
+        new_wires = Wires.combined(wires1, wires2, order_by_first=False)
+        assert new_wires.wire_list == [1, 4, 5, 2, 3]
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            Wires.combined([3, 4], [8, 5])
+
+    def test_shared_method(self):
+        """Tests the ``shared()`` method."""
+
+        wires1 = Wires([4, 0, 1])
+        wires2 = Wires([0, 4, 3])
+
+        res = Wires.shared(wires1, wires2)
+        assert res == Wires([4, 0])
+
+        res = Wires.shared(wires1, wires2, order_by_first=False)
+        assert res == Wires([0, 4])
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            Wires.shared([2, 1], [8, 5])
+
+    def test_unique_method(self):
+        """Tests the ``unique()`` method."""
+
+        wires1 = Wires([4, 0, 1])
+        wires2 = Wires([0, 2, 3])
+        res = Wires.unique(wires1, wires2)
+        assert res == Wires([4, 1, 2, 3])
+
+        res = Wires.unique(wires1, wires2, order_by_first=False)
+        assert res == Wires([2, 3, 4, 1])
+
+        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
+            Wires.unique([2, 1], [8, 5])
+
     def test_merge_method(self):
-        """Tests the static ``merge()`` method."""
+        """Tests the ``merge()`` method."""
 
         list_of_wires = [Wires([0, 1]), Wires([2]), Wires([3, 4])]
         merged = Wires.merge(list_of_wires)
