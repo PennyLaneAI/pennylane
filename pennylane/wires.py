@@ -49,7 +49,9 @@ class Wires(Sequence):
         elif isinstance(wires, Iterable):
             # If input is an iterable, check that entries are unique and convert to a list
             if len(set(wires)) != len(wires):
-                raise WireError("Each wire must be represented by a unique index; got {}.".format(wires))
+                raise WireError(
+                    "Each wire must be represented by a unique index; got {}.".format(wires)
+                )
 
             self.wire_list = list(wires)
 
@@ -338,10 +340,18 @@ class Wires(Sequence):
         for wires in list_of_wires:
 
             if not isinstance(wires, Wires):
-                raise WireError("Expected list of Wires objects; got entry {} of type {}.".format(wires, type(wires)))
+                raise WireError(
+                    "Expected list of Wires objects; got entry {} of type {}.".format(
+                        wires, type(wires)
+                    )
+                )
 
             if any([w in merged_wires for w in wires.wire_list]):
-                raise WireError("Cannot merge Wires objects that contain the same wires; got {}.".format(list_of_wires))
+                raise WireError(
+                    "Cannot merge Wires objects that contain the same wires; got {}.".format(
+                        list_of_wires
+                    )
+                )
             else:
                 merged_wires += wires.wire_list
 
