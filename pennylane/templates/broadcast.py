@@ -49,7 +49,7 @@ def wires_pyramid(wires):
     """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
-        subset = wires[layer: len(wires) - layer]
+        subset = wires[layer : len(wires) - layer]
         sequence += [subset.subset([i, i + 1]) for i in range(0, len(subset) - 1, 2)]
     return sequence
 

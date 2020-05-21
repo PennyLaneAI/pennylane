@@ -71,7 +71,7 @@ def BasisStatePreparation(basis_state, wires):
 
     ######################
 
-    wires = wires.wire_list # TODO: remove when operator takes Wires object
+    wires = wires.wire_list  # TODO: remove when operator takes Wires object
 
     for wire, state in zip(wires, basis_state):
         if state == 1:
