@@ -48,10 +48,13 @@ class Wires(Sequence):
 
         elif isinstance(wires, Iterable):
             # If input is an iterable, check that entries are unique and convert to a list
-            if len(set(wires)) != len(wires):
-                raise WireError(
-                    "Each wire must be represented by a unique index; got {}.".format(wires)
-                )
+            try:
+                if len(set(wires)) != len(wires):
+                    raise WireError(
+                        "Wires must be unique; got {}.".format(wires)
+                    )
+            except TypeError:
+                raise WireError("Cannot create wires from elements of type {}.".format(type(wires[0]))) # TODO: edge case that iterable contains different types
 
             self.wire_list = list(wires)
 
@@ -356,3 +359,41 @@ class Wires(Sequence):
                 merged_wires += wires.wire_list
 
         return Wires(merged_wires)
+
+    @staticmethod
+    def all_unique(list_of_wires):
+        """Check whether all wires in the Wire objects in the list contain only unique wires.
+
+        For example:
+
+        >>> list_of_wires = [Wires([4, 0]), Wires([2, 5])]
+        >>> Wires.all_unique(list_of_wires)
+        True
+        >>> list_of_wires = [Wires([4, 0, 1]), Wires([4, 2])]
+        >>> Wires.all_unique(list_of_wires)
+        False
+
+        Args:
+            list_of_wires (List[Wires]): List of Wires objects
+
+        Returns:
+            bool: whether list only contains unique wires
+        """
+
+        all_wires = []
+        for wires in list_of_wires:
+            if not isinstance(wires, Wires):
+                raise WireError(
+                    "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
+                        wires, type(wires)
+                    )
+                )
+            all_wires.append(wires.as_list())
+
+        for wires in list_of_wires:
+            for wire in wires:
+                # check that wire is only contained in one of the Wires objects
+                if sum([1 for wires_ in list_of_wires if wire in wires_]) > 1:
+                    return False
+
+        return True
