@@ -155,13 +155,11 @@ class CircuitGraph:
         self.num_wires = 0
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(list(_flatten(op.wires))) + 1)
+            self.num_wires = max(self.num_wires, len(op.wires))
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(
-                _flatten(op.wires)
-            ):  # flatten the nested wires lists of Tensor observables
+            for w in op.wires:
                 # Add op to the grid, to the end of wire w
-                self._grid.setdefault(w, []).append(op)
+                self._grid.setdefault(w.as_list()[0], []).append(op)  # TODO: use index of wire in user_wires
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 

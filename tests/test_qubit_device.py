@@ -545,6 +545,7 @@ class TestMarginalProb:
         """Test that the correct arguments are passed to the marginal_prob method"""
 
         mock_qubit_device_with_original_statistics.num_wires = 3
+        mock_qubit_device_with_original_statistics._user_wires = qml.wires.Wires(range(3))
 
         # Generate probabilities
         probs = np.array([random() for i in range(2 ** 3)])
@@ -588,7 +589,10 @@ class TestMarginalProb:
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method"""
-        mock_qubit_device_with_original_statistics.num_wires = int(np.log2(len(probs)))
+        n_wires = int(np.log2(len(probs)))
+        mock_qubit_device_with_original_statistics.num_wires = n_wires
+        mock_qubit_device_with_original_statistics._user_wires = qml.wires.Wires(range(n_wires))
+
         res = mock_qubit_device_with_original_statistics.marginal_prob(probs, wires=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
