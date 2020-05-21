@@ -29,7 +29,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
 from autograd.core import VSpace
 
-__doc__  = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
+__doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
 
 
 class tensor(_np.ndarray):
@@ -106,7 +106,7 @@ class tensor(_np.ndarray):
         if obj is None:
             return
 
-        self.requires_grad = getattr(obj, 'requires_grad', None)
+        self.requires_grad = getattr(obj, "requires_grad", None)
 
     def __repr__(self):
         string = super().__repr__()
@@ -137,6 +137,7 @@ def tensor_wrapper(obj):
     output converted to a :class:`~.tensor`; this avoids superfluous conversion
     of scalars and other native-Python types.
     """
+
     @functools.wraps(obj)
     def _wrapped(*args, **kwargs):
         """Wrapped NumPy function"""
@@ -153,7 +154,9 @@ def tensor_wrapper(obj):
                 # list are non-trainable, the output is also non-trainable.
                 # NOTE: Use of Python's ``all`` results in an infinite recursion,
                 # and I'm not sure why. Using ``np.all`` works fine.
-                tensor_kwargs["requires_grad"] = not _np.all([i.requires_grad == False for i in tensor_args])
+                tensor_kwargs["requires_grad"] = not _np.all(
+                    [i.requires_grad == False for i in tensor_args]
+                )
 
         # evaluate the original object
         res = obj(*args, **kwargs)
@@ -164,6 +167,7 @@ def tensor_wrapper(obj):
             res = tensor(res, **tensor_kwargs)
 
         return res
+
     return _wrapped
 
 
@@ -204,7 +208,9 @@ def tensor_to_arraybox(x, *args):
         if x.requires_grad:
             return ArrayBox(x, *args)
 
-        raise NonDifferentiableError("{} is non-differentiable. Set the requires_grad attribute to True.".format(x))
+        raise NonDifferentiableError(
+            "{} is non-differentiable. Set the requires_grad attribute to True.".format(x)
+        )
 
     return ArrayBox(x, *args)
 
