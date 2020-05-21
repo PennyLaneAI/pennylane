@@ -238,8 +238,8 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         products = []
         for wire_pair in pattern:
             # get the position of the wire indices in the array
-            indices = wires.get_indices(wire_pair)
+            idx1, idx2 = wires.indices(wire_pair)
             # create products of parameters
-            products.append(features[indices[0]] * features[indices[1]])
+            products.append(features[idx1] * features[idx2])
 
         broadcast(unitary=MultiRZ, pattern=pattern, wires=wires, parameters=products)
