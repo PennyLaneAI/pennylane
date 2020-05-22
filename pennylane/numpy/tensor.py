@@ -12,21 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides the PennyLane/Autograd wrapped version of NumPy,
-as well as the PennyLane :class:`~.tensor` class.
+This module provides the PennyLane :class:`~.tensor` class.
 """
-from collections import Sequence
-import functools
-
 import numpy as onp
 
 from autograd import numpy as _np
-from autograd.numpy import *  # pylint: disable=wildcard-import
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
 from autograd.core import VSpace
+
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
 
@@ -113,78 +109,6 @@ class tensor(_np.ndarray):
         return string[:-1] + ", requires_grad={})".format(self.requires_grad)
 
 
-def extract_tensors(x):
-    """Iterate through an iterable, and extract any PennyLane
-    tensors that appear.
-    """
-    if isinstance(x, tensor):
-        # If the item is a tensor, return it
-        yield x
-    elif isinstance(x, Sequence) and not isinstance(x, (str, bytes)):
-        # If the item is a sequence, recursively look through its
-        # elements for tensors.
-        # NOTE: we choose to branch on Sequence here and not Iterable,
-        # as NumPy arrays are not Sequences.
-        for item in x:
-            yield from extract_tensors(item)
-
-
-def tensor_wrapper(obj):
-    """Decorator that wraps existing NumPy functions so that they return
-    a PennyLane :class:`~.tensor`.
-
-    Only if the decorated function returns an ``ndarray`` is the
-    output converted to a :class:`~.tensor`; this avoids superfluous conversion
-    of scalars and other native-Python types.
-    """
-
-    @functools.wraps(obj)
-    def _wrapped(*args, **kwargs):
-        """Wrapped NumPy function"""
-
-        tensor_kwargs = {}
-
-        if "requires_grad" in kwargs:
-            tensor_kwargs["requires_grad"] = kwargs.pop("requires_grad")
-        else:
-            tensor_args = list(extract_tensors(args))
-
-            if tensor_args:
-                # Unless the user specifies otherwise, if all tensors in the argument
-                # list are non-trainable, the output is also non-trainable.
-                # NOTE: Use of Python's ``all`` results in an infinite recursion,
-                # and I'm not sure why. Using ``np.all`` works fine.
-                tensor_kwargs["requires_grad"] = not _np.all(
-                    [not i.requires_grad for i in tensor_args]
-                )
-
-        # evaluate the original object
-        res = obj(*args, **kwargs)
-
-        if isinstance(res, _np.ndarray):
-            # only if the output of the object is a ndarray,
-            # then convert to a PennyLane tensor
-            res = tensor(res, **tensor_kwargs)
-
-        return res
-
-    return _wrapped
-
-
-def wrap_arrays(old, new):
-    """Loop through an objects symbol table,
-    wrapping each function with :func:`~.tensor_wrapper`.
-
-    Args:
-        old (dict): The symbol table to be wrapped. Note that
-            callable classes are ignored; only function are wrapped.
-        new (dict): The symbol table that contains the wrapped values.
-    """
-    for name, obj in old.items():
-        if callable(obj) and not isinstance(obj, type):
-            new[name] = tensor_wrapper(obj)
-
-
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable
     :class:`~.tensor` using Autograd."""
@@ -215,6 +139,5 @@ def tensor_to_arraybox(x, *args):
     return ArrayBox(x, *args)
 
 
-wrap_arrays(_np.__dict__, globals())
 Box.type_mappings[tensor] = tensor_to_arraybox
 VSpace.mappings[tensor] = lambda x: ComplexArrayVSpace(x) if onp.iscomplexobj(x) else ArrayVSpace(x)
