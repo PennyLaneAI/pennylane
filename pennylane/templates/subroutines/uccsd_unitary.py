@@ -1,0 +1,221 @@
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""
+Contains the ``UCCSDUnitary`` template.
+"""
+import numpy as np
+
+import pennylane as qml
+
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+from pennylane.templates.decorator import template
+from pennylane.templates.utils import (
+    check_no_variable,
+    check_shape,
+    check_type,
+    check_wires,
+    get_shape,
+)
+
+from pennylane.templates.subroutines import (
+    SingleExcitationUnitary,
+    DoubleExcitationUnitary
+)
+
+@template
+def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
+    r"""Implements the the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz
+    by applying the
+    :func:`SingleExcitationUnitary <pennylane.templates.subroutine.SingleExcitationUnitary>`
+    and :func:`DoubleExcitationUnitary <pennylane.templates.subroutine.DoubleExcitationUnitary>`
+    templates to exponentiate the coupled-cluster excitation operator up to the level of doubles.
+    UCCSD is a VQE ansatz commonly used to run quantum chemistry simulations.
+
+    The UCCSD unitary, within the first-order Trotter approximation, is given by:
+
+    .. math::
+
+        \hat{U}(\vec{\theta}) = 
+        \prod_{p > r} \mathrm{exp} \Big\{\theta_{pr}
+        (\hat{c}_p^\dagger \hat{c}_r-\mathrm{H.c.}) \Big\}
+        \prod_{p > q > r > s} \mathrm{exp} \Big\{\theta_{pqrs}
+        (\hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s-\mathrm{H.c.}) \Big\}
+
+    where :math:`\hat{c}` and :math:`\hat{c}^\dagger` are the fermionic annihilation and
+    creation operators and the indices :math:`r, s` and :math:`p, q` run over the occupied and
+    unoccupied molecular orbitals, respectively. Using the `Jordan-Wigner transformation
+    <https://arxiv.org/abs/1208.5986>`_ the UCCSD unitary defined above can be written in terms
+    of Pauli matrices as follows (for more details see
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_):
+
+    .. math::
+
+        \hat{U}(\vec{\theta}) = && \prod_{p > r} \mathrm{exp} \Big\{ \frac{i\theta_{pr}}{2}
+        \bigotimes_{a=r+1}^{p-1} \hat{Z}_a (\hat{Y}_r \hat{X}_p - \mathrm{H.c.}) \Big\} \\
+        && \times \prod_{p > q > r > s} \mathrm{exp} \Big\{ \frac{i\theta_{pqrs}}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1}
+        \hat{Z}_a (\hat{X}_s \hat{X}_r \hat{Y}_q \hat{X}_p +
+        \hat{Y}_s \hat{X}_r \hat{Y}_q \hat{Y}_p +
+        \hat{X}_s \hat{Y}_r \hat{Y}_q \hat{Y}_p +
+        \hat{X}_s \hat{X}_r \hat{X}_q \hat{Y}_p -
+        \{\mathrm{H.c.}\}) \Big\}.
+
+    Args:
+        weights (array): length ``len(ph)+len(pphh)`` vector of parameters, the angles
+            :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
+            :func:`SingleExcitationUnitary <pennylane.templates.subroutine.SingleExcitationUnitary>`
+            and
+            :func:`DoubleExcitationUnitary <pennylane.templates.subroutine.DoubleExcitationUnitary>`
+            for each term of the coupled-cluster excitation operator.
+        wires (Sequence[int]): wires the UCCSD unitary should act on
+        ph (Sequence[list]): sequence of two-element lists containing the indices ``r, p`` that
+            define the 1particle-1hole (ph) configuration :math:`\vert \mathrm{ph} \rangle =
+            \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
+            where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state.
+        pphh (Sequence[list]): sequence of four-elements lists containing the indices
+            ``s, r, q, p`` that define the 2particle-2hole configuration (pphh)
+            :math:`\vert \mathrm{pphh} \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
+            \hat{c}_s \vert \mathrm{HF} \rangle`.
+        init_state (array[int]): lenght ``len(wires)`` occupation-number vector representing the
+            HF state. ``init_state`` is used to initialized the qubit register.
+    
+    Raises:
+        ValueError: if inputs do not have the correct format
+
+    .. UsageDetails::
+
+        Notice that:
+
+        #. The number of wires has to be equal to the number of spin-orbitals included in
+           the active space.
+
+        #. The ``ph`` and ``pphh`` lists can be generated with the function
+           :func:`sd_excitations <pennylane.qchem.pennylane_qchem.qchem.py>`.
+           See example below.
+
+        #. The vector of parameters ``weights`` is a one-dimensional array of size
+           ``len(ph)+len(pphh)``
+
+
+        An example of how to use this template is shown below:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import UCCSDAnsatz
+
+            # Number of active electrons
+            n_active_electrons = 2
+
+            # Number of active spin-orbitals
+            n_active_orbitals = 4
+
+            # Set the ``ref_state`` array to encode the HF state
+            ref_state = qml.qchem.hf_state(n_active_electrons, n_active_orbitals)
+
+            # Spin-projection selection rule to generate the excitations
+            DS = 0
+
+            # Generate the particle-hole configurations
+            ph, pphh = qml.qchem.sd_excitations(n_active_electrons, n_active_orbitals, DS=DS)
+
+            dev = qml.device('default.qubit', wires=n_active_orbitals)
+
+            @qml.qnode(dev)
+            def circuit(weights, wires, ph=ph, pphh=pphh, init_state=ref_state):
+                UCCSDAnsatz(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
+                return qml.expval(qml.PauliZ(0))
+
+            params = np.random.normal(0, np.pi, len(ph) + len(pphh))
+            print(circuit(params, wires, ph=ph, pphh=pphh, init_state=ref_state))
+
+    """
+
+    ##############
+    # Input checks
+
+    check_no_variable(wires, msg="'wires' cannot be differentiable")
+
+    wires = check_wires(wires)
+
+    if (len(ph) == 0) and (len(pphh) == 0):
+    	raise ValueError(
+            "Both 'ph' and 'pphh' lists can not be empty; got ph={}, pphh={}".
+            format(ph, pphh)
+            )
+
+    expected_shape = (2,)
+    for i_ph in ph:
+	    check_shape(
+            i_ph,
+            expected_shape,
+            msg="Elements of 'ph' must be of shape {}; got {}".
+            format(expected_shape, get_shape(i_ph)),
+        )
+
+    expected_shape = (4,)
+    for i_pphh in pphh:
+        check_shape(
+            i_pphh,
+            expected_shape,
+            msg="Elements of 'ph' must be of shape {}; got {}".
+            format(expected_shape, get_shape(i_pphh)),
+        )
+
+    expected_shape = (len(ph)+len(pphh),)
+    check_shape(
+        weights,
+        expected_shape,
+        msg="'weights' must be of shape {}; got {}".
+        format(expected_shape, get_shape(weights)),
+    )
+
+    expected_shape = (len(wires),)
+    check_shape(
+        init_state,
+        expected_shape,
+        msg="'init_state' must be of shape {}; got {}".
+        format(expected_shape, get_shape(init_state)),
+    )
+
+    check_type(ph, [list], msg="'ph' must be a list; got {}".format(ph))
+    for i_ph in ph:
+        check_type(i_ph, [list], msg="Each element of 'ph' must be a list; got {}".format(i_ph))
+        for i in i_ph:
+            check_type(i, [int],
+                msg="Each element of 'ph' must be a list of integers; got {}".format(i_ph))
+
+    check_type(pphh, [list], msg="'pphh' must be a list; got {}".format(pphh))
+    for i_pphh in pphh:
+        check_type(i_pphh, [list],
+            msg="Each element of 'pphh' must be a list; got {}".format(i_pphh))
+        for i in i_pphh:
+            check_type(i, [int],
+                msg="Each element of 'pphh' must be a list of integers; got {}".format(i_pphh))
+
+    check_type(init_state, [np.ndarray],
+        msg="'init_state' must be a Numpy array; got {}".format(init_state))
+    for i in init_state:
+    	check_type(i, [int, np.int64],
+    	    msg="Elements of 'init_state' must be integers; got {}".format(init_state))
+
+    ###############
+
+    qml.BasisState(np.flip(init_state), wires=wires)
+
+    for d, i_pphh in enumerate(pphh):
+        DoubleExcitationUnitary(weights[len(ph) + d], wires=i_pphh)
+
+    for s, i_ph in enumerate(ph):
+        SingleExcitationUnitary(weights[s], wires=i_ph)
