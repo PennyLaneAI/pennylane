@@ -17,7 +17,7 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.utils import unflatten
+from pennylane.utils import _flatten, unflatten
 
 
 def to_autograd(qnode):
@@ -67,15 +67,30 @@ def to_autograd(qnode):
                     nested Sequence[float]: vector-Jacobian product, arranged
                     into the nested structure of the input arguments in ``args``
                 """
+                diff_args = []
+                diff_indices = None
+                non_diff_indices = set()
+
+                for arg, variable_inds in zip(args, self.arg_vars):
+                    if not getattr(arg, "requires_grad", True):
+                        indices = [i.idx for i in _flatten(variable_inds)]
+                        non_diff_indices.update(indices)
+                    else:
+                        diff_args.append(arg)
+
+                if non_diff_indices:
+                    diff_indices = set(range(self.num_variables)) - non_diff_indices
+
                 # Jacobian matrix of the circuit
-                jac = self.jacobian(args, kwargs)
+                jac = self.jacobian(args, kwargs, wrt=diff_indices)
+
                 if not g.shape:
                     temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
                 else:
                     temp = g @ jac
 
                 # restore the nested structure of the input args
-                temp = unflatten(temp.flat, args)
+                temp = unflatten(temp.flat, diff_args)
                 return temp
 
             return gradient_product
