@@ -20,6 +20,7 @@ import pennylane as qml
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
+from pennylane.templates.subroutines import DoubleExcitationUnitary, SingleExcitationUnitary
 from pennylane.templates.utils import (
     check_no_variable,
     check_shape,
@@ -28,10 +29,6 @@ from pennylane.templates.utils import (
     get_shape,
 )
 
-from pennylane.templates.subroutines import (
-    SingleExcitationUnitary,
-    DoubleExcitationUnitary
-)
 
 @template
 def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
@@ -46,7 +43,7 @@ def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
 
     .. math::
 
-        \hat{U}(\vec{\theta}) = 
+        \hat{U}(\vec{\theta}) =
         \prod_{p > r} \mathrm{exp} \Big\{\theta_{pr}
         (\hat{c}_p^\dagger \hat{c}_r-\mathrm{H.c.}) \Big\}
         \prod_{p > q > r > s} \mathrm{exp} \Big\{\theta_{pqrs}
@@ -89,7 +86,7 @@ def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
             \hat{c}_s \vert \mathrm{HF} \rangle`.
         init_state (array[int]): lenght ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialized the qubit register.
-    
+
     Raises:
         ValueError: if inputs do not have the correct format
 
@@ -149,19 +146,19 @@ def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
 
     wires = check_wires(wires)
 
-    if (len(ph) == 0) and (len(pphh) == 0):
-    	raise ValueError(
-            "Both 'ph' and 'pphh' lists can not be empty; got ph={}, pphh={}".
-            format(ph, pphh)
-            )
+    if (not ph) and (not pphh):
+        raise ValueError(
+            "Both 'ph' and 'pphh' lists can not be empty; got ph={}, pphh={}".format(ph, pphh)
+        )
 
     expected_shape = (2,)
     for i_ph in ph:
-	    check_shape(
+        check_shape(
             i_ph,
             expected_shape,
-            msg="Elements of 'ph' must be of shape {}; got {}".
-            format(expected_shape, get_shape(i_ph)),
+            msg="Elements of 'ph' must be of shape {}; got {}".format(
+                expected_shape, get_shape(i_ph)
+            ),
         )
 
     expected_shape = (4,)
@@ -169,46 +166,58 @@ def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
         check_shape(
             i_pphh,
             expected_shape,
-            msg="Elements of 'ph' must be of shape {}; got {}".
-            format(expected_shape, get_shape(i_pphh)),
+            msg="Elements of 'ph' must be of shape {}; got {}".format(
+                expected_shape, get_shape(i_pphh)
+            ),
         )
 
-    expected_shape = (len(ph)+len(pphh),)
+    expected_shape = (len(ph) + len(pphh),)
     check_shape(
         weights,
         expected_shape,
-        msg="'weights' must be of shape {}; got {}".
-        format(expected_shape, get_shape(weights)),
+        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
     )
 
     expected_shape = (len(wires),)
     check_shape(
         init_state,
         expected_shape,
-        msg="'init_state' must be of shape {}; got {}".
-        format(expected_shape, get_shape(init_state)),
+        msg="'init_state' must be of shape {}; got {}".format(
+            expected_shape, get_shape(init_state)
+        ),
     )
 
     check_type(ph, [list], msg="'ph' must be a list; got {}".format(ph))
     for i_ph in ph:
         check_type(i_ph, [list], msg="Each element of 'ph' must be a list; got {}".format(i_ph))
         for i in i_ph:
-            check_type(i, [int],
-                msg="Each element of 'ph' must be a list of integers; got {}".format(i_ph))
+            check_type(
+                i, [int], msg="Each element of 'ph' must be a list of integers; got {}".format(i_ph)
+            )
 
     check_type(pphh, [list], msg="'pphh' must be a list; got {}".format(pphh))
     for i_pphh in pphh:
-        check_type(i_pphh, [list],
-            msg="Each element of 'pphh' must be a list; got {}".format(i_pphh))
+        check_type(
+            i_pphh, [list], msg="Each element of 'pphh' must be a list; got {}".format(i_pphh)
+        )
         for i in i_pphh:
-            check_type(i, [int],
-                msg="Each element of 'pphh' must be a list of integers; got {}".format(i_pphh))
+            check_type(
+                i,
+                [int],
+                msg="Each element of 'pphh' must be a list of integers; got {}".format(i_pphh),
+            )
 
-    check_type(init_state, [np.ndarray],
-        msg="'init_state' must be a Numpy array; got {}".format(init_state))
+    check_type(
+        init_state,
+        [np.ndarray],
+        msg="'init_state' must be a Numpy array; got {}".format(init_state),
+    )
     for i in init_state:
-    	check_type(i, [int, np.int64],
-    	    msg="Elements of 'init_state' must be integers; got {}".format(init_state))
+        check_type(
+            i,
+            [int, np.int64],
+            msg="Elements of 'init_state' must be integers; got {}".format(init_state),
+        )
 
     ###############
 
