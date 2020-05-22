@@ -249,6 +249,21 @@ class TestNumpyIntegration:
         assert not isinstance(x, np.tensor)
         assert not hasattr(x, "requires_grad")
 
+    def test_random_subpackage(self):
+        """Test that the random subpackage is correctly wrapped"""
+        x = np.random.normal(size=[2, 3])
+        assert isinstance(x, np.tensor)
+
+    def test_linalg_subpackage(self):
+        """Test that the linalg subpackage is correctly wrapped"""
+        x = np.linalg.eigvals([[1, 1], [1, 1]])
+        assert isinstance(x, np.tensor)
+
+    def test_fft_subpackage(self):
+        """Test that the fft subpackage is correctly wrapped"""
+        x = np.fft.fft(np.arange(8))
+        assert isinstance(x, np.tensor)
+
 
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""

@@ -15,16 +15,24 @@
 This package provides a wrapped version of autograd.numpy, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
+# pylint: disable=wrong-import-position,wildcard-import
 from autograd import numpy as _np
-from autograd.numpy import *  # pylint: disable=wildcard-import
+from autograd.numpy import *
+
+from .wrapper import wrap_arrays, extract_tensors
+
+wrap_arrays(_np.__dict__, globals())
+
+# Delete the unwrapped fft, linalg, random modules
+# so that we can re-import our wrapped versions.
+del fft
+del linalg
+del random
 
 from . import fft
 from . import linalg
 from . import random
 
 from .tensor import tensor, NonDifferentiableError
-from .wrapper import wrap_arrays, extract_tensors
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
-
-wrap_arrays(_np.__dict__, globals())
