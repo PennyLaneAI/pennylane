@@ -17,7 +17,7 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.numpy import tensor
+from pennylane.numpy import array, ndarray
 from pennylane.utils import _flatten, unflatten
 
 
@@ -90,8 +90,11 @@ def to_autograd(qnode):
                 else:
                     temp = g @ jac
 
-                # restore the nested structure of the input args
-                temp = tensor(unflatten(temp.flat, tensor(diff_args)), requires_grad=False)
+                if isinstance(args, ndarray):
+                    diff_args = array(diff_args)
+
+                # Restore the nested structure of the input args.
+                temp = unflatten(temp.flat, diff_args)
                 return temp
 
             return gradient_product

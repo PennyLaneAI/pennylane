@@ -83,7 +83,7 @@ class TestJacobianQNodeExceptions:
 
         node = JacobianQNode(circuit, operable_mock_device_2_wires)
 
-        with pytest.raises(ValueError, match="Cannot differentiate with respect to the parameters"):
+        with pytest.raises(ValueError, match=r"Cannot differentiate with respect to argument\(s\) \{'x'\}"):
             node.jacobian(0.5)
 
     def test_operator_not_supporting_pd_analytic(self, operable_mock_device_2_wires):

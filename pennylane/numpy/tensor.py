@@ -89,6 +89,7 @@ class tensor(_np.ndarray):
     """
 
     def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
+        print(input_array)
         obj = _np.array(input_array, *args, **kwargs)
 
         if isinstance(obj, _np.ndarray):
