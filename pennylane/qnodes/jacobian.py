@@ -253,7 +253,9 @@ class JacobianQNode(BaseQNode):
         # are we trying to differentiate wrt. params that don't support any method?
         bad = inds_using(None)
         if bad:
-            raise ValueError("Cannot differentiate with respect to the parameters {}.".format(bad))
+            # get bad argument name
+            bad_var_names = {v.name for v in _flatten(self.arg_vars) if v.idx in bad}
+            raise ValueError("Cannot differentiate with respect to argument(s) {}.".format(bad_var_names))
 
         if method == "device":
             self._set_variables(args, kwargs)
@@ -263,10 +265,14 @@ class JacobianQNode(BaseQNode):
 
         if method == "A":
             bad = inds_using("F")
+
+            # get bad argument name
+            bad_var_names = {v.name for v in _flatten(self.arg_vars) if v.idx in bad}
+
             if bad:
                 raise ValueError(
                     "The analytic gradient method cannot be "
-                    "used with the parameters {}.".format(bad)
+                    "used with the argument(s) {}.".format(bad_var_names)
                 )
             # only variants of the analytic method remain
             method = self.par_to_grad_method
