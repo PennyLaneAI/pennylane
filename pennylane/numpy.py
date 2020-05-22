@@ -21,9 +21,8 @@ import functools
 import numpy as onp
 
 from autograd import numpy as _np
-from autograd.numpy import *
+from autograd.numpy import * # pylint: disable=wildcard-import
 
-import autograd
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
@@ -93,7 +92,7 @@ class tensor(_np.ndarray):
         [0., 0., 0.]], requires_grad=True)
     """
 
-    def __new__(cls, input_array, requires_grad=True, *args, **kwargs):
+    def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
         obj = _np.array(input_array, *args, **kwargs)
 
         if isinstance(obj, _np.ndarray):
@@ -103,6 +102,7 @@ class tensor(_np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
+        # pylint: disable=attribute-defined-outside-init
         if obj is None:
             return
 
@@ -155,7 +155,7 @@ def tensor_wrapper(obj):
                 # NOTE: Use of Python's ``all`` results in an infinite recursion,
                 # and I'm not sure why. Using ``np.all`` works fine.
                 tensor_kwargs["requires_grad"] = not _np.all(
-                    [i.requires_grad == False for i in tensor_args]
+                    [not i.requires_grad for i in tensor_args]
                 )
 
         # evaluate the original object
@@ -181,7 +181,7 @@ def wrap_arrays(old, new):
         new (dict): The symbol table that contains the wrapped values.
     """
     for name, obj in old.items():
-        if callable(obj) and type(obj) is not type:
+        if callable(obj) and not isinstance(obj, type):
             new[name] = tensor_wrapper(obj)
 
 

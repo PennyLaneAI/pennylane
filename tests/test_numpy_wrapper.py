@@ -243,6 +243,12 @@ class TestNumpyIntegration:
         assert isinstance(res, np.tensor)
         assert res.requires_grad
 
+    def test_classes_not_wrapped(self):
+        """Test that NumPy classes are not wrapped"""
+        x = np.ndarray([0, 1, 2])
+        assert not isinstance(x, np.tensor)
+        assert not hasattr(x, "requires_grad")
+
 
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""
