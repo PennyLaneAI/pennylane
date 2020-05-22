@@ -21,7 +21,7 @@ import functools
 import numpy as onp
 
 from autograd import numpy as _np
-from autograd.numpy import * # pylint: disable=wildcard-import
+from autograd.numpy import *  # pylint: disable=wildcard-import
 
 from autograd.tracer import Box
 from autograd.numpy.numpy_boxes import ArrayBox
