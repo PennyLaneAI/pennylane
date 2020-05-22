@@ -91,6 +91,7 @@ def to_autograd(qnode):
 
                 # restore the nested structure of the input args
                 temp = unflatten(temp.flat, diff_args)
+                print(type(temp))
                 return temp
 
             return gradient_product

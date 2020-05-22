@@ -17,7 +17,7 @@ Unit tests for computing Autograd gradients of quantum functions.
 
 import pytest
 import autograd
-import autograd.numpy as anp  # only to be used inside classical computational nodes
+import pennylane.numpy as anp  # only to be used inside classical computational nodes
 import numpy as np
 
 import pennylane as qml
@@ -466,8 +466,7 @@ class TestQubitGradient:
         # Note: the lambda function is required as evaluate now receives a required `kwargs` argument
         # that cannot be differentiated by autograd.
         grad_fn = autograd.grad(lambda x: qnode.evaluate(x, {}))
-        print(grad_fn(params))
-        grad_auto = np.array(grad_fn(params))[np.newaxis, :]  # so shapes will match
+        grad_auto = grad_fn(params)[np.newaxis, :]  # so shapes will match
 
         # gradients computed with different methods must agree
         assert grad_fd1 == pytest.approx(grad_fd2, abs=tol)
