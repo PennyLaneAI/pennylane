@@ -15,7 +15,7 @@
 This package provides a wrapped version of autograd.numpy, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
-# pylint: disable=wrong-import-position,wildcard-import
+# pylint: disable=wrong-import-position,wildcard-import,undefined-variable
 from autograd import numpy as _np
 from autograd.numpy import *
 
