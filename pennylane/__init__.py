@@ -162,23 +162,49 @@ def device(name, *args, **kwargs):
     raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
 
 
-def grad(func, argnum):
+def grad(func, argnum=None):
     """Returns the gradient as a callable function of (functions of) QNodes.
 
     This is a wrapper around the :mod:`autograd.grad` functions.
+    Function arguments with the property ``requires_grad`` set to ``False``
+    will automatically be excluded from the gradient computation, unless
+    the ``argnum`` keyword argument is passed.
 
     Args:
         func (function): a Python function or QNode that contains
             a combination of quantum and classical nodes
-        argnum (int or list(int)): which argument(s) to take the gradient
-            with respect to
+
+    Keyword Args:
+        argnum (int or list(int)): Which argument(s) to take the gradient
+            with respect to. By default, the arguments themselves are used
+            to determine differentiability, by examining the ``requires_grad``
+            property. Providing this keyword argument overrides this behaviour,
+            allowing differentiability to be set manually.
 
     Returns:
         function: the function that returns the gradient of the input
         function with respect to the arguments in argnum
     """
     # pylint: disable=no-value-for-parameter
-    return _grad(func, argnum)
+    if argnum is not None:
+        # for backwards compatibility with existing code
+        # that manually specifies argnum
+        return _grad(func, argnum)
+
+    def _gradient_function(*args, **kwargs):
+        """Inspect the arguments for differentiability, and
+        compute the autograd gradient function with required argnums
+        dynamically"""
+        argnum = []
+
+        for idx, arg in enumerate(args):
+            if not getattr(arg, "requires_grad", True):
+                continue
+            argnum.append(idx)
+
+        return _grad(func, argnum)(*args, **kwargs)
+
+    return _gradient_function
 
 
 def jacobian(func, argnum):

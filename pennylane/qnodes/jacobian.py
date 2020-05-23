@@ -255,7 +255,9 @@ class JacobianQNode(BaseQNode):
         if bad:
             # get bad argument name
             bad_var_names = {v.name for v in _flatten(self.arg_vars) if v.idx in bad}
-            raise ValueError("Cannot differentiate with respect to argument(s) {}.".format(bad_var_names))
+            raise ValueError(
+                "Cannot differentiate with respect to argument(s) {}.".format(bad_var_names)
+            )
 
         if method == "device":
             self._set_variables(args, kwargs)

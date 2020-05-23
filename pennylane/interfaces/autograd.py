@@ -17,7 +17,7 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.numpy import array, ndarray
+from pennylane.numpy import array, ndarray, zeros, fromiter, int64
 from pennylane.utils import _flatten, unflatten
 
 
@@ -93,8 +93,15 @@ def to_autograd(qnode):
                 if isinstance(args, ndarray):
                     diff_args = array(diff_args)
 
+                if non_diff_indices:
+                    # Autograd requires we return a gradient of size (num_variables,)
+                    res = zeros([self.num_variables])
+                    indices = fromiter(diff_indices, dtype=int64)
+                    res[indices] = temp
+                    temp = res
+
                 # Restore the nested structure of the input args.
-                temp = unflatten(temp.flat, diff_args)
+                temp = unflatten(temp.flat, args)
                 return temp
 
             return gradient_product
