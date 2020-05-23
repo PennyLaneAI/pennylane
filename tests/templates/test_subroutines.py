@@ -24,7 +24,8 @@ from pennylane.templates.subroutines import (
     Interferometer, 
     ArbitraryUnitary,
     SingleExcitationUnitary,
-    DoubleExcitationUnitary
+    DoubleExcitationUnitary,
+    UCCSDUnitary
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -634,3 +635,96 @@ class TestDoubleExcitationUnitary:
         jac_A = circuit.jacobian((weight), method="A")
         jac_F = circuit.jacobian((weight), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)
+
+
+class TestUCCSDAnsatz:
+    """Tests for the UCCSDAnsatz template from the pennylane.templates.subroutine module."""
+
+    @pytest.mark.parametrize(
+        ("ph", "pphh", "weights", "ref_gates"),
+        [
+          ([[0, 2]], [], np.array([3.815]),
+             [ [0, qml.BasisState, range(0,6), [np.array([0, 0, 0, 0, 1, 1])]],
+               [1, qml.RX,         [0],        [-np.pi/2]],
+               [5, qml.RZ,         [2],        [1.9075]],
+               [6, qml.CNOT,       [1, 2],     []] ]),
+
+          ([[0, 2], [1, 3]], [], np.array([3.815, 4.866]),
+             [ [2,  qml.Hadamard, [2],    []],
+               [8,  qml.RX,       [0],    [np.pi/2]],
+               [12, qml.CNOT,     [0, 1], []],
+               [23, qml.RZ,       [3],    [2.433]],
+               [24, qml.CNOT,     [2, 3], []],
+               [26, qml.RX,       [1],    [np.pi/2]] ]),
+
+          ([], [[0, 1, 2, 5]], np.array([3.815]),
+             [ [3,   qml.RX,       [2],    [-np.pi/2]],
+               [29,  qml.RZ,       [5],    [0.476875]],
+               [73,  qml.Hadamard, [0],    []],
+               [150, qml.RX,       [1],    [np.pi/2]],
+               [88,  qml.CNOT,     [3, 4], []],
+               [121, qml.CNOT,     [2, 3], []] ]),
+
+          ([], [[0, 1, 2, 3], [0, 1, 4, 5]], np.array([3.815, 4.866]),
+             [ [4,   qml.Hadamard, [3],    []],
+               [16,  qml.RX,       [0],    [-np.pi/2]],
+               [38,  qml.RZ,       [3],    [0.476875]],
+               [78,  qml.Hadamard, [2],    []],
+               [107, qml.RX,       [1],    [-np.pi/2]],
+               [209, qml.Hadamard, [4],    []],
+               [218, qml.RZ,       [5],    [-0.60825]],
+               [82,  qml.CNOT,     [2, 3], []],
+               [159, qml.CNOT,     [4, 5], []] ]),
+
+          ([[0, 4], [1, 3]], [[0, 1, 2, 3], [0, 1, 4, 5]], np.array([3.815, 4.866, 1.019, 0.639]),
+             [ [16,  qml.RX,       [0],    [-np.pi/2]],
+               [47,  qml.Hadamard, [1],    []],
+               [74,  qml.Hadamard, [2],    []],
+               [83,  qml.RZ,       [3],    [-0.127375]],
+               [134, qml.RX,       [4],    [np.pi/2]],
+               [158, qml.RZ,       [5],    [0.079875]],
+               [188, qml.RZ,       [5],    [-0.079875]],
+               [96,  qml.CNOT,     [1, 2], []],
+               [235, qml.CNOT,     [1, 4], []] ])
+        ]
+    )
+    def test_uccsd_unitary_operations(self, ph, pphh, weights, ref_gates):
+        """Test the correctness of the UCCSDUnitary template including the gate count
+        and order, the wires the operation acts on and the correct use of parameters 
+        in the circuit."""
+
+        sqg = 10*len(ph) + 72*len(pphh)
+
+        cnots = 0
+        for i_ph in ph:
+            cnots += 4*(i_ph[1]-i_ph[0])
+
+        for i_pphh in pphh:
+            cnots += 16*(i_pphh[1]-i_pphh[0] + i_pphh[3]-i_pphh[2] + 1)
+        N = 6
+        wires = range(N)
+
+        ref_state = np.array([1, 1, 0, 0, 0, 0])
+
+        with qml.utils.OperationRecorder() as rec:
+            UCCSDUnitary(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
+
+        assert len(rec.queue) == sqg + cnots + 1
+
+        for gate in ref_gates:
+            idx = gate[0]
+
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
+
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
+
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            if exp_gate != qml.BasisState:
+                assert res_weight == exp_weight
+            else:
+                assert np.allclose(res_weight, exp_weight)
