@@ -1,13 +1,74 @@
 """
-This submodule contains frequently used cost functions.
+This submodule contains frequently used loss and cost functions.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import pennylane as qml
 
 
-class MSECost:
-    r"""Allows users to combine an ansatz circuit with some target observables and then
-    derive a cost function from their expectation values."""
+class SquaredErrorLoss:
+    r"""Combines an ansatz circuit with some target observables and calculates
+    the squared error between their expectation values and a target.
+
+    Args:
+        ansatz (callable): The ansatz for the circuit before the final measurement step.
+            Note that the ansatz **must** have the following signature:
+
+            .. code-block:: python
+
+                ansatz(params, **kwargs)
+
+            where ``params`` are the trainable weights of the variational circuit, and
+            ``kwargs`` are any additional keyword arguments that need to be passed
+            to the template.
+        observables (Iterable[:class:`~.Observable`]): observables to measure during the
+            final step of each circuit
+        device (Device, Sequence[Device]): Corresponding device(s) where the resulting
+            function should be executed. This can either be a single device, or a list
+            of devices of length matching the number of observables.
+        interface (str, None): Which interface to use.
+            This affects the types of objects that can be passed to/returned to the function.
+            Supports all interfaces supported by the :func:`~.qnode` decorator.
+        diff_method (str, None): The method of differentiation to use with the created function.
+            Supports all differentiation methods supported by the :func:`~.qnode` decorator.
+
+    Returns:
+        callable: a loss function with signature ``loss(*args, target=None, **kwargs)`` that calculates
+        the squared error loss between the observables' expectation values and a target.
+
+    .. seealso:: :func:`~.map`
+
+    **Example:**
+
+    First, we create a device and design an ansatz:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=3)
+
+        def ansatz(phis, **kwargs):
+            for w, phi in enumerate(phis):
+                qml.RX(phi, wires=w)
+
+    Now we can create the observables:
+
+    .. code-block:: python3
+
+        obs = [
+            qml.PauliZ(0),
+            qml.PauliX(0),
+            qml.PauliZ(1) @ qml.PauliZ(2)
+        ]
+
+    Next, we can define the loss function:
+
+    >>> loss = qml.qnn.SquaredErrorLoss(ansatz, observables, dev, interface="torch")
+    >>> phis = np.ones(num_qubits)
+    >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
+    tensor([0.2113, 0.2500, 0.0368], dtype=torch.float64)
+
+    The loss function can be minimized using any gradient descent-based
+    :doc:`optimizer </introduction/optimizers>`.
+    """
 
     def __init__(
         self,
@@ -29,11 +90,26 @@ class MSECost:
             **kwargs
         )
 
-    def __call__(self, *args, target=None, **kwargs):
+    def loss(self, *args, target=None, **kwargs):
+        r"""Calculates the squared error loss between the observables'
+        expectation values and a target.
+
+        Keyword Args:
+            target (tensor): target values
+
+        Returns:
+            array[float]: squared error values
+        """
+
+        input_ = self.qnodes(*args, **kwargs)
+
         if target is None:
             raise ValueError("The target cannot be None")
 
-        if len(target) != len(self.qnodes):
+        if len(target) != len(input_):
             raise ValueError("Invalid target")
 
-        return (self.qnodes(*args, **kwargs) - target) ** 2
+        return (input_ - target) ** 2
+
+    def __call__(self, *args, **kwargs):
+        return self.loss(*args, **kwargs)

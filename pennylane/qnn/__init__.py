@@ -13,6 +13,6 @@
 # limitations under the License.
 """This module contains classes and functions for constructing quantum neural networks from QNodes."""
 
-from .cost import MSECost
+from .cost import SquaredErrorLoss
 from .keras import KerasLayer
 from .torch import TorchLayer
