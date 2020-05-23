@@ -155,10 +155,10 @@ class CircuitGraph:
         self.num_wires = 0
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(list(_flatten(op.wires))) + 1)
+            self.num_wires = max(self.num_wires, max(list(_flatten(op.wires.as_list()))) + 1)
             op.queue_idx = k  # store the queue index in the Operator
             for w in set(
-                _flatten(op.wires)
+                _flatten(op.wires.as_list())
             ):  # flatten the nested wires lists of Tensor observables
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
@@ -224,7 +224,7 @@ class CircuitGraph:
                     serialization_string += str(param)
                     serialization_string += delimiter
 
-            serialization_string += str(op.wires)
+            serialization_string += str(op.wires.as_list())
 
         # Adding a distinct separating string that could not occur by any combination of the
         # name of the operation and wires
@@ -307,7 +307,7 @@ class CircuitGraph:
         # create the QASM code representing the operations
         for op in decomposed_ops:
             gate = OPENQASM_GATES[op.name]
-            wires = ",".join(["q[{}]".format(w) for w in op.wires])
+            wires = ",".join(["q[{}]".format(w) for w in op.wires.as_list()])
             params = ""
 
             if op.num_params > 0:
@@ -565,7 +565,7 @@ class CircuitGraph:
                     continue
 
                 # push back to next layer if not all args wires are there yet
-                if len(op.wires) > num_ops[op]:
+                if len(op.wires.as_list()) > num_ops[op]:
                     operations[wire].insert(l, None)
 
             l += 1

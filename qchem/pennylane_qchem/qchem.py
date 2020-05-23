@@ -414,7 +414,7 @@ def _terms_to_qubit_operator(coeffs, ops):
     for coeff, op in zip(coeffs, ops):
 
         # wire ids
-        wires = [js[0] for js in op.wires]
+        wires = [js[0] for js in op.wires.as_list()]
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]

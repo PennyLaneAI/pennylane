@@ -98,19 +98,19 @@ class TestOperation:
         # make sure that `heisenberg_expand` method receives enough wires to actually expand
         # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
         # so only check multimode ops
-        if len(op.wires) > 1:
+        if len(op.wires.as_list()) > 1:
             with pytest.raises(ValueError, match='is too small to fit Heisenberg matrix'):
-                op.heisenberg_expand(U, len(op.wires) - 1)
+                op.heisenberg_expand(U, len(op.wires.as_list()) - 1)
 
         # validate size of input for `heisenberg_expand` method
         with pytest.raises(ValueError, match='Heisenberg matrix is the wrong size'):
             U_wrong_size = U[1:, 1:]
-            op.heisenberg_expand(U_wrong_size, len(op.wires))
+            op.heisenberg_expand(U_wrong_size, len(op.wires.as_list()))
 
         # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
         with pytest.raises(ValueError, match='Only order-1 and order-2 arrays supported'):
             U_high_order = np.array([U] * 3)
-            op.heisenberg_expand(U_high_order, len(op.wires))
+            op.heisenberg_expand(U_high_order, len(op.wires.as_list()))
 
     @pytest.mark.parametrize("test_class", op_classes_param_testable)
     def test_operation_init(self, test_class, monkeypatch):

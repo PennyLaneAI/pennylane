@@ -60,7 +60,7 @@ class TestDecorator:
 
         for res_op, exp_op in zip(res, expected):
             assert res_op.name == exp_op.name
-            assert res_op.wires == exp_op.wires
+            assert res_op.wires.as_list() == exp_op.wires.as_list()
             assert res_op.params == exp_op.params
 
     def test_decorated_dummy_template(self):
@@ -71,7 +71,7 @@ class TestDecorator:
 
         for res_op, exp_op in zip(res, expected):
             assert res_op.name == exp_op.name
-            assert res_op.wires == exp_op.wires
+            assert res_op.wires.as_list() == exp_op.wires.as_list()
             assert res_op.params == exp_op.params
 
     def test_decorated_decorated_dummy_template(self):
@@ -86,5 +86,5 @@ class TestDecorator:
 
         for res_op, exp_op in zip(res, expected):
             assert res_op.name == exp_op.name
-            assert res_op.wires == exp_op.wires
+            assert res_op.wires.as_list() == exp_op.wires.as_list()
             assert res_op.params == exp_op.params

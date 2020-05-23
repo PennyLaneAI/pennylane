@@ -333,7 +333,7 @@ class RepresentationResolver:
 
         # Display a control symbol for all controlling qubits of a controlled Operation
         if base_name in self.control_wire_dict and wire in [
-            op.wires[control_idx] for control_idx in self.control_wire_dict[base_name]
+            op.wires.as_list()[control_idx] for control_idx in self.control_wire_dict[base_name]
         ]:
             # No need to add a -1 for inverse here
             return self.charset.CONTROL
@@ -343,7 +343,7 @@ class RepresentationResolver:
 
         elif base_name == "PauliRot":
             representation = "R{0}({1})".format(
-                op.params[1][op.wires.index(wire)],
+                op.params[1][op.wires.as_list().index(wire)],
                 self.single_parameter_representation(op.params[0]),
             )
 
@@ -377,7 +377,7 @@ class RepresentationResolver:
 
         elif base_name in {"BasisState", "FockStateVector"}:
             representation = (
-                self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
+                self.charset.PIPE + str(op.params[0][op.wires.as_list().index(wire)]) + self.charset.RANGLE
             )
 
         # Operations that only have matrix arguments

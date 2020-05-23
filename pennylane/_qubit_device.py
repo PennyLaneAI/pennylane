@@ -195,7 +195,7 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires # returns a list of wires
+        >>> op.wires.as_list() # returns a list of wires
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
@@ -227,7 +227,7 @@ class QubitDevice(Device):
         """
         wires = []
         for op in operators:
-            wires.extend(op.wires)
+            wires.extend(op.wires.as_list())
 
         return set(wires)
 

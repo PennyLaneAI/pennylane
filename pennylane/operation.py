@@ -105,6 +105,7 @@ import functools
 import numbers
 from collections.abc import Sequence
 from enum import Enum, IntEnum
+from pennylane.wires import Wires
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -229,8 +230,8 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
-            is interpreted as wires.
+        wires (iterable): Iterable containing representations of the wires that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
@@ -364,6 +365,19 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
+        # turn wires into Wires object
+        self._wires = Wires(wires)  #: pennylane.wires.Wires: wires on which the operator acts
+
+        if (
+            self.num_wires != AllWires
+            and self.num_wires != AnyWires
+            and len(self._wires) != self.num_wires
+        ):
+            raise ValueError(
+                "{}: wrong number of wires. "
+                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
+            )
+
         if len(params) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "
@@ -375,12 +389,6 @@ class Operator(abc.ABC):
             for p in params:
                 self.check_domain(p)
         self.params = list(params)  #: list[Any]: parameters of the operator
-
-        # apply the operator on the given wires
-        if not isinstance(wires, Sequence):
-            wires = [wires]
-        self._check_wires(wires)
-        self._wires = wires  #: tuple[int]: wires on which the operator acts
 
         if do_queue:
             self.queue()
@@ -398,39 +406,6 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires)
         return "{}(wires={})".format(self.name, self.wires)
-
-    def _check_wires(self, wires):
-        """Check the validity of the operator wires.
-
-        Args:
-            wires (Sequence[Any]): wires to check
-        Raises:
-            TypeError, ValueError: list of wires is invalid
-        Returns:
-            tuple[int]: wires converted to integers
-        """
-        for w in wires:
-            if not isinstance(w, numbers.Integral):
-                raise TypeError(
-                    "{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.".format(
-                        self.name
-                    )
-                )
-
-        if (
-            self.num_wires != AllWires
-            and self.num_wires != AnyWires
-            and len(wires) != self.num_wires
-        ):
-            raise ValueError(
-                "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
-            )
-
-        if len(set(wires)) != len(wires):
-            raise ValueError("{}: wires must be unique, got {}.".format(self.name, wires))
-
-        return tuple(int(w) for w in wires)
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -490,10 +465,10 @@ class Operator(abc.ABC):
 
     @property
     def wires(self):
-        """Wire values.
+        """Wires of this operator.
 
         Returns:
-            tuple[int]: wire values
+            pennylane.wires.Wires: wire values
         """
         return self._wires
 
