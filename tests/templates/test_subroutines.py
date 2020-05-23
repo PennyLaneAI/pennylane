@@ -637,8 +637,8 @@ class TestDoubleExcitationUnitary:
         assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
-class TestUCCSDAnsatz:
-    """Tests for the UCCSDAnsatz template from the pennylane.templates.subroutine module."""
+class TestUCCSDUnitary:
+    """Tests for the UCCSDUnitary template from the pennylane.templates.subroutine module."""
 
     @pytest.mark.parametrize(
         ("ph", "pphh", "weights", "ref_gates"),
