@@ -43,11 +43,14 @@ def _process(wires):
 
     elif isinstance(wires, Number):
         # if the input is a single number, interpret as a single wire
-        return (wires, )
+        return (wires,)
 
     else:
-        raise WireError("Wires must be represented by a number or string; got {} of type {}."
-                        .format(wires, type(wires)))
+        raise WireError(
+            "Wires must be represented by a number or string; got {} of type {}.".format(
+                wires, type(wires)
+            )
+        )
 
 
 class Wires(Sequence):
