@@ -450,7 +450,7 @@ class Operator(abc.ABC):
         if isinstance(p, Variable):
             if self.par_domain == "A":
                 raise TypeError(
-                    "{}: Array parameter expected, got a Variable,"
+                    "{}: Array parameter expected, got a Variable, "
                     "which can only represent real scalars.".format(self.name)
                 )
             return p
