@@ -15,8 +15,8 @@
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
 from collections import Sequence, Iterable
-from numbers import Number
-import numpy as np  # for random functions
+from numpy import array
+from numpy.random import seed, choice  # for random functions
 
 
 class WireError(Exception):
@@ -50,11 +50,11 @@ class Wires(Sequence):
             # If input is an iterable, check that entries are unique and convert to a list
             try:
                 if len(set(wires)) != len(wires):
-                    raise WireError(
-                        "Wires must be unique; got {}.".format(wires)
-                    )
+                    raise WireError("Wires must be unique; got {}.".format(wires))
             except TypeError:
-                raise WireError("Cannot create wires from elements of type {}.".format(type(wires[0]))) # TODO: edge case that iterable contains different types
+                raise WireError(
+                    "Cannot create wires from elements of type {}.".format(type(wires[0]))
+                )  # TODO: edge case that iterable contains different types
 
             self.wire_list = list(wires)
 
@@ -99,7 +99,7 @@ class Wires(Sequence):
         Returns:
             ndarray: array representing Wires object
         """
-        return np.array(self.wire_list)
+        return array(self.wire_list)
 
     def as_list(self):
         """Returns a list representation of the Wires object.
@@ -110,7 +110,7 @@ class Wires(Sequence):
         return self.wire_list
 
     def index(self, wire):
-        """Overwrites a Sequences ``index()`` function which returns the index of ``wire``.
+        """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
 
         Args:
             wire (Any): Object whose index is to be found. If this is a Wires object of length 1, look for the object
@@ -159,16 +159,16 @@ class Wires(Sequence):
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([2, 3, 0])
-        <Wires =[1, 5, 4]>
+        <Wires = [1, 5, 4]>
 
         >>> wires.subset(1)
         <Wires = [0]>
 
         Args:
             indices (List[int] or int): indices or index of the wires we want to select
-            periodic_boundary (bool): whether the modulo of the number of wires of an index is used instead of an index.
-                implements periodic boundary conditions in the indexing,
-                so that for example ``wires.select(len(wires)) == wires.select(0)``.
+            periodic_boundary (bool): Whether the modulo of the number of wires of an index is used instead of an index.
+                Implements periodic boundary conditions in the indexing,
+                so that for example ``wires.subset(len(wires)) == wires.subset(0)``.
 
         Returns:
             Wires: subset of wires
@@ -179,12 +179,12 @@ class Wires(Sequence):
 
         if periodic_boundary:
             # replace indices by their modulo
-            indices = [i % len(self) for i in indices]
+            indices = [i % len(self.wire_list) for i in indices]
 
         for i in indices:
-            if i > len(self):
+            if i > len(self.wire_list):
                 raise WireError(
-                    "cannot subset wire at index {} from {} wires.".format(i, len(self))
+                    "Cannot subset wire at index {} from {} wires.".format(i, len(self.wire_list))
                 )
 
         subset = [self.wire_list[i] for i in indices]
@@ -202,13 +202,15 @@ class Wires(Sequence):
             Wires: random subset of wires
         """
 
-        if n_samples > len(self):
-            raise WireError("cannot sample {} wires from {} wires.".format(n_samples, len(self)))
+        if n_samples > len(self.wire_list):
+            raise WireError(
+                "Cannot sample {} wires from {} wires.".format(n_samples, len(self.wire_list))
+            )
 
         if seed is not None:
-            np.random.seed(seed)
+            seed(seed)
 
-        indices = np.random.choice(len(self), size=n_samples, replace=False)
+        indices = choice(len(self.wire_list), size=n_samples, replace=False)
         subset = [self.wire_list[i] for i in indices]
         return Wires(subset)
 
@@ -224,13 +226,13 @@ class Wires(Sequence):
         >>> wires2 = Wires([3, 0, 4])
         >>> wires3 = Wires([4, 0])
         >>> Wires.shared_wires([wires1, wires2, wires3])
-        <Wires [4, 0]>
+        <Wires = [4, 0]>
 
         >>> Wires.shared_wires([wires2, wires1, wires3])
-        <Wires [0, 4]>
+        <Wires = [0, 4]>
 
         Args:
-            list_of_wires (List[Wires]): List of Wires objects
+            list_of_wires (List[Wires]): list of Wires objects
 
         Returns:
             Wires: shared wires
@@ -239,9 +241,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
-                        wires, type(wires)
-                    )
+                    "Expected a `Wires` object; got {} of type {}.".format(wires, type(wires))
                 )
 
         shared = []
@@ -261,7 +261,7 @@ class Wires(Sequence):
 
         For example:
 
-        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires1 = Wires([4, 0, 1])
         >>> wires2 = Wires([3, 0, 4])
         >>> wires3 = Wires([5, 3])
         >>> list_of_wires = [wires1, wires2, wires3]
@@ -279,9 +279,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
-                        wires, type(wires)
-                    )
+                    "Expected a `Wires` object; got {} of type {}".format(wires, type(wires))
                 )
 
             combined.extend(wire for wire in wires.wire_list if wire not in combined)
@@ -294,15 +292,14 @@ class Wires(Sequence):
 
         For example:
 
-        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires1 = Wires([4, 0, 1])
         >>> wires2 = Wires([0, 2, 3])
         >>> wires3 = Wires([5, 3])
-        >>> list_of_wires = [wires1, wires2, wires3]
-        >>> Wires.unique_wires(list_of_wires)
+        >>> Wires.unique_wires([wires1, wires2, wires3])
         <Wires = [4, 2, 5]>
 
         Args:
-            list_of_wires (List[Wires]): List of Wires objects
+            list_of_wires (List[Wires]): list of Wires objects
 
         Returns:
             Wires: unique wires
@@ -311,9 +308,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
-                        wires, type(wires)
-                    )
+                    "Expected a `Wires` object; got {} of type {}.".format(wires, type(wires))
                 )
 
         unique = []
@@ -335,8 +330,6 @@ class Wires(Sequence):
         Return:
             Wires: new Wires object that contains all wires of the list's Wire objects
 
-        Raises:
-            WireError: for incorrect input or if any two Wires objects contain the same wires
         """
 
         merged_wires = []
@@ -374,7 +367,7 @@ class Wires(Sequence):
         False
 
         Args:
-            list_of_wires (List[Wires]): List of Wires objects
+            list_of_wires (List[Wires]): list of Wires objects
 
         Returns:
             bool: whether list only contains unique wires
@@ -384,13 +377,11 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "expected a `pennylane.wires.Wires` object; got {} of type {}".format(
-                        wires, type(wires)
-                    )
+                    "Expected a `Wires` object; got {} of type {}.".format(wires, type(wires))
                 )
             all_wires.append(wires.as_list())
 
-        for wires in list_of_wires:
+        for wires in all_wires:
             for wire in wires:
                 # check that wire is only contained in one of the Wires objects
                 if sum([1 for wires_ in list_of_wires if wire in wires_]) > 1:

@@ -104,7 +104,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
 
-        assert wires_str == "<Wires = {}>".format([1, 2, 3])
+        assert wires_str == "<Wires = [1, 2, 3]>"
 
     def test_set(self):
         """Tests that the implementation of __hash__ allows for the set() function to work."""
@@ -129,9 +129,9 @@ class TestWires:
         """Tests that Wires object can be converted to a list."""
 
         wires = Wires([4, 0, 1])
-        lst = wires.as_list()
-        assert isinstance(lst, list)
-        assert wires.wire_list == lst
+        list_ = wires.as_list()
+        assert isinstance(list_, list)
+        assert wires.wire_list == list_
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
