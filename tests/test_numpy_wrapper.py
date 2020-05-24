@@ -203,9 +203,9 @@ class TestNumpyIntegration:
         assert np.all(res == expected)
         assert not res.requires_grad
 
-    def test_wrapped_function_nontrainable_input(self):
-        """Test that a wrapped function acting on non-trainable
-        input returns non-trainable output"""
+    def test_wrapped_function_nontrainable_list_input(self):
+        """Test that a wrapped function with signature of the form
+        func([arr1, arr2, ...]) acting on non-trainable input returns non-trainable output"""
         arr1 = np.array([0, 1], requires_grad=False)
         arr2 = np.array([2, 3], requires_grad=False)
         arr3 = np.array([4, 5], requires_grad=False)
@@ -219,8 +219,8 @@ class TestNumpyIntegration:
         assert res.requires_grad
 
     def test_wrapped_function_nontrainable_variable_args(self):
-        """Test that a wrapped function with variable args acting on non-trainable
-        input returns non-trainable output"""
+        """Test that a wrapped function with signature of the form
+        func(arr1, arr2, ...) acting on non-trainable input returns non-trainable output"""
         arr1 = np.array([0, 1], requires_grad=False)
         arr2 = np.array([2, 3], requires_grad=False)
 
@@ -263,6 +263,80 @@ class TestNumpyIntegration:
         """Test that the fft subpackage is correctly wrapped"""
         x = np.fft.fft(np.arange(8))
         assert isinstance(x, np.tensor)
+
+    def test_unary_operators(self):
+        """Test that unary operators (negate, power)
+        correctly work on tensors."""
+        x = np.array([[1, 2], [3, 4]])
+        res = -x
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        res = -x
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        x = np.array([[1, 2], [3, 4]])
+        res = x ** 2
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        res = x ** 2
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+
+    def test_binary_operators(self):
+        """Test that binary operators (add, subtract, divide, multiply, matmul)
+        correctly work on tensors."""
+        x = np.array([[1, 2], [3, 4]])
+        y = np.array([[5, 6], [7, 8]])
+        res = x + y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x - y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x / y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x * y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x @ y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+    def test_binary_operator_nontrainable(self):
+        """Test that binary operators on two non-trainable
+        arrays result in non-trainable output."""
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        y = np.array([[5, 6], [7, 8]], requires_grad=False)
+        res = x + y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x - y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x / y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x * y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x @ y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
 
 
 class TestAutogradIntegration:

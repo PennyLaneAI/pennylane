@@ -40,12 +40,16 @@ def extract_tensors(x):
 
 
 def tensor_wrapper(obj):
-    """Decorator that wraps existing NumPy functions so that they return
-    a PennyLane :class:`~.tensor`.
+    """Decorator that wraps callable objects and classes so that they both accept
+    a ``requires_grad`` keyword argument, as well as returning a PennyLane
+    :class:`~.tensor`.
 
-    Only if the decorated function returns an ``ndarray`` is the
+    Only if the decorated object returns an ``ndarray`` is the
     output converted to a :class:`~.tensor`; this avoids superfluous conversion
     of scalars and other native-Python types.
+
+    Args:
+        obj: a callable object or class
     """
 
     @functools.wraps(obj)
@@ -62,11 +66,10 @@ def tensor_wrapper(obj):
             if tensor_args:
                 # Unless the user specifies otherwise, if all tensors in the argument
                 # list are non-trainable, the output is also non-trainable.
-                # NOTE: Use of Python's ``all`` results in an infinite recursion,
-                # and I'm not sure why. Using ``np.all`` works fine.
-                tensor_kwargs["requires_grad"] = not _np.all(
-                    [not i.requires_grad for i in tensor_args]
-                )
+                # Equivalently: if any tensor is trainable, the output is also trainable.
+                # NOTE: Use of Python's ``any`` results in an infinite recursion,
+                # and I'm not sure why. Using ``np.any`` works fine.
+                tensor_kwargs["requires_grad"] = _np.any([i.requires_grad for i in tensor_args])
 
         # evaluate the original object
         res = obj(*args, **kwargs)
@@ -82,7 +85,8 @@ def tensor_wrapper(obj):
 
 
 def wrap_arrays(old, new):
-    """Loop through an objects symbol table,
+    """Loop through an object's symbol table,
+
     wrapping each function with :func:`~.tensor_wrapper`.
 
     Args:
