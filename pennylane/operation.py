@@ -447,6 +447,10 @@ class Operator(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
+        # If parameter is a NumPy scalar, convert it into a Python scalar.
+        if isinstance(p, np.ndarray) and p.ndim == 0:
+            p = p.item()
+
         if isinstance(p, Variable):
             if self.par_domain == "A":
                 raise TypeError(

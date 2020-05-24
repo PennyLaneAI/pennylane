@@ -714,3 +714,111 @@ class TestParameterHandlingIntegration:
         res = grad_fn(weights)
 
         assert len(res[0]) == 2
+
+    def test_gradient_value(self, mocker, tol):
+        """Test that the returned gradient value for a qubit QNode is correct,
+        when one of the arguments is non-differentiable."""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(2))
+
+        dcircuit = qml.grad(circuit)
+
+        theta = 0.5
+        phi = 0.1
+
+        # explicitly mark varphi as non-differentiable
+        varphi = qml.numpy.array(0.23, requires_grad=False)
+
+        res = dcircuit(theta, phi, varphi)
+        expected = np.array([
+            np.cos(theta) * np.sin(phi) * np.sin(varphi),
+            np.sin(theta) * np.cos(phi) * np.sin(varphi)
+        ])
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # check that the parameter-shift rule was not applied to varphi
+        assert spy.call_args[1]["wrt"] == {0, 1}
+
+    def test_chained_gradient_value(self, mocker, tol):
+        """Test that the returned gradient value for two chained qubit QNodes
+        is correct."""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev1 = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev1)
+        def circuit1(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
+
+        dev2 = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev2)
+        def circuit2(data, weights):
+            qml.RX(data[0], wires=0)
+            qml.RX(data[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[0], wires=0)
+            qml.RZ(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        def cost(a, b, c, weights):
+            return circuit2(circuit1(a, b, c), weights)
+
+        grad_fn = qml.grad(cost)
+
+        # Set the first parameter of circuit1 as non-differentiable.
+        a = qml.numpy.array(0.4, requires_grad=False)
+
+        # the remaining free parameters are all differentiable
+        b = 0.5
+        c = 0.1
+        weights = qml.numpy.array([0.2, 0.3])
+
+        res = grad_fn(a, b, c, weights)
+
+        # Output should have shape [dcost/db, dcost/dc, dcost/dw],
+        # where b,c are scalars, and w is a vector of length 2.
+        assert len(res) == 3
+        assert res[0].shape == tuple() # scalar
+        assert res[1].shape == tuple() # scalar
+        assert res[2].shape == (2,)    # vector
+
+        cacbsc = np.cos(a)*np.cos(b)*np.sin(c)
+
+        expected = np.array([
+            # analytic expression for dcost/db
+            -np.cos(a)*np.sin(b)*np.sin(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
+            # analytic expression for dcost/dc
+            np.cos(a)*np.cos(b)*np.cos(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
+            # analytic expression for dcost/dw[0]
+            np.sin(cacbsc)*np.cos(weights[0])*np.sin(np.cos(a)),
+            # analytic expression for dcost/dw[1]
+            0
+        ])
+
+        # np.hstack 'flattens' the ragged gradient array allowing it
+        # to be compared with the expected result
+        assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
+
+        # Check that the parameter-shift rule was applied
+        # to all parameters in circuit2 (i.e., wrt=None)
+        assert spy.call_args_list[0][1]["wrt"] == None
+
+        # check that the parameter-shift rule was not applied
+        # to the first parameter of circuit1
+        assert spy.call_args_list[1][1]["wrt"] == {1, 2}
