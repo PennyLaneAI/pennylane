@@ -16,7 +16,7 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 from collections import Sequence, Iterable
 import numpy as np
-from numbers import Integral
+from numbers import Number
 
 
 class WireError(Exception):
@@ -35,13 +35,13 @@ def _process(wires):
         if all(isinstance(w, Wires) for w in wires):
             # if the elements are themselves Wires objects, merge them to a new one
             wires = [w for wires_ in wires for w in wires_.tolist()]
-            return Wires(wires)
+            return tuple(wires)
 
-        if all(isinstance(w, str) or isinstance(w, Integral) for w in wires):
+        if all(isinstance(w, str) or isinstance(w, Number) for w in wires):
             # if the elements are strings or numbers, turn iterable into tuple
             return tuple(wires)
 
-    elif isinstance(wires, Integral):
+    elif isinstance(wires, Number):
         # if the input is a single number, interpret as a single wire
         return (wires, )
 
@@ -74,9 +74,6 @@ class Wires(Sequence):
         if len(set(self.wire_tuple)) != len(self.wire_tuple):
             raise WireError("Wires must be unique; got {}.".format(wires))
 
-        # keep a set representation
-        self.wire_set = frozenset(self.wire_tuple)
-
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object representing a register with a single wire."""
         return Wires(self.wire_tuple[idx])
@@ -88,8 +85,8 @@ class Wires(Sequence):
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
         if isinstance(item, Wires):
-            # If all wire can be found in this object, return True
-            if all(wire in self for wire in item):
+            # If all wires can be found in this object, return True
+            if all(wire in self.wire_tuple for wire in item.wire_tuple):
                 return True
         else:
             return item in self.wire_tuple
@@ -267,7 +264,7 @@ class Wires(Sequence):
             if all(wire in wires_ for wires_ in list_of_wires):
                 shared.append(wire)
 
-        return Wires.merge(shared)
+        return Wires(shared)
 
     @staticmethod
     def all_wires(list_of_wires):
@@ -334,7 +331,7 @@ class Wires(Sequence):
                 if sum([1 for wires_ in list_of_wires if wire in wires_]) == 1:
                     unique.append(wire)
 
-        return Wires.merge(unique)
+        return Wires(unique)
 
     @staticmethod
     def merge(list_of_wires):
@@ -365,6 +362,6 @@ class Wires(Sequence):
                     )
                 )
             else:
-                merged_wires += wires.wire_tuple
+                merged_wires.extend(wires.tolist())
 
         return Wires(merged_wires)
