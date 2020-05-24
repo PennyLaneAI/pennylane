@@ -203,9 +203,9 @@ class TestNumpyIntegration:
         assert np.all(res == expected)
         assert not res.requires_grad
 
-    def test_wrapped_function_nontrainable_input(self):
-        """Test that a wrapped function acting on non-trainable
-        input returns non-trainable output"""
+    def test_wrapped_function_nontrainable_list_input(self):
+        """Test that a wrapped function with signature of the form
+        func([arr1, arr2, ...]) acting on non-trainable input returns non-trainable output"""
         arr1 = np.array([0, 1], requires_grad=False)
         arr2 = np.array([2, 3], requires_grad=False)
         arr3 = np.array([4, 5], requires_grad=False)
@@ -219,8 +219,8 @@ class TestNumpyIntegration:
         assert res.requires_grad
 
     def test_wrapped_function_nontrainable_variable_args(self):
-        """Test that a wrapped function with variable args acting on non-trainable
-        input returns non-trainable output"""
+        """Test that a wrapped function with signature of the form
+        func(arr1, arr2, ...) acting on non-trainable input returns non-trainable output"""
         arr1 = np.array([0, 1], requires_grad=False)
         arr2 = np.array([2, 3], requires_grad=False)
 
