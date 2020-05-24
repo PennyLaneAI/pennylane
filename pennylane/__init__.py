@@ -165,7 +165,7 @@ def device(name, *args, **kwargs):
 def grad(func, argnum=None):
     """Returns the gradient as a callable function of (functions of) QNodes.
 
-    This is a wrapper around the :mod:`autograd.grad` functions.
+    This is a wrapper around the :mod:`autograd.grad` function.
     Function arguments with the property ``requires_grad`` set to ``False``
     will automatically be excluded from the gradient computation, unless
     the ``argnum`` keyword argument is passed.
@@ -175,11 +175,11 @@ def grad(func, argnum=None):
             a combination of quantum and classical nodes
 
     Keyword Args:
-        argnum (int or list(int)): Which argument(s) to take the gradient
+        argnum (int, list(int), None): Which argument(s) to take the gradient
             with respect to. By default, the arguments themselves are used
             to determine differentiability, by examining the ``requires_grad``
             property. Providing this keyword argument overrides this behaviour,
-            allowing differentiability to be set manually.
+            allowing argument differentiability to be defined manually for the returned gradient function.
 
     Returns:
         function: the function that returns the gradient of the input

@@ -699,10 +699,7 @@ class TestParameterHandlingIntegration:
 
         weights = [w1, w2]
 
-        res = cost(weights)
         grad_fn = qml.grad(cost)
         res = grad_fn(weights)
 
         assert len(res[0]) == 2
-
-
