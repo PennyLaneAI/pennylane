@@ -264,6 +264,80 @@ class TestNumpyIntegration:
         x = np.fft.fft(np.arange(8))
         assert isinstance(x, np.tensor)
 
+    def test_unary_operators(self):
+        """Test that unary operators (negate, power)
+        correctly work on tensors."""
+        x = np.array([[1, 2], [3, 4]])
+        res = -x
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        res = -x
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        x = np.array([[1, 2], [3, 4]])
+        res = x ** 2
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        res = x ** 2
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+
+    def test_binary_operators(self):
+        """Test that binary operators (add, subtract, divide, multiply, matmul)
+        correctly work on tensors."""
+        x = np.array([[1, 2], [3, 4]])
+        y = np.array([[5, 6], [7, 8]])
+        res = x + y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x - y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x / y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x * y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+        res = x @ y
+        assert isinstance(res, np.tensor)
+        assert res.requires_grad
+
+    def test_binary_operator_nontrainable(self):
+        """Test that binary operators on two non-trainable
+        arrays result in non-trainable output."""
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        y = np.array([[5, 6], [7, 8]], requires_grad=False)
+        res = x + y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x - y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x / y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x * y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
+        res = x @ y
+        assert isinstance(res, np.tensor)
+        assert not res.requires_grad
+
 
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""
