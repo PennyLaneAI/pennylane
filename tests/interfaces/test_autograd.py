@@ -517,8 +517,9 @@ class TestParameterHandlingIntegration:
         assert res[0].shape == weights.shape
 
         # check that the parameter shift was only performed for the
-        # differentiable input, not the data input
-        assert spy.call_args[1]["wrt"] == set(range(weights.size))
+        # differentiable elements of `weights`, not the data input
+        num_w1 = weights.size
+        assert spy.call_args[1]["wrt"] == set(range(num_w1))
 
     def test_differentiable_parameter_middle(self, mocker):
         """Test that a differentiable parameter provided as the middle
@@ -556,8 +557,11 @@ class TestParameterHandlingIntegration:
         assert res[0].shape == weights.shape
 
         # check that the parameter shift was only performed for the
-        # differentiable input, not the data input
-        assert spy.call_args[1]["wrt"] == set(data1.size + np.arange(weights.size))
+        # differentiable elements of `weights`, not the data input
+        num_w1 = weights.size
+        offset = data1.size
+        expected = set(range(offset, offset + num_w1))
+        assert spy.call_args[1]["wrt"] == expected
 
     def test_differentiable_parameter_last(self, mocker):
         """Test that a differentiable parameter used as the last
@@ -595,8 +599,11 @@ class TestParameterHandlingIntegration:
         assert res[0].shape == weights.shape
 
         # check that the parameter shift was only performed for the
-        # differentiable input, not the data input
-        assert spy.call_args[1]["wrt"] == set(data1.size + data2.size + np.arange(weights.size))
+        # differentiable elements of `weights`, not the data input
+        num_w1 = weights.size
+        offset = data1.size + data2.size
+        expected = set(range(offset, offset + num_w1))
+        assert spy.call_args[1]["wrt"] == expected
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
         """Test that multiple differentiable and non-differentiable parameters
@@ -633,11 +640,15 @@ class TestParameterHandlingIntegration:
         assert res[1].shape == weights2.shape
 
         # check that the parameter shift was only performed for the
-        # differentiable input, not the data input
-        diff_variables = spy.call_args[1]["wrt"]
-        expected_diff_variables = set(data1.size + np.arange(weights1.size))
-        expected_diff_variables.update(data1.size + weights1.size + data2.size + np.arange(weights2.size))
-        assert diff_variables == expected_diff_variables
+        # differentiable elements of `weights`, not the data input
+        num_w1 = weights1.size
+        num_w2 = weights2.size
+
+        offset1 = data1.size
+        offset2 = data1.size + num_w1 + data2.size
+
+        expected = set(list(range(offset1, offset1 + num_w1)) + list(range(offset2, offset2 + num_w2)))
+        assert spy.call_args[1]["wrt"] == expected
 
     def test_gradient_non_differentiable_exception(self):
         """Test that an exception is raised if non-differentiable data is

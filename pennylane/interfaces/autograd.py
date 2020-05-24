@@ -72,9 +72,9 @@ def to_autograd(qnode):
                 diff_indices = None
                 non_diff_indices = set()
 
-                for arg, variable_inds in zip(args, self.arg_vars):
+                for arg, arg_variable in zip(args, self.arg_vars):
                     if not getattr(arg, "requires_grad", True):
-                        indices = [i.idx for i in _flatten(variable_inds)]
+                        indices = [i.idx for i in _flatten(arg_variable)]
                         non_diff_indices.update(indices)
                     else:
                         diff_args.append(arg)
@@ -86,23 +86,20 @@ def to_autograd(qnode):
                 jac = self.jacobian(args, kwargs, wrt=diff_indices)
 
                 if not g.shape:
-                    temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
+                    vjp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
                 else:
-                    temp = g @ jac
-
-                if isinstance(args, ndarray):
-                    diff_args = array(diff_args)
+                    vjp = g @ jac
 
                 if non_diff_indices:
                     # Autograd requires we return a gradient of size (num_variables,)
                     res = zeros([self.num_variables])
                     indices = fromiter(diff_indices, dtype=int64)
-                    res[indices] = temp
-                    temp = res
+                    res[indices] = vjp
+                    vjp = res
 
                 # Restore the nested structure of the input args.
-                temp = unflatten(temp.flat, args)
-                return temp
+                vjp = unflatten(vjp.flat, args)
+                return vjp
 
             return gradient_product
 

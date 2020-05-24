@@ -182,8 +182,9 @@ def grad(func, argnum=None):
             allowing argument differentiability to be defined manually for the returned gradient function.
 
     Returns:
-        function: the function that returns the gradient of the input
-        function with respect to the arguments in argnum
+        function: The function that returns the gradient of the input
+        function with respect to the differentiable arguments, or, if specified,
+        the arguments in ``argnum``.
     """
     # pylint: disable=no-value-for-parameter
     if argnum is not None:
@@ -194,13 +195,18 @@ def grad(func, argnum=None):
     def _gradient_function(*args, **kwargs):
         """Inspect the arguments for differentiability, and
         compute the autograd gradient function with required argnums
-        dynamically"""
+        dynamically.
+
+        This wrapper function is returned to the user instead of autograd.grad,
+        so that we can take into account cases where the user computes the
+        gradient function once, but then calls it with arguments that change
+        in differentiability.
+        """
         argnum = []
 
         for idx, arg in enumerate(args):
-            if not getattr(arg, "requires_grad", True):
-                continue
-            argnum.append(idx)
+            if getattr(arg, "requires_grad", True):
+                argnum.append(idx)
 
         return _grad(func, argnum)(*args, **kwargs)
 
