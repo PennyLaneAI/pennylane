@@ -82,7 +82,8 @@ def tensor_wrapper(obj):
 
 
 def wrap_arrays(old, new):
-    """Loop through an objects symbol table,
+    """Loop through an object's symbol table,
+
     wrapping each function with :func:`~.tensor_wrapper`.
 
     Args:

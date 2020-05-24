@@ -49,7 +49,8 @@ class tensor(_np.ndarray):
         ``np.array``, ``np.zeros`` or ``np.empty``.
 
         The parameters given here refer to a low-level class
-        for instantiating an tensors.
+        for instantiating tensors.
+
 
     Args:
         input_array (array_like): Any data structure in any form that can be converted to
