@@ -22,8 +22,7 @@ from pennylane.wires import Wires, WireError
 class TestWires:
     """Tests for the ``Wires`` class."""
 
-    @pytest.mark.parametrize("iterable", [Wires([0, 1, 2]),
-                                          np.array([0, 1, 2]),
+    @pytest.mark.parametrize("iterable", [np.array([0, 1, 2]),
                                           [0, 1, 2],
                                           (0, 1, 2),
                                           range(3)
@@ -32,18 +31,32 @@ class TestWires:
         """Tests that a Wires object can be created from standard iterable inputs."""
 
         wires = Wires(iterable)
-        assert wires.wire_list == [0, 1, 2]
+        assert wires.wire_tuple == [0, 1, 2]
+
+    @pytest.mark.parametrize("iterable", [Wires([0, 1, 2])])
+    def test_creation_from_wires_object(self, iterable):
+        """Tests that a Wires object can be created from another Wires object."""
+
+        wires = Wires(iterable)
+        assert wires.wire_tuple == [0, 1, 2]
+
+    @pytest.mark.parametrize("iterable", [[Wires([0, 1]), Wires([2])],
+                                          [Wires([0]), Wires([1]), Wires([2])]])
+    def test_creation_from_wires_object(self, iterable):
+        """Tests that a Wires object can be created from a list of Wires."""
+
+        wires = Wires(iterable)
+        assert wires.wire_tuple == [0, 1, 2]
 
     @pytest.mark.parametrize("iterable", [[1, 0, 4],
                                           ['a', 'b', 'c'],
-                                          ['a', 1, "ancilla"],
-                                          [Wires(['a']), Wires([1, 2])]])
+                                          ['a', 1, "ancilla"]])
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different
         objects representing a single wire index."""
 
         wires = Wires(iterable)
-        assert wires.wire_list == list(iterable)
+        assert wires.wire_tuple == tuple(iterable)
 
     @pytest.mark.parametrize("wire", [1, 'a', -1.4])
     def test_creation_from_single_object(self, wire):
@@ -51,13 +64,13 @@ class TestWires:
         representing a single wire index."""
 
         wires = Wires(wire)
-        assert wires.wire_list == [wire]
+        assert wires.wire_tuple == (wire,)
 
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
                                           (4, 1, 1, 3),
                                           ['a', 'a', 'b'],
-                                          [Wires([1, 0]), Wires([1, 0]), Wires([3])]])
+                                          [Wires([1, 0]), Wires([1, 2]), Wires([3])]])
     def test_error_for_repeated_wires(self, iterable):
         """Tests that a Wires object cannot be created from iterables with repeated indices."""
 
@@ -86,28 +99,33 @@ class TestWires:
         assert wires1 != wires2
         assert wires1 == wires3
 
-    def test_is_ordered(self):
-        """Tests that a Wires object is not equal to another Wires object with a different ordering of the indices."""
-
-        wires1 = Wires([1, 2, 3])
-        wires2 = Wires([3, 2, 1])
-        assert wires1 != wires2
-
-    def test_length(self):
+    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
+                                          ['a', 'b', 'c']])
+    def test_length(self, iterable):
         """Tests that a Wires object returns the correct length."""
 
-        wires = Wires([1, 2, 3, 4, 5])
-        assert len(wires) == 5
+        wires = Wires(iterable)
+        assert len(wires) == len(iterable)
 
     def test_representation(self):
         """Tests the string representation."""
 
         wires_str = str(Wires([1, 2, 3]))
-
         assert wires_str == "<Wires = [1, 2, 3]>"
 
-    def test_set(self):
-        """Tests that the implementation of __hash__ allows for the set() function to work."""
+    @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
+                                          [4, 1, 1, 3],
+                                          (4, 1, 1, 3),
+                                          ['a', 'a', 'b'],
+                                          [Wires([1, 0]), Wires([1, 2]), Wires([3])]])
+    def test_set_attribute(self, iterable):
+        """Tests that the set attribute is formed correctly."""
+
+        wires = Wires(iterable)
+        assert wires.wire_set == set(iterable)
+
+    def test_set_of_wires(self):
+        """Tests that a set() of wires is formed correctly."""
 
         wires = Wires([0, 1, 2])
         list_of_wires = [Wires([1]), Wires([1]), Wires([1, 2, 3]), Wires([4])]
@@ -119,7 +137,7 @@ class TestWires:
         """Tests that Wires object can be converted to a numpy array."""
 
         wires = Wires([4, 0, 1])
-        array = wires.as_ndarray()
+        array = wires.toarray()
         assert isinstance(array, np.ndarray)
         assert array.shape == (3, )
         for w1, w2 in zip(array, np.array([4, 0, 1])):
@@ -129,9 +147,9 @@ class TestWires:
         """Tests that Wires object can be converted to a list."""
 
         wires = Wires([4, 0, 1])
-        list_ = wires.as_list()
+        list_ = wires.tolist()
         assert isinstance(list_, list)
-        assert wires.wire_list == list_
+        assert wires.wire_tuple == list_
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
@@ -186,7 +204,7 @@ class TestWires:
         wires3 = Wires([6, 5])
 
         new_wires = Wires.all_wires([wires1, wires2, wires3])
-        assert new_wires.wire_list == [1, 2, 3, 4, 5, 6]
+        assert new_wires.wire_tuple == [1, 2, 3, 4, 5, 6]
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             Wires.all_wires([[3, 4], [8, 5]])
@@ -220,34 +238,3 @@ class TestWires:
 
         with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
             Wires.unique_wires([[2, 1], [8, 5]])
-
-    def test_merge_method(self):
-        """Tests the ``merge()`` method."""
-
-        list_of_wires = [Wires([0, 1]), Wires([2]), Wires([3, 4])]
-        merged = Wires.merge(list_of_wires)
-
-        assert merged == Wires([0, 1, 2, 3, 4])
-
-        # check error for merging the same wires
-        with pytest.raises(WireError, match="Cannot merge Wires objects that contain"):
-            Wires.merge([Wires(0), Wires(0)])
-
-        # check error for wrong inputs
-        with pytest.raises(WireError, match="Expected list of Wires objects"):
-            Wires.merge([[0, 1], [2]])
-
-    def test_all_unique_method(self):
-        """Tests the ``all_unique()`` method."""
-
-        wires1 = Wires([1, 2])
-        wires2 = Wires([3, 0])
-        wires3 = Wires([6, 10])
-        res = Wires.all_unique([wires1, wires2, wires3])
-        assert res
-
-        res = Wires.all_unique([wires1, wires2, Wires([1, 11])])
-        assert not res
-
-        with pytest.raises(WireError, match="expected a `pennylane.wires.Wires` object"):
-            Wires.all_unique([[2, 1], [8, 5]])
