@@ -979,7 +979,7 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[list[Any]]: nested list containing the wires per observable
+            list[Wires]: nested list containing the wires per observable
             in the tensor product
         """
         return Wires([o.wires for o in self.obs])
