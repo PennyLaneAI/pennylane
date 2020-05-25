@@ -144,10 +144,10 @@ class TestWires:
     def test_convert_to_list(self):
         """Tests that Wires object can be converted to a list."""
 
-        wires = Wires([4, 0, 1])
+        wires = Wires()
         list_ = wires.tolist()
-        assert isinstance(list_, tuple)
-        assert wires.wire_tuple == list_
+        assert isinstance(list_, list)
+        assert list_ == [4, 0, 1]
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
