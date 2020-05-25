@@ -797,3 +797,36 @@ class TestUCCSDUnitary:
 
         with pytest.raises(ValueError, match=msg_match):
             qnode(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+
+    @pytest.mark.parametrize(
+        ("weights", "ph", "pphh", "expected"),
+        [
+            (np.array([3.90575761, -1.89772083, -1.36689032]),
+             [[0, 2], [1, 3]], [0, 1, 2, 3],
+             [-0.14619406, -0.06502792, 0.14619406, 0.06502792]),
+        ]
+    )
+    def test_integration(self, weights, ph, pphh, expected, tol):
+        """Test integration with PennyLane and gradient calculations"""
+
+        N = 4
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        w_ph_0 = weights[0]
+        w_ph_1 = weights[1]
+        w_pphh = weights[2]
+
+        @qml.qnode(dev)
+        def circuit(w_ph_0, w_ph_1, w_pphh):
+        	UCCSDUnitary(weights, wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
+
+        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(w_ph_0, w_ph_1, w_pphh)
+        assert np.allclose(res, np.array(expected), atol=tol)
+
+        # compare the two methods of computing the Jacobian
+        jac_A = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="A")
+        jac_F = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="F")
+        assert jac_A == pytest.approx(jac_F, abs=tol)
