@@ -12,4 +12,4 @@ qml.utils
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
-    :skip: Iterable, Variable, OrderedDict
+    :skip: Iterable, OrderedDict
