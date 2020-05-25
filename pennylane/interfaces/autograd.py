@@ -17,7 +17,7 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.numpy import array, ndarray, zeros, fromiter, int64
+from pennylane.numpy import zeros, fromiter, int64
 from pennylane.utils import _flatten, unflatten
 
 
@@ -68,7 +68,6 @@ def to_autograd(qnode):
                     nested Sequence[float]: vector-Jacobian product, arranged
                     into the nested structure of the input arguments in ``args``
                 """
-                diff_args = []
                 diff_indices = None
                 non_diff_indices = set()
 
@@ -76,8 +75,6 @@ def to_autograd(qnode):
                     if not getattr(arg, "requires_grad", True):
                         indices = [i.idx for i in _flatten(arg_variable)]
                         non_diff_indices.update(indices)
-                    else:
-                        diff_args.append(arg)
 
                 if non_diff_indices:
                     diff_indices = set(range(self.num_variables)) - non_diff_indices
