@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.wires`.
 """
 import pytest
 import numpy as np
+import pennylane as qml
 from pennylane.wires import Wires, WireError
 
 
@@ -66,6 +67,16 @@ class TestWires:
         wires = Wires(wire)
         assert wires.wire_tuple == (wire,)
 
+    @pytest.mark.parametrize("iterable", [[0, 1, None],
+                                          [qml.RX],
+                                          None,
+                                          qml.RX])
+    def test_error_for_incorrect_wire_types(self, iterable):
+        """Tests that a Wires object cannot be created from wire types that are not allowed."""
+
+        with pytest.raises(WireError, match="Wires must be represented"):
+            Wires(iterable)
+            
     @pytest.mark.parametrize("iterable", [np.array([4, 1, 1, 3]),
                                           [4, 1, 1, 3],
                                           (4, 1, 1, 3),
