@@ -366,8 +366,9 @@ class Operator(abc.ABC):
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
         # turn wires into Wires object
-        self._wires = Wires(wires)  #: pennylane.wires.Wires: wires on which the operator acts
+        self._wires = Wires(wires)  #: Wires: wires on which the operator acts
 
+        # check that the number of wires given corresponds to required number
         if (
             self.num_wires != AllWires
             and self.num_wires != AnyWires
