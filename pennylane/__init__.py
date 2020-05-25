@@ -17,7 +17,7 @@ PennyLane can be directly imported.
 """
 import pkg_resources
 
-from autograd import numpy
+import numpy as _np
 from autograd import grad as _grad
 from autograd import jacobian as _jacobian
 
@@ -46,10 +46,6 @@ from .qnodes import qnode, QNode, QuantumFunctionError
 from .utils import inv
 from ._version import __version__
 from .io import *
-
-
-# overwrite module docstrings
-numpy.__doc__ = "NumPy with automatic differentiation support, provided by Autograd."
 
 
 # Look for an existing configuration file
@@ -207,7 +203,7 @@ def jacobian(func, argnum):
     # pylint: disable=no-value-for-parameter
     if isinstance(argnum, int):
         return _jacobian(func, argnum)
-    return lambda *args, **kwargs: numpy.stack(
+    return lambda *args, **kwargs: _np.stack(
         [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
     ).T
 
