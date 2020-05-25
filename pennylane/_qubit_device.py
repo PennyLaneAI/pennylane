@@ -36,9 +36,10 @@ class QubitDevice(Device):
     * :meth:`~.apply`: append circuit operations, compile the circuit (if applicable),
       and perform the quantum computation.
 
-    Devices that generate their own samples (such as hardware) may optionally overwrite
-    :meth:`~.probabilty`, which otherwise automatically computes the probabilities from the
-    generated samples, and **must** overwrite the following method:
+    Devices that generate their own samples (such as hardware) may optionally
+    overwrite :meth:`~.probabilty`. This method otherwise automatically
+    computes the probabilities from the generated samples, and **must**
+    overwrite the following method:
 
     * :meth:`~.generate_samples`: Generate samples from the device from the
       exact or approximate probability distribution.
@@ -176,7 +177,7 @@ class QubitDevice(Device):
         """Apply quantum operations, rotate the circuit into the measurement
         basis, and compile and execute the quantum circuit.
 
-        This method recieves a list of quantum operations queued by the QNode,
+        This method receives a list of quantum operations queued by the QNode,
         and should be responsible for:
 
         * Constructing the quantum program
@@ -389,7 +390,7 @@ class QubitDevice(Device):
 
         # count the basis state occurrences, and construct the probability vector
         basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([len(wires) ** 2], dtype=np.float64)
+        prob = np.zeros([2 ** len(wires)], dtype=np.float64)
         prob[basis_states] = counts / self.shots
         return prob
 

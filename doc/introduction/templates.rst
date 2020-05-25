@@ -108,6 +108,11 @@ trainable parameters, and they may consist of repeated layers.
     :figure: ../_static/templates/embeddings/displacement.png
 
 .. customgalleryitem::
+    :link: ../code/api/pennylane.templates.embeddings.IQPEmbedding.html
+    :description: IQPEmbedding
+    :figure: ../_static/templates/embeddings/iqp.png
+
+.. customgalleryitem::
     :link: ../code/api/pennylane.templates.embeddings.QAOAEmbedding.html
     :description: QAOAEmbedding
     :figure: ../_static/templates/embeddings/qaoa.png
@@ -193,6 +198,16 @@ of other templates.
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
+    :description: SingleExcitationUnitary
+    :figure: ../_static/templates/subroutines/single_excitation_unitary.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.DoubleExcitationUnitary.html
+    :description: DoubleExcitationUnitary
+    :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -240,6 +255,10 @@ takes single quantum operations or other templates and applies them to wires in 
     :description: broadcast (all-to-all)
     :figure: ../_static/templates/broadcast_alltoall.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.broadcast.html
+    :description: broadcast (custom)
+    :figure: ../_static/templates/broadcast_custom.png
 
 .. raw:: html
 
@@ -332,5 +351,5 @@ The initialization functions can be found in the :mod:`~.pennylane.init` module.
 Adding a new template
 ---------------------
 
-Consult the :ref:`Developer's guide <adding_new_templates>` to learn how to grow the templates library by
+Consult the :ref:`Contributing templates<contributing_templates>` page to learn how to grow the templates library by
 adding your own template to PennyLane.

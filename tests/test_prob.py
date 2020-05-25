@@ -84,6 +84,19 @@ def test_integration(tol):
     expected = np.array([0.5, 0.5, 0, 0])
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
+def test_integration_analytic_false(tol):
+    """Test the probability is correct for a known state preparation when the
+    analytic attribute is set to False."""
+    dev = qml.device('default.qubit', wires=3, analytic=False)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.PauliX(0)
+        return qml.probs(wires=[0])
+
+    res = circuit()
+    expected = np.array([0, 1])
+    assert np.allclose(res, expected, atol=tol, rtol=0)
 
 def test_numerical_analytic_diff_agree(init_state, tol):
     """Test that the finite difference and parameter shift rule

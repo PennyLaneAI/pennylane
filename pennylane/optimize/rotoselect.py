@@ -13,8 +13,9 @@
 # limitations under the License.
 """Rotoselect gradient free optimizer"""
 
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.utils import _flatten, unflatten
 
 
@@ -107,6 +108,8 @@ class RotoselectOptimizer:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
+        # wrap the objective function so that it accepts the flattened parameter array
+        objective_fn_flat = lambda x_flat, gen: objective_fn(unflatten(x_flat, x), generators=gen)
 
         try:
             assert len(x_flat) == len(generators)
@@ -117,7 +120,7 @@ class RotoselectOptimizer:
 
         for d, _ in enumerate(x_flat):
             x_flat[d], generators[d] = self._find_optimal_generators(
-                objective_fn, x_flat, generators, d
+                objective_fn_flat, x_flat, generators, d
             )
 
         return unflatten(x_flat, x), generators

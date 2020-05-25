@@ -16,12 +16,27 @@ Unit tests for the :mod:`pennylane.QNodeCollection`
 """
 from collections.abc import Sequence
 
+import numpy as onp
 import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
 
-from conftest import torch, tf, Variable
+try:
+    import torch
+except ImportError as e:
+    torch = None
+
+try:
+    import tensorflow as tf
+
+    if tf.__version__[0] == "1":
+        tf.enable_eager_execution()
+
+    from tensorflow import Variable
+except ImportError as e:
+    tf = None
+    Variable = None
 
 
 class TestConstruction:
@@ -237,7 +252,7 @@ class TestEvalation:
         params = [0.5643, -0.45]
 
         res = qc(params, parallel=parallel).numpy()
-        expected = np.vstack([qnode1(params), qnode2(params)])
+        expected = onp.vstack([qnode1(params), qnode2(params)])
         assert np.all(res == expected)
 
     @pytest.mark.xfail(raises=AttributeError, reason="Dask breaks the TF gradient tape")
