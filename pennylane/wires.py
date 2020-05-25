@@ -31,15 +31,14 @@ def _process(wires):
         # if input is already a Wires object, just copy its wire tuple
         return wires.wire_tuple
 
-    elif isinstance(wires, Iterable):
-        if all(isinstance(w, Wires) for w in wires):
-            # if the elements are themselves Wires objects, merge them to a new one
-            wires = [w for wires_ in wires for w in wires_.tolist()]
-            return tuple(wires)
+    elif isinstance(wires, Iterable) and all(isinstance(w, Wires) for w in wires):
+        # if the elements are themselves Wires objects, merge them to a new one
+        wires = [w for wires_ in wires for w in wires_.tolist()]
+        return tuple(wires)
 
-        if all(isinstance(w, str) or isinstance(w, Number) for w in wires):
-            # if the elements are strings or numbers, turn iterable into tuple
-            return tuple(wires)
+    elif isinstance(wires, Iterable) and all(isinstance(w, str) or isinstance(w, Number) for w in wires):
+        # if the elements are strings or numbers, turn iterable into tuple
+        return tuple(wires)
 
     elif isinstance(wires, Number):
         # if the input is a single number, interpret as a single wire

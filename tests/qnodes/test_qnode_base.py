@@ -342,7 +342,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == 0
+        assert qnode.ops[0].wires[0] == qml.wires.Wires(0)
 
 
 class TestQNodeExceptions:
@@ -521,7 +521,7 @@ class TestQNodeExceptions:
         """Error: wire arguments must be intergers."""
 
         def circuit(x):
-            qml.RX(x, wires=[0.5])
+            qml.RX(x, wires=[qml.PauliX])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
@@ -536,7 +536,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match="Wires must be integers"):
+        with pytest.raises(TypeError, match="'NoneType' object is not iterable"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -547,7 +547,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(TypeError, match="Wires must be integers"):
+        with pytest.raises(TypeError, match="'NoneType' object is not iterable"):
             node(x=1)
 
     @pytest.mark.xfail(
