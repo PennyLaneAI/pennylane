@@ -36,6 +36,7 @@
 * Placeholder for variable/tensor refactor. So far this has included:
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
   [(#650)](https://github.com/XanaduAI/pennylane/pull/650)
+  [(#652)](https://github.com/XanaduAI/pennylane/pull/652)
 
   - A new `ndarray` subclass `pennylane.numpy.tensor`, which extends NumPy arrays with
     the keyword argument and attribute `requires_grad`. Tensors which have `requires_grad=False`
@@ -50,7 +51,7 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
-  - The QNode Autograd interface now inspects QNode positional arguments when calculating
+  - The QNode Autograd and Torch interfaces now inspects QNode positional arguments when calculating
     the vector-Jacobian product. If any argument is marked as `requires_grad=False`, it
     is automatically excluded from the parameter-shift rule.
 
