@@ -728,3 +728,72 @@ class TestUCCSDUnitary:
                 assert res_weight == exp_weight
             else:
                 assert np.allclose(res_weight, exp_weight)
+
+    @pytest.mark.parametrize(
+        ("weights", "ph", "pphh", "init_state", "msg_match"),
+        [
+            ( np.array([-2.8]), [[0, 2]], [], [1, 1, 0, 0],
+             "'init_state' must be a Numpy array"),
+
+            ( np.array([-2.8]), [[0, 2]], [], (1, 1, 0, 0),
+             "'init_state' must be a Numpy array"),
+
+            ( np.array([-2.8]), [], [], np.array([1, 1, 0, 0]),
+             "Both 'ph' and 'pphh' lists can not be empty"),
+
+            ( np.array([-2.8]), None, [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
+             "'ph' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [0, [1, 2]], [], np.array([1, 1, 0, 0]),
+             "Each element of 'ph' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [["a", 3], [1, 2]], [], np.array([1, 1, 0, 0]),
+             "Each element of 'ph' must be a list of integers"),
+
+            ( np.array([-2.8, 1.6]), [[1.4, 3], [1, 2]], [], np.array([1, 1, 0, 0]),
+             "Each element of 'ph' must be a list of integers"),
+
+            ( np.array([-2.8]), [[0, 2]], None, np.array([1, 1, 0, 0]),
+             "'pphh' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [], [0, [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
+             "Each element of 'pphh' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [], [[0, 1, "a", 3], [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
+             "Each element of 'pphh' must be a list of integers"),
+
+            ( np.array([-2.8, 1.6]), [], [[0, 1, 1.4, 3], [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
+             "Each element of 'pphh' must be a list of integers"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2], [1, 3, 4]], [], np.array([1, 1, 0, 0]),
+             "Elements of 'ph' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2]], [[0, 1, 2,]], np.array([1, 1, 0, 0]),
+             "Elements of 'pphh' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2]], [], np.array([1, 1, 0, 0]),
+             "'weights' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [], [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
+             "'weights' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2], [1, 3]], [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
+             "'weights' must be of shape"),
+        
+        ]
+    )
+    def test_uccsd_unitary_exceptions(self, weights, ph, pphh, init_state, msg_match):
+        """Test that UCCSDUnitary throws an exception if the parameters
+        has illegal shapes, types or values."""
+        N=4
+        wires = range(4)
+        dev = qml.device("default.qubit", wires=N)
+
+        def circuit(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state):
+            UCCSDUnitary(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match=msg_match):
+            qnode(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
