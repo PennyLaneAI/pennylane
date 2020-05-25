@@ -101,12 +101,19 @@ def to_tf(qnode, dtype=None):
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         func = qnode.func
+        num_variables = property(lambda self: qnode.num_variables)
+        arg_vars = property(lambda self: qnode.arg_vars)
 
     @qnode_str
     @tf.custom_gradient
     def _TFQNode(*input_, **input_kwargs):
         # determine which input tensors are being recorded for backpropagation
-        requires_grad = [tape_lib.should_record_backprop([i]) for i in input_]
+        requires_grad = [
+            tape_lib.should_record_backprop([1 * i])
+            if isinstance(i, (Variable, tf.Tensor))
+            else False
+            for i in input_
+        ]
 
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
@@ -134,6 +141,7 @@ def to_tf(qnode, dtype=None):
             diff_indices = None
             non_diff_indices = set()
 
+            # determine the QNode variables which should be differentiated
             for tensor, arg_variable, r in zip(input_, qnode.arg_vars, requires_grad):
                 if not r:
                     indices = [i.idx for i in _flatten(arg_variable)]
@@ -141,8 +149,6 @@ def to_tf(qnode, dtype=None):
 
             if non_diff_indices:
                 diff_indices = set(range(qnode.num_variables)) - non_diff_indices
-
-            print(diff_indices, non_diff_indices)
 
             # evaluate the Jacobian matrix of the QNode
             variables = tfkwargs.get("variables", None)
