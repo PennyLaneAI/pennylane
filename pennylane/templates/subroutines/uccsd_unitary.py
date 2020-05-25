@@ -151,42 +151,6 @@ def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
             "Both 'ph' and 'pphh' lists can not be empty; got ph={}, pphh={}".format(ph, pphh)
         )
 
-    expected_shape = (2,)
-    for i_ph in ph:
-        check_shape(
-            i_ph,
-            expected_shape,
-            msg="Elements of 'ph' must be of shape {}; got {}".format(
-                expected_shape, get_shape(i_ph)
-            ),
-        )
-
-    expected_shape = (4,)
-    for i_pphh in pphh:
-        check_shape(
-            i_pphh,
-            expected_shape,
-            msg="Elements of 'ph' must be of shape {}; got {}".format(
-                expected_shape, get_shape(i_pphh)
-            ),
-        )
-
-    expected_shape = (len(ph) + len(pphh),)
-    check_shape(
-        weights,
-        expected_shape,
-        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
-    )
-
-    expected_shape = (len(wires),)
-    check_shape(
-        init_state,
-        expected_shape,
-        msg="'init_state' must be of shape {}; got {}".format(
-            expected_shape, get_shape(init_state)
-        ),
-    )
-
     check_type(ph, [list], msg="'ph' must be a list; got {}".format(ph))
     for i_ph in ph:
         check_type(i_ph, [list], msg="Each element of 'ph' must be a list; got {}".format(i_ph))
@@ -218,6 +182,42 @@ def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
             [int, np.int64],
             msg="Elements of 'init_state' must be integers; got {}".format(init_state),
         )
+
+    expected_shape = (2,)
+    for i_ph in ph:
+        check_shape(
+            i_ph,
+            expected_shape,
+            msg="Elements of 'ph' must be of shape {}; got {}".format(
+                expected_shape, get_shape(i_ph)
+            ),
+        )
+
+    expected_shape = (4,)
+    for i_pphh in pphh:
+        check_shape(
+            i_pphh,
+            expected_shape,
+            msg="Elements of 'pphh' must be of shape {}; got {}".format(
+                expected_shape, get_shape(i_pphh)
+            ),
+        )
+
+    expected_shape = (len(ph) + len(pphh),)
+    check_shape(
+        weights,
+        expected_shape,
+        msg="'weights' must be of shape {}; got {}".format(expected_shape, get_shape(weights)),
+    )
+
+    expected_shape = (len(wires),)
+    check_shape(
+        init_state,
+        expected_shape,
+        msg="'init_state' must be of shape {}; got {}".format(
+            expected_shape, get_shape(init_state)
+        ),
+    )
 
     ###############
 
