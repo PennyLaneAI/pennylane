@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
+from pennylane.wires import WireError
 
 
 @pytest.fixture(scope="function")
@@ -525,7 +526,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match="Wires must be integers"):
+        with pytest.raises(WireError, match="Wires must be represented by"):
             node(1)
 
     def test_arg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -536,7 +537,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match="'NoneType' object is not iterable"):
+        with pytest.raises(WireError, match="Wires must be represented by"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -547,7 +548,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(TypeError, match="'NoneType' object is not iterable"):
+        with pytest.raises(WireError, match="Wires must be represented by"):
             node(x=1)
 
     @pytest.mark.xfail(
