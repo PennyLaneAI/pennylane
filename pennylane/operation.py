@@ -395,7 +395,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
+        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires.tolist())
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -404,8 +404,8 @@ class Operator(abc.ABC):
         # the last evaluation.
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires)
-        return "{}(wires={})".format(self.name, self.wires)
+            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
+        return "{}(wires={})".format(self.name, self.wires.tolist())
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -888,7 +888,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires)
+            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
 
         return repr(self.return_type) + "(" + temp + ")"
 
