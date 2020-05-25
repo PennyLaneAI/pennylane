@@ -93,7 +93,7 @@ def to_layer(operation_list, num_wires):
     layer = [None] * num_wires
 
     for op in operation_list:
-        for wire in op.wires.as_list():
+        for wire in op.wires.tolist():
             layer[wire] = op
 
     return layer

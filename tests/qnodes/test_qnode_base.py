@@ -774,11 +774,11 @@ class TestQNodeArgs:
 
         node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(np.pi, q=1)
-        assert node.ops[0].wires == [1]
+        assert node.ops[0].wires == qml.wires.Wires([1])
         assert c == pytest.approx(-1.0, abs=tol)
 
         c = node(np.pi)
-        assert node.ops[0].wires == [default_q]
+        assert node.ops[0].wires == qml.wires.Wires([default_q])
         assert c == pytest.approx(-1.0, abs=tol)
 
     def test_keywordargs_used(self, qubit_device_1_wire, tol):

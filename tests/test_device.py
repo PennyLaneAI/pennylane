@@ -427,9 +427,9 @@ class TestOperations:
             m.setattr(Device, 'apply', lambda self, op, wires, params: call_history.append([op, wires, params]))
             mock_device_with_paulis_and_methods.execute(queue, observables)
 
-        assert call_history[0] == ["PauliX", [0], []]
-        assert call_history[1] == ["PauliY", [1], []]
-        assert call_history[2] == ["PauliZ", [2], []]
+        assert call_history[0] == ["PauliX", qml.wires.Wires([0]), []]
+        assert call_history[1] == ["PauliY", qml.wires.Wires([1]), []]
+        assert call_history[2] == ["PauliZ", qml.wires.Wires([2]), []]
 
     def test_unsupported_operations_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -504,9 +504,9 @@ class TestObservables:
             m.setattr(Device, 'sample', lambda self, *args: sample_args.extend(args))
             mock_device_with_paulis_and_methods.execute([], observables)
 
-        assert expval_args == ["PauliX", [0], []]
-        assert var_args == ["PauliY", [1], []]
-        assert sample_args == ["PauliZ", [2], []]
+        assert expval_args == ["PauliX", qml.wires.Wires([0]), []]
+        assert var_args == ["PauliY", qml.wires.Wires([1]), []]
+        assert sample_args == ["PauliZ", qml.wires.Wires([2]), []]
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""

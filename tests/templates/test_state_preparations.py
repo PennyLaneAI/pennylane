@@ -314,12 +314,12 @@ class TestArbitraryStatePreparation:
         assert rec.queue[0].name == "PauliRot"
         assert rec.queue[0].params[0] == weights[0]
         assert rec.queue[0].params[1] == "X"
-        assert rec.queue[0].wires == [0]
+        assert rec.queue[0].wires == qml.wires.Wires([0])
 
         assert rec.queue[1].name == "PauliRot"
         assert rec.queue[1].params[0] == weights[1]
         assert rec.queue[1].params[1] == "Y"
-        assert rec.queue[1].wires == [0]
+        assert rec.queue[1].wires == qml.wires.Wires([0])
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on on two wires."""
@@ -331,32 +331,32 @@ class TestArbitraryStatePreparation:
         assert rec.queue[0].name == "PauliRot"
         assert rec.queue[0].params[0] == weights[0]
         assert rec.queue[0].params[1] == "XI"
-        assert rec.queue[0].wires == [0, 1]
+        assert rec.queue[0].wires == qml.wires.Wires([0, 1])
 
         assert rec.queue[1].name == "PauliRot"
         assert rec.queue[1].params[0] == weights[1]
         assert rec.queue[1].params[1] == "YI"
-        assert rec.queue[1].wires == [0, 1]
+        assert rec.queue[1].wires == qml.wires.Wires([0, 1])
 
         assert rec.queue[2].name == "PauliRot"
         assert rec.queue[2].params[0] == weights[2]
         assert rec.queue[2].params[1] == "IX"
-        assert rec.queue[2].wires == [0, 1]
+        assert rec.queue[2].wires == qml.wires.Wires([0, 1])
 
         assert rec.queue[3].name == "PauliRot"
         assert rec.queue[3].params[0] == weights[3]
         assert rec.queue[3].params[1] == "IY"
-        assert rec.queue[3].wires == [0, 1]
+        assert rec.queue[3].wires == qml.wires.Wires([0, 1])
 
         assert rec.queue[4].name == "PauliRot"
         assert rec.queue[4].params[0] == weights[4]
         assert rec.queue[4].params[1] == "XX"
-        assert rec.queue[4].wires == [0, 1]
+        assert rec.queue[4].wires == qml.wires.Wires([0, 1])
 
         assert rec.queue[5].name == "PauliRot"
         assert rec.queue[5].params[0] == weights[5]
         assert rec.queue[5].params[1] == "XY"
-        assert rec.queue[5].wires == [0, 1]
+        assert rec.queue[5].wires == qml.wires.Wires([0, 1])
 
     def test_GHZ_generation(self, qubit_device_3_wires, tol):
         """Test that the template prepares a GHZ state."""

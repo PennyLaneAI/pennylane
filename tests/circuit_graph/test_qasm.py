@@ -723,23 +723,23 @@ class TestQASMConformanceTests:
 
         # operations
         assert gates[0].name == "h"
-        assert gates[0].wires == [0]
+        assert gates[0].wires == qml.wires.Wires([0])
 
         assert gates[1].name == "ry"
-        assert gates[1].wires == [0]
+        assert gates[1].wires == qml.wires.Wires([0])
         assert gates[1].params == [params[1]]
 
         assert gates[2].name == "cx"
-        assert gates[2].wires == [0, 1]
+        assert gates[2].wires == qml.wires.Wires([0, 1])
 
         assert gates[4].name == "rx"
-        assert gates[4].wires == [1]
+        assert gates[4].wires == qml.wires.Wires([1])
         assert gates[4].params == [params[0]]
 
         # rotations
         assert gates[3].name == "h"
-        assert gates[3].wires == [0]
+        assert gates[3].wires == qml.wires.Wires([0])
 
         assert gates[5].name == "ry"
-        assert gates[5].wires == [2]
+        assert gates[5].wires == qml.wires.Wires([2])
         assert gates[5].params == [-np.pi / 4]

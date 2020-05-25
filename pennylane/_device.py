@@ -191,7 +191,7 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                self.apply(operation.name, operation.wires, operation.parameters)
+                self.apply(operation.name, operation.wires.tolist(), operation.parameters)
 
             self.post_apply()
 
@@ -199,16 +199,16 @@ class Device(abc.ABC):
 
             for obs in observables:
                 if obs.return_type is Expectation:
-                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
+                    results.append(self.expval(obs.name, obs.wires.tolist(), obs.parameters))
 
                 elif obs.return_type is Variance:
-                    results.append(self.var(obs.name, obs.wires, obs.parameters))
+                    results.append(self.var(obs.name, obs.wires.tolist(), obs.parameters))
 
                 elif obs.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+                    results.append(np.array(self.sample(obs.name, obs.wires.tolist(), obs.parameters)))
 
                 elif obs.return_type is Probability:
-                    results.append(list(self.probability(wires=obs.wires).values()))
+                    results.append(list(self.probability(wires=obs.wires.tolist()).values()))
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError(

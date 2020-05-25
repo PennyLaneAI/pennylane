@@ -513,7 +513,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
     def test_template_inversion_without_context(self):
@@ -524,7 +524,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
     def test_double_inversion(self):
@@ -535,7 +535,7 @@ class TestInv:
 
         for inv_inv_op, exp_op in zip(inv_inv_ops, op_queue):
             assert inv_inv_op.name == exp_op.name
-            assert inv_inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_inv_op.wires == exp_op.wires
             assert inv_inv_op.params == exp_op.params
 
     def test_template_double_inversion(self):
@@ -544,7 +544,7 @@ class TestInv:
 
         for inv_inv_op, exp_op in zip(inv_inv_ops, dummy_template([0, 1, 2])):
             assert inv_inv_op.name == exp_op.name
-            assert inv_inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_inv_op.wires == exp_op.wires
             assert inv_inv_op.params == exp_op.params
 
     def test_inversion_with_context(self):
@@ -568,7 +568,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
     def test_non_queued_inversion_with_context(self):
@@ -595,7 +595,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
     def test_mixed_inversion_with_context(self):
@@ -624,7 +624,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
     def test_mixed_inversion_with_nested_context(self):
@@ -654,12 +654,12 @@ class TestInv:
 
         for inv_op, exp_op in zip(rec1.queue, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
         for inv_op, exp_op in zip(rec2.queue, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires == exp_op.wires
             assert inv_op.params == exp_op.params
 
     def test_template_inversion_with_context(self):
@@ -681,7 +681,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires.tolist() == exp_op.wires.tolist()
             assert inv_op.params == exp_op.params
 
     def test_inversion_with_qnode(self):
@@ -712,7 +712,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires.tolist() == exp_op.wires.tolist()
             assert inv_op.params == exp_op.params
 
     def test_non_queued_inversion_with_qnode(self):
@@ -746,7 +746,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires.tolist() == exp_op.wires.tolist()
             assert inv_op.params == exp_op.params
 
     def test_mixed_inversion_with_qnode(self):
@@ -781,7 +781,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires.tolist() == exp_op.wires.tolist()
             assert inv_op.params == exp_op.params
 
     def test_template_inversion_with_qnode(self):
@@ -810,7 +810,7 @@ class TestInv:
 
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
-            assert inv_op.wires.as_list() == exp_op.wires.as_list()
+            assert inv_op.wires.tolist() == exp_op.wires.tolist()
             assert inv_op.params == exp_op.params
 
     def test_argument_wrapping(self):
@@ -821,7 +821,7 @@ class TestInv:
         inv_ops = pu.inv(op)
 
         assert inv_ops[0].name == exp_op.name
-        assert inv_ops[0].wires == exp_op.wires.as_list()
+        assert inv_ops[0].wires == exp_op.wires
         assert inv_ops[0].params == exp_op.params
 
     @pytest.mark.parametrize("arg", [2.3, object()])

@@ -972,7 +972,7 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len(list(_flatten(self.wires)))
+        return len(self.wires)
 
     @property
     def wires(self):
@@ -982,7 +982,7 @@ class Tensor(Observable):
             list[list[Any]]: nested list containing the wires per observable
             in the tensor product
         """
-        return [o.wires for o in self.obs]
+        return Wires([o.wires for o in self.obs])
 
     @property
     def params(self):
@@ -1065,7 +1065,7 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires.tolist())
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1139,7 +1139,7 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires.tolist()):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1221,6 +1221,9 @@ class CV:
         Returns:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
+
+        # TODO: Need to extract indices!
+
         U_dim = len(U)
         nw = len(self.wires)
 
@@ -1230,7 +1233,7 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
-        if num_wires == 0 or list(self.wires) == list(range(num_wires)):
+        if num_wires == 0 or self.wires.tolist() == list(range(num_wires)):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
@@ -1252,7 +1255,7 @@ class CV:
         if U.ndim == 1:
             W = np.zeros(dim)
             W[0] = U[0]
-            for k, w in enumerate(self.wires):
+            for k, w in enumerate(self.wires.tolist()):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
             if isinstance(self, Observable):
@@ -1262,7 +1265,7 @@ class CV:
 
             W[0, 0] = U[0, 0]
 
-            for k1, w1 in enumerate(self.wires):
+            for k1, w1 in enumerate(self.wires.tolist()):
                 s1 = loc(k1)
                 d1 = loc(w1)
 
@@ -1271,7 +1274,7 @@ class CV:
                 # first row (for gates, the first row is always (1, 0, 0, ...), but not for observables!)
                 W[0, d1] = U[0, s1]
 
-                for k2, w2 in enumerate(self.wires):
+                for k2, w2 in enumerate(self.wires.tolist()):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         return W
 
