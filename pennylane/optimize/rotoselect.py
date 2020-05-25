@@ -13,8 +13,9 @@
 # limitations under the License.
 """Rotoselect gradient free optimizer"""
 
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.utils import _flatten, unflatten
 
 
