@@ -16,6 +16,8 @@ Unit tests for the :mod:`pennylane` optimizers.
 """
 # pylint: disable=redefined-outer-name
 import itertools as it
+
+import numpy as onp
 import pytest
 
 import pennylane as qml
@@ -484,8 +486,7 @@ class TestOptimizer:
             H_0 = float(f(insert(x, d, 0)))
             H_p = float(f(insert(x, d, np.pi / 2)))
             H_m = float(f(insert(x, d, -np.pi / 2)))
-
-            a = np.arctan2(2 * H_0 - H_p - H_m, H_p - H_m)
+            a = onp.arctan2(2 * H_0 - H_p - H_m, H_p - H_m)
 
             x[d] = -np.pi / 2 - a
 
