@@ -249,6 +249,8 @@ def to_torch(qnode):
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         func = qnode.func
+        arg_vars = property(lambda self: qnode.arg_vars)
+        num_variables = property(lambda self: qnode.num_variables)
 
     @qnode_str
     def custom_apply(*args, **kwargs):
