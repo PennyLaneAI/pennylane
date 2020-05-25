@@ -179,7 +179,6 @@ def to_torch(qnode):
             # the way in which the backward class is created on the fly
 
             # determine the QNode variables which should be differentiated
-            diff_args = []
             diff_indices = None
             non_diff_indices = set()
 
@@ -187,8 +186,6 @@ def to_torch(qnode):
                 if not getattr(arg, "requires_grad", False):
                     indices = [i.idx for i in _flatten(arg_variable)]
                     non_diff_indices.update(indices)
-                else:
-                    diff_args.append(arg)
 
             if non_diff_indices:
                 diff_indices = set(range(qnode.num_variables)) - non_diff_indices
