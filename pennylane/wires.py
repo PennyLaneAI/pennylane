@@ -123,7 +123,7 @@ class Wires(Sequence):
         Returns:
             List: list representing Wires object
         """
-        return self.wire_tuple
+        return list(self.wire_tuple)
 
     def index(self, wire):
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
