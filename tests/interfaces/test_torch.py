@@ -725,6 +725,9 @@ class TestParameterHandlingIntegration:
 
         loss = circuit(weights, data1, data2)
         loss.backward()
+
+        assert weights.grad.requires_grad == False
+
         res = weights.grad.detach().numpy()
 
         # we do not check for correctness, just that the output
