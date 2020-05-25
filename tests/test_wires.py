@@ -144,7 +144,7 @@ class TestWires:
     def test_convert_to_list(self):
         """Tests that Wires object can be converted to a list."""
 
-        wires = Wires()
+        wires = Wires([4, 0, 1])
         list_ = wires.tolist()
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
