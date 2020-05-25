@@ -14,3 +14,4 @@
 """This module contains classes and functions for constructing quantum neural networks from QNodes."""
 
 from .keras import KerasLayer
+from .torch import TorchLayer

@@ -2,10 +2,47 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
+  hybrid models using the `torch.nn` API.
+  [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
+
+  A PennyLane QNode can be converted into a `torch.nn` layer using the `qml.qnn.TorchLayer` class:
+
+  ```python
+  @qml.qnode(dev)
+  def qnode(inputs, weights_0, weight_1):
+     # define the circuit
+     # ...
+
+  weight_shapes = {"weights_0": 3, "weight_1": 1}
+  qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+  ```
+
+  A hybrid model can then be easily constructed:
+
+  ```python
+  model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
+  ```
+* Contains the new template ``DoubleExcitationUnitary`` implementing the quantum circuit to
+  exponentiate the Coupled-Cluster double excitation operator. This template is required to
+  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
+  [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
+
 * Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
   exponentiate the Coupled-Cluster single excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
+
+* Placeholder for variable/tensor refactor. So far this has included:
+  [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
+
+  - A new `ndarray` subclass `pennylane.numpy.tensor`, which extends NumPy arrays with
+    the keyword argument and attribute `requires_grad`. Tensors which have `requires_grad=False`
+    are treated as non-differentiable by the Autograd interface.
+
+  - A new subpackage `pennylane.numpy`, which wraps `autograd.numpy` such that NumPy functions
+    accept the `requires_grad` keyword argument, and allows Autograd to differentiate
+    `pennylane.numpy.tensor` objects.
 
 <h3>Improvements</h3>
 
@@ -21,6 +58,9 @@
 
 <h3>Breaking changes</h3>
 
+* Removes support for Python 3.5.
+  [(#639)](https://github.com/XanaduAI/pennylane/pull/639)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
@@ -29,7 +69,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Nathan Killoran
+Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva
 
 
 # Release 0.9.0 (current release)
