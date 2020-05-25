@@ -738,8 +738,11 @@ class TestUCCSDUnitary:
             ( np.array([-2.8]), [[0, 2]], [], (1, 1, 0, 0),
              "'init_state' must be a Numpy array"),
 
+            ( np.array([-2.8]), [[0, 2]], [], np.array([1.2, 1, 0, 0]),
+             "Elements of 'init_state' must be integers"),
+
             ( np.array([-2.8]), [], [], np.array([1, 1, 0, 0]),
-             "Both 'ph' and 'pphh' lists can not be empty"),
+             "'ph' and 'pphh' lists can not be both empty"),
 
             ( np.array([-2.8]), None, [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
              "'ph' must be a list"),
@@ -764,6 +767,9 @@ class TestUCCSDUnitary:
 
             ( np.array([-2.8, 1.6]), [], [[0, 1, 1.4, 3], [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
              "Each element of 'pphh' must be a list of integers"),
+
+            ( np.array([-2.8]), [[0, 2]], [], np.array([1, 1, 0, 0, 0]),
+             "'init_state' must be of shape"),
 
             ( np.array([-2.8, 1.6]), [[0, 2], [1, 3, 4]], [], np.array([1, 1, 0, 0]),
              "Elements of 'ph' must be of shape"),
