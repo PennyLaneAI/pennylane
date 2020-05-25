@@ -142,6 +142,7 @@ class CircuitGraph:
         primary_par_deps (dict[int, list[ParameterDependency]]): Mapping from flattened primary
             parameter indices to Operators that depend on them.
     """
+
     # pylint: disable=too-many-public-methods
     def __init__(self, ops, primary_par_deps):
         self.primary_par_deps = primary_par_deps

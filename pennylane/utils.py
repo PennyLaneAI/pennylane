@@ -21,6 +21,8 @@ from collections import OrderedDict
 import copy
 import functools
 import inspect
+import itertools
+import numbers
 
 import numpy as np
 
