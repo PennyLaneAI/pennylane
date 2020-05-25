@@ -96,7 +96,7 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return "<Wires = {}>".format(self.wire_tuple)
+        return "<Wires = {}>".format(list(self.wire_tuple))
 
     def __eq__(self, other):
         """Method to support the '==' operator. This will also implicitly define the '!=' operator."""

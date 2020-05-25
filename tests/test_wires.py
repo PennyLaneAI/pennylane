@@ -120,7 +120,7 @@ class TestWires:
         """Tests the string representation."""
 
         wires_str = str(Wires([1, 2, 3]))
-        assert wires_str == "<Wires = (1, 2, 3)>"
+        assert wires_str == "<Wires = [1, 2, 3]>"
 
     def test_set_of_wires(self):
         """Tests that a set() of wires is formed correctly."""
