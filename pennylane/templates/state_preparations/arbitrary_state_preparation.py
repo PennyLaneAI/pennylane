@@ -85,7 +85,7 @@ def ArbitraryStatePreparation(weights, wires):
         msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
 
-    wires = wires.wire_list  # Todo: remove when ops take Wires object
+    wires = wires.tolist()  # Todo: remove when ops take Wires object
 
     for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

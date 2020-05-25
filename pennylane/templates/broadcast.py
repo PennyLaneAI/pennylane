@@ -49,7 +49,7 @@ def wires_pyramid(wires):
     """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
-        subset = wires[layer : len(wires) - layer]
+        subset = wires[layer: len(wires) - layer]
         sequence += [subset.subset([i, i + 1]) for i in range(0, len(subset) - 1, 2)]
     return sequence
 
@@ -571,6 +571,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     }
 
     # broadcast the unitary
-    for w, p in zip(wire_sequence[pattern], parameters):
-        w = w.wire_list  # TODO: Delete once operator takes Wires objects
-        unitary(*p, wires=w, **kwargs)
+    for wires, pars in zip(wire_sequence[pattern], parameters):
+        wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
+        unitary(*pars, wires=wires, **kwargs)

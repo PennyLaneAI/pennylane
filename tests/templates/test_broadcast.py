@@ -277,7 +277,7 @@ class TestBuiltinPatterns:
         wires = Wires(wires)
         sequence = function(wires)
         for w, t in zip(sequence, target):
-            assert w.wire_list == t
+            assert w.tolist() == t
 
 
 class TestCustomPattern:
