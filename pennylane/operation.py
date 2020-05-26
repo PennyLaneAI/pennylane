@@ -152,7 +152,7 @@ class ObservableReturnTypes(Enum):
 
     def __repr__(self):
         """String representation of the return types."""
-        return self.value
+        return str(self.value)
 
 
 Sample = ObservableReturnTypes.Sample
