@@ -698,6 +698,12 @@ class TestUnflatten:
 
     flat = torch.tensor([i for i in range(12)])
 
+    def test_unsupported_type_error(self):
+        """Test that an unsupported type exception is raised if there is
+        an unknown element in the model."""
+        with pytest.raises(TypeError, match="Unsupported type in the model"):
+            unflatten_torch(self.flat, [object()])
+
     def test_model_number(self):
         """Test that the function simply splits flat between its first and remaining elements
         when the model is a number"""
