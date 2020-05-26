@@ -926,14 +926,14 @@ class TestParameterHandlingIntegration:
 
         # input data
         data1 = tf.constant([0, 1, 1, 0], dtype=tf.float64) / np.sqrt(2)
-        data2 = tf.Variable([1, 1], dtype=tf.float64, trianable=False)
+        data2 = tf.Variable([1, 1], dtype=tf.float64, trainable=False)
 
         with tf.GradientTape() as tape:
             loss = circuit(data1, weights1, data2, weights2)
 
         grad = tape.gradient(loss, [weights1, weights2])
-        res1 = grad[0].detach().numpy()
-        res2 = weights2.grad.detach().numpy()
+        res1 = grad[0].numpy()
+        res2 = grad[1].numpy()
 
         # we do not check for correctness, just that the output
         # is the correct shape
@@ -951,169 +951,196 @@ class TestParameterHandlingIntegration:
         expected = set(list(range(offset1, offset1 + num_w1)) + list(range(offset2, offset2 + num_w2)))
         assert spy.call_args[1]["wrt"] == expected
 
-    # def test_gradient_non_differentiable_exception(self):
-    #     """Test that an exception is raised if non-differentiable data is
-    #     differentiated"""
-    #     dev = qml.device("default.qubit", wires=2)
+    def test_gradient_non_differentiable_none(self, mocker):
+        """Test that the gradient of a non-differentiable tensor is None"""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev = qml.device("default.qubit", wires=2)
 
-    #     @qml.qnode(dev, interface="tf")
-    #     def circuit(data1):
-    #         qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
-    #         return qml.expval(qml.PauliZ(0))
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
 
-    #     grad_fn = qml.grad(circuit, argnum=[0])
-    #     data1 = tf.constant([0, 1, 1, 0]) / np.sqrt(2)
+        weights = tf.constant(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3))
 
-    #     loss = circuit(data1)
+        with tf.GradientTape() as tape:
+            loss = circuit(weights)
 
-    #     assert not loss.requires_grad
+        grad = tape.gradient(loss, weights)
+        assert grad is None
 
-    #     with pytest.raises(RuntimeError, match="does not have a grad_fn"):
-    #         grad = tape.gradient(loss, weights)
+        spy.assert_not_called()
 
-    # def test_chained_qnodes(self):
-    #     """Test that the gradient of chained QNodes works without error"""
-    #     dev = qml.device("default.qubit", wires=2)
+    def test_non_differentiable_watch(self, mocker):
+        """Test that watching a non-differentiable tensor makes it differentiable"""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev = qml.device("default.qubit", wires=2)
 
-    #     @qml.qnode(dev, interface="tf")
-    #     def circuit1(weights):
-    #         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-    #         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
 
-    #     @qml.qnode(dev, interface="tf")
-    #     def circuit2(data, weights):
-    #         qml.templates.AngleEmbedding(data, wires=[0, 1])
-    #         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-    #         return qml.expval(qml.PauliX(0))
+        weights = tf.constant(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3))
 
-    #     def cost(weights):
-    #         w1, w2 = weights
-    #         c1 = circuit1(w1)
-    #         c2 = circuit2(c1, w2)
-    #         return torch.sum(c2) ** 2
+        with tf.GradientTape() as tape:
+            tape.watch([weights])
+            loss = circuit(weights)
 
-    #     w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-    #     w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+        grad = tape.gradient(loss, weights)
+        assert grad is not None
+        assert grad.shape == weights.shape
+        spy.assert_called_once()
 
-    #     w1 = tf.Variable(w1)
-    #     w2 = tf.Variable(w2)
+        assert spy.call_args[1]["wrt"] == None
 
-    #     weights = [w1, w2]
+    def test_chained_qnodes(self):
+        """Test that the gradient of chained QNodes works without error"""
+        dev = qml.device("default.qubit", wires=2)
 
-    #     loss = cost(weights)
-    #     grad = tape.gradient(loss, weights)
+        @qml.qnode(dev, interface="tf")
+        def circuit1(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-    #     res = w1.grad.detach().numpy()
-    #     assert res.shape == w1.shape
+        @qml.qnode(dev, interface="tf")
+        def circuit2(data, weights):
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
 
-    #     res = w2.grad.detach().numpy()
-    #     assert res.shape == w2.shape
+        def cost(weights):
+            w1, w2 = weights
+            c1 = circuit1(w1)
+            c2 = circuit2(c1, w2)
+            return tf.reduce_sum(c2) ** 2
 
-    # def test_gradient_value(self, mocker, tol):
-    #     """Test that the returned gradient value for a qubit QNode is correct,
-    #     when one of the arguments is non-differentiable."""
-    #     spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
-    #     dev = qml.device("default.qubit", wires=3)
+        # input weights
+        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
+        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
 
-    #     @qml.qnode(dev, interface="tf")
-    #     def circuit(a, b, c):
-    #         qml.RX(a, wires=0)
-    #         qml.RX(b, wires=1)
-    #         qml.RX(c, wires=2)
-    #         qml.CNOT(wires=[0, 1])
-    #         qml.CNOT(wires=[1, 2])
-    #         return qml.expval(qml.PauliX(0) @ qml.PauliY(2))
+        w1 = tf.Variable(w1)
+        w2 = tf.Variable(w2)
 
-    #     theta = tf.Variable(0.5)
-    #     phi = tf.Variable(0.1)
+        weights = [w1, w2]
 
-    #     # varphi is non-differentiable
-    #     varphi = torch.tensor(0.23)
+        with tf.GradientTape() as tape:
+            loss = cost(weights)
 
-    #     loss = circuit(theta, phi, varphi)
-    #     grad = tape.gradient(loss, weights)
+        grad = tape.gradient(loss, weights)
 
-    #     res = [i.grad.detach().numpy() for i in [theta, phi]]
-    #     expected = torch.tensor([
-    #         torch.cos(theta) * torch.sin(phi) * torch.sin(varphi),
-    #         torch.sin(theta) * torch.cos(phi) * torch.sin(varphi)
-    #     ])
+        assert len(grad) == 2
+        assert grad[0].shape == w1.shape
+        assert grad[1].shape == w2.shape
 
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+    def test_gradient_value(self, mocker, tol):
+        """Test that the returned gradient value for a qubit QNode is correct,
+        when one of the arguments is non-differentiable."""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev = qml.device("default.qubit", wires=3)
 
-    #     # check that the parameter-shift rule was not applied to varphi
-    #     assert spy.call_args[1]["wrt"] == {0, 1}
+        @qml.qnode(dev, interface="tf")
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(2))
 
-    # def test_chained_gradient_value(self, mocker, tol):
-    #     """Test that the returned gradient value for two chained qubit QNodes
-    #     is correct."""
-    #     spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
-    #     dev1 = qml.device("default.qubit", wires=3)
+        theta = tf.Variable(0.5)
+        phi = tf.Variable(0.1)
 
-    #     @qml.qnode(dev1, interface="tf")
-    #     def circuit1(a, b, c):
-    #         qml.RX(a, wires=0)
-    #         qml.RX(b, wires=1)
-    #         qml.RX(c, wires=2)
-    #         qml.CNOT(wires=[0, 1])
-    #         qml.CNOT(wires=[1, 2])
-    #         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
+        # varphi is non-differentiable
+        varphi = tf.constant(0.23)
 
-    #     dev2 = qml.device("default.qubit", wires=2)
+        with tf.GradientTape() as tape:
+            loss = circuit(theta, phi, varphi)
 
-    #     @qml.qnode(dev2, interface="tf")
-    #     def circuit2(data, weights):
-    #         qml.RX(data[0], wires=0)
-    #         qml.RX(data[1], wires=1)
-    #         qml.CNOT(wires=[0, 1])
-    #         qml.RZ(weights[0], wires=0)
-    #         qml.RZ(weights[1], wires=1)
-    #         qml.CNOT(wires=[0, 1])
-    #         return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+        grad = tape.gradient(loss, [theta, phi, varphi])
 
-    #     def cost(a, b, c, weights):
-    #         return circuit2(circuit1(a, b, c), weights)
+        expected = [
+            tf.cos(theta) * tf.sin(phi) * tf.sin(varphi),
+            tf.sin(theta) * tf.cos(phi) * tf.sin(varphi),
+        ]
 
-    #     # Set the first parameter of circuit1 as non-differentiable.
-    #     a = tf.constant(0.4)
+        assert np.allclose(grad[:2], expected, atol=tol, rtol=0)
+        assert grad[2] is None
 
-    #     # the remaining free parameters are all differentiable
-    #     b = tf.Variable(0.5)
-    #     c = tf.Variable(0.1)
-    #     weights = tf.Variable([0.2, 0.3])
+        # check that the parameter-shift rule was not applied to varphi
+        assert spy.call_args[1]["wrt"] == {0, 1}
 
-    #     loss = cost(a, b, c, weights)
-    #     grad = tape.gradient(loss, weights)
-    #     res = [i.grad.detach().numpy() for i in [b, c, weights]]
+    def test_chained_gradient_value(self, mocker, tol):
+        """Test that the returned gradient value for two chained qubit QNodes
+        is correct."""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev1 = qml.device("default.qubit", wires=3)
 
-    #     # Output should have shape [dcost/db, dcost/dc, dcost/dw],
-    #     # where b,c are scalars, and w is a vector of length 2.
-    #     assert len(res) == 3
-    #     assert res[0].shape == tuple() # scalar
-    #     assert res[1].shape == tuple() # scalar
-    #     assert res[2].shape == (2,)    # vector
+        @qml.qnode(dev1, interface="tf")
+        def circuit1(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
 
-    #     cacbsc = torch.cos(a)*torch.cos(b)*torch.sin(c)
+        dev2 = qml.device("default.qubit", wires=2)
 
-    #     expected = torch.tensor([
-    #         # analytic expression for dcost/db
-    #         -torch.cos(a)*torch.sin(b)*torch.sin(c)*torch.cos(cacbsc)*torch.sin(weights[0])*torch.sin(torch.cos(a)),
-    #         # analytic expression for dcost/dc
-    #         torch.cos(a)*torch.cos(b)*torch.cos(c)*torch.cos(cacbsc)*torch.sin(weights[0])*torch.sin(torch.cos(a)),
-    #         # analytic expression for dcost/dw[0]
-    #         torch.sin(cacbsc)*torch.cos(weights[0])*torch.sin(torch.cos(a)),
-    #         # analytic expression for dcost/dw[1]
-    #         0
-    #     ])
+        @qml.qnode(dev2, interface="tf")
+        def circuit2(data, weights):
+            qml.RX(data[0], wires=0)
+            qml.RX(data[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[0], wires=0)
+            qml.RZ(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
 
-    #     # np.hstack 'flattens' the ragged gradient array allowing it
-    #     # to be compared with the expected result
-    #     assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
+        def cost(a, b, c, weights):
+            return circuit2(circuit1(a, b, c), weights)
 
-    #     # Check that the parameter-shift rule was applied
-    #     # to all parameters in circuit2 (i.e., wrt=None)
-    #     assert spy.call_args_list[0][1]["wrt"] == None
+        # Set the first parameter of circuit1 as non-differentiable.
+        a = tf.constant(0.4)
 
-    #     # check that the parameter-shift rule was not applied
-    #     # to the first parameter of circuit1
-    #     assert spy.call_args_list[1][1]["wrt"] == {1, 2}
+        # the remaining free parameters are all differentiable
+        b = tf.Variable(0.5)
+        c = tf.Variable(0.1)
+        weights = tf.Variable([0.2, 0.3])
+
+        with tf.GradientTape() as tape:
+            loss = cost(a, b, c, weights)
+
+        grad = tape.gradient(loss, [b, c, weights])
+
+        # Output should have shape [dcost/db, dcost/dc, dcost/dw],
+        # where b,c are scalars, and w is a vector of length 2.
+        assert len(grad) == 3
+        assert grad[0].shape == tuple() # scalar
+        assert grad[1].shape == tuple() # scalar
+        assert grad[2].shape == (2,)    # vector
+
+        cacbsc = tf.cos(a)*tf.cos(b)*tf.sin(c)
+
+        expected = [
+            # analytic expression for dcost/db
+            -tf.cos(a)*tf.sin(b)*tf.sin(c)*tf.cos(cacbsc)*tf.sin(weights[0])*tf.sin(tf.cos(a)),
+            # analytic expression for dcost/dc
+            tf.cos(a)*tf.cos(b)*tf.cos(c)*tf.cos(cacbsc)*tf.sin(weights[0])*tf.sin(tf.cos(a)),
+            # analytic expression for dcost/dw[0]
+            tf.sin(cacbsc)*tf.cos(weights[0])*tf.sin(tf.cos(a)),
+            # analytic expression for dcost/dw[1]
+            0
+        ]
+
+        # np.hstack 'flattens' the ragged gradient array allowing it
+        # to be compared with the expected result
+        assert np.allclose(np.hstack(grad), expected, atol=tol, rtol=0)
+
+        # Check that the parameter-shift rule was applied
+        # to all parameters in circuit2 (i.e., wrt=None)
+        assert spy.call_args_list[0][1]["wrt"] == None
+
+        # check that the parameter-shift rule was not applied
+        # to the first parameter of circuit1
+        assert spy.call_args_list[1][1]["wrt"] == {1, 2}
