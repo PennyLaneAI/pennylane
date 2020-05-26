@@ -1,12 +1,14 @@
 """
 This submodule contains frequently used loss and cost functions.
 """
-# pylint: disable=too-many-arguments, too-few-public-methods
+# pylint: disable=too-many-arguments
 import pennylane as qml
 
 
 class SquaredErrorLoss:
-    r"""Combines an ansatz circuit with some target observables and calculates
+    r"""Squared error loss function for circuits with trainable parameters.
+
+    Combines an ansatz circuit with some target observables and calculates
     the squared error between their expectation values and a target.
 
     Args:
@@ -101,13 +103,14 @@ class SquaredErrorLoss:
             array[float]: squared error values
         """
 
-        input_ = self.qnodes(*args, **kwargs)
-
         if target is None:
             raise ValueError("The target cannot be None")
 
+        input_ = self.qnodes(*args, **kwargs)
+
         if len(target) != len(input_):
-            raise ValueError("Invalid target")
+            raise ValueError("Input target of incorrect length %d instead of %d"
+                             % (len(target), len(input_)))
 
         return (input_ - target) ** 2
 

@@ -28,7 +28,7 @@ class TestSquaredErrorLoss:
             loss(phis)
 
     def test_invalid_target(self, interface):
-        with pytest.raises(ValueError, match="Invalid target"):
+        with pytest.raises(ValueError, match="Input target of incorrect length 2 instead of 1"):
             num_qubits = 1
 
             dev = qml.device("default.qubit", wires=num_qubits)
@@ -48,7 +48,7 @@ class TestSquaredErrorLoss:
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
 
-        assert np.allclose(res, np.array([0.88, 0.83, 0.05]), atol=0.2, rtol=0.2)
+        assert np.allclose(res, np.array([0.88, 0.83, 0.05]), atol=0.01, rtol=0.01)
 
     def test_rx_circuit(self, interface):
         num_qubits = 3
@@ -60,4 +60,4 @@ class TestSquaredErrorLoss:
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
 
-        assert np.allclose(res, np.array([0.21, 0.25, 0.03]), atol=0.2, rtol=0.2)
+        assert np.allclose(res, np.array([0.21, 0.25, 0.03]), atol=0.01, rtol=0.01)
