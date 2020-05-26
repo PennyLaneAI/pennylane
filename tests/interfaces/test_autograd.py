@@ -746,7 +746,7 @@ class TestParameterHandlingIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        # check that the parameter-shift rule was not applied to varphi
+        # check that the gradient was not applied to varphi
         assert spy.call_args[1]["wrt"] == {0, 1}
 
     def test_chained_gradient_value(self, mocker, tol):
@@ -815,8 +815,8 @@ class TestParameterHandlingIntegration:
         # to be compared with the expected result
         assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
 
-        # Check that the parameter-shift rule was applied
-        # to all parameters in circuit2 (i.e., wrt=None)
+        # Check that the gradient was computed
+        # for all parameters in circuit2 (i.e., wrt=None)
         assert spy.call_args_list[0][1]["wrt"] == None
 
         # check that the parameter-shift rule was not applied
