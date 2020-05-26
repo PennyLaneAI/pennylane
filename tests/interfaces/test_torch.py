@@ -726,6 +726,7 @@ class TestParameterHandlingIntegration:
         loss = circuit(weights, data1, data2)
         loss.backward()
 
+        # check that weights is only once differentiable
         assert weights.grad.requires_grad == False
 
         res = weights.grad.detach().numpy()
@@ -1027,10 +1028,10 @@ class TestParameterHandlingIntegration:
         # to be compared with the expected result
         assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
 
-        # Check that the parameter-shift rule was applied
-        # to all parameters in circuit2 (i.e., wrt=None)
+        # Check that the gradient was computed
+        # for all parameters in circuit2 (i.e., wrt=None)
         assert spy.call_args_list[0][1]["wrt"] == None
 
-        # check that the parameter-shift rule was not applied
-        # to the first parameter of circuit1
+        # check that the gradient was not computed
+        # for the first parameter of circuit1
         assert spy.call_args_list[1][1]["wrt"] == {1, 2}

@@ -206,7 +206,7 @@ def to_torch(qnode):
 
             # restore the nested structure of the input args
             grad_input_list = [
-                torch.as_tensor(i) for i in unflatten_torch(vjp.flatten(), ctx.args)[0]
+                torch.as_tensor(i) for i in unflatten_torch(vjp, ctx.args)[0]
             ]
             grad_input = []
 
