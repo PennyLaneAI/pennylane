@@ -1004,10 +1004,10 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[list[Any]]: nested list containing the wires per observable
+            list[Any]: flat list containing all wires addressed by the observables
             in the tensor product
         """
-        return [o.wires for o in self.obs]
+        return list(_flatten([o.wires for o in self.obs]))
 
     @property
     def params(self):
