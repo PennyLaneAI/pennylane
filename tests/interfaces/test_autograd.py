@@ -518,8 +518,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.size
-        assert spy.call_args[1]["wrt"] == set(range(num_w1))
+        assert spy.call_args[1]["wrt"] == set(range(18))
 
     def test_differentiable_parameter_middle(self, mocker):
         """Test that a differentiable parameter provided as the middle
@@ -558,9 +557,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.size
-        offset = data1.size
-        expected = set(range(offset, offset + num_w1))
+        expected = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_differentiable_parameter_last(self, mocker):
@@ -600,9 +597,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.size
-        offset = data1.size + data2.size
-        expected = set(range(offset, offset + num_w1))
+        expected = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
@@ -746,7 +741,7 @@ class TestParameterHandlingIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        # check that the parameter-shift rule was not applied to varphi
+        # check that the gradient was not applied to varphi
         assert spy.call_args[1]["wrt"] == {0, 1}
 
     def test_chained_gradient_value(self, mocker, tol):
@@ -815,8 +810,8 @@ class TestParameterHandlingIntegration:
         # to be compared with the expected result
         assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
 
-        # Check that the parameter-shift rule was applied
-        # to all parameters in circuit2 (i.e., wrt=None)
+        # Check that the gradient was computed
+        # for all parameters in circuit2 (i.e., wrt=None)
         assert spy.call_args_list[0][1]["wrt"] == None
 
         # check that the parameter-shift rule was not applied
