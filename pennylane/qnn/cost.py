@@ -109,8 +109,9 @@ class SquaredErrorLoss:
         input_ = self.qnodes(*args, **kwargs)
 
         if len(target) != len(input_):
-            raise ValueError("Input target of incorrect length %d instead of %d"
-                             % (len(target), len(input_)))
+            raise ValueError(
+                "Input target of incorrect length %d instead of %d" % (len(target), len(input_))
+            )
 
         return (input_ - target) ** 2
 
