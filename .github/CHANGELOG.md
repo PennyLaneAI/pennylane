@@ -52,7 +52,7 @@
     if present the old behaviour persists.
 
   - The QNode Autograd and Torch interfaces now inspects QNode positional arguments when calculating
-    the vector-Jacobian product. If any argument is marked as `requires_grad=False`, it
+    the gradient. If any argument is marked as `requires_grad=False`, it
     is automatically excluded from the parameter-shift rule.
 
 <h3>Improvements</h3>
