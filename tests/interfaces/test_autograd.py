@@ -518,8 +518,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.size
-        assert spy.call_args[1]["wrt"] == set(range(num_w1))
+        assert spy.call_args[1]["wrt"] == set(range(18))
 
     def test_differentiable_parameter_middle(self, mocker):
         """Test that a differentiable parameter provided as the middle
@@ -558,9 +557,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.size
-        offset = data1.size
-        expected = set(range(offset, offset + num_w1))
+        expected = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_differentiable_parameter_last(self, mocker):
@@ -600,9 +597,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.size
-        offset = data1.size + data2.size
-        expected = set(range(offset, offset + num_w1))
+        expected = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
