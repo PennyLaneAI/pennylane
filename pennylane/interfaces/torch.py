@@ -28,7 +28,7 @@ from torch.autograd.function import once_differentiable
 from pennylane.utils import _flatten
 
 
-def unflatten_torch(flat, model):  # pragma: no cover
+def unflatten_torch(flat, model):
     """Restores an arbitrary nested structure to a flattened Torch tensor.
 
     Args:
@@ -47,7 +47,7 @@ def unflatten_torch(flat, model):  # pragma: no cover
 
     if isinstance(model, torch.Tensor):
         idx = model.numel()
-        res = torch.view(flat[:idx], model.shape)
+        res = flat[:idx].view(model.shape)
         return res, flat[idx:]
 
     if isinstance(model, Iterable):
@@ -205,9 +205,7 @@ def to_torch(qnode):
                 vjp = res
 
             # restore the nested structure of the input args
-            grad_input_list = [
-                torch.as_tensor(i) for i in unflatten_torch(vjp, ctx.args)[0]
-            ]
+            grad_input_list = [torch.as_tensor(i) for i in unflatten_torch(vjp, ctx.args)[0]]
             grad_input = []
 
             # match the type and device of the input tensors

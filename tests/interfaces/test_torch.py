@@ -27,6 +27,7 @@ import pennylane as qml
 from pennylane.utils import _flatten, unflatten
 from pennylane.qnodes import QNode, QuantumFunctionError
 from pennylane._device import DeviceError
+from pennylane.interfaces.torch import unflatten_torch
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
@@ -692,6 +693,51 @@ class TestTorchGradients:
         assert grad1 == grad2
 
 
+class TestUnflatten:
+    """Tests for pennylane.interfaces.torch.unflatten_torch"""
+
+    flat = torch.tensor([i for i in range(12)])
+
+    def test_model_number(self):
+        """Test that the function simply splits flat between its first and remaining elements
+        when the model is a number"""
+        unflattened = unflatten_torch(self.flat, 0)
+        assert unflattened[0] == 0
+        assert torch.all(unflattened[1] == self.flat[1:])
+
+    def test_model_tensor(self):
+        """Test that function correctly takes the first elements of flat and reshapes it into the
+        model tensor, while leaving the remaining elements as a flat tensor"""
+        model = torch.ones((3, 3))
+        unflattened = unflatten_torch(self.flat, model)
+
+        target = self.flat[:9].view((3, 3))
+        remaining = self.flat[-3:]
+
+        assert torch.all(unflattened[0] == target)
+        assert torch.all(unflattened[1] == remaining)
+
+    def test_model_iterable(self):
+        """Test that the function correctly unflattens when the model is a list of numbers,
+        which should result in unflatten_torch returning a list of tensors"""
+        model = [1] * 12
+        unflattened = unflatten_torch(self.flat, model)
+
+        assert all([i.shape == () for i in unflattened[0]])
+        assert unflattened[1].numel() == 0
+
+    def test_model_nested_tensor(self):
+        """Test that the function correctly unflattens when the model is a nested tensor,
+        which should result in unflatten_torch returning a list of tensors of the same shape"""
+        model = [torch.ones(3), torch.ones((2, 2)), torch.ones((3, 1)), torch.ones((1, 2))]
+        unflattened = unflatten_torch(self.flat, model)
+
+        assert all(
+            [u.shape == model[i].shape for i, u in enumerate(unflattened[0])]
+        )
+        assert unflattened[1].numel() == 0
+
+
 class TestParameterHandlingIntegration:
     """Test that the parameter handling for differentiable/non-differentiable
     parameters works correctly."""
@@ -776,9 +822,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.numel()
-        offset = data1.numel()
-        expected = set(range(offset, offset + num_w1))
+        expected = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_differentiable_parameter_last(self, mocker):
@@ -817,9 +861,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = weights.numel()
-        offset = data1.numel() + data2.numel()
-        expected = set(range(offset, offset + num_w1))
+        expected = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
