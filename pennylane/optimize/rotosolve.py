@@ -13,7 +13,7 @@
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
 
-from pennylane import numpy as np
+import numpy as np
 from pennylane.utils import _flatten, unflatten
 
 
