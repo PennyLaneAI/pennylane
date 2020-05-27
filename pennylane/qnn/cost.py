@@ -93,7 +93,7 @@ class SquaredErrorLoss:
         measure="expval",
         interface="autograd",
         diff_method="best",
-        **kwargs
+        **kwargs,
     ):
         self.qnodes = qml.map(
             ansatz,
@@ -102,7 +102,7 @@ class SquaredErrorLoss:
             measure=measure,
             interface=interface,
             diff_method=diff_method,
-            **kwargs
+            **kwargs,
         )
 
     def loss(self, *args, target=None, **kwargs):
@@ -123,7 +123,8 @@ class SquaredErrorLoss:
 
         if len(target) != len(input_):
             raise ValueError(
-                f"Input target of incorrect length {len(target)} instead of {len(input_)}")
+                f"Input target of incorrect length {len(target)} instead of {len(input_)}"
+            )
 
         return (input_ - target) ** 2
 
