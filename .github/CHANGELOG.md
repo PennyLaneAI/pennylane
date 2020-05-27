@@ -36,7 +36,7 @@
 * Placeholder for variable/tensor refactor. So far this has included:
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
   [(#650)](https://github.com/XanaduAI/pennylane/pull/650)
-  [(#652)](https://github.com/XanaduAI/pennylane/pull/650)
+  [(#652)](https://github.com/XanaduAI/pennylane/pull/652)
 
   - A new `ndarray` subclass `pennylane.numpy.tensor`, which extends NumPy arrays with
     the keyword argument and attribute `requires_grad`. Tensors which have `requires_grad=False`

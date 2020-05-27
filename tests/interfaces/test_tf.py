@@ -811,7 +811,7 @@ class TestParameterHandlingIntegration:
         # is the correct shape
         assert res.shape == weights.shape
 
-        # check that the parameter shift was only performed for the
+        # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
         num_w1 = tf.size(weights).numpy()
         assert spy.call_args[1]["wrt"] == set(range(num_w1))
@@ -852,7 +852,7 @@ class TestParameterHandlingIntegration:
         # is the correct shape
         assert res.shape == weights.shape
 
-        # check that the parameter shift was only performed for the
+        # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
         num_w1 = tf.size(weights).numpy()
         offset = tf.size(data1).numpy()
@@ -895,7 +895,7 @@ class TestParameterHandlingIntegration:
         # is the correct shape
         assert res.shape == weights.shape
 
-        # check that the parameter shift was only performed for the
+        # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
         num_w1 = tf.size(weights).numpy()
         offset = tf.size(data1).numpy() + tf.size(data2).numpy()
@@ -940,7 +940,7 @@ class TestParameterHandlingIntegration:
         assert res1.shape == weights1.shape
         assert res2.shape == weights2.shape
 
-        # check that the parameter shift was only performed for the
+        # check that the gradient was only computed for the
         # differentiable elements of `weights`, not the data input
         num_w1 = tf.size(weights1).numpy()
         num_w2 = tf.size(weights2).numpy()
@@ -1067,7 +1067,7 @@ class TestParameterHandlingIntegration:
         assert np.allclose(grad[:2], expected, atol=tol, rtol=0)
         assert grad[2] is None
 
-        # check that the parameter-shift rule was not applied to varphi
+        # check that the gradient was not computed for varphi
         assert spy.call_args[1]["wrt"] == {0, 1}
 
     def test_chained_gradient_value(self, mocker, tol):
@@ -1137,10 +1137,10 @@ class TestParameterHandlingIntegration:
         # to be compared with the expected result
         assert np.allclose(np.hstack(grad), expected, atol=tol, rtol=0)
 
-        # Check that the parameter-shift rule was applied
-        # to all parameters in circuit2 (i.e., wrt=None)
+        # Check that the gradient was computed
+        # for all parameters in circuit2 (i.e., wrt=None)
         assert spy.call_args_list[0][1]["wrt"] == None
 
-        # check that the parameter-shift rule was not applied
-        # to the first parameter of circuit1
+        # check that the gradient was not computed
+        # for the first parameter of circuit1
         assert spy.call_args_list[1][1]["wrt"] == {1, 2}
