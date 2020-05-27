@@ -55,7 +55,8 @@
     is automatically excluded from the parameter-shift rule.
     
 * Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
-  to calculate losses and costs on circuits with trainable parameters. 
+  to calculate losses and costs on circuits with trainable parameters.
+  [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
 <h3>Improvements</h3>
 
