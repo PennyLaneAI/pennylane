@@ -789,7 +789,7 @@ class TestUCCSDUnitary:
         ]
     )
     def test_uccsd_xceptions(self, weights, ph, pphh, init_state, msg_match):
-        """Test that UCCSD throws an exception if the parameters has illegal
+        """Test that UCCSD throws an exception if the parameters have illegal
         shapes, types or values."""
         N=4
         wires = range(4)
