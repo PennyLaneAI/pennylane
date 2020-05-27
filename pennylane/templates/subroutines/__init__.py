@@ -17,7 +17,7 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 """
 
 from .arbitrary_unitary import ArbitraryUnitary
+from .uccsd import UCCSD
 from .double_excitation_unitary import DoubleExcitationUnitary
 from .interferometer import Interferometer
 from .single_excitation_unitary import SingleExcitationUnitary
-from .uccsd import UCCSD
