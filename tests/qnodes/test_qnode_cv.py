@@ -611,5 +611,5 @@ class TestVarianceJacobian:
 
         circuit = CVQNode(circuit, dev)
 
-        with pytest.raises(ValueError, match=r"cannot be used with the parameters \{0\}"):
+        with pytest.raises(ValueError, match=r"cannot be used with the argument\(s\) \{'a'\}"):
             circuit.jacobian([1.0], method="A")
