@@ -784,7 +784,7 @@ class TestUCCSDUnitary:
              "'weights' must be of shape"),
 
             ( np.array([-2.8, 1.6]), [[0, 2], [1, 3]], [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
-             "'weights' must be of shape"),
+             "'weights' must be of shape")
         
         ]
     )
@@ -809,7 +809,7 @@ class TestUCCSDUnitary:
         [
             (np.array([3.90575761, -1.89772083, -1.36689032]),
              [[0, 2], [1, 3]], [0, 1, 2, 3],
-             [-0.14619406, -0.06502792, 0.14619406, 0.06502792]),
+             [-0.14619406, -0.06502792, 0.14619406, 0.06502792])
         ]
     )
     def test_integration(self, weights, ph, pphh, expected, tol):
