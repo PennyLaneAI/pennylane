@@ -25,7 +25,7 @@ from pennylane.templates.subroutines import (
     ArbitraryUnitary,
     SingleExcitationUnitary,
     DoubleExcitationUnitary,
-    UCCSDUnitary
+    UCCSD
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -638,7 +638,7 @@ class TestDoubleExcitationUnitary:
 
 
 class TestUCCSDUnitary:
-    """Tests for the UCCSDUnitary template from the pennylane.templates.subroutine module."""
+    """Tests for the UCCSD template from the pennylane.templates.subroutine module."""
 
     @pytest.mark.parametrize(
         ("ph", "pphh", "weights", "ref_gates"),
@@ -688,8 +688,8 @@ class TestUCCSDUnitary:
                [235, qml.CNOT,     [1, 4], []] ])
         ]
     )
-    def test_uccsd_unitary_operations(self, ph, pphh, weights, ref_gates):
-        """Test the correctness of the UCCSDUnitary template including the gate count
+    def test_uccsd_operations(self, ph, pphh, weights, ref_gates):
+        """Test the correctness of the UCCSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters 
         in the circuit."""
 
@@ -707,7 +707,7 @@ class TestUCCSDUnitary:
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
         with qml.utils.OperationRecorder() as rec:
-            UCCSDUnitary(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
+            UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
 
         assert len(rec.queue) == sqg + cnots + 1
 
@@ -788,15 +788,15 @@ class TestUCCSDUnitary:
         
         ]
     )
-    def test_uccsd_unitary_exceptions(self, weights, ph, pphh, init_state, msg_match):
-        """Test that UCCSDUnitary throws an exception if the parameters
-        has illegal shapes, types or values."""
+    def test_uccsd_xceptions(self, weights, ph, pphh, init_state, msg_match):
+        """Test that UCCSD throws an exception if the parameters has illegal
+        shapes, types or values."""
         N=4
         wires = range(4)
         dev = qml.device("default.qubit", wires=N)
 
         def circuit(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state):
-            UCCSDUnitary(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+            UCCSD(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -825,7 +825,7 @@ class TestUCCSDUnitary:
 
         @qml.qnode(dev)
         def circuit(w_ph_0, w_ph_1, w_pphh):
-        	UCCSDUnitary(weights, wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
+        	UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
 
         return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 

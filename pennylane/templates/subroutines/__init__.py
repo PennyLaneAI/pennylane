@@ -20,4 +20,4 @@ from .arbitrary_unitary import ArbitraryUnitary
 from .double_excitation_unitary import DoubleExcitationUnitary
 from .interferometer import Interferometer
 from .single_excitation_unitary import SingleExcitationUnitary
-from .uccsd_unitary import UCCSDUnitary
+from .uccsd_unitary import UCCSD
