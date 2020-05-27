@@ -1,6 +1,24 @@
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests for the pennylane.qnn.cost module.
+"""
 import numpy as np
 import pennylane as qml
 import pytest
+
+from pennylane.qnn.cost import SquaredErrorLoss
 
 
 def rx_ansatz(phis, **kwargs):
@@ -22,7 +40,7 @@ class TestSquaredErrorLoss:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = qml.qnn.SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
 
             phis = np.ones(num_qubits)
             loss(phis)
@@ -33,7 +51,7 @@ class TestSquaredErrorLoss:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = qml.qnn.SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
 
             phis = np.ones(num_qubits)
             loss(phis, target=np.array([1.0, 2.0]))
@@ -43,7 +61,7 @@ class TestSquaredErrorLoss:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = qml.qnn.SquaredErrorLoss(layer_ansatz, observables, dev, interface=interface)
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface=interface)
 
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
@@ -55,7 +73,7 @@ class TestSquaredErrorLoss:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = qml.qnn.SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))

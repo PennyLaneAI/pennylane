@@ -53,6 +53,9 @@
   - The QNode Autograd interface now inspects QNode positional arguments when calculating
     the vector-Jacobian product. If any argument is marked as `requires_grad=False`, it
     is automatically excluded from the parameter-shift rule.
+    
+* Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
+  to calculate losses and costs on circuits with trainable parameters. 
 
 <h3>Improvements</h3>
 
@@ -74,7 +77,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac
+Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
