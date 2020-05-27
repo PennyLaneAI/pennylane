@@ -107,7 +107,7 @@ def to_tf(qnode, dtype=None):
     @qnode_str
     @tf.custom_gradient
     def _TFQNode(*input_, **input_kwargs):
-        # Determine which input tensors are being recorded for backpropagation.
+        # Determine which input tensors/Variables are being recorded for backpropagation.
         # The function should_record_backprop, documented here:
         # https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/eager/tape.py#L163
         # accepts lists of *tensors* (not Variables), returning True if all are being watched by one or more

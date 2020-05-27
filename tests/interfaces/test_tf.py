@@ -805,11 +805,10 @@ class TestParameterHandlingIntegration:
             loss = circuit(weights, data1, data2)
 
         grad = tape.gradient(loss, weights)
-        res = grad.numpy()
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res.shape == weights.shape
+        assert grad.shape == weights.shape
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
@@ -846,17 +845,14 @@ class TestParameterHandlingIntegration:
             loss = circuit(data1, weights, data2)
 
         grad = tape.gradient(loss, weights)
-        res = grad.numpy()
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res.shape == weights.shape
+        assert grad.shape == weights.shape
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = tf.size(weights).numpy()
-        offset = tf.size(data1).numpy()
-        expected = set(range(offset, offset + num_w1))
+        expected = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_differentiable_parameter_last(self, mocker):
@@ -889,17 +885,14 @@ class TestParameterHandlingIntegration:
             loss = circuit(data1, data2, weights)
 
         grad = tape.gradient(loss, weights)
-        res = grad.numpy()
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res.shape == weights.shape
+        assert grad.shape == weights.shape
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = tf.size(weights).numpy()
-        offset = tf.size(data1).numpy() + tf.size(data2).numpy()
-        expected = set(range(offset, offset + num_w1))
+        expected = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
         assert spy.call_args[1]["wrt"] == expected
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
@@ -932,13 +925,11 @@ class TestParameterHandlingIntegration:
             loss = circuit(data1, weights1, data2, weights2)
 
         grad = tape.gradient(loss, [weights1, weights2])
-        res1 = grad[0].numpy()
-        res2 = grad[1].numpy()
 
         # we do not check for correctness, just that the output
         # is the correct shape
-        assert res1.shape == weights1.shape
-        assert res2.shape == weights2.shape
+        assert grad[0].shape == weights1.shape
+        assert grad[1].shape == weights2.shape
 
         # check that the gradient was only computed for the
         # differentiable elements of `weights`, not the data input
