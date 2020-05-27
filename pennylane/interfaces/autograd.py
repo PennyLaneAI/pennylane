@@ -17,7 +17,8 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.utils import unflatten
+from pennylane.numpy import zeros, fromiter, int64
+from pennylane.utils import _flatten, unflatten
 
 
 def to_autograd(qnode):
@@ -67,16 +68,35 @@ def to_autograd(qnode):
                     nested Sequence[float]: vector-Jacobian product, arranged
                     into the nested structure of the input arguments in ``args``
                 """
-                # Jacobian matrix of the circuit
-                jac = self.jacobian(args, kwargs)
-                if not g.shape:
-                    temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
-                else:
-                    temp = g @ jac
+                diff_indices = None
+                non_diff_indices = set()
 
-                # restore the nested structure of the input args
-                temp = unflatten(temp.flat, args)
-                return temp
+                for arg, arg_variable in zip(args, self.arg_vars):
+                    if not getattr(arg, "requires_grad", True):
+                        indices = [i.idx for i in _flatten(arg_variable)]
+                        non_diff_indices.update(indices)
+
+                if non_diff_indices:
+                    diff_indices = set(range(self.num_variables)) - non_diff_indices
+
+                # Jacobian matrix of the circuit
+                jac = self.jacobian(args, kwargs, wrt=diff_indices)
+
+                if not g.shape:
+                    vjp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
+                else:
+                    vjp = g @ jac
+
+                if non_diff_indices:
+                    # Autograd requires we return a gradient of size (num_variables,)
+                    res = zeros([self.num_variables])
+                    indices = fromiter(diff_indices, dtype=int64)
+                    res[indices] = vjp
+                    vjp = res
+
+                # Restore the nested structure of the input args.
+                vjp = unflatten(vjp.flat, args)
+                return vjp
 
             return gradient_product
 
