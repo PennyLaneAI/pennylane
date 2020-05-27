@@ -153,7 +153,7 @@ class ObservableReturnTypes(Enum):
 
     def __repr__(self):
         """String representation of the return types."""
-        return self.value
+        return str(self.value)
 
 
 Sample = ObservableReturnTypes.Sample
@@ -980,7 +980,7 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[Wires]: nested list containing the wires per observable
+            Wires: wires used by the observables
             in the tensor product
         """
         return Wires([o.wires for o in self.obs])
