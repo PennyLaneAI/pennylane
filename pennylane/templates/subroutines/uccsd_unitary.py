@@ -31,8 +31,8 @@ from pennylane.templates.utils import (
 
 
 @template
-def UCCSDUnitary(weights, wires, ph=None, pphh=None, init_state=None):
-    r"""Implements the the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz. 
+def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
+    r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz. 
     
     The UCCSD ansatz calls the
     :func:`SingleExcitationUnitary <pennylane.templates.subroutine.SingleExcitationUnitary>`
