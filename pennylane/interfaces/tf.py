@@ -146,8 +146,8 @@ def to_tf(qnode, dtype=None):
             non_diff_indices = set()
 
             # determine the QNode variables which should be differentiated
-            for tensor, arg_variable, r in zip(input_, qnode.arg_vars, requires_grad):
-                if not r:
+            for differentiable, arg_variable in zip(requires_grad, qnode.arg_vars):
+                if not differentiable:
                     indices = [i.idx for i in _flatten(arg_variable)]
                     non_diff_indices.update(indices)
 
