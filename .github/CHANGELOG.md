@@ -59,7 +59,6 @@
   - The QNode TF interface now inspects QNode positional arguments when calculating
     the vector-Jacobian product. If any argument is not being watched by a `tf.GradientTape()`,
     it is automatically excluded from quantum gradient computations.
-    is automatically excluded from quantum gradient computations.
 
 <h3>Improvements</h3>
 
