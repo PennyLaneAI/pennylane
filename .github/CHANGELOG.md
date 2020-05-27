@@ -355,6 +355,10 @@ Thomas Bromley, Alain Delgado Gran, Josh Izaac
 
 <h3>Improvements</h3>
 
+* A new `Wires` class was introduced for the internal 
+  bookkeeping of wire indices.
+  [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
+
 * Improvements to the speed/performance of the `default.qubit` device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
   [(#559)](https://github.com/XanaduAI/pennylane/pull/559)
