@@ -32,8 +32,8 @@ from pennylane.templates.utils import (
 
 @template
 def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
-    r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz. 
-    
+    r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
+
     The UCCSD ansatz calls the
     :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
     templates to exponentiate the coupled-cluster excitation operator. UCCSD is a VQE ansatz
