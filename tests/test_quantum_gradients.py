@@ -17,7 +17,7 @@ Unit tests for computing Autograd gradients of quantum functions.
 
 import pytest
 import autograd
-import autograd.numpy as anp  # only to be used inside classical computational nodes
+import pennylane.numpy as anp  # only to be used inside classical computational nodes
 import numpy as np
 
 import pennylane as qml

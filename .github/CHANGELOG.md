@@ -35,6 +35,7 @@
 
 * Placeholder for variable/tensor refactor. So far this has included:
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
+  [(#650)](https://github.com/XanaduAI/pennylane/pull/650)
 
   - A new `ndarray` subclass `pennylane.numpy.tensor`, which extends NumPy arrays with
     the keyword argument and attribute `requires_grad`. Tensors which have `requires_grad=False`
@@ -43,6 +44,15 @@
   - A new subpackage `pennylane.numpy`, which wraps `autograd.numpy` such that NumPy functions
     accept the `requires_grad` keyword argument, and allows Autograd to differentiate
     `pennylane.numpy.tensor` objects.
+
+  - The `argnum` argument to `qml.grad` is now optional; if not provided, arguments explicitly
+    marked as `requires_grad=False` are excluded for the list of differentiable arguments.
+    The ability to pass `argnum` has been retained for backwards compatibility, and
+    if present the old behaviour persists.
+
+  - The QNode Autograd interface now inspects QNode positional arguments when calculating
+    the vector-Jacobian product. If any argument is marked as `requires_grad=False`, it
+    is automatically excluded from the parameter-shift rule.
 
 <h3>Improvements</h3>
 
@@ -343,6 +353,10 @@ Thomas Bromley, Alain Delgado Gran, Josh Izaac
   [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
 
 <h3>Improvements</h3>
+
+* A new `Wires` class was introduced for the internal 
+  bookkeeping of wire indices.
+  [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
 
 * Improvements to the speed/performance of the `default.qubit` device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)
