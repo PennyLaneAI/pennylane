@@ -744,6 +744,9 @@ class TestUCCSDUnitary:
             ( np.array([-2.8]), [], [], np.array([1, 1, 0, 0]),
              "'ph' and 'pphh' lists can not be both empty"),
 
+            ( np.array([-2.8]), None, None, np.array([1, 1, 0, 0]),
+             "'ph' and 'pphh' lists can not be both empty"),
+
             ( np.array([-2.8]), None, [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
              "'ph' must be a list"),
 
