@@ -450,7 +450,7 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires) # TODO: nonconsecutive
+        wires = np.hstack(wires)  # TODO: nonconsecutive
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
