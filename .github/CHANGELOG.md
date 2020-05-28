@@ -51,7 +51,7 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
-  - The QNode Autograd and Torch interfaces now inspects QNode positional arguments when calculating
+  - The QNode Autograd and Torch interfaces now inspect QNode positional arguments when calculating
     the gradient. If any argument is marked as `requires_grad=False`, it
     is automatically excluded from the parameter-shift rule.
 
