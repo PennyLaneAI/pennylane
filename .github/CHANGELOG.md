@@ -54,11 +54,10 @@
 
   - The QNode Autograd interface now inspects QNode positional arguments when calculating
     the vector-Jacobian product. If any argument is marked as `requires_grad=False`, it
-    is automatically excluded from quantum gradient computations.
 
-  - The QNode TF interface now inspects QNode positional arguments when calculating
-    the vector-Jacobian product. If any argument is not being watched by a `tf.GradientTape()`,
-    it is automatically excluded from quantum gradient computations.
+* Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
+  to calculate losses and costs on circuits with trainable parameters.
+  [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
 <h3>Improvements</h3>
 
@@ -80,7 +79,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac
+Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
