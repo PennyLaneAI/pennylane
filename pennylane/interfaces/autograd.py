@@ -44,6 +44,15 @@ def to_autograd(qnode):
 
         def __call__(self, *args, **kwargs):
             # prevents autograd boxed arguments from going through to evaluate
+            non_diff_indices = list()
+
+            for idx, arg in enumerate(args):
+                if not getattr(arg, "requires_grad", True):
+                    non_diff_indices.append(idx)
+
+            if non_diff_indices:
+                kwargs["_non_diff_arg_indices"] = non_diff_indices
+
             args = autograd.builtins.tuple(args)  # pylint: disable=no-member
             return self.evaluate(args, kwargs)
 
@@ -72,12 +81,11 @@ def to_autograd(qnode):
                 non_diff_indices = set()
 
                 for arg, arg_variable in zip(args, self.arg_vars):
-                    if not getattr(arg, "requires_grad", True):
+                    if not getattr(arg, "requires_grad", True) and hasattr(arg_variable, "idx"):
                         indices = [i.idx for i in _flatten(arg_variable)]
                         non_diff_indices.update(indices)
 
-                if non_diff_indices:
-                    diff_indices = set(range(self.num_variables)) - non_diff_indices
+                diff_indices = set(range(self.num_variables)) - non_diff_indices
 
                 # Jacobian matrix of the circuit
                 jac = self.jacobian(args, kwargs, wrt=diff_indices)
@@ -87,12 +95,11 @@ def to_autograd(qnode):
                 else:
                     vjp = g @ jac
 
-                if non_diff_indices:
-                    # Autograd requires we return a gradient of size (num_variables,)
-                    res = zeros([self.num_variables])
-                    indices = fromiter(diff_indices, dtype=int64)
-                    res[indices] = vjp
-                    vjp = res
+                # Autograd requires we return a gradient of size (num_variables,)
+                res = zeros([len(list(_flatten(args)))])
+                indices = fromiter(diff_indices, dtype=int64)
+                res[indices] = vjp
+                vjp = res
 
                 # Restore the nested structure of the input args.
                 vjp = unflatten(vjp.flat, args)

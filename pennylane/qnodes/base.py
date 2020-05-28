@@ -192,6 +192,8 @@ class BaseQNode(qml.QueuingContext):
         that depend on it.
         """
 
+        self.non_diff_arg_indices = []
+
         self._metric_tensor_subcircuits = None
         """dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor"""
 
@@ -272,7 +274,9 @@ class BaseQNode(qml.QueuingContext):
             args (tuple[Any]): positional (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
-        Variable.positional_arg_values = np.array(list(_flatten(args)))
+        diff_args = [a for idx, a in enumerate(args) if idx not in self.non_diff_arg_indices]
+        Variable.positional_arg_values = np.array(list(_flatten(diff_args)))
+        print(self.non_diff_arg_indices, Variable.positional_arg_values)
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
             Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
@@ -420,11 +424,28 @@ class BaseQNode(qml.QueuingContext):
                     self._determine_structured_variable_name(variable_value, variable_name)
                 )
 
+        variable_name_strings = [a for idx, a in enumerate(variable_name_strings) if idx not in self.non_diff_arg_indices]
+        diff_args = [a for idx, a in enumerate(args) if idx not in self.non_diff_arg_indices]
+
+
         arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
 
         # arrange the newly created Variables in the nested structure of args
-        arg_vars = unflatten(arg_vars, args)
+        arg_vars = unflatten(arg_vars, diff_args)
+
+        if self.non_diff_arg_indices:
+            # insert the non-differentiable arguments back in
+            diff_indices = set(range(len(args))) - set(self.non_diff_arg_indices)
+
+            res = []
+            for a in range(len(args)):
+                if a in diff_indices:
+                    res.append(arg_vars.pop(0))
+                elif a in self.non_diff_arg_indices:
+                    res.append(args[a])
+
+            arg_vars = res
 
         # kwargs
         # if not mutable: must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
@@ -741,11 +762,15 @@ class BaseQNode(qml.QueuingContext):
         Returns:
             float or array[float]: output measured value(s)
         """
-        kwargs = self._default_args(kwargs)
-        self._set_variables(args, kwargs)
+        new_kwargs = {}
+        new_kwargs.update(kwargs)
+        self.non_diff_arg_indices = new_kwargs.pop("_non_diff_arg_indices", self.non_diff_arg_indices)
+
+        new_kwargs = self._default_args(new_kwargs)
+        self._set_variables(args, new_kwargs)
 
         if self.circuit is None or self.mutable:
-            self._construct(args, kwargs)
+            self._construct(args, new_kwargs)
 
         self.device.reset()
 
