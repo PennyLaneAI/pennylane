@@ -28,3 +28,4 @@ qchem/tests/tmp/timer.dat
 timer.dat
 tmp/*
 benchmark/revisions/
+venv
