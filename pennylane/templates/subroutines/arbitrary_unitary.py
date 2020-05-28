@@ -16,7 +16,8 @@ Contains the ``ArbitraryUnitary`` template.
 """
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_wires, check_shape, get_shape
+from pennylane.templates.utils import check_shape, get_shape
+from pennylane.wires import Wires
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
@@ -90,9 +91,10 @@ def ArbitraryUnitary(weights, wires):
     Args:
         weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
             where :math:`n` is the number of wires the template acts upon.
-        wires (List[int]): The wires on which the arbitrary unitary acts.
+        wires (List[int]): The wires on which the arbitrary unitary acts. Also accepts
+            :class:`pennylane.wires.Wires` objects.
     """
-    wires = check_wires(wires)
+    wires = Wires(wires)
 
     n_wires = len(wires)
     expected_shape = (4 ** n_wires - 1,)
@@ -101,6 +103,8 @@ def ArbitraryUnitary(weights, wires):
         expected_shape,
         msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
+
+    wires = wires.tolist()  # Todo: remove when ops take Wires object
 
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

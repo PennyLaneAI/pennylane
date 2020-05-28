@@ -21,8 +21,9 @@ from scipy import sparse
 import pennylane as qml
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_wires, check_shape, get_shape
+from pennylane.templates.utils import check_shape, get_shape
 from pennylane.variable import Variable
+from pennylane.wires import Wires
 
 
 # pylint: disable=len-as-condition,arguments-out-of-order
@@ -123,7 +124,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     control_indices = [
         int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
-        for i in range(num_selections)
+        for i in range(num_selections)  # TODO: non-consecutive ordering
     ]
 
     for i, control_index in enumerate(control_indices):
@@ -163,7 +164,7 @@ def _get_alpha_z(omega, n, k):
     Args:
         omega (float): phase of the input
         n (int): total number of qubits
-        k (int): current qubit
+        k (int): index of current qubit
 
     Returns:
         scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^z_k`
@@ -186,11 +187,12 @@ def _get_alpha_y(a, n, k):
     Args:
         omega (float): phase of the input
         n (int): total number of qubits
-        k (int): current qubit
+        k (int): index of current qubit
 
     Returns:
         scipy.sparse.dok_matrix[np.float64]: a sparse vector representing :math:`\alpha^y_k`
     """
+
     alpha = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
 
     numerator = sparse.dok_matrix((2 ** (n - k), 1), dtype=np.float64)
@@ -246,7 +248,7 @@ def MottonenStatePreparation(state_vector, wires):
     ###############
     # Input checks
 
-    wires = check_wires(wires)
+    wires = Wires(wires)
 
     n_wires = len(wires)
     expected_shape = (2 ** n_wires,)
@@ -272,8 +274,6 @@ def MottonenStatePreparation(state_vector, wires):
     state_vector = np.array(state_vector).reshape([2] * n_wires).T.flatten()[:, np.newaxis]
     state_vector = sparse.dok_matrix(state_vector)
 
-    wires = np.array(wires)
-
     a = sparse.dok_matrix(state_vector.shape)
     omega = sparse.dok_matrix(state_vector.shape)
 
@@ -288,16 +288,20 @@ def MottonenStatePreparation(state_vector, wires):
     # code to avoid inverting at the end
 
     # Apply y rotations
-    for k in range(n_wires, 0, -1):
+    for k in range(n_wires, 0, -1):  # Todo: use actual wire ordering!
         alpha_y_k = _get_alpha_y(a, n_wires, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
+        control = control.tolist()  # TODO: remove when operators accept Wires object
+        target = target.tolist()[0]  # TODO: remove when operators accept Wires object
         _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
-    for k in range(n_wires, 0, -1):
+    for k in range(n_wires, 0, -1):  # Todo: use actual wire ordering!
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
+        control = control.tolist()  # TODO: remove when operators accept Wires object
+        target = target.tolist()[0]  # TODO: remove when operators accept Wires object
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)

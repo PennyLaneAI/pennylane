@@ -20,7 +20,7 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-from pennylane.ops import RY
+from pennylane.wires import WireError
 from pennylane.templates.embeddings import (AngleEmbedding,
                                             BasisEmbedding,
                                             AmplitudeEmbedding,
@@ -261,21 +261,6 @@ class TestAngleEmbedding:
         with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1])
 
-    def test_angle_embedding_exception_wires_not_valid(self):
-        """Verifies that AngleEmbedding() raises an exception if ``wires`` is not
-        a valid list of indices."""
-
-        n_subsystems = 5
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            AngleEmbedding(features=x, wires='a')
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="wires must be a positive"):
-            circuit(x=[1])
-
 
 class TestBasisEmbedding:
     """ Tests the BasisEmbedding method."""
@@ -323,19 +308,6 @@ class TestBasisEmbedding:
         with pytest.raises(ValueError):
             circuit(x=np.array([0]))
 
-    def test_basis_embedding_illegal_wires_exception(self):
-        """Verifies that BasisEmbedding() raises an exception if ``wires`` has incorrect format."""
-
-        n_subsystems = 2
-        dev = qml.device('default.qubit', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            BasisEmbedding(features=x, wires="a")
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="wires must be a positive"):
-            circuit(x=[1, 0])
 
     def test_basis_embedding_input_not_binary_exception(self):
         """Verifies that BasisEmbedding() raises an exception if the features contain
@@ -454,22 +426,6 @@ class TestIQPEmbedding:
 
         with pytest.raises(ValueError, match="'features' must be of shape"):
             circuit(f=features)
-
-    @pytest.mark.parametrize('pattern', [qml.RZ,
-                                         [qml.RZ, qml.RZ],
-                                         [[qml.RZ, qml.RZ], [qml.RZ, qml.RZ]]])
-    def test_exception_wrong_type_pattern(self, pattern):
-        """Verifies that an exception is raised if 'pattern' is of a wrong type."""
-
-        dev = qml.device('default.qubit', wires=3)
-
-        @qml.qnode(dev)
-        def circuit(f=None):
-            qml.templates.IQPEmbedding(features=f, wires=range(3), pattern=pattern)
-            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
-        with pytest.raises(ValueError, match="'pattern' must be None or a list of wire pairs"):
-            circuit(f=[1., 2., 3.])
 
     @pytest.mark.parametrize('pattern', [[[1], [2]],
                                          [[0, 1, 2], [0, 1, 2]]])
@@ -673,22 +629,6 @@ class TestQAOAEmbedding:
         with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1])
 
-    def test_exception_wires_not_valid(self):
-        """Verifies that QAOAEmbedding() raises an exception if ``wires`` is not
-        a valid list of indices."""
-
-        n_wires = 5
-        weights = np.zeros(shape=(1, 2 * n_wires))
-        dev = qml.device('default.qubit', wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            QAOAEmbedding(features=x, weights=weights, wires='a')
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="wires must be a positive"):
-            circuit(x=[1])
-
 
 class TestDisplacementEmbedding:
     """ Tests the DisplacementEmbedding method."""
@@ -755,21 +695,6 @@ class TestDisplacementEmbedding:
         with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1, 2])
 
-    def test_displacement_embedding_wires_not_valid_exception(self):
-        """Verifies that DisplacementEmbedding() raises an exception if ``wires`` is not
-        a list of indices."""
-
-        n_subsystems = 5
-        dev = qml.device('default.gaussian', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            DisplacementEmbedding(features=x, wires='a')
-            return qml.expval(qml.X(0))
-
-        with pytest.raises(ValueError, match="wires must be a positive"):
-            circuit(x=[1])
-
 
 class TestSqueezingEmbedding:
     """ Tests the SqueezingEmbedding method."""
@@ -834,18 +759,3 @@ class TestSqueezingEmbedding:
 
         with pytest.raises(ValueError, match="did not recognize option"):
             circuit(x=[1, 2])
-
-    def test_squeezing_embedding_wires_not_valid_exception(self):
-        """Verifies that SqueezingtEmbedding() raises an exception if ``wires`` is not
-        a list of indices."""
-
-        n_subsystems = 5
-        dev = qml.device('default.gaussian', wires=n_subsystems)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            DisplacementEmbedding(features=x, wires='a')
-            return qml.expval(qml.X(0))
-
-        with pytest.raises(ValueError, match="wires must be a positive"):
-            circuit(x=[1])

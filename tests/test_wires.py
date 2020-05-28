@@ -215,6 +215,9 @@ class TestWires:
         assert wires.subset([2, 3, 0]) == Wires([1, 5, 4])
         assert wires.subset(1) == Wires([0])
         assert wires.subset([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
+        # if index does not exist
+        with pytest.raises(WireError, match="Cannot subset wire at index"):
+            wires.subset([10])
 
     def test_all_wires_method(self):
         """Tests the ``all_wires()`` method."""

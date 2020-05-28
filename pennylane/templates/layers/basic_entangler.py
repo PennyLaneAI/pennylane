@@ -21,10 +21,10 @@ from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
     check_no_variable,
-    check_wires,
     check_number_of_layers,
     get_shape,
 )
+from pennylane.wires import Wires
 
 
 @template
@@ -58,7 +58,8 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
     Args:
         weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
                                 for the rotation
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
+            :class:`pennylane.wires.Wires` objects.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
     Raises:
@@ -140,9 +141,9 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
     if rotation is None:
         rotation = RX
 
-    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+    wires = Wires(wires)
 
-    wires = check_wires(wires)
+    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 
     repeat = check_number_of_layers([weights])
 
