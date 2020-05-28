@@ -28,15 +28,16 @@ def _process(wires):
     """Converts the input to a tuple of numbers or strings."""
 
     if isinstance(wires, Wires):
-        # if input is already a Wires object, just copy its wire tuple
+        # if input is already a Wires object, just return its wire tuple
         return wires.wire_tuple
 
     elif isinstance(wires, Iterable) and all(isinstance(w, Wires) for w in wires):
         # if the elements are themselves Wires objects, merge them to a new one
-        wires = [w for wires_ in wires for w in wires_.tolist()]
-        return tuple(wires)
+        return tuple(w for wires_ in wires for w in wires_.tolist())
 
-    elif isinstance(wires, Iterable) and all(isinstance(w, str) or isinstance(w, Number) for w in wires):
+    elif isinstance(wires, Iterable) and all(
+        isinstance(w, str) or isinstance(w, Number) for w in wires
+    ):
         # if the elements are strings or numbers, turn iterable into tuple
         return tuple(wires)
 
@@ -54,8 +55,8 @@ def _process(wires):
 
 class Wires(Sequence):
     """
-    A bookkeeping class for wires, which are ordered collections of unique objects. The i'th object
-    addresses the i'th quantum subsystem.
+    A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\text{th}` object
+    addresses the :math:`i\text{th}` quantum subsystem.
 
     There is no conceptual difference between registers of multiple wires and single wires,
     which are just wire registers of length one.
@@ -63,9 +64,9 @@ class Wires(Sequence):
     Indexing and slicing this sequence will return another ``Wires`` object.
 
     Args:
-         wires (Any): If iterable, interpreted as an ordered collection of unique objects representing wires.
-            Any other input type is converted into an iterable of a single entry, and hence interpreted as a
-            single wire.
+         wires (Iterable[Number,str], Number): If iterable, interpreted as an ordered collection of unique objects
+            representing wires. If a Number, the input is converted into an iterable of a single entry,
+            and hence interpreted as a single wire.
     """
 
     def __init__(self, wires):
@@ -87,11 +88,9 @@ class Wires(Sequence):
     def __contains__(self, item):
         """Method checking if Wires object contains an object."""
         if isinstance(item, Wires):
-            # If all wires can be found in this object, return True
-            if all(wire in self.wire_tuple for wire in item.wire_tuple):
-                return True
-        else:
-            return item in self.wire_tuple
+            item = item.tolist()
+        # if all wires can be found in tuple, return True, else False
+        return all(wire in self.wire_tuple for wire in item)
 
     def __repr__(self):
         """Method defining the string representation of this class."""
@@ -242,7 +241,6 @@ class Wires(Sequence):
         >>> wires3 = Wires([4, 0])
         >>> Wires.shared_wires([wires1, wires2, wires3])
         <Wires = [4, 0]>
-
         >>> Wires.shared_wires([wires2, wires1, wires3])
         <Wires = [0, 4]>
 
@@ -256,7 +254,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "Expected a `Wires` object; got {} of type {}.".format(wires, type(wires))
+                    "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
                 )
 
         shared = []
@@ -294,7 +292,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "Expected a `Wires` object; got {} of type {}".format(wires, type(wires))
+                    "Expected a Wires object; got {} of type {}".format(wires, type(wires))
                 )
 
             combined.extend(wire for wire in wires.wire_tuple if wire not in combined)
@@ -323,7 +321,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "Expected a `Wires` object; got {} of type {}.".format(wires, type(wires))
+                    "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
                 )
 
         unique = []
@@ -334,36 +332,3 @@ class Wires(Sequence):
                     unique.append(wire)
 
         return Wires(unique)
-
-    @staticmethod
-    def merge(list_of_wires):
-        """Merge Wires objects in list to one. All Wires objects in the list must contain unique wires.
-
-        Args:
-            list_of_wires (List[Wires]): list of Wires objects
-
-        Return:
-            Wires: new Wires object that contains all wires of the list's Wire objects
-
-        """
-
-        merged_wires = []
-        for wires in list_of_wires:
-
-            if not isinstance(wires, Wires):
-                raise WireError(
-                    "Expected list of Wires objects; got entry {} of type {}.".format(
-                        wires, type(wires)
-                    )
-                )
-
-            if any([w in merged_wires for w in wires.wire_tuple]):
-                raise WireError(
-                    "Cannot merge Wires objects that contain the same wires; got {}.".format(
-                        list_of_wires
-                    )
-                )
-            else:
-                merged_wires.extend(wires.tolist())
-
-        return Wires(merged_wires)
