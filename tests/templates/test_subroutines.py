@@ -562,7 +562,7 @@ class TestDoubleExcitationUnitary:
 
         assert len(rec.queue) == sqg + cnots
 
-        for i, gate in enumerate(ref_gates):
+        for gate in ref_gates:
             idx = gate[0]
 
             exp_gate = gate[1]
