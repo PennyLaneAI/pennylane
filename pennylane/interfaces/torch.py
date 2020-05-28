@@ -36,8 +36,8 @@ def unflatten_torch(flat, model):
         model (array, Iterable, Number): model nested structure
 
     Returns:
-        Union[torch.Tensor, list], array: first elements of flat arranged into the nested
-        structure of model, unused elements of flat
+        Tuple[list[torch.Tensor], torch.Tensor]: tuple containing elements of ``flat`` arranged
+        into the nested structure of model, as well as the unused elements of ``flat``.
 
     Raises:
         TypeError: if ``model`` contains an object of unsupported type
@@ -45,9 +45,13 @@ def unflatten_torch(flat, model):
     if isinstance(model, (numbers.Number, str)):
         return flat[0], flat[1:]
 
-    if isinstance(model, torch.Tensor):
-        idx = model.numel()
-        res = flat[:idx].view(model.shape)
+    if isinstance(model, (torch.Tensor, np.ndarray)):
+        try:
+            idx = model.numel()
+        except AttributeError:
+            idx = model.size
+
+        res = flat[:idx].reshape(model.shape)
         return res, flat[idx:]
 
     if isinstance(model, Iterable):
@@ -205,7 +209,7 @@ def to_torch(qnode):
                 vjp = res
 
             # restore the nested structure of the input args
-            grad_input_list = [torch.as_tensor(i) for i in unflatten_torch(vjp, ctx.args)[0]]
+            grad_input_list = unflatten_torch(vjp, ctx.saved_tensors)[0]
             grad_input = []
 
             # match the type and device of the input tensors
