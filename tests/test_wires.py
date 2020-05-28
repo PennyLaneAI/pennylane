@@ -191,9 +191,6 @@ class TestWires:
         assert wires.indices(Wires([1, 4])) == [2, 0]
         # for non-Wires inputs
         assert wires.indices([1, 4]) == [2, 0]
-        # if index is out of range
-        with pytest.raises(WireError, match="Cannot subset wire at index"):
-            wires.index([10])
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""

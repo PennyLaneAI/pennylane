@@ -311,14 +311,13 @@ class BaseQNode(qml.QueuingContext):
                     "Operator {} must act on all wires".format(operator.name)
                 )
 
-        # TODO: move this to device for nonconsec wires
-        # # Make sure only existing wires are used.
-        # for w in _flatten(operator.wires):
-        #     if w < 0 or w >= self.num_wires:
-        #         raise QuantumFunctionError(
-        #             "Operation {} applied to invalid wire {} "
-        #             "on device with {} wires.".format(operator.name, w, self.num_wires)
-        #         )
+        # Make sure only existing wires are used.
+        for w in operator.wires.tolist():  # TODO: move this to device for nonconsec wires
+            if w < 0 or w >= self.num_wires:
+                raise QuantumFunctionError(
+                    "Operation {} applied to invalid wire {} "
+                    "on device with {} wires.".format(operator.name, w, self.num_wires)
+                )
 
         # observables go to their own, temporary queue
         if isinstance(operator, Observable):
