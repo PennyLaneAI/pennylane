@@ -24,7 +24,11 @@ import numpy as np
 import tensorflow as tf
 
 from tensorflow import Variable  # pylint: disable=unused-import,ungrouped-imports
-from tensorflow.python.eager import tape as tape_lib
+
+try:
+    from tensorflow.python.eager.tape import should_record_backprop
+except ImportError:
+    from tensorflow.python.eager.tape import should_record as should_record_backprop
 
 from pennylane.utils import _flatten
 
@@ -113,7 +117,7 @@ def to_tf(qnode, dtype=None):
         # accepts lists of *tensors* (not Variables), returning True if all are being watched by one or more
         # existing gradient tape, False if not.
         requires_grad = [
-            tape_lib.should_record_backprop([tf.convert_to_tensor(i)])
+            should_record_backprop([tf.convert_to_tensor(i)])
             if isinstance(i, (Variable, tf.Tensor))
             else False
             for i in input_
