@@ -77,18 +77,17 @@ def to_autograd(qnode):
                     nested Sequence[float]: vector-Jacobian product, arranged
                     into the nested structure of the input arguments in ``args``
                 """
-                diff_indices = None
-                non_diff_indices = set()
+                diff_indices = set()
 
                 for arg, arg_variable in zip(args, self.arg_vars):
-                    if not getattr(arg, "requires_grad", True) and hasattr(arg_variable, "idx"):
+                    if getattr(arg, "requires_grad", True):
                         indices = [i.idx for i in _flatten(arg_variable)]
-                        non_diff_indices.update(indices)
+                        diff_indices.update(indices)
 
-                diff_indices = set(range(self.num_variables)) - non_diff_indices
+                wrt = diff_indices if len(diff_indices) != self.num_variables else None
 
                 # Jacobian matrix of the circuit
-                jac = self.jacobian(args, kwargs, wrt=diff_indices)
+                jac = self.jacobian(args, kwargs, wrt=wrt)
 
                 if not g.shape:
                     vjp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used

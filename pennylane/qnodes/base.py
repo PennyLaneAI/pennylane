@@ -274,8 +274,7 @@ class BaseQNode(qml.QueuingContext):
             args (tuple[Any]): positional (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
-        diff_args = [a for idx, a in enumerate(args) if idx not in self.non_diff_arg_indices]
-        Variable.positional_arg_values = np.array(list(_flatten(diff_args)))
+        Variable.positional_arg_values = np.array(list(_flatten(args)))
         print(self.non_diff_arg_indices, Variable.positional_arg_values)
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
@@ -427,12 +426,17 @@ class BaseQNode(qml.QueuingContext):
         variable_name_strings = [a for idx, a in enumerate(variable_name_strings) if idx not in self.non_diff_arg_indices]
         diff_args = [a for idx, a in enumerate(args) if idx not in self.non_diff_arg_indices]
 
+        indices = range(len(list(_flatten(args))))
+        self.num_variables = len(indices)
+        if self.non_diff_arg_indices:
+            indices = unflatten(indices, args)
+            indices = _flatten([el_idx for arg_idx, el_idx in enumerate(indices) if arg_idx not in self.non_diff_arg_indices])
 
-        arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
-        self.num_variables = len(arg_vars)
+        arg_vars = [Variable(idx, name) for idx, name in zip(indices, _flatten(variable_name_strings))]
 
         # arrange the newly created Variables in the nested structure of args
         arg_vars = unflatten(arg_vars, diff_args)
+        self.var_arg_mapping = {}
 
         if self.non_diff_arg_indices:
             # insert the non-differentiable arguments back in
