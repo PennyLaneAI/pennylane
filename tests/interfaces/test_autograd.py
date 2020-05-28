@@ -475,3 +475,345 @@ class TestAutogradJacobianQubit:
         assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
         assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
         assert grad_angle == pytest.approx(grad_auto, abs=tol)
+
+
+class TestParameterHandlingIntegration:
+    """Test that the parameter handling for differentiable/non-differentiable
+    parameters works correctly."""
+
+    def test_differentiable_parameter_first(self, mocker):
+        """Test that a differentiable parameter used as the first
+        argument is correctly evaluated by QNode.jacobian, and that
+        all other non-differentiable parameters are ignored"""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights, data1, data2):
+            # non-differentiable quantum function
+            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            # differentiable quantum function
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            # non-differentiable quantum function
+            qml.templates.AngleEmbedding(data2, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # differentiating the circuit wrt the weights
+        grad_fn = qml.grad(circuit)
+
+        # input weights
+        weights = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
+
+        # input data
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+        data2 = qml.numpy.array([1, 1], requires_grad=False)
+
+        res = grad_fn(weights, data1, data2)
+
+        # we do not check for correctness, just that the output
+        # is the correct shape
+        assert len(res) == 1
+        assert res[0].shape == weights.shape
+
+        # check that the parameter shift was only performed for the
+        # differentiable elements of `weights`, not the data input
+        assert spy.call_args[1]["wrt"] == set(range(18))
+
+    def test_differentiable_parameter_middle(self, mocker):
+        """Test that a differentiable parameter provided as the middle
+        argument is correctly evaluated by QNode.jacobian, and that
+        all other non-differentiable parameters are ignored"""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(data1, weights, data2):
+            # non-differentiable quantum function
+            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            # differentiable quantum function
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            # non-differentiable quantum function
+            qml.templates.AngleEmbedding(data2, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # differentiating the circuit wrt the weights
+        grad_fn = qml.grad(circuit)
+
+        # input weights
+        weights = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
+
+        # input data
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+        data2 = qml.numpy.array([1, 1], requires_grad=False)
+
+        res = grad_fn(data1, weights, data2)
+
+        # we do not check for correctness, just that the output
+        # is the correct shape
+        assert len(res) == 1
+        assert res[0].shape == weights.shape
+
+        # check that the parameter shift was only performed for the
+        # differentiable elements of `weights`, not the data input
+        expected = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
+        assert spy.call_args[1]["wrt"] == expected
+
+    def test_differentiable_parameter_last(self, mocker):
+        """Test that a differentiable parameter used as the last
+        argument is correctly evaluated by QNode.jacobian, and that
+        all other non-differentiable parameters are ignored"""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(data1, data2, weights):
+            # non-differentiable quantum function
+            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            # differentiable quantum function
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            # non-differentiable quantum function
+            qml.templates.AngleEmbedding(data2, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # differentiating the circuit wrt the weights
+        grad_fn = qml.grad(circuit)
+
+        # input weights
+        weights = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
+
+        # input data
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+        data2 = qml.numpy.array([1, 1], requires_grad=False)
+
+        res = grad_fn(data1, data2, weights)
+
+        # we do not check for correctness, just that the output
+        # is the correct shape
+        assert len(res) == 1
+        assert res[0].shape == weights.shape
+
+        # check that the parameter shift was only performed for the
+        # differentiable elements of `weights`, not the data input
+        expected = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
+        assert spy.call_args[1]["wrt"] == expected
+
+    def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
+        """Test that multiple differentiable and non-differentiable parameters
+        works as expected"""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(data1, weights1, data2, weights2):
+            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            qml.templates.StronglyEntanglingLayers(weights1, wires=[0, 1])
+            qml.templates.AngleEmbedding(data2, wires=[0, 1])
+            qml.templates.StronglyEntanglingLayers(weights2, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # differentiating the circuit wrt the weights
+        grad_fn = qml.grad(circuit)
+
+        # input weights
+        weights1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
+        weights2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+
+        # input data
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+        data2 = qml.numpy.array([1, 1], requires_grad=False)
+
+        res = grad_fn(data1, weights1, data2, weights2)
+
+        # we do not check for correctness, just that the output
+        # is the correct shape
+        assert len(res) == 2
+        assert res[0].shape == weights1.shape
+        assert res[1].shape == weights2.shape
+
+        # check that the parameter shift was only performed for the
+        # differentiable elements of `weights`, not the data input
+        num_w1 = weights1.size
+        num_w2 = weights2.size
+
+        offset1 = data1.size
+        offset2 = data1.size + num_w1 + data2.size
+
+        expected = set(list(range(offset1, offset1 + num_w1)) + list(range(offset2, offset2 + num_w2)))
+        assert spy.call_args[1]["wrt"] == expected
+
+    def test_gradient_non_differentiable_exception(self):
+        """Test that an exception is raised if non-differentiable data is
+        differentiated"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(data1):
+            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        grad_fn = qml.grad(circuit, argnum=[0])
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+
+        with pytest.raises(qml.numpy.NonDifferentiableError, match="is non-differentiable"):
+            grad_fn(data1)
+
+    def test_no_differentiable_parameters(self):
+        """If there are no differentiable parameters, the output of the gradient
+        function is an empty tuple, and a warning is emitted."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(data1):
+            qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        grad_fn = qml.grad(circuit)
+        data1 = qml.numpy.array([0, 1, 1, 0], requires_grad=False) / np.sqrt(2)
+
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            res = grad_fn(data1)
+
+        assert res == tuple()
+
+    def test_chained_qnodes(self):
+        """Test that the gradient of chained QNodes works without error"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit1(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit2(data, weights):
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        def cost(weights):
+            w1, w2 = weights
+            c1 = circuit1(w1)
+            c2 = circuit2(c1, w2)
+            return qml.numpy.sum(c2) ** 2
+
+        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
+        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+
+        weights = [w1, w2]
+
+        grad_fn = qml.grad(cost)
+        res = grad_fn(weights)
+
+        assert len(res[0]) == 2
+
+    def test_gradient_value(self, mocker, tol):
+        """Test that the returned gradient value for a qubit QNode is correct,
+        when one of the arguments is non-differentiable."""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(2))
+
+        dcircuit = qml.grad(circuit)
+
+        theta = 0.5
+        phi = 0.1
+
+        # explicitly mark varphi as non-differentiable
+        varphi = qml.numpy.array(0.23, requires_grad=False)
+
+        res = dcircuit(theta, phi, varphi)
+        expected = np.array([
+            np.cos(theta) * np.sin(phi) * np.sin(varphi),
+            np.sin(theta) * np.cos(phi) * np.sin(varphi)
+        ])
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # check that the gradient was not applied to varphi
+        assert spy.call_args[1]["wrt"] == {0, 1}
+
+    def test_chained_gradient_value(self, mocker, tol):
+        """Test that the returned gradient value for two chained qubit QNodes
+        is correct."""
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+        dev1 = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev1)
+        def circuit1(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
+
+        dev2 = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev2)
+        def circuit2(data, weights):
+            qml.RX(data[0], wires=0)
+            qml.RX(data[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[0], wires=0)
+            qml.RZ(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        def cost(a, b, c, weights):
+            return circuit2(circuit1(a, b, c), weights)
+
+        grad_fn = qml.grad(cost)
+
+        # Set the first parameter of circuit1 as non-differentiable.
+        a = qml.numpy.array(0.4, requires_grad=False)
+
+        # the remaining free parameters are all differentiable
+        b = 0.5
+        c = 0.1
+        weights = qml.numpy.array([0.2, 0.3])
+
+        res = grad_fn(a, b, c, weights)
+
+        # Output should have shape [dcost/db, dcost/dc, dcost/dw],
+        # where b,c are scalars, and w is a vector of length 2.
+        assert len(res) == 3
+        assert res[0].shape == tuple() # scalar
+        assert res[1].shape == tuple() # scalar
+        assert res[2].shape == (2,)    # vector
+
+        cacbsc = np.cos(a)*np.cos(b)*np.sin(c)
+
+        expected = np.array([
+            # analytic expression for dcost/db
+            -np.cos(a)*np.sin(b)*np.sin(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
+            # analytic expression for dcost/dc
+            np.cos(a)*np.cos(b)*np.cos(c)*np.cos(cacbsc)*np.sin(weights[0])*np.sin(np.cos(a)),
+            # analytic expression for dcost/dw[0]
+            np.sin(cacbsc)*np.cos(weights[0])*np.sin(np.cos(a)),
+            # analytic expression for dcost/dw[1]
+            0
+        ])
+
+        # np.hstack 'flattens' the ragged gradient array allowing it
+        # to be compared with the expected result
+        assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
+
+        # Check that the gradient was computed
+        # for all parameters in circuit2 (i.e., wrt=None)
+        assert spy.call_args_list[0][1]["wrt"] == None
+
+        # check that the parameter-shift rule was not applied
+        # to the first parameter of circuit1
+        assert spy.call_args_list[1][1]["wrt"] == {1, 2}

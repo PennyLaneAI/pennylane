@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes and functions for integrating QNodes with the Keras Layer API."""
+"""This module contains the classes and functions for integrating QNodes with the Keras Layer
+API."""
 import functools
 import inspect
 from collections.abc import Iterable
@@ -56,15 +57,7 @@ class KerasLayer(Layer):
 
     **Example**
 
-    .. code-block:: python
-
-        qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
-        clayer = tf.keras.layers.Dense(2)
-        model = tf.keras.models.Sequential([qlayer, clayer])
-
-    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
-    with all other arguments to be treated as internal weights. A valid ``qnode`` for the example
-    above would be:
+    First let's define the QNode that we want to convert into a Keras Layer_:
 
     .. code-block:: python
 
@@ -80,15 +73,25 @@ class KerasLayer(Layer):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
+    The signature of the QNode **must** contain an ``inputs`` named argument for input data,
+    with all other arguments to be treated as internal weights. We can then convert to a Keras
+    Layer_ with:
+
+    >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
+    >>> qlayer = qml.qnn.KerasLayer(qnode, weight_shapes, output_dim=2)
+
     The internal weights of the QNode are automatically initialized within the
     :class:`~.KerasLayer` and must have their shapes specified in a ``weight_shapes`` dictionary.
-    For example:
+    It is then easy to combine with other neural network layers from the
+    `tensorflow.keras.layers <https://www.tensorflow.org/api_docs/python/tf/keras/layers>`__ module
+    and create a hybrid:
 
-    .. code-block::
-
-        weight_shapes = {"weights_0": 3, "weight_1": 1}
+    >>> clayer = tf.keras.layers.Dense(2)
+    >>> model = tf.keras.models.Sequential([qlayer, clayer])
 
     .. UsageDetails::
+
+        **QNode signature**
 
         The QNode must have a signature that satisfies the following conditions:
 
@@ -101,9 +104,11 @@ class KerasLayer(Layer):
         - There cannot be a variable number of positional or keyword arguments, e.g., no ``*args``
           or ``**kwargs`` present in the signature.
 
-        The optional ``weight_specs`` argument allows for a more fine-grained
-        specification of the QNode weights, such as the method of initialization and any
-        regularization or constraints. For example, the initialization method of the ``weights``
+        **Initializing weights**
+
+        The optional ``weight_specs`` argument of :class:`~.KerasLayer` allows for a more
+        fine-grained specification of the QNode weights, such as the method of initialization and
+        any regularization or constraints. For example, the initialization method of the ``weights``
         argument in the example above could be specified by:
 
         .. code-block::
@@ -186,7 +191,12 @@ class KerasLayer(Layer):
         self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
     ):
         if not CORRECT_TF_VERSION:
-            raise ImportError("KerasLayer requires TensorFlow version 2 and above")
+            raise ImportError(
+                "KerasLayer requires TensorFlow version 2 or above. The latest "
+                "version of TensorFlow can be installed using:\n"
+                "pip install tensorflow --upgrade\nAlternatively, visit "
+                "https://www.tensorflow.org/install for detailed instructions."
+            )
 
         self.sig = qnode.func.sig
 

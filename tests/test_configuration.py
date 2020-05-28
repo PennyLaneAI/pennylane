@@ -17,11 +17,13 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import pytest
 import os
 import logging as log
+import sys
 
 import toml
 
 import pennylane as qml
 from pennylane import Configuration
+
 
 log.getLogger('defaults')
 
@@ -66,7 +68,7 @@ backend = "qasm_simulator"
 
 @pytest.fixture(scope="function")
 def default_config(tmpdir):
-    config_path = tmpdir + config_filename
+    config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
         f.write(test_config)
@@ -76,7 +78,7 @@ def default_config(tmpdir):
 
 @pytest.fixture(scope="function")
 def default_config_toml(tmpdir):
-    config_path = tmpdir + config_filename
+    config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
         f.write(test_config)
@@ -144,8 +146,7 @@ class TestConfigurationFileInteraction:
         # make a change
         config['strawberryfields.global']['shots'] = 10
 
-        # Need to convert to string for Python 3.5 compatibility
-        temp_config_path = str(tmp_path / 'test_config.toml')
+        temp_config_path = tmp_path / 'test_config.toml'
         config.save(temp_config_path)
 
         result = toml.load(temp_config_path)
