@@ -1002,7 +1002,7 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len(list(_flatten(self.wires)))
+        return len(self.wires)
 
     @property
     def wires(self):
