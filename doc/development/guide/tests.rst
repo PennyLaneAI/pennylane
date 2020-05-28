@@ -5,11 +5,11 @@ Running the test suite
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The PennyLane test suite requires the Python ``pytest`` package, as well as ``pytest-cov``
-for test coverage; these can be installed via ``pip``:
+for test coverage and ``pytest-mock`` for mocking; these can be installed via ``pip``:
 
 .. code-block:: bash
 
-    pip install pytest pytest-cov
+    pip install pytest pytest-cov pytest-mock
 
 To ensure that PennyLane is working correctly, the test suite can then be run by
 navigating to the source code folder and running
