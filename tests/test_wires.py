@@ -122,10 +122,18 @@ class TestWires:
         """Tests the __contains__() method."""
 
         wires = Wires([0, 1, 2, 3])
+
         assert Wires([0, 3]) in wires
         assert Wires([1]) in wires
         assert not Wires([0, 4]) in wires
         assert not Wires([4]) in wires
+
+        assert [0, 3] in wires
+        assert [1] in wires
+        assert not [0, 4] in wires
+        assert not [4] in wires
+
+        assert (0, 3) in wires
 
     def test_representation(self):
         """Tests the string representation."""
@@ -215,7 +223,7 @@ class TestWires:
         new_wires = Wires.all_wires([wires1, wires2, wires3])
         assert new_wires.wire_tuple == (1, 2, 3, 4, 5, 6)
 
-        with pytest.raises(WireError, match="Expected a `Wires` object"):
+        with pytest.raises(WireError, match="Expected a Wires object"):
             Wires.all_wires([[3, 4], [8, 5]])
 
     def test_shared_wires_method(self):
@@ -230,7 +238,7 @@ class TestWires:
         res = Wires.shared_wires([wires2, wires1, wires3])
         assert res == Wires([0, 4])
 
-        with pytest.raises(WireError, match="Expected a `Wires` object"):
+        with pytest.raises(WireError, match="Expected a Wires object"):
             Wires.shared_wires([[3, 4], [8, 5]])
 
     def test_unique_wires_method(self):
@@ -245,5 +253,5 @@ class TestWires:
         res = Wires.unique_wires([wires2, wires1, wires3])
         assert res == Wires([3, 1])
 
-        with pytest.raises(WireError, match="Expected a `Wires` object"):
+        with pytest.raises(WireError, match="Expected a Wires object"):
             Wires.unique_wires([[2, 1], [8, 5]])
