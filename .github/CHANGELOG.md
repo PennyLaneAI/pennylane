@@ -85,6 +85,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in the unit tests ``test_single_ex_unitary_operations`` and
+  ``test_double_ex_unitary_operations`` in order to test the correctness of the
+  entire set of quantum gates applied for building the UCCSD ansatz.
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
