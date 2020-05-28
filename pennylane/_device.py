@@ -203,7 +203,7 @@ class Device(abc.ABC):
                     # if obs is a tensor observable, use a list of individual wires
                     wires = [ob.wires.tolist() for ob in obs.obs]
                 else:
-                    wires = obs.wires
+                    wires = obs.wires.tolist()
 
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, wires, obs.parameters))
