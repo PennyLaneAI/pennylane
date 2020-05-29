@@ -206,7 +206,6 @@ class JacobianQNode(BaseQNode):
         kwargs = kwargs or {}
 
         # apply defaults
-        self.non_diff_arg_indices = kwargs.pop("_non_diff_arg_indices", self.non_diff_arg_indices)
         kwargs = self._default_args(kwargs)
 
         options = options or {}

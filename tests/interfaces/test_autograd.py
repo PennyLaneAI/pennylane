@@ -817,3 +817,40 @@ class TestParameterHandlingIntegration:
         # check that the parameter-shift rule was not applied
         # to the first parameter of circuit1
         assert spy.call_args_list[1][1]["wrt"] == {1, 2}
+
+    @pytest.mark.parametrize("w", [[0, 1], [1, 0]])
+    def test_non_diff_wires_argument(self, w, mocker, tol):
+        """Test that passing wires as a non-differentiable positional
+        argument works correctly."""
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(wires, params):
+            qml.Hadamard(wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RX(params[0], wires=wires[0])
+            qml.RY(params[1], wires=wires[1])
+            qml.CNOT(wires=[wires[1], wires[0]])
+            return qml.expval(qml.PauliZ(0))
+
+        params = qml.numpy.array([0.6, 0.2])
+        wires = qml.numpy.array(w, requires_grad=False)
+
+        a, b = params
+        if w == [0, 1]:
+            expected_res = np.cos(a) * np.cos(b)
+            expected_grad = [-np.cos(b) * np.sin(a), -np.cos(a) * np.sin(b)]
+        elif w == [1, 0]:
+            expected_res = 0
+            expected_grad = [0, 0]
+
+        res = circuit(wires, params)
+        grad_fn = qml.grad(circuit)
+        res_grad = grad_fn(wires, params)
+
+        assert circuit.non_diff_arg_indices == [0]
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        assert spy.call_args[1]["wrt"] == {2, 3}
+        assert np.allclose(res_grad, expected_grad, atol=tol, rtol=0)

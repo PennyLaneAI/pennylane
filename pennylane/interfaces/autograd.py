@@ -50,9 +50,7 @@ def to_autograd(qnode):
                 if not getattr(arg, "requires_grad", True):
                     non_diff_indices.append(idx)
 
-            if non_diff_indices:
-                kwargs["_non_diff_arg_indices"] = non_diff_indices
-
+            qnode.non_diff_arg_indices = non_diff_indices
             args = autograd.builtins.tuple(args)  # pylint: disable=no-member
             return self.evaluate(args, kwargs)
 
@@ -94,7 +92,7 @@ def to_autograd(qnode):
                 else:
                     vjp = g @ jac
 
-                # Autograd requires we return a gradient of size (num_variables,)
+                # Autograd requires we return a gradient of size (num_elements,)
                 res = zeros([len(list(_flatten(args)))])
                 indices = fromiter(diff_indices, dtype=int64)
                 res[indices] = vjp

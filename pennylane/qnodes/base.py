@@ -422,33 +422,18 @@ class BaseQNode(qml.QueuingContext):
                     self._determine_structured_variable_name(variable_value, variable_name)
                 )
 
-        variable_name_strings = [a for idx, a in enumerate(variable_name_strings) if idx not in self.non_diff_arg_indices]
-        diff_args = [a for idx, a in enumerate(args) if idx not in self.non_diff_arg_indices]
+        arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
+        self.num_variables = len(arg_vars)
 
-        indices = range(len(list(_flatten(args))))
-        self.num_variables = len(indices)
-        if self.non_diff_arg_indices:
-            indices = unflatten(indices, args)
-            indices = _flatten([el_idx for arg_idx, el_idx in enumerate(indices) if arg_idx not in self.non_diff_arg_indices])
-
-        arg_vars = [Variable(idx, name) for idx, name in zip(indices, _flatten(variable_name_strings))]
-
-        # arrange the newly created Variables in the nested structure of args
-        arg_vars = unflatten(arg_vars, diff_args)
-        self.var_arg_mapping = {}
+        arg_vars = unflatten(arg_vars, args)
 
         if self.non_diff_arg_indices:
             # insert the non-differentiable arguments back in
             diff_indices = set(range(len(args))) - set(self.non_diff_arg_indices)
 
-            res = []
             for a in range(len(args)):
-                if a in diff_indices:
-                    res.append(arg_vars.pop(0))
-                elif a in self.non_diff_arg_indices:
-                    res.append(args[a])
-
-            arg_vars = res
+                if a in self.non_diff_arg_indices:
+                    arg_vars[a] = args[a]
 
         # kwargs
         # if not mutable: must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
@@ -767,7 +752,6 @@ class BaseQNode(qml.QueuingContext):
         """
         new_kwargs = {}
         new_kwargs.update(kwargs)
-        self.non_diff_arg_indices = new_kwargs.pop("_non_diff_arg_indices", self.non_diff_arg_indices)
 
         new_kwargs = self._default_args(new_kwargs)
         self._set_variables(args, new_kwargs)
