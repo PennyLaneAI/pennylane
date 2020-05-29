@@ -63,7 +63,7 @@ def check_wires(wires):
     )
     if not isinstance(wires, Iterable):
         raise ValueError(msg)
-    if not all([isinstance(w, (int, np.int64, np.int32)) for w in wires]):
+    if not all([isinstance(w, int) for w in wires]):
         raise ValueError(msg)
     if any([w < 0 for w in wires]):
         raise ValueError(msg)

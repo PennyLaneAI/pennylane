@@ -750,14 +750,11 @@ class BaseQNode(qml.QueuingContext):
         Returns:
             float or array[float]: output measured value(s)
         """
-        new_kwargs = {}
-        new_kwargs.update(kwargs)
-
-        new_kwargs = self._default_args(new_kwargs)
-        self._set_variables(args, new_kwargs)
+        kwargs = self._default_args(kwargs)
+        self._set_variables(args, kwargs)
 
         if self.circuit is None or self.mutable:
-            self._construct(args, new_kwargs)
+            self._construct(args, kwargs)
 
         self.device.reset()
 
