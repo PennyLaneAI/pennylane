@@ -425,10 +425,13 @@ class BaseQNode(qml.QueuingContext):
         arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
 
+        # arrange the newly created Variables in the nested structure of args
         arg_vars = unflatten(arg_vars, args)
 
         if self.non_diff_arg_indices:
-            # insert the non-differentiable arguments back in
+            # If some of the input arguments are marked as non-differentiable,
+            # then replace the variable instances in arg_vars back with the
+            # original objects.
             diff_indices = set(range(len(args))) - set(self.non_diff_arg_indices)
 
             for a in range(len(args)):

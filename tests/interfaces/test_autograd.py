@@ -818,6 +818,42 @@ class TestParameterHandlingIntegration:
         # to the first parameter of circuit1
         assert spy.call_args_list[1][1]["wrt"] == {1, 2}
 
+    def test_non_diff_not_a_variable(self, mocker, capsys):
+        """Test that an argument marked as non-differentiable
+        is not wrapped as a variable."""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            print(type(x), type(y), type(z))
+            return qml.expval(qml.PauliZ(0))
+
+        x = 1
+        y = qml.numpy.array(2, requires_grad=False)
+        z = 3
+
+        res = circuit(x, y, z)
+
+        assert circuit.non_diff_arg_indices == [1]
+
+        assert isinstance(circuit.arg_vars[0], qml.variable.Variable)
+        assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
+        assert isinstance(circuit.arg_vars[2], qml.variable.Variable)
+
+        assert circuit.arg_vars[0] != x
+        assert circuit.arg_vars[1] == y
+        assert circuit.arg_vars[2] != z
+
+        captured = capsys.readouterr()
+        assert (
+            "<class 'pennylane.variable.Variable'> <class 'pennylane.numpy.tensor.tensor'> <class 'pennylane.variable.Variable'>"
+            in captured.out
+        )
+
     @pytest.mark.parametrize("w", [[0, 1], [1, 0]])
     def test_non_diff_wires_argument(self, w, mocker, tol):
         """Test that passing wires as a non-differentiable positional
