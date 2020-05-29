@@ -31,11 +31,13 @@
   exponentiate the Coupled-Cluster double excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
   [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
 * Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
   exponentiate the Coupled-Cluster single excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
 * Placeholder for variable/tensor refactor. So far this has included:
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
@@ -84,11 +86,6 @@
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
-
-* Fixes a bug in the unit tests ``test_single_ex_unitary_operations`` and
-  ``test_double_ex_unitary_operations`` in order to test the correctness of the
-  entire set of quantum gates applied for building the UCCSD ansatz.
-  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
 <h3>Contributors</h3>
 
@@ -374,7 +371,7 @@ Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 <h3>Improvements</h3>
 
-* A new `Wires` class was introduced for the internal 
+* A new `Wires` class was introduced for the internal
   bookkeeping of wire indices.
   [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
 
