@@ -192,7 +192,7 @@ class BaseQNode(qml.QueuingContext):
         that depend on it.
         """
 
-        self.non_diff_arg_indices = []
+        self.trainable_args = None
 
         self._metric_tensor_subcircuits = None
         """dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor"""
@@ -425,17 +425,16 @@ class BaseQNode(qml.QueuingContext):
         arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
 
-        # arrange the newly created Variables in the nested structure of args
-        arg_vars = unflatten(arg_vars, args)
+        # Arrange the newly created Variables in the nested structure of args.
+        # Make sure that NumPy scalars are converted into Python scalars.
+        arg_vars = [i.item() if isinstance(i, np.ndarray) and i.ndim == 0 else i for i in unflatten(arg_vars, args)]
 
-        if self.non_diff_arg_indices:
+        if self.trainable_args is not None and len(self.trainable_args) != len(args):
             # If some of the input arguments are marked as non-differentiable,
             # then replace the variable instances in arg_vars back with the
             # original objects.
-            diff_indices = set(range(len(args))) - set(self.non_diff_arg_indices)
-
             for a in range(len(args)):
-                if a in self.non_diff_arg_indices:
+                if a not in self.trainable_args:
                     arg_vars[a] = args[a]
 
         # kwargs

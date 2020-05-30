@@ -42,15 +42,18 @@ def to_autograd(qnode):
         # mark the evaluate method as an Autograd primitive
         evaluate = autograd.extend.primitive(qnode.__class__.evaluate)
 
-        def __call__(self, *args, **kwargs):
-            # prevents autograd boxed arguments from going through to evaluate
-            non_diff_indices = list()
+        def set_trainable(self, args):
+            non_trainable_args = set()
 
             for idx, arg in enumerate(args):
                 if not getattr(arg, "requires_grad", True):
-                    non_diff_indices.append(idx)
+                    non_trainable_args.add(idx)
 
-            qnode.non_diff_arg_indices = non_diff_indices
+            self.trainable_args = set(range(len(args))) - non_trainable_args
+
+        def __call__(self, *args, **kwargs):
+            # prevents autograd boxed arguments from going through to evaluate
+            self.set_trainable(args)
             args = autograd.builtins.tuple(args)  # pylint: disable=no-member
             return self.evaluate(args, kwargs)
 
@@ -75,26 +78,19 @@ def to_autograd(qnode):
                     nested Sequence[float]: vector-Jacobian product, arranged
                     into the nested structure of the input arguments in ``args``
                 """
-                diff_indices = set()
-
-                for arg, arg_variable in zip(args, self.arg_vars):
-                    if getattr(arg, "requires_grad", True):
-                        indices = [i.idx for i in _flatten(arg_variable)]
-                        diff_indices.update(indices)
-
-                wrt = diff_indices if len(diff_indices) != self.num_variables else None
-
                 # Jacobian matrix of the circuit
-                jac = self.jacobian(args, kwargs, wrt=wrt)
+                self.set_trainable(args)
+                jac = self.jacobian(args, kwargs)
 
                 if not g.shape:
                     vjp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
                 else:
                     vjp = g @ jac
 
-                if wrt is not None:
-                    # Autograd requires we return a gradient of size (num_elements,)
+                if len(vjp) != self.num_variables:
+                    # Autograd requires we return a gradient of size (num_variables,)
                     res = zeros([self.num_variables])
+                    diff_indices = [i.idx for i in _flatten(self.arg_vars) if hasattr(i, "idx")]
                     indices = fromiter(diff_indices, dtype=int64)
                     res[indices] = vjp
                     vjp = res

@@ -157,6 +157,17 @@ def to_torch(qnode):
             ctx.kwargs = kwargs_to_numpy(input_kwargs)
             ctx.save_for_backward(*input_)
 
+            # Determine the QNode input tensor require gradients,
+            # and thus communicate to the QNode which ones must
+            # be wrapped as PennyLane variables.
+            non_trainable_args = set()
+
+            for idx, arg in enumerate(input_):
+                if not getattr(arg, "requires_grad", True):
+                    non_trainable_args.add(idx)
+
+            qnode.trainable_args = set(range(len(input_))) - non_trainable_args
+
             # evaluate the QNode
             res = qnode(*ctx.args, **ctx.kwargs)
 
@@ -182,28 +193,17 @@ def to_torch(qnode):
             # subtleties in the torch.autograd.FunctionMeta metaclass, specifically
             # the way in which the backward class is created on the fly
 
-            # determine the QNode variables which should be differentiated
-            diff_indices = None
-            non_diff_indices = set()
-
-            for arg, arg_variable in zip(ctx.saved_tensors, qnode.arg_vars):
-                if not getattr(arg, "requires_grad", False):
-                    indices = [i.idx for i in _flatten(arg_variable)]
-                    non_diff_indices.update(indices)
-
-            if non_diff_indices:
-                diff_indices = set(range(qnode.num_variables)) - non_diff_indices
-
             # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(ctx.args, ctx.kwargs, wrt=diff_indices)
+            jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
             jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
             vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
             vjp = vjp.flatten()
 
-            if non_diff_indices:
+            if len(vjp) != qnode.num_variables:
                 # Torch requires we return a gradient of size (num_variables,)
                 res = torch.zeros([qnode.num_variables], dtype=grad_output.dtype)
+                diff_indices = [i.idx for i in _flatten(qnode.arg_vars) if hasattr(i, "idx")]
                 indices = np.fromiter(diff_indices, dtype=np.int64)
                 res[indices] = vjp
                 vjp = res
@@ -250,6 +250,7 @@ def to_torch(qnode):
         func = qnode.func
         arg_vars = property(lambda self: qnode.arg_vars)
         num_variables = property(lambda self: qnode.num_variables)
+        trainable_args = property(lambda self: qnode.trainable_args)
 
     @qnode_str
     def custom_apply(*args, **kwargs):

@@ -233,7 +233,7 @@ class JacobianQNode(BaseQNode):
 
         # check that the wrt parameters are ok
         if wrt is None:
-            wrt = range(self.num_variables)
+            wrt = [v.idx for v in _flatten(self.arg_vars) if hasattr(v, "idx")]
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
                 raise ValueError(
@@ -254,7 +254,7 @@ class JacobianQNode(BaseQNode):
         bad = inds_using(None)
         if bad:
             # get bad argument name
-            bad_var_names = {v.name for v in _flatten(self.arg_vars) if v.idx in bad}
+            bad_var_names = {v.name for v in _flatten(self.arg_vars) if hasattr(v, "idx") and v.idx in bad}
             raise ValueError(
                 "Cannot differentiate with respect to argument(s) {}.".format(bad_var_names)
             )
@@ -269,7 +269,7 @@ class JacobianQNode(BaseQNode):
             bad = inds_using("F")
 
             # get bad argument name
-            bad_var_names = {v.name for v in _flatten(self.arg_vars) if v.idx in bad}
+            bad_var_names = {v.name for v in _flatten(self.arg_vars) if hasattr(v, "idx") and v.idx in bad}
 
             if bad:
                 raise ValueError(

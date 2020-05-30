@@ -774,12 +774,10 @@ class TestParameterHandlingIntegration:
     """Test that the parameter handling for differentiable/non-differentiable
     parameters works correctly."""
 
-    def test_differentiable_parameter_first(self, mocker):
+    def test_differentiable_parameter_first(self):
         """Test that a differentiable parameter used as the first
         argument is correctly evaluated by QNode.jacobian, and that
         all other non-differentiable parameters are ignored"""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -812,15 +810,12 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = tf.size(weights).numpy()
-        assert spy.call_args[1]["wrt"] == set(range(num_w1))
+        assert circuit.trainable_args == {0}
 
-    def test_differentiable_parameter_middle(self, mocker):
+    def test_differentiable_parameter_middle(self):
         """Test that a differentiable parameter provided as the middle
         argument is correctly evaluated by QNode.jacobian, and that
         all other non-differentiable parameters are ignored"""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -852,15 +847,12 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        expected = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
-        assert spy.call_args[1]["wrt"] == expected
+        assert circuit.trainable_args == {1}
 
-    def test_differentiable_parameter_last(self, mocker):
+    def test_differentiable_parameter_last(self):
         """Test that a differentiable parameter used as the last
         argument is correctly evaluated by QNode.jacobian, and that
         all other non-differentiable parameters are ignored"""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -892,14 +884,11 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        expected = {6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}
-        assert spy.call_args[1]["wrt"] == expected
+        assert circuit.trainable_args == {2}
 
-    def test_multiple_differentiable_and_non_differentiable_parameters(self, mocker):
+    def test_multiple_differentiable_and_non_differentiable_parameters(self):
         """Test that multiple differentiable and non-differentiable parameters
         works as expected"""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -933,14 +922,7 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was only computed for the
         # differentiable elements of `weights`, not the data input
-        num_w1 = tf.size(weights1).numpy()
-        num_w2 = tf.size(weights2).numpy()
-
-        offset1 = tf.size(data1).numpy()
-        offset2 = tf.size(data1).numpy() + num_w1 + tf.size(data2).numpy()
-
-        expected = set(list(range(offset1, offset1 + num_w1)) + list(range(offset2, offset2 + num_w2)))
-        assert spy.call_args[1]["wrt"] == expected
+        assert circuit.trainable_args == {1, 3}
 
     def test_gradient_non_differentiable_none(self, mocker):
         """Test that the gradient of a non-differentiable tensor is None"""
@@ -962,9 +944,8 @@ class TestParameterHandlingIntegration:
 
         spy.assert_not_called()
 
-    def test_non_differentiable_watch(self, mocker):
+    def test_non_differentiable_watch(self):
         """Test that watching a non-differentiable tensor makes it differentiable"""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -981,9 +962,8 @@ class TestParameterHandlingIntegration:
         grad = tape.gradient(loss, weights)
         assert grad is not None
         assert grad.shape == weights.shape
-        spy.assert_called_once()
 
-        assert spy.call_args[1]["wrt"] == None
+        assert circuit.trainable_args == {0}
 
     def test_chained_qnodes(self):
         """Test that the gradient of chained QNodes works without error"""
@@ -1024,10 +1004,9 @@ class TestParameterHandlingIntegration:
         assert grad[0].shape == w1.shape
         assert grad[1].shape == w2.shape
 
-    def test_gradient_value(self, mocker, tol):
+    def test_gradient_value(self, tol):
         """Test that the returned gradient value for a qubit QNode is correct,
         when one of the arguments is non-differentiable."""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="tf")
@@ -1059,12 +1038,11 @@ class TestParameterHandlingIntegration:
         assert grad[2] is None
 
         # check that the gradient was not computed for varphi
-        assert spy.call_args[1]["wrt"] == {0, 1}
+        assert circuit.trainable_args == {0, 1}
 
-    def test_chained_gradient_value(self, mocker, tol):
+    def test_chained_gradient_value(self, tol):
         """Test that the returned gradient value for two chained qubit QNodes
         is correct."""
-        spy = mocker.spy(qml.qnodes.JacobianQNode, "jacobian")
         dev1 = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev1, interface="tf")
@@ -1129,9 +1107,109 @@ class TestParameterHandlingIntegration:
         assert np.allclose(np.hstack(grad), expected, atol=tol, rtol=0)
 
         # Check that the gradient was computed
-        # for all parameters in circuit2 (i.e., wrt=None)
-        assert spy.call_args_list[0][1]["wrt"] == None
+        # for all parameters in circuit2
+        assert circuit2.trainable_args == {0, 1}
 
         # check that the gradient was not computed
         # for the first parameter of circuit1
-        assert spy.call_args_list[1][1]["wrt"] == {1, 2}
+        assert circuit1.trainable_args == {1, 2}
+
+    def test_non_diff_not_a_variable(self, capsys):
+        """Test that an argument marked as non-differentiable
+        is not wrapped as a variable."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            print(type(x), type(y), type(z))
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable(1.)
+        y = tf.constant(2.)
+        z = tf.Variable(3.)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x, y, z)
+
+        assert circuit.trainable_args == {0, 2}
+
+        assert isinstance(circuit.arg_vars[0], qml.variable.Variable)
+        assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
+        assert isinstance(circuit.arg_vars[2], qml.variable.Variable)
+
+        assert circuit.arg_vars[0] != x
+        assert circuit.arg_vars[1] == y
+        assert circuit.arg_vars[2] != z
+
+        captured = capsys.readouterr()
+        assert (
+            "<class 'pennylane.variable.Variable'> <class 'numpy.float32'> <class 'pennylane.variable.Variable'>"
+            in captured.out
+        )
+
+    @pytest.mark.parametrize("w", [[0, 1], [1, 0]])
+    def test_non_diff_wires_argument(self, w, tol):
+        """Test that passing wires as a non-differentiable positional
+        argument works correctly."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(wires, params):
+            print(wires)
+            qml.Hadamard(wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RX(params[0], wires=wires[0])
+            qml.RY(params[1], wires=wires[1])
+            qml.CNOT(wires=[wires[1], wires[0]])
+            return qml.expval(qml.PauliZ(0))
+
+        params = tf.Variable([0.6, 0.2])
+
+        a, b = params.numpy()
+        if w == [0, 1]:
+            expected_res = np.cos(a) * np.cos(b)
+            expected_grad = [-np.cos(b) * np.sin(a), -np.cos(a) * np.sin(b)]
+        elif w == [1, 0]:
+            expected_res = 0
+            expected_grad = [0, 0]
+
+        with tf.GradientTape() as tape:
+            res = circuit(w, params)
+
+        assert circuit.trainable_args == {1}
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        grad = tape.gradient(res, params)
+        print(grad)
+
+        assert circuit.trainable_args == {1}
+        assert np.allclose(grad, expected_grad, atol=tol, rtol=0)
+
+    def test_call_changing_trainability(self):
+        """Test that trainability properly changes between QNode calls"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = torch.tensor(1., requires_grad=True)
+        y = torch.tensor(2., requires_grad=False)
+        z = torch.tensor(3., requires_grad=True)
+
+        res = circuit(x, y, z)
+
+        assert circuit.trainable_args == {0, 2}
+
+        x.requires_grad = False
+        y.requires_grad = True
+
+        res = circuit(x, y, z)
+
+        assert circuit.trainable_args == {1, 2}
