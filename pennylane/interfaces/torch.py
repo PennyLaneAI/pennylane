@@ -154,15 +154,15 @@ def to_torch(qnode):
             """Given input arguments to the TorchQNode, determine which arguments
             are trainable and which aren't.
 
-            Currently, all arguments are assumed to be differentiable by default,
-            unless the ``torch.tensor`` attribute ``requires_grad`` is set to False.
+            Currently, all arguments are assumed to be nondifferentiable by default,
+            unless the ``torch.tensor`` attribute ``requires_grad`` is set to True.
 
             This method calls the underlying :meth:`set_trainable_args` method of the QNode.
             """
             non_trainable_args = set()
 
             for idx, arg in enumerate(args):
-                if not getattr(arg, "requires_grad", True):
+                if not getattr(arg, "requires_grad", False):
                     non_trainable_args.add(idx)
 
             qnode.set_trainable_args(set(range(len(args))) - non_trainable_args)

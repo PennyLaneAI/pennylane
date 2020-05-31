@@ -1108,7 +1108,6 @@ class TestParameterHandlingIntegration:
 
         @qml.qnode(dev, interface="torch")
         def circuit(wires, params):
-            print(wires)
             qml.Hadamard(wires=wires[0])
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RX(params[0], wires=wires[0])
