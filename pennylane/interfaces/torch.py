@@ -150,6 +150,24 @@ def to_torch(qnode):
         """The TorchQNode"""
 
         @staticmethod
+        def set_trainable(args):
+            """Given input arguments to the TorchQNode, determine which arguments
+            are trainable and which aren't.
+
+            Currently, all arguments are assumed to be differentiable by default,
+            unless the ``torch.tensor`` attribute ``requires_grad`` is set to False.
+
+            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+            """
+            non_trainable_args = set()
+
+            for idx, arg in enumerate(args):
+                if not getattr(arg, "requires_grad", True):
+                    non_trainable_args.add(idx)
+
+            qnode.set_trainable_args(set(range(len(args))) - non_trainable_args)
+
+        @staticmethod
         def forward(ctx, input_kwargs, *input_):
             """Implements the forward pass QNode evaluation"""
             # detach all input tensors, convert to NumPy array
@@ -160,13 +178,7 @@ def to_torch(qnode):
             # Determine the QNode input tensor require gradients,
             # and thus communicate to the QNode which ones must
             # be wrapped as PennyLane variables.
-            non_trainable_args = set()
-
-            for idx, arg in enumerate(input_):
-                if not getattr(arg, "requires_grad", True):
-                    non_trainable_args.add(idx)
-
-            qnode.trainable_args = set(range(len(input_))) - non_trainable_args
+            _TorchQNode.set_trainable(input_)
 
             # evaluate the QNode
             res = qnode(*ctx.args, **ctx.kwargs)
@@ -248,9 +260,10 @@ def to_torch(qnode):
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         func = qnode.func
+        set_trainable_args = qnode.set_trainable_args
+        get_trainable_args = qnode.get_trainable_args
         arg_vars = property(lambda self: qnode.arg_vars)
         num_variables = property(lambda self: qnode.num_variables)
-        trainable_args = property(lambda self: qnode.trainable_args)
 
     @qnode_str
     def custom_apply(*args, **kwargs):

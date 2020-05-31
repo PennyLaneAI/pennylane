@@ -105,9 +105,10 @@ def to_tf(qnode, dtype=None):
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         func = qnode.func
+        set_trainable_args = qnode.set_trainable_args
+        get_trainable_args = qnode.get_trainable_args
         num_variables = property(lambda self: qnode.num_variables)
         arg_vars = property(lambda self: qnode.arg_vars)
-        trainable_args = property(lambda self: qnode.trainable_args)
 
     @qnode_str
     @tf.custom_gradient
@@ -124,7 +125,6 @@ def to_tf(qnode, dtype=None):
             for i in input_
         ]
 
-
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
         kwargs = {
@@ -140,7 +140,7 @@ def to_tf(qnode, dtype=None):
         }
 
         # evaluate the QNode
-        qnode.trainable_args = {i for i, val in enumerate(requires_grad) if val}
+        qnode.set_trainable_args({i for i, val in enumerate(requires_grad) if val})
         res = qnode(*args, **kwargs)
 
         if not isinstance(res, np.ndarray):
@@ -151,6 +151,7 @@ def to_tf(qnode, dtype=None):
             """Returns the vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
             variables = tfkwargs.get("variables", None)
+            qnode.set_trainable_args({i for i, val in enumerate(requires_grad) if val})
             jacobian = qnode.jacobian(args, kwargs)
             jacobian = tf.constant(jacobian, dtype=dtype)
 
@@ -161,7 +162,7 @@ def to_tf(qnode, dtype=None):
             grad_input = tf.matmul(grad_output_row, jacobian)
             grad_input = tf.reshape(grad_input, [-1])
 
-            if len(qnode.trainable_args) < len(args):
+            if grad_input.shape[0] < qnode.num_variables:
                 # TensorFlow requires we return a gradient of size (num_variables,)
                 res = np.zeros([qnode.num_variables])
                 diff_indices = [i.idx for i in _flatten(qnode.arg_vars) if hasattr(i, "idx")]
@@ -170,6 +171,12 @@ def to_tf(qnode, dtype=None):
                 grad_input = tf.constant(res, dtype=dtype)
 
             grad_input_unflattened = unflatten_tf(grad_input, input_)[0]
+
+            for idx, requires in enumerate(requires_grad):
+                # If a particular input argument is non-differentiable,
+                # replace the corresponding position in the gradient with None.
+                if not requires:
+                    grad_input_unflattened[idx] = None
 
             if variables is not None:
                 return grad_input_unflattened, variables

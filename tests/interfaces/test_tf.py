@@ -810,7 +810,7 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {0}
+        assert circuit.get_trainable_args() == {0}
 
     def test_differentiable_parameter_middle(self):
         """Test that a differentiable parameter provided as the middle
@@ -847,7 +847,7 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {1}
+        assert circuit.get_trainable_args() == {1}
 
     def test_differentiable_parameter_last(self):
         """Test that a differentiable parameter used as the last
@@ -884,7 +884,7 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was computed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {2}
+        assert circuit.get_trainable_args() == {2}
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self):
         """Test that multiple differentiable and non-differentiable parameters
@@ -922,7 +922,7 @@ class TestParameterHandlingIntegration:
 
         # check that the gradient was only computed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {1, 3}
+        assert circuit.get_trainable_args() == {1, 3}
 
     def test_gradient_non_differentiable_none(self, mocker):
         """Test that the gradient of a non-differentiable tensor is None"""
@@ -963,7 +963,7 @@ class TestParameterHandlingIntegration:
         assert grad is not None
         assert grad.shape == weights.shape
 
-        assert circuit.trainable_args == {0}
+        assert circuit.get_trainable_args() == {0}
 
     def test_chained_qnodes(self):
         """Test that the gradient of chained QNodes works without error"""
@@ -1038,7 +1038,7 @@ class TestParameterHandlingIntegration:
         assert grad[2] is None
 
         # check that the gradient was not computed for varphi
-        assert circuit.trainable_args == {0, 1}
+        assert circuit.get_trainable_args() == {0, 1}
 
     def test_chained_gradient_value(self, tol):
         """Test that the returned gradient value for two chained qubit QNodes
@@ -1108,11 +1108,11 @@ class TestParameterHandlingIntegration:
 
         # Check that the gradient was computed
         # for all parameters in circuit2
-        assert circuit2.trainable_args == {0, 1}
+        assert circuit2.get_trainable_args() == {0, 1}
 
         # check that the gradient was not computed
         # for the first parameter of circuit1
-        assert circuit1.trainable_args == {1, 2}
+        assert circuit1.get_trainable_args() == {1, 2}
 
     def test_non_diff_not_a_variable(self, capsys):
         """Test that an argument marked as non-differentiable
@@ -1134,7 +1134,7 @@ class TestParameterHandlingIntegration:
         with tf.GradientTape() as tape:
             res = circuit(x, y, z)
 
-        assert circuit.trainable_args == {0, 2}
+        assert circuit.get_trainable_args() == {0, 2}
 
         assert isinstance(circuit.arg_vars[0], qml.variable.Variable)
         assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
@@ -1179,37 +1179,38 @@ class TestParameterHandlingIntegration:
         with tf.GradientTape() as tape:
             res = circuit(w, params)
 
-        assert circuit.trainable_args == {1}
+        assert circuit.get_trainable_args() == {1}
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad = tape.gradient(res, params)
-        print(grad)
 
-        assert circuit.trainable_args == {1}
+        assert circuit.get_trainable_args() == {1}
         assert np.allclose(grad, expected_grad, atol=tol, rtol=0)
 
     def test_call_changing_trainability(self):
         """Test that trainability properly changes between QNode calls"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="tf")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
             qml.RZ(z, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = torch.tensor(1., requires_grad=True)
-        y = torch.tensor(2., requires_grad=False)
-        z = torch.tensor(3., requires_grad=True)
+        x = tf.Variable(1.)
+        y = tf.constant(2.)
+        z = tf.Variable(3.)
 
-        res = circuit(x, y, z)
+        with tf.GradientTape() as tape:
+            res = circuit(x, y, z)
 
-        assert circuit.trainable_args == {0, 2}
+        assert circuit.get_trainable_args() == {0, 2}
 
-        x.requires_grad = False
-        y.requires_grad = True
+        x = 1.
 
-        res = circuit(x, y, z)
+        with tf.GradientTape() as tape:
+            tape.watch([y, z])
+            res = circuit(x, y, z)
 
-        assert circuit.trainable_args == {1, 2}
+        assert circuit.get_trainable_args() == {1, 2}

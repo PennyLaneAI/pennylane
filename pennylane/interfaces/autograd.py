@@ -43,13 +43,18 @@ def to_autograd(qnode):
         evaluate = autograd.extend.primitive(qnode.__class__.evaluate)
 
         def set_trainable(self, args):
+            """Given input arguments to the AutogradQNode, determine which arguments
+            are trainable and which aren't.
+
+            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+            """
             non_trainable_args = set()
 
             for idx, arg in enumerate(args):
                 if not getattr(arg, "requires_grad", True):
                     non_trainable_args.add(idx)
 
-            self.trainable_args = set(range(len(args))) - non_trainable_args
+            self.set_trainable_args(set(range(len(args))) - non_trainable_args)
 
         def __call__(self, *args, **kwargs):
             # prevents autograd boxed arguments from going through to evaluate

@@ -192,7 +192,7 @@ class BaseQNode(qml.QueuingContext):
         that depend on it.
         """
 
-        self.trainable_args = None
+        self._trainable_args = None
 
         self._metric_tensor_subcircuits = None
         """dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor"""
@@ -265,6 +265,42 @@ class BaseQNode(qml.QueuingContext):
         raise RuntimeError(
             "The QNode can only be drawn after its CircuitGraph has been constructed."
         )
+
+    def set_trainable_args(self, arg_indices):
+        """Store the indices of quantum function positional arguments
+        that support differentiability.
+
+        Args:
+            args (None or Set[int]): Differentiable positional argument indices. A
+                value of ``None`` means that all argument indices are differentiable.
+        """
+        if not arg_indices:
+            self._trainable_args = None
+            return
+
+        # Perform validation
+        if not self.func.var_pos and max(arg_indices) > self.func.n_pos:
+            raise ValueError(
+                f"Argument index not available. QNode has at most {self.func.n_pos} arguments."
+            )
+
+        if min(arg_indices) < 0:
+            raise ValueError(f"Argument indices must be positive integers")
+
+        if not all(isinstance(i, int) for i in arg_indices):
+            raise ValueError("Argument indices must be integers.")
+
+        self._trainable_args = arg_indices
+
+    def get_trainable_args(self):
+        """Returns the indices of quantum function positional arguments
+        that support differentiability.
+
+        Returns:
+            None or Set[int]: Differentiable positional argument indices. A
+                value of ``None`` means that all argument indices are differentiable.
+        """
+        return self._trainable_args
 
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
@@ -427,14 +463,17 @@ class BaseQNode(qml.QueuingContext):
 
         # Arrange the newly created Variables in the nested structure of args.
         # Make sure that NumPy scalars are converted into Python scalars.
-        arg_vars = [i.item() if isinstance(i, np.ndarray) and i.ndim == 0 else i for i in unflatten(arg_vars, args)]
+        arg_vars = [
+            i.item() if isinstance(i, np.ndarray) and i.ndim == 0 else i
+            for i in unflatten(arg_vars, args)
+        ]
 
-        if self.trainable_args is not None and len(self.trainable_args) != len(args):
+        if self._trainable_args is not None and len(self._trainable_args) != len(args):
             # If some of the input arguments are marked as non-differentiable,
             # then replace the variable instances in arg_vars back with the
             # original objects.
             for a in range(len(args)):
-                if a not in self.trainable_args:
+                if a not in self._trainable_args:
                     arg_vars[a] = args[a]
 
         # kwargs

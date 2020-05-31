@@ -516,7 +516,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {0}
+        assert circuit.get_trainable_args() == {0}
 
     def test_differentiable_parameter_middle(self):
         """Test that a differentiable parameter provided as the middle
@@ -553,7 +553,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {1}
+        assert circuit.get_trainable_args() == {1}
 
     def test_differentiable_parameter_last(self):
         """Test that a differentiable parameter used as the last
@@ -590,7 +590,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {2}
+        assert circuit.get_trainable_args() == {2}
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self):
         """Test that multiple differentiable and non-differentiable parameters
@@ -626,7 +626,7 @@ class TestParameterHandlingIntegration:
 
         # check that the parameter shift was only performed for the
         # differentiable elements of `weights`, not the data input
-        assert circuit.trainable_args == {1, 3}
+        assert circuit.get_trainable_args() == {1, 3}
 
     def test_gradient_non_differentiable_exception(self):
         """Test that an exception is raised if non-differentiable data is
@@ -724,7 +724,7 @@ class TestParameterHandlingIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # check that the gradient was not applied to varphi
-        assert circuit.trainable_args == {0, 1}
+        assert circuit.get_trainable_args() == {0, 1}
 
     def test_chained_gradient_value(self, mocker, tol):
         """Test that the returned gradient value for two chained qubit QNodes
@@ -793,11 +793,11 @@ class TestParameterHandlingIntegration:
 
         # Check that the gradient was computed
         # for all parameters in circuit2
-        assert circuit2.trainable_args == {0, 1}
+        assert circuit2.get_trainable_args() == {0, 1}
 
         # check that the parameter-shift rule was not applied
         # to the first parameter of circuit1
-        assert circuit1.trainable_args == {1, 2}
+        assert circuit1.get_trainable_args() == {1, 2}
 
     def test_non_diff_not_a_variable(self, capsys):
         """Test that an argument marked as non-differentiable
@@ -818,7 +818,7 @@ class TestParameterHandlingIntegration:
 
         res = circuit(x, y, z)
 
-        assert circuit.trainable_args == {0, 2}
+        assert circuit.get_trainable_args() == {0, 2}
 
         assert isinstance(circuit.arg_vars[0], qml.variable.Variable)
         assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
@@ -862,13 +862,13 @@ class TestParameterHandlingIntegration:
 
         res = circuit(wires, params)
 
-        assert circuit.trainable_args == {1}
+        assert circuit.get_trainable_args() == {1}
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad_fn = qml.grad(circuit)
         res_grad = grad_fn(wires, params)
 
-        assert circuit.trainable_args == {1}
+        assert circuit.get_trainable_args() == {1}
         assert np.allclose(res_grad, expected_grad, atol=tol, rtol=0)
 
     def test_call_changing_trainability(self):
@@ -888,14 +888,14 @@ class TestParameterHandlingIntegration:
 
         res = circuit(x, y, z)
 
-        assert circuit.trainable_args == {0, 2}
+        assert circuit.get_trainable_args() == {0, 2}
 
         x.requires_grad = False
         y.requires_grad = True
 
         res = circuit(x, y, z)
 
-        assert circuit.trainable_args == {1, 2}
+        assert circuit.get_trainable_args() == {1, 2}
 
     def test_grad_changing_trainability(self):
         """Test that trainability properly changes between QNode gradient calls"""
@@ -915,11 +915,11 @@ class TestParameterHandlingIntegration:
         grad_fn = qml.grad(circuit)
         res = grad_fn(x, y, z)
 
-        assert circuit.trainable_args == {0, 2}
+        assert circuit.get_trainable_args() == {0, 2}
 
         x.requires_grad = False
         y.requires_grad = True
 
         res = grad_fn(x, y, z)
 
-        assert circuit.trainable_args == {1, 2}
+        assert circuit.get_trainable_args() == {1, 2}
