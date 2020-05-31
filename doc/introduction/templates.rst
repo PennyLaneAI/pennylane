@@ -208,6 +208,11 @@ of other templates.
     :description: DoubleExcitationUnitary
     :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.UCCSD.html
+    :description: UCCSD
+    :figure: ../_static/templates/subroutines/uccsd.png  
+
 .. raw:: html
 
         <div style='clear:both'></div>
