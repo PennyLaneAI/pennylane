@@ -1162,3 +1162,33 @@ class TestParameterHandlingIntegration:
         res = circuit(x, y, z)
 
         assert circuit.get_trainable_args() == {1, 2}
+
+    def test_immutability(self):
+        """Test that changing parameter differentiability raises an exception
+        on immutable QNodes."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch", mutable=False)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = torch.tensor(1., requires_grad=True)
+        y = torch.tensor(2., requires_grad=False)
+        z = torch.tensor(3., requires_grad=True)
+
+        res = circuit(x, y, z)
+        assert circuit.get_trainable_args() == {0, 2}
+
+        # change values and compute the gradient again
+        res = circuit(2*x, -y, z)
+        assert circuit.get_trainable_args() == {0, 2}
+
+        # attempting to change differentiability raises an error
+        x.requires_grad = False
+        y.requires_grad = True
+
+        with pytest.raises(qml.QuantumFunctionError, match="cannot be modified"):
+            circuit(x, y, z)

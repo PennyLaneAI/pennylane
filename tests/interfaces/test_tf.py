@@ -1140,9 +1140,11 @@ class TestParameterHandlingIntegration:
         assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
         assert isinstance(circuit.arg_vars[2], qml.variable.Variable)
 
-        assert circuit.arg_vars[0] != x
-        assert circuit.arg_vars[1] == y
-        assert circuit.arg_vars[2] != z
+        # the calls to `numpy()` are required so as TF 1.15 does not
+        # automatically cast the TensorFlow tensors on comparison.
+        assert circuit.arg_vars[0].val == x.numpy()
+        assert circuit.arg_vars[1] == y.numpy()
+        assert circuit.arg_vars[2].val == z.numpy()
 
         captured = capsys.readouterr()
         assert (
@@ -1213,3 +1215,34 @@ class TestParameterHandlingIntegration:
             res = circuit(x, y, z)
 
         assert circuit.get_trainable_args() == {1, 2}
+
+    def test_immutability(self):
+        """Test that changing parameter differentiability raises an exception
+        on immutable QNodes."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf", mutable=False)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable(1.)
+        y = 2.
+        z = tf.Variable(3.)
+
+        res = circuit(x, y, z)
+        assert circuit.get_trainable_args() == {0, 2}
+
+        # change values and compute the gradient again
+        with tf.GradientTape() as tape:
+            res = circuit(2*x, -y, z)
+        assert circuit.get_trainable_args() == {0, 2}
+
+        # attempting to change differentiability raises an error
+        x = 1.
+        y = tf.Variable(y)
+
+        with pytest.raises(qml.QuantumFunctionError, match="cannot be modified"):
+            circuit(x, y, z)
