@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Contains the new template ``UCCSD`` implementing the Unitary Coupled-Cluster (UCCSD) ansatz
+  to perform VQE-based quantum chemistry simulations using PennyLane-QChem.
+  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
+
 * PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
   hybrid models using the `torch.nn` API.
   [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
