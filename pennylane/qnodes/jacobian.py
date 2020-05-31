@@ -233,7 +233,7 @@ class JacobianQNode(BaseQNode):
 
         # check that the wrt parameters are ok
         if wrt is None:
-            wrt = [v.idx for v in _flatten(self.arg_vars) if hasattr(v, "idx")]
+            wrt = list(self.variable_deps)
         else:
             if min(wrt) < 0 or max(wrt) >= self.num_variables:
                 raise ValueError(

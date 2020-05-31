@@ -162,14 +162,6 @@ def to_tf(qnode, dtype=None):
             grad_input = tf.matmul(grad_output_row, jacobian)
             grad_input = tf.reshape(grad_input, [-1])
 
-            if grad_input.shape[0] < qnode.num_variables:
-                # TensorFlow requires we return a gradient of size (num_variables,)
-                res = np.zeros([qnode.num_variables])
-                diff_indices = [i.idx for i in _flatten(qnode.arg_vars) if hasattr(i, "idx")]
-                indices = np.fromiter(diff_indices, dtype=np.int64)
-                res[indices] = grad_input
-                grad_input = tf.constant(res, dtype=dtype)
-
             grad_input_unflattened = unflatten_tf(grad_input, input_)[0]
 
             for idx, requires in enumerate(requires_grad):

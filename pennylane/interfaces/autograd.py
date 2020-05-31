@@ -92,14 +92,6 @@ def to_autograd(qnode):
                 else:
                     vjp = g @ jac
 
-                if len(vjp) != self.num_variables:
-                    # Autograd requires we return a gradient of size (num_variables,)
-                    res = zeros([self.num_variables])
-                    diff_indices = [i.idx for i in _flatten(self.arg_vars) if hasattr(i, "idx")]
-                    indices = fromiter(diff_indices, dtype=int64)
-                    res[indices] = vjp
-                    vjp = res
-
                 # Restore the nested structure of the input args.
                 vjp = unflatten(vjp.flat, args)
                 return vjp

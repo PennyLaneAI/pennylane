@@ -212,14 +212,6 @@ def to_torch(qnode):
             vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
             vjp = vjp.flatten()
 
-            if len(vjp) != qnode.num_variables:
-                # Torch requires we return a gradient of size (num_variables,)
-                res = torch.zeros([qnode.num_variables], dtype=grad_output.dtype)
-                diff_indices = [i.idx for i in _flatten(qnode.arg_vars) if hasattr(i, "idx")]
-                indices = np.fromiter(diff_indices, dtype=np.int64)
-                res[indices] = vjp
-                vjp = res
-
             # restore the nested structure of the input args
             grad_input_list = unflatten_torch(vjp, ctx.saved_tensors)[0]
             grad_input = []
