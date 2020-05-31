@@ -17,8 +17,7 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.numpy import zeros, fromiter, int64
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import unflatten
 
 
 def to_autograd(qnode):

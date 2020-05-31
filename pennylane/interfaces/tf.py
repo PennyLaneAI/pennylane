@@ -30,8 +30,6 @@ try:
 except ImportError:
     from tensorflow.python.eager.tape import should_record as should_record_backprop
 
-from pennylane.utils import _flatten
-
 
 def unflatten_tf(flat, model):
     """Restores an arbitrary nested structure to a flattened TF tensor.

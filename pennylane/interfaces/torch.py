@@ -25,8 +25,6 @@ import numpy as np
 import torch
 from torch.autograd.function import once_differentiable
 
-from pennylane.utils import _flatten
-
 
 def unflatten_torch(flat, model):
     """Restores an arbitrary nested structure to a flattened Torch tensor.
