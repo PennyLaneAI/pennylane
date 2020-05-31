@@ -274,21 +274,34 @@ class BaseQNode(qml.QueuingContext):
             args (None or Set[int]): Differentiable positional argument indices. A
                 value of ``None`` means that all argument indices are differentiable.
         """
+        if not self.mutable and self.circuit is not None:
+
+            if self.get_trainable_args() == arg_indices:
+                return
+
+            raise QuantumFunctionError(
+                "The trainability of arguments on immutable QNodes cannot be modified after the first evaluation."
+            )
+
         if not arg_indices:
+            # the provided arg_indices are an empty set
             self._trainable_args = None
             return
 
         # Perform validation
         if not self.func.var_pos and max(arg_indices) > self.func.n_pos:
+            # QNode does not allow variable positional arguments (*args), and
+            # the provided index set contains a value larger than the number
+            # of positional arguments.
             raise ValueError(
                 f"Argument index not available. QNode has at most {self.func.n_pos} arguments."
             )
 
         if min(arg_indices) < 0:
-            raise ValueError(f"Argument indices must be positive integers")
+            raise ValueError("Argument indices must be positive integers")
 
         if not all(isinstance(i, int) for i in arg_indices):
-            raise ValueError("Argument indices must be integers.")
+            raise ValueError("Argument indices must be positive integers.")
 
         self._trainable_args = arg_indices
 
@@ -472,7 +485,7 @@ class BaseQNode(qml.QueuingContext):
             # If some of the input arguments are marked as non-differentiable,
             # then replace the variable instances in arg_vars back with the
             # original objects.
-            for a in range(len(args)):
+            for a, _ in enumerate(args):
                 if a not in self._trainable_args:
                     arg_vars[a] = args[a]
 
