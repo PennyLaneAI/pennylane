@@ -141,8 +141,8 @@ class RotoselectOptimizer:
             d (int): the position in the input sequence ``x`` containing the value to be optimized
 
         Returns:
-            tuple: Tuple containing the parameter value and generator that, at position ``d`` in
-            ``x`` and ``generators``, optimizes the objective function.
+            tuple: tuple containing the parameter value and generator that, at position ``d`` in
+            ``x`` and ``generators``, optimizes the objective function
         """
         params_opt_d = x[d]
         generators_opt_d = generators[d]
