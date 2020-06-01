@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Contains the new template ``UCCSD`` implementing the Unitary Coupled-Cluster (UCCSD) ansatz
+  to perform VQE-based quantum chemistry simulations using PennyLane-QChem.
+  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
+
 * PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
   hybrid models using the `torch.nn` API.
   [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
@@ -52,13 +56,18 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
-  - The QNode Autograd interface now inspects QNode positional arguments when calculating
-    the vector-Jacobian product. If any argument is marked as `requires_grad=False`, it
+  - The QNode Autograd and Torch interfaces now inspect QNode positional arguments when calculating
+    the gradient. If any argument is marked as `requires_grad=False`, it
     is automatically excluded from quantum gradient computations.
 
   - The QNode TF interface now inspects QNode positional arguments when calculating
-    the vector-Jacobian product. If any argument is not being watched by a `tf.GradientTape()`,
+    the gradient. If any argument is not being watched by a `tf.GradientTape()`,
     it is automatically excluded from quantum gradient computations.
+
+* Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
+  to calculate losses and costs on circuits with trainable parameters.
+  [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
+
 
 <h3>Improvements</h3>
 
@@ -80,7 +89,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac
+Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
