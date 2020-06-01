@@ -68,7 +68,7 @@ class DefaultQubitTF(QubitDevice):
 
     To use this device, you will need to install TensorFlow:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         pip install tensorflow>=2.0
 
@@ -105,7 +105,8 @@ class DefaultQubitTF(QubitDevice):
 
     There are a couple of things to keep in mind when using ``"backprop"`` mode:
 
-    * You must use the ``"tf"`` interface, as TensorFlow is used as the device backend.
+    * You must use the ``"tf"`` interface for classical backpropagation, as TensorFlow is
+      used as the device backend.
 
     * Only exact expectation values, variances, and probabilities are differentiable.
       When instantiating the device with ``analytic=False``, differentiating QNode
