@@ -371,7 +371,7 @@ Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 <h3>Improvements</h3>
 
-* A new `Wires` class was introduced for the internal
+* A new `Wires` class was introduced for the internal 
   bookkeeping of wire indices.
   [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
 
