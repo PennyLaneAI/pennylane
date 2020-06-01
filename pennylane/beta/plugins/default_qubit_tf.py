@@ -230,7 +230,13 @@ class DefaultQubitTF(QubitDevice):
             return
 
         if isinstance(operation, DiagonalOperation):
-            self._state = self._apply_diagonal_unitary(operation.eigvals, operation.wires)
+            if operation.name in self.parametric_ops:
+                matrix = self.parametric_ops[operation.name](*operation.parameters)
+                eigvals = tf.linalg.diag_part(matrix)
+            else:
+                eigvals = operation.eigvals
+
+            self._state = self._apply_diagonal_unitary(eigvals, operation.wires)
             return
 
         if operation.name in self.parametric_ops:
@@ -249,7 +255,9 @@ class DefaultQubitTF(QubitDevice):
             wires (list[int]): list of wires where the provided state should
                 be initialized
         """
-        if not np.isclose(tf.linalg.norm(input_state, 2), 1.0, atol=tolerance):
+        input_state = tf.convert_to_tensor(input_state, dtype=C_DTYPE)
+
+        if not np.allclose(tf.norm(input_state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         n_state_vector = input_state.shape[0]
@@ -266,8 +274,10 @@ class DefaultQubitTF(QubitDevice):
 
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
-        state = np.zeros_like(self._state)
-        state[ravelled_indices] = input_state
+        ravelled_indices = np.expand_dims(ravelled_indices, 1)
+
+        state = tf.scatter_nd(ravelled_indices, input_state, [2 ** self.num_wires])
+        state = tf.reshape(state, [2] * self.num_wires)
         self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
 
     def _apply_basis_state(self, state, wires):
@@ -292,9 +302,10 @@ class DefaultQubitTF(QubitDevice):
         basis_states = 2 ** (self.num_wires - 1 - np.array(wires))
         num = int(np.dot(state, basis_states))
 
-        state = np.zeros_like(self._state)
+        state = np.zeros(2 ** self.num_wires)
         state[num] = 1.0
-        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        self._state = tf.reshape(state, [2] * self.num_wires)
 
     def _apply_unitary(self, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
@@ -351,7 +362,7 @@ class DefaultQubitTF(QubitDevice):
             tf.Tensor: output vector after applying ``phases`` to input ``vec`` on specified subsystems
         """
         # reshape vectors
-        phases = tf.reshape(phases, [2] * len(wires))
+        phases = tf.cast(tf.reshape(phases, [2] * len(wires)), dtype=C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[wires].tolist())
