@@ -93,7 +93,7 @@ class DefaultQubitTF(QubitDevice):
     >>> print(tape.gradient(res, weights))
     tf.Tensor([-2.2526717e-01 -1.0086454e+00  1.3877788e-17], shape=(3,), dtype=float32)
 
-    Autograd mode will also work when using classical backpropagation:
+    Autograph mode will also work when using classical backpropagation:
 
     >>> @tf.function
     ... def cost(weights):
@@ -389,11 +389,7 @@ class DefaultQubitTF(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-        if self._state is None:
-            return None
-
         wires = wires or range(self.num_wires)
-
         prob = self.marginal_prob(tf.abs(self._state) ** 2, wires)
         return prob
 
