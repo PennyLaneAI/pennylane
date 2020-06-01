@@ -195,7 +195,7 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires # returns a list of wires
+        >>> op.wires.tolist() # returns a list of wires
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
@@ -227,7 +227,7 @@ class QubitDevice(Device):
         """
         wires = []
         for op in operators:
-            wires.extend(op.wires)
+            wires.extend(op.wires.tolist())
 
         return set(wires)
 
@@ -259,7 +259,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))
+                results.append(self.probability(wires=obs.wires.tolist()))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -382,7 +382,7 @@ class QubitDevice(Device):
         # consider only the requested wires
         wires = np.hstack(wires)
 
-        samples = self._samples[:, np.array(wires)]
+        samples = self._samples[:, np.array(wires)]  # TODO: Use indices for nonconsec wires
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(wires)
@@ -450,7 +450,7 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)
+        wires = np.hstack(wires)  # TODO: nonconsecutive
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
@@ -471,7 +471,7 @@ class QubitDevice(Device):
         return prob[perm]
 
     def expval(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
 
         if self.analytic:
             # exact expectation value
@@ -483,7 +483,7 @@ class QubitDevice(Device):
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
 
         if self.analytic:
             # exact variance value
@@ -495,7 +495,7 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
