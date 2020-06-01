@@ -195,7 +195,7 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires.tolist() # returns a list of wires
+        >>> op.wires # returns the Wires
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
@@ -259,7 +259,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires.tolist()))
+                results.append(self.probability(wires=self.translate(obs.wires)))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -471,7 +471,7 @@ class QubitDevice(Device):
         return prob[perm]
 
     def expval(self, observable):
-        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
+        wires = self.translate(observable.wires)
 
         if self.analytic:
             # exact expectation value
@@ -483,7 +483,7 @@ class QubitDevice(Device):
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
+        wires = self.translate(observable.wires)
 
         if self.analytic:
             # exact variance value
@@ -495,7 +495,7 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
+        wires = self.translate(observable.wires)
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:

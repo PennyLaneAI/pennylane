@@ -63,6 +63,7 @@ class Device(abc.ABC):
 
         self.shots = shots
         self._register = Wires(wires)
+        self.num_wires = len(self._register)
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
@@ -140,12 +141,6 @@ class Device(abc.ABC):
         directly or indirectly provided by the user."""
         return self._register
 
-    @property
-    def num_wires(self):
-        """Representation of the subsystems on this device,
-        directly or indirectly provided by the user."""
-        return len(self._register)
-
     @shots.setter
     def shots(self, shots):
         """Changes the number of shots.
@@ -210,7 +205,9 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                self.apply(operation.name, operation.wires.tolist(), operation.parameters)
+                # retrieve indices of subsystems that the operation acts on
+                subsystems = self.translate(operation.wires)
+                self.apply(operation.name, subsystems, operation.parameters)
 
             self.post_apply()
 
@@ -218,23 +215,25 @@ class Device(abc.ABC):
 
             for obs in observables:
 
+                # translate wires of
                 if isinstance(obs, Tensor):
-                    # if obs is a tensor observable, use a list of individual wires
-                    wires = [ob.wires.tolist() for ob in obs.obs]
+                    # if obs is a tensor observable, retrieve list of indices of subsystems
+                    subsystems = [self.translate(ob.wires) for ob in obs.obs]
                 else:
-                    wires = obs.wires.tolist()
+                    # retrieve indices of subsystems that the observable acts on
+                    subsystems = self.translate(obs.wires)
 
                 if obs.return_type is Expectation:
-                    results.append(self.expval(obs.name, wires, obs.parameters))
+                    results.append(self.expval(obs.name, subsystems, obs.parameters))
 
                 elif obs.return_type is Variance:
-                    results.append(self.var(obs.name, wires, obs.parameters))
+                    results.append(self.var(obs.name, subsystems, obs.parameters))
 
                 elif obs.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
+                    results.append(np.array(self.sample(obs.name, subsystems, obs.parameters)))
 
                 elif obs.return_type is Probability:
-                    results.append(list(self.probability(wires=wires).values()))
+                    results.append(list(self.probability(wires=subsystems).values()))
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError(
@@ -469,6 +468,17 @@ class Device(abc.ABC):
                             observable_name, self.short_name
                         )
                     )
+
+    def translate(self, wires):
+        """Translates from an operation's wires to the corresponding indices of the subsystems in the register.
+
+        Args:
+            wires (Wires): wires object
+
+        Return:
+            List[int]: indices at which the wires are in the register
+        """
+        return self._register.indices(wires)
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):
