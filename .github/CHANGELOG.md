@@ -2,12 +2,16 @@
 
 <h3>New features since last release</h3>
 
+* Contains the new template ``UCCSD`` implementing the Unitary Coupled-Cluster (UCCSD) ansatz
+  to perform VQE-based quantum chemistry simulations using PennyLane-QChem.
+  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
+
 * PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
   hybrid models using the `torch.nn` API.
   [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
 
   A PennyLane QNode can be converted into a `torch.nn` layer using the `qml.qnn.TorchLayer` class:
- 
+
   ```python
   @qml.qnode(dev)
   def qnode(inputs, weights_0, weight_1):
@@ -23,11 +27,49 @@
   ```python
   model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
+* Contains the new template ``DoubleExcitationUnitary`` implementing the quantum circuit to
+  exponentiate the Coupled-Cluster double excitation operator. This template is required to
+  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
+  [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
 * Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
   exponentiate the Coupled-Cluster single excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
+
+* Placeholder for variable/tensor refactor. So far this has included:
+  [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
+  [(#650)](https://github.com/XanaduAI/pennylane/pull/650)
+  [(#652)](https://github.com/XanaduAI/pennylane/pull/652)
+  [(#655)](https://github.com/XanaduAI/pennylane/pull/655)
+
+  - A new `ndarray` subclass `pennylane.numpy.tensor`, which extends NumPy arrays with
+    the keyword argument and attribute `requires_grad`. Tensors which have `requires_grad=False`
+    are treated as non-differentiable by the Autograd interface.
+
+  - A new subpackage `pennylane.numpy`, which wraps `autograd.numpy` such that NumPy functions
+    accept the `requires_grad` keyword argument, and allows Autograd to differentiate
+    `pennylane.numpy.tensor` objects.
+
+  - The `argnum` argument to `qml.grad` is now optional; if not provided, arguments explicitly
+    marked as `requires_grad=False` are excluded for the list of differentiable arguments.
+    The ability to pass `argnum` has been retained for backwards compatibility, and
+    if present the old behaviour persists.
+
+  - The QNode Autograd and Torch interfaces now inspect QNode positional arguments when calculating
+    the gradient. If any argument is marked as `requires_grad=False`, it
+    is automatically excluded from quantum gradient computations.
+
+  - The QNode TF interface now inspects QNode positional arguments when calculating
+    the gradient. If any argument is not being watched by a `tf.GradientTape()`,
+    it is automatically excluded from quantum gradient computations.
+
+* Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
+  to calculate losses and costs on circuits with trainable parameters.
+  [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
+
 
 <h3>Improvements</h3>
 
@@ -49,7 +91,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac
+Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
@@ -328,6 +370,10 @@ Thomas Bromley, Alain Delgado Gran, Josh Izaac
   [(#614)](https://github.com/XanaduAI/pennylane/pull/614)
 
 <h3>Improvements</h3>
+
+* A new `Wires` class was introduced for the internal 
+  bookkeeping of wire indices.
+  [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
 
 * Improvements to the speed/performance of the `default.qubit` device.
   [(#567)](https://github.com/XanaduAI/pennylane/pull/567)

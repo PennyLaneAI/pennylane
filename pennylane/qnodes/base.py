@@ -517,7 +517,7 @@ class BaseQNode(qml.QueuingContext):
 
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
-        for k, op in enumerate(self.ops):
+        for op in self.ops:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if not p.is_kwarg:  # ignore auxiliary arguments
@@ -625,7 +625,7 @@ class BaseQNode(qml.QueuingContext):
             )
 
         # check that no wires are measured more than once
-        m_wires = list(w for ob in res for w in _flatten(ob.wires))
+        m_wires = list(w for ob in res for w in ob.wires)
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError(
                 "Each wire in the quantum circuit can only be measured once."
