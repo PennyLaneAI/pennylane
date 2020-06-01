@@ -48,8 +48,7 @@ def random_layer(weights, wires, ratio_imprim, imprimitive, rotations, seed):
     while i < len(weights):
         if np.random.random() > ratio_imprim:
             # Apply a random rotation gate to a random wire
-            rnd1 = np.random.choice(range(len(rotations)))
-            gate = rotations[rnd1]
+            gate = np.random.choice(rotations)
             rnd_wire = wires.select_random(1)
             rnd_wire = rnd_wire.tolist()  # TODO: Remove when operator takes Wires object
             gate(weights[i], wires=rnd_wire)

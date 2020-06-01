@@ -151,12 +151,12 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 # skip even or odd pairs depending on layer
                 if (l + k) % 2 != 1:
                     if beamsplitter == "clements":
-                        Rotation(phi[n], wires=[w1])  # TODO: use select function ?
-                        Beamsplitter(theta[n], 0, wires=[w1, w2])  # TODO: use select function ?
+                        Rotation(phi[n], wires=[w1])
+                        Beamsplitter(theta[n], 0, wires=[w1, w2])
                     else:
                         Beamsplitter(
                             theta[n], phi[n], wires=[w1, w2]
-                        )  # TODO: use select function ?
+                        )
                     n += 1
 
     elif mesh == "triangular":
@@ -167,14 +167,14 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 if beamsplitter == "clements":
                     Rotation(
                         phi[n], wires=wires[k]
-                    )  # wires.select(k)) # TODO: use select function ?
+                    )
                     Beamsplitter(
                         theta[n], 0, wires=[wires[k], wires[k + 1]]
-                    )  # wires.select([k, k+1])) # TODO: use select function ?
+                    )
                 else:
                     Beamsplitter(
                         theta[n], phi[n], wires=[wires[k], wires[k + 1]]
-                    )  # wires.select([k, k+1])) # TODO: use select function ?
+                    ) 
                 n += 1
 
     # apply the final local phase shifts to all modes
