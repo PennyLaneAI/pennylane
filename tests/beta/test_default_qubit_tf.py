@@ -425,7 +425,7 @@ class TestQNodeIntegration:
         circuit()
         state = dev.state
 
-        expected = tf.constant([1., 0, 1., 0]) / np.sqrt(2)
+        expected = tf.constant([1.0, 0, 1.0, 0]) / np.sqrt(2)
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
@@ -451,16 +451,26 @@ class TestPassthruIntegration:
         with tf.GradientTape() as tape:
             res = circuit([x, y, z])
 
-        expected = tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2) - tf.math.sin(3 * x) * tf.math.sin(z / 2)
+        expected = tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2) - tf.math.sin(
+            3 * x
+        ) * tf.math.sin(z / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = tf.concat(tape.jacobian(res, [x, y, z]), axis=0)
 
         expected = np.array(
             [
-                -3 * (tf.math.sin(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2) + tf.math.cos(3 * x) * tf.math.sin(z / 2)),
+                -3
+                * (
+                    tf.math.sin(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2)
+                    + tf.math.cos(3 * x) * tf.math.sin(z / 2)
+                ),
                 -tf.math.cos(3 * x) * tf.math.sin(y) * tf.math.cos(z / 2),
-                -0.5 * (tf.math.sin(3 * x) * tf.math.cos(z / 2) + tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.sin(z / 2)),
+                -0.5
+                * (
+                    tf.math.sin(3 * x) * tf.math.cos(z / 2)
+                    + tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.sin(z / 2)
+                ),
             ]
         )
 
@@ -666,7 +676,7 @@ class TestHybridInterfaceDeviceIntegration:
             qml.QubitStateVector(1j * np.array([1, -1]) / np.sqrt(2), wires=w)
             # the parameterized gate is one that gets decomposed
             # via a template
-            qml.U3.decomposition(x, weights[0], weights[1], wires=w)   # <--- decomposition is used
+            qml.U3.decomposition(x, weights[0], weights[1], wires=w)  # <--- decomposition is used
             return qml.expval(qml.PauliX(w))
 
         def cost_fn(params):
@@ -723,7 +733,10 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.qubit.tf only supports the tf interface when diff_method='backprop'"):
+        with pytest.raises(
+            ValueError,
+            match="Device default.qubit.tf only supports the tf interface when diff_method='backprop'",
+        ):
             res = cost_raising_error(params)
 
     def test_error_classical_diff_autograd(self, tol):
@@ -745,5 +758,8 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.qubit.tf only supports the tf interface when diff_method='backprop'"):
+        with pytest.raises(
+            ValueError,
+            match="Device default.qubit.tf only supports the tf interface when diff_method='backprop'",
+        ):
             res = cost_raising_error(params)
