@@ -137,7 +137,7 @@ class RotoselectOptimizer:
             x (Union[Sequence[float], float]): sequence containing the initial values of the
                 variables to be optimized over or a single float with the initial value
             generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
-                operators to be used in the circuit and optimized over.
+                operators to be used in the circuit and optimized over
             d (int): the position in the input sequence ``x`` containing the value to be optimized
 
         Returns:
