@@ -99,10 +99,10 @@ class RotoselectOptimizer:
             objective_fn (function): The objective function for optimization. It must have the
                 signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
                 and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
-            generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
-                operators to be used in the circuit and optimized over.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+            generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over
 
         Returns:
             array: The new variable values :math:`x^{(t+1)}` as well as the new generators.
@@ -134,11 +134,11 @@ class RotoselectOptimizer:
             objective_fn (function): The objective function for optimization. It must have the
                 signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
                 and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
-            generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+            generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
                 operators to be used in the circuit and optimized over.
-            d (int): The position in the input sequence ``x`` containing the value to be optimized.
+            d (int): the position in the input sequence ``x`` containing the value to be optimized
 
         Returns:
             tuple: Tuple containing the parameter value and generator that, at position ``d`` in
@@ -172,14 +172,14 @@ class RotoselectOptimizer:
             objective_fn (function): The objective function for optimization. It must have the
                 signature ``objective_fn(x, generators=None)`` with a sequence of the values ``x``
                 and a list of the gates ``generators`` as inputs, returning a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
-            generators (list[~.Operation]): List containing the initial ``pennylane.ops.qubit``
-                operators to be used in the circuit and optimized over.
-            d (int): The position in the input sequence ``x`` containing the value to be optimized.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized overs or a single float with the initial value
+            generators (list[~.Operation]): list containing the initial ``pennylane.ops.qubit``
+                operators to be used in the circuit and optimized over
+            d (int): the position in the input sequence ``x`` containing the value to be optimized
 
         Returns:
-            array: The input sequence ``x`` with the value at position ``d`` optimized.
+            array: the input sequence ``x`` with the value at position ``d`` optimized
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):

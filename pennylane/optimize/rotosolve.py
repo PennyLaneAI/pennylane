@@ -83,11 +83,11 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
 
         Returns:
-            array: The new variable values :math:`x^{(t+1)}`.
+            array: the new variable values :math:`x^{(t+1)}`
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
@@ -108,12 +108,12 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
-            d (int): The position in the input sequence ``x`` containing the value to be optimized.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+            d (int): the position in the input sequence ``x`` containing the value to be optimized
 
         Returns:
-            array: The input sequence ``x`` with the value at position ``d`` optimized.
+            array: the input sequence ``x`` with the value at position ``d`` optimized
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):
