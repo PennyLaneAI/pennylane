@@ -45,7 +45,7 @@ class RotosolveOptimizer:
 
     >>> opt = qml.optimize.RotosolveOptimizer()
     >>> x = [0.3, 0.7]
-    >>> n_steps = 1000
+    >>> n_steps = 10
 
     Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
 
@@ -55,7 +55,7 @@ class RotosolveOptimizer:
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=1)
     ...     qml.CNOT(wires=[0, 1])
-    ...     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
+    ...     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
     Define a cost function (that takes a list of values as input and return a single value) based
     on the above circuit.
@@ -66,9 +66,9 @@ class RotosolveOptimizer:
 
     Run the optimization step-by-step for ``n_steps`` steps.
 
-    >>> cost_rotosel = []
+    >>> cost_rotosolve = []
     >>> for _ in range(n_steps):
-    ...     cost_rotosel.append(cost(x))
+    ...     cost_rotosolve.append(cost(x))
     ...     x = opt.step(cost, x)
 
     The optimized values for x should now be stored in ``x`` and steps-vs-cost can be seen by

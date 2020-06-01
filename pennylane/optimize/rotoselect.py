@@ -58,7 +58,7 @@ class RotoselectOptimizer:
     >>> opt = qml.optimize.RotoselectOptimizer()
     >>> x = [0.3, 0.7]
     >>> generators = [qml.RX, qml.RY]
-    >>> n_steps = 1000
+    >>> n_steps = 10
 
     Set up the PennyLane circuit using the ``default.qubit`` simulator device.
 
@@ -68,7 +68,7 @@ class RotoselectOptimizer:
     ...     generators[0](params[0], wires=0)
     ...     generators[1](params[1], wires=1)
     ...     qml.CNOT(wires=[0, 1])
-    ...     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
+    ...     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
     Define a cost function based on the above circuit.
 
