@@ -25,6 +25,13 @@ import tensorflow as tf
 
 from tensorflow import Variable  # pylint: disable=unused-import,ungrouped-imports
 
+try:
+    from tensorflow.python.eager.tape import should_record_backprop
+except ImportError:
+    from tensorflow.python.eager.tape import should_record as should_record_backprop
+
+from pennylane.utils import _flatten
+
 
 def unflatten_tf(flat, model):
     """Restores an arbitrary nested structure to a flattened TF tensor.
@@ -98,10 +105,24 @@ def to_tf(qnode, dtype=None):
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         func = qnode.func
+        num_variables = property(lambda self: qnode.num_variables)
+        arg_vars = property(lambda self: qnode.arg_vars)
 
     @qnode_str
     @tf.custom_gradient
     def _TFQNode(*input_, **input_kwargs):
+        # Determine which input tensors/Variables are being recorded for backpropagation.
+        # The function should_record_backprop, documented here:
+        # https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/eager/tape.py#L163
+        # accepts lists of *tensors* (not Variables), returning True if all are being watched by one or more
+        # existing gradient tape, False if not.
+        requires_grad = [
+            should_record_backprop([tf.convert_to_tensor(i)])
+            if isinstance(i, (Variable, tf.Tensor))
+            else False
+            for i in input_
+        ]
+
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
         kwargs = {
@@ -125,9 +146,21 @@ def to_tf(qnode, dtype=None):
 
         def grad(grad_output, **tfkwargs):
             """Returns the vector-Jacobian product"""
+            diff_indices = None
+            non_diff_indices = set()
+
+            # determine the QNode variables which should be differentiated
+            for differentiable, arg_variable in zip(requires_grad, qnode.arg_vars):
+                if not differentiable:
+                    indices = [i.idx for i in _flatten(arg_variable)]
+                    non_diff_indices.update(indices)
+
+            if non_diff_indices:
+                diff_indices = set(range(qnode.num_variables)) - non_diff_indices
+
             # evaluate the Jacobian matrix of the QNode
             variables = tfkwargs.get("variables", None)
-            jacobian = qnode.jacobian(args, kwargs)
+            jacobian = qnode.jacobian(args, kwargs, wrt=diff_indices)
             jacobian = tf.constant(jacobian, dtype=dtype)
 
             # Reshape gradient output array as a 2D row-vector.
@@ -136,6 +169,14 @@ def to_tf(qnode, dtype=None):
             # Calculate the vector-Jacobian matrix product, and flatten the output.
             grad_input = tf.matmul(grad_output_row, jacobian)
             grad_input = tf.reshape(grad_input, [-1])
+
+            if non_diff_indices:
+                # TensorFlow requires we return a gradient of size (num_variables,)
+                res = np.zeros([qnode.num_variables])
+                indices = np.fromiter(diff_indices, dtype=np.int64)
+                res[indices] = grad_input
+                grad_input = tf.constant(res, dtype=dtype)
+
             grad_input_unflattened = unflatten_tf(grad_input, input_)[0]
 
             if variables is not None:
