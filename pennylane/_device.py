@@ -19,6 +19,7 @@ import abc
 
 import numpy as np
 
+from collections import Iterable
 from pennylane.operation import (
     Operation,
     Observable,
@@ -29,6 +30,7 @@ from pennylane.operation import (
     Tensor,
 )
 from pennylane.qnodes import QuantumFunctionError
+from pennylane.wires import Wires
 
 
 class DeviceError(Exception):
@@ -41,7 +43,8 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int): number of subsystems in the quantum state represented by the device.
+        wires (int or iterable): Number of subsystems represented by the device, or iterable that contains
+            unique labels for the subsystems as numbers (i.e., ``[0, 2, 3]``) or strings (``['ancilla', 'q1', 'q2']``).
             Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
@@ -53,9 +56,13 @@ class Device(abc.ABC):
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000):
-        self.num_wires = wires
-        self.shots = shots
 
+        if not isinstance(wires, Iterable):
+            # interpret wires as the number of consecutive wires
+            wires = range(wires)
+
+        self.shots = shots
+        self._register = Wires(wires)
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
@@ -126,6 +133,18 @@ class Device(abc.ABC):
         """Number of circuit evaluations/random samples used to estimate
         expectation values of observables"""
         return self._shots
+
+    @property
+    def register(self):
+        """Representation of the subsystems on this device,
+        directly or indirectly provided by the user."""
+        return self._register
+
+    @property
+    def num_wires(self):
+        """Representation of the subsystems on this device,
+        directly or indirectly provided by the user."""
+        return len(self._register)
 
     @shots.setter
     def shots(self, shots):
