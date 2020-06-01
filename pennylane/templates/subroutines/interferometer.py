@@ -174,7 +174,7 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                 else:
                     Beamsplitter(
                         theta[n], phi[n], wires=[wires[k], wires[k + 1]]
-                    ) 
+                    )
                 n += 1
 
     # apply the final local phase shifts to all modes
