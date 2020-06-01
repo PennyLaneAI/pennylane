@@ -22,7 +22,6 @@ import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
-from pennylane.plugins import DefaultQubit
 
 try:
     import tensorflow as tf
@@ -57,7 +56,64 @@ tolerance = 1e-10
 
 
 class DefaultQubitTF(QubitDevice):
-    """Default qubit device for PennyLane supporting backpropagation via TensorFlow.
+    """Experimental simulator plugin based on ``"default.qubit"``, written
+    using TensorFlow.
+
+    **Short name:** ``default.qubit.tf``
+
+    This experimental device provides a pure-state qubit simulator written using TensorFlow.
+    As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
+    be faster than the parameter-shift rule for analytic quantum gradients
+    when the number of parameters to be optimized is large.
+
+    To use this device, you will need to install TensorFlow:
+
+    .. code-block:: bash
+
+        pip install tensorflow>=2.0
+
+    **Example**
+
+    The ``default.qubit.tf`` is designed to be used with end-to-end classical backpropagation
+    (``diff_method="backprop"``) with the TensorFlow interface. This is the default method
+    of differentiation when creating a QNode with this device.
+
+    Using this method, the created QNode is a 'white-box', and is
+    tightly integrated with your TensorFlow computation:
+
+    >>> dev = qml.device("default.qubit.tf", wires=1)
+    >>> @qml.qnode(dev, interface="tf", diff_method="backprop")
+    ... def circuit(x):
+    ...     qml.RX(x[1], wires=0)
+    ...     qml.Rot(x[0], x[1], x[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> weights = tf.Variable([0.2, 0.5, 0.1])
+    >>> with tf.GradientTape() as tape:
+    ...     res = circuit(weights)
+    >>> print(tape.gradient(res, weights))
+    tf.Tensor([-2.2526717e-01 -1.0086454e+00  1.3877788e-17], shape=(3,), dtype=float32)
+
+    Autograd mode will also work when using classical backpropagation:
+
+    >>> @tf.function
+    ... def cost(weights):
+    ...     return tf.reduce_sum(circuit(weights)**3) - 1
+    >>> with tf.GradientTape() as tape:
+    ...     res = cost(weights)
+    >>> print(tape.gradient(res, weights))
+    tf.Tensor([-3.5471588e-01 -1.5882589e+00  3.4694470e-17], shape=(3,), dtype=float32)
+
+    There are a couple of things to keep in mind when using ``"backprop"`` mode:
+
+    * You must use the ``"tf"`` interface, as TensorFlow is used as the device backend.
+
+    * Only exact expectation values, variances, and probabilities are differentiable.
+      When instantiating the device with ``analytic=False``, differentiating QNode
+      output will result in ``None``.
+
+    If you wish to use a different machine-learning interface, or prefer to calculate quantum
+    gradients using the ``parameter-shift`` or ``finite-difff`` differentiation methods,
+    it is recommended to use the ``default.qubit`` device instead.
 
     Args:
         wires (int): the number of modes to initialize the device in
@@ -116,6 +172,7 @@ class DefaultQubitTF(QubitDevice):
         "RX": tf_ops.RX,
         "RY": tf_ops.RY,
         "RZ": tf_ops.RZ,
+        "Rot": tf_ops.Rot,
         "CRX": tf_ops.CRX,
         "CRY": tf_ops.CRY,
         "CRZ": tf_ops.CRZ,
@@ -124,12 +181,12 @@ class DefaultQubitTF(QubitDevice):
     _asarray = staticmethod(tf.convert_to_tensor)
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        self.analytic = analytic
-
+        # create the initial state
         state = np.zeros(2 ** wires, dtype=np.complex128)
         state[0] = 1
         state = tf.convert_to_tensor(state, dtype=C_DTYPE)
 
+        # Internally, we store the state as a tensor of dimension [2]*wires
         self._state = tf.reshape(state, [2] * wires)
         self._pre_rotated_state = self._state
 
@@ -141,9 +198,6 @@ class DefaultQubitTF(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            # number of wires on device
-            wires = operation.wires
-            par = operation.parameters
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
@@ -151,41 +205,97 @@ class DefaultQubitTF(QubitDevice):
                     "on a {} device.".format(operation.name, self.short_name)
                 )
 
-            if isinstance(operation, QubitStateVector):
-                input_state = tf.constant(par[0], dtype=C_DTYPE)
-                self.apply_state_vector(input_state, wires)
-
-            elif isinstance(operation, BasisState):
-                basis_state = par[0]
-                self.apply_basis_state(basis_state, wires)
-
-            elif isinstance(operation, DiagonalOperation):
-                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
-
-            else:
-                if operation.name in self.parametric_ops:
-                    matrix = self.parametric_ops[operation.name](*par)
-                else:
-                    matrix = operation.matrix
-
-                self._state = self.mat_vec_product(matrix, self._state, wires)
+            self._apply_operation(operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
         for operation in rotations:
-            wires = operation.wires
-            par = operation.parameters
+            self._apply_operation(operation)
 
-            if operation.name in self.parametric_ops:
-                matrix = self.parametric_ops[operation.name](*par)
-            else:
-                matrix = operation.matrix
+    def _apply_operation(self, operation):
+        """Applies operations to the internal device state.
 
-            self._state = self.mat_vec_product(matrix, self._state, wires)
+        Args:
+            operation (~.Operation): operation to apply to the device
+        """
+        if isinstance(operation, QubitStateVector):
+            self._apply_state_vector(operation.parameters[0], operation.wires)
+            return
 
-    def mat_vec_product(self, mat, vec, wires):
+        if isinstance(operation, BasisState):
+            self._apply_basis_state(operation.parameters[0], operation.wires)
+            return
+
+        if isinstance(operation, DiagonalOperation):
+            self._state = self._apply_diagonal_unitary(operation.eigvals, operation.wires)
+            return
+
+        if operation.name in self.parametric_ops:
+            matrix = self.parametric_ops[operation.name](*operation.parameters)
+        else:
+            matrix = operation.matrix
+
+        self._state = self._apply_unitary(matrix, operation.wires)
+
+    def _apply_state_vector(self, input_state, wires):
+        """Initialize the internal state vector in a specified state.
+
+        Args:
+            input_state (array[complex]): normalized input state of length
+                ``2**len(wires)``
+            wires (list[int]): list of wires where the provided state should
+                be initialized
+        """
+        if not np.isclose(tf.linalg.norm(input_state, 2), 1.0, atol=tolerance):
+            raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+        n_state_vector = input_state.shape[0]
+
+        if input_state.ndim != 1 or n_state_vector != 2 ** len(wires):
+            raise ValueError("State vector must be of length 2**wires.")
+
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
+        unravelled_indices[:, wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+        state = np.zeros_like(self._state)
+        state[ravelled_indices] = input_state
+        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+
+    def _apply_basis_state(self, state, wires):
+        """Initialize the state vector in a specified computational basis state.
+
+        Args:
+            state (array[int]): computational basis state of shape ``(wires,)``
+                consisting of 0s and 1s.
+            wires (list[int]): list of wires where the provided computational state should
+                be initialized
+        """
+        # length of basis state parameter
+        n_basis_state = len(state)
+
+        if not set(state).issubset({0, 1}):
+            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
+
+        if n_basis_state != len(wires):
+            raise ValueError("BasisState parameter and wires must be of equal length.")
+
+        # get computational basis state number
+        basis_states = 2 ** (self.num_wires - 1 - np.array(wires))
+        num = int(np.dot(state, basis_states))
+
+        state = np.zeros_like(self._state)
+        state[num] = 1.0
+        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+
+    def _apply_unitary(self, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
@@ -193,7 +303,6 @@ class DefaultQubitTF(QubitDevice):
 
         Args:
             mat (tf.Tensor): matrix to multiply
-            vec (tf.Tensor): state tensor to multiply
             wires (Sequence[int]): target subsystems
 
         Returns:
@@ -226,16 +335,15 @@ class DefaultQubitTF(QubitDevice):
             new_state_indices=new_state_indices,
         )
 
-        return tf.einsum(einsum_indices, mat, vec)
+        return tf.einsum(einsum_indices, mat, self._state)
 
-    def vec_vec_product(self, phases, vec, wires):
+    def _apply_diagonal_unitary(self, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
 
         Args:
             phases (tf.Tensor): vector to multiply
-            vec (tf.Tensor): state tensor to multiply
             wires (Sequence[int]): target subsystems
 
         Returns:
@@ -251,65 +359,11 @@ class DefaultQubitTF(QubitDevice):
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        return tf.einsum(einsum_indices, phases, vec)
+        return tf.einsum(einsum_indices, phases, self._state)
 
     @property
     def state(self):
         return tf.reshape(self._pre_rotated_state, [-1])
-
-    def apply_state_vector(self, input_state, wires):
-        """Initialize the internal state vector in a specified state.
-        Args:
-            input_state (array[complex]): normalized input state of length
-                ``2**len(wires)``
-            wires (list[int]): list of wires where the provided state should
-                be initialized
-        """
-        if not np.isclose(tf.linalg.norm(input_state, 2), 1.0, atol=tolerance):
-            raise ValueError("Sum of amplitudes-squared does not equal one.")
-
-        n_state_vector = input_state.shape[0]
-
-        if input_state.ndim != 1 or n_state_vector != 2 ** len(wires):
-            raise ValueError("State vector must be of length 2**wires.")
-
-        # generate basis states on subset of qubits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
-
-        # get basis states to alter on full set of qubits
-        unravelled_indices = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
-        unravelled_indices[:, wires] = basis_states
-
-        # get indices for which the state is changed to input state vector elements
-        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
-        state = np.zeros_like(self._state)
-        state[ravelled_indices] = input_state
-        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
-
-    def apply_basis_state(self, state, wires):
-        """Initialize the state vector in a specified computational basis state.
-        Args:
-            state (array[int]): computational basis state of shape ``(wires,)``
-                consisting of 0s and 1s.
-            wires (list[int]): list of wires where the provided computational state should
-                be initialized
-        """
-        # length of basis state parameter
-        n_basis_state = len(state)
-
-        if not set(state).issubset({0, 1}):
-            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
-
-        if n_basis_state != len(wires):
-            raise ValueError("BasisState parameter and wires must be of equal length.")
-
-        # get computational basis state number
-        basis_states = 2 ** (self.num_wires - 1 - np.array(wires))
-        num = int(np.dot(state, basis_states))
-
-        state = np.zeros_like(self._state)
-        state[num] = 1.0
-        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
 
     def reset(self):
         """Reset the device"""
@@ -363,16 +417,18 @@ class DefaultQubitTF(QubitDevice):
             prob = self.probability(wires=wires)
             return tf.tensordot(eigvals, prob, axes=1)
 
-        super().expval(observable)
+        return super().expval(observable)
 
     def var(self, observable):
         wires = observable.wires
 
         if self.analytic:
             # exact variance value
-            eigvals = observable.eigvals
+            eigvals = tf.convert_to_tensor(observable.eigvals, dtype=R_DTYPE)
             prob = self.probability(wires=wires)
-            return tf.math.real((eigvals ** 2) @ prob - (eigvals @ prob) ** 2)
+            return (
+                tf.tensordot(eigvals ** 2, prob, axes=1) - tf.tensordot(eigvals, prob, axes=1) ** 2
+            )
 
         # estimate the variance
-        super().var(observable)
+        return super().var(observable)

@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Utility functions and numerical implementations of operations for
-the default.tensor.tf device.
+Utility functions and numerical implementations of quantum operations TensorFlow devices.
 """
 import tensorflow as tf
 from numpy import kron
@@ -23,7 +22,7 @@ R_DTYPE = tf.float64
 
 I = tf.constant([[1, 0], [0, 1]], dtype=C_DTYPE)
 X = tf.constant([[0, 1], [1, 0]], dtype=C_DTYPE)
-Y = tf.constant([[0j, 1j], [-1j, 0j]], dtype=C_DTYPE)
+Y = tf.constant([[0j, -1j], [1j, 0j]], dtype=C_DTYPE)
 Z = tf.constant([[1, 0], [0, -1]], dtype=C_DTYPE)
 
 II = tf.eye(4, dtype=C_DTYPE)
@@ -99,7 +98,7 @@ def Rot(a, b, c):
     Returns:
         tf.Tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
-    return Rotz(c) @ Roty(b) @ Rotz(a)
+    return RZ(c) @ RY(b) @ RZ(a)
 
 
 def CRX(theta):
@@ -165,5 +164,4 @@ def CRot(a, b, c):
         tf.Tensor[complex]: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
-    return CRotz(c) @ (CRoty(b) @ CRotz(a))
-
+    return CRZ(c) @ (CRY(b) @ CRZ(a))
