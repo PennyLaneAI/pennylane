@@ -720,7 +720,7 @@ class TestUCCSDUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == exp_wires
+            assert res_wires == qml.wires.Wires(range(0, 6))
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
