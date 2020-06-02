@@ -110,14 +110,18 @@ class DefaultQubitTF(QubitDevice):
 
     * Only exact expectation values, variances, and probabilities are differentiable.
       When instantiating the device with ``analytic=False``, differentiating QNode
-      output will result in ``None``.
+      outputs will result in ``None``.
+
 
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
-    gradients using the ``parameter-shift`` or ``finite-difff`` differentiation methods,
-    it is recommended to use the ``default.qubit`` device instead.
+    gradients using the ``parameter-shift`` or ``finite-diff`` differentiation methods,
+
+    consider using the ``default.qubit`` device instead.
+
 
     Args:
-        wires (int): the number of modes to initialize the device in
+        wires (int): the number of wires to initialize the device with
+
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, then the number of shots is ignored
@@ -247,7 +251,7 @@ class DefaultQubitTF(QubitDevice):
         self._state = self._apply_unitary(matrix, operation.wires)
 
     def _apply_state_vector(self, input_state, wires):
-        """Initialize the internal state vector in a specified state.
+        """Set the internal state vector to a specified state.
 
         Args:
             input_state (array[complex]): normalized input state of length
