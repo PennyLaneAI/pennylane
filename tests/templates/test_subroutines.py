@@ -369,21 +369,22 @@ class TestSingleExcitationUnitary:
         with qml.utils.OperationRecorder() as rec:
             SingleExcitationUnitary(weight, wires=ph)
 
-        idx = ref_gates[0][0]
+        assert len(rec.queue) == sqg + cnots            
 
-        exp_gate = ref_gates[0][1]
-        res_gate = rec.queue[idx]
+        for gate in ref_gates:
+            idx = gate[0]
 
-        exp_wires = ref_gates[0][2]
-        res_wires = rec.queue[idx]._wires
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
 
-        exp_weight = ref_gates[0][3]
-        res_weight = rec.queue[idx].parameters        
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
 
-        assert len(rec.queue) == sqg + cnots
-        assert isinstance(res_gate, exp_gate) 
-        assert res_wires == exp_wires
-        assert res_weight == exp_weight
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
@@ -559,21 +560,22 @@ class TestDoubleExcitationUnitary:
         with qml.utils.OperationRecorder() as rec:
             DoubleExcitationUnitary(weight, wires=pphh)
 
-        idx = ref_gates[0][0]
-
-        exp_gate = ref_gates[0][1]
-        res_gate = rec.queue[idx]
-
-        exp_wires = ref_gates[0][2]
-        res_wires = rec.queue[idx]._wires
-
-        exp_weight = ref_gates[0][3]
-        res_weight = rec.queue[idx].parameters        
-
         assert len(rec.queue) == sqg + cnots
-        assert isinstance(res_gate, exp_gate) 
-        assert res_wires == exp_wires
-        assert res_weight == exp_weight
+
+        for gate in ref_gates:
+            idx = gate[0]
+
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
+
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
+
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
         ("weight", "pphh", "msg_match"),
