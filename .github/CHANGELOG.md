@@ -31,11 +31,13 @@
   exponentiate the Coupled-Cluster double excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
   [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
 * Contains the new template ``SingleExcitationUnitary`` implementing the quantum circuit to
   exponentiate the Coupled-Cluster single excitation operator. This template is required to
   build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
+  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
 * A significant refactor with respect to how QNodes and interfaces mark quantum function
   arguments as differentiable, designed to improve performance and make QNodes more intuitive.
