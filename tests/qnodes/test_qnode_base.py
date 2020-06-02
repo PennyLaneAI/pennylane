@@ -1372,3 +1372,111 @@ class TestQNodeDraw:
             match="The QNode can only be drawn after its CircuitGraph has been constructed",
         ):
             circuit.draw()
+
+
+class TestTrainableArgs:
+    """Test functionality related to trainable argument setting and validation"""
+
+    def test_all_trainable(self, mock_device):
+        """Test that setting trainable_args to None treats all
+        arguments as differentiable"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args(None)
+        var_values = [1.0, 2.0, 3.0, 4.0]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [
+            Variable(0, "a"),
+            Variable(1, "b"),
+            Variable(2, "c"),
+            Variable(3, "d"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+    def test_none_trainable(self, mock_device):
+        """Test that an empty set results in no trainable arguments"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args(set())
+        var_values = [1.0, 2.0, 3.0, 4.0]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [1.0, 2.0, 3.0, 4.0]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+    def test_invalid_index_type(self, mock_device):
+        """Test floats and/or negative integers passed raise an exception"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        with pytest.raises(ValueError, match="Argument indices must be positive integers"):
+            node.set_trainable_args({-1, 2})
+
+        with pytest.raises(ValueError, match="Argument indices must be positive integers"):
+            node.set_trainable_args({0.5})
+
+    def test_invalid_index_value(self, mock_device):
+        """Test that an exception is raised if a specified trainable argument doesn't exist"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        with pytest.raises(ValueError, match=r"not available\. QNode has at most 4 arguments"):
+            node.set_trainable_args({0, 1, 5})
+
+        # QNodes with variable positional arguments turn this check off
+
+        def circuit(a, b, c, d, *args):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        assert node.func.var_pos
+        assert node.func.n_pos == 4
+
+        # The following will no longer raise an exception,
+        # since we do not know in advance how many arguments
+        # the user will evaluate the QNode with.
+        node.set_trainable_args({0, 1, 6})
+        assert node.get_trainable_args() == {0, 1, 6}
