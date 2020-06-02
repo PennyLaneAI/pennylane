@@ -1295,6 +1295,59 @@ class TestQNodeVariableMap:
         for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
             assert var == expected
 
+    def test_non_trainable_args(self, mock_device):
+        """Test that non trainable args are not converted to Variables"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args({0, 3})
+        var_values = [1.0, 2.0, 3.0, 4.0]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [
+            Variable(0, "a"),
+            var_values[1],
+            var_values[2],
+            Variable(3, "d"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+        assert not kwarg_vars
+
+    def test_numpy_scalars(self, mock_device):
+        """Test that non-differentiable NumPy scalars are correctly cast to Python numeric literals
+        during Variable creation."""
+
+        def circuit(a, b):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args({0})
+        var_values = [np.array(1.0), np.array(2.0)]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [
+            Variable(0, "a[]"),
+            var_values[1].item(),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+        assert not kwarg_vars
+
 
 class TestQNodeDraw:
     """Test functionality related to draw."""
