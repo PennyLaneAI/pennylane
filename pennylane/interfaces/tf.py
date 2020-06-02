@@ -119,6 +119,7 @@ def to_tf(qnode, dtype=None):
         # by the wrapper class.
         num_variables = property(lambda self: qnode.num_variables)
         arg_vars = property(lambda self: qnode.arg_vars)
+        par_to_grad_method = property(lambda self: qnode.par_to_grad_method)
 
     @TFQNode
     @tf.custom_gradient

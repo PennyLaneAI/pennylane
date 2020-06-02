@@ -266,6 +266,7 @@ def to_torch(qnode):
         # by the wrapper class.
         arg_vars = property(lambda self: qnode.arg_vars)
         num_variables = property(lambda self: qnode.num_variables)
+        par_to_grad_method = property(lambda self: qnode.par_to_grad_method)
 
     @TorchQNode
     def custom_apply(*args, **kwargs):

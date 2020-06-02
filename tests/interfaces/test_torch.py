@@ -785,9 +785,18 @@ class TestParameterHandlingIntegration:
         # is the correct shape
         assert res.shape == weights.shape
 
-        # check that the parameter shift was only performed for the
-        # differentiable elements of `weights`, not the data input
+        # check that the first arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {0}
+
+        # Check that the parameter shift was not performed for the
+        # non-differentiable elements of `data1` and `data2`.
+        # First, extract the variable indices that the jacobian method
+        # 'skipped' (those with grad_method="0"):
+        non_diff_var_indices = sorted([k for k, v in circuit.par_to_grad_method.items() if v == "0"])
+
+        # Check that these indices corresponds to the elements of data1 and data2
+        # within the flattenened list [weights, data1, data2]
+        assert non_diff_var_indices == [18, 19, 20, 21, 22, 23]
 
     def test_differentiable_parameter_middle(self):
         """Test that a differentiable parameter provided as the middle
@@ -821,9 +830,18 @@ class TestParameterHandlingIntegration:
         # is the correct shape
         assert res.shape == weights.shape
 
-        # check that the parameter shift was only performed for the
-        # differentiable elements of `weights`, not the data input
+        # check that the second arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {1}
+
+        # Check that the parameter shift was not performed for the
+        # non-differentiable elements of `data1` and `data2`.
+        # First, extract the variable indices that the jacobian method
+        # 'skipped' (those with grad_method="0"):
+        non_diff_var_indices = sorted([k for k, v in circuit.par_to_grad_method.items() if v == "0"])
+
+        # Check that these indices corresponds to the elements of data1 and data2
+        # within the flattenened list [data1, weights, data2]
+        assert non_diff_var_indices == [0, 1, 2, 3, 22, 23]
 
     def test_differentiable_parameter_last(self):
         """Test that a differentiable parameter used as the last
@@ -857,9 +875,19 @@ class TestParameterHandlingIntegration:
         # is the correct shape
         assert res.shape == weights.shape
 
-        # check that the parameter shift was only performed for the
-        # differentiable elements of `weights`, not the data input
+        # check that the last arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {2}
+
+        # Check that the parameter shift was not performed for the
+        # non-differentiable elements of `data1` and `data2`.
+        # First, extract the variable indices that the jacobian method
+        # 'skipped' (those with grad_method="0"):
+        non_diff_var_indices = sorted([k for k, v in circuit.par_to_grad_method.items() if v == "0"])
+
+        # Check that these indices corresponds to the elements of data1 and data2
+        # within the flattenened list [data1, weights, data2]
+        assert non_diff_var_indices == [0, 1, 2, 3, 4, 5]
+
 
     def test_multiple_differentiable_and_non_differentiable_parameters(self):
         """Test that multiple differentiable and non-differentiable parameters
