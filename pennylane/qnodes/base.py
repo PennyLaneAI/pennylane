@@ -283,9 +283,15 @@ class BaseQNode(qml.QueuingContext):
                 "The trainability of arguments on immutable QNodes cannot be modified after the first evaluation."
             )
 
-        if not arg_indices:
-            # the provided arg_indices are an empty set
+        if arg_indices is None:
+            # all arguments are differentiable
             self._trainable_args = None
+            return
+
+        if not arg_indices:
+            # The provided arg_indices are an empty serquence;
+            # no arguments are differentiable.
+            self._trainable_args = set()
             return
 
         # Perform validation

@@ -47,13 +47,13 @@ def to_autograd(qnode):
 
             This method calls the underlying :meth:`set_trainable_args` method of the QNode.
             """
-            non_trainable_args = set()
+            trainable_args = set()
 
             for idx, arg in enumerate(args):
-                if not getattr(arg, "requires_grad", True):
-                    non_trainable_args.add(idx)
+                if getattr(arg, "requires_grad", True):
+                    trainable_args.add(idx)
 
-            self.set_trainable_args(set(range(len(args))) - non_trainable_args)
+            self.set_trainable_args(trainable_args)
 
         def __call__(self, *args, **kwargs):
             # prevents autograd boxed arguments from going through to evaluate

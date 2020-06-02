@@ -482,6 +482,33 @@ class TestParameterHandlingIntegration:
     """Test that the parameter handling for differentiable/non-differentiable
     parameters works correctly."""
 
+    def test_no_differentiable_parameter(self):
+        """Test that the QNode can still be evaluated even when no parameters
+        are differentiable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = qml.numpy.array(1., requires_grad=False)
+        y = qml.numpy.array(2., requires_grad=False)
+        z = qml.numpy.array(3., requires_grad=False)
+
+        circuit(x, y, z)
+        assert circuit.get_trainable_args() == set()
+
+        grad_fn = qml.grad(circuit)
+
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            res = grad_fn(x, y, z)
+
+        assert not res
+        assert circuit.get_trainable_args() == set()
+
     def test_differentiable_parameter_first(self):
         """Test that a differentiable parameter used as the first
         argument is correctly evaluated by QNode.jacobian, and that
@@ -803,7 +830,7 @@ class TestParameterHandlingIntegration:
         # to the first parameter of circuit1
         assert circuit1.get_trainable_args() == {1, 2}
 
-    def test_non_diff_not_a_variable(self, capsys):
+    def test_non_diff_not_a_variable(self):
         """Test that an argument marked as non-differentiable
         is not wrapped as a variable."""
         dev = qml.device("default.qubit", wires=1)
@@ -813,7 +840,11 @@ class TestParameterHandlingIntegration:
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
             qml.RZ(z, wires=0)
-            print(type(x), type(y), type(z))
+
+            assert isinstance(x, qml.variable.Variable)
+            assert isinstance(y, np.ndarray)
+            assert isinstance(z, qml.variable.Variable)
+
             return qml.expval(qml.PauliZ(0))
 
         x = 1
@@ -824,22 +855,19 @@ class TestParameterHandlingIntegration:
 
         assert circuit.get_trainable_args() == {0, 2}
 
-        assert isinstance(circuit.arg_vars[0], qml.variable.Variable)
-        assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
-        assert isinstance(circuit.arg_vars[2], qml.variable.Variable)
-
         assert circuit.arg_vars[0] != x
         assert circuit.arg_vars[1] == y
         assert circuit.arg_vars[2] != z
 
-        captured = capsys.readouterr()
-        assert (
-            "<class 'pennylane.variable.Variable'> <class 'pennylane.numpy.tensor.tensor'> <class 'pennylane.variable.Variable'>"
-            in captured.out
-        )
+    a = 0.6
+    b = 0.2
+    test_data = [
+        ([0, 1], np.cos(2*a) * np.cos(b), [-2 * np.cos(b) * np.sin(2*a), -np.cos(2*a) * np.sin(b)]),
+        ([1, 0], -np.cos(b) * np.sin(b), [0, -np.cos(b) ** 2 + np.sin(b) ** 2]),
+    ]
 
-    @pytest.mark.parametrize("w", [[0, 1], [1, 0]])
-    def test_non_diff_wires_argument(self, w, tol):
+    @pytest.mark.parametrize("w, expected_res, expected_grad", test_data)
+    def test_non_diff_wires_argument(self, w, expected_res, expected_grad, tol):
         """Test that passing wires as a non-differentiable positional
         argument works correctly."""
         dev = qml.device("default.qubit", wires=2)
@@ -851,18 +879,12 @@ class TestParameterHandlingIntegration:
             qml.RX(params[0], wires=wires[0])
             qml.RY(params[1], wires=wires[1])
             qml.CNOT(wires=[wires[1], wires[0]])
+            qml.RX(params[0], wires=wires[0])
+            qml.RY(params[1], wires=wires[1])
             return qml.expval(qml.PauliZ(0))
 
         params = qml.numpy.array([0.6, 0.2])
         wires = qml.numpy.array(w, requires_grad=False)
-
-        a, b = params
-        if w == [0, 1]:
-            expected_res = np.cos(a) * np.cos(b)
-            expected_grad = [-np.cos(b) * np.sin(a), -np.cos(a) * np.sin(b)]
-        elif w == [1, 0]:
-            expected_res = 0
-            expected_grad = [0, 0]
 
         res = circuit(wires, params)
 

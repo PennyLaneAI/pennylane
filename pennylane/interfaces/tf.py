@@ -77,10 +77,16 @@ def to_tf(qnode, dtype=None):
         function: the QNode as a TensorFlow function
     """
 
-    class qnode_str(partial):
+    class TFQNode(partial):
         """TensorFlow QNode"""
 
         # pylint: disable=too-few-public-methods
+
+        # Here, we are making use of functools.partial to dynamically add
+        # methods and attributes to the custom gradient function defined below.
+        # This allows us to provide more useful __str__ and __repr__ methods
+        # for the decorated function (so it would still look like a QNode to end-users),
+        # as well as making QNode attributes and methods available.
 
         @property
         def interface(self):
@@ -98,6 +104,7 @@ def to_tf(qnode, dtype=None):
             """REPL representation"""
             return self.__str__()
 
+        # Bind QNode methods
         print_applied = qnode.print_applied
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
@@ -105,10 +112,15 @@ def to_tf(qnode, dtype=None):
         func = qnode.func
         set_trainable_args = qnode.set_trainable_args
         get_trainable_args = qnode.get_trainable_args
+
+        # Bind QNode attributes. Note that attributes must be
+        # bound as properties; by making use of closure, we ensure
+        # that updates to the wrapped QNode attributes are reflected
+        # by the wrapper class.
         num_variables = property(lambda self: qnode.num_variables)
         arg_vars = property(lambda self: qnode.arg_vars)
 
-    @qnode_str
+    @TFQNode
     @tf.custom_gradient
     def _TFQNode(*input_, **input_kwargs):
         # Determine which input tensors/Variables are being recorded for backpropagation.
@@ -116,12 +128,12 @@ def to_tf(qnode, dtype=None):
         # https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/eager/tape.py#L163
         # accepts lists of *tensors* (not Variables), returning True if all are being watched by one or more
         # existing gradient tape, False if not.
-        requires_grad = [
-            should_record_backprop([tf.convert_to_tensor(i)])
+        trainable_args = {
+            idx
+            for idx, i in enumerate(input_)
             if isinstance(i, (Variable, tf.Tensor))
-            else False
-            for i in input_
-        ]
+            and should_record_backprop([tf.convert_to_tensor(i)])
+        }
 
         # detach all input Tensors, convert to NumPy array
         args = [i.numpy() if isinstance(i, (Variable, tf.Tensor)) else i for i in input_]
@@ -138,7 +150,7 @@ def to_tf(qnode, dtype=None):
         }
 
         # evaluate the QNode
-        qnode.set_trainable_args({i for i, val in enumerate(requires_grad) if val})
+        qnode.set_trainable_args(trainable_args)
         res = qnode(*args, **kwargs)
 
         if not isinstance(res, np.ndarray):
@@ -149,7 +161,7 @@ def to_tf(qnode, dtype=None):
             """Returns the vector-Jacobian product"""
             # evaluate the Jacobian matrix of the QNode
             variables = tfkwargs.get("variables", None)
-            qnode.set_trainable_args({i for i, val in enumerate(requires_grad) if val})
+            qnode.set_trainable_args(trainable_args)
             jacobian = qnode.jacobian(args, kwargs)
             jacobian = tf.constant(jacobian, dtype=dtype)
 
@@ -162,11 +174,10 @@ def to_tf(qnode, dtype=None):
 
             grad_input_unflattened = unflatten_tf(grad_input, input_)[0]
 
-            for idx, requires in enumerate(requires_grad):
+            for idx in set(range(len(args))) - trainable_args:
                 # If a particular input argument is non-differentiable,
                 # replace the corresponding position in the gradient with None.
-                if not requires:
-                    grad_input_unflattened[idx] = None
+                grad_input_unflattened[idx] = None
 
             if variables is not None:
                 return grad_input_unflattened, variables

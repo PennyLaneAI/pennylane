@@ -157,13 +157,13 @@ def to_torch(qnode):
 
             This method calls the underlying :meth:`set_trainable_args` method of the QNode.
             """
-            non_trainable_args = set()
+            trainable_args = set()
 
             for idx, arg in enumerate(args):
-                if not getattr(arg, "requires_grad", False):
-                    non_trainable_args.add(idx)
+                if getattr(arg, "requires_grad", False):
+                    trainable_args.add(idx)
 
-            qnode.set_trainable_args(set(range(len(args))) - non_trainable_args)
+            qnode.set_trainable_args(trainable_args)
 
         @staticmethod
         def forward(ctx, input_kwargs, *input_):
@@ -224,10 +224,16 @@ def to_torch(qnode):
 
             return (None,) + tuple(grad_input)
 
-    class qnode_str(partial):
+    class TorchQNode(partial):
         """Torch QNode"""
 
         # pylint: disable=too-few-public-methods
+
+        # Here, we are making use of functools.partial to dynamically add
+        # methods and attributes to the custom gradient method defined below.
+        # This allows us to provide more useful __str__ and __repr__ methods
+        # for the decorated function (so it would still look like a QNode to end-users),
+        # as well as making QNode attributes and methods available.
 
         @property
         def interface(self):
@@ -245,6 +251,7 @@ def to_torch(qnode):
             """REPL representation"""
             return self.__str__()
 
+        # Bind QNode methods
         print_applied = qnode.print_applied
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
@@ -252,10 +259,15 @@ def to_torch(qnode):
         func = qnode.func
         set_trainable_args = qnode.set_trainable_args
         get_trainable_args = qnode.get_trainable_args
+
+        # Bind QNode attributes. Note that attributes must be
+        # bound as properties; by making use of closure, we ensure
+        # that updates to the wrapped QNode attributes are reflected
+        # by the wrapper class.
         arg_vars = property(lambda self: qnode.arg_vars)
         num_variables = property(lambda self: qnode.num_variables)
 
-    @qnode_str
+    @TorchQNode
     def custom_apply(*args, **kwargs):
         """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""
 

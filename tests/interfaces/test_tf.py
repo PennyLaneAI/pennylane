@@ -939,6 +939,8 @@ class TestParameterHandlingIntegration:
         with tf.GradientTape() as tape:
             loss = circuit(weights)
 
+        assert circuit.get_trainable_args() == set()
+
         grad = tape.gradient(loss, weights)
         assert grad is None
 
@@ -1114,7 +1116,7 @@ class TestParameterHandlingIntegration:
         # for the first parameter of circuit1
         assert circuit1.get_trainable_args() == {1, 2}
 
-    def test_non_diff_not_a_variable(self, capsys):
+    def test_non_diff_not_a_variable(self):
         """Test that an argument marked as non-differentiable
         is not wrapped as a variable."""
         dev = qml.device("default.qubit", wires=1)
@@ -1124,7 +1126,11 @@ class TestParameterHandlingIntegration:
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
             qml.RZ(z, wires=0)
-            print(type(x), type(y), type(z))
+
+            assert isinstance(x, qml.variable.Variable)
+            assert isinstance(y, np.float32)
+            assert isinstance(z, qml.variable.Variable)
+
             return qml.expval(qml.PauliZ(0))
 
         x = tf.Variable(1.)
@@ -1136,26 +1142,23 @@ class TestParameterHandlingIntegration:
 
         assert circuit.get_trainable_args() == {0, 2}
 
-        assert isinstance(circuit.arg_vars[0], qml.variable.Variable)
-        assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
-        assert isinstance(circuit.arg_vars[2], qml.variable.Variable)
-
         # the calls to `numpy()` are required so as TF 1.15 does not
         # automatically cast the TensorFlow tensors on comparison.
         assert circuit.arg_vars[0].val == x.numpy()
         assert circuit.arg_vars[1] == y.numpy()
         assert circuit.arg_vars[2].val == z.numpy()
 
-        captured = capsys.readouterr()
-        assert (
-            "<class 'pennylane.variable.Variable'> <class 'numpy.float32'> <class 'pennylane.variable.Variable'>"
-            in captured.out
-        )
+    a = 0.6
+    b = 0.2
+    test_data = [
+        ([0, 1], np.cos(2*a) * np.cos(b), [-2 * np.cos(b) * np.sin(2*a), -np.cos(2*a) * np.sin(b)]),
+        ([1, 0], -np.cos(b) * np.sin(b), [0, -np.cos(b) ** 2 + np.sin(b) ** 2]),
+    ]
 
-    @pytest.mark.parametrize("w", [[0, 1], [1, 0]])
-    def test_non_diff_wires_argument(self, w, tol):
+    @pytest.mark.parametrize("w, expected_res, expected_grad", test_data)
+    def test_non_diff_wires_argument(self, w, expected_res, expected_grad, tol):
         """Test that passing wires as a non-differentiable positional
-        argument works correctly."""
+        argument works correctly, and results in the expected QNode result and gradient."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf")
@@ -1165,17 +1168,11 @@ class TestParameterHandlingIntegration:
             qml.RX(params[0], wires=wires[0])
             qml.RY(params[1], wires=wires[1])
             qml.CNOT(wires=[wires[1], wires[0]])
+            qml.RX(params[0], wires=wires[0])
+            qml.RY(params[1], wires=wires[1])
             return qml.expval(qml.PauliZ(0))
 
         params = tf.Variable([0.6, 0.2])
-
-        a, b = params.numpy()
-        if w == [0, 1]:
-            expected_res = np.cos(a) * np.cos(b)
-            expected_grad = [-np.cos(b) * np.sin(a), -np.cos(a) * np.sin(b)]
-        elif w == [1, 0]:
-            expected_res = 0
-            expected_grad = [0, 0]
 
         with tf.GradientTape() as tape:
             res = circuit(w, params)
