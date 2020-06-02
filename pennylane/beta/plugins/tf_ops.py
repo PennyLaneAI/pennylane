@@ -44,10 +44,10 @@ def PhaseShift(phi):
         phi (float): phase shift angle
 
     Returns:
-        tf.Tensor[complex]: unitary 2x2 phase shift matrix
+        tf.Tensor[complex]: diagonal part of the phase shift matrix
     """
     phi = tf.cast(phi, dtype=C_DTYPE)
-    return ((1 + tf.exp(1j * phi)) * I + (1 - tf.exp(1j * phi)) * Z) / 2
+    return tf.convert_to_tensor([1.0, tf.exp(1j * phi)])
 
 
 def RX(theta):
@@ -83,10 +83,11 @@ def RZ(theta):
         theta (float): rotation angle
 
     Returns:
-        tf.Tensor[complex]: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
+        tf.Tensor[complex]: the diagonal part of the rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
     theta = tf.cast(theta, dtype=C_DTYPE)
-    return tf.cos(theta / 2) * I + 1j * tf.sin(-theta / 2) * Z
+    p = tf.exp(-0.5j * theta)
+    return tf.convert_to_tensor([p, tf.math.conj(p)])
 
 
 def Rot(a, b, c):
@@ -98,7 +99,7 @@ def Rot(a, b, c):
     Returns:
         tf.Tensor[complex]: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
-    return RZ(c) @ RY(b) @ RZ(a)
+    return tf.linalg.diag(RZ(c)) @ RY(b) @ tf.linalg.diag(RZ(a))
 
 
 def CRX(theta):
@@ -143,16 +144,12 @@ def CRZ(theta):
     Args:
         theta (float): rotation angle
     Returns:
-        tf.Tensor[complex]: unitary 4x4 rotation matrix
+        tf.Tensor[complex]: diagonal part of the 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R_z(\theta)`
     """
     theta = tf.cast(theta, dtype=C_DTYPE)
-    return (
-        tf.cos(theta / 4) ** 2 * II
-        - 1j * tf.sin(theta / 2) / 2 * IZ
-        + tf.sin(theta / 4) ** 2 * ZI
-        + 1j * tf.sin(theta / 2) / 2 * ZZ
-    )
+    p = tf.exp(-0.5j * theta)
+    return tf.convert_to_tensor([1.0, 1.0, p, tf.math.conj(p)])
 
 
 def CRot(a, b, c):
@@ -164,4 +161,4 @@ def CRot(a, b, c):
         tf.Tensor[complex]: unitary 4x4 rotation matrix
         :math:`|0\rangle\langle 0|\otimes \mathbb{I}+|1\rangle\langle 1|\otimes R(a,b,c)`
     """
-    return CRZ(c) @ (CRY(b) @ CRZ(a))
+    return tf.linalg.diag(CRZ(c)) @ (CRY(b) @ tf.linalg.diag(CRZ(a)))

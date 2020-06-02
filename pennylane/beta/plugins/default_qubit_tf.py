@@ -233,41 +233,39 @@ class DefaultQubitTF(QubitDevice):
             self._apply_basis_state(operation.parameters[0], operation.wires)
             return
 
-        if isinstance(operation, DiagonalOperation):
-            if operation.name in self.parametric_ops:
-                matrix = self.parametric_ops[operation.name](*operation.parameters)
-                eigvals = tf.linalg.diag_part(matrix)
-            else:
-                eigvals = operation.eigvals
-
-            self._state = self._apply_diagonal_unitary(eigvals, operation.wires)
-            return
-
+        matrix = None
         if operation.name in self.parametric_ops:
             matrix = self.parametric_ops[operation.name](*operation.parameters)
+
+        if isinstance(operation, DiagonalOperation):
+            matrix = operation.eigvals if matrix is None else matrix
+            self._apply_diagonal_unitary(matrix, operation.wires)
         else:
-            matrix = operation.matrix
+            matrix = operation.matrix if matrix is None else matrix
+            self._apply_unitary(matrix, operation.wires)
 
-        self._state = self._apply_unitary(matrix, operation.wires)
-
-    def _apply_state_vector(self, input_state, wires):
+    def _apply_state_vector(self, state, wires):
         """Set the internal state vector to a specified state.
 
         Args:
-            input_state (array[complex]): normalized input state of length
+            state (array[complex]): normalized input state of length
                 ``2**len(wires)``
             wires (list[int]): list of wires where the provided state should
                 be initialized
         """
-        input_state = tf.convert_to_tensor(input_state, dtype=C_DTYPE)
+        state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        n_state_vector = state.shape[0]
 
-        if not np.allclose(tf.norm(input_state, ord=2), 1.0, atol=tolerance):
+        if state.ndim != 1 or n_state_vector != 2 ** len(wires):
+            raise ValueError("State vector must be of length 2**wires.")
+
+        if not np.allclose(tf.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        n_state_vector = input_state.shape[0]
-
-        if input_state.ndim != 1 or n_state_vector != 2 ** len(wires):
-            raise ValueError("State vector must be of length 2**wires.")
+        if len(wires) == self.num_wires:
+            # Initialize the entire register with the state
+            self._state = tf.reshape(state, [2] * self.num_wires)
+            return
 
         # generate basis states on subset of qubits via the cartesian product
         basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
@@ -280,7 +278,7 @@ class DefaultQubitTF(QubitDevice):
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
         ravelled_indices = np.expand_dims(ravelled_indices, 1)
 
-        state = tf.scatter_nd(ravelled_indices, input_state, [2 ** self.num_wires])
+        state = tf.scatter_nd(ravelled_indices, state, [2 ** self.num_wires])
         state = tf.reshape(state, [2] * self.num_wires)
         self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
 
@@ -351,7 +349,7 @@ class DefaultQubitTF(QubitDevice):
             new_state_indices=new_state_indices,
         )
 
-        return tf.einsum(einsum_indices, mat, self._state)
+        self._state = tf.einsum(einsum_indices, mat, self._state)
 
     def _apply_diagonal_unitary(self, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
@@ -375,7 +373,7 @@ class DefaultQubitTF(QubitDevice):
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        return tf.einsum(einsum_indices, phases, self._state)
+        self._state = tf.einsum(einsum_indices, phases, self._state)
 
     @property
     def state(self):
