@@ -628,7 +628,7 @@ class TestParameterHandlingIntegration:
         assert res[0].shape == weights1.shape
         assert res[1].shape == weights2.shape
 
-        # check that the parameter shift was only performed for the
+        # check that the gradient was only computed for the
         # differentiable elements of `weights`, not the data input
         assert circuit.get_trainable_args() == {1, 3}
 

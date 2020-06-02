@@ -1140,7 +1140,7 @@ class TestParameterHandlingIntegration:
         assert not isinstance(circuit.arg_vars[1], qml.variable.Variable)
         assert isinstance(circuit.arg_vars[2], qml.variable.Variable)
 
-        # the calls to `numpy()` are required so as TF 1.15 does not
+        # the calls to `numpy()` are required so that TF 1.15 does not
         # automatically cast the TensorFlow tensors on comparison.
         assert circuit.arg_vars[0].val == x.numpy()
         assert circuit.arg_vars[1] == y.numpy()

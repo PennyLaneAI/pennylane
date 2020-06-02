@@ -297,11 +297,8 @@ class BaseQNode(qml.QueuingContext):
                 f"Argument index not available. QNode has at most {self.func.n_pos} arguments."
             )
 
-        if min(arg_indices) < 0:
-            raise ValueError("Argument indices must be positive integers")
-
-        if not all(isinstance(i, int) for i in arg_indices):
-            raise ValueError("Argument indices must be positive integers.")
+        if not all(isinstance(i, int) and i>=0 for i in arg_indices):
+                    raise ValueError("Argument indices must be positive integers.")
 
         self._trainable_args = arg_indices
 
