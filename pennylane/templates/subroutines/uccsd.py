@@ -215,6 +215,8 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
 
     ###############
 
+    wires = wires.tolist()  # TODO: Remove when ops accept wires
+
     qml.BasisState(np.flip(init_state), wires=wires)
 
     for d, i_pphh in enumerate(pphh):
