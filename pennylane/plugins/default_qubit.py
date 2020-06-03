@@ -127,18 +127,39 @@ class DefaultQubit(QubitDevice):
         """
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], operation.wires)
+            return
 
-        elif isinstance(operation, BasisState):
+        if isinstance(operation, BasisState):
             self._apply_basis_state(operation.parameters[0], operation.wires)
+            return
 
-        elif isinstance(operation, DiagonalOperation):
-            self._apply_diagonal_unitary(operation.eigvals, operation.wires)
+        matrix = self._get_unitary_matrix(operation)
 
+        if isinstance(operation, DiagonalOperation):
+            self._apply_diagonal_unitary(matrix, operation.wires)
         elif len(operation.wires) <= 2:
             # Einsum is faster for small gates
-            self._apply_unitary_einsum(operation.matrix, operation.wires)
+            self._apply_unitary_einsum(matrix, operation.wires)
         else:
-            self._apply_unitary(operation.matrix, operation.wires)
+            self._apply_unitary(matrix, operation.wires)
+
+    def _get_unitary_matrix(self, unitary):
+        """Return the matrix representing a unitary operation.
+
+        Args:
+            unitary (~.Operation): a PennyLane unitary operation
+
+        Returns:
+            tf.Tensor[complex] or array[complex]: Returns a 2D matrix representation of
+            the unitary in the computational basis, or, in the case of a diagonal unitary,
+            a 1D array representing the matrix diagonal. For non-parametric unitaries,
+            the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
+            object will be returned.
+        """
+        if isinstance(unitary, DiagonalOperation):
+            return unitary.eigvals
+
+        return unitary.matrix
 
     @property
     def state(self):
@@ -215,9 +236,9 @@ class DefaultQubit(QubitDevice):
             mat (array): matrix to multiply
             wires (Sequence[int]): target subsystems
         """
-        mat = np.reshape(mat, [2] * len(wires) * 2)
+        mat = self._cast(self._reshape(mat, [2] * len(wires) * 2), dtype=self.C_DTYPE)
         axes = (np.arange(len(wires), 2 * len(wires)), wires)
-        tdot = np.tensordot(mat, self._state, axes=axes)
+        tdot = self._tensordot(mat, self._state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
@@ -226,7 +247,7 @@ class DefaultQubit(QubitDevice):
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
         perm = list(wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        self._state = np.transpose(tdot, inv_perm)
+        self._state = self._transpose(tdot, inv_perm)
 
     def _apply_unitary_einsum(self, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.

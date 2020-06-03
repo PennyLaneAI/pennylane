@@ -154,6 +154,8 @@ class DefaultQubitTF(DefaultQubit):
     _scatter = staticmethod(tf.scatter_nd)
     _einsum = staticmethod(tf.einsum)
     _cast = staticmethod(tf.cast)
+    _transpose = staticmethod(tf.transpose)
+    _tensordot = staticmethod(tf.tensordot)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -180,24 +182,3 @@ class DefaultQubitTF(DefaultQubit):
             return unitary.eigvals
 
         return unitary.matrix
-
-    def _apply_operation(self, operation):
-        """Applies operations to the internal device state.
-
-        Args:
-            operation (~.Operation): operation to apply to the device
-        """
-        if isinstance(operation, QubitStateVector):
-            self._apply_state_vector(operation.parameters[0], operation.wires)
-            return
-
-        if isinstance(operation, BasisState):
-            self._apply_basis_state(operation.parameters[0], operation.wires)
-            return
-
-        matrix = self._get_unitary_matrix(operation)
-
-        if isinstance(operation, DiagonalOperation):
-            self._apply_diagonal_unitary(matrix, operation.wires)
-        else:
-            self._apply_unitary_einsum(matrix, operation.wires)

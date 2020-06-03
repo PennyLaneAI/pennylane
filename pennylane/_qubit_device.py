@@ -77,6 +77,8 @@ class QubitDevice(Device):
     _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
+    _transpose = staticmethod(np.transpose)
+    _tensordot = staticmethod(np.tensordot)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
