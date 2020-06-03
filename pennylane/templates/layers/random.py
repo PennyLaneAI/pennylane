@@ -91,8 +91,8 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
 
     Args:
         weights (array[float]): array of weights of shape ``(L, k)``,
-        wires (Sequence[int]): sequence of qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         ratio_imprim (float): value between 0 and 1 that determines the ratio of imprimitive to rotation gates
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
         rotations (list[pennylane.ops.Operation]): List of Pauli-X, Pauli-Y and/or Pauli-Z gates. The frequency

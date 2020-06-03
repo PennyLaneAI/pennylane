@@ -33,7 +33,7 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
 
     Args:
         weights (array[float]): array of weights of shape ``(len(wires), 3)``
-        wires (Wires): sequence of qubit indices that the template acts on.
+        wires (Wires): wires that the template acts on
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
@@ -72,8 +72,8 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     Args:
 
         weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
-        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
                                 using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`

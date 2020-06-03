@@ -35,7 +35,7 @@ def entangler(par1, par2, wires):
     Args:
          par1 (float or qml.Variable): parameter of first Pauli-Y rotation
          par2 (float or qml.Variable): parameter of second Pauli-Y rotation
-         wires (list): two wire indices that unitary acts on
+         wires (Wires): two wire indices that unitary acts on
     """
 
     CZ(wires=wires)
@@ -80,8 +80,8 @@ def SimplifiedTwoDesign(initial_layer_weights, weights, wires):
     Args:
         initial_layer_weights (array[float]): array of weights for the initial rotation block, shape ``(M,)``
         weights (array[float]): array of rotation angles for the layers, shape ``(L, M-1, 2)``
-        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
 
     Raises:
         ValueError: if inputs do not have the correct format

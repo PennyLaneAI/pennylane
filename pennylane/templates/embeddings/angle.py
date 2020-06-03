@@ -48,8 +48,8 @@ def AngleEmbedding(features, wires, rotation="X"):
     Args:
         features (array): input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         rotation (str): Type of rotations used
 
     Raises:
