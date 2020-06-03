@@ -205,8 +205,8 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                # retrieve indices of subsystems that the operation acts on
-                subsystems = self.translate(operation.wires)
+                # map wires to list of indices of the subsystems on the device which they address
+                subsystems = self.wire_map(operation.wires)
                 self.apply(operation.name, subsystems, operation.parameters)
 
             self.post_apply()
@@ -218,10 +218,10 @@ class Device(abc.ABC):
                 # translate wires of
                 if isinstance(obs, Tensor):
                     # if obs is a tensor observable, retrieve list of indices of subsystems
-                    subsystems = [self.translate(ob.wires) for ob in obs.obs]
+                    subsystems = [self.wire_map(ob.wires) for ob in obs.obs]
                 else:
-                    # retrieve indices of subsystems that the observable acts on
-                    subsystems = self.translate(obs.wires)
+                    # map wires to list of indices of the subsystems on the device which they address
+                    subsystems = self.wire_map(obs.wires)
 
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, subsystems, obs.parameters))
@@ -469,7 +469,7 @@ class Device(abc.ABC):
                         )
                     )
 
-    def translate(self, wires):
+    def wire_map(self, wires):
         """Translates from an operation's wires to the corresponding indices of the subsystems in the register.
 
         Args:

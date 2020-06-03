@@ -26,6 +26,7 @@ import numpy as np
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
+from pennylane.wires import Wires
 
 
 class QubitDevice(Device):
@@ -227,7 +228,7 @@ class QubitDevice(Device):
         """
         wires = []
         for op in operators:
-            wires.extend(op.wires.tolist())
+            wires.extend(op.wires)
 
         return set(wires)
 
@@ -259,7 +260,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=self.translate(obs.wires)))
+                results.append(self.probability(wires=self.wire_map(obs.wires)))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -379,18 +380,23 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
-        # consider only the requested wires
-        wires = np.hstack(wires)
 
-        samples = self._samples[:, np.array(wires)]  # TODO: Use indices for nonconsec wires
+        wires = Wires(wires)
+        # map wires to list of indices of the subsystems on the device which they address
+        subsystems = self.wire_map(wires)
+
+        # consider only the requested wires
+        subsystems = np.hstack(subsystems)
+
+        samples = self._samples[:, np.array(subsystems)]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        unraveled_indices = [2] * len(wires)
+        unraveled_indices = [2] * len(subsystems)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
 
         # count the basis state occurrences, and construct the probability vector
         basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([2 ** len(wires)], dtype=np.float64)
+        prob = np.zeros([2 ** len(subsystems)], dtype=np.float64)
         prob[basis_states] = counts / self.shots
         return prob
 
@@ -409,12 +415,18 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
-        wires = wires or range(self.num_wires)
+
+        if wires is None:
+            subsystems = range(self.num_wires)
+        else:
+            wires = Wires(wires)
+            # map wires to list of indices of the subsystems on the device which they address
+            subsystems = self.wire_map(wires)
 
         if hasattr(self, "analytic") and self.analytic:
-            return self.analytic_probability(wires=wires)
+            return self.analytic_probability(wires=subsystems)
 
-        return self.estimate_probability(wires=wires)
+        return self.estimate_probability(wires=subsystems)
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -439,7 +451,7 @@ class QubitDevice(Device):
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
-            wires (Sequence[int]): Sequence of wires to return
+            wires (Iterable or Wires): Sequence of wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
@@ -450,10 +462,15 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)  # TODO: re-asses for nonconsecutive wires
+        wires = Wires(wires)
+
+        # map wires to list of indices of the subsystems on the device which they address
+        subsystems = self.wire_map(wires)
+
+        subsystems = np.hstack(subsystems)
 
         # determine which wires are to be summed over
-        inactive_wires = list(set(range(self.num_wires)) - set(wires))
+        inactive_wires = list(set(range(self.num_wires)) - set(subsystems))
 
         # reshape the probability so that each axis corresponds to a wire
         prob = prob.reshape([2] * self.num_wires)
@@ -464,32 +481,35 @@ class QubitDevice(Device):
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(subsystems))))
         perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
+            basis_states[:, np.argsort(np.argsort(subsystems))].T, [2] * len(subsystems)
         )
         return prob[perm]
 
     def expval(self, observable):
 
-        wires = self.translate(observable.wires)
+        # map wires to list of indices of the subsystems on the device which they address
+        subsystems = self.wire_map(observable.wires)
 
         if self.analytic:
             # exact expectation value
             eigvals = observable.eigvals
-            prob = self.probability(wires=wires)
+            prob = self.probability(wires=subsystems)
             return (eigvals @ prob).real
 
         # estimate the ev
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = self.translate(observable.wires)
+
+        # map wires to list of indices of the subsystems on the device which they address
+        subsystems = self.wire_map(observable.wires)
 
         if self.analytic:
             # exact variance value
             eigvals = observable.eigvals
-            prob = self.probability(wires=wires)
+            prob = self.probability(wires=subsystems)
             return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
 
         # estimate the variance
@@ -497,17 +517,18 @@ class QubitDevice(Device):
 
     def sample(self, observable):
 
-        wires = self.translate(observable.wires)
+        # map wires to list of indices of the subsystems on the device which they address
+        subsystems = self.wire_map(observable.wires)
 
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, wires[0]]
+            return 1 - 2 * self._samples[:, subsystems[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        wires = np.hstack(wires)
+        wires = np.hstack(subsystems)
         samples = self._samples[:, np.array(wires)]
         unraveled_indices = [2] * len(wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
