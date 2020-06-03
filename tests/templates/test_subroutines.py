@@ -389,13 +389,9 @@ class TestSingleExcitationUnitary:
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
         [
-            ( 0.2      , [0]         , "'wires' must be of shape"),
-            ( 0.2      , []          , "'wires' must be of shape"),
+            ( 0.2      , [0]         , "expected 2 wires"),
+            ( 0.2      , []          , "expected 2 wires"),
             ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
-            ( 0.2      , None        , "wires must be a positive integer"),
-            ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
-            ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
-            ( 0.2      , [3, 3]      , "wires_1 must be greater than wires_0"),
             ( 0.2      , [3, 1]      , "wires_1 must be greater than wires_0")
         ]
     )
@@ -580,18 +576,13 @@ class TestDoubleExcitationUnitary:
     @pytest.mark.parametrize(
         ("weight", "pphh", "msg_match"),
         [
-            ( 0.2      , [0]                  , "'wires' must be of shape"),
-            ( 0.2      , [0, 1]               , "'wires' must be of shape"),
-            ( 0.2      , [0, 1, 2, 3, 4]      , "'wires' must be of shape"),
-            ( 0.2      , []                   , "'wires' must be of shape"),
+            ( 0.2      , [0]                  , "expected 4 wires"),
+            ( 0.2      , [0, 1]               , "expected 4 wires"),
+            ( 0.2      , [0, 1, 2, 3, 4]      , "expected 4 wires"),
+            ( 0.2      , []                   , "expected 4 wires"),
             ([0.2, 1.1], [0, 2, 4, 6]         , "'weight' must be of shape"),
-            ( 0.2      , None                 , "wires must be a positive integer"),
-            ( 0.2      , ["a", "b", "c", "d"] , "wires must be a positive integer"),
-            ( 0.2      , [1.1, 5.2, 6, 7]     , "wires must be a positive integer"),
             ( 0.2      , [1, 0, 6, 3]         , "wires_3 > wires_2 > wires_1 > wires_0"),
-            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0"),
-            ( 0.2      , [0, 1, 3, 3]         , "wires_1 > wires_0 and wires_3 > wires_2"),
-            ( 0.2      , [0, 0, 2, 2]         , "wires_1 > wires_0 and wires_3 > wires_2"),
+            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0")
         ]
     )
     def test_double_excitation_unitary_exceptions(self, weight, pphh, msg_match):
@@ -599,8 +590,8 @@ class TestDoubleExcitationUnitary:
         ``pphh`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=10)
 
-        def circuit(weight=weight, wires=pphh):
-            DoubleExcitationUnitary(weight=weight, wires=pphh)
+        def circuit(weight=weight, wires=None):
+            DoubleExcitationUnitary(weight=weight, wires=wires)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -646,7 +637,7 @@ class TestUCCSDUnitary:
         ("ph", "pphh", "weights", "ref_gates"),
         [
           ([[0, 2]], [], np.array([3.815]),
-             [ [0, qml.BasisState, range(0,6), [np.array([0, 0, 0, 0, 1, 1])]],
+             [ [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
                [1, qml.RX,         [0],        [-np.pi/2]],
                [5, qml.RZ,         [2],        [1.9075]],
                [6, qml.CNOT,       [1, 2],     []] ]),

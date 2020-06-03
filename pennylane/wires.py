@@ -174,15 +174,22 @@ class Wires(Sequence):
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([2, 3, 0])
         <Wires = [1, 5, 4]>
-
         >>> wires.subset(1)
         <Wires = [0]>
 
+        If ``periodic_boundary`` is True, the modulo of the number of wires of an index is used instead of an index,
+        so that  ``wires.subset(i) == wires.subset(i % n_wires)`` where ``n_wires`` is the number of wires of this
+        object.
+
+        For example:
+
+        >>> wires = Wires([4, 0, 1, 5, 6])
+        >>> wires.subset([5, 1, 7])
+        <Wires = [4, 0, 1]>
+
         Args:
             indices (List[int] or int): indices or index of the wires we want to select
-            periodic_boundary (bool): Whether the modulo of the number of wires of an index is used instead of an index.
-                Implements periodic boundary conditions in the indexing,
-                so that for example ``wires.subset(len(wires)) == wires.subset(0)``.
+            periodic_boundary (bool): controls periodic boundary conditions in the indexing
 
         Returns:
             Wires: subset of wires
