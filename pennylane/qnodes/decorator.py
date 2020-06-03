@@ -213,7 +213,9 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     qnode_class = _get_qnode_class(device, interface, diff_method)
     qnode_ = qnode_class(func, device, mutable=mutable, **kwargs)
 
-    if not isinstance(qnode_, PassthruQNode):
+    if isinstance(qnode_, PassthruQNode):
+        qnode_.interface = interface
+    else:
         # PassthruQNode's do not support interface conversions
         qnode_ = _apply_interface(qnode_, interface, diff_method)
 

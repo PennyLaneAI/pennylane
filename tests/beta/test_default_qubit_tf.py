@@ -1189,3 +1189,24 @@ class TestSamplesNonAnalytic:
 
         grad = tape.gradient(res, [a, b])
         assert grad == [None, None]
+
+    def test_qnode_collection_integration(self):
+        """Test that a PassthruQNode default.qubit.tf works with QNodeCollections."""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
+
+        weights = tf.Variable(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+
+        @tf.function
+        def cost(weights):
+            return tf.reduce_sum(qnodes(weights))
+
+        with tf.GradientTape() as tape:
+            res = qnodes(weights)
+
+        grad = tape.gradient(res, weights)
+
+        assert isinstance(grad, tf.Tensor)
+        assert grad.shape == weights.shape
