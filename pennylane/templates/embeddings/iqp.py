@@ -26,7 +26,7 @@ from pennylane.templates.utils import (
     get_shape,
     check_no_variable,
 )
-from pennylane.wires import Wires, WireError
+from pennylane.wires import Wires
 
 
 @template
