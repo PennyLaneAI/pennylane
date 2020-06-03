@@ -380,7 +380,7 @@ class TestSingleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == exp_wires
+            assert res_wires == qml.wires.Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -567,7 +567,7 @@ class TestDoubleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == exp_wires
+            assert res_wires == qml.wires.Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -619,7 +619,7 @@ class TestDoubleExcitationUnitary:
             qml.BasisState(init_state, wires=wires)
             DoubleExcitationUnitary(weight, wires=pphh)
 
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(weight)
         assert np.allclose(res, np.array(expected), atol=tol)
@@ -713,7 +713,7 @@ class TestUCCSDUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == qml.wires.Wires(range(0, 6))
+            assert res_wires == qml.wires.Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -804,7 +804,7 @@ class TestUCCSDUnitary:
         ("weights", "ph", "pphh", "expected"),
         [
             (np.array([3.90575761, -1.89772083, -1.36689032]),
-             [[0, 2], [1, 3]], [0, 1, 2, 3],
+             [[0, 2], [1, 3]], [[0, 1, 2, 3]],
              [-0.14619406, -0.06502792, 0.14619406, 0.06502792])
         ]
     )
@@ -821,9 +821,8 @@ class TestUCCSDUnitary:
 
         @qml.qnode(dev)
         def circuit(w_ph_0, w_ph_1, w_pphh):
-        	UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
-
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+            UCCSD([w_ph_0, w_ph_1, w_pphh], wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
+            return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
         res = circuit(w_ph_0, w_ph_1, w_pphh)
         assert np.allclose(res, np.array(expected), atol=tol)
