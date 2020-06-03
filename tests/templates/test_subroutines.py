@@ -369,32 +369,29 @@ class TestSingleExcitationUnitary:
         with qml.utils.OperationRecorder() as rec:
             SingleExcitationUnitary(weight, wires=ph)
 
-        idx = ref_gates[0][0]
+        assert len(rec.queue) == sqg + cnots            
 
-        exp_gate = ref_gates[0][1]
-        res_gate = rec.queue[idx]
+        for gate in ref_gates:
+            idx = gate[0]
 
-        exp_wires = ref_gates[0][2]
-        res_wires = rec.queue[idx]._wires
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
 
-        exp_weight = ref_gates[0][3]
-        res_weight = rec.queue[idx].parameters        
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
 
-        assert len(rec.queue) == sqg + cnots
-        assert isinstance(res_gate, exp_gate) 
-        assert res_wires == qml.wires.Wires(exp_wires)
-        assert res_weight == exp_weight
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
         [
-            ( 0.2      , [0]         , "'wires' must be of shape"),
-            ( 0.2      , []          , "'wires' must be of shape"),
+            ( 0.2      , [0]         , "expected 2 wires"),
+            ( 0.2      , []          , "expected 2 wires"),
             ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
-            ( 0.2      , None        , "wires must be a positive integer"),
-            ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
-            ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
-            ( 0.2      , [3, 3]      , "wires_1 must be greater than wires_0"),
             ( 0.2      , [3, 1]      , "wires_1 must be greater than wires_0")
         ]
     )
@@ -559,37 +556,33 @@ class TestDoubleExcitationUnitary:
         with qml.utils.OperationRecorder() as rec:
             DoubleExcitationUnitary(weight, wires=pphh)
 
-        idx = ref_gates[0][0]
-
-        exp_gate = ref_gates[0][1]
-        res_gate = rec.queue[idx]
-
-        exp_wires = ref_gates[0][2]
-        res_wires = rec.queue[idx]._wires
-
-        exp_weight = ref_gates[0][3]
-        res_weight = rec.queue[idx].parameters        
-
         assert len(rec.queue) == sqg + cnots
-        assert isinstance(res_gate, exp_gate) 
-        assert res_wires == qml.wires.Wires(exp_wires)
-        assert res_weight == exp_weight
+
+        for gate in ref_gates:
+            idx = gate[0]
+
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
+
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
+
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
         ("weight", "pphh", "msg_match"),
         [
-            ( 0.2      , [0]                  , "'wires' must be of shape"),
-            ( 0.2      , [0, 1]               , "'wires' must be of shape"),
-            ( 0.2      , [0, 1, 2, 3, 4]      , "'wires' must be of shape"),
-            ( 0.2      , []                   , "'wires' must be of shape"),
+            ( 0.2      , [0]                  , "expected 4 wires"),
+            ( 0.2      , [0, 1]               , "expected 4 wires"),
+            ( 0.2      , [0, 1, 2, 3, 4]      , "expected 4 wires"),
+            ( 0.2      , []                   , "expected 4 wires"),
             ([0.2, 1.1], [0, 2, 4, 6]         , "'weight' must be of shape"),
-            ( 0.2      , None                 , "wires must be a positive integer"),
-            ( 0.2      , ["a", "b", "c", "d"] , "wires must be a positive integer"),
-            ( 0.2      , [1.1, 5.2, 6, 7]     , "wires must be a positive integer"),
             ( 0.2      , [1, 0, 6, 3]         , "wires_3 > wires_2 > wires_1 > wires_0"),
-            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0"),
-            ( 0.2      , [0, 1, 3, 3]         , "wires_1 > wires_0 and wires_3 > wires_2"),
-            ( 0.2      , [0, 0, 2, 2]         , "wires_1 > wires_0 and wires_3 > wires_2"),
+            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0")
         ]
     )
     def test_double_excitation_unitary_exceptions(self, weight, pphh, msg_match):
@@ -597,8 +590,8 @@ class TestDoubleExcitationUnitary:
         ``pphh`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=10)
 
-        def circuit(weight=weight, wires=pphh):
-            DoubleExcitationUnitary(weight=weight, wires=pphh)
+        def circuit(weight=weight, wires=None):
+            DoubleExcitationUnitary(weight=weight, wires=wires)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -644,7 +637,7 @@ class TestUCCSDUnitary:
         ("ph", "pphh", "weights", "ref_gates"),
         [
           ([[0, 2]], [], np.array([3.815]),
-             [ [0, qml.BasisState, range(0,6), [np.array([0, 0, 0, 0, 1, 1])]],
+             [ [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
                [1, qml.RX,         [0],        [-np.pi/2]],
                [5, qml.RZ,         [2],        [1.9075]],
                [6, qml.CNOT,       [1, 2],     []] ]),

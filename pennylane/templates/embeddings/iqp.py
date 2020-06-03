@@ -26,7 +26,7 @@ from pennylane.templates.utils import (
     get_shape,
     check_no_variable,
 )
-from pennylane.wires import Wires, WireError
+from pennylane.wires import Wires
 
 
 @template
@@ -81,8 +81,8 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     Args:
         features (array): array of features to encode
-        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         n_repeats (int): number of times the basic embedding is repeated
         pattern (list[int]): specifies the wires and features of the entanglers
 
