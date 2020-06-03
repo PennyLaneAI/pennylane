@@ -120,7 +120,8 @@ def SingleExcitationUnitary(weight, wires=None):
     if len(wires) != 2:
         raise ValueError("expected 2 wires; got {}".format(len(wires)))
 
-    if wires[1] <= wires[0]:  # TODO: delete for non-consec wires
+    wire_list = wires.tolist()  # TODO: delete this "<=" check for non-consec wires
+    if wire_list[1] <= wire_list[0]:
         raise ValueError(
             "wires_1 must be greater than wires_0; got wires[1]={}, wires[0]={}".format(
                 wires[1], wires[0]
@@ -135,6 +136,8 @@ def SingleExcitationUnitary(weight, wires=None):
     )
 
     ###############
+
+    wires = wires.tolist()  # TODO: Remove when ops accept wires
 
     r, p = wires
 

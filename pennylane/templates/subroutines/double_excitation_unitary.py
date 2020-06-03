@@ -27,6 +27,7 @@ from pennylane.templates.utils import (
 )
 from pennylane.wires import Wires
 
+
 def _layer1(weight, s, r, q, p, set_cnot_wires):
     r"""Implement the first layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
@@ -498,24 +499,21 @@ def DoubleExcitationUnitary(weight, wires=None):
         msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
     )
 
-    if wires != sorted(wires):  # TODO: delete for non-consec wires
+    wire_list = wires.tolist()  # TODO: delete the following checks for non-consec wires
+    if wire_list != sorted(wire_list):
         raise ValueError(
             "Elements of 'wires' must satisfy that wires_3 > wires_2 > wires_1 > wires_0.\n"
             "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
         )
 
-    if (wires[1] <= wires[0]) or (wires[3] <= wires[2]): # TODO: delete for non-consec wires
-        raise ValueError(
-            "Elements of 'wires' must satisfy that wires_1 > wires_0 and wires_3 > wires_2.\n"
-            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
-        )
-
     ###############
+
+    wires = wires.tolist()  # TODO: Remove when ops accept wires
 
     s, r, q, p = wires
 
     # Sequence of the wires entering the CNOTs between wires 's' and 'p'
-    set_cnot_wires = (
+    set_cnot_wires = (  # TODO: change logic for non-consec wires
         [[l, l + 1] for l in range(s, r)] + [[r, q]] + [[l, l + 1] for l in range(q, p)]
     )
 
