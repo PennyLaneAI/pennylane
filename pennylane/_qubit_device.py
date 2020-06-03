@@ -407,9 +407,9 @@ class QubitDevice(Device):
 
         # count the basis state occurrences, and construct the probability vector
         basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([2 ** len(wires)], dtype=self.R_DTYPE)
+        prob = np.zeros([2 ** len(wires)], dtype=np.float64)
         prob[basis_states] = counts / self.shots
-        return self._asarray(prob)
+        return self._asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None):
         """Return either the analytic probability or estimated probability of

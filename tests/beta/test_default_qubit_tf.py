@@ -930,7 +930,7 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.qubit.tf", wires=3)
         dev2 = qml.device("default.qubit.tf", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method=diff_method)
+        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="tf")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
         p_tf = tf.Variable(p)
@@ -967,21 +967,24 @@ class TestPassthruIntegration:
         dev = qml.device("default.qubit.tf", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
-        def circuit(a):
+        def circuit(a, b):
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            return qml.probs(wires=[1])
 
         a = tf.Variable(0.54)
+        b = tf.Variable(0.12)
 
         with tf.GradientTape() as tape:
-            circuit(a)
-            res = tf.abs(dev.state) ** 2
+            res = circuit(a, b)[0]
             res = res[1] - res[0]
 
-        grad = tape.gradient(res, a)
-        expected = tf.sin(a)
+        expected = -tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = tape.gradient(res, [a, b])
+        expected = [tf.sin(a) * tf.cos(b), tf.cos(a) * tf.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_backprop_gradient(self, tol):
@@ -1111,5 +1114,78 @@ class TestSamplesNonAnalytic:
         assert res.shape == (1, shots)
         assert set(res[0].numpy()) == {-1, 1}
 
+    def test_sample_observables_non_differentiable(self):
+        """Test that sampled observables cannot be differentiated."""
+        shots = 100
+        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
 
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(0))
 
+        a = tf.Variable(0.54)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        assert tape.gradient(res, a) is None
+
+    def test_estimating_probability(self, tol):
+        """Test that the probability is accurately estimated."""
+        dev = qml.device("default.qubit.tf", wires=2, analytic=False, shots=1000)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            qml.PauliX(0)
+            return qml.probs(wires=[0])
+
+        res = circuit()
+
+        assert isinstance(res, tf.Tensor)
+
+        expected = np.array([0, 1])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_estimating_expectation_values(self, tol):
+        """Test that estimating expectation values using a finite number
+        of shots produces a numeric tensor"""
+        dev = qml.device("default.qubit.tf", wires=3, analytic=False, shots=1000)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=[0])
+            qml.RX(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        a = tf.Variable(0.543)
+        b = tf.Variable(0.43)
+
+        res = circuit(a, b)
+        assert isinstance(res, tf.Tensor)
+
+        # We don't check the expected value due to stochasticity, but
+        # leave it here for completeness.
+        # expected = [tf.cos(a), tf.cos(a) * tf.cos(b)]
+        # assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_estimating_expectation_values_not_differentiable(self, tol):
+        """Test that analytic=False results in non-differentiable QNodes"""
+        dev = qml.device("default.qubit.tf", wires=3, analytic=False)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=[0])
+            qml.RX(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        a = tf.Variable(0.543)
+        b = tf.Variable(0.43)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
+        grad = tape.gradient(res, [a, b])
+        assert grad == [None, None]
