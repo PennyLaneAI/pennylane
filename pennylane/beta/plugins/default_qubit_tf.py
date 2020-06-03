@@ -180,7 +180,7 @@ class DefaultQubitTF(DefaultQubit):
 
         if isinstance(operation, DiagonalOperation):
             matrix = operation.eigvals if matrix is None else matrix
-            self._state = self._vec_vec_product(matrix, self._state, operation.wires)
+            self._apply_diagonal_unitary(matrix, operation.wires)
         else:
             matrix = operation.matrix if matrix is None else matrix
-            self._state = self._mat_vec_product_einsum(matrix, self._state, operation.wires)
+            self._apply_unitary_einsum(matrix, operation.wires)

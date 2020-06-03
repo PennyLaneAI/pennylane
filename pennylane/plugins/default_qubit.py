@@ -132,15 +132,13 @@ class DefaultQubit(QubitDevice):
             self._apply_basis_state(operation.parameters[0], operation.wires)
 
         elif isinstance(operation, DiagonalOperation):
-            self._state = self._vec_vec_product(operation.eigvals, self._state, operation.wires)
+            self._apply_diagonal_unitary(operation.eigvals, operation.wires)
 
         elif len(operation.wires) <= 2:
             # Einsum is faster for small gates
-            self._state = self._mat_vec_product_einsum(
-                operation.matrix, self._state, operation.wires
-            )
+            self._apply_unitary_einsum(operation.matrix, operation.wires)
         else:
-            self._state = self._mat_vec_product(operation.matrix, self._state, operation.wires)
+            self._apply_unitary(operation.matrix, operation.wires)
 
     @property
     def state(self):
@@ -210,20 +208,16 @@ class DefaultQubit(QubitDevice):
         state = self._asarray(state, dtype=self.C_DTYPE)
         self._state = self._reshape(state, [2] * self.num_wires)
 
-    def _mat_vec_product(self, mat, vec, wires):
+    def _apply_unitary(self, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
             mat (array): matrix to multiply
-            vec (array): state tensor to multiply
             wires (Sequence[int]): target subsystems
-
-        Returns:
-            array: output vector after applying ``mat`` to input ``vec`` on specified subsystems
         """
         mat = np.reshape(mat, [2] * len(wires) * 2)
         axes = (np.arange(len(wires), 2 * len(wires)), wires)
-        tdot = np.tensordot(mat, vec, axes=axes)
+        tdot = np.tensordot(mat, self._state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
@@ -232,11 +226,9 @@ class DefaultQubit(QubitDevice):
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
         perm = list(wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
-        state_multi_index = np.transpose(tdot, inv_perm)
+        self._state = np.transpose(tdot, inv_perm)
 
-        return state_multi_index
-
-    def _mat_vec_product_einsum(self, mat, vec, wires):
+    def _apply_unitary_einsum(self, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
@@ -244,11 +236,7 @@ class DefaultQubit(QubitDevice):
 
         Args:
             mat (array): matrix to multiply
-            vec (array): state tensor to multiply
             wires (Sequence[int]): target subsystems
-
-        Returns:
-            array: output vector after applying ``mat`` to input ``vec`` on specified subsystems
         """
         mat = self._cast(self._reshape(mat, [2] * len(wires) * 2), dtype=self.C_DTYPE)
 
@@ -277,20 +265,16 @@ class DefaultQubit(QubitDevice):
             new_state_indices=new_state_indices,
         )
 
-        return self._einsum(einsum_indices, mat, vec)
+        self._state = self._einsum(einsum_indices, mat, self._state)
 
-    def _vec_vec_product(self, phases, vec, wires):
+    def _apply_diagonal_unitary(self, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
 
         Args:
             phases (array): vector to multiply
-            vec (array): state tensor to multiply
             wires (Sequence[int]): target subsystems
-
-        Returns:
-            array: output vector after applying ``phases`` to input ``vec`` on specified subsystems
         """
         # reshape vectors
         phases = self._cast(self._reshape(phases, [2] * len(wires)), dtype=self.C_DTYPE)
@@ -302,7 +286,7 @@ class DefaultQubit(QubitDevice):
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        return self._einsum(einsum_indices, phases, vec)
+        self._state = self._einsum(einsum_indices, phases, self._state)
 
     def reset(self):
         """Reset the device"""
