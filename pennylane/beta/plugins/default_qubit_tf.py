@@ -16,7 +16,6 @@ reference plugin.
 """
 import numpy as np
 
-from pennylane import QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 from pennylane.plugins import DefaultQubit
 

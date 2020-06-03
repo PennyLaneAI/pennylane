@@ -143,7 +143,7 @@ class DefaultQubit(QubitDevice):
         else:
             self._apply_unitary(matrix, operation.wires)
 
-    def _get_unitary_matrix(self, unitary):
+    def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
 
         Args:
