@@ -95,8 +95,8 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         theta (array): length :math:`M(M-1)/2` array of transmittivity angles :math:`\theta`
         phi (array): length :math:`M(M-1)/2` array of phase angles :math:`\phi`
         varphi (array): length :math:`M` array of rotation angles :math:`\varphi`
-        wires (Sequence[int]): wires the interferometer should act on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         mesh (string): the type of mesh to use
         beamsplitter (str): if ``clements``, the beamsplitter convention from
           Clements et al. 2016 (https://dx.doi.org/10.1364/OPTICA.3.001460) is used; if ``pennylane``, the
@@ -152,9 +152,7 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
                         Rotation(phi[n], wires=Wires(w1))
                         Beamsplitter(theta[n], 0, wires=Wires([w1, w2]))
                     else:
-                        Beamsplitter(
-                            theta[n], phi[n], wires=Wires([w1, w2])
-                        )
+                        Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
                     n += 1
 
     elif mesh == "triangular":

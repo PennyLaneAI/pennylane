@@ -23,9 +23,9 @@ from pennylane.templates.utils import (
     check_no_variable,
     check_shape,
     check_type,
-    check_wires,
     get_shape,
 )
+from pennylane.wires import Wires
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -429,7 +429,8 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (sequence[int]): four-element sequence with the qubit indices ``s, r, q, p``
+        wires (Iterable or Wires): Wires ``s, r, q, p`` that the template acts on. Must be of length 4.
+            Accepts an iterable of numbers or strings, or a Wires object.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -486,16 +487,10 @@ def DoubleExcitationUnitary(weight, wires=None):
     ##############
     # Input checks
 
-    check_no_variable(wires, msg="'wires' cannot be differentiable")
+    wires = Wires(wires)
 
-    wires = check_wires(wires)
-
-    expected_shape = (4,)
-    check_shape(
-        wires,
-        expected_shape,
-        msg="'wires' must be of shape {}; got {}".format(expected_shape, get_shape(wires)),
-    )
+    if len(wires) != 4:
+        raise ValueError("expected 4 wires; got {}".format(len(wires)))
 
     expected_shape = ()
     check_shape(
@@ -504,28 +499,19 @@ def DoubleExcitationUnitary(weight, wires=None):
         msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
     )
 
-    check_type(wires, [list], msg="'wires' must be a list; got {}".format(wires))
-    for w in wires:
-        check_type(w, [int], msg="'wires' must be a list of integers; got {}".format(wires))
-
-    if wires != sorted(wires):
+    wire_list = wires.tolist()  # TODO: delete the following checks for non-consec wires
+    if wire_list != sorted(wire_list):
         raise ValueError(
             "Elements of 'wires' must satisfy that wires_3 > wires_2 > wires_1 > wires_0.\n"
             "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
         )
 
-    if (wires[1] <= wires[0]) or (wires[3] <= wires[2]):
-        raise ValueError(
-            "Elements of 'wires' must satisfy that wires_1 > wires_0 and wires_3 > wires_2.\n"
-            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
-        )
-
     ###############
 
-    s, r, q, p = wires
+    s, r, q, p = wires.tolist()  # TODO: need to change logic here when introducing non-consec wires
 
     # Sequence of the wires entering the CNOTs between wires 's' and 'p'
-    set_cnot_wires = (
+    set_cnot_wires = (  # TODO: change logic for non-consec wires
         [[l, l + 1] for l in range(s, r)] + [[r, q]] + [[l, l + 1] for l in range(q, p)]
     )
 

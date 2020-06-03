@@ -36,8 +36,8 @@ def BasisStatePreparation(basis_state, wires):
         basis_state (array): Input array of shape ``(N,)``, where N is the number of wires
             the state preparation acts on. ``N`` must be smaller or equal to the total
             number of wires of the device.
-        wires (Sequence[int]): sequence of qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -70,8 +70,6 @@ def BasisStatePreparation(basis_state, wires):
         )
 
     ######################
-
-    wires = wires.tolist()  # TODO: remove when operator takes Wires object
 
     for wire, state in zip(wires, basis_state):
         if state == 1:

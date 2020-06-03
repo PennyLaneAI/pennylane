@@ -44,8 +44,8 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     Args:
         features (array): Array of features of size (N,)
-        wires (Sequence[int]): sequence of mode indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or

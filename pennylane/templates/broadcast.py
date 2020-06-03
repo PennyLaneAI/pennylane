@@ -146,8 +146,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         unitary (func): quantum gate or template
         pattern (str): specifies the wire pattern of the broadcast
         parameters (list): sequence of parameters for each gate applied
-        wires (Sequence[int] or int): wire indices that the unitaries act upon. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         kwargs (dict): dictionary of auxilliary parameters for ``unitary``
 
     Raises:
@@ -572,5 +572,4 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # broadcast the unitary
     for wires, pars in zip(wire_sequence[pattern], parameters):
-        wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
         unitary(*pars, wires=wires, **kwargs)

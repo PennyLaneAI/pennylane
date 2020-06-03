@@ -57,8 +57,8 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
 
     Args:
         features (array): input array of shape ``(2^n,)``
-        wires (Sequence[int] or int): qubit indices that the template acts on. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         pad (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (Boolean): controls the activation of automatic normalization
 
@@ -233,8 +233,6 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
             )
 
     ###############
-
-    wires = wires.tolist()  # TODO: remove this line when QubitStateVector accepts Wires object
 
     features = np.array(features)
     QubitStateVector(features, wires=wires)

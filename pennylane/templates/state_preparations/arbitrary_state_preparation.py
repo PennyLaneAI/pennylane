@@ -71,8 +71,8 @@ def ArbitraryStatePreparation(weights, wires):
     Args:
         weights (array[float]): The angles of the Pauli word rotations, needs to have length :math:`2^(n+1) - 2`
             where :math:`n` is the number of wires the template acts upon.
-        wires (List[int]): The wires on which the arbitrary unitary acts. Also accepts
-            :class:`pennylane.wires.Wires` objects.
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
     """
 
     wires = Wires(wires)

@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
-from pennylane.wires import WireError
+from pennylane.wires import Wires, WireError
 
 
 @pytest.fixture(scope="function")
@@ -343,7 +343,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == qml.wires.Wires(0)
+        assert qnode.ops[0].wires[0] == Wires(0)
 
 
 class TestQNodeExceptions:
@@ -775,11 +775,11 @@ class TestQNodeArgs:
 
         node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(np.pi, q=1)
-        assert node.ops[0].wires == qml.wires.Wires([1])
+        assert node.ops[0].wires == Wires([1])
         assert c == pytest.approx(-1.0, abs=tol)
 
         c = node(np.pi)
-        assert node.ops[0].wires == qml.wires.Wires([default_q])
+        assert node.ops[0].wires == Wires([default_q])
         assert c == pytest.approx(-1.0, abs=tol)
 
     def test_keywordargs_used(self, qubit_device_1_wire, tol):

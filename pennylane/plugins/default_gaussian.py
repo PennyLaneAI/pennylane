@@ -841,13 +841,12 @@ class DefaultGaussian(Device):
         r""" Returns the vector of means and the covariance matrix of the specified wires.
 
         Args:
-            wires (int or Sequence[int]): indices of the requested wires
+            wires (Iterable[int] or int): indices of the requested wires # TODO: re-assess for nonconsec wires
 
         Returns:
             tuple (means, cov): means is an array containing the vector of means,
             and cov is a square array containing the covariance matrix
         """
-
         if wires == list(range(self.num_wires)):
             # reduced state is full state
             return self._state
