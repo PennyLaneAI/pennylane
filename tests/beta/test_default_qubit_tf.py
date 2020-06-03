@@ -1197,6 +1197,8 @@ class TestSamplesNonAnalytic:
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
 
+        assert qnodes.interface == "tf"
+
         weights = tf.Variable(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
 
         @tf.function
