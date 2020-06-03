@@ -70,14 +70,19 @@ class QubitDevice(Device):
     R_DTYPE = np.float64
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
+    _abs = staticmethod(np.abs)
     _reduce_sum = staticmethod(lambda array, axes: np.apply_over_axes(np.sum, array, axes))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
     _gather = staticmethod(lambda array, indices: array[indices])
+    _einsum = staticmethod(np.einsum)
+    _cast = staticmethod(np.asarray)
 
     @staticmethod
-    def _scatter(array, indices, values):
-        array[indices] = values
+    def _scatter(indices, array, new_dimensions):
+        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+        new_array[indices] = array
+        return new_array
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 

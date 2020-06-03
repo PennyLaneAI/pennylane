@@ -86,14 +86,16 @@ class DefaultQubit(QubitDevice):
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        self.eng = None
-        self.analytic = analytic
+        # create the initial state
+        state = np.zeros(2 ** wires, dtype=np.complex128)
+        state[0] = 1
+        state = self._asarray(state, dtype=self.C_DTYPE)
 
-        self._state = np.zeros(2 ** wires, dtype=np.complex128)
-        self._state[0] = 1
-        self._state = self._state.reshape([2] * wires)
+        # Internally, we store the state as a tensor of dimension [2]*wires
+        self._state = self._reshape(state, [2] * wires)
         self._pre_rotated_state = self._state
 
+        # call QubitDevice init
         super().__init__(wires, shots, analytic)
 
     def apply(self, operations, rotations=None, **kwargs):
@@ -101,9 +103,6 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            # number of wires on device
-            wires = operation.wires
-            par = operation.parameters
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
@@ -111,68 +110,80 @@ class DefaultQubit(QubitDevice):
                     "on a {} device.".format(operation.name, self.short_name)
                 )
 
-            if isinstance(operation, QubitStateVector):
-                input_state = np.asarray(par[0], dtype=np.complex128)
-                self.apply_state_vector(input_state, wires)
-
-            elif isinstance(operation, BasisState):
-                basis_state = par[0]
-                self.apply_basis_state(basis_state, wires)
-
-            elif isinstance(operation, DiagonalOperation):
-                self._state = self.vec_vec_product(operation.eigvals, self._state, wires)
-
-            elif len(wires) <= 2:
-                # Einsum is faster for small gates
-                self._state = self.mat_vec_product_einsum(operation.matrix, self._state, wires)
-
-            else:
-                self._state = self.mat_vec_product(operation.matrix, self._state, wires)
+            self._apply_operation(operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
         for operation in rotations:
-            wires = operation.wires
-            par = operation.parameters
-            self._state = self.mat_vec_product(operation.matrix, self._state, wires)
+            self._apply_operation(operation)
+
+    def _apply_operation(self, operation):
+        """Applies operations to the internal device state.
+
+        Args:
+            operation (~.Operation): operation to apply to the device
+        """
+        if isinstance(operation, QubitStateVector):
+            self._apply_state_vector(operation.parameters[0], operation.wires)
+
+        elif isinstance(operation, BasisState):
+            self._apply_basis_state(operation.parameters[0], operation.wires)
+
+        elif isinstance(operation, DiagonalOperation):
+            self._state = self._vec_vec_product(operation.eigvals, self._state, operation.wires)
+
+        elif len(operation.wires) <= 2:
+            # Einsum is faster for small gates
+            self._state = self._mat_vec_product_einsum(
+                operation.matrix, self._state, operation.wires
+            )
+        else:
+            self._state = self._mat_vec_product(operation.matrix, self._state, operation.wires)
 
     @property
     def state(self):
-        return self._pre_rotated_state.ravel()
+        return self._flatten(self._pre_rotated_state)
 
-    def apply_state_vector(self, input_state, wires):
+    def _apply_state_vector(self, state, wires):
         """Initialize the internal state vector in a specified state.
 
         Args:
-            input_state (array[complex]): normalized input state of length
+            state (array[complex]): normalized input state of length
                 ``2**len(wires)``
             wires (list[int]): list of wires where the provided state should
                 be initialized
         """
-        if not np.isclose(np.linalg.norm(input_state, 2), 1.0, atol=tolerance):
-            raise ValueError("Sum of amplitudes-squared does not equal one.")
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        n_state_vector = state.shape[0]
 
-        n_state_vector = input_state.shape[0]
-
-        if input_state.ndim == 1 and n_state_vector == 2 ** len(wires):
-            # generate basis states on subset of qubits via the cartesian product
-            basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
-
-            # get basis states to alter on full set of qubits
-            unravelled_indices = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
-            unravelled_indices[:, wires] = basis_states
-
-            # get indices for which the state is changed to input state vector elements
-            ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
-            self._state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
-            self._state[ravelled_indices] = input_state
-            self._state = self._state.reshape([2] * self.num_wires)
-        else:
+        if state.ndim != 1 or n_state_vector != 2 ** len(wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-    def apply_basis_state(self, state, wires):
+        if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+            raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+        if len(wires) == self.num_wires and sorted(wires) == wires:
+            # Initialize the entire register with the state
+            self._state = self._reshape(state, [2] * self.num_wires)
+            return
+
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
+        unravelled_indices[:, wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+
+        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+        state = self._reshape(state, [2] * self.num_wires)
+        self._state = self._asarray(state, dtype=self.C_DTYPE)
+
+    def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.
 
         Args:
@@ -194,11 +205,12 @@ class DefaultQubit(QubitDevice):
         basis_states = 2 ** (self.num_wires - 1 - np.array(wires))
         num = int(np.dot(state, basis_states))
 
-        self._state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
-        self._state[num] = 1.0
-        self._state = self._state.reshape([2] * self.num_wires)
+        state = np.zeros(2 ** self.num_wires)
+        state[num] = 1.0
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        self._state = self._reshape(state, [2] * self.num_wires)
 
-    def mat_vec_product(self, mat, vec, wires):
+    def _mat_vec_product(self, mat, vec, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
@@ -218,13 +230,13 @@ class DefaultQubit(QubitDevice):
         # the correct output state
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires]
-        perm = wires + unused_idxs
+        perm = list(wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         state_multi_index = np.transpose(tdot, inv_perm)
 
         return state_multi_index
 
-    def mat_vec_product_einsum(self, mat, vec, wires):
+    def _mat_vec_product_einsum(self, mat, vec, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
@@ -238,7 +250,7 @@ class DefaultQubit(QubitDevice):
         Returns:
             array: output vector after applying ``mat`` to input ``vec`` on specified subsystems
         """
-        mat = np.reshape(mat, [2] * len(wires) * 2)
+        mat = self._cast(self._reshape(mat, [2] * len(wires) * 2), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
@@ -265,9 +277,9 @@ class DefaultQubit(QubitDevice):
             new_state_indices=new_state_indices,
         )
 
-        return np.einsum(einsum_indices, mat, vec)
+        return self._einsum(einsum_indices, mat, vec)
 
-    def vec_vec_product(self, phases, vec, wires):
+    def _vec_vec_product(self, phases, vec, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
@@ -281,7 +293,7 @@ class DefaultQubit(QubitDevice):
             array: output vector after applying ``phases`` to input ``vec`` on specified subsystems
         """
         # reshape vectors
-        phases = phases.reshape([2] * len(wires))
+        phases = self._cast(self._reshape(phases, [2] * len(wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[wires].tolist())
@@ -290,15 +302,17 @@ class DefaultQubit(QubitDevice):
             affected_indices=affected_indices, state_indices=state_indices
         )
 
-        return np.einsum(einsum_indices, phases, vec)
+        return self._einsum(einsum_indices, phases, vec)
 
     def reset(self):
         """Reset the device"""
         # init the state vector to |00..0>
         super().reset()
-        self._state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
-        self._state[0] = 1
-        self._state = self._state.reshape([2] * self.num_wires)
+
+        state = np.zeros([np.prod(self._state.shape)], dtype=np.complex128)
+        state[0] = 1
+        state = state.reshape(self._state.shape)
+        self._state = self._asarray(state, dtype=self.C_DTYPE)
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
@@ -307,6 +321,5 @@ class DefaultQubit(QubitDevice):
             return None
 
         wires = wires or range(self.num_wires)
-
-        prob = self.marginal_prob(np.abs(self._state.ravel()) ** 2, wires)
+        prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
         return prob
