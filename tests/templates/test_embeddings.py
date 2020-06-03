@@ -20,7 +20,6 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-from pennylane.wires import WireError
 from pennylane.templates.embeddings import (AngleEmbedding,
                                             BasisEmbedding,
                                             AmplitudeEmbedding,
