@@ -319,11 +319,11 @@ class TestRandomLayers:
         weights = [[0.1, 0.2, 0.3]]
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(2), seed=1)
+            RandomLayers(weights=weights, wires=range(2), seed=10)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(2), seed=2)
+            RandomLayers(weights=weights, wires=range(2), seed=20)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -386,7 +386,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=range(n_wires),
+                wires=qml.wires.Wires(range(n_wires)),
                 ratio_imprim=ratio,
                 imprimitive=CNOT,
                 rotations=[RX, RY, RZ],
@@ -405,7 +405,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=range(n_subsystems),
+                wires=qml.wires.Wires(range(n_subsystems)),
                 ratio_imprim=0.3,
                 imprimitive=impr,
                 rotations=rots,
@@ -425,7 +425,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=range(n_subsystems),
+                wires=qml.wires.Wires(range(n_subsystems)),
                 ratio_imprim=0.3,
                 imprimitive=qml.CNOT,
                 rotations=[RX, RY, RZ],
@@ -443,7 +443,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=range(n_subsystems),
+                wires=qml.wires.Wires(range(n_subsystems)),
                 ratio_imprim=0.3,
                 imprimitive=qml.CNOT,
                 rotations=[RX, RY, RZ],
@@ -464,7 +464,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=range(n_subsystems),
+                wires=qml.wires.Wires(range(n_subsystems)),
                 ratio_imprim=0.3,
                 imprimitive=qml.CNOT,
                 rotations=[RX, RY, RZ],
