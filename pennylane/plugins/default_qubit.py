@@ -150,11 +150,9 @@ class DefaultQubit(QubitDevice):
             unitary (~.Operation): a PennyLane unitary operation
 
         Returns:
-            tf.Tensor[complex] or array[complex]: Returns a 2D matrix representation of
+            array[complex]: Returns a 2D matrix representation of
             the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal. For non-parametric unitaries,
-            the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
-            object will be returned.
+            a 1D array representing the matrix diagonal.
         """
         if isinstance(unitary, DiagonalOperation):
             return unitary.eigvals
