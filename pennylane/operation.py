@@ -230,8 +230,8 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (iterable): Iterable containing representations of the wires that the operator acts on.
-            If not given, args[-1] is interpreted as wires.
+        wires (Iterable or Wires): Iterable containing representations of the wires that the operator acts on,
+            or Wires object. If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
@@ -474,7 +474,7 @@ class Operator(abc.ABC):
         """Wires of this operator.
 
         Returns:
-            pennylane.wires.Wires: wire values
+            Wires: wires
         """
         return self._wires
 
@@ -985,8 +985,7 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            Wires: wires used by the observables
-            in the tensor product
+            Wires: wires addressed by the observables in the tensor product
         """
         return Wires([o.wires for o in self.obs])
 
@@ -1228,8 +1227,7 @@ class CV:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
 
-        # TODO: Need to extract indices!
-
+        # TODO: re-assess this function for non-consec wires
         U_dim = len(U)
         nw = len(self.wires)
 

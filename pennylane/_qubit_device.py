@@ -450,7 +450,7 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)  # TODO: nonconsecutive
+        wires = np.hstack(wires)  # TODO: re-asses for nonconsecutive wires
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
@@ -471,7 +471,7 @@ class QubitDevice(Device):
         return prob[perm]
 
     def expval(self, observable):
-        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact expectation value
@@ -483,7 +483,7 @@ class QubitDevice(Device):
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact variance value
@@ -495,7 +495,7 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        wires = observable.wires.tolist()  # TODO: Use "toregister" function here
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:

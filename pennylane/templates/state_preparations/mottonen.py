@@ -124,7 +124,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     control_indices = [
         int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
-        for i in range(num_selections)  # TODO: non-consecutive ordering
+        for i in range(num_selections)  # TODO: re-asses for nonconsecutive wires
     ]
 
     for i, control_index in enumerate(control_indices):
