@@ -134,8 +134,6 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     M = len(wires)
 
-    wires = wires.tolist()  # Todo: remove when ops take Wires object
-
     if M == 1:
         # the interferometer is a single rotation
         Rotation(varphi[0], wires=wires[0])

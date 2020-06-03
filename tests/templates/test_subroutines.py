@@ -19,6 +19,7 @@ Integration tests should be placed into ``test_templates.py``.
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.wires import Wires
 
 from pennylane.templates.subroutines import (
     Interferometer, 
@@ -380,7 +381,7 @@ class TestSingleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == qml.wires.Wires(exp_wires)
+            assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -567,7 +568,7 @@ class TestDoubleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == qml.wires.Wires(exp_wires)
+            assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -713,7 +714,7 @@ class TestUCCSDUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == qml.wires.Wires(exp_wires)
+            assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters

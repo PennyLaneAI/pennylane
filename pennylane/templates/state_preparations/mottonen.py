@@ -293,8 +293,6 @@ def MottonenStatePreparation(state_vector, wires):
         alpha_y_k = _get_alpha_y(a, n_wires, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
-        control = control.tolist()  # TODO: remove when operators accept Wires object
-        target = target.tolist()[0]  # TODO: remove when operators accept Wires object
         _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
@@ -302,7 +300,5 @@ def MottonenStatePreparation(state_vector, wires):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
-        control = control.tolist()  # TODO: remove when operators accept Wires object
-        target = target.tolist()[0]  # TODO: remove when operators accept Wires object
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)
