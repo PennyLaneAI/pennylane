@@ -1049,6 +1049,23 @@ class TestPassthruIntegration:
 class TestSamplesNonAnalytic:
     """Tests for sampling and non-analytic mode"""
 
+    def test_sample_observables(self):
+        """Test that the device allows for sampling from observables."""
+        shots = 100
+        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        a = tf.Variable(0.54)
+        res = circuit(a)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (1, shots)
+        assert set(res[0].numpy()) == {-1, 1}
+
 
 class TestHybridInterfaceDeviceIntegration:
     """Integration tests for default.qubit.tf. This test class ensures it integrates

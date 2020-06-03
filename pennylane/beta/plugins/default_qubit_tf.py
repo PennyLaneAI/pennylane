@@ -46,7 +46,6 @@ try:
 except ImportError:
     pass
 
-from .tf_ops import C_DTYPE, R_DTYPE
 from . import tf_ops
 
 ABC_ARRAY = np.array(list(ABC))
@@ -183,13 +182,21 @@ class DefaultQubitTF(QubitDevice):
         "CRZ": tf_ops.CRZ,
     }
 
+    C_DTYPE = tf.complex128
+    R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
+    _dot = staticmethod(lambda x, y: tf.tensordot(x, y, axes=1))
+    _reduce_sum = staticmethod(tf.reduce_sum)
+    _reshape = staticmethod(tf.reshape)
+    _flatten = staticmethod(lambda tensor: tf.reshape(tensor, [-1]))
+    _gather = staticmethod(tf.gather)
+    _scatter = staticmethod(tf.scatter_nd)
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         # create the initial state
         state = np.zeros(2 ** wires, dtype=np.complex128)
         state[0] = 1
-        state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        state = tf.convert_to_tensor(state, dtype=self.C_DTYPE)
 
         # Internally, we store the state as a tensor of dimension [2]*wires
         self._state = tf.reshape(state, [2] * wires)
@@ -253,7 +260,7 @@ class DefaultQubitTF(QubitDevice):
             wires (list[int]): list of wires where the provided state should
                 be initialized
         """
-        state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        state = tf.convert_to_tensor(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
         if state.ndim != 1 or n_state_vector != 2 ** len(wires):
@@ -280,7 +287,7 @@ class DefaultQubitTF(QubitDevice):
 
         state = tf.scatter_nd(ravelled_indices, state, [2 ** self.num_wires])
         state = tf.reshape(state, [2] * self.num_wires)
-        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        self._state = tf.convert_to_tensor(state, dtype=self.C_DTYPE)
 
     def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.
@@ -306,7 +313,7 @@ class DefaultQubitTF(QubitDevice):
 
         state = np.zeros(2 ** self.num_wires)
         state[num] = 1.0
-        state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        state = tf.convert_to_tensor(state, dtype=self.C_DTYPE)
         self._state = tf.reshape(state, [2] * self.num_wires)
 
     def _apply_unitary(self, mat, wires):
@@ -322,7 +329,7 @@ class DefaultQubitTF(QubitDevice):
         Returns:
             tf.Tensor: output vector after applying ``mat`` to input ``vec`` on specified subsystems
         """
-        mat = tf.cast(tf.reshape(mat, [2] * len(wires) * 2), dtype=C_DTYPE)
+        mat = tf.cast(tf.reshape(mat, [2] * len(wires) * 2), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
@@ -364,7 +371,7 @@ class DefaultQubitTF(QubitDevice):
             tf.Tensor: output vector after applying ``phases`` to input ``vec`` on specified subsystems
         """
         # reshape vectors
-        phases = tf.cast(tf.reshape(phases, [2] * len(wires)), dtype=C_DTYPE)
+        phases = tf.cast(tf.reshape(phases, [2] * len(wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[wires].tolist())
@@ -387,58 +394,10 @@ class DefaultQubitTF(QubitDevice):
         state = np.zeros([np.prod(self._state.shape)], dtype=np.complex128)
         state[0] = 1
         state = state.reshape(self._state.shape)
-        self._state = tf.convert_to_tensor(state, dtype=C_DTYPE)
+        self._state = tf.convert_to_tensor(state, dtype=self.C_DTYPE)
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
         wires = wires or range(self.num_wires)
         prob = self.marginal_prob(tf.abs(self._state) ** 2, wires)
         return prob
-
-    def marginal_prob(self, prob, wires=None):
-        if wires is None:
-            # no need to marginalize
-            return prob
-
-        wires = np.hstack(wires)
-
-        # determine which wires are to be summed over
-        inactive_wires = list(set(range(self.num_wires)) - set(wires))
-
-        # sum over all inactive wires
-        prob = tf.reshape(tf.reduce_sum(prob, axis=inactive_wires), [-1])
-
-        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
-        # If this is the case, we must permute the marginalized probability so that
-        # it corresponds to the orders of the wires passed.
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
-        perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
-        )
-
-        return tf.gather(prob, perm.tolist())
-
-    def expval(self, observable):
-        wires = observable.wires
-
-        if self.analytic:
-            # exact expectation value
-            eigvals = tf.convert_to_tensor(observable.eigvals, dtype=R_DTYPE)
-            prob = self.probability(wires=wires)
-            return tf.tensordot(eigvals, prob, axes=1)
-
-        return super().expval(observable)
-
-    def var(self, observable):
-        wires = observable.wires
-
-        if self.analytic:
-            # exact variance value
-            eigvals = tf.convert_to_tensor(observable.eigvals, dtype=R_DTYPE)
-            prob = self.probability(wires=wires)
-            return (
-                tf.tensordot(eigvals ** 2, prob, axes=1) - tf.tensordot(eigvals, prob, axes=1) ** 2
-            )
-
-        # estimate the variance
-        return super().var(observable)
