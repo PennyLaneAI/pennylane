@@ -434,7 +434,10 @@ class QubitDevice(Device):
 
             .. math::
 
-                \mathbb{P}^{(2, 0)} = \[ |00\rangle, |10\rangle, |01\rangle, |11\rangle\]
+                \mathbb{P}^{(2, 0)}
+                            = \left[
+                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                              \right]
 
         Args:
             prob: The probabilities to return the marginal probabilities
