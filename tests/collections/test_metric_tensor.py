@@ -21,7 +21,19 @@ import numpy as np
 from scipy.linalg import block_diag
 
 
-from conftest import torch, tf, Variable
+try:
+    import torch
+except ImportError as e:
+    torch = None
+
+try:
+    import tensorflow as tf
+
+    if tf.__version__[0] == "1":
+        tf.enable_eager_execution()
+
+except ImportError as e:
+    pass
 
 
 # ===================================================================
@@ -391,7 +403,7 @@ class TestMetricTensorInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        params_torch = torch.autograd.Variable(torch.tensor(params))
+        params_torch = torch.tensor(params)
         circuit = sample_circuit(params)
 
         G = qml.MetricTensor(circuit, dev)(params_torch)
@@ -407,7 +419,7 @@ class TestMetricTensorInterfaces:
         dev = qml.device("default.qubit", wires=3)
 
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        params_tf = Variable(params)
+        params_tf = tf.Variable(params)
 
         circuit = sample_circuit(params)
 
@@ -466,7 +478,7 @@ class TestMetricTensorAutodiff:
         using PyTorch"""
         dev = qml.device("default.qubit", wires=3)
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        params_torch = torch.autograd.Variable(torch.tensor(params), requires_grad=True)
+        params_torch = torch.tensor(params, requires_grad=True)
         circuit = sample_circuit(params)
 
         cost = qml.sum(qml.MetricTensor(circuit, dev))
@@ -484,7 +496,7 @@ class TestMetricTensorAutodiff:
         using tensorflow"""
         dev = qml.device("default.qubit", wires=3)
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        params_tf = Variable(params)
+        params_tf = tf.Variable(params)
         circuit = sample_circuit(params)
 
         cost = qml.sum(qml.MetricTensor(circuit, dev))

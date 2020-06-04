@@ -283,7 +283,7 @@ class MetricTensor:
                     p = []
 
                     for x in op.params:
-                        if not isinstance(x, qml.variable.VariableRef):
+                        if not isinstance(x, qml.variable.Variable):
                             p.append(x)
                         else:
                             p.append(weights[p_idx[counter]])
