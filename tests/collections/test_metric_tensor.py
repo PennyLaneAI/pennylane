@@ -217,11 +217,11 @@ class TestMetricTensorEvaluation:
     def test_no_generator(self,):
         """Test exception is raised if subcircuit contains an
         operation with no generator"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(a):
-            qml.Rot(a, 0, 0, wires=0)
+            qml.CRot(a, 0, 0, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
         g = qml.MetricTensor(circuit, dev)

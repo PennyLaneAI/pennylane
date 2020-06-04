@@ -64,10 +64,39 @@ class MetricTensor:
     QNode.
 
     Args:
-        qnode (QubitQNode): a Qubit QNode for which the metric tensor should be computed
+        qnode (QNode): a qubit QNode for which the metric tensor should be computed
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             metric tensor should be executed. This can either be a single device, or a list
             of devices of length corresponding to the number of parametric layers in ``qnode``.
+
+
+    **Example:**
+
+    Let's define a custom two-wire template:
+
+    .. code-block:: python
+
+        def my_template(params, wires, **kwargs):
+            qml.RX(params[0], wires=wires[0])
+            qml.RX(params[1], wires=wires[1])
+            qml.CNOT(wires=wires)
+
+    We want to compute the expectation values over the following list
+    of two-qubit observables:
+
+    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
+
+    This can be easily done with the ``map`` function:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
+
+    The returned :class:`~.QNodeCollection` can be evaluated, returning the results from each
+    mapped QNode as an array:
+
+    >>> params = [0.54, 0.12]
+    >>> qnodes(params)
+    array([-0.06154835  0.99280864])
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -92,7 +121,7 @@ class MetricTensor:
 
             self.np = torch
         elif self.interface == "autograd":
-            from autograd import numpy as np  # pylint: disable=redefined-outer-name
+            from pennylane import numpy as np  # pylint: disable=redefined-outer-name
 
             self.np = np
         else:
@@ -274,22 +303,10 @@ class MetricTensor:
 
             @qml.qnode(self.dev, interface=self.interface, mutable=False)
             def qn(
-                weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev, _params=params
+                weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev
             ):  # pylint: disable=dangerous-default-value
-                counter = 0
-                p_idx = np.argsort([item for sublist in _params for item in sublist])
-
                 for op in _queue:
-                    p = []
-
-                    for x in op.params:
-                        if not isinstance(x, qml.variable.Variable):
-                            p.append(x)
-                        else:
-                            p.append(weights[p_idx[counter]])
-                            counter += 1
-
-                    op.__class__(*p, wires=op.wires)
+                    op.queue()
 
                 for o in _obs_list:
                     o.diagonalizing_gates()
