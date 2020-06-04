@@ -70,33 +70,53 @@ class MetricTensor:
             of devices of length corresponding to the number of parametric layers in ``qnode``.
 
 
-    **Example:**
+    **Example**
 
-    Let's define a custom two-wire template:
+    Consider the following QNode:
 
     .. code-block:: python
 
-        def my_template(params, wires, **kwargs):
-            qml.RX(params[0], wires=wires[0])
-            qml.RX(params[1], wires=wires[1])
-            qml.CNOT(wires=wires)
+        @qml.qnode(dev, interface="tf")
+        def qnode(params):
+            qml.templates.StronglyEntanglingLayers(params, wires=[0, 1, 2])
+            return qml.expval(qml.PauliY(0) @ qml.PauliZ(1))
 
-    We want to compute the expectation values over the following list
-    of two-qubit observables:
+    By using ``qml.MetricTensor()``, we create a metric tensor object that can be evaluated
+    to compute the metric tensor of the QNode:
 
-    >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
+    >>> g = qml.MetricTensor(qnode, dev)
 
-    This can be easily done with the ``map`` function:
+    We can evaluate this function at various points in the QNode parameter space to
+    compute the metric tensor:
 
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> qnodes = qml.map(my_template, obs_list, dev, measure="expval")
+    >>> weights = qml.init.strong_ent_layers_normal(n_wires=3, n_layers=2)
+    >>> t1 = g(weights)
+    >>> t1.shape
+    (18, 18)
 
-    The returned :class:`~.QNodeCollection` can be evaluated, returning the results from each
-    mapped QNode as an array:
+    The ``MetricTensor`` object computes the metric tensor by generating a :class:`~.QNodeCollection`;
+    each QNode in the collection computes a block diagonal element of the the metric tensor on hardware.
+    These QNode are accessible via the ``qnodes`` attribute:
 
-    >>> params = [0.54, 0.12]
-    >>> qnodes(params)
-    array([-0.06154835  0.99280864])
+    >>> print(g.qnodes)
+    <pennylane.collections.qnode_collection.QNodeCollection object at 0x7f62dcb39310>
+
+    In this case, 14 QNodes are used to compute the metric tensor.
+
+    >>> len(g.qnodes)
+    14
+
+    The output of ``g`` is also end-to-end differentiable using your
+    :doc:`chosen ML library </introduction/interfaces>`.
+    When the gradient of the metric tensor is requested, the parameter-shift rule is used to
+    to compute quantum gradients automatically, on quantum hardware if required.
+
+    In this example, we are using the TensorFlow interface, so we can use TensorFlow to
+    construct a cost function using the metric tensor and to differentiate it.
+
+    >>> with tf.GradientTape() as tape:
+    ...     loss = tf.reduce_sum(g(weights))
+    >>> grad = tape.gradient(loss, weights)
     """
 
     # pylint: disable=too-many-instance-attributes
