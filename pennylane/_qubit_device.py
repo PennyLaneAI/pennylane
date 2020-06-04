@@ -26,6 +26,7 @@ import numpy as np
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
+from pennylane.wires import Wires
 
 
 class QubitDevice(Device):
@@ -195,7 +196,7 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires.tolist() # returns a list of wires
+        >>> op.wires # returns a Wires object representing the wires that the operation acts on
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
@@ -223,13 +224,11 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            set[int]: the set of wires activated by the specified operators
+            Wires: all wires activated by the specified operators
         """
-        wires = []
-        for op in operators:
-            wires.extend(op.wires.tolist())
+        list_of_wires = [op.wires for op in operators]
 
-        return set(wires)
+        return Wires.all_wires(list_of_wires)
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.

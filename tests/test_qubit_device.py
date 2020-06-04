@@ -616,4 +616,4 @@ class TestActiveWires:
         ]
 
         res = mock_qubit_device.active_wires(queue)
-        assert res == {0, 2, 5}
+        assert res == Wires([0, 2, 5])

@@ -230,8 +230,8 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (Iterable or Wires): Iterable containing representations of the wires that the operator acts on,
-            or Wires object. If not given, args[-1] is interpreted as wires.
+        wires (Iterable, Number, str, Wires): Iterable containing representations of the wires that the operator acts
+            on, or Wires object. If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """

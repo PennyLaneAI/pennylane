@@ -229,11 +229,7 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                if isinstance(op, qml.operation.Tensor):
-                    # pylint: disable=protected-access
-                    wires = list(qml.utils._flatten(op.wires.tolist()))
-                else:
-                    wires = op.wires.tolist()
+                wires = op.wires.tolist()
 
                 if len(wires) > 1:
                     internal_wires = self.circuit_wires_to_internal_wires(wires)
@@ -310,7 +306,7 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                if len(op.wires.tolist()) > 1:
+                if len(op.wires) > 1:
                     sorted_wires = op.wires.tolist().copy()
                     sorted_wires.sort()
 
