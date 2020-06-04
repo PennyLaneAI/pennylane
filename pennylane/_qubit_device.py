@@ -226,7 +226,6 @@ class QubitDevice(Device):
         Returns:
             Wires: all wires activated by the specified operators
         """
-
         list_of_wires = [op.wires for op in operators]
 
         return Wires.all_wires(list_of_wires)
@@ -381,7 +380,7 @@ class QubitDevice(Device):
         """
 
         wires = Wires(wires)
-        # map wires to list of indices of the subsystems on the device which they address
+        # map wires to list of indices of the corresponding subsystems on the device
         subsystems = self.wire_map(wires)
 
         # consider only the requested wires
@@ -416,10 +415,10 @@ class QubitDevice(Device):
         """
 
         if wires is None:
-            subsystems = range(self.num_wires)
+            subsystems = list(range(self.num_wires))
         else:
             wires = Wires(wires)
-            # map wires to list of indices of the subsystems on the device which they address
+            # map wires to list of indices of the corresponding subsystems on the device
             subsystems = self.wire_map(wires)
 
         if hasattr(self, "analytic") and self.analytic:
@@ -463,7 +462,7 @@ class QubitDevice(Device):
 
         wires = Wires(wires)
 
-        # map wires to list of indices of the subsystems on the device which they address
+        # map wires to list of indices of the corresponding subsystems on the device
         subsystems = self.wire_map(wires)
 
         subsystems = np.hstack(subsystems)
@@ -488,7 +487,7 @@ class QubitDevice(Device):
 
     def expval(self, observable):
 
-        # map wires to list of indices of the subsystems on the device which they address
+        # map wires to list of indices of the corresponding subsystems on the device
         subsystems = self.wire_map(observable.wires)
 
         if self.analytic:
@@ -502,7 +501,7 @@ class QubitDevice(Device):
 
     def var(self, observable):
 
-        # map wires to list of indices of the subsystems on the device which they address
+        # map wires to list of indices of the corresponding subsystems on the device
         subsystems = self.wire_map(observable.wires)
 
         if self.analytic:
@@ -516,7 +515,7 @@ class QubitDevice(Device):
 
     def sample(self, observable):
 
-        # map wires to list of indices of the subsystems on the device which they address
+        # map wires to list of indices of the corresponding subsystems on the device
         subsystems = self.wire_map(observable.wires)
 
         name = observable.name

@@ -57,11 +57,12 @@ class Device(abc.ABC):
 
     def __init__(self, wires=1, shots=1000):
 
+        self.shots = shots
+
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
             wires = range(wires)
 
-        self.shots = shots
         self._register = Wires(wires)
         self.num_wires = len(self._register)
         self._op_queue = None
@@ -137,8 +138,13 @@ class Device(abc.ABC):
 
     @property
     def register(self):
-        """Representation of the subsystems on this device,
-        directly or indirectly provided by the user."""
+        """Representation of the subsystems on this device, as directly or indirectly provided by the user.
+
+        The register is a ``Wires`` object, and every wire is represented by a unique Number or string object
+        (i.e. ``<Wires = [0, 1, 2]>`` or ``<Wires = [-1, 5, 10]>`` or ``<Wires = ['q1', 'garbage', 'ancilla']>``).
+        The device locates the wires of operations it acts on in the register, and generally uses the indices of
+        the wires to address the correct subsystems.
+        """
         return self._register
 
     @shots.setter
@@ -205,7 +211,7 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                # map wires to list of indices of the subsystems on the device which they address
+                # map wires to list of indices of the corresponding subsystems on the device
                 subsystems = self.wire_map(operation.wires)
                 self.apply(operation.name, subsystems, operation.parameters)
 
@@ -220,7 +226,7 @@ class Device(abc.ABC):
                     # if obs is a tensor observable, retrieve list of indices of subsystems
                     subsystems = [self.wire_map(ob.wires) for ob in obs.obs]
                 else:
-                    # map wires to list of indices of the subsystems on the device which they address
+                    # map wires to list of indices of the corresponding subsystems on the device
                     subsystems = self.wire_map(obs.wires)
 
                 if obs.return_type is Expectation:
@@ -470,13 +476,13 @@ class Device(abc.ABC):
                     )
 
     def wire_map(self, wires):
-        """Translates from an operation's wires to the corresponding indices of the subsystems in the register.
+        """Translates from an operation's wires to the corresponding indices of the subsystems on this device.
 
         Args:
             wires (Wires): wires object
 
         Return:
-            List[int]: indices at which the wires are in the register
+            list[int]: indices at which the wires are located on this device
         """
         return self._register.indices(wires)
 
