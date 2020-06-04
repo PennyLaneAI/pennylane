@@ -1070,7 +1070,9 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires.tolist()) #TODO: !!! AT THIS STAGE WE DO NOT KNOW THE ORDER
+        obs_sorted = sorted(
+            self.obs, key=lambda x: x.wires.tolist()
+        )  # TODO: !!! AT THIS STAGE WE DO NOT KNOW THE ORDER
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:

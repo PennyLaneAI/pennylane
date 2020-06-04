@@ -161,16 +161,10 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         for l in range(2 * M - 3):
             for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
                 if beamsplitter == "clements":
-                    Rotation(
-                        phi[n], wires=wires[k]
-                    )
-                    Beamsplitter(
-                        theta[n], 0, wires=wires.subset([k, k + 1])
-                    )
+                    Rotation(phi[n], wires=wires[k])
+                    Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
                 else:
-                    Beamsplitter(
-                        theta[n], phi[n], wires=wires.subset([k, k + 1])
-                    )
+                    Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
                 n += 1
 
     # apply the final local phase shifts to all modes
