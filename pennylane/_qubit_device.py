@@ -196,7 +196,7 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires # returns the Wires
+        >>> op.wires # returns a Wires object representing the wires that the operation acts on
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
@@ -224,13 +224,12 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            set[int]: the set of wires activated by the specified operators
+            Wires: all wires activated by the specified operators
         """
-        wires = []
-        for op in operators:
-            wires.extend(op.wires)
 
-        return set(wires)
+        list_of_wires = [op.wires for op in operators]
+
+        return Wires.all_wires(list_of_wires)
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
