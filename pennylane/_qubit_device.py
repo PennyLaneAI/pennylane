@@ -468,13 +468,15 @@ class QubitDevice(Device):
         subsystems = np.hstack(subsystems)
 
         # determine which wires are to be summed over
-        inactive_wires = list(set(range(self.num_wires)) - set(subsystems))
+        # since wires is a subset of the register, this will return the inactive wires
+        inactive_wires = Wires.unique_wires([wires, self.register])
+        inactive_subsystems = self.wire_map(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
         prob = prob.reshape([2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+        prob = np.apply_over_axes(np.sum, prob, inactive_subsystems).flatten()
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
