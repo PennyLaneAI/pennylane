@@ -152,7 +152,7 @@ class ObservableReturnTypes(Enum):
 
     def __repr__(self):
         """String representation of the return types."""
-        return self.value
+        return str(self.value)
 
 
 Sample = ObservableReturnTypes.Sample
@@ -447,10 +447,15 @@ class Operator(abc.ABC):
         Returns:
             Number, array, Variable: p
         """
+        # pylint: disable=too-many-branches
+        # If parameter is a NumPy scalar, convert it into a Python scalar.
+        if isinstance(p, np.ndarray) and p.ndim == 0:
+            p = p.item()
+
         if isinstance(p, Variable):
             if self.par_domain == "A":
                 raise TypeError(
-                    "{}: Array parameter expected, got a Variable,"
+                    "{}: Array parameter expected, got a Variable, "
                     "which can only represent real scalars.".format(self.name)
                 )
             return p
@@ -997,17 +1002,17 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len(list(_flatten(self.wires)))
+        return len(self.wires)
 
     @property
     def wires(self):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[list[Any]]: nested list containing the wires per observable
+            list[Any]: flat list containing all wires addressed by the observables
             in the tensor product
         """
-        return [o.wires for o in self.obs]
+        return list(_flatten([o.wires for o in self.obs]))
 
     @property
     def params(self):
