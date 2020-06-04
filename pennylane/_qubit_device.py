@@ -494,7 +494,7 @@ class QubitDevice(Device):
 
         if self.analytic:
             # exact expectation value
-            eigvals = observable.eigvals
+            eigvals = observable.eigvals  # TODO: !!!EIGVALS NEED TO BE SORTED HERE
             prob = self.probability(wires=subsystems)
             return (eigvals @ prob).real
 

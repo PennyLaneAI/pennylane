@@ -396,7 +396,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires.tolist())
+        return "{}: {} params, {}".format(self.name, len(self.params), self.wires)
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -405,8 +405,8 @@ class Operator(abc.ABC):
         # the last evaluation.
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
-        return "{}(wires={})".format(self.name, self.wires.tolist())
+            return "{}({}, {})".format(self.name, params, self.wires)
+        return "{}({})".format(self.name, self.wires)
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -894,7 +894,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+            return repr(self.return_type) + "({})".format(self.wires)
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -1070,7 +1070,7 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires.tolist())
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires.tolist()) #TODO: !!! AT THIS STAGE WE DO NOT KNOW THE ORDER
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1227,7 +1227,7 @@ class CV:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
 
-        # TODO: re-assess this function for non-consec wires
+        # TODO: !!! re-assess this function for non-consec wires
         U_dim = len(U)
         nw = len(self.wires)
 
