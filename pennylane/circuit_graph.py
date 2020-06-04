@@ -157,9 +157,7 @@ class CircuitGraph:
         for k, op in enumerate(ops):
             self.num_wires = max(self.num_wires, max(op.wires.tolist()) + 1)
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(
-                op.wires.tolist()
-            ):
+            for w in set(op.wires.tolist()):
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
