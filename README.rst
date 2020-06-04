@@ -121,7 +121,7 @@ For a full list of PennyLane plugins, see `the PennyLane website <https://pennyl
 Installation
 ============
 
-PennyLane requires Python version 3.5 and above. Installation of PennyLane, as well
+PennyLane requires Python version 3.6 and above. Installation of PennyLane, as well
 as all dependencies, can be done using pip:
 
 .. code-block:: bash

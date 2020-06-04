@@ -16,13 +16,52 @@ This module contains the :func:`to_torch` function to convert Numpy-interfacing 
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name,arguments-differ
+from collections import Iterable
 import inspect
 from functools import partial
+import numbers
 
 import numpy as np
 import torch
+from torch.autograd.function import once_differentiable
 
-from pennylane.utils import unflatten
+from pennylane.utils import _flatten
+
+
+def unflatten_torch(flat, model):
+    """Restores an arbitrary nested structure to a flattened Torch tensor.
+
+    Args:
+        flat (torch.Tensor): 1D tensor of items
+        model (array, Iterable, Number): model nested structure
+
+    Returns:
+        Tuple[list[torch.Tensor], torch.Tensor]: tuple containing elements of ``flat`` arranged
+        into the nested structure of model, as well as the unused elements of ``flat``.
+
+    Raises:
+        TypeError: if ``model`` contains an object of unsupported type
+    """
+    if isinstance(model, (numbers.Number, str)):
+        return flat[0], flat[1:]
+
+    if isinstance(model, (torch.Tensor, np.ndarray)):
+        try:
+            idx = model.numel()
+        except AttributeError:
+            idx = model.size
+
+        res = flat[:idx].reshape(model.shape)
+        return res, flat[idx:]
+
+    if isinstance(model, Iterable):
+        res = []
+        for x in model:
+            val, flat = unflatten_torch(flat, x)
+            res.append(val)
+        return res, flat
+
+    raise TypeError("Unsupported type in the model: {}".format(type(model)))
 
 
 def _get_default_args(func):
@@ -135,6 +174,7 @@ def to_torch(qnode):
             return torch.from_numpy(res)
 
         @staticmethod
+        @once_differentiable
         def backward(ctx, grad_output):  # pragma: no cover
             """Implements the backwards pass QNode vector-Jacobian product"""
             # NOTE: This method is definitely tested by the `test_torch.py` test suite,
@@ -142,31 +182,39 @@ def to_torch(qnode):
             # subtleties in the torch.autograd.FunctionMeta metaclass, specifically
             # the way in which the backward class is created on the fly
 
+            # determine the QNode variables which should be differentiated
+            diff_indices = None
+            non_diff_indices = set()
+
+            for arg, arg_variable in zip(ctx.saved_tensors, qnode.arg_vars):
+                if not getattr(arg, "requires_grad", False):
+                    indices = [i.idx for i in _flatten(arg_variable)]
+                    non_diff_indices.update(indices)
+
+            if non_diff_indices:
+                diff_indices = set(range(qnode.num_variables)) - non_diff_indices
+
             # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
+            jacobian = qnode.jacobian(ctx.args, ctx.kwargs, wrt=diff_indices)
+            jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
-            if grad_output.is_cuda:  # pragma: no cover
-                grad_output_np = grad_output.cpu().detach().numpy()
-            else:
-                grad_output_np = grad_output.detach().numpy()
+            vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
+            vjp = vjp.flatten()
 
-            # perform the vector-Jacobian product
-            if not grad_output_np.shape:
-                temp = grad_output_np * jacobian
-            else:
-                temp = grad_output_np.T @ jacobian
+            if non_diff_indices:
+                # Torch requires we return a gradient of size (num_variables,)
+                res = torch.zeros([qnode.num_variables], dtype=grad_output.dtype)
+                indices = np.fromiter(diff_indices, dtype=np.int64)
+                res[indices] = vjp
+                vjp = res
 
             # restore the nested structure of the input args
-            temp = [
-                np.array(i) if not isinstance(i, np.ndarray) else i
-                for i in unflatten(temp.flat, ctx.args)
-            ]
-
-            # convert the result to torch tensors, matching
-            # the type of the input tensors
+            grad_input_list = unflatten_torch(vjp, ctx.saved_tensors)[0]
             grad_input = []
-            for i, j in zip(temp, ctx.saved_tensors):
-                res = torch.as_tensor(torch.from_numpy(i), dtype=j.dtype)
+
+            # match the type and device of the input tensors
+            for i, j in zip(grad_input_list, ctx.saved_tensors):
+                res = torch.as_tensor(i, dtype=j.dtype)
                 if j.is_cuda:  # pragma: no cover
                     cuda_device = j.get_device()
                     res = torch.as_tensor(res, device=cuda_device)
@@ -201,6 +249,8 @@ def to_torch(qnode):
         draw = qnode.draw
         _qnode = qnode
         func = qnode.func
+        arg_vars = property(lambda self: qnode.arg_vars)
+        num_variables = property(lambda self: qnode.num_variables)
 
     @qnode_str
     def custom_apply(*args, **kwargs):
