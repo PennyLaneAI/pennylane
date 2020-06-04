@@ -31,6 +31,13 @@ def layer_ansatz(weights, x=None, **kwargs):
     qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
 
 
+@pytest.fixture
+def skip_if_no_torch_support():
+    """Overrides the skip_if_no_torch_support in the main conftest to also skip if torch is
+    present but is version 1.3 or earlier"""
+    pytest.importorskip("torch", minversion="1.4")
+
+
 @pytest.mark.parametrize("interface", qml.qnodes.decorator.ALLOWED_INTERFACES)
 @pytest.mark.usefixtures("skip_if_no_torch_support", "skip_if_no_tf_support")
 class TestSquaredErrorLoss:
