@@ -18,8 +18,9 @@ Contains the ``BasisEmbedding`` template.
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, check_wires, get_shape, check_type
+from pennylane.templates.utils import check_shape, get_shape, check_type
 import pennylane as qml
+from pennylane.wires import Wires
 
 
 @template
@@ -37,7 +38,8 @@ def BasisEmbedding(features, wires):
 
     Args:
         features (array): binary input array of shape ``(n, )``
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -46,7 +48,7 @@ def BasisEmbedding(features, wires):
     #############
     # Input checks
 
-    wires = check_wires(wires)
+    wires = Wires(wires)
 
     check_type(
         features, [Iterable], msg="'features' must be iterable; got type {}".format(type(features))
@@ -63,6 +65,8 @@ def BasisEmbedding(features, wires):
         raise ValueError("'basis_state' must only consist of 0s and 1s; got {}".format(features))
 
     ###############
+
+    wires = wires.tolist()  # TODO: Remove when operators take Wires objects
 
     for wire, bit in zip(wires, features):
         if bit == 1:
