@@ -174,7 +174,7 @@ class PauliY(Observable, Operation):
                 computational basis.
         """
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
-    
+
     @staticmethod
     def decomposition(wires):
         decomp_ops = [RY(np.pi, wires=wires)]
