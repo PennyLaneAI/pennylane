@@ -73,6 +73,11 @@ class Hadamard(Observable, Operation):
         """
         return [RY(-np.pi / 4, wires=self.wires)]
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [RX(np.pi / 2, wires=wires), RZ(np.pi / 2, wires=wires)]
+        return decomp_ops
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -115,6 +120,11 @@ class PauliX(Observable, Operation):
             computational basis.
         """
         return [Hadamard(wires=self.wires)]
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [RX(np.pi, wires=wires)]
+        return decomp_ops
 
 
 class PauliY(Observable, Operation):
@@ -161,6 +171,11 @@ class PauliY(Observable, Operation):
         """
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [RY(np.pi, wires=wires)]
+        return decomp_ops
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -193,6 +208,11 @@ class PauliZ(Observable, DiagonalOperation):
     def diagonalizing_gates(self):
         return []
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [RZ(np.pi, wires=wires)]
+        return decomp_ops
+
 
 class S(DiagonalOperation):
     r"""S(wires)
@@ -223,6 +243,11 @@ class S(DiagonalOperation):
     def _eigvals(cls, *params):
         return np.array([1, 1j])
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [RZ(np.pi / 2, wires=wires)]
+        return decomp_ops
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -252,6 +277,11 @@ class T(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [RZ(np.pi / 4, wires=wires)]
+        return decomp_ops
 
 
 class CNOT(Operation):
