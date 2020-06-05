@@ -75,7 +75,11 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RX(np.pi / 2, wires=wires), RZ(np.pi / 2, wires=wires)]
+        decomp_ops = [
+            RZ(np.pi / 2, wires=wires),
+            RX(np.pi / 2, wires=wires),
+            RZ(np.pi / 2, wires=wires),
+        ]
         return decomp_ops
 
 
@@ -170,14 +174,10 @@ class PauliY(Observable, Operation):
                 computational basis.
         """
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
-
+    
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [
-            RZ(np.pi / 2, wires=wires),
-            RX(np.pi / 2, wires=wires),
-            RZ(np.pi / 2, wires=wires),
-        ]
+        decomp_ops = [RY(np.pi, wires=wires)]
         return decomp_ops
 
 
