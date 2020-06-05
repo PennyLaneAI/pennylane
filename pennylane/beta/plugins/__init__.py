@@ -18,3 +18,4 @@ This package contains experimental plugin devices for PennyLane.
 """
 from .default_tensor import DefaultTensor
 from .default_tensor_tf import DefaultTensorTF
+from .default_qubit_tf import DefaultQubitTF
