@@ -73,8 +73,8 @@ def _get_qnode_class(device, interface, diff_method):
         if allows_passthru:
             if interface != passthru_interface:
                 raise ValueError(
-                    "Device {} only supports the {} interface when "
-                    "diff_method='backprop'".format(device.short_name, passthru_interface)
+                    "Device {} only supports diff_method='backprop' when using the "
+                    "{} interface.".format(device.short_name, passthru_interface)
                 )
             return PassthruQNode
 

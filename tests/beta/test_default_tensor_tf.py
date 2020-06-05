@@ -767,7 +767,7 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='backprop'"):
+        with pytest.raises(ValueError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
             res = cost_raising_error(params)
 
     def test_error_classical_diff_autograd(self, tol):
@@ -789,5 +789,5 @@ class TestHybridInterfaceDeviceIntegration:
 
             return circuit(params[0], w=0)
 
-        with pytest.raises(ValueError, match="Device default.tensor.tf only supports the tf interface when diff_method='backprop'"):
+        with pytest.raises(ValueError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
             res = cost_raising_error(params)

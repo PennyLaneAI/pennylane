@@ -977,8 +977,10 @@ class TestPassthruIntegration:
         b = tf.Variable(0.12)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b)[0]
-            res = res[1] - res[0]
+            # get the probability of wire 1
+            prob_wire_1 = circuit(a, b)[0]
+            # compute Prob(|1>_1) - Prob(|0>_1)
+            res = prob_wire_1[1] - prob_wire_1[0]
 
         expected = -tf.cos(a) * tf.cos(b)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1089,7 +1091,7 @@ class TestPassthruIntegration:
 
         with pytest.raises(
             ValueError,
-            match="default.qubit.tf only supports the tf interface when diff_method='backprop'",
+            match="default.qubit.tf only supports diff_method='backprop' when using the tf interface",
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
@@ -1131,8 +1133,8 @@ class TestSamplesNonAnalytic:
 
         assert tape.gradient(res, a) is None
 
-    def test_estimating_probability(self, tol):
-        """Test that the probability is accurately estimated."""
+    def test_estimating_marginal_probability(self, tol):
+        """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, analytic=False, shots=1000)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
@@ -1145,6 +1147,23 @@ class TestSamplesNonAnalytic:
         assert isinstance(res, tf.Tensor)
 
         expected = np.array([0, 1])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_estimating_full_probability(self, tol):
+        """Test that the probability of a subset of wires is accurately estimated."""
+        dev = qml.device("default.qubit.tf", wires=2, analytic=False, shots=1000)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            qml.PauliX(0)
+            qml.PauliX(1)
+            return qml.probs(wires=[0, 1])
+
+        res = circuit()
+
+        assert isinstance(res, tf.Tensor)
+
+        expected = np.array([0, 0, 0, 1])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_estimating_expectation_values(self, tol):
@@ -1187,8 +1206,13 @@ class TestSamplesNonAnalytic:
         with tf.GradientTape() as tape:
             res = circuit(a, b)
 
+        assert isinstance(res, tf.Tensor)
         grad = tape.gradient(res, [a, b])
         assert grad == [None, None]
+
+
+class TestHighLevelIntegration:
+    """Tests for integration with higher level components of PennyLane."""
 
     def test_qnode_collection_integration(self):
         """Test that a PassthruQNode default.qubit.tf works with QNodeCollections."""

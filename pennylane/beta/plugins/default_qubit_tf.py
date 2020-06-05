@@ -94,7 +94,7 @@ class DefaultQubitTF(DefaultQubit):
     >>> print(tape.gradient(res, weights))
     tf.Tensor([-3.5471588e-01 -1.5882589e+00  3.4694470e-17], shape=(3,), dtype=float32)
 
-    There are a couple of things to keep in mind when using the ``"backprop"`` 
+    There are a couple of things to keep in mind when using the ``"backprop"``
     differentiation method for QNodes:
 
     * You must use the ``"tf"`` interface for classical backpropagation, as TensorFlow is

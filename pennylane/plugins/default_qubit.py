@@ -86,17 +86,13 @@ class DefaultQubit(QubitDevice):
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires, *, shots=1000, analytic=True):
-        # create the initial state
-        state = np.zeros(2 ** wires, dtype=np.complex128)
-        state[0] = 1
-        state = self._asarray(state, dtype=self.C_DTYPE)
-
-        # Internally, we store the state as a tensor of dimension [2]*wires
-        self._state = self._reshape(state, [2] * wires)
-        self._pre_rotated_state = self._state
-
         # call QubitDevice init
         super().__init__(wires, shots, analytic)
+
+        # Create the initial state. Internally, we store the
+        # state as an array of dimension [2]*wires.
+        self._state = self._create_basis_state(0)
+        self._pre_rotated_state = self._state
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -158,6 +154,21 @@ class DefaultQubit(QubitDevice):
             return unitary.eigvals
 
         return unitary.matrix
+
+    def _create_basis_state(self, index):
+        """Return a computational basis state over all wires.
+
+        Args:
+            index (int): integer representing the computational basis state
+
+        Returns:
+            array[complex]: complex array of shape ``[2]*self.num_wires``
+            representing the statevector of the basis state
+        """
+        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
+        state[index] = 1
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        return self._reshape(state, [2] * self.num_wires)
 
     @property
     def state(self):
@@ -222,10 +233,7 @@ class DefaultQubit(QubitDevice):
         basis_states = 2 ** (self.num_wires - 1 - np.array(wires))
         num = int(np.dot(state, basis_states))
 
-        state = np.zeros(2 ** self.num_wires)
-        state[num] = 1.0
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        self._state = self._reshape(state, [2] * self.num_wires)
+        self._state = self._create_basis_state(num)
 
     def _apply_unitary(self, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
@@ -309,13 +317,10 @@ class DefaultQubit(QubitDevice):
 
     def reset(self):
         """Reset the device"""
-        # init the state vector to |00..0>
         super().reset()
 
-        state = np.zeros([np.prod(self._state.shape)], dtype=np.complex128)
-        state[0] = 1
-        state = state.reshape(self._state.shape)
-        self._state = self._asarray(state, dtype=self.C_DTYPE)
+        # init the state vector to |00..0>
+        self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
