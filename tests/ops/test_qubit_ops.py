@@ -392,12 +392,16 @@ class TestOperations:
 
         assert len(res) == 2
 
-        assert res[0].name == "RX"
+        assert res[0].name == "RZ"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 2
 
-        assert res[1].name == "RZ"
+        assert res[1].name == "RX"
         assert res[1].wires == [0]
+        assert res[0].params[0] == np.pi / 2
+        
+        assert res[2].name == "RZ"
+        assert res[2].wires == [0]
         assert res[0].params[0] == np.pi / 2
 
     def test_phase_shift(self, tol):
