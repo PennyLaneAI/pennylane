@@ -16,13 +16,50 @@ This module contains the :func:`to_torch` function to convert Numpy-interfacing 
 compatible quantum nodes.
 """
 # pylint: disable=redefined-outer-name,arguments-differ
+from collections import Iterable
 import inspect
 from functools import partial
+import numbers
 
 import numpy as np
 import torch
+from torch.autograd.function import once_differentiable
 
-from pennylane.utils import unflatten
+
+def unflatten_torch(flat, model):
+    """Restores an arbitrary nested structure to a flattened Torch tensor.
+
+    Args:
+        flat (torch.Tensor): 1D tensor of items
+        model (array, Iterable, Number): model nested structure
+
+    Returns:
+        Tuple[list[torch.Tensor], torch.Tensor]: tuple containing elements of ``flat`` arranged
+        into the nested structure of model, as well as the unused elements of ``flat``.
+
+    Raises:
+        TypeError: if ``model`` contains an object of unsupported type
+    """
+    if isinstance(model, (numbers.Number, str)):
+        return flat[0], flat[1:]
+
+    if isinstance(model, (torch.Tensor, np.ndarray)):
+        try:
+            idx = model.numel()
+        except AttributeError:
+            idx = model.size
+
+        res = flat[:idx].reshape(model.shape)
+        return res, flat[idx:]
+
+    if isinstance(model, Iterable):
+        res = []
+        for x in model:
+            val, flat = unflatten_torch(flat, x)
+            res.append(val)
+        return res, flat
+
+    raise TypeError("Unsupported type in the model: {}".format(type(model)))
 
 
 def _get_default_args(func):
@@ -111,12 +148,35 @@ def to_torch(qnode):
         """The TorchQNode"""
 
         @staticmethod
+        def set_trainable(args):
+            """Given input arguments to the TorchQNode, determine which arguments
+            are trainable and which aren't.
+
+            Currently, all arguments are assumed to be nondifferentiable by default,
+            unless the ``torch.tensor`` attribute ``requires_grad`` is set to True.
+
+            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+            """
+            trainable_args = set()
+
+            for idx, arg in enumerate(args):
+                if getattr(arg, "requires_grad", False):
+                    trainable_args.add(idx)
+
+            qnode.set_trainable_args(trainable_args)
+
+        @staticmethod
         def forward(ctx, input_kwargs, *input_):
             """Implements the forward pass QNode evaluation"""
             # detach all input tensors, convert to NumPy array
             ctx.args = args_to_numpy(input_)
             ctx.kwargs = kwargs_to_numpy(input_kwargs)
             ctx.save_for_backward(*input_)
+
+            # Determine which QNode input tensors require gradients,
+            # and thus communicate to the QNode which ones must
+            # be wrapped as PennyLane variables.
+            _TorchQNode.set_trainable(input_)
 
             # evaluate the QNode
             res = qnode(*ctx.args, **ctx.kwargs)
@@ -135,6 +195,7 @@ def to_torch(qnode):
             return torch.from_numpy(res)
 
         @staticmethod
+        @once_differentiable
         def backward(ctx, grad_output):  # pragma: no cover
             """Implements the backwards pass QNode vector-Jacobian product"""
             # NOTE: This method is definitely tested by the `test_torch.py` test suite,
@@ -144,29 +205,18 @@ def to_torch(qnode):
 
             # evaluate the Jacobian matrix of the QNode
             jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
+            jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
-            if grad_output.is_cuda:  # pragma: no cover
-                grad_output_np = grad_output.cpu().detach().numpy()
-            else:
-                grad_output_np = grad_output.detach().numpy()
-
-            # perform the vector-Jacobian product
-            if not grad_output_np.shape:
-                temp = grad_output_np * jacobian
-            else:
-                temp = grad_output_np.T @ jacobian
+            vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
+            vjp = vjp.flatten()
 
             # restore the nested structure of the input args
-            temp = [
-                np.array(i) if not isinstance(i, np.ndarray) else i
-                for i in unflatten(temp.flat, ctx.args)
-            ]
-
-            # convert the result to torch tensors, matching
-            # the type of the input tensors
+            grad_input_list = unflatten_torch(vjp, ctx.saved_tensors)[0]
             grad_input = []
-            for i, j in zip(temp, ctx.saved_tensors):
-                res = torch.as_tensor(torch.from_numpy(i), dtype=j.dtype)
+
+            # match the type and device of the input tensors
+            for i, j in zip(grad_input_list, ctx.saved_tensors):
+                res = torch.as_tensor(i, dtype=j.dtype)
                 if j.is_cuda:  # pragma: no cover
                     cuda_device = j.get_device()
                     res = torch.as_tensor(res, device=cuda_device)
@@ -174,10 +224,16 @@ def to_torch(qnode):
 
             return (None,) + tuple(grad_input)
 
-    class qnode_str(partial):
+    class TorchQNode(partial):
         """Torch QNode"""
 
         # pylint: disable=too-few-public-methods
+
+        # Here, we are making use of functools.partial to dynamically add
+        # methods and attributes to the custom gradient method defined below.
+        # This allows us to provide more useful __str__ and __repr__ methods
+        # for the decorated function (so it would still look like a QNode to end-users),
+        # as well as making QNode attributes and methods available.
 
         @property
         def interface(self):
@@ -195,13 +251,24 @@ def to_torch(qnode):
             """REPL representation"""
             return self.__str__()
 
+        # Bind QNode methods
         print_applied = qnode.print_applied
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         func = qnode.func
+        set_trainable_args = qnode.set_trainable_args
+        get_trainable_args = qnode.get_trainable_args
 
-    @qnode_str
+        # Bind QNode attributes. Note that attributes must be
+        # bound as properties; by making use of closure, we ensure
+        # that updates to the wrapped QNode attributes are reflected
+        # by the wrapper class.
+        arg_vars = property(lambda self: qnode.arg_vars)
+        num_variables = property(lambda self: qnode.num_variables)
+        par_to_grad_method = property(lambda self: qnode.par_to_grad_method)
+
+    @TorchQNode
     def custom_apply(*args, **kwargs):
         """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""
 

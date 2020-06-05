@@ -41,7 +41,8 @@ info = {
             'default.gaussian = pennylane.plugins:DefaultGaussian',
             'default.qubit.jax = pennylane.beta.plugins.default_qubit_jax:DefaultQubitJAX',
             'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
-            'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF'
+            'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF',
+            'default.qubit.tf = pennylane.beta.plugins.default_qubit_tf:DefaultQubitTF',
             ],
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
@@ -66,7 +67,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',

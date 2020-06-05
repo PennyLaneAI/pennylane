@@ -21,7 +21,21 @@ import numpy as np
 
 import pennylane as qml
 
-from conftest import torch, tf, Variable
+try:
+    import torch
+except ImportError as e:
+    torch = None
+
+try:
+    import tensorflow as tf
+
+    if tf.__version__[0] == "1":
+        tf.enable_eager_execution()
+
+    from tensorflow import Variable
+except ImportError as e:
+    tf = None
+    Variable = None
 
 
 class TestMap:

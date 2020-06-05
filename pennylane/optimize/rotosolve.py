@@ -13,7 +13,7 @@
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
 
-from pennylane import numpy as np
+import numpy as np
 from pennylane.utils import _flatten, unflatten
 
 
@@ -45,7 +45,7 @@ class RotosolveOptimizer:
 
     >>> opt = qml.optimize.RotosolveOptimizer()
     >>> x = [0.3, 0.7]
-    >>> n_steps = 1000
+    >>> n_steps = 10
 
     Set up the PennyLane circuit using the ``default.qubit`` as simulator device.
 
@@ -55,20 +55,20 @@ class RotosolveOptimizer:
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=1)
     ...     qml.CNOT(wires=[0, 1])
-    ...     return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(1))
+    ...     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
     Define a cost function (that takes a list of values as input and return a single value) based
     on the above circuit.
 
     >>> def cost(x):
-    ...     X_1, Y_2 = circuit(x)
-    ...     return 0.2 * X_1 + 0.5 * Y_2
+    ...     Z_1, X_2 = circuit(x)
+    ...     return 0.2 * Z_1 + 0.5 * X_2
 
     Run the optimization step-by-step for ``n_steps`` steps.
 
-    >>> cost_rotosel = []
+    >>> cost_rotosolve = []
     >>> for _ in range(n_steps):
-    ...     cost_rotosel.append(cost(x))
+    ...     cost_rotosolve.append(cost(x))
     ...     x = opt.step(cost, x)
 
     The optimized values for x should now be stored in ``x`` and steps-vs-cost can be seen by
@@ -83,11 +83,11 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
 
         Returns:
-            array: The new variable values :math:`x^{(t+1)}`.
+            array: the new variable values :math:`x^{(t+1)}`
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         objective_fn_flat = lambda x_flat: objective_fn(unflatten(x_flat, x))
@@ -108,12 +108,12 @@ class RotosolveOptimizer:
             objective_fn (function): The objective function for optimization. It should take a
                 sequence of the values ``x`` and a list of the gates ``generators`` as inputs, and
                 return a single value.
-            x (Union[Sequence[float], float]): Sequence containing the initial values of the
-                variables to be optimized over, or a single float with the initial value.
-            d (int): The position in the input sequence ``x`` containing the value to be optimized.
+            x (Union[Sequence[float], float]): sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value
+            d (int): the position in the input sequence ``x`` containing the value to be optimized
 
         Returns:
-            array: The input sequence ``x`` with the value at position ``d`` optimized.
+            array: the input sequence ``x`` with the value at position ``d`` optimized
         """
         # helper function for x[d] = theta
         def insert(x, d, theta):

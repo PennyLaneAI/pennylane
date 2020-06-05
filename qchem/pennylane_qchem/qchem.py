@@ -414,7 +414,7 @@ def _terms_to_qubit_operator(coeffs, ops):
     for coeff, op in zip(coeffs, ops):
 
         # wire ids
-        wires = [js[0] for js in op.wires]
+        wires = op.wires
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]
@@ -553,10 +553,13 @@ def generate_hamiltonian(
     )
 
     docc_indices, active_indices = active_space(
-        mol_name, hf_data, n_active_electrons, n_active_orbitals)
+        mol_name, hf_data, n_active_electrons, n_active_orbitals
+    )
 
-    h_of, nr_qubits = decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices,
-                                           active_indices), 2 * len(active_indices)
+    h_of, nr_qubits = (
+        decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
+        2 * len(active_indices),
+    )
 
     return convert_hamiltonian(h_of), nr_qubits
 
@@ -611,14 +614,14 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
     if n_orbitals <= n_electrons:
         raise ValueError(
             "The number of active orbitals ({}) "
-            "has to be greater than the number of active electrons ({})."
-            .format(n_orbitals, n_electrons)
+            "has to be greater than the number of active electrons ({}).".format(
+                n_orbitals, n_electrons
+            )
         )
 
     if delta_sz not in (0, 1, -1, 2, -2):
         raise ValueError(
-            "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({})."
-             .format(delta_sz)
+            "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({}).".format(delta_sz)
         )
 
     # define the single-particle state spin quantum number 'sz'
@@ -626,20 +629,67 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
 
     # nested list with the indices 'p, r' for each 1particle-1hole (ph) configuration
     ph = [
-           [r, p] 
-           for r in range(n_electrons) for p in range(n_electrons, n_orbitals)
-           if sz[p]-sz[r] == delta_sz
+        [r, p]
+        for r in range(n_electrons)
+        for p in range(n_electrons, n_orbitals)
+        if sz[p] - sz[r] == delta_sz
     ]
 
     # nested list with the indices 's, r, q, p' for each 2particle-2hole (pphh) configuration
     pphh = [
-             [s, r, q, p] 
-             for s in range(n_electrons-1) for r in range(s+1, n_electrons)
-             for q in range(n_electrons, n_orbitals-1) for p in range(q+1, n_orbitals)
-             if (sz[p] + sz[q] - sz[r] - sz[s]) == delta_sz
+        [s, r, q, p]
+        for s in range(n_electrons - 1)
+        for r in range(s + 1, n_electrons)
+        for q in range(n_electrons, n_orbitals - 1)
+        for p in range(q + 1, n_orbitals)
+        if (sz[p] + sz[q] - sz[r] - sz[s]) == delta_sz
     ]
 
-    return ph, pphh    
+    return ph, pphh
+
+
+def hf_state(n_electrons, m_spin_orbitals):
+    r"""Generates the occupation-number vector representing the Hartree-Fock (HF)
+    state of :math:`N` electrons in a basis of :math:`M` spin orbitals.
+
+    The many-particle wave function in the HF approximation is a `Slater determinant
+    <https://en.wikipedia.org/wiki/Slater_determinant>`_. In Fock space, a Slater determinant
+    is represented by the occupation-number vector:
+
+    .. math:
+        \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_M \rangle,
+        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right.
+
+    **Example**
+
+    >>> init_state = hf_state(2, 6)
+    >>> print(init_state)
+    [1 1 0 0 0 0]
+
+    Args:
+        n_electrons (int): number of active electrons
+        m_spin_orbitals (int): number of active **spin-orbitals**
+
+    Returns:
+        array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
+    """
+
+    if n_electrons <= 0:
+        raise ValueError(
+            "The number of active electrons has to be larger than zero; got 'n_electrons' = {}".format(
+                n_electrons
+            )
+        )
+
+    if n_electrons > m_spin_orbitals:
+        raise ValueError(
+            "The number of active orbitals cannot be smaller than the number of active electrons;"
+            " got 'm_spin_orbitals'={} < 'n_electrons'={}".format(m_spin_orbitals, n_electrons)
+        )
+
+    hf_state_on = np.where(np.arange(m_spin_orbitals) < n_electrons, 1, 0)
+
+    return np.array(hf_state_on)
 
 
 __all__ = [
@@ -653,4 +703,5 @@ __all__ = [
     "convert_hamiltonian",
     "generate_hamiltonian",
     "sd_excitations",
+    "hf_state",
 ]

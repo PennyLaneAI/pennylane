@@ -158,5 +158,5 @@ The final weights and circuit value are:
 <tf.Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
 >>> theta
 <tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
->>> circuit(phi, theta)
+>>> circuit4(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>

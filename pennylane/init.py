@@ -17,7 +17,7 @@ to use in templates.
 """
 # pylint: disable=too-many-arguments
 from math import pi
-import numpy as np
+from pennylane import numpy as np
 
 
 def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
