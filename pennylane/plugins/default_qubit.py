@@ -123,7 +123,7 @@ class DefaultQubit(QubitDevice):
         """Applies operations to the internal device state.
 
         Args:
-            operation (~.Operation): operation to apply to the device
+            operation (~.Operation): operation to apply on the device
         """
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], operation.wires)

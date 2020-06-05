@@ -46,12 +46,13 @@ from . import tf_ops
 
 
 class DefaultQubitTF(DefaultQubit):
-    """Experimental simulator plugin based on ``"default.qubit"``, written
+    """Simulator plugin based on ``"default.qubit"``, written
+
     using TensorFlow.
 
     **Short name:** ``default.qubit.tf``
 
-    This experimental device provides a pure-state qubit simulator written using TensorFlow.
+    This device provides a pure-state qubit simulator written using TensorFlow.
     As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
     be faster than the parameter-shift rule for analytic quantum gradients
     when the number of parameters to be optimized is large.
@@ -93,7 +94,8 @@ class DefaultQubitTF(DefaultQubit):
     >>> print(tape.gradient(res, weights))
     tf.Tensor([-3.5471588e-01 -1.5882589e+00  3.4694470e-17], shape=(3,), dtype=float32)
 
-    There are a couple of things to keep in mind when using ``"backprop"`` mode:
+    There are a couple of things to keep in mind when using the ``"backprop"`` 
+    differentiation method for QNodes:
 
     * You must use the ``"tf"`` interface for classical backpropagation, as TensorFlow is
       used as the device backend.
@@ -105,7 +107,6 @@ class DefaultQubitTF(DefaultQubit):
 
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
     gradients using the ``parameter-shift`` or ``finite-diff`` differentiation methods,
-
     consider using the ``default.qubit`` device instead.
 
 
@@ -150,7 +151,6 @@ class DefaultQubitTF(DefaultQubit):
     _reshape = staticmethod(tf.reshape)
     _flatten = staticmethod(lambda tensor: tf.reshape(tensor, [-1]))
     _gather = staticmethod(tf.gather)
-    _scatter = staticmethod(tf.scatter_nd)
     _einsum = staticmethod(tf.einsum)
     _cast = staticmethod(tf.cast)
     _transpose = staticmethod(tf.transpose)
