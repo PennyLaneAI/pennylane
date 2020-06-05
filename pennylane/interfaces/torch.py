@@ -25,8 +25,6 @@ import numpy as np
 import torch
 from torch.autograd.function import once_differentiable
 
-from pennylane.utils import _flatten
-
 
 def unflatten_torch(flat, model):
     """Restores an arbitrary nested structure to a flattened Torch tensor.
@@ -150,12 +148,35 @@ def to_torch(qnode):
         """The TorchQNode"""
 
         @staticmethod
+        def set_trainable(args):
+            """Given input arguments to the TorchQNode, determine which arguments
+            are trainable and which aren't.
+
+            Currently, all arguments are assumed to be nondifferentiable by default,
+            unless the ``torch.tensor`` attribute ``requires_grad`` is set to True.
+
+            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+            """
+            trainable_args = set()
+
+            for idx, arg in enumerate(args):
+                if getattr(arg, "requires_grad", False):
+                    trainable_args.add(idx)
+
+            qnode.set_trainable_args(trainable_args)
+
+        @staticmethod
         def forward(ctx, input_kwargs, *input_):
             """Implements the forward pass QNode evaluation"""
             # detach all input tensors, convert to NumPy array
             ctx.args = args_to_numpy(input_)
             ctx.kwargs = kwargs_to_numpy(input_kwargs)
             ctx.save_for_backward(*input_)
+
+            # Determine which QNode input tensors require gradients,
+            # and thus communicate to the QNode which ones must
+            # be wrapped as PennyLane variables.
+            _TorchQNode.set_trainable(input_)
 
             # evaluate the QNode
             res = qnode(*ctx.args, **ctx.kwargs)
@@ -182,31 +203,12 @@ def to_torch(qnode):
             # subtleties in the torch.autograd.FunctionMeta metaclass, specifically
             # the way in which the backward class is created on the fly
 
-            # determine the QNode variables which should be differentiated
-            diff_indices = None
-            non_diff_indices = set()
-
-            for arg, arg_variable in zip(ctx.saved_tensors, qnode.arg_vars):
-                if not getattr(arg, "requires_grad", False):
-                    indices = [i.idx for i in _flatten(arg_variable)]
-                    non_diff_indices.update(indices)
-
-            if non_diff_indices:
-                diff_indices = set(range(qnode.num_variables)) - non_diff_indices
-
             # evaluate the Jacobian matrix of the QNode
-            jacobian = qnode.jacobian(ctx.args, ctx.kwargs, wrt=diff_indices)
+            jacobian = qnode.jacobian(ctx.args, ctx.kwargs)
             jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
             vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
             vjp = vjp.flatten()
-
-            if non_diff_indices:
-                # Torch requires we return a gradient of size (num_variables,)
-                res = torch.zeros([qnode.num_variables], dtype=grad_output.dtype)
-                indices = np.fromiter(diff_indices, dtype=np.int64)
-                res[indices] = vjp
-                vjp = res
 
             # restore the nested structure of the input args
             grad_input_list = unflatten_torch(vjp, ctx.saved_tensors)[0]
@@ -222,10 +224,16 @@ def to_torch(qnode):
 
             return (None,) + tuple(grad_input)
 
-    class qnode_str(partial):
+    class TorchQNode(partial):
         """Torch QNode"""
 
         # pylint: disable=too-few-public-methods
+
+        # Here, we are making use of functools.partial to dynamically add
+        # methods and attributes to the custom gradient method defined below.
+        # This allows us to provide more useful __str__ and __repr__ methods
+        # for the decorated function (so it would still look like a QNode to end-users),
+        # as well as making QNode attributes and methods available.
 
         @property
         def interface(self):
@@ -243,16 +251,25 @@ def to_torch(qnode):
             """REPL representation"""
             return self.__str__()
 
+        # Bind QNode methods
         print_applied = qnode.print_applied
         jacobian = qnode.jacobian
         metric_tensor = qnode.metric_tensor
         draw = qnode.draw
         _qnode = qnode
         func = qnode.func
+        set_trainable_args = qnode.set_trainable_args
+        get_trainable_args = qnode.get_trainable_args
+
+        # Bind QNode attributes. Note that attributes must be
+        # bound as properties; by making use of closure, we ensure
+        # that updates to the wrapped QNode attributes are reflected
+        # by the wrapper class.
         arg_vars = property(lambda self: qnode.arg_vars)
         num_variables = property(lambda self: qnode.num_variables)
+        par_to_grad_method = property(lambda self: qnode.par_to_grad_method)
 
-    @qnode_str
+    @TorchQNode
     def custom_apply(*args, **kwargs):
         """Custom apply wrapper, to allow passing kwargs to the TorchQNode"""
 

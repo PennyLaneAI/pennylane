@@ -39,11 +39,15 @@
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
   [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
 
-* Placeholder for variable/tensor refactor. So far this has included:
+* A significant refactor with respect to how QNodes and interfaces mark quantum function
+  arguments as differentiable, designed to improve performance and make QNodes more intuitive.
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
   [(#650)](https://github.com/XanaduAI/pennylane/pull/650)
   [(#652)](https://github.com/XanaduAI/pennylane/pull/652)
   [(#655)](https://github.com/XanaduAI/pennylane/pull/655)
+  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
+
+  In particular, the following changes have been made:
 
   - A new `ndarray` subclass `pennylane.numpy.tensor`, which extends NumPy arrays with
     the keyword argument and attribute `requires_grad`. Tensors which have `requires_grad=False`
@@ -58,12 +62,17 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
-  - The QNode Autograd and Torch interfaces now inspect QNode positional arguments when calculating
-    the gradient. If any argument is marked as `requires_grad=False`, it
+  - QNodes have two new public methods: `QNode.set_trainable_args()` and `QNode.get_trainable_args()`.
+    These are designed to be called by interfaces, to specify to the QNode which of its
+    input arguments are differentiable. Arguments which are non-differentiable will not be converted
+    to PennyLane Variable objects within the QNode.
+
+  - The QNode Autograd and Torch interfaces now inspect QNode positional arguments.
+    If any argument is marked as `requires_grad=False`, it
     is automatically excluded from quantum gradient computations.
 
-  - The QNode TF interface now inspects QNode positional arguments when calculating
-    the gradient. If any argument is not being watched by a `tf.GradientTape()`,
+  - The QNode TF interface now inspects QNode positional arguments.
+    If any argument is not being watched by a `tf.GradientTape()`,
     it is automatically excluded from quantum gradient computations.
 
 * Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
