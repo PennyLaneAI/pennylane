@@ -66,7 +66,26 @@ class QubitDevice(Device):
     """
 
     # pylint: disable=too-many-public-methods
+    C_DTYPE = np.complex128
+    R_DTYPE = np.float64
     _asarray = staticmethod(np.asarray)
+    _dot = staticmethod(np.dot)
+    _abs = staticmethod(np.abs)
+    _reduce_sum = staticmethod(lambda array, axes: np.apply_over_axes(np.sum, array, axes))
+    _reshape = staticmethod(np.reshape)
+    _flatten = staticmethod(lambda array: array.flatten())
+    _gather = staticmethod(lambda array, indices: array[indices])
+    _einsum = staticmethod(np.einsum)
+    _cast = staticmethod(np.asarray)
+    _transpose = staticmethod(np.transpose)
+    _tensordot = staticmethod(np.tensordot)
+
+    @staticmethod
+    def _scatter(indices, array, new_dimensions):
+        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+        new_array[indices] = array
+        return new_array
+
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires=1, shots=1000, analytic=True):
@@ -392,7 +411,7 @@ class QubitDevice(Device):
         basis_states, counts = np.unique(indices, return_counts=True)
         prob = np.zeros([2 ** len(wires)], dtype=np.float64)
         prob[basis_states] = counts / self.shots
-        return prob
+        return self._asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None):
         """Return either the analytic probability or estimated probability of
@@ -459,10 +478,10 @@ class QubitDevice(Device):
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = prob.reshape([2] * self.num_wires)
+        prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+        prob = self._flatten(self._reduce_sum(prob, inactive_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -471,16 +490,16 @@ class QubitDevice(Device):
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
         )
-        return prob[perm]
+        return self._gather(prob, perm)
 
     def expval(self, observable):
         wires = observable.wires
 
         if self.analytic:
             # exact expectation value
-            eigvals = observable.eigvals
+            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=wires)
-            return (eigvals @ prob).real
+            return self._dot(eigvals, prob)
 
         # estimate the ev
         return np.mean(self.sample(observable))
@@ -490,9 +509,9 @@ class QubitDevice(Device):
 
         if self.analytic:
             # exact variance value
-            eigvals = observable.eigvals
+            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=wires)
-            return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
+            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
         return np.var(self.sample(observable))
