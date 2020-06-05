@@ -17,8 +17,7 @@ Differentiable quantum nodes with Autograd interface.
 import autograd.extend
 import autograd.builtins
 
-from pennylane.numpy import zeros, fromiter, int64
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import unflatten
 
 
 def to_autograd(qnode):
@@ -42,8 +41,23 @@ def to_autograd(qnode):
         # mark the evaluate method as an Autograd primitive
         evaluate = autograd.extend.primitive(qnode.__class__.evaluate)
 
+        def set_trainable(self, args):
+            """Given input arguments to the AutogradQNode, determine which arguments
+            are trainable and which aren't.
+
+            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+            """
+            trainable_args = set()
+
+            for idx, arg in enumerate(args):
+                if getattr(arg, "requires_grad", True):
+                    trainable_args.add(idx)
+
+            self.set_trainable_args(trainable_args)
+
         def __call__(self, *args, **kwargs):
             # prevents autograd boxed arguments from going through to evaluate
+            self.set_trainable(args)
             args = autograd.builtins.tuple(args)  # pylint: disable=no-member
             return self.evaluate(args, kwargs)
 
@@ -68,31 +82,14 @@ def to_autograd(qnode):
                     nested Sequence[float]: vector-Jacobian product, arranged
                     into the nested structure of the input arguments in ``args``
                 """
-                diff_indices = None
-                non_diff_indices = set()
-
-                for arg, arg_variable in zip(args, self.arg_vars):
-                    if not getattr(arg, "requires_grad", True):
-                        indices = [i.idx for i in _flatten(arg_variable)]
-                        non_diff_indices.update(indices)
-
-                if non_diff_indices:
-                    diff_indices = set(range(self.num_variables)) - non_diff_indices
-
                 # Jacobian matrix of the circuit
-                jac = self.jacobian(args, kwargs, wrt=diff_indices)
+                self.set_trainable(args)
+                jac = self.jacobian(args, kwargs)
 
                 if not g.shape:
                     vjp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
                 else:
                     vjp = g @ jac
-
-                if non_diff_indices:
-                    # Autograd requires we return a gradient of size (num_variables,)
-                    res = zeros([self.num_variables])
-                    indices = fromiter(diff_indices, dtype=int64)
-                    res[indices] = vjp
-                    vjp = res
 
                 # Restore the nested structure of the input args.
                 vjp = unflatten(vjp.flat, args)
