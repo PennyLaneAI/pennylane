@@ -78,6 +78,9 @@
   ``CircuitGraph.to_openqasm()`` method.
   [(#623)](https://github.com/XanaduAI/pennylane/pull/623)
 
+* Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, and Hadamard gates, which decomposes
+  each of these gates into a product of rotation gates. [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.5.
@@ -91,7 +94,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
