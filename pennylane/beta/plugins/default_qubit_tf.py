@@ -46,9 +46,7 @@ from . import tf_ops
 
 
 class DefaultQubitTF(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written
-
-    using TensorFlow.
+    """Simulator plugin based on ``"default.qubit"``, written using TensorFlow.
 
     **Short name:** ``default.qubit.tf``
 
