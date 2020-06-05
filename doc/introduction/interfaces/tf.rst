@@ -100,8 +100,8 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = Variable([0.5, 0.1])
-    theta = Variable(0.2)
+    phi = tf.Variable([0.5, 0.1])
+    theta = tf.Variable(0.2)
 
     with tf.GradientTape() as tape:
         # Use the circuit to calculate the loss value
@@ -158,5 +158,5 @@ The final weights and circuit value are:
 <tf.Variable 'Variable:0' shape=(2,) dtype=float64, numpy=array([ 1.04719755,  0.1       ])>
 >>> theta
 <tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
->>> circuit(phi, theta)
+>>> circuit4(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>

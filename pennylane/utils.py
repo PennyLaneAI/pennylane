@@ -22,7 +22,6 @@ import copy
 import numbers
 import functools
 import inspect
-import itertools
 
 import numpy as np
 
@@ -134,56 +133,6 @@ def _get_default_args(func):
         for idx, (k, v) in enumerate(signature.parameters.items())
         if v.default is not inspect.Parameter.empty
     }
-
-
-def expand(U, wires, num_wires):
-    r"""Expand a multi-qubit operator into a full system operator.
-
-    Args:
-        U (array): :math:`2^n \times 2^n` matrix where n = len(wires).
-        wires (Sequence[int]): Target subsystems (order matters! the
-            left-most Hilbert space is at index 0).
-
-    Raises:
-        ValueError: if wrong wires of the system were targeted or
-            the size of the unitary is incorrect
-
-    Returns:
-        array: :math:`2^N\times 2^N` matrix. The full system operator.
-    """
-    if num_wires == 1:
-        # total number of wires is 1, simply return the matrix
-        return U
-
-    N = num_wires
-    wires = np.asarray(wires)
-
-    if np.any(wires < 0) or np.any(wires >= N) or len(set(wires)) != len(wires):
-        raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
-    if U.shape != (2 ** len(wires), 2 ** len(wires)):
-        raise ValueError("Matrix parameter must be of size (2**len(wires), 2**len(wires))")
-
-    # generate N qubit basis states via the cartesian product
-    tuples = np.array(list(itertools.product([0, 1], repeat=N)))
-
-    # wires not acted on by the operator
-    inactive_wires = list(set(range(N)) - set(wires))
-
-    # expand U to act on the entire system
-    U = np.kron(U, np.identity(2 ** len(inactive_wires)))
-
-    # move active wires to beginning of the list of wires
-    rearranged_wires = np.array(list(wires) + inactive_wires)
-
-    # convert to computational basis
-    # i.e., converting the list of basis state bit strings into
-    # a list of decimal numbers that correspond to the computational
-    # basis state. For example, [0, 1, 0, 1, 1] = 2^3+2^1+2^0 = 11.
-    perm = np.ravel_multi_index(tuples[:, rearranged_wires].T, [2] * N)
-
-    # permute U to take into account rearranged wires
-    return U[:, perm][perm]
 
 
 @functools.lru_cache()
@@ -387,20 +336,39 @@ def inv(operation_list):
     return inv_ops
 
 
-def expand_matrix(matrix, original_wires, expanded_wires):
-    """Expand matrix to larger tensor space and rearrange wires"""
-    original_wires = list(original_wires)
-    expanded_wires = list(expanded_wires)
+def expand(matrix, original_wires, expanded_wires):
+    r"""Expand a an operator matrix to more wires.
+
+    Args:
+        matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of matrix
+        expanded_wires (Union[Sequence[int], int]): expanded wires of matrix, can be shuffled.
+            If a single int m is given, corresponds to list(range(m))
+
+    Returns:
+        array: :math:`2^m \times 2^m` matrix where m = len(expanded_wires).
+    """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
     N = len(original_wires)
     M = len(expanded_wires)
     D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if matrix.shape != (2 ** N, 2 ** N):
+        raise ValueError(
+            "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
+        )
 
     dims = [2] * (2 * N)
     tensor = matrix.reshape(dims)
 
     if D > 0:
         extra_dims = [2] * (2 * D)
-        identity = np.eye(len(extra_dims)).reshape(extra_dims)
+        identity = np.eye(2 ** D).reshape(extra_dims)
         expanded_tensor = np.tensordot(tensor, identity, axes=0)
         # Fix order of tensor factors
         expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
@@ -420,5 +388,50 @@ def expand_matrix(matrix, original_wires, expanded_wires):
 
     return expanded_tensor.reshape((2 ** M, 2 ** M))
 
-def rearrange_matrix(matrix, old_wires, new_wires):
-    return expand_matrix(matrix, old_wires, new_wires)
+
+def expand_vector(vector, original_wires, expanded_wires):
+    r"""Expand a vector to more wires.
+
+    Args:
+        vector (array): :math:`2^n` vector where n = len(original_wires).
+        original_wires (Sequence[int]): original wires of vector
+        expanded_wires (Union[Sequence[int], int]): expanded wires of vector, can be shuffled
+            If a single int m is given, corresponds to list(range(m))
+
+    Returns:
+        array: :math:`2^m` vector where m = len(expanded_wires).
+    """
+    if isinstance(expanded_wires, numbers.Integral):
+        expanded_wires = list(range(expanded_wires))
+
+    N = len(original_wires)
+    M = len(expanded_wires)
+    D = M - N
+
+    if not set(expanded_wires).issuperset(original_wires):
+        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
+
+    if vector.shape != (2 ** N,):
+        raise ValueError("Vector parameter must be of length 2**len(original_wires)")
+
+    dims = [2] * N
+    tensor = vector.reshape(dims)
+
+    if D > 0:
+        extra_dims = [2] * D
+        ones = np.ones(2 ** D).reshape(extra_dims)
+        expanded_tensor = np.tensordot(tensor, ones, axes=0)
+    else:
+        expanded_tensor = tensor
+
+    wire_indices = []
+    for wire in original_wires:
+        wire_indices.append(expanded_wires.index(wire))
+
+    wire_indices = np.array(wire_indices)
+
+    # Order tensor factors according to wires
+    original_indices = np.array(range(N))
+    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+
+    return expanded_tensor.reshape(2 ** M)

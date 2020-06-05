@@ -194,13 +194,15 @@ class VQECost:
     :doc:`optimizer </introduction/optimizers>`.
     """
 
-    def __init__(self, ansatz, hamiltonian, device, interface="autograd", diff_method="best"):
+    def __init__(
+        self, ansatz, hamiltonian, device, interface="autograd", diff_method="best", **kwargs
+    ):
         coeffs, observables = hamiltonian.terms
         self.hamiltonian = hamiltonian
         """Hamiltonian: the hamiltonian defining the VQE problem."""
 
         self.qnodes = qml.map(
-            ansatz, observables, device, interface=interface, diff_method=diff_method
+            ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
         )
         """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the
         the expectation value of each observable term after applying the circuit ansatz.
@@ -210,3 +212,21 @@ class VQECost:
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
+
+    def metric_tensor(self, args, kwargs=None, diag_approx=False, only_construct=False):
+        """Evaluate the value of the metric tensor.
+
+        Args:
+            args (tuple[Any]): positional (differentiable) arguments
+            kwargs (dict[str, Any]): auxiliary arguments
+            diag_approx (bool): iff True, use the diagonal approximation
+            only_construct (bool): Iff True, construct the circuits used for computing
+                the metric tensor but do not execute them, and return None.
+
+        Returns:
+            array[float]: metric tensor
+        """
+        # We know that for VQE, all the qnodes share the same ansatz so we select the first
+        return self.qnodes.qnodes[0].metric_tensor(
+            args=args, kwargs=kwargs, diag_approx=diag_approx, only_construct=only_construct
+        )

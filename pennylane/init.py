@@ -17,7 +17,7 @@ to use in templates.
 """
 # pylint: disable=too-many-arguments
 from math import pi
-import numpy as np
+from pennylane import numpy as np
 
 
 def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
@@ -161,8 +161,13 @@ def random_layers_uniform(n_layers, n_wires, n_rots=None, low=0, high=2 * pi, se
     if seed is not None:
         np.random.seed(seed)
 
+    # set default
     if n_rots is None:
         n_rots = n_wires
+
+    # no circuit if there are no wires
+    if n_wires == 0:
+        n_rots = 0
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_rots))
     return params
@@ -191,8 +196,13 @@ def random_layers_normal(n_layers, n_wires, n_rots=None, mean=0, std=0.1, seed=N
     if seed is not None:
         np.random.seed(seed)
 
+    # set default
     if n_rots is None:
         n_rots = n_wires
+
+    # no circuit if there are no wires
+    if n_wires == 0:
+        n_rots = 0
 
     params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_rots))
     return params
@@ -910,7 +920,7 @@ def simplified_two_design_weights_uniform(n_layers, n_wires, low=0, high=2 * pi,
 
     n_unitaries_per_layer = n_wires - 1
 
-    if n_unitaries_per_layer == 0:
+    if n_unitaries_per_layer in [0, -1]:
         params = np.array([])
     else:
         params = np.random.uniform(low=low, high=high, size=(n_layers, n_unitaries_per_layer, 2))
@@ -943,7 +953,7 @@ def simplified_two_design_weights_normal(n_layers, n_wires, mean=0, std=0.1, see
 
     n_unitaries_per_layer = n_wires - 1
 
-    if n_unitaries_per_layer == 0:
+    if n_unitaries_per_layer in [0, -1]:
         params = np.array([])
     else:
         params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_unitaries_per_layer, 2))

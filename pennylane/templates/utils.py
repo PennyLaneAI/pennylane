@@ -81,7 +81,7 @@ def get_shape(inpt):
     """
 
     # avoids incorrect assignment of shape
-    if isinstance(inpt, (float, int, complex)):
+    if isinstance(inpt, (float, int, complex, Variable)):
         shape = ()
 
     else:

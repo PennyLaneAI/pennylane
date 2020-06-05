@@ -23,9 +23,11 @@ To add a new pattern:
 from collections import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_wires, check_type, get_shape, check_is_in_options
+from pennylane.templates.utils import check_type, get_shape, check_is_in_options
+from pennylane.wires import Wires
 
 
+###################
 # helpers to define pattern wire sequences
 
 
@@ -35,12 +37,11 @@ def wires_ring(wires):
     if len(wires) in [0, 1]:
         return []
     elif len(wires) == 2:
-        # exception: for 2 wires ring is set equal to chain,
-        # to avoid duplication of gate
-        return [[wires[0], wires[1]]]
+        # deviation from the rule: for 2 wires ring is set equal to chain,
+        # to avoid duplication of single gate
+        return [wires.subset([0, 1])]
     else:
-        ring = list(wires) + list(wires[0:1])
-        sequence = [[ring[i], ring[i + 1]] for i in range(len(wires))]
+        sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
         return sequence
 
 
@@ -48,8 +49,8 @@ def wires_pyramid(wires):
     """Wire sequence for the pyramid pattern."""
     sequence = []
     for layer in range(len(wires) // 2):
-        temp = wires[layer : len(wires) - layer]
-        sequence += [[temp[i], temp[i + 1]] for i in range(0, len(temp) - 1, 2)]
+        block = wires[layer : len(wires) - layer]
+        sequence += [block.subset([i, i + 1]) for i in range(0, len(block) - 1, 2)]
     return sequence
 
 
@@ -58,8 +59,11 @@ def wires_all_to_all(wires):
     sequence = []
     for i in range(len(wires)):
         for j in range(i + 1, len(wires)):
-            sequence += [[wires[i], wires[j]]]
+            sequence += [wires.subset([i, j])]
     return sequence
+
+
+###################
 
 
 @template
@@ -125,6 +129,14 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
+    * A custom pattern can be passed by provding a list of wire lists to ``pattern``. The ``unitary`` is applied
+      to each set of wires specified in the list.
+
+      .. figure:: ../../_static/templates/broadcast_custom.png
+          :align: center
+          :width: 20%
+          :target: javascript:void(0);
+
     Each ``unitary`` may depend on a different set of parameters. These are passed as a list by the ``parameters``
     argument.
 
@@ -134,7 +146,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         unitary (func): quantum gate or template
         pattern (str): specifies the wire pattern of the broadcast
         parameters (list): sequence of parameters for each gate applied
-        wires (Sequence[int] or int): wire indices that the unitaries act upon
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         kwargs (dict): dictionary of auxilliary parameters for ``unitary``
 
     Raises:
@@ -400,6 +413,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
           .. code-block:: python
 
+              dev = qml.device('default.qubit', wires=4)
+
               @qml.qnode(dev)
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='pyramid',
@@ -416,6 +431,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
           .. code-block:: python
 
+              dev = qml.device('default.qubit', wires=4)
+
               @qml.qnode(dev)
               def circuit(pars):
                   broadcast(unitary=qml.CRot, pattern='ring',
@@ -430,24 +447,60 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
               pars6 = [3, -2, -3]
 
               circuit([pars1, pars2, pars3, pars4, pars5, pars6])
+
+        * Custom pattern
+
+          For a custom pattern, the wire lists for each application of the unitary is
+          passed to ``pattern``:
+
+          .. code-block:: python
+
+              dev = qml.device('default.qubit', wires=5)
+
+              pattern = [[0, 1], [3, 4]]
+
+              @qml.qnode(dev)
+              def circuit():
+                  broadcast(unitary=qml.CNOT, pattern=pattern,
+                            wires=range(5))
+                  return qml.expval(qml.PauliZ(0))
+
+              circuit()
+
+          When using a parametrized unitary, make sure that the number of wire lists in ``pattern`` corresponds to the
+          number of parameters in ``parameters``.
+
+          .. code-block:: python
+
+                pattern = [[0, 1], [3, 4]]
+
+                @qml.qnode(dev)
+                def circuit(pars):
+                    broadcast(unitary=qml.CRot, pattern=pattern,
+                              wires=range(5), parameters=pars)
+                    return qml.expval(qml.PauliZ(0))
+
+                pars1 = [1, 2, 3]
+                pars2 = [-1, 3, 1]
+                pars = [pars1, pars2]
+
+                assert len(pars) == len(pattern)
+
+                circuit(pars)
     """
 
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
+    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
 
     #########
     # Input checks
 
-    wires = check_wires(wires)
+    wires = Wires(wires)
 
     check_type(
         parameters,
         [Iterable, type(None)],
         msg="'parameters' must be either of type None or "
         "Iterable; got {}".format(type(parameters)),
-    )
-
-    check_type(
-        pattern, [str], msg="'pattern' must be a string; got {}".format(type(pattern)),
     )
 
     if kwargs is None:
@@ -457,9 +510,17 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
     )
 
-    check_is_in_options(
-        pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
-    )
+    custom_pattern = None
+
+    if isinstance(pattern, str):
+        check_is_in_options(
+            pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
+        )
+    else:
+        # turn custom pattern into list of Wires objects
+        custom_pattern = [Wires(w) for w in pattern]
+        # set "pattern" to "custom", indicating that custom settings have to be used
+        pattern = "custom"
 
     n_parameters = {
         "single": len(wires),
@@ -469,9 +530,10 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
         "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
         "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
+        "custom": len(custom_pattern) if custom_pattern is not None else None,
     }
 
-    # check that enough parameters for pattern
+    # check that there are enough parameters for pattern
     if parameters is not None:
         shape = get_shape(parameters)
 
@@ -496,17 +558,19 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     #########
 
-    # define wire sequence for patterns
+    # define wire sequences for patterns
     wire_sequence = {
-        "single": wires,
-        "double": [[wires[i], wires[i + 1]] for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [[wires[i], wires[i + 1]] for i in range(1, len(wires) - 1, 2)],
-        "chain": [[wires[i], wires[i + 1]] for i in range(len(wires) - 1)],
+        "single": [wires[i] for i in range(len(wires))],
+        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
         "ring": wires_ring(wires),
         "pyramid": wires_pyramid(wires),
         "all_to_all": wires_all_to_all(wires),
+        "custom": custom_pattern,
     }
 
     # broadcast the unitary
-    for w, p in zip(wire_sequence[pattern], parameters):
-        unitary(*p, wires=w, **kwargs)
+    for wires, pars in zip(wire_sequence[pattern], parameters):
+        wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
+        unitary(*pars, wires=wires, **kwargs)

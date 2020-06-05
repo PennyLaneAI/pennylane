@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.templates import template, broadcast
 from pennylane.ops import RX, RY, T, S, Rot, CRX, CRot, CNOT
 from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires_ring
-
+from pennylane.wires import Wires
 
 @template
 def ConstantTemplate(wires):
@@ -121,8 +121,8 @@ GATE_PARAMETERS = [("single", 0, T, []),
                    ]
 
 
-class TestConstructorBroadcast:
-    """Tests the broadcast template constructor."""
+class TestBuiltinPatterns:
+    """Tests the built-in patterns ("single", "ring", etc) of the broadcast template constructor."""
 
     @pytest.mark.parametrize("unitary, parameters", [(RX, [[0.1], [0.2], [0.3]]),
                                                      (Rot,
@@ -244,19 +244,6 @@ class TestConstructorBroadcast:
         with pytest.raises(ValueError, match="the ring pattern with 2 wires is an exception"):
             circuit(pars)
 
-    def test_exception_wires_not_valid(self):
-        """Tests that an exception is raised if 'wires' argument has invalid format."""
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            broadcast(unitary=RX, wires='a', pattern="single", parameters=[[1], [2]])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="wires must be a positive"):
-            circuit()
-
     def test_exception_parameters_not_valid(self):
         """Tests that an exception is raised if 'parameters' argument has invalid format."""
 
@@ -270,21 +257,69 @@ class TestConstructorBroadcast:
         with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
             circuit()
 
-    @pytest.mark.parametrize("function, wires, target", [(wires_pyramid, [8, 2, 0, 4, 6, 2],
-                                                          [[8, 2], [0, 4], [6, 2], [2, 0], [4, 6], [0, 4]]),
+    @pytest.mark.parametrize("function, wires, target", [(wires_pyramid, [8, 2, 0, 4, 6, 1],
+                                                          [[8, 2], [0, 4], [6, 1], [2, 0], [4, 6], [0, 4]]),
                                                          (wires_pyramid, [5, 10, 1, 0, 3, 4, 6],
                                                           [[5, 10], [1, 0], [3, 4], [10, 1], [0, 3], [1, 0]]),
                                                          (wires_pyramid, [0], []),
-                                                         (wires_ring, [8, 2, 0, 4, 6, 2],
-                                                          [[8, 2], [2, 0], [0, 4], [4, 6], [6, 2], [2, 8]]),
+                                                         (wires_ring, [8, 2, 0, 4, 6, 1],
+                                                          [[8, 2], [2, 0], [0, 4], [4, 6], [6, 1], [1, 8]]),
                                                          (wires_ring, [0], []),
                                                          (wires_ring, [4, 2], [[4, 2]]),
                                                          (wires_all_to_all, [8, 2, 0, 4],
                                                           [[8, 2], [8, 0], [8, 4], [2, 0], [2, 4], [0, 4]]),
-                                                         (wires_all_to_all, [0], []),
+                                                         (wires_all_to_all, [0],
+                                                          []),
                                                          ])
     def test_wire_sequence_generating_functions(self, function, wires, target):
         """Tests that the wire list generating functions for different patterns create the correct sequence."""
 
+        wires = Wires(wires)
         sequence = function(wires)
-        assert sequence == target
+        for w, t in zip(sequence, target):
+            assert w.tolist() == t
+
+
+class TestCustomPattern:
+    """Additional tests for using broadcast with a custom pattern."""
+
+    @pytest.mark.parametrize("custom_pattern, pattern", [([[0, 1], [1, 2], [2, 3], [3, 0]], "ring"),
+                                                         ([[0, 1], [1, 2], [2, 3]], "chain"),
+                                                         ([[0, 1], [2, 3]], "double")
+                                                         ])
+    def test_reproduce_builtin_patterns(self, custom_pattern, pattern):
+        """Tests that the custom pattern can reproduce the built in patterns."""
+
+        dev = qml.device('default.qubit', wires=4)
+
+        # qnode using custom pattern
+        @qml.qnode(dev)
+        def circuit1():
+            broadcast(unitary=qml.CNOT, pattern=custom_pattern, wires=range(4))
+            return [qml.expval(qml.PauliZ(wires=w)) for w in range(4)]
+
+        # qnode using built-in pattern
+        @qml.qnode(dev)
+        def circuit2():
+            broadcast(unitary=qml.CNOT, pattern=pattern, wires=range(4))
+            return [qml.expval(qml.PauliZ(wires=w)) for w in range(4)]
+
+        custom = circuit1()
+        built_in = circuit2()
+        assert np.allclose(custom, built_in)
+
+    @pytest.mark.parametrize("custom_pattern, expected", [([[0], [2], [3], [2]], [-1., 1., 1., -1.]),
+                                                          ([[3], [2], [0]], [-1., 1., -1., -1.]),
+                                                         ])
+    def test_correct_output(self, custom_pattern, expected):
+        """Tests the output for simple cases."""
+
+        dev = qml.device('default.qubit', wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            broadcast(unitary=qml.PauliX, wires=range(4), pattern=custom_pattern)
+            return [qml.expval(qml.PauliZ(w)) for w in range(4)]
+
+        res = circuit()
+        assert np.allclose(res, expected)

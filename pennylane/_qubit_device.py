@@ -31,19 +31,23 @@ from pennylane import Device
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
 
-    The following abstract methods **must** be defined:
-
-    * :meth:`~.probability`: returns the probability or marginal probability from the
-      device after circuit execution. :meth:`~.marginal_prob` may be used here.
+    The following abstract method **must** be defined:
 
     * :meth:`~.apply`: append circuit operations, compile the circuit (if applicable),
       and perform the quantum computation.
 
-    Where relevant, devices that generate their own samples (such as hardware) should
-    overwrite the following methods:
+    Devices that generate their own samples (such as hardware) may optionally
+    overwrite :meth:`~.probabilty`. This method otherwise automatically
+    computes the probabilities from the generated samples, and **must**
+    overwrite the following method:
 
     * :meth:`~.generate_samples`: Generate samples from the device from the
       exact or approximate probability distribution.
+
+    Analytic devices **must** overwrite the following method:
+
+    * :meth:`~.analytic_probability`: returns the probability or marginal probability from the
+      device after circuit execution. :meth:`~.marginal_prob` may be used here.
 
     This device contains common utility methods for qubit-based devices. These
     do not need to be overwritten. Utility methods include:
@@ -62,7 +66,26 @@ class QubitDevice(Device):
     """
 
     # pylint: disable=too-many-public-methods
+    C_DTYPE = np.complex128
+    R_DTYPE = np.float64
     _asarray = staticmethod(np.asarray)
+    _dot = staticmethod(np.dot)
+    _abs = staticmethod(np.abs)
+    _reduce_sum = staticmethod(lambda array, axes: np.apply_over_axes(np.sum, array, axes))
+    _reshape = staticmethod(np.reshape)
+    _flatten = staticmethod(lambda array: array.flatten())
+    _gather = staticmethod(lambda array, indices: array[indices])
+    _einsum = staticmethod(np.einsum)
+    _cast = staticmethod(np.asarray)
+    _transpose = staticmethod(np.transpose)
+    _tensordot = staticmethod(np.tensordot)
+
+    @staticmethod
+    def _scatter(indices, array, new_dimensions):
+        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+        new_array[indices] = array
+        return new_array
+
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires=1, shots=1000, analytic=True):
@@ -173,7 +196,7 @@ class QubitDevice(Device):
         """Apply quantum operations, rotate the circuit into the measurement
         basis, and compile and execute the quantum circuit.
 
-        This method recieves a list of quantum operations queued by the QNode,
+        This method receives a list of quantum operations queued by the QNode,
         and should be responsible for:
 
         * Constructing the quantum program
@@ -280,7 +303,9 @@ class QubitDevice(Device):
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
         number_of_states = 2 ** self.num_wires
-        rotated_prob = self.probability()
+
+        rotated_prob = self.analytic_probability()
+
         samples = self.sample_basis_states(number_of_states, rotated_prob)
         return QubitDevice.states_to_binary(samples, self.num_wires)
 
@@ -335,8 +360,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def probability(self, wires=None):
+    def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
         state from the last run of the device.
 
@@ -360,6 +384,56 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
+        raise NotImplementedError
+
+    def estimate_probability(self, wires=None):
+        """Return the estimated probability of each computational basis state
+        using the generated samples.
+
+        Args:
+            wires (Sequence[int]): Sequence of wires to return
+                marginal probabilities for. Wires not provided
+                are traced out of the system.
+
+        Returns:
+            List[float]: list of the probabilities
+        """
+        # consider only the requested wires
+        wires = np.hstack(wires)
+
+        samples = self._samples[:, np.array(wires)]
+
+        # convert samples from a list of 0, 1 integers, to base 10 representation
+        unraveled_indices = [2] * len(wires)
+        indices = np.ravel_multi_index(samples.T, unraveled_indices)
+
+        # count the basis state occurrences, and construct the probability vector
+        basis_states, counts = np.unique(indices, return_counts=True)
+        prob = np.zeros([2 ** len(wires)], dtype=np.float64)
+        prob[basis_states] = counts / self.shots
+        return self._asarray(prob, dtype=self.R_DTYPE)
+
+    def probability(self, wires=None):
+        """Return either the analytic probability or estimated probability of
+        each computational basis state.
+
+        If no :attr:`~.analytic` attributes exists for the device, then return the
+        estimated probability.
+
+        Args:
+            wires (Sequence[int]): Sequence of wires to return
+                marginal probabilities for. Wires not provided
+                are traced out of the system.
+
+        Returns:
+            List[float]: list of the probabilities
+        """
+        wires = wires or range(self.num_wires)
+
+        if hasattr(self, "analytic") and self.analytic:
+            return self.analytic_probability(wires=wires)
+
+        return self.estimate_probability(wires=wires)
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -379,7 +453,10 @@ class QubitDevice(Device):
 
             .. math::
 
-                \mathbb{P}^{(2, 0)} = \[ |00\rangle, |10\rangle, |01\rangle, |11\rangle\]
+                \mathbb{P}^{(2, 0)}
+                            = \left[
+                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                              \right]
 
         Args:
             prob: The probabilities to return the marginal probabilities
@@ -401,10 +478,10 @@ class QubitDevice(Device):
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = prob.reshape([2] * self.num_wires)
+        prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+        prob = self._flatten(self._reduce_sum(prob, inactive_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -413,16 +490,16 @@ class QubitDevice(Device):
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
         )
-        return prob[perm]
+        return self._gather(prob, perm)
 
     def expval(self, observable):
         wires = observable.wires
 
         if self.analytic:
             # exact expectation value
-            eigvals = observable.eigvals
+            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=wires)
-            return (eigvals @ prob).real
+            return self._dot(eigvals, prob)
 
         # estimate the ev
         return np.mean(self.sample(observable))
@@ -432,9 +509,9 @@ class QubitDevice(Device):
 
         if self.analytic:
             # exact variance value
-            eigvals = observable.eigvals
+            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=wires)
-            return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
+            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
         return np.var(self.sample(observable))

@@ -29,12 +29,9 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        print(tf.__version__)
-        import tensorflow.contrib.eager as tfe
         tf.enable_eager_execution()
-        Variable = tfe.Variable
-    else:
-        from tensorflow import Variable
+
+    from tensorflow import Variable
 except ImportError as e:
     pass
 
@@ -291,6 +288,20 @@ class TestVQE:
         hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
             cost = qml.VQECost(4, hamiltonian, mock_device)
+
+    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
+    def test_passing_kwargs(self, coeffs, observables, expected):
+        """Test that the step size and order used for the finite differences
+        differentiation method were passed to the QNode instances using the
+        keyword arguments."""
+        dev = qml.device("default.qubit", wires=2)
+        hamiltonian = qml.vqe.Hamiltonian(coeffs, observables)
+        cost = qml.VQECost(lambda params, **kwargs: None, hamiltonian, dev, h=123, order=2)
+
+        # Checking that the qnodes contain the step size and order
+        for qnode in cost.qnodes:
+            assert qnode.h == 123
+            assert qnode.order == 2
 
 
 class TestAutogradInterface:

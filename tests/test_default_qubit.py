@@ -169,20 +169,20 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_two_wires_no_parameters)
     def test_apply_operation_two_wires_no_parameters_inverse(self, qubit_device_2_wires, tol, operation, input, expected_output):
         """Tests that applying an operation yields the expected output state for two wire
            operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
     test_data_three_wires_no_parameters = [
         (qml.CSWAP, [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
@@ -195,20 +195,20 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for three wire
            operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input)
+        qubit_device_3_wires._state = np.array(input).reshape((2, 2, 2))
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
-        assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
     def test_apply_operation_three_wires_no_parameters_inverse(self, qubit_device_3_wires, tol, operation, input, expected_output):
         """Tests that applying the inverse of an operation yields the expected output state for three wire
            operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input)
+        qubit_device_3_wires._state = np.array(input).reshape((2, 2, 2))
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
-        assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
 
     @pytest.mark.parametrize("operation,expected_output,par", [
@@ -229,7 +229,7 @@ class TestApply:
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply([operation(par, wires=[0, 1])])
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
     test_data_single_wire_with_parameters = [
         (qml.PhaseShift, [1, 0], [1, 0], [math.pi / 2]),
@@ -244,6 +244,9 @@ class TestApply:
         (qml.RZ, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2]),
         (qml.RZ, [0, 1], [0, 1j], [math.pi]),
         (qml.RZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [math.pi / 2]),
+        (qml.MultiRZ, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 1], [0, 1j], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [math.pi / 2]),
         (qml.Rot, [1, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0], [math.pi / 2, 0, 0]),
         (qml.Rot, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (qml.Rot, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2], [0, 0, math.pi / 2]),
@@ -256,6 +259,9 @@ class TestApply:
          [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
         (qml.QubitUnitary, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1j],
          [np.array([[1j / math.sqrt(2), 1j / math.sqrt(2)], [1j / math.sqrt(2), -1j / math.sqrt(2)]])]),
+        (qml.DiagonalQubitUnitary, [1, 0], [-1, 0], [np.array([-1, 1])]),
+        (qml.DiagonalQubitUnitary, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1j / math.sqrt(2)], [np.array([1, 1j])]),
+        (qml.DiagonalQubitUnitary, [1 / 2, math.sqrt(3) / 4], [cmath.exp(1j * 0.4) / 2, cmath.exp(1j * -0.4) * math.sqrt(3) / 4], [np.array([cmath.exp(1j * 0.4), cmath.exp(1j * -0.4)])]),
     ]
 
     test_data_single_wire_with_parameters_inverses = [
@@ -273,6 +279,13 @@ class TestApply:
         (qml.RZ, [0, 1], [0, -1j], [math.pi]),
         (qml.RZ, [1 / math.sqrt(2), 1 / math.sqrt(2)],
          [1 / 2 + 1/2*1j, 1 / 2 - 1/2*1j], [math.pi / 2]),
+        (qml.MultiRZ, [1, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 1], [0, -1j], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2)],
+         [1 / 2 + 1/2*1j, 1 / 2 - 1/2*1j], [math.pi / 2]),
+        (qml.DiagonalQubitUnitary, [1, 0], [-1, 0], [np.array([-1, 1])]),
+        (qml.DiagonalQubitUnitary, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1j / math.sqrt(2)], [np.array([1, 1j])]),
+        (qml.DiagonalQubitUnitary, [1 / 2, math.sqrt(3) / 4], [cmath.exp(-1j * 0.4) / 2, cmath.exp(1j * 0.4) * math.sqrt(3) / 4], [np.array([cmath.exp(1j * 0.4), cmath.exp(1j * -0.4)])]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_single_wire_with_parameters)
@@ -307,6 +320,9 @@ class TestApply:
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
         (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
         (qml.CRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, 1j, 0], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 - 1j / 2, 1 / 2 + 1j / 2, 0, 0], [math.pi / 2]),
         (qml.CRot, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2, 0, 0]),
         (qml.CRot, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
         (qml.CRot, [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
@@ -323,6 +339,9 @@ class TestApply:
         (qml.QubitUnitary, [1 / 2, 1 / 2, -1 / 2, 1 / 2], [1 / 2, 0, 1 / math.sqrt(2), 1 / 2], [np.array(
             [[1, 0, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0], [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
              [0, 0, 0, 1]])]),
+        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], [1/math.sqrt(2), 0, 0, -1/math.sqrt(2)], [np.array([1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, 1j, 0], [np.array([-1, 1j, 1j, -1])]),
     ]
 
     test_data_two_wires_with_parameters_inverses = [
@@ -330,6 +349,12 @@ class TestApply:
         (qml.CRX, [0, 0, 0, 1], [0, 0, 1j, 0], [math.pi]),
         (qml.CRX, [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
          [0, 1 / math.sqrt(2), 1 / 2, 1j / 2], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
+        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, -1j, 0], [math.pi]),
+        (qml.MultiRZ, [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0], [1 / 2 + 1j / 2, 1 / 2 - 1j / 2, 0, 0], [math.pi / 2]),
+        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [1/math.sqrt(2), 0, 0, 1/math.sqrt(2)], [1/math.sqrt(2), 0, 0, -1/math.sqrt(2)], [np.array([1, 1, 1, -1])]),
+        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, -1j, 0], [np.array([-1, 1j, 1j, -1])]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_two_wires_with_parameters)
@@ -337,20 +362,20 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
            operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation,input,expected_output,par", test_data_two_wires_with_parameters_inverses)
     def test_apply_operation_two_wires_with_parameters_inverse(self, qubit_device_2_wires, tol, operation, input, expected_output, par):
         """Tests that applying the inverse of an operation yields the expected output state for two wire
            operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input)
+        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
-        assert np.allclose(qubit_device_2_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert np.allclose(qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0)
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
@@ -929,6 +954,8 @@ class TestDefaultQubitIntegration:
         ("RY", [-math.pi/4], 1/math.sqrt(2)),
         ("RZ", [math.pi/2], 1),
         ("RZ", [-math.pi/4], 1),
+        ("MultiRZ", [math.pi/2], 1),
+        ("MultiRZ", [-math.pi/4], 1),
         ("Rot", [math.pi/2, 0, 0], 1),
         ("Rot", [0, math.pi/2, 0], 0),
         ("Rot", [0, 0, math.pi/2], 1),
@@ -963,6 +990,9 @@ class TestDefaultQubitIntegration:
         ("CRZ", [0], [-1/2, -1/2]),
         ("CRZ", [-math.pi], [-1/2, -1/2]),
         ("CRZ", [math.pi/2], [-1/2, -1/2]),
+        ("MultiRZ", [0], [-1/2, -1/2]),
+        ("MultiRZ", [-math.pi], [-1/2, -1/2]),
+        ("MultiRZ", [math.pi/2], [-1/2, -1/2]),
         ("CRot", [math.pi/2, 0, 0], [-1/2, -1/2]),
         ("CRot", [0, math.pi/2, 0], [-1/2, 1/4]),
         ("CRot", [0, 0, math.pi/2], [-1/2, -1/2]),
@@ -1594,3 +1624,50 @@ class TestTensorSample:
             )
         ) / 16
         assert np.allclose(var, expected, atol=tol, rtol=0)
+
+class TestProbabilityIntegration:
+    """Test probability method for when analytic is True/False"""
+
+    def mock_analytic_counter(self, wires=None):
+        self.analytic_counter += 1
+        return np.array([1, 0, 0, 0], dtype=float)
+
+    @pytest.mark.parametrize("x", [[0.2, 0.5], [0.4, 0.9], [0.8, 0.3]])
+    def test_probability(self, x, tol):
+        """Test that the probability function works when analytic=False"""
+        dev = qml.device("default.qubit", wires=2, analytic=False)
+        dev_analytic = qml.device("default.qubit", wires=2, analytic=True)
+
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        prob = qml.QNode(circuit, dev)
+        prob_analytic = qml.QNode(circuit, dev_analytic)
+
+        assert np.isclose(prob(x).sum(), 1, atol=tol, rtol=0)
+        assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
+        assert not np.array_equal(prob_analytic(x), prob(x))
+
+    @pytest.mark.parametrize("analytic", [True, False])
+    def test_call_generate_samples(self, analytic, monkeypatch):
+        """Test analytic_probability call when generating samples"""
+        self.analytic_counter = False
+
+        dev = qml.device("default.qubit", wires=2, analytic=analytic)
+        monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
+
+        # generate samples through `generate_samples` (using 'analytic_probability')
+        dev.generate_samples()
+
+        # should call `analytic_probability` once through `generate_samples`
+        assert self.analytic_counter == 1
+
+    def test_stateless_analytic_return(self):
+        """Test that analytic_probability returns None if device is stateless"""
+        dev = qml.device("default.qubit", wires=2)
+        dev._state = None
+
+        assert dev.analytic_probability() is None

@@ -22,7 +22,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable, CV, Wires, ObservableReturnTypes
+from pennylane.operation import Observable, CV, ActsOn, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
@@ -192,6 +192,8 @@ class BaseQNode(qml.QueuingContext):
         that depend on it.
         """
 
+        self._trainable_args = None
+
         self._metric_tensor_subcircuits = None
         """dict[tuple[int], dict[str, Any]]: circuit descriptions for computing the metric tensor"""
 
@@ -264,6 +266,58 @@ class BaseQNode(qml.QueuingContext):
             "The QNode can only be drawn after its CircuitGraph has been constructed."
         )
 
+    def set_trainable_args(self, arg_indices):
+        """Store the indices of quantum function positional arguments
+        that support differentiability.
+
+        Args:
+            args (None or Set[int]): Differentiable positional argument indices. A
+                value of ``None`` means that all argument indices are differentiable.
+        """
+        if not self.mutable and self.circuit is not None:
+
+            if self.get_trainable_args() == arg_indices:
+                return
+
+            raise QuantumFunctionError(
+                "The trainability of arguments on immutable QNodes cannot be modified after the first evaluation."
+            )
+
+        if arg_indices is None:
+            # all arguments are differentiable
+            self._trainable_args = None
+            return
+
+        if not arg_indices:
+            # The provided arg_indices are an empty set;
+            # no arguments are differentiable.
+            self._trainable_args = set()
+            return
+
+        # Perform validation
+        if not self.func.var_pos and max(arg_indices) > self.func.n_pos:
+            # QNode does not allow variable positional arguments (*args), and
+            # the provided index set contains a value larger than the number
+            # of positional arguments.
+            raise ValueError(
+                f"Argument index not available. QNode has at most {self.func.n_pos} arguments."
+            )
+
+        if any(not isinstance(i, int) or i < 0 for i in arg_indices):
+            raise ValueError("Argument indices must be positive integers.")
+
+        self._trainable_args = arg_indices
+
+    def get_trainable_args(self):
+        """Returns the indices of quantum function positional arguments
+        that support differentiability.
+
+        Returns:
+            None or Set[int]: Differentiable positional argument indices. A
+                value of ``None`` means that all argument indices are differentiable.
+        """
+        return self._trainable_args
+
     def _set_variables(self, args, kwargs):
         """Store the current values of the quantum function parameters in the Variable class
         so the Operators may access them.
@@ -305,7 +359,7 @@ class BaseQNode(qml.QueuingContext):
             self.queue.remove(operator)
 
     def _append_operator(self, operator):
-        if operator.num_wires == Wires.All:
+        if operator.num_wires == ActsOn.AllWires:
             if set(operator.wires) != set(range(self.num_wires)):
                 raise QuantumFunctionError(
                     "Operator {} must act on all wires".format(operator.name)
@@ -423,8 +477,20 @@ class BaseQNode(qml.QueuingContext):
         arg_vars = [Variable(idx, name) for idx, name in enumerate(_flatten(variable_name_strings))]
         self.num_variables = len(arg_vars)
 
-        # arrange the newly created Variables in the nested structure of args
-        arg_vars = unflatten(arg_vars, args)
+        # Arrange the newly created Variables in the nested structure of args.
+        # Make sure that NumPy scalars are converted into Python scalars.
+        arg_vars = [
+            i.item() if isinstance(i, np.ndarray) and i.ndim == 0 else i
+            for i in unflatten(arg_vars, args)
+        ]
+
+        if self._trainable_args is not None and len(self._trainable_args) != len(args):
+            # If some of the input arguments are marked as non-differentiable,
+            # then replace the variable instances in arg_vars back with the
+            # original objects.
+            for a, _ in enumerate(args):
+                if a not in self._trainable_args:
+                    arg_vars[a] = args[a]
 
         # kwargs
         # if not mutable: must convert auxiliary arguments to named Variables so they can be updated without re-constructing the circuit
@@ -517,7 +583,7 @@ class BaseQNode(qml.QueuingContext):
 
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
-        for k, op in enumerate(self.ops):
+        for op in self.ops:
             for j, p in enumerate(_flatten(op.params)):
                 if isinstance(p, Variable):
                     if not p.is_kwarg:  # ignore auxiliary arguments
@@ -625,7 +691,7 @@ class BaseQNode(qml.QueuingContext):
             )
 
         # check that no wires are measured more than once
-        m_wires = list(w for ob in res for w in _flatten(ob.wires))
+        m_wires = list(w for ob in res for w in ob.wires)
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError(
                 "Each wire in the quantum circuit can only be measured once."

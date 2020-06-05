@@ -46,6 +46,9 @@ class JacobianQNode(BaseQNode):
         self._h = kwargs.get("h", default_step_size)
         """float: step size for the finite difference method"""
 
+        self._order = kwargs.get("order", 1)
+        """float: order for the finite difference method"""
+
     metric_tensor = None
 
     @property
@@ -61,6 +64,15 @@ class JacobianQNode(BaseQNode):
     @h.setter
     def h(self, value):
         self._h = value
+
+    @property
+    def order(self):
+        """float: order for the finite difference method"""
+        return self._order
+
+    @order.setter
+    def order(self, value):
+        self._order = value
 
     def __repr__(self):
         """String representation."""
@@ -162,7 +174,11 @@ class JacobianQNode(BaseQNode):
           possible, otherwise finite difference.
 
         * Device method (``'device'``): Delegates the computation of the Jacobian to the
-          device executing the circuit.
+          device executing the circuit. Only supported by devices that provide their
+          own method for computing derivatives; support can be checked by
+          querying the device capabilities: ``dev.capabilities()['provides_jacobian']`` must
+          return ``True``. Examples of supported devices include the experimental
+          :class:`"default.tensor.tf" <~.DefaultTensorTF>` device.
 
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
@@ -197,6 +213,8 @@ class JacobianQNode(BaseQNode):
         # Add the step size into the options, if it was not there already
         if "h" not in options.keys():
             options = {"h": self.h, **options}
+        if "order" not in options.keys():
+            options = {"order": self._order, **options}
 
         # (re-)construct the circuit if necessary
         if self.circuit is None or self.mutable:
@@ -235,7 +253,13 @@ class JacobianQNode(BaseQNode):
         # are we trying to differentiate wrt. params that don't support any method?
         bad = inds_using(None)
         if bad:
-            raise ValueError("Cannot differentiate with respect to the parameters {}.".format(bad))
+            # get bad argument name
+            bad_var_names = {
+                v.name for v in _flatten(self.arg_vars) if hasattr(v, "idx") and v.idx in bad
+            }
+            raise ValueError(
+                "Cannot differentiate with respect to argument(s) {}.".format(bad_var_names)
+            )
 
         if method == "device":
             self._set_variables(args, kwargs)
@@ -245,10 +269,16 @@ class JacobianQNode(BaseQNode):
 
         if method == "A":
             bad = inds_using("F")
+
+            # get bad argument name
+            bad_var_names = {
+                v.name for v in _flatten(self.arg_vars) if hasattr(v, "idx") and v.idx in bad
+            }
+
             if bad:
                 raise ValueError(
                     "The analytic gradient method cannot be "
-                    "used with the parameters {}.".format(bad)
+                    "used with the argument(s) {}.".format(bad_var_names)
                 )
             # only variants of the analytic method remain
             method = self.par_to_grad_method
@@ -318,12 +348,12 @@ class JacobianQNode(BaseQNode):
         Returns:
             array[float]: partial derivative of the node
         """
-        y0 = options.get("y0", None)
         h = options.get("h", self.h)
-        order = options.get("order", 1)
+        order = options.get("order", self.order)
 
         shift_args = args.copy()
         if order == 1:
+            y0 = options.get("y0", None)
             # shift the parameter by h
             shift_args[idx] += h
             y = np.asarray(self.evaluate(shift_args, kwargs))
