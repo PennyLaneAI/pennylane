@@ -788,7 +788,7 @@ class TestParameterHandlingIntegration:
         # check that the first arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {0}
 
-        # Check that the parameter shift was not performed for the
+        # Check that the gradient was not computed for the
         # non-differentiable elements of `data1` and `data2`.
         # First, extract the variable indices that the jacobian method
         # 'skipped' (those with grad_method="0"):
@@ -833,7 +833,7 @@ class TestParameterHandlingIntegration:
         # check that the second arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {1}
 
-        # Check that the parameter shift was not performed for the
+        # Check that the gradient was not computed for the
         # non-differentiable elements of `data1` and `data2`.
         # First, extract the variable indices that the jacobian method
         # 'skipped' (those with grad_method="0"):
@@ -878,14 +878,14 @@ class TestParameterHandlingIntegration:
         # check that the last arg was marked as non-differentiable
         assert circuit.get_trainable_args() == {2}
 
-        # Check that the parameter shift was not performed for the
+        # Check that the gradient was not computed for the
         # non-differentiable elements of `data1` and `data2`.
         # First, extract the variable indices that the jacobian method
         # 'skipped' (those with grad_method="0"):
         non_diff_var_indices = sorted([k for k, v in circuit.par_to_grad_method.items() if v == "0"])
 
         # Check that these indices corresponds to the elements of data1 and data2
-        # within the flattenened list [data1, weights, data2]
+        # within the flattenened list [data1, data2, weights]
         assert non_diff_var_indices == [0, 1, 2, 3, 4, 5]
 
 

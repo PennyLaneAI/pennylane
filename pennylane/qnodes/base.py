@@ -289,7 +289,7 @@ class BaseQNode(qml.QueuingContext):
             return
 
         if not arg_indices:
-            # The provided arg_indices are an empty serquence;
+            # The provided arg_indices are an empty set;
             # no arguments are differentiable.
             self._trainable_args = set()
             return
@@ -303,7 +303,7 @@ class BaseQNode(qml.QueuingContext):
                 f"Argument index not available. QNode has at most {self.func.n_pos} arguments."
             )
 
-        if not all(isinstance(i, int) and i >= 0 for i in arg_indices):
+        if any(not isinstance(i, int) or i < 0 for i in arg_indices):
             raise ValueError("Argument indices must be positive integers.")
 
         self._trainable_args = arg_indices

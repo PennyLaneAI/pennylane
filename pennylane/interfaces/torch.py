@@ -173,7 +173,7 @@ def to_torch(qnode):
             ctx.kwargs = kwargs_to_numpy(input_kwargs)
             ctx.save_for_backward(*input_)
 
-            # Determine which QNode input tensor require gradients,
+            # Determine which QNode input tensors require gradients,
             # and thus communicate to the QNode which ones must
             # be wrapped as PennyLane variables.
             _TorchQNode.set_trainable(input_)
