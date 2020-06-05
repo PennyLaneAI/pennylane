@@ -173,7 +173,11 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RY(np.pi, wires=wires)]
+        decomp_ops = [
+            RZ(np.pi / 2, wires=wires),
+            RX(np.pi / 2, wires=wires),
+            RZ(np.pi / 2, wires=wires),
+        ]
         return decomp_ops
 
 
