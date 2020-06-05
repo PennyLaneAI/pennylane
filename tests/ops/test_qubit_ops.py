@@ -390,7 +390,7 @@ class TestOperations:
         op = qml.Hadamard(wires=0)
         res = op.decomposition(0)
 
-        assert len(res) == 2
+        assert len(res) == 3
 
         assert res[0].name == "RZ"
         assert res[0].wires == [0]
