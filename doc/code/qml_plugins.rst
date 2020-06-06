@@ -11,7 +11,6 @@ qml.plugins
     See the `main plugins page <https://pennylane.ai/plugins.html>`_ for more
     details on available plugins.
 
+.. rubric:: Modules
 
-.. automodapi:: pennylane.plugins
-    :no-heading:
-    :include-all-objects:
+.. automodule:: pennylane.plugins

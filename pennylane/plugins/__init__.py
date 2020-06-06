@@ -29,6 +29,10 @@ from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
 
 try:
+    # import DefaultQubitTF so that it will display
+    # in the documentation
     from .default_qubit_tf import DefaultQubitTF
 except ImportError:
+    # if TensorFlow 2.0 is not installed the import
+    # is skipped.
     pass
