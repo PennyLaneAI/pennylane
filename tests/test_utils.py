@@ -69,13 +69,7 @@ U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 
 test_hamiltonians = [
-    [
-        np.array([[2.5, -0.5], [-0.5, 2.5]]),
-        (
-            [2.5, -0.5],
-            [Identity(wires=[0]), PauliX(wires=[0])]
-        )
-    ],
+    [np.array([[2.5, -0.5], [-0.5, 2.5]]), ([2.5, -0.5], [Identity(wires=[0]), PauliX(wires=[0])])],
     [
         np.array(np.diag([0, 0, 0, 1])),
         (
@@ -84,9 +78,9 @@ test_hamiltonians = [
                 Tensor(Identity(wires=[0]), Identity(wires=[1])),
                 Tensor(Identity(wires=[0]), PauliZ(wires=[1])),
                 Tensor(PauliZ(wires=[0]), Identity(wires=[1])),
-                Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))
-            ]
-        )
+                Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])),
+            ],
+        ),
     ],
     [
         np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
@@ -102,10 +96,10 @@ test_hamiltonians = [
                 Tensor(PauliX(wires=[0]), PauliZ(wires=[1])),
                 Tensor(PauliY(wires=[0]), PauliY(wires=[1])),
                 Tensor(PauliZ(wires=[0]), PauliX(wires=[1])),
-                Tensor(PauliZ(wires=[0]), PauliY(wires=[1]))
-            ]
-        )
-    ]
+                Tensor(PauliZ(wires=[0]), PauliY(wires=[1])),
+            ],
+        ),
+    ],
 ]
 
 
@@ -138,8 +132,7 @@ class TestDecomposition:
                     assert all(np.allclose(o[0].matrix, o[1].matrix) for o in obs)
 
                     linear_comb += decomposed_coeff[term] * functools.reduce(
-                        np.kron,
-                        [o.matrix for o in decomposed_obs[term].obs]
+                        np.kron, [o.matrix for o in decomposed_obs[term].obs]
                     )
                 else:
                     assert np.allclose(decomposed_obs[term].matrix, expected_obs[term].matrix)

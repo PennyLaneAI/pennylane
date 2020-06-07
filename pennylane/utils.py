@@ -94,8 +94,12 @@ def decompose_hamiltonian(H, hide_identity=False):
             if not all(t is qml.Identity for t in term):
                 obs.append(
                     functools.reduce(
-                        matmul, [t(i) for i, t in enumerate(term)
-                                 if t is not qml.Identity or not hide_identity]
+                        matmul,
+                        [
+                            t(i)
+                            for i, t in enumerate(term)
+                            if t is not qml.Identity or not hide_identity
+                        ],
                     )
                 )
             else:
