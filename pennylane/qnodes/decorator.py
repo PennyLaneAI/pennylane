@@ -22,10 +22,11 @@ from .device_jacobian import DeviceJacobianQNode
 from .jacobian import JacobianQNode
 from .qubit import QubitQNode
 from .passthru import PassthruQNode
+from .rev import ReversibleQNode
 
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
-ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff")
+ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff", "rev")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
@@ -100,6 +101,9 @@ def _get_qnode_class(device, interface, diff_method):
         raise ValueError(
             "The parameter shift rule is not available for devices with model {}.".format(model)
         )
+
+    if diff_method == "rev":
+        return ReversibleQNode
 
     if diff_method in ALLOWED_DIFF_METHODS:
         # finite differences
