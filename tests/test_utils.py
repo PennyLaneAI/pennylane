@@ -26,6 +26,9 @@ import numpy as np
 import pennylane as qml
 import pennylane.utils as pu
 
+from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane.operation import Tensor
+
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -65,31 +68,84 @@ U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 
-test_Hamiltonians = [np.array([[2.5, -0.5], [-0.5, 2.5]]), np.array(np.diag([0, 0, 0, 1]))]
+test_hamiltonians = [
+    [
+        np.array([[2.5, -0.5], [-0.5, 2.5]]),
+        (
+            [2.5, -0.5],
+            [Identity(wires=[0]), PauliX(wires=[0])]
+        )
+    ],
+    [
+        np.array(np.diag([0, 0, 0, 1])),
+        (
+            [0.25, -0.25, -0.25, 0.25],
+            [
+                Tensor(Identity(wires=[0]), Identity(wires=[1])),
+                Tensor(Identity(wires=[0]), PauliZ(wires=[1])),
+                Tensor(PauliZ(wires=[0]), Identity(wires=[1])),
+                Tensor(PauliZ(wires=[0]), PauliZ(wires=[1]))
+            ]
+        )
+    ],
+    [
+        np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
+        (
+            [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5],
+            [
+                Tensor(Identity(wires=[0]), Identity(wires=[1])),
+                Tensor(Identity(wires=[0]), PauliX(wires=[1])),
+                Tensor(Identity(wires=[0]), PauliY(wires=[1])),
+                Tensor(Identity(wires=[0]), PauliZ(wires=[1])),
+                Tensor(PauliX(wires=[0]), Identity(wires=[1])),
+                Tensor(PauliX(wires=[0]), PauliX(wires=[1])),
+                Tensor(PauliX(wires=[0]), PauliZ(wires=[1])),
+                Tensor(PauliY(wires=[0]), PauliY(wires=[1])),
+                Tensor(PauliZ(wires=[0]), PauliX(wires=[1])),
+                Tensor(PauliZ(wires=[0]), PauliY(wires=[1]))
+            ]
+        )
+    ]
+]
 
 
 class TestDecomposition:
     """Tests the decompose_hamiltonian function"""
 
-    @pytest.mark.parametrize("H", test_Hamiltonians)
-    def test_decomp(self, H):
-        """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into Pauli matrices"""
-        N = int(np.log2(len(H)))
-        coeff, combs = pu.decompose_hamiltonian(H)
-        result = np.zeros((2 ** N, 2 ** N))
-        matrices = []
-        for term in combs:
-            base = [qml.Identity] * N
-            if term.num_wires == N:
-                matrices.append(term.matrix)
-            else:
-                base[term.wires[0]] = term.__class__
-                matrices.append(
-                    functools.reduce(operator.matmul, [t(i) for i, t in enumerate(base)]).matrix
-                )
-        for term in zip(coeff, matrices):
-            result = result + term[0] * term[1]
-        assert (H == result).all
+    @pytest.mark.parametrize("H", test_hamiltonians)
+    def test_decomposition(self, H):
+        """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
+        linear combination of Pauli matrices"""
+        for test, expected in test_hamiltonians:
+            decomposed = pu.decompose_hamiltonian(test)
+
+            decomposed_coeff, decomposed_obs = decomposed
+            expected_coeff, expected_obs = expected
+
+            assert len(decomposed_obs) == len(decomposed_coeff)
+            assert len(expected_obs) == len(expected_coeff)
+
+            assert np.allclose(decomposed_coeff, expected_coeff)
+
+            n_terms = len(decomposed_obs)
+
+            linear_comb = np.zeros(test.shape, dtype=np.complex128)
+            for term in range(n_terms):
+                assert type(decomposed_obs[term]) == type(expected_obs[term])
+
+                if isinstance(decomposed_obs[term], Tensor):
+                    obs = zip(decomposed_obs[term].obs, expected_obs[term].obs)
+                    assert all(np.allclose(o[0].matrix, o[1].matrix) for o in obs)
+
+                    linear_comb += decomposed_coeff[term] * functools.reduce(
+                        np.kron,
+                        [o.matrix for o in decomposed_obs[term].obs]
+                    )
+                else:
+                    assert np.allclose(decomposed_obs[term].matrix, expected_obs[term].matrix)
+                    linear_comb += decomposed_coeff[term] * decomposed_obs[term].matrix
+
+            assert np.allclose(test, linear_comb)
 
 
 class TestFlatten:

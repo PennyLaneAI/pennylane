@@ -31,11 +31,14 @@ import pennylane as qml
 from pennylane.variable import Variable
 
 
-def decompose_hamiltonian(H):
+def decompose_hamiltonian(H, hide_identity=False):
     """Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
-        H (array[complex]): an Hermitian matrix of dimension :math:`2^N\times 2^N`
+        H (array[complex]): an Hermitian matrix of dimension :math:`2^n\times 2^n`
+
+    Keyword Args:
+        hide_identity (bool): always show ~.Identity observables in the results
 
     Returns:
         tuple[list[float], list[~.Observable]]: Returns a list of tensor products of PennyLane Pauli observables, as
@@ -67,18 +70,22 @@ def decompose_hamiltonian(H):
 
     This Hamiltonian can then be used in defining VQE problems using :class:`~VQECost`.
     """
-    N = int(np.log2(len(H)))
+    n = int(np.log2(len(H)))
+    N = 2 ** n
 
-    if len(H) - 2 ** N != 0:
+    if len(H) - N != 0:
         raise ValueError("Hamiltonian should be in the form (n^2 x n^2), for any n>=1")
+
+    if not np.allclose(H, H.conj().T):
+        raise ValueError("The Hamiltonian is not Hermitian")
 
     paulis = [qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ]
     obs = []
     coeffs = []
 
-    for term in itertools.product(paulis, repeat=N):
+    for term in itertools.product(paulis, repeat=n):
         matrices = [i._matrix() for i in term]
-        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / (2 ** N)
+        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
         coeff = np.real_if_close(coeff).item()
 
         if not np.allclose(coeff, 0):
@@ -87,7 +94,8 @@ def decompose_hamiltonian(H):
             if not all(t is qml.Identity for t in term):
                 obs.append(
                     functools.reduce(
-                        matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity]
+                        matmul, [t(i) for i, t in enumerate(term)
+                                 if t is not qml.Identity or not hide_identity]
                     )
                 )
             else:
