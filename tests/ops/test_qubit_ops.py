@@ -341,6 +341,11 @@ class TestOperations:
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi
 
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+
     def test_y_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliY(wires=0)
@@ -351,6 +356,11 @@ class TestOperations:
         assert res[0].name == "RY"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
     def test_z_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -362,6 +372,11 @@ class TestOperations:
         assert res[0].name == "RZ"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
     def test_s_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -373,6 +388,11 @@ class TestOperations:
         assert res[0].name == "RZ"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 2
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -384,6 +404,11 @@ class TestOperations:
         assert res[0].name == "RZ"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 4
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
@@ -403,6 +428,11 @@ class TestOperations:
         assert res[2].name == "RZ"
         assert res[2].wires == [0]
         assert res[0].params[0] == np.pi / 2
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
