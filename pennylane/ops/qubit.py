@@ -128,9 +128,9 @@ class PauliX(Observable, Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            PhaseShift(np.pi/2, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
             RX(np.pi, wires=wires),
-            PhaseShift(np.pi/2, wires=wires)
+            PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
@@ -182,9 +182,9 @@ class PauliY(Observable, Operation):
     @staticmethod
     def decomposition(wires):
         decomp_ops = [
-            PhaseShift(np.pi/2, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
             RY(np.pi, wires=wires),
-            PhaseShift(np.pi/2, wires=wires)
+            PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
 
