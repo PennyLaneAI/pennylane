@@ -243,7 +243,9 @@ class QubitQNode(JacobianQNode):
             # for each operation in the layer, get the generator and convert it to a variance
             for n, op in enumerate(curr_ops):
                 gen, s = op.generator
-                w = op.wires.tolist()
+                w = op.wires
+                # get the wire's indices on the device
+                subsystems = self.device.wire_map(w)
 
                 if gen is None:
                     raise QuantumFunctionError(
@@ -257,7 +259,7 @@ class QubitQNode(JacobianQNode):
                     variance = var(qml.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
-                        Ki_matrices.append((n, expand(gen, w, self.num_wires)))
+                        Ki_matrices.append((n, expand(gen, subsystems, self.num_wires)))
 
                 elif issubclass(gen, Observable):
                     # generator is an existing PennyLane operation
@@ -271,7 +273,7 @@ class QubitQNode(JacobianQNode):
                         elif issubclass(gen, qml.PauliZ):
                             mat = np.array([[1, 0], [0, -1]])
 
-                        Ki_matrices.append((n, expand(mat, w, self.num_wires)))
+                        Ki_matrices.append((n, expand(mat, subsystems, self.num_wires)))
 
                 else:
                     raise QuantumFunctionError(

@@ -313,8 +313,8 @@ class BaseQNode(qml.QueuingContext):
                 )
 
         # Make sure only existing wires are used.
-        for w in operator.wires.tolist():  # TODO: need to have access to register here
-            if w < 0 or w >= self.num_wires:
+        for w in operator.wires:
+            if w not in self.device.register:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
                     "on device with {} wires.".format(operator.name, w, self.num_wires)

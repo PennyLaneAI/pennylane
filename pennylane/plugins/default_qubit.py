@@ -138,9 +138,10 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit rotations
         for operation in rotations:
-            wires = operation.wires.tolist()
+            wires = operation.wires
+            subsystems = self.wire_map(wires)
             par = operation.parameters
-            self._state = self.mat_vec_product(operation.matrix, self._state, wires)
+            self._state = self.mat_vec_product(operation.matrix, self._state, subsystems)
 
     @property
     def state(self):
