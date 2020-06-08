@@ -623,7 +623,7 @@ class PhaseShift(DiagonalOperation):
     def _eigvals(cls, *params):
         phi = params[0]
         return np.array([1, cmath.exp(1j * phi)])
-    
+
     @staticmethod
     def decomposition(phi, wires):
         decomp_ops = [RZ(phi, wires=wires)]
