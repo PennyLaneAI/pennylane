@@ -191,6 +191,8 @@ class TestWires:
         assert wires.indices(Wires([1, 4])) == [2, 0]
         # for non-Wires inputs
         assert wires.indices([1, 4]) == [2, 0]
+        # for integer
+        assert wires.indices(1) == [2]
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""

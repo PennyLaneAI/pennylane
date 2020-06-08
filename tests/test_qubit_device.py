@@ -21,7 +21,6 @@ from random import random
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError
 from pennylane.qnodes import QuantumFunctionError
-from pennylane import expval, var, sample
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.variable import Variable
@@ -163,7 +162,7 @@ class TestOperations:
 
         observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
 
-        circuit_graph = CircuitGraph(queue + observables, {})
+        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
 
         call_history = []
 
@@ -191,7 +190,7 @@ class TestOperations:
 
         observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))]
 
-        circuit_graph = CircuitGraph(queue + observables, {})
+        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
@@ -225,7 +224,7 @@ class TestOperations:
     def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods, monkeypatch, queue, observables):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        circuit_graph = CircuitGraph(queue + observables, {})
+        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
 
         call_history = {}
 
@@ -263,7 +262,7 @@ class TestObservables:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        circuit_graph = CircuitGraph(queue + observables, {})
+        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
@@ -281,7 +280,7 @@ class TestObservables:
         obs.return_type = "SomeUnsupportedReturnType"
         observables = [obs]
 
-        circuit_graph = CircuitGraph(queue + observables, {})
+        circuit_graph = CircuitGraph(queue + observables, {}, Wires([0]))
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)

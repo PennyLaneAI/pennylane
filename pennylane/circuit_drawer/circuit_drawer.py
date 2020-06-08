@@ -14,7 +14,7 @@
 """
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
-from collections import OrderedDict, Iterable
+from collections import OrderedDict
 
 import pennylane as qml
 
@@ -45,6 +45,7 @@ class CircuitDrawer:
     Args:
         raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
+        register (Wires): register of all wires in the circuit
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
@@ -53,22 +54,23 @@ class CircuitDrawer:
         self,
         raw_operation_grid,
         raw_observable_grid,
+        register,
         charset=UnicodeCharSet,
         show_variable_names=False,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
+        self.register = register
         self.charset = charset
         self.show_variable_names = show_variable_names
 
-        self.make_wire_conversion_dicts(raw_operation_grid, raw_observable_grid)
         self.representation_resolver = RepresentationResolver(charset, show_variable_names)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []
         self.observable_decoration_indices = []
 
-        CircuitDrawer.move_multi_wire_gates(self.operation_grid)
+        self.move_multi_wire_gates(self.operation_grid)
 
         # Resolve operator names
         self.resolve_representation(self.operation_grid, self.operation_representation_grid)
@@ -117,56 +119,6 @@ class CircuitDrawer:
         self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
-    def make_wire_conversion_dicts(self, raw_operation_grid, raw_observable_grid):
-        """Prepare the dictionaries used to convert between internal and device wires.
-
-        This conversion is necessary due to the fact that the circuit drawer internally uses
-        ascending wires that have to be matched to the actual wires of the Operations inside
-        the circuit.
-
-        Args:
-            raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
-            raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
-        """
-        # pylint: disable=protected-access
-        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
-            qml.utils._flatten(raw_observable_grid)
-        )
-        all_wires = [op.wires.tolist() for op in all_operators if op is not None]
-        circuit_wires = sorted(set(qml.utils._flatten(all_wires)))
-        internal_wires = list(range(len(circuit_wires)))
-
-        self._cicuit_wire_to_internal_wire = dict(zip(circuit_wires, internal_wires))
-        self._internal_wire_to_circuit_wire = dict(zip(internal_wires, circuit_wires))
-
-    def circuit_wires_to_internal_wires(self, wires):
-        """Convert one or multiple device wires to internal wires.
-
-        Args:
-            wires (Union[Iterable[int],int]): One or multiple device wires
-
-        Returns:
-            Union[Iterable[int],int]: The corresponding internal wires
-        """
-        if isinstance(wires, Iterable):
-            return [self._cicuit_wire_to_internal_wire[wire] for wire in wires]
-
-        return self._cicuit_wire_to_internal_wire[wires]
-
-    def internal_wires_to_circuit_wires(self, wires):
-        """Convert one or multiple internal wires to device wires.
-
-        Args:
-            wires (Union[Iterable[int],int]): One or multiple internal wires
-
-        Returns:
-            Union[Iterable[int],int]: The corresponding device wires
-        """
-        if isinstance(wires, Iterable):
-            return [self._internal_wire_to_circuit_wire[wire] for wire in wires]
-
-        return self._internal_wire_to_circuit_wire[wires]
-
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
 
@@ -178,26 +130,27 @@ class CircuitDrawer:
             representation_layer = [""] * grid.num_wires
 
             for wire, operator in enumerate(grid.layer(i)):
+                subsystems = self.register.indices(wire)
                 representation_layer[wire] = self.representation_resolver.element_representation(
-                    operator, self.internal_wires_to_circuit_wires(wire)
+                    operator, subsystems
                 )
 
             representation_grid.append_layer(representation_layer)
 
-    def add_multi_wire_connectors_to_layer(self, internal_wires, decoration_layer):
+    def add_multi_wire_connectors_to_layer(self, subsystems, decoration_layer):
         """Add multi wire connectors for the given wires to a layer.
 
         Args:
-            internal_wires (list[int]): The internal wires that are to be connected
+            subsystems (list[int]): The indices of wires that are to be connected
             decoration_layer (list[str]): The decoration layer to which the wires will be added
         """
-        min_wire = min(internal_wires)
-        max_wire = max(internal_wires)
+        min_wire = min(subsystems)
+        max_wire = max(subsystems)
 
         decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
 
         for k in range(min_wire + 1, max_wire):
-            if k in internal_wires:
+            if k in subsystems:
                 decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
             else:
                 decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
@@ -229,12 +182,12 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                wires = op.wires.tolist()
+                wires = op.wires
+                subsystems = self.register.indices(wires)
 
-                if len(wires) > 1:
-                    internal_wires = self.circuit_wires_to_internal_wires(wires)
-                    min_wire = min(internal_wires)
-                    max_wire = max(internal_wires)
+                if len(subsystems) > 1:
+                    min_wire = min(subsystems)
+                    max_wire = max(subsystems)
 
                     # If there is a conflict between decorations, we start a new decoration_layer
                     if any(
@@ -246,7 +199,7 @@ class CircuitDrawer:
 
                         decoration_layer = [""] * grid.num_wires
 
-                    self.add_multi_wire_connectors_to_layer(internal_wires, decoration_layer)
+                    self.add_multi_wire_connectors_to_layer(subsystems, decoration_layer)
 
             representation_grid.insert_layer(i + j, decoration_layer)
             inserted_indices.append(i + j)
@@ -284,8 +237,7 @@ class CircuitDrawer:
                 ),
             )
 
-    @staticmethod
-    def move_multi_wire_gates(operator_grid):
+    def move_multi_wire_gates(self, operator_grid):
         """Move multi-wire gates so that there are no interlocking multi-wire gates in the same layer.
 
         Args:
@@ -306,8 +258,11 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
+                # translate wires to their indices in the register
+                subsystems = self.register.indices(op.wires)
+
                 if len(op.wires) > 1:
-                    sorted_wires = op.wires.tolist().copy()
+                    sorted_wires = subsystems.copy()
                     sorted_wires.sort()
 
                     blocked_wires = list(range(sorted_wires[0], sorted_wires[-1] + 1))
@@ -318,7 +273,9 @@ class CircuitDrawer:
                         if other_op is None:
                             continue
 
-                        other_sorted_wires = other_op.wires.tolist().copy()
+                        # translate wires to their indices in the register
+                        other_subsystems = self.register.indices(other_op.wires)
+                        other_sorted_wires = other_subsystems.copy()
                         other_sorted_wires.sort()
                         other_blocked_wires = list(
                             range(other_sorted_wires[0], other_sorted_wires[-1] + 1)
@@ -351,7 +308,7 @@ class CircuitDrawer:
             wire = self.full_representation_grid.wire(i)
 
             rendered_string += "{:2d}: {}".format(
-                self.internal_wires_to_circuit_wires(i), 2 * self.charset.WIRE
+                self.register[i].tolist()[0], 2 * self.charset.WIRE
             )
 
             for s in wire:

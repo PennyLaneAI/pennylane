@@ -414,7 +414,8 @@ def _terms_to_qubit_operator(coeffs, ops):
     for coeff, op in zip(coeffs, ops):
 
         # wire ids
-        wires = op.wires.tolist()
+        wires = op.wires.tolist()  # Can we use subsystems here? Otherwise the Qchem library relies on users
+                                   # and devices assuming consecutive indices as wires
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]

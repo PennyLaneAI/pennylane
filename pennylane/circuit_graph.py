@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
-from .utils import _flatten
 from .variable import Variable
 
 
@@ -141,44 +140,49 @@ class CircuitGraph:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
+        register (Wires): the register of wires
     """
 
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, ops, variable_deps):
+    def __init__(self, ops, variable_deps, register):
         self.variable_deps = variable_deps
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
-        self.num_wires = 0
+        self.register = register
+        """Wires: register of wires that are adressed in the operations. 
+        Required to translate between wires and indices of the wires in the register."""
+        self.num_wires = len(register)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(op.wires.tolist()) + 1)
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(op.wires.tolist()):
-                # Add op to the grid, to the end of wire w
-                self._grid.setdefault(w, []).append(op)
+            for w in op.wires:
+                # get the index of the wire on the register
+                subsystem = register.index(w)
+                # add op to the grid, to the end of wire w
+                self._grid.setdefault(subsystem, []).append(op)
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
         # Iterate over each (populated) wire in the grid
-        for wire in self._grid.values():
+        for subsystem in self._grid.values():
             # Add the first operator on the wire to the graph
             # This operator does not depend on any others
-            self._graph.add_node(wire[0])
+            self._graph.add_node(subsystem[0])
 
-            for i in range(1, len(wire)):
+            for i in range(1, len(subsystem)):
                 # For subsequent operators on the wire:
-                if wire[i] not in self._graph:
+                if subsystem[i] not in self._graph:
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
-                    self._graph.add_node(wire[i])
+                    self._graph.add_node(subsystem[i])
 
                 # Create an edge between this and the previous operator
-                self._graph.add_edge(wire[i - 1], wire[i])
+                self._graph.add_edge(subsystem[i - 1], subsystem[i])
 
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
@@ -235,7 +239,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires.tolist())
+            serialization_string += str(obs.wires)
 
         return serialization_string
 
@@ -625,7 +629,7 @@ class CircuitGraph:
             )
 
         drawer = CircuitDrawer(
-            grid, obs, charset=CHARSETS[charset], show_variable_names=show_variable_names
+            grid, obs, self.register, charset=CHARSETS[charset], show_variable_names=show_variable_names
         )
 
         return drawer.draw()

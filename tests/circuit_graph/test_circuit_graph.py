@@ -56,7 +56,7 @@ def ops(queue, obs):
 @pytest.fixture
 def circuit(ops):
     """A fixture of a circuit generated based on the queue and obs fixtures above."""
-    circuit = CircuitGraph(ops, {})
+    circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
     return circuit
 
 
@@ -88,7 +88,7 @@ class TestCircuitGraph:
 
         ops = [qml.RX(0.43, wires=0), qml.RY(0.35, wires=1)]
 
-        res = CircuitGraph(ops, {}).graph
+        res = CircuitGraph(ops, {}, Wires([0, 1])).graph
         assert len(res) == 2
         assert not res.edges()
 
@@ -96,7 +96,7 @@ class TestCircuitGraph:
         """Test a more complex example containing operations
         that do depend on the result of previous operations"""
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
         graph = circuit.graph
         assert len(graph) == 9
         assert len(graph.edges()) == 9
@@ -119,7 +119,7 @@ class TestCircuitGraph:
         """
         Test that the ``ancestors`` and ``descendants`` methods return the expected result.
         """
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
 
         ancestors = circuit.ancestors([ops[6]])
         assert len(ancestors) == 3
@@ -132,7 +132,7 @@ class TestCircuitGraph:
     def test_update_node(self, ops):
         """Changing nodes in the graph."""
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
         new = qml.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
@@ -201,7 +201,7 @@ class TestCircuitGraph:
 
     def test_diagonalizing_gates(self):
         """Tests that the diagonalizing gates are correct for a circuit"""
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {})
+        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {}, Wires([0, 1]))
         diag_gates = circuit.diagonalizing_gates
 
         assert len(diag_gates) == 1
@@ -211,9 +211,9 @@ class TestCircuitGraph:
     def test_is_sampled(self):
         """Test that circuit graphs with sampled observables properly return
         True for CircuitGraph.is_sampled"""
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {})
+        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))], {}, Wires([0, 1]))
         assert not circuit.is_sampled
 
-        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.sample(qml.PauliZ(1))], {})
+        circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.sample(qml.PauliZ(1))], {}, Wires([0, 1]))
         assert circuit.is_sampled
 

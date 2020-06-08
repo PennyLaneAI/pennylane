@@ -156,11 +156,14 @@ class Wires(Sequence):
         [2, 0]
 
         Args:
-            wires (Wires or Iterable[Any]): Iterable containing the wires whose indices are to be found
+            wires (Wires or Iterable[Any] or Integral, str): Iterable containing the wires whose indices are to be found,
+                or number/string representing a single wire
 
         Returns:
             List: index list
         """
+        if not isinstance(wires, Iterable):
+            return [self.index(wires)]
 
         return [self.index(w) for w in wires]
 

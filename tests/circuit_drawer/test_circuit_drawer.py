@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import CircuitDrawer
 from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
-
+from pennylane.wires import Wires
 
 class TestFunctions:
     """Test the helper functions."""
@@ -65,7 +65,7 @@ dummy_raw_observable_grid = [
 @pytest.fixture
 def dummy_circuit_drawer():
     """A dummy CircuitDrawer instance."""
-    return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
+    return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)))
 
 
 def assert_nested_lists_equal(list1, list2):
@@ -203,7 +203,6 @@ class TestCircuitDrawer:
     )
     def test_resolve_decorations(self, dummy_circuit_drawer, grid, target_representation_grid):
         """Test that decorations are properly resolved."""
-        dummy_circuit_drawer.make_wire_conversion_dicts(grid.raw_grid, [[]])
         representation_grid = Grid()
         dummy_circuit_drawer.resolve_decorations(grid, representation_grid)
 

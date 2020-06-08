@@ -526,7 +526,7 @@ class BaseQNode(qml.QueuingContext):
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
-        self.circuit = CircuitGraph(self.ops, self.variable_deps)
+        self.circuit = CircuitGraph(self.ops, self.variable_deps, self.device.register)
 
         # check for unused positional params
         if self.kwargs.get("par_check", False):
@@ -786,7 +786,7 @@ class BaseQNode(qml.QueuingContext):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
             circuit_graph = CircuitGraph(
-                self.circuit.operations + list(obs), self.circuit.variable_deps
+                self.circuit.operations + list(obs), self.circuit.variable_deps, self.device.register
             )
             ret = self.device.execute(circuit_graph)
         else:
