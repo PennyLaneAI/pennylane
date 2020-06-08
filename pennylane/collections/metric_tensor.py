@@ -38,6 +38,7 @@ def _marginal_prob(prob, wires, interface):
         array[float] or tensor[float]: the marginal probabilities, of
         size ``(2**len(wires),)``
     """
+    prob = fn[interface].flatten(prob)
     num_wires = int(np.log2(len(prob)))
     inactive_wires = list(set(range(num_wires)) - set(wires))
     prob = fn[interface].reshape(prob, [2] * num_wires)
@@ -111,7 +112,6 @@ class MetricTensor:
         self.qnode = qnode
         self.dev = device
         self.interface = qnode.interface
-        self._qnode_type = self.qnode.__class__
 
         self.qnodes = None
         self.obs = None
@@ -141,7 +141,7 @@ class MetricTensor:
             g = scale * self.cov_matrix(prob, obs, diag_approx=diag_approx)
             gs.append(g)
 
-        perm = np.array([item for sublist in self.params for item in sublist])
+        perm = np.array([item for sublist in self.params for item in sublist], dtype=np.int64)
 
         # create the block diagonal metric tensor
         tensor = self.fn.block_diag(*gs)
@@ -257,7 +257,7 @@ class MetricTensor:
                         "has no corresponding observable".format(gen)
                     )
 
-            @qml.qnode(self.dev, interface=self.interface, mutable=False)
+            @qml.qnode(self.dev, interface=self.interface, mutable=True)
             def qn(
                 weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev
             ):  # pylint: disable=dangerous-default-value

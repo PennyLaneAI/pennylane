@@ -56,7 +56,7 @@ def non_parametrized_layer(a, b, c):
 
 
 @pytest.fixture
-def sample_circuit(interface, tf_support, torch_support):
+def sample_circuit(interface, device, tf_support, torch_support):
     """Sample variational circuit fixture used in the
     next couple of tests"""
     if interface == "torch" and not torch_support:
@@ -66,7 +66,7 @@ def sample_circuit(interface, tf_support, torch_support):
         pytest.skip("Skipped, no tf support")
 
     def _sample_circuit(params, non_params=[0.5, 0.1, 0.5]):
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device(device, wires=3)
 
         @qml.qnode(dev, interface=interface)
         def final(params):
@@ -206,6 +206,28 @@ def sample_circuit_tensor(params, non_params=[0.5, 0.1, 0.5]):
     return block_diag(G1, G2, G3)
 
 
+@pytest.fixture
+def finite_diff():
+    """Fixture to compute the numeric gradient of the metric tensor
+    for some reduction function fn"""
+    def _finite_diff(fn, params):
+        # Compare the analytic gradient against finite diff
+        cost_exp = lambda params: fn(sample_circuit_tensor(params))
+        h = 0.0001
+        shift = np.zeros([6])
+        grad = []
+
+        for i in range(6):
+            shift_tmp = shift.copy()
+            shift_tmp[i] += h
+            pp = np.array(params) + shift_tmp
+            pm = np.array(params) - shift_tmp
+            grad.append((cost_exp(pp) - cost_exp(pm))/(2*h))
+
+        return grad
+
+    return _finite_diff
+
 # ===================================================================
 # Tests
 # ===================================================================
@@ -214,7 +236,7 @@ def sample_circuit_tensor(params, non_params=[0.5, 0.1, 0.5]):
 class TestMetricTensorEvaluation:
     """Tests for metric tensor subcircuit construction and evaluation"""
 
-    def test_no_generator(self,):
+    def test_no_generator(self):
         """Test exception is raised if subcircuit contains an
         operation with no generator"""
         dev = qml.device("default.qubit", wires=2)
@@ -368,6 +390,7 @@ class TestMetricTensorEvaluation:
         assert np.allclose(res, np.diag(expected), atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("device", ["default.qubit"])
 class TestMetricTensorInterfaces:
     """Tests for interfaces of the metric tensor"""
 
@@ -431,30 +454,9 @@ class TestMetricTensorInterfaces:
         assert np.allclose(G, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("device", ["default.qubit"])
 class TestMetricTensorAutodiff:
     """Tests for differentiation of the metric tensor"""
-
-    @pytest.fixture
-    def finite_diff(self):
-        """Fixture to compute the numeric gradient of the metric tensor
-        for some reduction function fn"""
-        def _finite_diff(fn, params):
-            # Compare the analytic gradient against finite diff
-            cost_exp = lambda params: fn(sample_circuit_tensor(params))
-            h = 0.0001
-            shift = np.zeros([6])
-            grad = []
-
-            for i in range(6):
-                shift_tmp = shift.copy()
-                shift_tmp[i] += h
-                pp = np.array(params) + shift_tmp
-                pm = np.array(params) - shift_tmp
-                grad.append((cost_exp(pp) - cost_exp(pm))/(2*h))
-
-            return grad
-
-        return _finite_diff
 
     @pytest.mark.parametrize("interface", ["autograd"])
     def test_autograd_metric_tensor(self, sample_circuit, finite_diff, tol):
@@ -516,9 +518,11 @@ class TestMetricTensorBackprop:
     """Test that the metric tensor correctly works with a device that
     supports backprop."""
 
+    @pytest.mark.xfail(reason="CircuitGraph.parametrized_layers does not correctly compute for PassthruQNodes", strict=True)
+    @pytest.mark.parametrize("device", ["default.qubit.tf"])
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_evaluation(self, sample_circuit, tol):
-        """Test metric tensor evaluation using default.qubit.tf"""
+    def test_construction(self, sample_circuit, tol):
+        """Test metric tensor construction using default.qubit.tf"""
         dev = qml.device("default.qubit.tf", wires=3)
 
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
@@ -526,8 +530,62 @@ class TestMetricTensorBackprop:
 
         circuit = sample_circuit(params)
 
-        G = qml.MetricTensor(circuit, dev)(params_tf)
+        assert isinstance(circuit, qml.qnodes.PassthruQNode)
+
+        g = qml.MetricTensor(circuit, dev)
+
+        res = g(params_tf)
         expected = sample_circuit_tensor(params)
 
-        assert isinstance(G, tf.Tensor)
-        assert np.allclose(G, expected, atol=tol, rtol=0)
+        assert all(isinstance(q, qml.qnodes.PassthruQNode) for q in g.qnodes)
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("device", ["default.qubit"])
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_evaluation(self, sample_circuit, tol):
+        """Test metric tensor evaluation using default.qubit.tf, with the
+        metric tensor constructed using a parameter-shift QNode."""
+        dev = qml.device("default.qubit.tf", wires=3)
+
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        params_tf = tf.Variable(params)
+
+        circuit = sample_circuit(params)
+
+        assert not isinstance(circuit, qml.qnodes.PassthruQNode)
+
+        g = qml.MetricTensor(circuit, dev)
+
+        res = g(params_tf)
+        expected = sample_circuit_tensor(params)
+
+        assert all(isinstance(q, qml.qnodes.PassthruQNode) for q in g.qnodes)
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("device", ["default.qubit"])
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_gradient(self, sample_circuit, finite_diff, tol):
+        """Test metric tensor gradient using default.qubit.tf, with the
+        metric tensor constructed using a parameter-shift QNode."""
+        dev = qml.device("default.qubit.tf", wires=3)
+
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        params_tf = tf.Variable(params)
+
+        circuit = sample_circuit(params)
+
+        assert not isinstance(circuit, qml.qnodes.PassthruQNode)
+
+        g = qml.MetricTensor(circuit, dev)
+
+        with tf.GradientTape() as tape:
+            loss = tf.reduce_sum(g(params_tf))
+
+        res = tape.gradient(loss, params_tf)
+        expected = finite_diff(np.sum, params)
+
+        assert all(isinstance(q, qml.qnodes.PassthruQNode) for q in g.qnodes)
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
