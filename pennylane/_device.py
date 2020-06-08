@@ -239,7 +239,7 @@ class Device(abc.ABC):
                     results.append(np.array(self.sample(obs.name, subsystems, obs.parameters)))
 
                 elif obs.return_type is Probability:
-                    results.append(list(self.probability(wires=subsystems).values()))
+                    results.append(list(self.probability(subsystems=subsystems).values()))
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError(

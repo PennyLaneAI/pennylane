@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires.tolist())
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 
@@ -305,14 +305,15 @@ class BaseQNode(qml.QueuingContext):
             self.queue.remove(operator)
 
     def _append_operator(self, operator):
-        if operator.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
-            if set(operator.wires.tolist()) != set(range(self.num_wires)):
+        if operator.num_wires == ActsOn.AllWires:
+            # check here only if enough wires
+            if len(operator.wires) != self.num_wires:
                 raise QuantumFunctionError(
                     "Operator {} must act on all wires".format(operator.name)
                 )
 
         # Make sure only existing wires are used.
-        for w in operator.wires.tolist():  # TODO: re-assess for for nonconsec wires
+        for w in operator.wires.tolist():  # TODO: need to have access to register here
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
@@ -339,7 +340,8 @@ class BaseQNode(qml.QueuingContext):
         or list structure.
 
         Args:
-            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used
+                as a blueprint for the returned variable name(s).
             prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
 
         Returns:

@@ -463,7 +463,7 @@ class TestExpval:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
+            m.setattr(QubitDevice, "probability", lambda self, subsystems=None: probs)
             res = dev.expval(obs)
 
         assert res == (obs.eigvals @ probs).real
@@ -511,7 +511,7 @@ class TestVar:
 
         call_history = []
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
+            m.setattr(QubitDevice, "probability", lambda self, subsystems=None: probs)
             res = dev.var(obs)
 
         assert res == (obs.eigvals ** 2) @ probs - (obs.eigvals @ probs).real ** 2
@@ -603,7 +603,7 @@ class TestMarginalProb:
         with monkeypatch.context() as m:
             m.setattr("numpy.apply_over_axes", apply_over_axes_mock)
             dev = mock_qubit_device_with_original_statistics(wires=3)
-            dev.marginal_prob(probs, wires=wires)
+            dev.marginal_prob(probs, subsystems=wires)
 
         assert np.array_equal(arguments_apply_over_axes[0][0].flatten(), probs)
         assert np.array_equal(arguments_apply_over_axes[0][1], inactive_wires)
@@ -636,19 +636,19 @@ class TestMarginalProb:
         """Test that the correct marginals are returned by the marginal_prob method"""
         num_wires = int(np.log2(len(probs)))
         dev = mock_qubit_device_with_original_statistics(num_wires)
-        res = dev.marginal_prob(probs, wires=wires)
+        res = dev.marginal_prob(probs, subsystems=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned_wires_none(
         self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
-        """Test that passing wires=None simply returns the original probability."""
+        """Test that passing subsystems=None simply returns the original probability."""
         num_wires = int(np.log2(len(probs)))
         dev = mock_qubit_device_with_original_statistics(wires=num_wires)
         dev.num_wires = num_wires
 
-        res = dev.marginal_prob(probs, wires=None)
+        res = dev.marginal_prob(probs, subsystems=None)
         assert np.allclose(res, probs, atol=tol, rtol=0)
 
 

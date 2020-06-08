@@ -396,7 +396,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, {}".format(self.name, len(self.params), self.wires)
+        return "{}: {} params, {}".format(self.name, len(self.params), self.wires.tolist())
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -405,8 +405,8 @@ class Operator(abc.ABC):
         # the last evaluation.
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, {})".format(self.name, params, self.wires)
-        return "{}({})".format(self.name, self.wires)
+            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
+        return "{}(wires={})".format(self.name, self.wires.tolist())
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -894,7 +894,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "({})".format(self.wires)
+            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -955,7 +955,7 @@ class Tensor(Observable):
     def __str__(self):
         """Print the tensor product and some information."""
         return "Tensor product {}: {} params, wires {}".format(
-            [i.name for i in self.obs], len(self.params), self.wires
+            [i.name for i in self.obs], len(self.params), self.wires.tolist()
         )
 
     def __repr__(self):

@@ -1487,7 +1487,7 @@ class TestTensorSample:
         dev.sample(obs)
 
         s1 = obs.eigvals
-        p = dev.probability(wires=obs.wires.tolist())
+        p = dev.probability(subsystems=dev.wire_map(obs.wires))
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
@@ -1527,7 +1527,7 @@ class TestTensorSample:
         dev.sample(obs)
 
         s1 = obs.eigvals
-        p = dev.marginal_prob(dev.probability(), wires=obs.wires.tolist())
+        p = dev.marginal_prob(dev.probability(), subsystems=dev.wire_map(obs.wires))
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
@@ -1575,7 +1575,7 @@ class TestTensorSample:
         dev.sample(obs)
 
         s1 = obs.eigvals
-        p = dev.marginal_prob(dev.probability(), wires=obs.wires.tolist())
+        p = dev.marginal_prob(dev.probability(), subsystems=dev.wire_map(obs.wires))
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
