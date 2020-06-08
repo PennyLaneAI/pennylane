@@ -62,7 +62,15 @@ class ReversibleQNode(QubitQNode):
                 between_ops = decomp[p_idx+1:] + between_ops
             else:
                 generator, multiplier = op.generator
-            diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator(wires)] + between_ops
+
+            # CRX, CRY, CRZ ops have a non-unitary matrix as generator
+            # TODO: these can be supported by multiplying ``state`` directly by these generators within this function
+            # (or by allowing non-unitary matrix multiplies in the simulator backends)
+            if op.name in ["CRX", "CRY", "CRZ"]:
+                raise ValueError("Controlled-rotation gates are not currently supported with the reversible gradient method.")
+            else:
+                generator = generator(wires)
+            diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
             # TODO: consider using shift rather than generator?
 
             # set the simulator state to be the pre-measurement state
