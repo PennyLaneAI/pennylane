@@ -24,7 +24,8 @@ from pennylane.templates.subroutines import (
     Interferometer, 
     ArbitraryUnitary,
     SingleExcitationUnitary,
-    DoubleExcitationUnitary
+    DoubleExcitationUnitary,
+    UCCSD
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -368,32 +369,29 @@ class TestSingleExcitationUnitary:
         with qml.utils.OperationRecorder() as rec:
             SingleExcitationUnitary(weight, wires=ph)
 
-        idx = ref_gates[0][0]
+        assert len(rec.queue) == sqg + cnots            
 
-        exp_gate = ref_gates[0][1]
-        res_gate = rec.queue[idx]
+        for gate in ref_gates:
+            idx = gate[0]
 
-        exp_wires = ref_gates[0][2]
-        res_wires = rec.queue[idx]._wires
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
 
-        exp_weight = ref_gates[0][3]
-        res_weight = rec.queue[idx].parameters        
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
 
-        assert len(rec.queue) == sqg + cnots
-        assert isinstance(res_gate, exp_gate) 
-        assert res_wires == exp_wires
-        assert res_weight == exp_weight
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
         ("weight", "ph", "msg_match"),
         [
-            ( 0.2      , [0]         , "'wires' must be of shape"),
-            ( 0.2      , []          , "'wires' must be of shape"),
+            ( 0.2      , [0]         , "expected 2 wires"),
+            ( 0.2      , []          , "expected 2 wires"),
             ([0.2, 1.1], [0,2]       , "'weight' must be of shape"),
-            ( 0.2      , None        , "wires must be a positive integer"),
-            ( 0.2      , ["a", "b"]  , "wires must be a positive integer"),
-            ( 0.2      , [1.13, 5.23], "wires must be a positive integer"),
-            ( 0.2      , [3, 3]      , "wires_1 must be greater than wires_0"),
             ( 0.2      , [3, 1]      , "wires_1 must be greater than wires_0")
         ]
     )
@@ -558,37 +556,33 @@ class TestDoubleExcitationUnitary:
         with qml.utils.OperationRecorder() as rec:
             DoubleExcitationUnitary(weight, wires=pphh)
 
-        idx = ref_gates[0][0]
-
-        exp_gate = ref_gates[0][1]
-        res_gate = rec.queue[idx]
-
-        exp_wires = ref_gates[0][2]
-        res_wires = rec.queue[idx]._wires
-
-        exp_weight = ref_gates[0][3]
-        res_weight = rec.queue[idx].parameters        
-
         assert len(rec.queue) == sqg + cnots
-        assert isinstance(res_gate, exp_gate) 
-        assert res_wires == exp_wires
-        assert res_weight == exp_weight
+
+        for gate in ref_gates:
+            idx = gate[0]
+
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
+
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
+
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            assert res_weight == exp_weight
 
     @pytest.mark.parametrize(
         ("weight", "pphh", "msg_match"),
         [
-            ( 0.2      , [0]                  , "'wires' must be of shape"),
-            ( 0.2      , [0, 1]               , "'wires' must be of shape"),
-            ( 0.2      , [0, 1, 2, 3, 4]      , "'wires' must be of shape"),
-            ( 0.2      , []                   , "'wires' must be of shape"),
+            ( 0.2      , [0]                  , "expected 4 wires"),
+            ( 0.2      , [0, 1]               , "expected 4 wires"),
+            ( 0.2      , [0, 1, 2, 3, 4]      , "expected 4 wires"),
+            ( 0.2      , []                   , "expected 4 wires"),
             ([0.2, 1.1], [0, 2, 4, 6]         , "'weight' must be of shape"),
-            ( 0.2      , None                 , "wires must be a positive integer"),
-            ( 0.2      , ["a", "b", "c", "d"] , "wires must be a positive integer"),
-            ( 0.2      , [1.1, 5.2, 6, 7]     , "wires must be a positive integer"),
             ( 0.2      , [1, 0, 6, 3]         , "wires_3 > wires_2 > wires_1 > wires_0"),
-            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0"),
-            ( 0.2      , [0, 1, 3, 3]         , "wires_1 > wires_0 and wires_3 > wires_2"),
-            ( 0.2      , [0, 0, 2, 2]         , "wires_1 > wires_0 and wires_3 > wires_2"),
+            ( 0.2      , [1, 0, 3, 6]         , "wires_3 > wires_2 > wires_1 > wires_0")
         ]
     )
     def test_double_excitation_unitary_exceptions(self, weight, pphh, msg_match):
@@ -596,8 +590,8 @@ class TestDoubleExcitationUnitary:
         ``pphh`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=10)
 
-        def circuit(weight=weight, wires=pphh):
-            DoubleExcitationUnitary(weight=weight, wires=pphh)
+        def circuit(weight=weight, wires=None):
+            DoubleExcitationUnitary(weight=weight, wires=wires)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -633,4 +627,208 @@ class TestDoubleExcitationUnitary:
         # compare the two methods of computing the Jacobian
         jac_A = circuit.jacobian((weight), method="A")
         jac_F = circuit.jacobian((weight), method="F")
+        assert jac_A == pytest.approx(jac_F, abs=tol)
+
+
+class TestUCCSDUnitary:
+    """Tests for the UCCSD template from the pennylane.templates.subroutine module."""
+
+    @pytest.mark.parametrize(
+        ("ph", "pphh", "weights", "ref_gates"),
+        [
+          ([[0, 2]], [], np.array([3.815]),
+             [ [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
+               [1, qml.RX,         [0],        [-np.pi/2]],
+               [5, qml.RZ,         [2],        [1.9075]],
+               [6, qml.CNOT,       [1, 2],     []] ]),
+
+          ([[0, 2], [1, 3]], [], np.array([3.815, 4.866]),
+             [ [2,  qml.Hadamard, [2],    []],
+               [8,  qml.RX,       [0],    [np.pi/2]],
+               [12, qml.CNOT,     [0, 1], []],
+               [23, qml.RZ,       [3],    [2.433]],
+               [24, qml.CNOT,     [2, 3], []],
+               [26, qml.RX,       [1],    [np.pi/2]] ]),
+
+          ([], [[0, 1, 2, 5]], np.array([3.815]),
+             [ [3,   qml.RX,       [2],    [-np.pi/2]],
+               [29,  qml.RZ,       [5],    [0.476875]],
+               [73,  qml.Hadamard, [0],    []],
+               [150, qml.RX,       [1],    [np.pi/2]],
+               [88,  qml.CNOT,     [3, 4], []],
+               [121, qml.CNOT,     [2, 3], []] ]),
+
+          ([], [[0, 1, 2, 3], [0, 1, 4, 5]], np.array([3.815, 4.866]),
+             [ [4,   qml.Hadamard, [3],    []],
+               [16,  qml.RX,       [0],    [-np.pi/2]],
+               [38,  qml.RZ,       [3],    [0.476875]],
+               [78,  qml.Hadamard, [2],    []],
+               [107, qml.RX,       [1],    [-np.pi/2]],
+               [209, qml.Hadamard, [4],    []],
+               [218, qml.RZ,       [5],    [-0.60825]],
+               [82,  qml.CNOT,     [2, 3], []],
+               [159, qml.CNOT,     [4, 5], []] ]),
+
+          ([[0, 4], [1, 3]], [[0, 1, 2, 3], [0, 1, 4, 5]], np.array([3.815, 4.866, 1.019, 0.639]),
+             [ [16,  qml.RX,       [0],    [-np.pi/2]],
+               [47,  qml.Hadamard, [1],    []],
+               [74,  qml.Hadamard, [2],    []],
+               [83,  qml.RZ,       [3],    [-0.127375]],
+               [134, qml.RX,       [4],    [np.pi/2]],
+               [158, qml.RZ,       [5],    [0.079875]],
+               [188, qml.RZ,       [5],    [-0.079875]],
+               [96,  qml.CNOT,     [1, 2], []],
+               [235, qml.CNOT,     [1, 4], []] ])
+        ]
+    )
+    def test_uccsd_operations(self, ph, pphh, weights, ref_gates):
+        """Test the correctness of the UCCSD template including the gate count
+        and order, the wires the operation acts on and the correct use of parameters 
+        in the circuit."""
+
+        sqg = 10*len(ph) + 72*len(pphh)
+
+        cnots = 0
+        for i_ph in ph:
+            cnots += 4*(i_ph[1]-i_ph[0])
+
+        for i_pphh in pphh:
+            cnots += 16*(i_pphh[1]-i_pphh[0] + i_pphh[3]-i_pphh[2] + 1)
+        N = 6
+        wires = range(N)
+
+        ref_state = np.array([1, 1, 0, 0, 0, 0])
+
+        with qml.utils.OperationRecorder() as rec:
+            UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
+
+        assert len(rec.queue) == sqg + cnots + 1
+
+        for gate in ref_gates:
+            idx = gate[0]
+
+            exp_gate = gate[1]
+            res_gate = rec.queue[idx]
+            assert isinstance(res_gate, exp_gate)
+
+            exp_wires = gate[2]
+            res_wires = rec.queue[idx]._wires
+            assert res_wires == exp_wires
+
+            exp_weight = gate[3]
+            res_weight = rec.queue[idx].parameters
+            if exp_gate != qml.BasisState:
+                assert res_weight == exp_weight
+            else:
+                assert np.allclose(res_weight, exp_weight)
+
+    @pytest.mark.parametrize(
+        ("weights", "ph", "pphh", "init_state", "msg_match"),
+        [
+            ( np.array([-2.8]), [[0, 2]], [], [1, 1, 0, 0],
+             "'init_state' must be a Numpy array"),
+
+            ( np.array([-2.8]), [[0, 2]], [], (1, 1, 0, 0),
+             "'init_state' must be a Numpy array"),
+
+            ( np.array([-2.8]), [[0, 2]], [], np.array([1.2, 1, 0, 0]),
+             "Elements of 'init_state' must be integers"),
+
+            ( np.array([-2.8]), [], [], np.array([1, 1, 0, 0]),
+             "'ph' and 'pphh' lists can not be both empty"),
+
+            ( np.array([-2.8]), None, None, np.array([1, 1, 0, 0]),
+             "'ph' and 'pphh' lists can not be both empty"),
+
+            ( np.array([-2.8]), None, [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
+             "'ph' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [0, [1, 2]], [], np.array([1, 1, 0, 0]),
+             "Each element of 'ph' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [["a", 3], [1, 2]], [], np.array([1, 1, 0, 0]),
+             "Each element of 'ph' must be a list of integers"),
+
+            ( np.array([-2.8, 1.6]), [[1.4, 3], [1, 2]], [], np.array([1, 1, 0, 0]),
+             "Each element of 'ph' must be a list of integers"),
+
+            ( np.array([-2.8]), [[0, 2]], None, np.array([1, 1, 0, 0]),
+             "'pphh' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [], [0, [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
+             "Each element of 'pphh' must be a list"),
+
+            ( np.array([-2.8, 1.6]), [], [[0, 1, "a", 3], [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
+             "Each element of 'pphh' must be a list of integers"),
+
+            ( np.array([-2.8, 1.6]), [], [[0, 1, 1.4, 3], [1, 2, 3, 4]], np.array([1, 1, 0, 0]),
+             "Each element of 'pphh' must be a list of integers"),
+
+            ( np.array([-2.8]), [[0, 2]], [], np.array([1, 1, 0, 0, 0]),
+             "'init_state' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2], [1, 3, 4]], [], np.array([1, 1, 0, 0]),
+             "Elements of 'ph' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2]], [[0, 1, 2,]], np.array([1, 1, 0, 0]),
+             "Elements of 'pphh' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2]], [], np.array([1, 1, 0, 0]),
+             "'weights' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [], [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
+             "'weights' must be of shape"),
+
+            ( np.array([-2.8, 1.6]), [[0, 2], [1, 3]], [[0, 1, 2, 3]], np.array([1, 1, 0, 0]),
+             "'weights' must be of shape")
+        
+        ]
+    )
+    def test_uccsd_xceptions(self, weights, ph, pphh, init_state, msg_match):
+        """Test that UCCSD throws an exception if the parameters have illegal
+        shapes, types or values."""
+        N=4
+        wires = range(4)
+        dev = qml.device("default.qubit", wires=N)
+
+        def circuit(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state):
+            UCCSD(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match=msg_match):
+            qnode(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+
+    @pytest.mark.parametrize(
+        ("weights", "ph", "pphh", "expected"),
+        [
+            (np.array([3.90575761, -1.89772083, -1.36689032]),
+             [[0, 2], [1, 3]], [0, 1, 2, 3],
+             [-0.14619406, -0.06502792, 0.14619406, 0.06502792])
+        ]
+    )
+    def test_integration(self, weights, ph, pphh, expected, tol):
+        """Test integration with PennyLane and gradient calculations"""
+
+        N = 4
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        w_ph_0 = weights[0]
+        w_ph_1 = weights[1]
+        w_pphh = weights[2]
+
+        @qml.qnode(dev)
+        def circuit(w_ph_0, w_ph_1, w_pphh):
+        	UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
+
+        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+        res = circuit(w_ph_0, w_ph_1, w_pphh)
+        assert np.allclose(res, np.array(expected), atol=tol)
+
+        # compare the two methods of computing the Jacobian
+        jac_A = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="A")
+        jac_F = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)

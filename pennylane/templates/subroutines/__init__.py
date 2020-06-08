@@ -16,7 +16,8 @@ Subroutines are the most basic template, consisting of a collection of quantum o
 any of the characteristics of other templates (i.e. to prepare a specific state, to be repeated or to encode features).
 """
 
-from .interferometer import Interferometer
 from .arbitrary_unitary import ArbitraryUnitary
-from .single_excitation_unitary import SingleExcitationUnitary
 from .double_excitation_unitary import DoubleExcitationUnitary
+from .interferometer import Interferometer
+from .single_excitation_unitary import SingleExcitationUnitary
+from .uccsd import UCCSD

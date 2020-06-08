@@ -41,8 +41,23 @@ def to_autograd(qnode):
         # mark the evaluate method as an Autograd primitive
         evaluate = autograd.extend.primitive(qnode.__class__.evaluate)
 
+        def set_trainable(self, args):
+            """Given input arguments to the AutogradQNode, determine which arguments
+            are trainable and which aren't.
+
+            This method calls the underlying :meth:`set_trainable_args` method of the QNode.
+            """
+            trainable_args = set()
+
+            for idx, arg in enumerate(args):
+                if getattr(arg, "requires_grad", True):
+                    trainable_args.add(idx)
+
+            self.set_trainable_args(trainable_args)
+
         def __call__(self, *args, **kwargs):
             # prevents autograd boxed arguments from going through to evaluate
+            self.set_trainable(args)
             args = autograd.builtins.tuple(args)  # pylint: disable=no-member
             return self.evaluate(args, kwargs)
 
@@ -68,15 +83,17 @@ def to_autograd(qnode):
                     into the nested structure of the input arguments in ``args``
                 """
                 # Jacobian matrix of the circuit
+                self.set_trainable(args)
                 jac = self.jacobian(args, kwargs)
-                if not g.shape:
-                    temp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
-                else:
-                    temp = g @ jac
 
-                # restore the nested structure of the input args
-                temp = unflatten(temp.flat, args)
-                return temp
+                if not g.shape:
+                    vjp = g * jac  # numpy treats 0d arrays as scalars, hence @ cannot be used
+                else:
+                    vjp = g @ jac
+
+                # Restore the nested structure of the input args.
+                vjp = unflatten(vjp.flat, args)
+                return vjp
 
             return gradient_product
 
