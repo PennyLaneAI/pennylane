@@ -127,7 +127,7 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RX(np.pi, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi/2, wires=wires), RX(np.pi, wires=wires), PhaseShift(np.pi/2, wires=wires)]
         return decomp_ops
 
 
@@ -177,7 +177,7 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RY(np.pi, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi/2, wires=wires), RY(np.pi, wires=wires), PhaseShift(np.pi/2, wires=wires)]
         return decomp_ops
 
 
@@ -214,7 +214,7 @@ class PauliZ(Observable, DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RZ(np.pi, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi, wires=wires)]
         return decomp_ops
 
 
@@ -249,7 +249,7 @@ class S(DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RZ(np.pi / 2, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
 
@@ -284,7 +284,7 @@ class T(DiagonalOperation):
 
     @staticmethod
     def decomposition(wires):
-        decomp_ops = [RZ(np.pi / 4, wires=wires)]
+        decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
 
 
@@ -623,6 +623,11 @@ class PhaseShift(DiagonalOperation):
     def _eigvals(cls, *params):
         phi = params[0]
         return np.array([1, cmath.exp(1j * phi)])
+    
+    @staticmethod
+    def decomposition(phi, wires):
+        decomp_ops = [RZ(phi, wires=wires)]
+        return decomp_ops
 
 
 class Rot(Operation):
