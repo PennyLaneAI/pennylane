@@ -16,17 +16,6 @@ TODO: more high-resolution picture ?
 .. image:: architecture_diagram.png
 	:width: 800px
 
-1. `Devices <https://pennylane.ai/plugins.html>`_
-2. `QNodes <https://pennylane.readthedocs.io/en/stable/code/qml_qnodes.html>`_
-
-  - `Qubit operations <https://pennylane.readthedocs.io/en/latest/code/qml_operation.html#qubit-operations>`_ and `CV operations <https://pennylane.readthedocs.io/en/latest/code/qml_operation.html#cv-operation-base-classes>`_ 
-  - `Templates <https://pennylane.readthedocs.io/en/latest/introduction/templates.html>`_
-  - `Qubit observables <https://pennylane.readthedocs.io/en/latest/introduction/operations.html#qubit-observables>`_ and `CV observables <https://pennylane.readthedocs.io/en/latest/introduction/operations.html#cv-observables>`_
-  - `Statistics <https://pennylane.readthedocs.io/en/stable/introduction/measurements.html>`_
-
-3. `Interfaces <https://pennylane.readthedocs.io/en/latest/code/qml_interfaces.html>`_
-4. `Optimizers <https://pennylane.readthedocs.io/en/stable/introduction/optimizers.html>`_
-
 Devices
 *******
 
@@ -85,7 +74,7 @@ Qubit based devices can use shared utilities by using the
      - ``"cirq.mixedsimulator"``
      - Cirq's density matrix simulator backend
    * - `Forest QVMDevice <https://pennylane-forest.readthedocs.io/en/latest/code/qvm.html>`__
-     - ``"forest.qvm"`` (``qvm_url`` not set for pyQVM)
+     - ``"forest.qvm"``, ``qvm_url`` needs to be unset to use the pyQVM
      - Forest QVM device supporting both the Rigetti Lisp QVM, as well as the built-in pyQuil pyQVM
    * - `Forest WavefunctionDevice <https://pennylane-forest.readthedocs.io/en/latest/code/wavefunction.html>`__
      - ``"forest.wavefunction"``
@@ -99,7 +88,7 @@ Qubit based devices can use shared utilities by using the
 :html:`<div class="hw_sim_list" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content2" class="collapsed"><p class="first admonition-title">Hardware simulators (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content2" class="collapse" data-parent="#aside1" style="height: 0px;">`
 
 .. list-table::
-   :widths: 25 30 50
+   :widths: 35 45 60 
    :header-rows: 1
 
    * - **Device**
@@ -114,8 +103,8 @@ Qubit based devices can use shared utilities by using the
    * - `IBM Q Experience <https://pennylaneqiskit.readthedocs.io/en/latest/devices/ibmq.html>`__
      - ``"qiskit.ibmq", backend="ibmq_qasm_simulator"``
      - IBM Q hardware device simulator
-   * - `QVMDevice <https://pennylane-forest.readthedocs.io/en/latest/code/qvm.html>`__
-     - ``"forest.qvm"``, (``qvm_url`` set for Lisp QVM)
+   * - `Forest QVMDevice <https://pennylane-forest.readthedocs.io/en/latest/code/qvm.html>`__
+     - ``"forest.qvm"``, ``qvm_url`` needs to be set to use the Lisp QVM
      - Forest QVM device supporting both the Rigetti Lisp QVM, as well as the built-in pyQuil pyQVM
 
 :html:`</div></div>`
@@ -124,14 +113,14 @@ Qubit based devices can use shared utilities by using the
 :html:`<div class="hw_list" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content3" class="collapsed"><p class="first admonition-title">Hardware devices (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content3" class="collapse" data-parent="#aside1" style="height: 0px;">`
 
 .. list-table::
-   :widths: 25 30 50
+   :widths: 35 45 60 
    :header-rows: 1
 
    * - **Device**
      - **Shortname**
      - **Description**
    * - `IBM Q Experience <https://pennylaneqiskit.readthedocs.io/en/latest/devices/ibmq.html>`__
-     - ``"qiskit.ibmq"``, (must specify a hardware backend)
+     - ``"qiskit.ibmq"`` *(must specify a hardware backend)*
      - IBM Q hardware device, queue based access to IBMQ backends
    * - `Forest QPUDevice <https://pennylane-forest.readthedocs.io/en/latest/code/qpu.html>`__
      - ``"forest.qpu"``
@@ -139,22 +128,27 @@ Qubit based devices can use shared utilities by using the
 
 :html:`</div></div>`
 
-* QPUDevice (PennyLane-Forest)
-  access to QPU (session based, paid access)
-
-* IBMQDeivce (PennyLane-Qiskit)
-  access to QPU (queue based, free access)
-
 :html:`<div class="photonic_list" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content4" class="collapsed"><p class="first admonition-title">Photonic devices (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content4" class="collapse" data-parent="#aside1" style="height: 0px;">`
-**Photonic devices**
 
-* default.gaussian
-* fock.simulator
-* guassian.simulator
+.. list-table::
+   :widths: 35 45 60 
+   :header-rows: 1
+
+   * - **Device**
+     - **Shortname**
+     - **Description**
+   * - :class:`~.DefaultGaussian`
+     - ``"default.gaussian"``
+     - Default gaussian device
+   * - `Strawberry Fields Fock device <https://pennylane-sf.readthedocs.io/en/latest/devices/fock.html>`__
+     - ``"strawberryfields.fock"``
+     - Fock device giving access to the Strawberry Fields Fock state simulator backend
+   * - `Strawberry Fields Gaussian device <https://pennylane-sf.readthedocs.io/en/latest/devices/gaussian.html>`__
+     - ``"strawberryfields.gaussian"``
+     - Gaussian device giving access to the Strawberry Fields Fock state simulator backend
+
 
 :html:`</div></div>`
-
-TODO: devices table with links 
 
 QNodes
 ******
@@ -165,6 +159,23 @@ that is executed by means of quantum information processing on a quantum
 device.
 
 See for a list of qnodes :ref:`qml_qnodes`.
+
+Interfaces
+**********
+
+TODO: rephrase, what to keep?
+
+PennyLane offers seamless integration between classical and quantum
+computations. Code up quantum circuits in PennyLane, and connect them easily to
+the top scientific computing and machine learning libraries.
+
+The bridge between the quantum and classical worlds is provided in PennyLane
+via interfaces. Currently, there are three built-in interfaces: NumPy, PyTorch,
+and TensorFlow. These interfaces make each of these libraries quantum-aware,
+allowing quantum circuits to be treated just like any other operation.
+
+Optimizers
+**********
 
 Design decisions
 ================
@@ -196,4 +207,5 @@ TODO: can this be somehow shared with the docstring of the ``QueingContext``?
 
 * Variable system
 
+  short intro on symbolic computation and link to the variable page
   TODO: add general description, symbolic computation
