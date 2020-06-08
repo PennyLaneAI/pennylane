@@ -22,7 +22,9 @@ to verify and test quantum gradient computations.
     :toctree: api
 
     default_qubit
+    default_qubit_tf
     default_gaussian
+    tf_ops
 """
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
