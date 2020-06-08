@@ -400,17 +400,18 @@ class TestMetricTensorInterfaces:
     def test_torch_metric_tensor(self, sample_circuit, tol):
         """Test that a block diagonal metric tensor evaluates correctly
         using PyTorch"""
-
         dev = qml.device("default.qubit", wires=3)
+
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        params_torch = torch.tensor(params)
+        params_torch = torch.tensor(params, requires_grad=True)
+
         circuit = sample_circuit(params)
 
         G = qml.MetricTensor(circuit, dev)(params_torch)
         expected = sample_circuit_tensor(params)
 
         assert isinstance(G, torch.Tensor)
-        assert np.allclose(G, expected, atol=tol, rtol=0)
+        assert np.allclose(G.detach().numpy(), expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["tf"])
     def test_tf_metric_tensor(self, sample_circuit, tol):
@@ -509,3 +510,24 @@ class TestMetricTensorAutodiff:
         expected = finite_diff(np.sum, params)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestMetricTensorBackprop:
+    """Test that the metric tensor correctly works with a device that
+    supports backprop."""
+
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_evaluation(self, sample_circuit, tol):
+        """Test metric tensor evaluation using default.qubit.tf"""
+        dev = qml.device("default.qubit.tf", wires=3)
+
+        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        params_tf = tf.Variable(params)
+
+        circuit = sample_circuit(params)
+
+        G = qml.MetricTensor(circuit, dev)(params_tf)
+        expected = sample_circuit_tensor(params)
+
+        assert isinstance(G, tf.Tensor)
+        assert np.allclose(G, expected, atol=tol, rtol=0)

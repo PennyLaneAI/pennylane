@@ -22,8 +22,7 @@ import numpy as np
 from scipy.linalg import block_diag
 import pennylane as qml
 
-from .dot import _get_dot_func
-from .sum import _get_sum_func
+from . import functions as fn
 
 
 def _marginal_prob(prob, wires, interface):
@@ -41,22 +40,9 @@ def _marginal_prob(prob, wires, interface):
     """
     num_wires = int(np.log2(len(prob)))
     inactive_wires = list(set(range(num_wires)) - set(wires))
-
-    if interface == "tf":
-        import tensorflow as tf
-
-        prob = tf.reshape(prob, [2] * num_wires)
-    else:
-        # NumPy and Torch both have reshape methods
-        prob = prob.reshape([2] * num_wires)
-
-    for a in reversed(inactive_wires):
-        prob = _get_sum_func(interface)(prob, axis=a)
-
-    if interface == "tf":
-        return tf.reshape(prob, [-1])
-
-    return prob.flatten()
+    prob = fn[interface].reshape(prob, [2] * num_wires)
+    prob = fn[interface].reduce_sum(prob, inactive_wires)
+    return fn[interface].flatten(prob)
 
 
 class MetricTensor:
@@ -132,22 +118,7 @@ class MetricTensor:
         self.coeffs = None
         self.params = None
 
-        if self.interface == "tf":
-            import tensorflow as tf
-
-            self.np = tf
-        elif self.interface == "torch":
-            import torch
-
-            self.np = torch
-        elif self.interface == "autograd":
-            from pennylane import numpy as np  # pylint: disable=redefined-outer-name
-
-            self.np = np
-        else:
-            self.np = np
-
-        self.dot = _get_dot_func(self.interface)[0]
+        self.fn = fn[self.interface]
 
     def __call__(self, *args, **kwargs):
         parallel = kwargs.pop("parallel", False)
@@ -160,50 +131,26 @@ class MetricTensor:
             args = args[0]
 
         probs = self.qnodes(args, parallel=parallel)
-        self.np.reshape(probs, [len(self.qnodes), -1])
+        self.fn.reshape(probs, [len(self.qnodes), -1])
 
         gs = []
 
         for prob, obs, coeffs in zip(probs, self.obs, self.coeffs):
             # calculate the covariance matrix of this layer
-            scale = np.outer(coeffs, coeffs)
-
-            if self.interface == "torch":
-                scale = self.np.tensor(scale)  # pylint: disable=not-callable
-
+            scale = self.fn.asarray(np.outer(coeffs, coeffs))
             g = scale * self.cov_matrix(prob, obs, diag_approx=diag_approx)
             gs.append(g)
 
         perm = np.array([item for sublist in self.params for item in sublist])
 
-        if self.interface == "torch":
-            # torch allows tensor assignment
-            tensor = self.np.zeros([len(perm), len(perm)], dtype=self.np.float64)
+        # create the block diagonal metric tensor
+        tensor = self.fn.block_diag(*gs)
 
-            for g, p in zip(gs, self.params):
-                row = np.array(p).reshape(-1, 1)
-                col = np.array(p).reshape(1, -1)
-                tensor[row, col] = g
+        # permute rows
+        tensor = self.fn.gather(tensor, perm)
 
-            return tensor
-
-        if self.interface == "tf":
-            # tf doesn't allow tensor assignment, but does provide
-            # support for constructing block diagonal operators
-
-            tfl = self.np.linalg
-            linop_blocks = [tfl.LinearOperatorFullMatrix(block) for block in gs]
-            linop_block_diagonal = tfl.LinearOperatorBlockDiag(linop_blocks)
-
-            # permute rows
-            tensor = self.np.gather(linop_block_diagonal.to_dense(), perm)
-
-            # permute columns
-            tensor = self.np.gather(self.np.transpose(tensor), perm)
-            return tensor
-
-        # autograd
-        tensor = block_diag(*gs)[:, perm][perm]
+        # permute columns
+        tensor = self.fn.gather(self.fn.transpose(tensor), perm)
         return tensor
 
     def cov_matrix(self, prob, obs, diag_approx=False):
@@ -229,45 +176,34 @@ class MetricTensor:
 
         # diagonal variances
         for i, o in enumerate(obs):
-            dot_fn, l = _get_dot_func(self.interface, o.eigvals)
+            l = self.fn.cast(self.fn.asarray(o.eigvals), dtype=self.fn.float64)
             p = _marginal_prob(prob, o.wires, self.interface)
-            res = dot_fn(l ** 2, p) - (dot_fn(l, p)) ** 2
+            res = self.fn.dot(l ** 2, p) - (self.fn.dot(l, p)) ** 2
             diag.append(res)
 
-        if self.interface == "tf":
-            diag = self.np.linalg.diag(diag)
-        elif self.interface == "torch":
-            diag = self.np.diag(self.np.stack(diag))
-        else:
-            diag = self.np.diag(diag)
+        diag = self.fn.diag(diag)
 
         if diag_approx:
             return diag
 
-        # off-diagonal covariances
-        off_diag = diag
-
-        if self.interface == "tf":
-            off_diag = np.zeros([len(obs), len(obs)]).tolist()
-
         for i, j in itertools.combinations(range(len(obs)), r=2):
-
             o1 = obs[i]
             o2 = obs[j]
 
-            _, l1 = _get_dot_func(self.interface, o1.eigvals)
-            _, l2 = _get_dot_func(self.interface, o2.eigvals)
-            _, l12 = _get_dot_func(self.interface, (o1 @ o2).eigvals)
+            l1 = self.fn.cast(self.fn.asarray(o1.eigvals), dtype=self.fn.float64)
+            l2 = self.fn.cast(self.fn.asarray(o2.eigvals), dtype=self.fn.float64)
+            l12 = self.fn.cast(self.fn.asarray((o1 @ o2).eigvals), dtype=self.fn.float64)
 
             p1 = _marginal_prob(prob, o1.wires, self.interface)
             p2 = _marginal_prob(prob, o2.wires, self.interface)
             p12 = _marginal_prob(prob, o1.wires + o2.wires, self.interface)
-            off_diag[i][j] = off_diag[j][i] = dot_fn(l12, p12) - dot_fn(l1, p1) * dot_fn(l2, p2)
 
-        if self.interface == "tf":
-            return diag + self.np.cast(self.np.stack(off_diag), dtype=self.np.float64)
+            res = self.fn.dot(l12, p12) - self.fn.dot(l1, p1) * self.fn.dot(l2, p2)
 
-        return off_diag
+            diag = self.fn.scatter_element_add(diag, [i, j], res)
+            diag = self.fn.scatter_element_add(diag, [j, i], res)
+
+        return diag
 
     def _make_qnodes(self, args, kwargs):
         """Helper method to construct the QNodes that generate the metric tensor."""
