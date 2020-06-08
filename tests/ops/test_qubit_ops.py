@@ -335,11 +335,19 @@ class TestOperations:
         op = qml.PauliX(wires=0)
         res = op.decomposition(0)
 
-        assert len(res) == 1
+        assert len(res) == 3
 
-        assert res[0].name == "RX"
+        assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]
-        assert res[0].params[0] == np.pi
+        assert res[0].params[0] == np.pi / 2
+        
+        assert res[1].name == "RX"
+        assert res[1].wires == [0]
+        assert res[1].params[0] == np.pi
+        
+        assert res[2].name == "PhaseShift"
+        assert res[2].wires == [0]
+        assert res[2].params[0] == np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
@@ -351,11 +359,19 @@ class TestOperations:
         op = qml.PauliY(wires=0)
         res = op.decomposition(0)
 
-        assert len(res) == 1
+        assert len(res) == 3
 
-        assert res[0].name == "RY"
+        assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]
-        assert res[0].params[0] == np.pi
+        assert res[0].params[0] == np.pi / 2
+        
+        assert res[1].name == "RY"
+        assert res[1].wires == [0]
+        assert res[1].params[0] == np.pi
+        
+        assert res[2].name == "PhaseShift"
+        assert res[2].wires == [0]
+        assert res[2].params[0] == np.pi / 2
         
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
@@ -369,7 +385,7 @@ class TestOperations:
 
         assert len(res) == 1
 
-        assert res[0].name == "RZ"
+        assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi
         
@@ -385,7 +401,7 @@ class TestOperations:
 
         assert len(res) == 1
 
-        assert res[0].name == "RZ"
+        assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 2
         
@@ -401,7 +417,7 @@ class TestOperations:
 
         assert len(res) == 1
 
-        assert res[0].name == "RZ"
+        assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 4
         
@@ -417,7 +433,7 @@ class TestOperations:
 
         assert len(res) == 3
 
-        assert res[0].name == "RZ"
+        assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 2
 
@@ -425,7 +441,7 @@ class TestOperations:
         assert res[1].wires == [0]
         assert res[0].params[0] == np.pi / 2
         
-        assert res[2].name == "RZ"
+        assert res[2].name == "PhaseShift"
         assert res[2].wires == [0]
         assert res[0].params[0] == np.pi / 2
         
