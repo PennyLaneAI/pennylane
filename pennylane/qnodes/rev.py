@@ -20,20 +20,14 @@ from copy import copy
 from functools import reduce
 from string import ascii_letters as ABC
 
-from .jacobian import JacobianQNode
+from .qubit import QubitQNode
 
 ABC_ARRAY = np.array(list(ABC))
 
-class ReversibleQNode(JacobianQNode):
+class ReversibleQNode(QubitQNode):
 
     def __init__(self, func, device, mutable=True, **kwargs):
         super().__init__(func, device, mutable=mutable, **kwargs)
-
-    def _best_method(self, idx):
-        meth = super()._best_method(idx)
-        if meth in [None, "0"]:
-            return meth
-        return "A"
 
     def _pd_analytic(self, idx, args, kwargs, **options):
         """Partial derivative of the node using an analytic method.
@@ -54,15 +48,21 @@ class ReversibleQNode(JacobianQNode):
 
         pd = 0.0
         # find the Operators in which the free parameter appears, use the product rule
-        for ctr, (op, p_idx) in enumerate(self.variable_deps[idx]):
+        for op, p_idx in self.variable_deps[idx]:
             # create a new circuit which rewinds the pre-measurement state to just after `op`,
             # applies the generator of `op`, and then plays forward back to
             # pre-measurement step
             # TODO: likely better to use circuitgraph to determine minimally necessary ops
-            generator, multiplier = op.generator  # TODO: this won't work for gates without generators (like `Rot`), but it could be made to)
+            wires = op.wires
             op_idx = ops.index(op)
             between_ops = ops[op_idx+1:]
-            diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator(op.wires)] + between_ops
+            if op.name == "Rot":
+                decomp = op.decomposition(*op.parameters, wires=wires)
+                generator, multiplier = decomp[p_idx].generator
+                between_ops = decomp[p_idx+1:] + between_ops
+            else:
+                generator, multiplier = op.generator
+            diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator(wires)] + between_ops
             # TODO: consider using shift rather than generator?
 
             # set the simulator state to be the pre-measurement state
