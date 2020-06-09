@@ -389,7 +389,7 @@ class TestOperations:
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi
         
-        decomposed_matrix = i.matrix
+        decomposed_matrix = res[0].matrix
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
@@ -405,7 +405,7 @@ class TestOperations:
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 2
         
-        decomposed_matrix = i.matrix
+        decomposed_matrix = res[0].matrix
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
@@ -421,7 +421,7 @@ class TestOperations:
         assert res[0].wires == [0]
         assert res[0].params[0] == np.pi / 4
         
-        decomposed_matrix = i.matrix
+        decomposed_matrix = res[0].matrix
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
@@ -452,8 +452,9 @@ class TestOperations:
 
     def test_phase_decomposition(self, tol):
         """Tests that the decomposition of the Phase gate is correct"""
-        op = qml.PhaseShift(0.3, wires=0)
-        res = op.decomposition(0)
+        phi = 0.3
+        op = qml.PhaseShift(phi, wires=0)
+        res = op.decomposition(phi, 0)
 
         assert len(res) == 1
 
@@ -461,7 +462,7 @@ class TestOperations:
         assert res[0].wires == [0]
         assert res[0].params[0] == 0.3
         
-        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        decomposed_matrix = res[0].matrix
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
