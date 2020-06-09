@@ -26,7 +26,7 @@ from .rev import ReversibleQNode
 
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
-ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff", "rev")
+ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff", "reversible")
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
@@ -102,7 +102,7 @@ def _get_qnode_class(device, interface, diff_method):
             "The parameter shift rule is not available for devices with model {}.".format(model)
         )
 
-    if diff_method == "rev":
+    if diff_method == "reversible":
         return ReversibleQNode
 
     if diff_method in ALLOWED_DIFF_METHODS:

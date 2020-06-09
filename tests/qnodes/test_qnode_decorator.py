@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.qnodes import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode
+from pennylane.qnodes import qnode, CVQNode, JacobianQNode, BaseQNode, QubitQNode, ReversibleQNode
 from pennylane.qnodes.jacobian import DEFAULT_STEP_SIZE_ANALYTIC, DEFAULT_STEP_SIZE
 
 
@@ -139,6 +139,18 @@ def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
 
     circuit.h = new_step_size
     assert circuit.h == new_step_size
+
+
+def test_reversible_diff_method():
+    """Test that a ReversibleQNode can be created via the qnode decorator"""
+    dev = qml.device('default.qubit', wires=1)
+
+        @qnode(dev, diff_method="reversible")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+    assert isinstance(circuit, ReversibleQNode)
 
 def test_tf_interface(skip_if_no_tf_support):
     """Test tf interface conversion"""
