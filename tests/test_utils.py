@@ -116,8 +116,8 @@ class TestDecomposition:
             decomposed_coeff, decomposed_obs = decomposed
             expected_coeff, expected_obs = expected
 
-            assert len(decomposed_obs) == len(decomposed_coeff)
-            assert len(expected_obs) == len(expected_coeff)
+            assert len(decomposed_obs) == len(expected_obs)
+            assert len(decomposed_coeff) == len(expected_coeff)
 
             assert np.allclose(decomposed_coeff, expected_coeff)
 
