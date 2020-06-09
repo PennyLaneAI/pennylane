@@ -105,7 +105,7 @@ class ReversibleQNode(QubitQNode):
         Unmeasured wires are contracted, and a scalar is returned."""
         # pylint: disable=protected-access
 
-        mat = np.reshape(obs.matrix, [2] * len(obs.wires) * 2)
+        mat = self.device._reshape(obs.matrix, [2] * len(obs.wires) * 2)
         wires = obs.wires
 
         vec1_indices = ABC[: self.num_wires]
