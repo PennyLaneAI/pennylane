@@ -376,7 +376,7 @@ class Operator(abc.ABC):
         ):
             raise ValueError(
                 "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
+                "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
         if len(params) != self.num_params:
