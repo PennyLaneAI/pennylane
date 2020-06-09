@@ -136,7 +136,7 @@ class TestCircuitDrawer:
 
         for idx, wire in enumerate(dummy_raw_operation_grid):
             for op in wire:
-                assert (op, idx) in args_tuples
+                assert (op, Wires(idx)) in args_tuples
 
     interlocking_multiwire_gate_grid = to_grid(
         [[qml.CNOT(wires=[0, 4]), qml.CNOT(wires=[1, 5]), qml.Toffoli(wires=[2, 3, 6])]], 7

@@ -61,6 +61,7 @@ class CircuitDrawer:
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.register = register
+        self.active_register = self.extract_active_register(raw_operation_grid, raw_observable_grid)
         self.charset = charset
         self.show_variable_names = show_variable_names
 
@@ -119,6 +120,27 @@ class CircuitDrawer:
         self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
+    def extract_active_register(self, raw_operation_grid, raw_observable_grid):
+        """Get the subset of wires in the register that are used in the circuit.
+
+        Args:
+            raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
+            raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
+
+        Return:
+            Wires: register of active wires
+        """
+        # pylint: disable=protected-access
+        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
+            qml.utils._flatten(raw_observable_grid)
+        )
+        all_wires = [op.wires for op in all_operators if op is not None]
+        # make Wires object containing all used wires
+        all_wires = qml.wires.Wires.all_wires(all_wires)
+        # shared wires will observe the ordering of the register
+        shared_wires = qml.wires.Wires.shared_wires([self.register, all_wires])
+        return shared_wires
+
     def resolve_representation(self, grid, representation_grid):
         """Resolve the string representation of the given Grid.
 
@@ -129,10 +151,10 @@ class CircuitDrawer:
         for i in range(grid.num_layers):
             representation_layer = [""] * grid.num_wires
 
-            for wire, operator in enumerate(grid.layer(i)):
-                subsystems = self.register.indices(wire)
-                representation_layer[wire] = self.representation_resolver.element_representation(
-                    operator, subsystems
+            for subsystem, operator in enumerate(grid.layer(i)):
+                wire = self.active_register[subsystem]
+                representation_layer[subsystem] = self.representation_resolver.element_representation(
+                    operator, wire
                 )
 
             representation_grid.append_layer(representation_layer)
@@ -183,7 +205,7 @@ class CircuitDrawer:
                     continue
 
                 wires = op.wires
-                subsystems = self.register.indices(wires)
+                subsystems = self.active_register.indices(wires)
 
                 if len(subsystems) > 1:
                     min_wire = min(subsystems)
@@ -259,7 +281,7 @@ class CircuitDrawer:
                     continue
 
                 # translate wires to their indices in the register
-                subsystems = self.register.indices(op.wires)
+                subsystems = self.active_register.indices(op.wires)
 
                 if len(op.wires) > 1:
                     sorted_wires = subsystems.copy()
@@ -274,7 +296,7 @@ class CircuitDrawer:
                             continue
 
                         # translate wires to their indices in the register
-                        other_subsystems = self.register.indices(other_op.wires)
+                        other_subsystems = self.active_register.indices(other_op.wires)
                         other_sorted_wires = other_subsystems.copy()
                         other_sorted_wires.sort()
                         other_blocked_wires = list(
@@ -308,7 +330,7 @@ class CircuitDrawer:
             wire = self.full_representation_grid.wire(i)
 
             rendered_string += "{:2d}: {}".format(
-                self.register[i].tolist()[0], 2 * self.charset.WIRE
+                self.active_register[i].tolist()[0], 2 * self.charset.WIRE
             )
 
             for s in wire:
