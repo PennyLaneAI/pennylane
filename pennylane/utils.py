@@ -35,7 +35,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
-        H (array[complex]): an Hermitian matrix of dimension :math:`2^n\times 2^n`
+        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`
 
     Keyword Args:
         hide_identity (bool): does not include the :class:`~.Identity` observable within
