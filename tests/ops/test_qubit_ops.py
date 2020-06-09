@@ -349,9 +349,7 @@ class TestOperations:
         assert res[2].params[0] == np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
-
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_y_decomposition(self, tol):
         """Tests that the decomposition of the PauliY is correct"""
@@ -373,9 +371,7 @@ class TestOperations:
         assert res[2].params[0] == np.pi / 2
         
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
-
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_z_decomposition(self, tol):
         """Tests that the decomposition of the PauliZ is correct"""
@@ -389,9 +385,7 @@ class TestOperations:
         assert res[0].params[0] == np.pi
         
         decomposed_matrix = res[0].matrix
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
-
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_s_decomposition(self, tol):
         """Tests that the decomposition of the S gate is correct"""
@@ -405,9 +399,7 @@ class TestOperations:
         assert res[0].params[0] == np.pi / 2
         
         decomposed_matrix = res[0].matrix
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
-
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the T gate is correct"""
@@ -421,9 +413,7 @@ class TestOperations:
         assert res[0].params[0] == np.pi / 4
         
         decomposed_matrix = res[0].matrix
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
-
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the Hadamard gate is correct"""
@@ -445,9 +435,7 @@ class TestOperations:
         assert res[0].params[0] == np.pi / 2
         
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
-
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
     def test_phase_decomposition(self, tol):
         """Tests that the decomposition of the Phase gate is correct"""
