@@ -135,7 +135,6 @@ class TestWires:
 
         assert (0, 3) in wires
 
-
     def test_representation(self):
         """Tests the string representation."""
 
