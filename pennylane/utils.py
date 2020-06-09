@@ -37,7 +37,6 @@ def decompose_hamiltonian(H, hide_identity=False):
     Args:
         H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`
 
-    Keyword Args:
         hide_identity (bool): does not include the :class:`~.Identity` observable within
             the tensor products of the decomposition if ``True``
 

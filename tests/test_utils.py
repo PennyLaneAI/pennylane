@@ -110,35 +110,35 @@ class TestDecomposition:
     def test_decomposition(self, H):
         """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        for test, expected in test_hamiltonians:
-            decomposed = pu.decompose_hamiltonian(test)
+        test, expected = H
+        decomposed = pu.decompose_hamiltonian(test)
 
-            decomposed_coeff, decomposed_obs = decomposed
-            expected_coeff, expected_obs = expected
+        decomposed_coeff, decomposed_obs = decomposed
+        expected_coeff, expected_obs = expected
 
-            assert len(decomposed_obs) == len(expected_obs)
-            assert len(decomposed_coeff) == len(expected_coeff)
+        assert len(decomposed_obs) == len(expected_obs)
+        assert len(decomposed_coeff) == len(expected_coeff)
 
-            assert np.allclose(decomposed_coeff, expected_coeff)
+        assert np.allclose(decomposed_coeff, expected_coeff)
 
-            n_terms = len(decomposed_obs)
+        n_terms = len(decomposed_obs)
 
-            linear_comb = np.zeros(test.shape, dtype=np.complex128)
-            for term in range(n_terms):
-                assert type(decomposed_obs[term]) == type(expected_obs[term])
+        linear_comb = np.zeros(test.shape, dtype=np.complex128)
+        for term in range(n_terms):
+            assert type(decomposed_obs[term]) == type(expected_obs[term])
 
-                if isinstance(decomposed_obs[term], Tensor):
-                    obs = zip(decomposed_obs[term].obs, expected_obs[term].obs)
-                    assert all(np.allclose(o[0].matrix, o[1].matrix) for o in obs)
+            if isinstance(decomposed_obs[term], Tensor):
+                obs = zip(decomposed_obs[term].obs, expected_obs[term].obs)
+                assert all(np.allclose(o[0].matrix, o[1].matrix) for o in obs)
 
-                    linear_comb += decomposed_coeff[term] * functools.reduce(
-                        np.kron, [o.matrix for o in decomposed_obs[term].obs]
-                    )
-                else:
-                    assert np.allclose(decomposed_obs[term].matrix, expected_obs[term].matrix)
-                    linear_comb += decomposed_coeff[term] * decomposed_obs[term].matrix
+                linear_comb += decomposed_coeff[term] * functools.reduce(
+                    np.kron, [o.matrix for o in decomposed_obs[term].obs]
+                )
+            else:
+                assert np.allclose(decomposed_obs[term].matrix, expected_obs[term].matrix)
+                linear_comb += decomposed_coeff[term] * decomposed_obs[term].matrix
 
-            assert np.allclose(test, linear_comb)
+        assert np.allclose(test, linear_comb)
 
 
 class TestFlatten:
