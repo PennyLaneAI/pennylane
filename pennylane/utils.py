@@ -38,7 +38,8 @@ def decompose_hamiltonian(H, hide_identity=False):
         H (array[complex]): an Hermitian matrix of dimension :math:`2^n\times 2^n`
 
     Keyword Args:
-        hide_identity (bool): always show ~.Identity observables in the results
+        hide_identity (bool): does not include the :class:`~.Identity` observable within
+            the tensor products of the decomposition if ``True``
 
     Returns:
         tuple[list[float], list[~.Observable]]: Returns a list of tensor products of PennyLane Pauli observables, as
