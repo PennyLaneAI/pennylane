@@ -73,8 +73,8 @@ def _get_qnode_class(device, interface, diff_method):
         if allows_passthru:
             if interface != passthru_interface:
                 raise ValueError(
-                    "Device {} only supports the {} interface when "
-                    "diff_method='backprop'".format(device.short_name, passthru_interface)
+                    "Device {} only supports diff_method='backprop' when using the "
+                    "{} interface.".format(device.short_name, passthru_interface)
                 )
             return PassthruQNode
 
@@ -213,7 +213,9 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
     qnode_class = _get_qnode_class(device, interface, diff_method)
     qnode_ = qnode_class(func, device, mutable=mutable, **kwargs)
 
-    if not isinstance(qnode_, PassthruQNode):
+    if isinstance(qnode_, PassthruQNode):
+        qnode_.interface = interface
+    else:
         # PassthruQNode's do not support interface conversions
         qnode_ = _apply_interface(qnode_, interface, diff_method)
 
