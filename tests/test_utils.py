@@ -20,6 +20,7 @@ import functools
 import itertools
 from unittest.mock import MagicMock
 import pytest
+import re
 
 import numpy as np
 
@@ -105,6 +106,17 @@ test_hamiltonians = [
 
 class TestDecomposition:
     """Tests the decompose_hamiltonian function"""
+
+    def test_wrong_dimension(self):
+        with pytest.raises(
+            ValueError,
+            match=re.escape("Hamiltonian should have shape (2^n, 2^n), for any qubit number n>=1"),
+        ):
+            pu.decompose_hamiltonian(np.ones((3, 3)))
+
+    def test_not_hermitian(self):
+        with pytest.raises(ValueError, match="The Hamiltonian is not Hermitian"):
+            pu.decompose_hamiltonian(np.array([[1, 2], [3, 4]]))
 
     @pytest.mark.parametrize("H", test_hamiltonians)
     def test_decomposition(self, H):
