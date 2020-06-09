@@ -145,10 +145,10 @@ def test_reversible_diff_method():
     """Test that a ReversibleQNode can be created via the qnode decorator"""
     dev = qml.device('default.qubit', wires=1)
 
-        @qnode(dev, diff_method="reversible")
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
+    @qnode(dev, diff_method="reversible")
+    def circuit(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(wires=0))
 
     assert isinstance(circuit, ReversibleQNode)
 
