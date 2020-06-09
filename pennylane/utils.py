@@ -32,7 +32,7 @@ from pennylane.variable import Variable
 
 
 def decompose_hamiltonian(H, hide_identity=False):
-    """Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
         H (array[complex]): an Hermitian matrix of dimension :math:`2^n\times 2^n`
