@@ -54,7 +54,7 @@ def _process(wires):
 
 
 class Wires(Sequence):
-    """
+    r"""
     A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\mathrm{th}` object
     addresses the :math:`i\mathrm{th}` quantum subsystem.
 
