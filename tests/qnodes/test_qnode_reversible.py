@@ -24,7 +24,7 @@ from pennylane.qnodes.base import QuantumFunctionError
 from pennylane.qnodes.rev import ReversibleQNode
 
 
-thetas = np.linspace(-2*np.pi, 2*np.pi, 8)
+thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 
 
 @pytest.fixture(scope="function")
@@ -33,13 +33,13 @@ def operable_mock_device_2_wires(monkeypatch):
 
     dev = Device
     with monkeypatch.context() as m:
-        m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, '_capabilities', {"model": "qubit"})
-        m.setattr(dev, 'operations', ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
-        m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
-        m.setattr(dev, 'reset', lambda self: None)
-        m.setattr(dev, 'apply', lambda self, x, y, z: None)
-        m.setattr(dev, 'expval', lambda self, x, y, z: 1)
+        m.setattr(dev, "__abstractmethods__", frozenset())
+        m.setattr(dev, "_capabilities", {"model": "qubit"})
+        m.setattr(dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
+        m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
+        m.setattr(dev, "reset", lambda self: None)
+        m.setattr(dev, "apply", lambda self, x, y, z: None)
+        m.setattr(dev, "expval", lambda self, x, y, z: 1)
         yield Device(wires=2)
 
 
@@ -119,6 +119,7 @@ class TestExpectationJacobian:
             return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
         extra_param = 0.31
+
         def circuit(reused_param, other_param):
             qml.RX(extra_param, wires=[0])
             qml.RY(reused_param, wires=[0])
@@ -128,17 +129,29 @@ class TestExpectationJacobian:
 
         dev = qml.device("default.qubit", wires=1)
         f = ReversibleQNode(circuit, dev)
-        zero_state = np.array([1., 0.])
+        zero_state = np.array([1.0, 0.0])
 
         # analytic gradient
         grad_A = f.jacobian([reused_p, other_p])
 
         # manual gradient
-        grad_true0 = (expZ(Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state) \
-                     -expZ(Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state)) / 2
-        grad_true1 = (expZ(Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state) \
-                     -expZ(Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state)) / 2
-        grad_true = grad_true0 + grad_true1 # product rule
+        grad_true0 = (
+            expZ(
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
+            )
+            - expZ(
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
+            )
+        ) / 2
+        grad_true1 = (
+            expZ(
+                Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+            )
+            - expZ(
+                Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+            )
+        ) / 2
+        grad_true = grad_true0 + grad_true1  # product rule
 
         assert grad_A[0, 0] == pytest.approx(grad_true, abs=tol)
 
@@ -421,8 +434,8 @@ class TestExpectationJacobian:
         assert positional_res == pytest.approx(array_res, abs=tol)
         assert positional_grad == pytest.approx(array_grad, abs=tol)
 
-    @pytest.mark.parametrize('theta', thetas)
-    @pytest.mark.parametrize('G', [qml.ops.RX, qml.ops.RY, qml.ops.RZ])
+    @pytest.mark.parametrize("theta", thetas)
+    @pytest.mark.parametrize("G", [qml.ops.RX, qml.ops.RY, qml.ops.RZ])
     def test_pauli_rotation_gradient(self, G, theta, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
@@ -437,12 +450,12 @@ class TestExpectationJacobian:
         manualgrad_val = (circuit(theta + np.pi / 2) - circuit(theta - np.pi / 2)) / 2
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    @pytest.mark.parametrize('theta', thetas)
+    @pytest.mark.parametrize("theta", thetas)
     def test_Rot_gradient(self, theta, tol):
         """Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."""
 
-        def circuit(x,y,z):
-            qml.Rot(x,y,z, wires=[0])
+        def circuit(x, y, z):
+            qml.Rot(x, y, z, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
@@ -451,7 +464,7 @@ class TestExpectationJacobian:
 
         angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
         autograd_val = circuit.jacobian(angle_inputs)
-        manualgrad_val = np.zeros((1,3))
+        manualgrad_val = np.zeros((1, 3))
 
         for idx in range(3):
             onehot_idx = eye[idx]
@@ -460,6 +473,25 @@ class TestExpectationJacobian:
             manualgrad_val[0, idx] = (circuit(*param1) - circuit(*param2)) / 2
 
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
+
+    @pytest.mark.parametrize("op", [qml.CRX, qml.CRY, qml.CRZ,])
+    def test_controlled_rotation_gates_exception(self, op):
+        """Tests that an exception is raised when a controlled
+        rotation gate is used with the ReversibleQNode."""
+        # remove this test when this support is added
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x):
+            qml.PauliX(wires=0)
+            op(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        circuit = ReversibleQNode(circuit, dev)
+
+        with pytest.raises(
+            ValueError, match="Controlled-rotation gates are not currently supported"
+        ):
+            circuit.jacobian([0.542])
 
     @pytest.mark.xfail
     def test_controlled_RX_gradient(self, tol):
@@ -602,6 +634,7 @@ class TestVarianceJacobian:
 
     def test_involutory_variance(self, tol):
         """Tests qubit observable that are involutory"""
+
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.var(qml.PauliZ(0))
@@ -646,6 +679,7 @@ class TestVarianceJacobian:
 
     def test_fanout(self, tol):
         """Tests qubit observable with repeated parameters"""
+
         def circuit(a):
             qml.RX(a, wires=0)
             qml.RY(a, wires=0)

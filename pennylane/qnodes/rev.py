@@ -24,8 +24,8 @@ from .qubit import QubitQNode
 
 ABC_ARRAY = np.array(list(ABC))
 
-class ReversibleQNode(QubitQNode):
 
+class ReversibleQNode(QubitQNode):
     def __init__(self, func, device, mutable=True, **kwargs):
         super().__init__(func, device, mutable=mutable, **kwargs)
 
@@ -55,11 +55,11 @@ class ReversibleQNode(QubitQNode):
             # TODO: likely better to use circuitgraph to determine minimally necessary ops
             wires = op.wires
             op_idx = ops.index(op)
-            between_ops = ops[op_idx+1:]
+            between_ops = ops[op_idx + 1 :]
             if op.name == "Rot":
                 decomp = op.decomposition(*op.parameters, wires=wires)
                 generator, multiplier = decomp[p_idx].generator
-                between_ops = decomp[p_idx+1:] + between_ops
+                between_ops = decomp[p_idx + 1 :] + between_ops
             else:
                 generator, multiplier = op.generator
 
@@ -67,7 +67,9 @@ class ReversibleQNode(QubitQNode):
             # TODO: these can be supported by multiplying ``state`` directly by these generators within this function
             # (or by allowing non-unitary matrix multiplies in the simulator backends)
             if op.name in ["CRX", "CRY", "CRZ"]:
-                raise ValueError("Controlled-rotation gates are not currently supported with the reversible gradient method.")
+                raise ValueError(
+                    "Controlled-rotation gates are not currently supported with the reversible gradient method."
+                )
             else:
                 generator = generator(wires)
             diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
@@ -110,9 +112,7 @@ class ReversibleQNode(QubitQNode):
         )
 
         einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
-            vec1_indices=vec1_indices,
-            obs_indices=obs_indices,
-            vec2_indices=vec2_indices,
+            vec1_indices=vec1_indices, obs_indices=obs_indices, vec2_indices=vec2_indices,
         )
 
         return np.einsum(einsum_str, vec1.conj(), mat, vec2)
