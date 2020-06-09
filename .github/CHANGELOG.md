@@ -80,7 +80,7 @@
 <h3>Improvements</h3>
 
 * Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, and Hadamard gates, which decomposes
-  each of these gates into a product of rotation gates. [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
+  each of these gates into rotation gates. [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
 
 * The `CircuitGraph` class now supports serializing contained circuit operations
   and measurement basis rotations to an OpenQASM2.0 script via the new
