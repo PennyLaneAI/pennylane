@@ -14,11 +14,11 @@
 """
 Reversible QNode.
 """
-import numpy as np
-
 from copy import copy
 from functools import reduce
 from string import ascii_letters as ABC
+
+import numpy as np
 
 from .qubit import QubitQNode
 
@@ -26,6 +26,8 @@ ABC_ARRAY = np.array(list(ABC))
 
 
 class ReversibleQNode(QubitQNode):
+    """Quantum node for reversible analytic differentiation method."""
+
     def __init__(self, func, device, mutable=True, **kwargs):
         super().__init__(func, device, mutable=mutable, **kwargs)
 
@@ -40,6 +42,8 @@ class ReversibleQNode(QubitQNode):
         Returns:
             array[float]: partial derivative of the node
         """
+        # pylint: disable=protected-access
+
         # TODO: cache these so they aren't created on each call from the same `jacobian`
         self.evaluate(args, kwargs)
         state = self.device._pre_rotated_state  # only works if forward pass has occured
@@ -49,11 +53,13 @@ class ReversibleQNode(QubitQNode):
         pd = 0.0
         # find the Operators in which the free parameter appears, use the product rule
         for op, p_idx in self.variable_deps[idx]:
+
             # create a new circuit which rewinds the pre-measurement state to just after `op`,
             # applies the generator of `op`, and then plays forward back to
             # pre-measurement step
             wires = op.wires
             op_idx = ops.index(op)
+
             # TODO: likely better to use circuitgraph to determine minimally necessary ops
             between_ops = ops[op_idx + 1 :]
             if op.name == "Rot":
@@ -70,8 +76,7 @@ class ReversibleQNode(QubitQNode):
                 raise ValueError(
                     "Controlled-rotation gates are not currently supported with the reversible gradient method."
                 )
-            else:
-                generator = generator(wires)
+            generator = generator(wires)
             diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
 
             # set the simulator state to be the pre-measurement state
@@ -79,11 +84,12 @@ class ReversibleQNode(QubitQNode):
 
             # evolve the pre-measurement state under this new circuit
             self.device.apply(diff_circuit)
-            dstate = self.device._pre_rotated_state  # TODO: this will only work for QubitDevicesgit d
+            dstate = self.device._pre_rotated_state  # TODO: this will only work for QubitDevices
 
             # compute matrix element <d(state)|O|state> for each observable O
-            matrix_elems = self.device._asarray([self._matrix_elem(dstate, ob, state) for ob in obs])
-            # TODO: handle var and sample
+            matrix_elems = self.device._asarray(
+                [self._matrix_elem(dstate, ob, state) for ob in obs]
+            )
 
             # post-process to get partial derivative contribution from this op
             multiplier *= op.params[p_idx].mult  # possible scalar multiplier
@@ -97,6 +103,8 @@ class ReversibleQNode(QubitQNode):
         """Computes the matrix element of observable ``obs`` between the two vectors
         ``vec1`` and ``vec2``, i.e., <vec1|obs|vec2>.
         Unmeasured wires are contracted, and a scalar is returned."""
+        # pylint: disable=protected-access
+
         mat = np.reshape(obs.matrix, [2] * len(obs.wires) * 2)
         wires = obs.wires
 

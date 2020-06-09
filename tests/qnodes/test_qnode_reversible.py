@@ -35,7 +35,9 @@ def operable_mock_device_2_wires(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(dev, "__abstractmethods__", frozenset())
         m.setattr(dev, "_capabilities", {"model": "qubit"})
-        m.setattr(dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
+        m.setattr(
+            dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"]
+        )
         m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, "reset", lambda self: None)
         m.setattr(dev, "apply", lambda self, x, y, z: None)
@@ -84,7 +86,9 @@ class TestBestMethod:
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
-    @pytest.mark.parametrize("mult", [1, -2, 1.623, -0.051, 0])  # intergers, floats, zero
+    @pytest.mark.parametrize(
+        "mult", [1, -2, 1.623, -0.051, 0]
+    )  # intergers, floats, zero
     def test_parameter_multipliers(self, mult, tol):
         """Test that various types and values of scalar multipliers for differentiable
         qfunc parameters yield the correct gradients."""
@@ -137,25 +141,43 @@ class TestExpectationJacobian:
         # manual gradient
         grad_true0 = (
             expZ(
-                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
+                Rx(reused_p)
+                @ Rz(other_p)
+                @ Ry(reused_p + np.pi / 2)
+                @ Rx(extra_param)
+                @ zero_state
             )
             - expZ(
-                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
+                Rx(reused_p)
+                @ Rz(other_p)
+                @ Ry(reused_p - np.pi / 2)
+                @ Rx(extra_param)
+                @ zero_state
             )
         ) / 2
         grad_true1 = (
             expZ(
-                Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+                Rx(reused_p + np.pi / 2)
+                @ Rz(other_p)
+                @ Ry(reused_p)
+                @ Rx(extra_param)
+                @ zero_state
             )
             - expZ(
-                Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
+                Rx(reused_p - np.pi / 2)
+                @ Rz(other_p)
+                @ Ry(reused_p)
+                @ Rx(extra_param)
+                @ zero_state
             )
         ) / 2
         grad_true = grad_true0 + grad_true1  # product rule
 
         assert grad_A[0, 0] == pytest.approx(grad_true, abs=tol)
 
-    @pytest.mark.parametrize("shape", [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)])
+    @pytest.mark.parametrize(
+        "shape", [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)]
+    )
     def test_multidim_array_parameter(self, shape, tol):
         """Tests that arguments which are multidimensional arrays are
         properly evaluated and differentiated in ReversibleQNodes."""
@@ -364,7 +386,11 @@ class TestExpectationJacobian:
             qml.RX(a[0], wires=0)
             qml.RX(a[1], wires=1)
             qml.RX(b[2, 1], wires=2)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(2)),
+            )
 
         dev = qml.device("default.qubit", wires=3)
         circuit = ReversibleQNode(circuit, dev)
@@ -712,7 +738,11 @@ class TestVarianceJacobian:
             qml.RX(c, wires=2)
             qml.CNOT(wires=[0, 1])
             qml.RZ(c, wires=2)
-            return qml.var(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(2))
+            return (
+                qml.var(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.var(qml.PauliZ(2)),
+            )
 
         circuit = ReversibleQNode(circuit, dev)
 
@@ -762,7 +792,10 @@ class TestSampleJacobian:
         circuit = ReversibleQNode(circuit, dev)
         par = 0.5
 
-        with pytest.raises(QuantumFunctionError, match="Circuits that include sampling can not be differentiated"):
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Circuits that include sampling can not be differentiated",
+        ):
             circuit.jacobian(par, method="A")
 
 
@@ -786,24 +819,27 @@ class TestHelperFunctions:
 
     one_qubit_vec1 = np.array([1, 1])
     one_qubit_vec2 = np.array([1, 1j])
-    two_qubit_vec = np.array([1, 1, 1, -1]).reshape([2,2])
+    two_qubit_vec = np.array([1, 1, 1, -1]).reshape([2, 2])
     single_qubit_obs1 = qml.PauliZ(0)
     single_qubit_obs2 = qml.PauliY(0)
-    two_qubit_obs = qml.Hermitian(np.eye(4), wires=[0,1])
+    two_qubit_obs = qml.Hermitian(np.eye(4), wires=[0, 1])
 
-    @pytest.mark.parametrize("wires, vec1, obs, vec2, expected", [
-        (1, one_qubit_vec1, single_qubit_obs1, one_qubit_vec1, 0),
-        (1, one_qubit_vec2, single_qubit_obs1, one_qubit_vec2, 0),
-        (1, one_qubit_vec1, single_qubit_obs1, one_qubit_vec2, 1-1j),
-        (1, one_qubit_vec2, single_qubit_obs1, one_qubit_vec1, 1+1j),
-        (1, one_qubit_vec1, single_qubit_obs2, one_qubit_vec1, 0),
-        (1, one_qubit_vec2, single_qubit_obs2, one_qubit_vec2, 2),
-        (1, one_qubit_vec1, single_qubit_obs2, one_qubit_vec2, 1+1j),
-        (1, one_qubit_vec2, single_qubit_obs2, one_qubit_vec1, 1-1j),
-        (2, two_qubit_vec, single_qubit_obs1, two_qubit_vec, 0),
-        (2, two_qubit_vec, single_qubit_obs2, two_qubit_vec, 0),
-        (2, two_qubit_vec, two_qubit_obs, two_qubit_vec, 4),
-    ])
+    @pytest.mark.parametrize(
+        "wires, vec1, obs, vec2, expected",
+        [
+            (1, one_qubit_vec1, single_qubit_obs1, one_qubit_vec1, 0),
+            (1, one_qubit_vec2, single_qubit_obs1, one_qubit_vec2, 0),
+            (1, one_qubit_vec1, single_qubit_obs1, one_qubit_vec2, 1 - 1j),
+            (1, one_qubit_vec2, single_qubit_obs1, one_qubit_vec1, 1 + 1j),
+            (1, one_qubit_vec1, single_qubit_obs2, one_qubit_vec1, 0),
+            (1, one_qubit_vec2, single_qubit_obs2, one_qubit_vec2, 2),
+            (1, one_qubit_vec1, single_qubit_obs2, one_qubit_vec2, 1 + 1j),
+            (1, one_qubit_vec2, single_qubit_obs2, one_qubit_vec1, 1 - 1j),
+            (2, two_qubit_vec, single_qubit_obs1, two_qubit_vec, 0),
+            (2, two_qubit_vec, single_qubit_obs2, two_qubit_vec, 0),
+            (2, two_qubit_vec, two_qubit_obs, two_qubit_vec, 4),
+        ],
+    )
     def test_matrix_elem(self, wires, vec1, obs, vec2, expected):
         """Tests for the helper function _matrix_elem"""
         dev = qml.device("default.qubit", wires=wires)
