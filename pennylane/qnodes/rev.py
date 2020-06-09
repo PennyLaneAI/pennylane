@@ -52,9 +52,9 @@ class ReversibleQNode(QubitQNode):
             # create a new circuit which rewinds the pre-measurement state to just after `op`,
             # applies the generator of `op`, and then plays forward back to
             # pre-measurement step
-            # TODO: likely better to use circuitgraph to determine minimally necessary ops
             wires = op.wires
             op_idx = ops.index(op)
+            # TODO: likely better to use circuitgraph to determine minimally necessary ops
             between_ops = ops[op_idx + 1 :]
             if op.name == "Rot":
                 decomp = op.decomposition(*op.parameters, wires=wires)
@@ -82,12 +82,12 @@ class ReversibleQNode(QubitQNode):
             dstate = self.device._pre_rotated_state  # TODO: this will only work for QubitDevicesgit d
 
             # compute matrix element <d(state)|O|state> for each observable O
-            matrix_elems = np.asarray([self._matrix_elem(dstate, ob, state) for ob in obs])
+            matrix_elems = self.device._asarray([self._matrix_elem(dstate, ob, state) for ob in obs])
             # TODO: handle var and sample
 
             # post-process to get partial derivative contribution from this op
             multiplier *= op.params[p_idx].mult  # possible scalar multiplier
-            pd += 2 * multiplier * np.imag(matrix_elems)
+            pd += 2 * multiplier * self.device._imag(matrix_elems)
 
         # reset state back to pre-measurement value
         self.device._pre_rotated_state = state
@@ -113,5 +113,4 @@ class ReversibleQNode(QubitQNode):
         einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
             vec1_indices=vec1_indices, obs_indices=obs_indices, vec2_indices=vec2_indices,
         )
-
-        return np.einsum(einsum_str, vec1.conj(), mat, vec2)
+        return self.device._einsum(einsum_str, self.device._conj(vec1), mat, vec2)

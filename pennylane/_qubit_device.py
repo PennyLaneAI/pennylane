@@ -80,6 +80,8 @@ class QubitDevice(Device):
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
     _tensordot = staticmethod(np.tensordot)
+    _conj = staticmethod(np.conj)
+    _imag = staticmethod(np.imag)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

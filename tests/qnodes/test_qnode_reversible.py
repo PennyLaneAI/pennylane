@@ -764,3 +764,50 @@ class TestSampleJacobian:
 
         with pytest.raises(QuantumFunctionError, match="Circuits that include sampling can not be differentiated"):
             circuit.jacobian(par, method="A")
+
+
+class TestDeviceJacobian:
+    """Analytic jacobian integration tests for different built-in devices."""
+
+    def _test_default_qubit_device(self):
+        """Tests that the jacobian is correctly computed when using the default.qubit device."""
+
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        circuit = ReversibleQNode(circuit, dev)
+        par = 0.5
+
+
+class TestHelperFunctions:
+    """Tests for additional helper functions."""
+
+    one_qubit_vec1 = np.array([1, 1])
+    one_qubit_vec2 = np.array([1, 1j])
+    two_qubit_vec = np.array([1, 1, 1, -1]).reshape([2,2])
+    single_qubit_obs1 = qml.PauliZ(0)
+    single_qubit_obs2 = qml.PauliY(0)
+    two_qubit_obs = qml.Hermitian(np.eye(4), wires=[0,1])
+
+    @pytest.mark.parametrize("wires, vec1, obs, vec2, expected", [
+        (1, one_qubit_vec1, single_qubit_obs1, one_qubit_vec1, 0),
+        (1, one_qubit_vec2, single_qubit_obs1, one_qubit_vec2, 0),
+        (1, one_qubit_vec1, single_qubit_obs1, one_qubit_vec2, 1-1j),
+        (1, one_qubit_vec2, single_qubit_obs1, one_qubit_vec1, 1+1j),
+        (1, one_qubit_vec1, single_qubit_obs2, one_qubit_vec1, 0),
+        (1, one_qubit_vec2, single_qubit_obs2, one_qubit_vec2, 2),
+        (1, one_qubit_vec1, single_qubit_obs2, one_qubit_vec2, 1+1j),
+        (1, one_qubit_vec2, single_qubit_obs2, one_qubit_vec1, 1-1j),
+        (2, two_qubit_vec, single_qubit_obs1, two_qubit_vec, 0),
+        (2, two_qubit_vec, single_qubit_obs2, two_qubit_vec, 0),
+        (2, two_qubit_vec, two_qubit_obs, two_qubit_vec, 4),
+    ])
+    def test_matrix_elem(self, wires, vec1, obs, vec2, expected):
+        """Tests for the helper function _matrix_elem"""
+        dev = qml.device("default.qubit", wires=wires)
+        mock_circuit = lambda: None
+        qnode = ReversibleQNode(mock_circuit, dev)
+        res = qnode._matrix_elem(vec1, obs, vec2)
+        assert res == expected
