@@ -745,3 +745,22 @@ class TestVarianceJacobian:
         ).T
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
+
+
+class TestSampleJacobian:
+    """Sample analytic jacobian integration tests."""
+
+    def test_samples_exception(self):
+        """Tests that an exception is raised when the jacobian is attempted to be computed
+        for a circuit which contains sampled output."""
+
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        circuit = ReversibleQNode(circuit, dev)
+        par = 0.5
+
+        with pytest.raises(QuantumFunctionError, match="Circuits that include sampling can not be differentiated"):
+            circuit.jacobian(par, method="A")

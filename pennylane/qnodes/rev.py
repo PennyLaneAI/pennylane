@@ -30,7 +30,7 @@ class ReversibleQNode(QubitQNode):
         super().__init__(func, device, mutable=mutable, **kwargs)
 
     def _pd_analytic(self, idx, args, kwargs, **options):
-        """Partial derivative of the node using an analytic method.
+        """Partial derivative of the node using the reversible method.
 
         Args:
             idx (int): flattened index of the parameter wrt. which the p.d. is computed
@@ -73,18 +73,16 @@ class ReversibleQNode(QubitQNode):
             else:
                 generator = generator(wires)
             diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
-            # TODO: consider using shift rather than generator?
 
             # set the simulator state to be the pre-measurement state
             self.device._state = state
 
             # evolve the pre-measurement state under this new circuit
             self.device.apply(diff_circuit)
-            dstate = self.device._pre_rotated_state
+            dstate = self.device._pre_rotated_state  # TODO: this will only work for QubitDevicesgit d
 
             # compute matrix element <d(state)|O|state> for each observable O
             matrix_elems = np.asarray([self._matrix_elem(dstate, ob, state) for ob in obs])
-            # Note: this only works for expvals
             # TODO: handle var and sample
 
             # post-process to get partial derivative contribution from this op
