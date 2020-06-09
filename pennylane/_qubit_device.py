@@ -26,6 +26,7 @@ import numpy as np
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
+from pennylane.wires import Wires
 
 
 class QubitDevice(Device):
@@ -214,8 +215,8 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires # returns a list of wires
-        [0]
+        >>> op.wires # returns a Wires object representing the wires that the operation acts on
+        Wires([0])
         >>> op.parameters # returns a list of parameters
         [0.2]
         >>> op.inverse # check if the operation should be inverted
@@ -242,13 +243,11 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            set[int]: the set of wires activated by the specified operators
+            Wires: all wires activated by the specified operators
         """
-        wires = []
-        for op in operators:
-            wires.extend(op.wires)
+        list_of_wires = [op.wires for op in operators]
 
-        return set(wires)
+        return Wires.all_wires(list_of_wires)
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
@@ -278,7 +277,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))
+                results.append(self.probability(wires=obs.wires.tolist()))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -401,7 +400,7 @@ class QubitDevice(Device):
         # consider only the requested wires
         wires = np.hstack(wires)
 
-        samples = self._samples[:, np.array(wires)]
+        samples = self._samples[:, np.array(wires)]  # TODO: Use indices for nonconsec wires
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(wires)
@@ -472,7 +471,7 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)
+        wires = np.hstack(wires)  # TODO: re-asses for nonconsecutive wires
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
@@ -493,7 +492,7 @@ class QubitDevice(Device):
         return self._gather(prob, perm)
 
     def expval(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact expectation value
@@ -505,7 +504,7 @@ class QubitDevice(Device):
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact variance value
@@ -517,7 +516,7 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
