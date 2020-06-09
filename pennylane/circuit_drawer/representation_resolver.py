@@ -311,7 +311,7 @@ class RepresentationResolver:
 
         Args:
             op (pennylane.operation.Operator): The Operator instance whose representation shall be returned
-            wire (int): The Operator's wire for which the string representation shall be returned
+            wire (Wires): The Operator's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Operator
@@ -333,7 +333,7 @@ class RepresentationResolver:
 
         # Display a control symbol for all controlling qubits of a controlled Operation
         if base_name in self.control_wire_dict and wire in [
-            op.wires.tolist()[control_idx] for control_idx in self.control_wire_dict[base_name]
+            op.wires[control_idx] for control_idx in self.control_wire_dict[base_name]
         ]:
             # No need to add a -1 for inverse here
             return self.charset.CONTROL
@@ -409,7 +409,7 @@ class RepresentationResolver:
 
         Args:
             obs (pennylane.ops.Observable): The Observable instance whose representation shall be returned
-            wire (int): The Observable's wire for which the string representation shall be returned
+            wire (Wires): The Observable's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Observable
@@ -439,7 +439,7 @@ class RepresentationResolver:
 
         Args:
             element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be returned
-            wire (int): The element's wire for which the string representation shall be returned
+            wire (Wires): The element's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the element
