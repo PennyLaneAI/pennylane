@@ -71,8 +71,8 @@ def SingleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable or Wires): Wires ``r, p`` that the template acts on. Must be of length 2.
-            Accepts an iterable of numbers or strings, or a Wires object.
+        wires (Iterable, Number or Wires): Wires that the template acts on. The first wire is interpreted as ``r``
+            while the last wire is interpreted as ``q``. Must be of minimum length 2.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -89,7 +89,7 @@ def SingleExcitationUnitary(weight, wires=None):
                \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
 
         #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that
-           CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations
+           CNOT gates act only on qubits ``wires[1]`` to ``wires[-2]``. The operations
            performed across these qubits are shown in dashed lines in the figure above.
 
         An example of how to use this template is shown below:
@@ -102,13 +102,12 @@ def SingleExcitationUnitary(weight, wires=None):
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
-            def circuit(weight, ph=None):
-                SingleExcitationUnitary(weight, wires=ph)
+            def circuit(weight, wires=None):
+                SingleExcitationUnitary(weight, wires=wires)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 0.56
-            single_excitation = [0, 2]
-            print(circuit(weight, ph=single_excitation))
+            print(circuit(weight, wires=[0, 1, 2]))
 
     """
 
@@ -117,16 +116,8 @@ def SingleExcitationUnitary(weight, wires=None):
 
     wires = Wires(wires)
 
-    if len(wires) != 2:
-        raise ValueError("expected 2 wires; got {}".format(len(wires)))
-
-    wire_list = wires.tolist()  # TODO: delete this "<=" check for non-consec wires
-    if wire_list[1] <= wire_list[0]:
-        raise ValueError(
-            "wires_1 must be greater than wires_0; got wires[1]={}, wires[0]={}".format(
-                wires[1], wires[0]
-            )
-        )
+    if len(wires) < 2:
+        raise ValueError("expected at least two wires; got {}".format(len(wires)))
 
     expected_shape = ()
     check_shape(
@@ -137,10 +128,12 @@ def SingleExcitationUnitary(weight, wires=None):
 
     ###############
 
-    r, p = wires.tolist()  # TODO: need to change logic here when introducing non-consec wires
+    # Interpret first and last wire as r and p
+    r = wires[0]
+    p = wires[-1]
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [[l, l + 1] for l in range(r, p)]
+    set_cnot_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]  #TODO: inconsistent to docstring
 
     # ------------------------------------------------------------------
     # Apply the first layer

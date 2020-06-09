@@ -149,42 +149,6 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             "'ph' and 'pphh' lists can not be both empty; got ph={}, pphh={}".format(ph, pphh)
         )
 
-    check_type(ph, [list], msg="'ph' must be a list; got {}".format(ph))
-    expected_shape = (2,)
-    for i_ph in ph:
-        check_type(i_ph, [list], msg="Each element of 'ph' must be a list; got {}".format(i_ph))
-        check_shape(
-            i_ph,
-            expected_shape,
-            msg="Elements of 'ph' must be of shape {}; got {}".format(
-                expected_shape, get_shape(i_ph)
-            ),
-        )
-        for i in i_ph:
-            check_type(
-                i, [int], msg="Each element of 'ph' must be a list of integers; got {}".format(i_ph)
-            )
-
-    check_type(pphh, [list], msg="'pphh' must be a list; got {}".format(pphh))
-    expected_shape = (4,)
-    for i_pphh in pphh:
-        check_type(
-            i_pphh, [list], msg="Each element of 'pphh' must be a list; got {}".format(i_pphh)
-        )
-        check_shape(
-            i_pphh,
-            expected_shape,
-            msg="Elements of 'pphh' must be of shape {}; got {}".format(
-                expected_shape, get_shape(i_pphh)
-            ),
-        )
-        for i in i_pphh:
-            check_type(
-                i,
-                [int],
-                msg="Each element of 'pphh' must be a list of integers; got {}".format(i_pphh),
-            )
-
     check_type(
         init_state,
         [np.ndarray],
@@ -216,6 +180,9 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
     ###############
 
     qml.BasisState(np.flip(init_state), wires=wires)
+
+    ph = [Wires(w) for w in ph]
+    pphh = [Wires(w) for w in pphh]
 
     for d, i_pphh in enumerate(pphh):
         DoubleExcitationUnitary(weights[len(ph) + d], wires=i_pphh)
