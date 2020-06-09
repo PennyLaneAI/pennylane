@@ -508,9 +508,7 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     ###############
 
-    wires = wires.tolist()  # TODO: Remove when ops accept wires
-
-    s, r, q, p = wires
+    s, r, q, p = wires.tolist()  # TODO: need to change logic here when introducing non-consec wires
 
     # Sequence of the wires entering the CNOTs between wires 's' and 'p'
     set_cnot_wires = (  # TODO: change logic for non-consec wires

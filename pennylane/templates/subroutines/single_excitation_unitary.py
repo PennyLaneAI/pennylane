@@ -137,9 +137,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
     ###############
 
-    wires = wires.tolist()  # TODO: Remove when ops accept wires
-
-    r, p = wires
+    r, p = wires.tolist()  # TODO: need to change logic here when introducing non-consec wires
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
     set_cnot_wires = [[l, l + 1] for l in range(r, p)]
