@@ -88,6 +88,7 @@ class ReversibleQNode(QubitQNode):
             # TODO: handle var and sample
 
             # post-process to get partial derivative contribution from this op
+            multiplier *= op.params[p_idx].mult  # possible scalar multiplier
             pd += 2 * multiplier * np.imag(matrix_elems)
 
         # reset state back to pre-measurement value
