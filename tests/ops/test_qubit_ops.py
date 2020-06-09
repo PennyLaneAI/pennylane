@@ -458,7 +458,7 @@ class TestOperations:
 
         assert len(res) == 1
 
-        assert res[0].name == "PhaseShift"
+        assert res[0].name == "RZ"
         assert res[0].wires == [0]
         assert res[0].params[0] == 0.3
         
