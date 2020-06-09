@@ -201,10 +201,17 @@ class TestCircuitDrawer:
             (multi_and_single_wire_gate_grid, multi_and_single_wire_gate_representation_grid),
         ],
     )
-    def test_resolve_decorations(self, dummy_circuit_drawer, grid, target_representation_grid):
+    def test_resolve_decorations(self, grid, target_representation_grid):
         """Test that decorations are properly resolved."""
         representation_grid = Grid()
-        dummy_circuit_drawer.resolve_decorations(grid, representation_grid)
+
+        raw_operator_grid = grid.raw_grid
+        # make a dummy observable grid
+        raw_observable_grid = [[None] for _ in range(len(raw_operator_grid))]
+
+        drawer = CircuitDrawer(raw_operator_grid, raw_observable_grid, Wires(range(10)))
+
+        drawer.resolve_decorations(grid, representation_grid)
 
         assert_nested_lists_equal(representation_grid.raw_grid, target_representation_grid.raw_grid)
 
@@ -230,11 +237,17 @@ class TestCircuitDrawer:
             (interlocking_SWAP_grid, moved_interlocking_SWAP_grid),
         ],
     )
-    def test_move_multi_wire_gates(self, dummy_circuit_drawer, grid, target_grid):
+    def test_move_multi_wire_gates(self, grid, target_grid):
         """Test that decorations are properly resolved."""
 
         operator_grid = grid.copy()
-        dummy_circuit_drawer.move_multi_wire_gates(operator_grid)
+
+        raw_operator_grid = operator_grid.raw_grid
+        # make a dummy observable grid
+        raw_observable_grid = [[None] for _ in range(len(raw_operator_grid))]
+
+        drawer = CircuitDrawer(raw_operator_grid, raw_observable_grid,  Wires(range(10)))
+        drawer.move_multi_wire_gates(operator_grid)
 
         assert_nested_lists_equal(operator_grid.raw_grid, target_grid.raw_grid)
 
