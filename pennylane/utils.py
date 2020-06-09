@@ -76,7 +76,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     N = 2 ** n
 
     if len(H) - N != 0:
-        raise ValueError("Hamiltonian should be in the form (n^2 x n^2), for any n>=1")
+        raise ValueError("Hamiltonian should have shape (2^n, 2^n), for any qubit number n>=1")
 
     if not np.allclose(H, H.conj().T):
         raise ValueError("The Hamiltonian is not Hermitian")
