@@ -41,20 +41,22 @@ def decompose_hamiltonian(H, hide_identity=False):
             the tensor products of the decomposition if ``True``
 
     Returns:
-        tuple[list[float], list[~.Observable]]: Returns a list of tensor products of PennyLane Pauli observables, as
-        well as the corresponding coefficients for each tensor product.
+        tuple[list[float], list[~.Observable]]: Returns a list of coefficients and a list
+            of corresponding tensor products of Pauli observables that decompose the Hamiltonian.
 
     **Example:**
 
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
-    >>> A = np.array([[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-    >>>  coeffs, obs_list = decompose_hamiltonian(A)
+    >>> A = np.array(
+    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
+    >>> coeffs, obs_list = decompose_hamiltonian(A)
     >>> coeffs
     [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5]
 
     We can use the output coefficients and tensor Pauli terms to construct a :class:`~.Hamiltonian`:
+
     >>> H = qml.Hamiltonian(coeffs, obs_list)
     >>> print(H)
     (-1.0) [I0 I1]
@@ -68,7 +70,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     + (-0.5) [Z0 X1]
     + (-0.5) [Z0 Y1]
 
-    This Hamiltonian can then be used in defining VQE problems using :class:`~VQECost`.
+    This Hamiltonian can then be used in defining VQE problems using :class:`~.VQECost`.
     """
     n = int(np.log2(len(H)))
     N = 2 ** n
