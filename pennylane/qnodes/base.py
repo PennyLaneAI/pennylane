@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires.tolist())
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 

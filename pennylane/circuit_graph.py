@@ -239,7 +239,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires)
+            serialization_string += str(obs.wires.tolist())
 
         return serialization_string
 

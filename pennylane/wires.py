@@ -54,9 +54,9 @@ def _process(wires):
 
 
 class Wires(Sequence):
-    """
-    A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\text{th}` object
-    addresses the :math:`i\text{th}` quantum subsystem.
+    r"""
+    A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\mathrm{th}` object
+    addresses the :math:`i\mathrm{th}` quantum subsystem.
 
     There is no conceptual difference between registers of multiple wires and single wires,
     which are just wire registers of length one.

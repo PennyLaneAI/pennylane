@@ -284,6 +284,7 @@ class CircuitDrawer:
                 subsystems = self.active_register.indices(op.wires)
 
                 if len(op.wires) > 1:
+
                     sorted_wires = subsystems.copy()
                     sorted_wires.sort()
 

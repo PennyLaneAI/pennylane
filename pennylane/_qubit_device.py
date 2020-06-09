@@ -506,7 +506,6 @@ class QubitDevice(Device):
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-
         # get indices of wires on the device
         subsystems = self.wire_map(observable.wires)
 
@@ -520,10 +519,8 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-
         # get indices of wires on the device
         subsystems = self.wire_map(observable.wires)
-
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:

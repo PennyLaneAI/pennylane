@@ -23,6 +23,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
 from pennylane.plugins.default_qubit_tf import DefaultQubitTF
+from pennylane.wires import Wires
 from gate_data import (
     I,
     X,
@@ -355,7 +356,7 @@ class TestExpval:
         for i in range(len(observables)):
             observables[i].return_type = qml.operation.Expectation
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}))
+        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0, 1, 2])))
         assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, theta, phi, varphi, tol):
@@ -367,7 +368,7 @@ class TestExpval:
         for i in range(len(observables)):
             observables[i].return_type = qml.operation.Expectation
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}))
+        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0, 1])))
 
         a = A[0, 0]
         re_b = A[0, 1].real
@@ -396,7 +397,7 @@ class TestExpval:
         for i in range(len(observables)):
             observables[i].return_type = qml.operation.Expectation
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}))
+        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0, 1])))
 
         # below is the analytic expectation value for this circuit with arbitrary
         # Hermitian observable A
@@ -636,7 +637,7 @@ class TestVar:
         for i in range(len(observables)):
             observables[i].return_type = qml.operation.Variance
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}))
+        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0])))
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -652,7 +653,7 @@ class TestVar:
         for i in range(len(observables)):
             observables[i].return_type = qml.operation.Variance
 
-        res = dev.execute(qml.CircuitGraph(queue + observables, {}))
+        res = dev.execute(qml.CircuitGraph(queue + observables, {}, Wires([0])))
         expected = 0.5 * (
             2 * np.sin(2 * theta) * np.cos(phi) ** 2
             + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))

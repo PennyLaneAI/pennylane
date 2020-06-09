@@ -164,17 +164,17 @@ class TestCircuitGraphHash:
     numeric_observable_queue = [
                         ([],
                          [observable1],
-                        '|||PauliZ<Wires = [0]>'
+                        '|||PauliZ[0]'
                         ),
                         (
                          [],
                          [observable2],
-                        '|||Hermitian![[ 1  0]\n [ 0 -1]]!<Wires = [0]>'
+                        '|||Hermitian![[ 1  0]\n [ 0 -1]]![0]'
                         ),
                         (
                          [],
                          [observable3],
-                        '|||[\'PauliZ\', \'PauliZ\']<Wires = [0, 1]>'
+                        '|||[\'PauliZ\', \'PauliZ\'][0, 1]'
                         )
 
                      ]
