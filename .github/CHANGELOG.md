@@ -76,14 +76,14 @@
   to calculate losses and costs on circuits with trainable parameters.
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
-
-<h3>Improvements</h3>
-
-* Updated the ``default.tensor`` plugin to use a smarter factorized representation 
-  of quantum states. This will result in more efficient simulations for circuits 
-  where not all qubits become entangled. 
+* The ``default.tensor`` plugin has been significantly upgraded. It now allows two different
+  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a 
+  exact factorized representation of quantum states, while the latter uses a matrix product state 
+  representation.
   ([#572](https://github.com/XanaduAI/pennylane/pull/572))
   ([#599](https://github.com/XanaduAI/pennylane/pull/599))
+
+<h3>Improvements</h3>
 
 * Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
   decomposes each of these gates into rotation gates. 
