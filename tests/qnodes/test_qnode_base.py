@@ -1130,7 +1130,8 @@ class TestDecomposition:
 
             @staticmethod
             def decomposition(wires=None):
-                ops = [qml.Hadamard(wires=wires)]
+                phi = 0.3
+                ops = [qml.RZ(phi, wires=wires)]
                 return ops
 
         queue = [qml.Rot(0, 1, 2, wires=0), DummyOp(wires=0), qml.RX(6, wires=0)]
