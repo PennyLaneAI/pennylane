@@ -519,7 +519,7 @@ class TestExpectationJacobian:
         ):
             circuit.jacobian([0.542])
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
     def test_controlled_RX_gradient(self, tol):
         """Test gradient of controlled RX gate"""
         dev = qml.device("default.qubit", wires=2)
@@ -564,7 +564,7 @@ class TestExpectationJacobian:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
     def test_controlled_RY_gradient(self, tol):
         """Test gradient of controlled RY gate"""
         dev = qml.device("default.qubit", wires=2)
@@ -609,7 +609,7 @@ class TestExpectationJacobian:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
     def test_controlled_RZ_gradient(self, tol):
         """Test gradient of controlled RZ gate"""
         dev = qml.device("default.qubit", wires=2)
