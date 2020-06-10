@@ -277,7 +277,8 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(subsystems=self.wire_map(obs.wires)))
+                subsystems = self.wire_map(obs.wires)
+                results.append(self.probability(subsystems=subsystems))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -390,7 +391,7 @@ class QubitDevice(Device):
         using the generated samples.
 
         Args:
-                subsystems (list[int]): indices of the wires to calculate
+                subsystems (list[int]): indices on the register of the wires to calculate
                 marginal probabilities for. Wires whose indices are not provided
                 are traced out of the system.
 
