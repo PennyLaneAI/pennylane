@@ -50,7 +50,7 @@ class ReversibleQNode(QubitQNode):
     The reversible approach is similar to backpropagation, but trades off extra computation for
     enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
     a forward pass, the reversible method only caches the final pre-measurement state.
-    
+
     Compared to the parameter-shift rule, the reversible method can
     be faster or slower, depending on the density and location of parametrized gates in a circuit
     (circuits with higher density of parametrized gates near the end of the circuit will see a
