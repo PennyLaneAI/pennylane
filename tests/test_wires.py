@@ -59,7 +59,7 @@ class TestWires:
         wires = Wires(iterable)
         assert wires.wire_tuple == tuple(iterable)
 
-    @pytest.mark.parametrize("wire", [1, 'a', -1.4])
+    @pytest.mark.parametrize("wire", [1, -2, 'a', 'q1', -1.4])
     def test_creation_from_single_object(self, wire):
         """Tests that a Wires object can be created from a non-iterable object
         representing a single wire index."""
@@ -167,6 +167,15 @@ class TestWires:
         list_ = wires.tolist()
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
+
+    def test_at_index_method(self):
+        """Tests the at_index() method."""
+
+        wires = Wires([0, 'q1', 16])
+
+        assert wires.at_index(0) == 0
+        assert wires.at_index(1) == 'q1'
+        assert wires.at_index(2) == 16
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])

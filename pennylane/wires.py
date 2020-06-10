@@ -31,7 +31,8 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.wire_tuple
 
-    if isinstance(wires, str) or isinstance(wires, Number):
+
+    elif isinstance(wires, (Number, str)):
         # interpret as a single wire
         return (wires,)
 
@@ -122,6 +123,23 @@ class Wires(Sequence):
             List: list representing Wires object
         """
         return list(self.wire_tuple)
+
+    def at_index(self, idx):
+        """Returns the wire at index ``idx``.
+
+        >>> w = Wires([0, 'q1', 16])
+        >>> w[1]
+        'q1'
+        >>> w[2]
+        16
+
+        Args:
+            int: index of wire to return
+
+        Returns:
+            Number or str: representation of the wire
+        """
+        return self.wire_tuple[idx]
 
     def index(self, wire):
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
