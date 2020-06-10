@@ -31,6 +31,10 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.wire_tuple
 
+    if isinstance(wires, str) or isinstance(wires, Number):
+        # interpret as a single wire
+        return (wires,)
+
     elif isinstance(wires, Iterable) and all(isinstance(w, Wires) for w in wires):
         # if the elements are themselves Wires objects, merge them to a new one
         return tuple(w for wires_ in wires for w in wires_.tolist())
@@ -40,10 +44,6 @@ def _process(wires):
     ):
         # if the elements are strings or numbers, turn iterable into tuple
         return tuple(wires)
-
-    elif isinstance(wires, Number):
-        # if the input is a single number, interpret as a single wire
-        return (wires,)
 
     else:
         raise WireError(
