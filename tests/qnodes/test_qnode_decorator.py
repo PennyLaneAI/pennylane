@@ -25,7 +25,7 @@ from pennylane.qnodes.jacobian import DEFAULT_STEP_SIZE_ANALYTIC, DEFAULT_STEP_S
 
 def test_create_qubit_qnode():
     """Test the decorator correctly creates Qubit QNodes"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev)
     def circuit(a):
@@ -35,9 +35,10 @@ def test_create_qubit_qnode():
     assert isinstance(circuit, QubitQNode)
     assert hasattr(circuit, "jacobian")
 
+
 def test_create_CV_qnode():
     """Test the decorator correctly creates Qubit QNodes"""
-    dev = qml.device('default.gaussian', wires=1)
+    dev = qml.device("default.gaussian", wires=1)
 
     @qnode(dev)
     def circuit(a):
@@ -51,7 +52,7 @@ def test_create_CV_qnode():
 def test_fallback_Jacobian_qnode(monkeypatch):
     """Test the decorator fallsback to Jacobian QNode if it
     can't determine the device model"""
-    dev = qml.device('default.gaussian', wires=1)
+    dev = qml.device("default.gaussian", wires=1)
 
     # use monkeypatch to avoid setting class attributes
     with monkeypatch.context() as m:
@@ -67,9 +68,10 @@ def test_fallback_Jacobian_qnode(monkeypatch):
         assert isinstance(circuit, JacobianQNode)
         assert hasattr(circuit, "jacobian")
 
+
 def test_torch_interface(skip_if_no_torch_support):
     """Test torch interface conversion"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, interface="torch")
     def circuit(a):
@@ -78,15 +80,15 @@ def test_torch_interface(skip_if_no_torch_support):
 
     assert circuit.interface == "torch"
 
-step_sizes = [(True, DEFAULT_STEP_SIZE_ANALYTIC),
-            (False, DEFAULT_STEP_SIZE)]
+
+step_sizes = [(True, DEFAULT_STEP_SIZE_ANALYTIC), (False, DEFAULT_STEP_SIZE)]
 
 
 @pytest.mark.parametrize("analytic, step_size", step_sizes)
 def test_finite_diff_qubit_qnode(analytic, step_size):
     """Test that a finite-difference differentiable qubit QNode
     is correctly created when diff_method='finite-diff' and analytic=True"""
-    dev = qml.device('default.qubit', wires=1, analytic=analytic)
+    dev = qml.device("default.qubit", wires=1, analytic=analytic)
 
     @qnode(dev, diff_method="finite-diff")
     def circuit(a):
@@ -104,7 +106,7 @@ def test_finite_diff_qubit_qnode(analytic, step_size):
 @pytest.mark.parametrize("order", [1, 2])
 def test_setting_order(order):
     """Test that the order is correctly set and reset in a finite-difference QNode."""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, diff_method="finite-diff", order=order)
     def circuit(a):
@@ -124,7 +126,7 @@ def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
     step_size = 0.5
     new_step_size = 0.12345
 
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, diff_method="finite-diff", h=step_size)
     def circuit(a):
@@ -143,7 +145,7 @@ def test_finite_diff_qubit_qnode_passing_step_size_through_decorator():
 
 def test_reversible_diff_method():
     """Test that a ReversibleQNode can be created via the qnode decorator"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, diff_method="reversible")
     def circuit(a):
@@ -152,22 +154,26 @@ def test_reversible_diff_method():
 
     assert isinstance(circuit, ReversibleQNode)
 
-def test_reversible_diff_method_exception():
+
+def test_reversible_diff_method_exception(monkeypatch):
     """Test that an exception is raised if the reversible diff_method
     is specified for a device which does not have reversible capability."""
-    dev = qml.device('default.qubit', wires=1)
-    dev._capabilities["reversible"] = False
-    print(dev._capabilities)
+    dev = qml.device("default.qubit", wires=1)
+    capabilities = {**dev._capabilities}
+    capabilities["reversible"] = False
+    monkeypatch.setattr(dev, "_capabilities", capabilities)
 
     with pytest.raises(ValueError, match="Reversible differentiation method not supported"):
+
         @qnode(dev, diff_method="reversible")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
+
 def test_tf_interface(skip_if_no_tf_support):
     """Test tf interface conversion"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, interface="tf")
     def circuit(a):
@@ -179,7 +185,7 @@ def test_tf_interface(skip_if_no_tf_support):
 
 def test_autograd_interface():
     """Test autograd interface conversion"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, interface="autograd")
     def circuit(a):
@@ -191,7 +197,7 @@ def test_autograd_interface():
 
 def test_no_interface():
     """Test no interface conversion"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, interface=None)
     def circuit(a):
@@ -203,7 +209,7 @@ def test_no_interface():
 
 def test_not_differentiable():
     """Test QNode marked as non-differentiable"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     @qnode(dev, interface=None, diff_method=None)
     def circuit(a):
@@ -220,9 +226,10 @@ def test_not_differentiable():
 def test_invalid_diff_method():
     """Test exception raised if an invalid diff
     method is provided"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     with pytest.raises(ValueError, match=r"Differentiation method \w+ not recognized"):
+
         @qnode(dev, interface=None, diff_method="test")
         def circuit(a):
             qml.RX(a, wires=0)
@@ -232,53 +239,61 @@ def test_invalid_diff_method():
 def test_invalid_interface():
     """Test exception raised if an invalid interface
     is provided"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
     with pytest.raises(ValueError, match=r"Interface \w+ not recognized"):
+
         @qnode(dev, interface="test")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
+
 def test_classical_diff_method_unsupported():
     """Test exception raised if an the classical diff method is specified for a
     device that does not support it"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
-    with pytest.raises(ValueError, match=r"device does not support native computations with "
-            "autodifferentiation frameworks"):
+    with pytest.raises(
+        ValueError,
+        match=r"device does not support native computations with " "autodifferentiation frameworks",
+    ):
 
         @qnode(dev, diff_method="backprop")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
+
 def test_device_diff_method_unsupported():
     """Test exception raised if an the device diff method is specified for a
     device that does not support it"""
-    dev = qml.device('default.qubit', wires=1)
+    dev = qml.device("default.qubit", wires=1)
 
-    with pytest.raises(ValueError, match=r"device does not provide a native method "
-            "for computing the jacobian"):
+    with pytest.raises(
+        ValueError, match=r"device does not provide a native method " "for computing the jacobian"
+    ):
 
         @qnode(dev, diff_method="device")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
+
 def test_parameter_shift_diff_method_unsupported():
     """Test exception raised if an the device diff method is specified for a
     device that does not support it"""
-    class DummyDevice(qml.plugins.DefaultQubit):
 
+    class DummyDevice(qml.plugins.DefaultQubit):
         @classmethod
         def capabilities(cls):
-            return { "model": "NotSupportedModel"}
-
+            return {"model": "NotSupportedModel"}
 
     dev = DummyDevice(wires=2)
 
-    with pytest.raises(ValueError, match=r"The parameter shift rule is not available for devices with model"):
+    with pytest.raises(
+        ValueError, match=r"The parameter shift rule is not available for devices with model"
+    ):
 
         @qnode(dev, diff_method="parameter-shift")
         def circuit(a):

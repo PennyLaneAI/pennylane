@@ -26,7 +26,14 @@ from .rev import ReversibleQNode
 
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
-ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff", "reversible")
+ALLOWED_DIFF_METHODS = (
+    "best",
+    "backprop",
+    "device",
+    "parameter-shift",
+    "finite-diff",
+    "reversible",
+)
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
@@ -103,6 +110,7 @@ def _get_qnode_class(device, interface, diff_method):
         )
 
     if diff_method == "reversible":
+        # pylint: disable=protected-access
         if "reversible" not in device._capabilities or not device._capabilities["reversible"]:
             raise ValueError(
                 "Reversible differentiation method not supported on {}".format(device.short_name)

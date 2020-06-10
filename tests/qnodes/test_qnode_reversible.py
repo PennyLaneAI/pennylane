@@ -35,9 +35,7 @@ def operable_mock_device_2_wires(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(dev, "__abstractmethods__", frozenset())
         m.setattr(dev, "_capabilities", {"model": "qubit"})
-        m.setattr(
-            dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"]
-        )
+        m.setattr(dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, "reset", lambda self: None)
         m.setattr(dev, "apply", lambda self, x, y, z: None)
@@ -48,9 +46,7 @@ def operable_mock_device_2_wires(monkeypatch):
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
-    @pytest.mark.parametrize(
-        "mult", [1, -2, 1.623, -0.051, 0]
-    )  # intergers, floats, zero
+    @pytest.mark.parametrize("mult", [1, -2, 1.623, -0.051, 0])  # intergers, floats, zero
     def test_parameter_multipliers(self, mult, tol):
         """Test that various types and values of scalar multipliers for differentiable
         qfunc parameters yield the correct gradients."""
@@ -103,43 +99,25 @@ class TestExpectationJacobian:
         # manual gradient
         grad_true0 = (
             expZ(
-                Rx(reused_p)
-                @ Rz(other_p)
-                @ Ry(reused_p + np.pi / 2)
-                @ Rx(extra_param)
-                @ zero_state
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p + np.pi / 2) @ Rx(extra_param) @ zero_state
             )
             - expZ(
-                Rx(reused_p)
-                @ Rz(other_p)
-                @ Ry(reused_p - np.pi / 2)
-                @ Rx(extra_param)
-                @ zero_state
+                Rx(reused_p) @ Rz(other_p) @ Ry(reused_p - np.pi / 2) @ Rx(extra_param) @ zero_state
             )
         ) / 2
         grad_true1 = (
             expZ(
-                Rx(reused_p + np.pi / 2)
-                @ Rz(other_p)
-                @ Ry(reused_p)
-                @ Rx(extra_param)
-                @ zero_state
+                Rx(reused_p + np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
             )
             - expZ(
-                Rx(reused_p - np.pi / 2)
-                @ Rz(other_p)
-                @ Ry(reused_p)
-                @ Rx(extra_param)
-                @ zero_state
+                Rx(reused_p - np.pi / 2) @ Rz(other_p) @ Ry(reused_p) @ Rx(extra_param) @ zero_state
             )
         ) / 2
         grad_true = grad_true0 + grad_true1  # product rule
 
         assert grad_A[0, 0] == pytest.approx(grad_true, abs=tol)
 
-    @pytest.mark.parametrize(
-        "shape", [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)]
-    )
+    @pytest.mark.parametrize("shape", [(8,), (8, 1), (4, 2), (2, 2, 2), (2, 1, 2, 1, 2)])
     def test_multidim_array_parameter(self, shape, tol):
         """Tests that arguments which are multidimensional arrays are
         properly evaluated and differentiated in ReversibleQNodes."""
@@ -462,9 +440,7 @@ class TestExpectationJacobian:
 
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    @pytest.mark.parametrize("op, name", [(qml.CRX, "CRX"),
-                                          (qml.CRY, "CRY"),
-                                          (qml.CRZ, "CRZ")])
+    @pytest.mark.parametrize("op, name", [(qml.CRX, "CRX"), (qml.CRY, "CRY"), (qml.CRZ, "CRZ")])
     def test_controlled_rotation_gates_exception(self, op, name):
         """Tests that an exception is raised when a controlled
         rotation gate is used with the ReversibleQNode."""
@@ -477,9 +453,7 @@ class TestExpectationJacobian:
             return qml.expval(qml.PauliZ(0))
 
         circuit = ReversibleQNode(circuit, dev)
-        with pytest.raises(
-            ValueError, match="The {} gate is not currently supported".format(name)
-        ):
+        with pytest.raises(ValueError, match="The {} gate is not currently supported".format(name)):
             circuit.jacobian([0.542])
 
     def test_phaseshift_exception(self):
@@ -495,12 +469,12 @@ class TestExpectationJacobian:
 
         circuit = ReversibleQNode(circuit, dev)
 
-        with pytest.raises(
-            ValueError, match="The PhaseShift gate is not currently supported"
-        ):
+        with pytest.raises(ValueError, match="The PhaseShift gate is not currently supported"):
             circuit.jacobian([0.542])
 
-    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of the PhaseShift gate.")
+    @pytest.mark.xfail(
+        reason="The ReversibleQNode does not support gradients of the PhaseShift gate."
+    )
     def test_phaseshift_gradient(self, tol):
         """Test gradient of PhaseShift gate"""
         dev = qml.device("default.qubit", wires=1)
@@ -545,7 +519,9 @@ class TestExpectationJacobian:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
+    @pytest.mark.xfail(
+        reason="The ReversibleQNode does not support gradients of controlled rotations"
+    )
     def test_controlled_RX_gradient(self, tol):
         """Test gradient of controlled RX gate"""
         dev = qml.device("default.qubit", wires=2)
@@ -590,7 +566,9 @@ class TestExpectationJacobian:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
+    @pytest.mark.xfail(
+        reason="The ReversibleQNode does not support gradients of controlled rotations"
+    )
     def test_controlled_RY_gradient(self, tol):
         """Test gradient of controlled RY gate"""
         dev = qml.device("default.qubit", wires=2)
@@ -635,7 +613,9 @@ class TestExpectationJacobian:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
+    @pytest.mark.xfail(
+        reason="The ReversibleQNode does not support gradients of controlled rotations"
+    )
     def test_controlled_RZ_gradient(self, tol):
         """Test gradient of controlled RZ gate"""
         dev = qml.device("default.qubit", wires=2)
@@ -687,7 +667,7 @@ class TestIntegration:
     def test_incapable_device_exception(self, monkeypatch):
         """Test that an exception is raised if the reversible diff_method
         is specified for a device which does not have reversible capability."""
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
         capabilities = {**dev._capabilities}
         capabilities["reversible"] = False
         monkeypatch.setattr(dev, "_capabilities", capabilities)
@@ -698,6 +678,7 @@ class TestIntegration:
 
         with pytest.raises(ValueError, match="Reversible differentiation method not supported"):
             ReversibleQNode(circuit, dev)
+
 
 class TestHelperFunctions:
     """Tests for additional helper functions."""
