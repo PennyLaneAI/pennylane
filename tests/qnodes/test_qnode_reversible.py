@@ -26,23 +26,6 @@ from pennylane.qnodes.rev import ReversibleQNode
 
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 
-
-@pytest.fixture(scope="function")
-def operable_mock_device_2_wires(monkeypatch):
-    """A mock instance of the abstract Device class that can support qfuncs."""
-
-    dev = Device
-    with monkeypatch.context() as m:
-        m.setattr(dev, "__abstractmethods__", frozenset())
-        m.setattr(dev, "_capabilities", {"model": "qubit"})
-        m.setattr(dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
-        m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
-        m.setattr(dev, "reset", lambda self: None)
-        m.setattr(dev, "apply", lambda self, x, y, z: None)
-        m.setattr(dev, "expval", lambda self, x, y, z: 1)
-        yield Device(wires=2)
-
-
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
