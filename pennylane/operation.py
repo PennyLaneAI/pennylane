@@ -1072,7 +1072,7 @@ class Tensor(Observable):
         # the eigenvalues is correct
         obs_sorted = sorted(
             self.obs, key=lambda x: x.wires.tolist()
-        )  # TODO: !!! AT THIS STAGE WE DO NOT KNOW THE ORDER
+        )  # TODO: Can we circumvent this sorting?
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1146,7 +1146,9 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires.tolist()):
+        for _, g in itertools.groupby(
+            self.obs, lambda x: x.wires.tolist()
+        ):  # TODO: Is this necessary?
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1229,7 +1231,6 @@ class CV:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
 
-        # TODO: !!! re-assess this function for non-consec wires
         U_dim = len(U)
         nw = len(self.wires)
 
@@ -1239,7 +1240,7 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
-        if num_wires == 0 or self.wires.tolist() == list(range(num_wires)):
+        if num_wires == 0 or len(self.wires) == num_wires:
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
@@ -1261,7 +1262,9 @@ class CV:
         if U.ndim == 1:
             W = np.zeros(dim)
             W[0] = U[0]
-            for k, w in enumerate(self.wires.tolist()):
+            for k, w in enumerate(
+                self.wires.tolist()
+            ):  # TODO: refactor CV functions to not depend on consec wires
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
             if isinstance(self, Observable):

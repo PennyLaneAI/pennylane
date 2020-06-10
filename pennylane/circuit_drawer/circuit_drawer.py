@@ -331,7 +331,7 @@ class CircuitDrawer:
         wire_names = []
         padding = 0
         for i in range(self.full_representation_grid.num_wires):
-            wire_name = str(self.active_register[i].tolist()[0])
+            wire_name = str(self.active_register.at_index(i))
             padding = max(padding, len(wire_name))
             wire_names.append(wire_name)
 
@@ -340,9 +340,7 @@ class CircuitDrawer:
             wire = self.full_representation_grid.wire(i)
             s = " {:>" + str(padding) + "}: {}"
 
-            rendered_string += s.format(
-                wire_names[i], 2 * self.charset.WIRE
-            )
+            rendered_string += s.format(wire_names[i], 2 * self.charset.WIRE)
 
             for s in wire:
                 rendered_string += s

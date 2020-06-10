@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires.tolist())
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 
@@ -371,7 +371,9 @@ class BaseQNode(qml.QueuingContext):
             if w not in self.device.register:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with wires {}.".format(operator.name, w, self.device.register.tolist())
+                    "on device with wires {}.".format(
+                        operator.name, w, self.device.register.tolist()
+                    )
                 )
 
         # observables go to their own, temporary queue

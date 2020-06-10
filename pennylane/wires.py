@@ -31,7 +31,6 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.wire_tuple
 
-
     elif isinstance(wires, (Number, str)):
         # interpret as a single wire
         return (wires,)
