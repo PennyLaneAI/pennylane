@@ -124,7 +124,7 @@ class Wires(Sequence):
         return list(self.wire_tuple)
 
     def at_index(self, idx):
-        """Returns the wire at index ``idx``.
+        """Returns the wire representation at the given position in the wires object.
 
         >>> w = Wires([0, 'q1', 16])
         >>> w.at_index(1)
