@@ -17,7 +17,6 @@ reference plugin.
 import numpy as np
 
 from pennylane.operation import DiagonalOperation
-from pennylane.plugins import DefaultQubit
 
 try:
     import tensorflow as tf
@@ -42,6 +41,7 @@ try:
 except ImportError:
     pass
 
+from . import DefaultQubit
 from . import tf_ops
 
 

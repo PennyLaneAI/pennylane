@@ -191,7 +191,7 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                self.apply(operation.name, operation.wires, operation.parameters)
+                self.apply(operation.name, operation.wires.tolist(), operation.parameters)
 
             self.post_apply()
 
@@ -201,9 +201,9 @@ class Device(abc.ABC):
 
                 if isinstance(obs, Tensor):
                     # if obs is a tensor observable, use a list of individual wires
-                    wires = [ob.wires for ob in obs.obs]
+                    wires = [ob.wires.tolist() for ob in obs.obs]
                 else:
-                    wires = obs.wires
+                    wires = obs.wires.tolist()
 
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, wires, obs.parameters))

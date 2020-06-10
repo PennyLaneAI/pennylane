@@ -27,6 +27,7 @@ from pennylane.templates.embeddings import (AngleEmbedding,
                                             DisplacementEmbedding,
                                             SqueezingEmbedding)
 from pennylane import Beamsplitter
+from pennylane.wires import Wires
 
 
 class TestAmplitudeEmbedding:
@@ -393,7 +394,7 @@ class TestIQPEmbedding:
 
         # compare all gate wires to expected ones
         for idx, gate in enumerate(rec.queue):
-            assert np.allclose(gate.wires, expected_queue_wires[idx]) # TODO use Wires object here
+            assert gate.wires == Wires(expected_queue_wires[idx])
 
     @pytest.mark.parametrize('pattern', [[[0, 3], [1, 2], [2, 0]],
                                          [[2, 3], [0, 2], [1, 0]]])
@@ -407,7 +408,7 @@ class TestIQPEmbedding:
         for gate in rec.queue:
             # check wires of entanglers
             if len(gate.wires) == 2:
-                assert gate.wires == pattern[counter]
+                assert gate.wires == Wires(pattern[counter])
                 counter += 1
 
     @pytest.mark.parametrize('features', [[1., 2.],
