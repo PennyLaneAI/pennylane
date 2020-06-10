@@ -65,9 +65,6 @@ class ReversibleQNode(QubitQNode):
             internally, otherwise convert it into array[float]. Default: True.
     """
 
-    def __init__(self, func, device, mutable=True, **kwargs):
-        super().__init__(func, device, mutable=mutable, **kwargs)
-
     def _pd_analytic(self, idx, args, kwargs, **options):
         """Partial derivative of the node using the reversible method.
 
@@ -109,9 +106,10 @@ class ReversibleQNode(QubitQNode):
             # CRX, CRY, CRZ ops have a non-unitary matrix as generator
             # TODO: these can be supported by multiplying ``state`` directly by these generators within this function
             # (or by allowing non-unitary matrix multiplies in the simulator backends)
-            if op.name in ["CRX", "CRY", "CRZ"]:
+            if op.name in ["PhaseShift", "CRX", "CRY", "CRZ"]:
                 raise ValueError(
-                    "Controlled-rotation gates are not currently supported with the reversible gradient method."
+                    "The {} gate is not currently supported with the "
+                    "reversible gradient method.".format(op.name)
                 )
             generator = generator(wires)
             diff_circuit = (

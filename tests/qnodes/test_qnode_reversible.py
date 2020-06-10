@@ -500,8 +500,10 @@ class TestExpectationJacobian:
 
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    @pytest.mark.parametrize("op", [qml.CRX, qml.CRY, qml.CRZ,])
-    def test_controlled_rotation_gates_exception(self, op):
+    @pytest.mark.parametrize("op, name", [(qml.CRX, "CRX"),
+                                          (qml.CRY, "CRY"),
+                                          (qml.CRZ, "CRZ")])
+    def test_controlled_rotation_gates_exception(self, op, name):
         """Tests that an exception is raised when a controlled
         rotation gate is used with the ReversibleQNode."""
         # remove this test when this support is added
@@ -513,11 +515,73 @@ class TestExpectationJacobian:
             return qml.expval(qml.PauliZ(0))
 
         circuit = ReversibleQNode(circuit, dev)
-
         with pytest.raises(
-            ValueError, match="Controlled-rotation gates are not currently supported"
+            ValueError, match="The {} gate is not currently supported".format(name)
         ):
             circuit.jacobian([0.542])
+
+    def test_phaseshift_exception(self):
+        """Tests that an exception is raised when a PhaseShift gate
+        is used with the ReversibleQNode."""
+        # remove this test when this support is added
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(x):
+            qml.PauliX(wires=0)
+            qml.PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit = ReversibleQNode(circuit, dev)
+
+        with pytest.raises(
+            ValueError, match="The PhaseShift gate is not currently supported"
+        ):
+            circuit.jacobian([0.542])
+
+    @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of the PhaseShift gate.")
+    def test_phaseshift_gradient(self, tol):
+        """Test gradient of PhaseShift gate"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit = ReversibleQNode(circuit, dev)
+
+        a = 0.542  # any value of a should give zero gradient
+
+        # get the analytic gradient
+        gradA = circuit.jacobian([a], method="A")
+        # get the finite difference gradient
+        gradF = circuit.jacobian([a], method="F")
+
+        # the expected gradient
+        expected = 0
+
+        assert gradF == pytest.approx(expected, abs=tol)
+        assert gradA == pytest.approx(expected, abs=tol)
+
+        def circuit1(x):
+            qml.Hadamard(x, wires=0)
+            qml.PhaseShift(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        circuit1 = ReversibleQNode(circuit1, dev)
+
+        b = 0.123  # gradient is -sin(b)
+
+        # get the analytic gradient
+        gradA = circuit1.jacobian([b], method="A")
+        # get the finite difference gradient
+        gradF = circuit1.jacobian([b], method="F")
+
+        # the expected gradient
+        expected = -np.sin(b)
+
+        assert gradF == pytest.approx(expected, abs=tol)
+        assert gradA == pytest.approx(expected, abs=tol)
 
     @pytest.mark.xfail(reason="The ReversibleQNode does not support gradients of controlled rotations")
     def test_controlled_RX_gradient(self, tol):
