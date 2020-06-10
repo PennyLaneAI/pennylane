@@ -71,8 +71,9 @@ def SingleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable, Number or Wires): Wires that the template acts on. The first wire is interpreted as ``r``
-            while the last wire is interpreted as ``q``. Must be of minimum length 2.
+        wires (Iterable or Wires): Wires that the template acts on. The first wire is interpreted as ``r``
+            while the last wire is interpreted as ``q``. The wires in between represent the particles/holes
+            between the pair. Must be of minimum length 2.
 
     Raises:
         ValueError: if inputs do not have the correct format

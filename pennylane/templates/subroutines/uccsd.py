@@ -192,7 +192,7 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
     pphh = [[Wires(w1), Wires(w2)] for w1, w2 in pphh]
 
     for d, (w1, w2) in enumerate(pphh):
-        DoubleExcitationUnitary(weights[len(ph) + d], wires_occupied=w1, wires_unoccupied=w2)
+        DoubleExcitationUnitary(weights[len(ph) + d], wires1=w1, wires2=w2)
 
     for s, i_ph in enumerate(ph):
         SingleExcitationUnitary(weights[s], wires=i_ph)

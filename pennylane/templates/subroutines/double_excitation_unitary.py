@@ -373,7 +373,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
 
 
 @template
-def DoubleExcitationUnitary(weight, wires_occupied=None, wires_unoccupied=None):
+def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     fermionic double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -421,11 +421,12 @@ def DoubleExcitationUnitary(weight, wires_occupied=None, wires_unoccupied=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires_occupied (Iterable, Number or Wires): Wires of the qubits representing occupied orbitals.
-            The first wire is interpreted as ``s`` while the last wire is interpreted as ``r``.
+        wires1 (Iterable or Wires): Wires of the qubits representing the first particle-hole pair.
+            The first wire is interpreted as ``s`` and the last wire is interpreted as ``r``. Wires in between
+            represent the particles/holes in between the pair.
             Must be of minimum length 2.
-        wires_unoccupied (Iterable, Number or Wires): Wires of the qubits representing unoccupied orbitals.
-            The first wire is interpreted as ``q`` while the last wire is interpreted as ``p``.
+        wires2 (Iterable or Wires): Wires of the qubits representing the second particle-hole pair.
+            The first wire is interpreted as ``q`` and the last wire is interpreted as ``p``.
             Must be of minimum length 2.
 
     Raises:
@@ -483,15 +484,15 @@ def DoubleExcitationUnitary(weight, wires_occupied=None, wires_unoccupied=None):
     ##############
     # Input checks
 
-    wires_occupied = Wires(wires_occupied)
-    wires_unoccupied = Wires(wires_unoccupied)
+    wires1 = Wires(wires1)
+    wires2 = Wires(wires2)
 
-    if len(wires_occupied) < 2:
+    if len(wires1) < 2:
         raise ValueError("expected at least two wires representing the occupied orbitals; "
-                         "got {}".format(len(wires_occupied)))
-    if len(wires_unoccupied) < 2:
+                         "got {}".format(len(wires1)))
+    if len(wires2) < 2:
         raise ValueError("expected at least two wires representing the unoccupied orbitals; "
-                         "got {}".format(len(wires_unoccupied)))
+                         "got {}".format(len(wires2)))
 
     expected_shape = ()
     check_shape(
@@ -502,14 +503,14 @@ def DoubleExcitationUnitary(weight, wires_occupied=None, wires_unoccupied=None):
 
     ###############
 
-    s = wires_occupied[0]
-    r = wires_occupied[-1]
-    q = wires_unoccupied[0]
-    p = wires_unoccupied[-1]
+    s = wires1[0]
+    r = wires1[-1]
+    q = wires2[0]
+    p = wires2[-1]
 
     # Sequence of the wires entering the CNOTs
-    cnots_occ = [wires_occupied.subset([l, l + 1]) for l in range(len(wires_occupied)-1)]
-    cnots_unocc = [wires_unoccupied.subset([l, l + 1]) for l in range(len(wires_unoccupied)-1)]
+    cnots_occ = [wires1.subset([l, l + 1]) for l in range(len(wires1) - 1)]
+    cnots_unocc = [wires2.subset([l, l + 1]) for l in range(len(wires2) - 1)]
 
     set_cnot_wires = cnots_occ + [Wires([r, q])] + cnots_unocc
 

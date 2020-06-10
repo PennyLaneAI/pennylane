@@ -556,7 +556,7 @@ class TestDoubleExcitationUnitary:
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
         with qml.utils.OperationRecorder() as rec:
-            DoubleExcitationUnitary(weight, wires_occupied=wires1, wires_unoccupied=wires2)
+            DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
 
         assert len(rec.queue) == sqg + cnots
 
@@ -590,7 +590,7 @@ class TestDoubleExcitationUnitary:
         dev = qml.device("default.qubit", wires=10)
 
         def circuit(weight=weight):
-            DoubleExcitationUnitary(weight=weight, wires_occupied=wires1, wires_unoccupied=wires2)
+            DoubleExcitationUnitary(weight=weight, wires1=wires1, wires2=wires2)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -615,7 +615,7 @@ class TestDoubleExcitationUnitary:
         def circuit(weight):
             init_state = np.flip(np.array([1, 1, 0, 0, 0]))
             qml.BasisState(init_state, wires=range(N))
-            DoubleExcitationUnitary(weight, wires_occupied=wires1, wires_unoccupied=wires2)
+            DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
 
             return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
