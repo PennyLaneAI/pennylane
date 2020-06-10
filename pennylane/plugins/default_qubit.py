@@ -53,8 +53,7 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = "0.10"
     version = "0.10.0"
     author = "Xanadu Inc."
-    _capabilities = {"inverse_operations": True,
-                     "reversible": True}
+    _capabilities = {"inverse_operations": True, "reversible": True}
 
     operations = {
         "BasisState",
