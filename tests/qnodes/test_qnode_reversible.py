@@ -45,44 +45,6 @@ def operable_mock_device_2_wires(monkeypatch):
         yield Device(wires=2)
 
 
-class TestBestMethod:
-    """Test different flows of _best_method"""
-
-    def test_no_following_observable(self, operable_mock_device_2_wires):
-        """Test that the gradient is 0 if no observables succeed"""
-
-        def circuit(x):
-            qml.RX(x, wires=[1])
-            return qml.expval(qml.PauliZ(0))
-
-        q = ReversibleQNode(circuit, operable_mock_device_2_wires)
-        q._construct([1.0], {})
-        assert q.par_to_grad_method == {0: "0"}
-
-    def test_param_unused(self, operable_mock_device_2_wires):
-        """Test that the gradient is 0 of an unused parameter"""
-
-        def circuit(x, y):
-            qml.RX(x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        q = ReversibleQNode(circuit, operable_mock_device_2_wires)
-        q._construct([1.0, 1.0], {})
-        assert q.par_to_grad_method == {0: "A", 1: "0"}
-
-    def test_not_differentiable(self, operable_mock_device_2_wires):
-        """Test that an operation with grad_method=None is marked as
-        non-differentiable"""
-
-        def circuit(x):
-            qml.BasisState(x, wires=[1])
-            return qml.expval(qml.PauliZ(0))
-
-        q = ReversibleQNode(circuit, operable_mock_device_2_wires)
-        q._construct([np.array([1.0])], {})
-        assert q.par_to_grad_method == {0: None}
-
-
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
@@ -719,164 +681,23 @@ class TestExpectationJacobian:
         assert gradA == pytest.approx(expected, abs=tol)
 
 
-class TestVarianceJacobian:
-    """Variance analytic jacobian integration tests."""
+class TestIntegration:
+    """Integration tests for ReversibleQNode."""
 
-    def test_involutory_variance(self, tol):
-        """Tests qubit observable that are involutory"""
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.var(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=1)
-        circuit = ReversibleQNode(circuit, dev)
-
-        a = 0.54
-        var = circuit(a)
-        expected = 1 - np.cos(a) ** 2
-        assert var == pytest.approx(expected, abs=tol)
-
-        # circuit jacobians
-        gradA = circuit.jacobian([a], method="A")
-        gradF = circuit.jacobian([a], method="F")
-        expected = 2 * np.sin(a) * np.cos(a)
-        assert gradF == pytest.approx(expected, abs=tol)
-        assert gradA == pytest.approx(expected, abs=tol)
-
-    def test_non_involutory_variance(self, tol):
-        """Tests a qubit Hermitian observable that is not involutory"""
-        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+    def test_incapable_device_exception(self, monkeypatch):
+        """Test that an exception is raised if the reversible diff_method
+        is specified for a device which does not have reversible capability."""
+        dev = qml.device('default.qubit', wires=1)
+        capabilities = {**dev._capabilities}
+        capabilities["reversible"] = False
+        monkeypatch.setattr(dev, "_capabilities", capabilities)
 
         def circuit(a):
             qml.RX(a, wires=0)
-            return qml.var(qml.Hermitian(A, 0))
+            return qml.expval(qml.PauliZ(wires=0))
 
-        dev = qml.device("default.qubit", wires=1)
-        circuit = ReversibleQNode(circuit, dev)
-
-        a = 0.54
-        var = circuit(a)
-        expected = (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)
-        assert var == pytest.approx(expected, abs=tol)
-
-        # circuit jacobians
-        gradA = circuit.jacobian([a], method="A")
-        gradF = circuit.jacobian([a], method="F")
-        expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
-        assert gradA == pytest.approx(expected, abs=tol)
-        assert gradF == pytest.approx(expected, abs=tol)
-
-    def test_fanout(self, tol):
-        """Tests qubit observable with repeated parameters"""
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            qml.RY(a, wires=0)
-            return qml.var(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=2)
-        circuit = ReversibleQNode(circuit, dev)
-
-        a = 0.54
-        var = circuit(a)
-        expected = 0.5 * np.sin(a) ** 2 * (np.cos(2 * a) + 3)
-        assert var == pytest.approx(expected, abs=tol)
-
-        # circuit jacobians
-        gradA = circuit.jacobian([a], method="A")
-        gradF = circuit.jacobian([a], method="F")
-        expected = 4 * np.sin(a) * np.cos(a) ** 3
-        assert gradA == pytest.approx(expected, abs=tol)
-        assert gradF == pytest.approx(expected, abs=tol)
-
-    def test_expval_and_variance(self, tol):
-        """Test that the qnode works for a combination of expectation
-        values and variances"""
-        dev = qml.device("default.qubit", wires=3)
-
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.RX(c, wires=2)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(c, wires=2)
-            return (
-                qml.var(qml.PauliZ(0)),
-                qml.expval(qml.PauliZ(1)),
-                qml.var(qml.PauliZ(2)),
-            )
-
-        circuit = ReversibleQNode(circuit, dev)
-
-        a = 0.54
-        b = -0.423
-        c = 0.123
-        var = circuit(a, b, c)
-        expected = np.array(
-            [
-                np.sin(a) ** 2,
-                np.cos(a) * np.cos(b),
-                0.25 * (3 - 2 * np.cos(b) ** 2 * np.cos(2 * c) - np.cos(2 * b)),
-            ]
-        )
-        assert var == pytest.approx(expected, abs=tol)
-
-        # # circuit jacobians
-        gradA = circuit.jacobian([a, b, c], method="A")
-        gradF = circuit.jacobian([a, b, c], method="F")
-        expected = np.array(
-            [
-                [2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0],
-                [
-                    0,
-                    -np.cos(a) * np.sin(b),
-                    0.5 * (2 * np.cos(b) * np.cos(2 * c) * np.sin(b) + np.sin(2 * b)),
-                ],
-                [0, 0, np.cos(b) ** 2 * np.sin(2 * c)],
-            ]
-        ).T
-        assert gradF == pytest.approx(expected, abs=tol)
-        assert gradA == pytest.approx(expected, abs=tol)
-
-
-class TestSampleJacobian:
-    """Sample analytic jacobian integration tests."""
-
-    def test_samples_exception(self):
-        """Tests that an exception is raised when the jacobian is attempted to be computed
-        for a circuit which contains sampled output."""
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=1)
-        circuit = ReversibleQNode(circuit, dev)
-        par = 0.5
-
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Circuits that include sampling can not be differentiated",
-        ):
-            circuit.jacobian(par, method="A")
-
-
-class TestDeviceJacobian:
-    """Analytic jacobian integration tests for different built-in devices."""
-
-    def _test_default_qubit_device(self):
-        """Tests that the jacobian is correctly computed when using the default.qubit device."""
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=1)
-        circuit = ReversibleQNode(circuit, dev)
-        par = 0.5
-
+        with pytest.raises(ValueError, match="Reversible differentiation method not supported"):
+            ReversibleQNode(circuit, dev)
 
 class TestHelperFunctions:
     """Tests for additional helper functions."""

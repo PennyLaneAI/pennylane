@@ -157,9 +157,10 @@ def test_reversible_diff_method_exception():
     is specified for a device which does not have reversible capability."""
     dev = qml.device('default.qubit', wires=1)
     dev._capabilities["reversible"] = False
+    print(dev._capabilities)
 
-    with pytest.raises(ValueError, match=""):
-        @qnode(dev, diff_method="Reversible differentiation method not supported")
+    with pytest.raises(ValueError, match="Reversible differentiation method not supported"):
+        @qnode(dev, diff_method="reversible")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(wires=0))

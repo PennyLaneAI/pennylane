@@ -64,6 +64,13 @@ class ReversibleQNode(QubitQNode):
         use_native_type (bool): If True, return the result in whatever type the device uses
             internally, otherwise convert it into array[float]. Default: True.
     """
+    def __init__(self, func, device, mutable=True, **kwargs):
+        if "reversible" not in device._capabilities or not device._capabilities["reversible"]:
+            raise ValueError(
+                "Reversible differentiation method not supported on {}".format(device.short_name)
+            )
+        super().__init__(func, device, mutable=mutable, **kwargs)
+
 
     def _pd_analytic(self, idx, args, kwargs, **options):
         """Partial derivative of the node using the reversible method.
@@ -128,6 +135,8 @@ class ReversibleQNode(QubitQNode):
             # compute matrix element <d(state)|O|state> for each observable O
             matrix_elems = self.device._asarray(
                 [self._matrix_elem(dstate, ob, state) for ob in obs]
+                # TODO: if all observables act on same number of wires, could
+                # do all at once with einsum
             )
 
             # post-process to get partial derivative contribution from this op
