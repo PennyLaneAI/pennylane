@@ -129,7 +129,7 @@ class Wires(Sequence):
         >>> w = Wires([0, 'q1', 16])
         >>> w[1]
         'q1'
-        >>> w[2]
+        >>> w.at_index(2)
         16
 
         Args:
