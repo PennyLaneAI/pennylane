@@ -146,7 +146,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
