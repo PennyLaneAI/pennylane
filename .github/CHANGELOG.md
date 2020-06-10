@@ -82,8 +82,8 @@
 * Updated the ``default.tensor`` plugin to use a smarter factorized representation 
   of quantum states. This will result in more efficient simulations for circuits 
   where not all qubits become entangled. 
-  [#572](https://github.com/XanaduAI/pennylane/pull/572)
-  [#599](https://github.com/XanaduAI/pennylane/pull/572)
+  ([#572](https://github.com/XanaduAI/pennylane/pull/572))
+  ([#599](https://github.com/XanaduAI/pennylane/pull/599))
 
 * Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
   decomposes each of these gates into rotation gates. 
