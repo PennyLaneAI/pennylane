@@ -127,7 +127,7 @@ class Wires(Sequence):
         """Returns the wire at index ``idx``.
 
         >>> w = Wires([0, 'q1', 16])
-        >>> w[1]
+        >>> w.at_index(1)
         'q1'
         >>> w.at_index(2)
         16
