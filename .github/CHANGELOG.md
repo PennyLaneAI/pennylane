@@ -83,6 +83,11 @@
   of quantum states. This will result in more efficient simulations for circuits 
   where not all qubits become entangled. 
   [#572](https://github.com/XanaduAI/pennylane/pull/572)
+  [#599](https://github.com/XanaduAI/pennylane/pull/572)
+
+* Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
+  decomposes each of these gates into rotation gates. 
+  [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
 
 * The `CircuitGraph` class now supports serializing contained circuit operations
   and measurement basis rotations to an OpenQASM2.0 script via the new
@@ -141,7 +146,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
