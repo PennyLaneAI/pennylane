@@ -46,6 +46,39 @@ contract_fns = {
 class DefaultTensor(Device):
     """Experimental Tensor Network simulator device for PennyLane.
 
+    **Short name:** ``default.tensor``
+
+    This experimental device uses the
+    `TensorNetwork <https://github.com/google/tensornetwork>`_ library
+    to provide a basic tensor-network-based simulator backend for PennyLane.
+    Tensor network simulators can faster or more efficient for certain types of
+    circuit structures.
+
+    To use this device, you will need to install TensorNetwork:
+
+    .. code-block:: bash
+
+        pip install tensornetwork==0.3
+
+    The ``default.tensor`` device supports two types of tensor networks: ``"exact"`` and ``"mps"``.
+
+    The (default) ``"exact"`` representation does not make any approximations, using exact dense tensors for
+    the simulator's quantum states and for the matrices of quantum gates and observables.
+
+    The ``"mps"`` representation (standing for "matrix product state") approximates the quantum state
+    using a one-dimensional grid of qubits with nearest-neighbour connectivity. As such, it does not support
+    multi-qubit gates/observables that do not act on nearest-neighbour qubits.
+
+    The preferred contraction method can also be specified when using the ``"exact"`` representation.
+    Available options are "auto", "greedy", "branch", or "optimal".
+    See the `TensorNetwork documentation <https://tensornetwork.readthedocs.io/en/latest/copy_contract.html>`_
+    for more details.
+
+    **Example**
+
+      >>> exact_tensornet = qml.device("default.tensor", wires=2, contraction_method="greedy")
+      >>> mps_tensornet = qml.device("default.tensor", wires=2, representation="mps")
+
     Args:
         wires (int): number of subsystems in the quantum state represented by the device
         shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
