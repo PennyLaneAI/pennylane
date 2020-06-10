@@ -59,6 +59,7 @@ class DefaultTensor(Device):
             for more information about contraction methods.
     """
 
+    # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
     pennylane_requires = "0.10"
@@ -193,7 +194,7 @@ class DefaultTensor(Device):
               wires (Sequence(list[int])): the wires for each factorized component of the state
               names (Sequence[str]): name for each factorized component of the state
         """
-        if not (len(tensors) == len(wires) == len(names)):
+        if not len(tensors) == len(wires) == len(names):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
         if self._rep == "exact":
@@ -501,49 +502,48 @@ class DefaultTensor(Device):
             raise NotImplementedError(
                 "Multi-wire measurement only supported for nearest-neighbour wire pairs."
             )
+        if len(obs_nodes) == 1 and len(wires[0]) == 1:
+            # TODO: can measure multiple local expectation values at once,
+            # but this would require change of `expval` behaviour and
+            # refactor of `execute` logic from parent class
+            expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
         else:
-            if len(obs_nodes) == 1 and len(wires[0]) == 1:
-                # TODO: can measure multiple local expectation values at once,
-                # but this would require change of `expval` behaviour and
-                # refactor of `execute` logic from parent class
-                expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
-            else:
-                conj_nodes = [tn.conj(node) for node in self.mps.nodes]
-                meas_wires = []
-                # connect measured bra and ket nodes with observables
-                for obs_node, wire_seq in zip(obs_nodes, wires):
-                    if len(wire_seq) == 2 and abs(wire_seq[0] - wire_seq[1]) > 1:
-                        raise NotImplementedError(
-                            "Multi-wire measurement only supported for nearest-neighbour wire pairs."
-                        )
-                    offset = len(wire_seq)
-                    for idx, wire in enumerate(wire_seq):
-                        tn.connect(conj_nodes[wire][1], obs_node[idx])
-                        tn.connect(obs_node[offset + idx], self.mps.nodes[wire][1])
-                    meas_wires.extend(wire_seq)
-                for wire in range(self.num_wires):
-                    # connect unmeasured ket nodes with bra nodes
-                    if wire not in meas_wires:
-                        tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
-                    # connect local nodes of MPS (not connected by default in tn)
-                    if wire != self.num_wires - 1:
-                        tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
-                        tn.connect(conj_nodes[wire][2], conj_nodes[wire + 1][0])
+            conj_nodes = [tn.conj(node) for node in self.mps.nodes]
+            meas_wires = []
+            # connect measured bra and ket nodes with observables
+            for obs_node, wire_seq in zip(obs_nodes, wires):
+                if len(wire_seq) == 2 and abs(wire_seq[0] - wire_seq[1]) > 1:
+                    raise NotImplementedError(
+                        "Multi-wire measurement only supported for nearest-neighbour wire pairs."
+                    )
+                offset = len(wire_seq)
+                for idx, wire in enumerate(wire_seq):
+                    tn.connect(conj_nodes[wire][1], obs_node[idx])
+                    tn.connect(obs_node[offset + idx], self.mps.nodes[wire][1])
+                meas_wires.extend(wire_seq)
+            for wire in range(self.num_wires):
+                # connect unmeasured ket nodes with bra nodes
+                if wire not in meas_wires:
+                    tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
+                # connect local nodes of MPS (not connected by default in tn)
+                if wire != self.num_wires - 1:
+                    tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
+                    tn.connect(conj_nodes[wire][2], conj_nodes[wire + 1][0])
 
-                # contract MPS bonds first
-                bra_node = conj_nodes[0]
-                ket_node = self.mps.nodes[0]
-                for wire in range(self.num_wires - 1):
-                    bra_node = tn.contract_between(bra_node, conj_nodes[wire + 1])
-                    ket_node = tn.contract_between(ket_node, self.mps.nodes[wire + 1])
-                # contract observables into ket
-                for obs_node in obs_nodes:
-                    ket_node = tn.contract_between(obs_node, ket_node)
-                # contract bra into observables/ket
-                expval_node = tn.contract_between(bra_node, ket_node)
-                # remove dangling singleton edges
-                expval = self._squeeze(expval_node.tensor)
-            return expval
+            # contract MPS bonds first
+            bra_node = conj_nodes[0]
+            ket_node = self.mps.nodes[0]
+            for wire in range(self.num_wires - 1):
+                bra_node = tn.contract_between(bra_node, conj_nodes[wire + 1])
+                ket_node = tn.contract_between(ket_node, self.mps.nodes[wire + 1])
+            # contract observables into ket
+            for obs_node in obs_nodes:
+                ket_node = tn.contract_between(obs_node, ket_node)
+            # contract bra into observables/ket
+            expval_node = tn.contract_between(bra_node, ket_node)
+            # remove dangling singleton edges
+            expval = self._squeeze(expval_node.tensor)
+        return expval
 
     def _contract_premeasurement_network(self):
         """Contract the nodes which represent the state preparation and gate applications to get the pre-measurement state.
