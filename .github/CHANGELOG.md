@@ -59,6 +59,14 @@
   ```python
   model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
+* Added a new "reversible" differentiation method which can be used in simulators, but not hardware.
+  The reversible approach is similar to backpropagation, but trades off extra computation for
+  enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
+  a forward pass, the reversible method only caches the final pre-measurement state. Compared to 
+  the parameter-shift method, the reversible method can be faster or slower, depending on the 
+  density and location of parametrized gates in a circuit (circuits with higher density of 
+  parametrized gates near the end of the circuit will see a benefit).
+  [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
 
 * Contains the new template `DoubleExcitationUnitary` implementing the quantum circuit to
   exponentiate the Coupled-Cluster double excitation operator. This template is required to

@@ -26,6 +26,7 @@ from pennylane.qnodes.rev import ReversibleQNode
 
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 
+
 class TestExpectationJacobian:
     """Jacobian integration tests for qubit expectations."""
 
