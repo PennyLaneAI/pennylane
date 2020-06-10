@@ -110,7 +110,7 @@ class TestDecomposition:
     def test_wrong_dimension(self):
         with pytest.raises(
             ValueError,
-            match=re.escape("Hamiltonian should have shape (2^n, 2^n), for any qubit number n>=1"),
+            match=re.escape("Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"),
         ):
             pu.decompose_hamiltonian(np.ones((3, 3)))
 
