@@ -327,11 +327,21 @@ class CircuitDrawer:
         """
         rendered_string = ""
 
+        # extract the register names as strings and get their maximum length
+        wire_names = []
+        padding = 0
         for i in range(self.full_representation_grid.num_wires):
-            wire = self.full_representation_grid.wire(i)
+            wire_name = str(self.active_register[i].tolist()[0])
+            padding = max(padding, len(wire_name))
+            wire_names.append(wire_name)
 
-            rendered_string += "{:2d}: {}".format(
-                self.active_register[i].tolist()[0], 2 * self.charset.WIRE
+        for i in range(self.full_representation_grid.num_wires):
+            # format wire name nicely
+            wire = self.full_representation_grid.wire(i)
+            s = " {:>" + str(padding) + "}: {}"
+
+            rendered_string += s.format(
+                wire_names[i], 2 * self.charset.WIRE
             )
 
             for s in wire:
