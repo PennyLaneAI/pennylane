@@ -181,7 +181,11 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
 
     for pphh_ in pphh:
         if len(pphh_) != 2:
-            raise ValueError("expected entries of pphh to be of size 2; got {} of length {}".format(pphh_, len(pphh_)))
+            raise ValueError(
+                "expected entries of pphh to be of size 2; got {} of length {}".format(
+                    pphh_, len(pphh_)
+                )
+            )
 
     ###############
 

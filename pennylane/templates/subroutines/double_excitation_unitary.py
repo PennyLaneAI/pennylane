@@ -488,11 +488,15 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     wires2 = Wires(wires2)
 
     if len(wires1) < 2:
-        raise ValueError("expected at least two wires representing the occupied orbitals; "
-                         "got {}".format(len(wires1)))
+        raise ValueError(
+            "expected at least two wires representing the occupied orbitals; "
+            "got {}".format(len(wires1))
+        )
     if len(wires2) < 2:
-        raise ValueError("expected at least two wires representing the unoccupied orbitals; "
-                         "got {}".format(len(wires2)))
+        raise ValueError(
+            "expected at least two wires representing the unoccupied orbitals; "
+            "got {}".format(len(wires2))
+        )
 
     expected_shape = ()
     check_shape(
