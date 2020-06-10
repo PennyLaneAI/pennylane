@@ -70,37 +70,9 @@ U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 
 test_hamiltonians = [
-    [np.array([[2.5, -0.5], [-0.5, 2.5]]), ([2.5, -0.5], [Identity(wires=[0]), PauliX(wires=[0])])],
-    [
-        np.array(np.diag([0, 0, 0, 1])),
-        (
-            [0.25, -0.25, -0.25, 0.25],
-            [
-                Tensor(Identity(wires=[0]), Identity(wires=[1])),
-                Tensor(Identity(wires=[0]), PauliZ(wires=[1])),
-                Tensor(PauliZ(wires=[0]), Identity(wires=[1])),
-                Tensor(PauliZ(wires=[0]), PauliZ(wires=[1])),
-            ],
-        ),
-    ],
-    [
-        np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
-        (
-            [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5],
-            [
-                Tensor(Identity(wires=[0]), Identity(wires=[1])),
-                Tensor(Identity(wires=[0]), PauliX(wires=[1])),
-                Tensor(Identity(wires=[0]), PauliY(wires=[1])),
-                Tensor(Identity(wires=[0]), PauliZ(wires=[1])),
-                Tensor(PauliX(wires=[0]), Identity(wires=[1])),
-                Tensor(PauliX(wires=[0]), PauliX(wires=[1])),
-                Tensor(PauliX(wires=[0]), PauliZ(wires=[1])),
-                Tensor(PauliY(wires=[0]), PauliY(wires=[1])),
-                Tensor(PauliZ(wires=[0]), PauliX(wires=[1])),
-                Tensor(PauliZ(wires=[0]), PauliY(wires=[1])),
-            ],
-        ),
-    ],
+    np.array([[2.5, -0.5], [-0.5, 2.5]]),
+    np.array(np.diag([0, 0, 0, 1])),
+    np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
 ]
 
 
@@ -110,7 +82,9 @@ class TestDecomposition:
     def test_wrong_dimension(self):
         with pytest.raises(
             ValueError,
-            match=re.escape("Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"),
+            match=re.escape(
+                "Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"
+            ),
         ):
             pu.decompose_hamiltonian(np.ones((3, 3)))
 
@@ -118,39 +92,41 @@ class TestDecomposition:
         with pytest.raises(ValueError, match="The Hamiltonian is not Hermitian"):
             pu.decompose_hamiltonian(np.array([[1, 2], [3, 4]]))
 
-    @pytest.mark.parametrize("H", test_hamiltonians)
-    def test_decomposition(self, H):
+    def test_hide_identity_true(self):
+        """Tests that there are no Identity observables in the tensor products
+        when hide_identity=True"""
+        H = np.array(np.diag([0, 0, 0, 1]))
+        coeff, obs_list = pu.decompose_hamiltonian(H, hide_identity=True)
+        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+
+        for tensor in tensors:
+            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
+            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
+            assert all_identities or no_identities
+
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_observable_types(self, hamiltonian):
+        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
+
+        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
+        assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
+
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_result_length(self, hamiltonian):
+        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
+        n = int(np.log2(len(hamiltonian)))
+
+        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
+        assert all(len(tensor.obs) == n for tensor in tensors)
+
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_decomposition(self, hamiltonian):
         """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        test, expected = H
-        decomposed = pu.decompose_hamiltonian(test)
+        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
 
-        decomposed_coeff, decomposed_obs = decomposed
-        expected_coeff, expected_obs = expected
-
-        assert len(decomposed_obs) == len(expected_obs)
-        assert len(decomposed_coeff) == len(expected_coeff)
-
-        assert np.allclose(decomposed_coeff, expected_coeff)
-
-        n_terms = len(decomposed_obs)
-
-        linear_comb = np.zeros(test.shape, dtype=np.complex128)
-        for term in range(n_terms):
-            assert type(decomposed_obs[term]) == type(expected_obs[term])
-
-            if isinstance(decomposed_obs[term], Tensor):
-                obs = zip(decomposed_obs[term].obs, expected_obs[term].obs)
-                assert all(np.allclose(o[0].matrix, o[1].matrix) for o in obs)
-
-                linear_comb += decomposed_coeff[term] * functools.reduce(
-                    np.kron, [o.matrix for o in decomposed_obs[term].obs]
-                )
-            else:
-                assert np.allclose(decomposed_obs[term].matrix, expected_obs[term].matrix)
-                linear_comb += decomposed_coeff[term] * decomposed_obs[term].matrix
-
-        assert np.allclose(test, linear_comb)
+        linear_comb = sum([decomposed_coeff[i] * o.matrix for i, o in enumerate(decomposed_obs)])
+        assert np.allclose(hamiltonian, linear_comb)
 
 
 class TestFlatten:
