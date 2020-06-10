@@ -12,7 +12,7 @@ sphinx-automodapi
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
 tensorflow==2.0.1
-tensornetwork==0.3
+tensornetwork==0.3.1
 toml
 torch==1.3.0+cpu
 torchvision==0.4.1+cpu
