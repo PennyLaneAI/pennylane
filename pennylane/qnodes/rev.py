@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Reversible QNode.
+ReversibleQNode class.
 """
 from copy import copy
 from functools import reduce
@@ -45,10 +45,13 @@ class ReversibleQNode(QubitQNode):
     At this stage, the state of the simulator is proportional to
     :math:`\frac{\partial}{\partial\theta}\vert\psi\rangle`.
     Some further post-processing of this gives the derivative
-    :math:`\frac{\partial}{\partial\theta} \langle \hat{O} \rangle for any observable O.
+    :math:`\frac{\partial}{\partial\theta} \langle \hat{O} \rangle` for any observable O.
 
     The reversible approach is similar to backpropagation, but trades off extra computation for
-    enhanced memory efficiency. Compared to the parameter-shift rule, the reversible method can
+    enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
+    a forward pass, the reversible method only caches the final pre-measurement state.
+    
+    Compared to the parameter-shift rule, the reversible method can
     be faster or slower, depending on the density and location of parametrized gates in a circuit
     (circuits with higher density of parametrized gates near the end of the circuit will see a
     benefit).
