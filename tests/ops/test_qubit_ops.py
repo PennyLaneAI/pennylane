@@ -337,15 +337,15 @@ class TestOperations:
         assert len(res) == 3
 
         assert res[0].name == "PhaseShift"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 2
         
         assert res[1].name == "RX"
-        assert res[1].wires == [0]
+        assert res[1].wires == qml.wires.Wires([0])
         assert res[1].params[0] == np.pi
         
         assert res[2].name == "PhaseShift"
-        assert res[2].wires == [0]
+        assert res[2].wires == qml.wires.Wires([0])
         assert res[2].params[0] == np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
@@ -359,15 +359,15 @@ class TestOperations:
         assert len(res) == 3
 
         assert res[0].name == "PhaseShift"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 2
         
         assert res[1].name == "RY"
-        assert res[1].wires == [0]
+        assert res[1].wires == qml.wires.Wires([0])
         assert res[1].params[0] == np.pi
         
         assert res[2].name == "PhaseShift"
-        assert res[2].wires == [0]
+        assert res[2].wires == qml.wires.Wires([0])
         assert res[2].params[0] == np.pi / 2
         
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
@@ -381,7 +381,7 @@ class TestOperations:
         assert len(res) == 1
 
         assert res[0].name == "PhaseShift"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi
         
         decomposed_matrix = res[0].matrix
@@ -395,7 +395,7 @@ class TestOperations:
         assert len(res) == 1
 
         assert res[0].name == "PhaseShift"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 2
         
         decomposed_matrix = res[0].matrix
@@ -409,7 +409,7 @@ class TestOperations:
         assert len(res) == 1
 
         assert res[0].name == "PhaseShift"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 4
         
         decomposed_matrix = res[0].matrix
@@ -423,15 +423,15 @@ class TestOperations:
         assert len(res) == 3
 
         assert res[0].name == "PhaseShift"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 2
 
         assert res[1].name == "RX"
-        assert res[1].wires == [0]
+        assert res[1].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 2
         
         assert res[2].name == "PhaseShift"
-        assert res[2].wires == [0]
+        assert res[2].wires == qml.wires.Wires([0])
         assert res[0].params[0] == np.pi / 2
         
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
@@ -446,7 +446,7 @@ class TestOperations:
         assert len(res) == 1
 
         assert res[0].name == "RZ"
-        assert res[0].wires == [0]
+        assert res[0].wires == qml.wires.Wires([0])
         assert res[0].params[0] == 0.3
         
         decomposed_matrix = res[0].matrix
