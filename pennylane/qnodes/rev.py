@@ -26,7 +26,44 @@ ABC_ARRAY = np.array(list(ABC))
 
 
 class ReversibleQNode(QubitQNode):
-    """Quantum node for reversible analytic differentiation method."""
+    """Quantum node for reversible analytic differentiation method.
+
+    This QNode enables a specific kind of differentiation method unique to simulators.
+
+    The ReversibleQNode computes the analytic derivative of the circuit by using
+    the following strategy:
+
+    Assume a circuit has a gate :math:`G(\theta)` that we want to differentiate.
+    Without loss of generality, we can write the circuit in the form three unitaries: :math:`UGV`.
+    Starting from the initial state :math:`\vert 0\rangle`, the quantum state is evolved up to the
+    "pre-measurement" state :math:`\vert\psi\rangle=UGV\vert 0\rangle`, which is saved
+    (this can be reused for each variable being differentiated).
+
+    We then apply the unitary :math:`V^{-1}` to evolve this state backwards in time
+    until just after the gate :math:`G` (hence the name "reversible").
+    The generator of :math:`G` is then applied as a gate, and we evolve forward using :math:`V` again.
+    At this stage, the state of the simulator is proportional to
+    :math:`\frac{\partial}{\partial\theta}\vert\psi\rangle`.
+    Some further post-processing of this gives the derivative
+    :math:`\frac{\partial}{\partial\theta} \langle \hat{O} \rangle for any observable O.
+
+    The reversible approach is similar to backpropagation, but trades off extra computation for
+    enhanced memory efficiency. Compared to the parameter-shift rule, the reversible method can
+    be faster or slower, depending on the density and location of parametrized gates in a circuit
+    (circuits with higher density of parametrized gates near the end of the circuit will see a
+    benefit).
+
+    Args:
+        func (callable): The *quantum function* of the QNode.
+            A Python function containing :class:`~.operation.Operation` constructor calls,
+            and returning a tuple of measured :class:`~.operation.Observable` instances.
+        device (~pennylane._device.Device): computational device to execute the function on
+
+    Keyword Args:
+        mutable (bool): whether the QNode is mutable or not
+        use_native_type (bool): If True, return the result in whatever type the device uses
+            internally, otherwise convert it into array[float]. Default: True.
+    """
 
     def __init__(self, func, device, mutable=True, **kwargs):
         super().__init__(func, device, mutable=mutable, **kwargs)

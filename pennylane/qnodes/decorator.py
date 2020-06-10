@@ -204,8 +204,10 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
               by the device; a separate ``interface`` argument should not be passed.
 
             * ``"reversible"``: Uses a reversible method for computing the gradient.
-              This method performs more operations that ``"backprop"``, but at a
-              significantly lower memory usage.
+              This method is similar to ``"backprop"``, but trades off increased
+              runtime with significantly lower memory usage. Compared to the
+              parameter-shift rule, the reversible method can be faster or slower,
+              depending on the density and location of parametrized gates in a circuit.
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
@@ -284,10 +286,12 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine learning framework supported
               by the device; a separate ``interface`` argument should not be passed.
-              
+
             * ``"reversible"``: Uses a reversible method for computing the gradient.
-              This method performs more operations that ``"backprop"``, but at a
-              significantly lower memory usage.
+              This method is similar to ``"backprop"``, but trades off increased
+              runtime with significantly lower memory usage. Compared to the
+              parameter-shift rule, the reversible method can be faster or slower,
+              depending on the density and location of parametrized gates in a circuit.
               Only allowed on (simulator) devices with the "reversible" capability,
               for example :class:`default.qubit <~.DefaultQubit>`.
 
