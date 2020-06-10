@@ -103,6 +103,10 @@ def _get_qnode_class(device, interface, diff_method):
         )
 
     if diff_method == "reversible":
+        if "reversible" not in device._capabilities:
+            raise ValueError(
+                "Reversible differentiation method not supported on {}".format(device)
+            )
         return ReversibleQNode
 
     if diff_method in ALLOWED_DIFF_METHODS:

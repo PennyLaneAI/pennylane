@@ -152,6 +152,18 @@ def test_reversible_diff_method():
 
     assert isinstance(circuit, ReversibleQNode)
 
+def test_reversible_diff_method_exception():
+    """Test that an exception is raised if the reversible diff_method
+    is specified for a device which does not have reversible capability."""
+    dev = qml.device('default.qubit', wires=1)
+    dev._capabilities["reversible"] = False
+
+    with pytest.raises(ValueError, match=""):
+        @qnode(dev, diff_method="Reversible differentiation method not supported")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
 def test_tf_interface(skip_if_no_tf_support):
     """Test tf interface conversion"""
     dev = qml.device('default.qubit', wires=1)
