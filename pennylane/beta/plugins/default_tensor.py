@@ -164,6 +164,7 @@ class DefaultTensor(Device):
         name = "{}{}".format(name, tuple(w for w in wires))
         if isinstance(A, tn.Node):
             A.set_name(name)
+            A.backend = self.backend
             node = A
         else:
             node = tn.Node(A, name=name, backend=self.backend)
@@ -236,7 +237,9 @@ class DefaultTensor(Device):
                             # final wire; no need to split further
                             node = self._add_node(DV, wires=[wire], name=name)
                         nodes.append(node)
-            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(nodes, canonicalize=False)
+            self.mps = tn.matrixproductstates.finite_mps.FiniteMPS([node.tensor for node in nodes],
+                                                                   canonicalize=False,
+                                                                   backend=self.backend)
             self._free_wire_edges = [node[1] for node in self.mps.nodes]
 
     def _get_operator_matrix(self, operation, par):
