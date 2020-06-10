@@ -123,13 +123,13 @@ class Wires(Sequence):
         """
         return list(self.wire_tuple)
 
-    def at_index(self, idx):
+    def get_label(self, idx):
         """Returns the wire representation at the given position in the wires object.
 
         >>> w = Wires([0, 'q1', 16])
-        >>> w.at_index(1)
+        >>> w.get_label(1)
         'q1'
-        >>> w.at_index(2)
+        >>> w.get_label(2)
         16
 
         Args:
