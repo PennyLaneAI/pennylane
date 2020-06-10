@@ -69,9 +69,14 @@ class ReversibleQNode(QubitQNode):
     """
 
     def __init__(self, func, device, mutable=True, **kwargs):
-        if "reversible" not in device._capabilities or not device._capabilities["reversible"]:
+        if (
+            "reversible" not in device._capabilities
+            or not device._capabilities["reversible"]
+        ):
             raise ValueError(
-                "Reversible differentiation method not supported on {}".format(device.short_name)
+                "Reversible differentiation method not supported on {}".format(
+                    device.short_name
+                )
             )
         super().__init__(func, device, mutable=mutable, **kwargs)
 
@@ -122,14 +127,18 @@ class ReversibleQNode(QubitQNode):
                     "reversible gradient method.".format(op.name)
                 )
             generator = generator(wires)
-            diff_circuit = [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
+            diff_circuit = (
+                [copy(op).inv() for op in between_ops[::-1]] + [generator] + between_ops
+            )
 
             # set the simulator state to be the pre-measurement state
             self.device._state = state
 
             # evolve the pre-measurement state under this new circuit
             self.device.apply(diff_circuit)
-            dstate = self.device._pre_rotated_state  # TODO: this will only work for QubitDevices
+            dstate = (
+                self.device._pre_rotated_state
+            )  # TODO: this will only work for QubitDevices
 
             # compute matrix element <d(state)|O|state> for each observable O
             matrix_elems = self.device._asarray(
@@ -166,6 +175,8 @@ class ReversibleQNode(QubitQNode):
         )
 
         einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
-            vec1_indices=vec1_indices, obs_indices=obs_indices, vec2_indices=vec2_indices,
+            vec1_indices=vec1_indices,
+            obs_indices=obs_indices,
+            vec2_indices=vec2_indices,
         )
         return self.device._einsum(einsum_str, self.device._conj(vec1), mat, vec2)
