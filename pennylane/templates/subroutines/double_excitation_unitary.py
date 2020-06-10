@@ -490,7 +490,7 @@ def DoubleExcitationUnitary(weight, wires_occupied=None, wires_unoccupied=None):
         raise ValueError("expected at least two wires representing the occupied orbitals; "
                          "got {}".format(len(wires_occupied)))
     if len(wires_unoccupied) < 2:
-        raise ValueError("expected at least two wires representing the occupied orbitals; "
+        raise ValueError("expected at least two wires representing the unoccupied orbitals; "
                          "got {}".format(len(wires_unoccupied)))
 
     expected_shape = ()
@@ -503,15 +503,15 @@ def DoubleExcitationUnitary(weight, wires_occupied=None, wires_unoccupied=None):
     ###############
 
     s = wires_occupied[0]
-    r = wires_unoccupied[-1]
-    q = wires_occupied[0]
+    r = wires_occupied[-1]
+    q = wires_unoccupied[0]
     p = wires_unoccupied[-1]
 
-    # Sequence of the wires entering the CNOTs between wires 's' and 'p'
-    cnots_occ = [wires_occupied.subset([l, l + 1]) for l in range(0, len(wires_occupied) - 1, 2)]
-    cnots_unocc = [wires_unoccupied.subset([l, l + 1]) for l in range(0, len(wires_unoccupied) - 1, 2)]
+    # Sequence of the wires entering the CNOTs
+    cnots_occ = [wires_occupied.subset([l, l + 1]) for l in range(len(wires_occupied)-1)]
+    cnots_unocc = [wires_unoccupied.subset([l, l + 1]) for l in range(len(wires_unoccupied)-1)]
 
-    set_cnot_wires = cnots_occ + cnots_unocc
+    set_cnot_wires = cnots_occ + [Wires([r, q])] + cnots_unocc
 
     # Apply the first layer
     _layer1(weight, s, r, q, p, set_cnot_wires)

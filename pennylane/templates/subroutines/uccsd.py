@@ -77,12 +77,14 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             excitation operator.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
-        ph (Sequence[list]): Sequence of two-element lists containing the indices ``r, p`` that
-            define the 1particle-1hole (ph) configuration :math:`\vert \mathrm{ph} \rangle =
+        ph (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]`` of the
+            1particle-1hole (ph) configuration :math:`\vert \mathrm{ph} \rangle =
             \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
-            where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state.
-        pphh (Sequence[list]): Sequence of four-elements lists containing the indices
-            ``s, r, q, p`` that define the 2particle-2hole configuration (pphh)
+            where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state. The first
+            entry is considered the wire of the particle, and the second entry the wire of the hole, while all
+            wires in between define the qubits "between" particle and hole in the representation.
+        pphh (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that specify the indices
+            ``[s, ...,r]`` and ``[q,..., p]`` defining the 2particle-2hole configurations (pphh)
             :math:`\vert \mathrm{pphh} \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
             \hat{c}_s \vert \mathrm{HF} \rangle`.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
@@ -177,15 +179,20 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
         ),
     )
 
+    for pphh_ in pphh:
+        if len(pphh_) != 2:
+            raise ValueError("expected entries of pphh to be of size 2; got {} of length {}".format(pphh_, len(pphh_)))
+
     ###############
 
     qml.BasisState(np.flip(init_state), wires=wires)
 
+    # turn wire arguments into Wires objects
     ph = [Wires(w) for w in ph]
-    pphh = [Wires(w) for w in pphh]
+    pphh = [[Wires(w1), Wires(w2)] for w1, w2 in pphh]
 
-    for d, i_pphh in enumerate(pphh):
-        DoubleExcitationUnitary(weights[len(ph) + d], wires=i_pphh)
+    for d, (w1, w2) in enumerate(pphh):
+        DoubleExcitationUnitary(weights[len(ph) + d], wires_occupied=w1, wires_unoccupied=w2)
 
     for s, i_ph in enumerate(ph):
         SingleExcitationUnitary(weights[s], wires=i_ph)

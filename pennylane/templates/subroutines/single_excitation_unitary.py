@@ -133,7 +133,7 @@ def SingleExcitationUnitary(weight, wires=None):
     p = wires[-1]
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [wires.subset([l, l + 1]) for l in range(0, len(wires) - 1, 2)]  #TODO: inconsistent to docstring
+    set_cnot_wires = [wires.subset([l, l + 1]) for l in range(len(wires) - 1)]
 
     # ------------------------------------------------------------------
     # Apply the first layer
