@@ -398,7 +398,6 @@ class Operator(abc.ABC):
         """Operator name and some information."""
         return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires.tolist())
 
-
     def __repr__(self):
         """Constructor-call-like representation."""
         # FIXME using self.parameters here instead of self.params is dangerous, it assumes the params can be evaluated

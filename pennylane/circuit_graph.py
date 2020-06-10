@@ -629,7 +629,11 @@ class CircuitGraph:
             )
 
         drawer = CircuitDrawer(
-            grid, obs, self.register, charset=CHARSETS[charset], show_variable_names=show_variable_names
+            grid,
+            obs,
+            self.register,
+            charset=CHARSETS[charset],
+            show_variable_names=show_variable_names,
         )
 
         return drawer.draw()

@@ -498,7 +498,9 @@ class QubitDevice(Device):
 
         if self.analytic:
             # exact expectation value
-            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)  # TODO: !!!EIGVALS NEED TO BE SORTED HERE
+            eigvals = self._asarray(
+                observable.eigvals, dtype=self.R_DTYPE
+            )  # TODO: !!!EIGVALS NEED TO BE SORTED HERE
             prob = self.probability(subsystems=subsystems)
             return self._dot(eigvals, prob)
 

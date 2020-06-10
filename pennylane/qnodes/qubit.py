@@ -418,7 +418,9 @@ class QubitQNode(JacobianQNode):
                 # diagonal approximation
                 if isinstance(self.device, qml.QubitDevice):
                     circuit_graph = qml.CircuitGraph(
-                        circuit["queue"] + circuit["observable"], self.variable_deps, self.device.register
+                        circuit["queue"] + circuit["observable"],
+                        self.variable_deps,
+                        self.device.register,
                     )
                     variances = self.device.execute(circuit_graph)
                 else:

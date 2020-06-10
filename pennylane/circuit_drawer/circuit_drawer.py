@@ -153,9 +153,9 @@ class CircuitDrawer:
 
             for subsystem, operator in enumerate(grid.layer(i)):
                 wire = self.active_register[subsystem]
-                representation_layer[subsystem] = self.representation_resolver.element_representation(
-                    operator, wire
-                )
+                representation_layer[
+                    subsystem
+                ] = self.representation_resolver.element_representation(operator, wire)
 
             representation_grid.append_layer(representation_layer)
 

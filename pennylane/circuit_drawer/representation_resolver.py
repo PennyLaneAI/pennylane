@@ -377,9 +377,7 @@ class RepresentationResolver:
 
         elif base_name in {"BasisState", "FockStateVector"}:
             representation = (
-                self.charset.PIPE
-                + str(op.params[0][op.wires.index(wire)])
-                + self.charset.RANGLE
+                self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
             )
 
         # Operations that only have matrix arguments
