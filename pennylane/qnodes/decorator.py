@@ -200,8 +200,14 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
             * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
-              QNode can only be used with the machine learning framework supported
+              QNode can only be used with the machine-learning framework supported
               by the device; a separate ``interface`` argument should not be passed.
+
+            * ``"reversible"``: Uses a reversible method for computing the gradient.
+              This method performs more operations that ``"backprop"``, but at a
+              significantly lower memory usage.
+              Only allowed on (simulator) devices with the "reversible" capability,
+              for example :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient rules.
@@ -278,6 +284,12 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine learning framework supported
               by the device; a separate ``interface`` argument should not be passed.
+              
+            * ``"reversible"``: Uses a reversible method for computing the gradient.
+              This method performs more operations that ``"backprop"``, but at a
+              significantly lower memory usage.
+              Only allowed on (simulator) devices with the "reversible" capability,
+              for example :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient rules.
