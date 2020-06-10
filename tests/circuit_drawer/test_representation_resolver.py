@@ -21,6 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.circuit_drawer import RepresentationResolver
 from pennylane.variable import Variable
+from pennylane.wires import Wires
 
 
 @pytest.fixture
@@ -265,7 +266,7 @@ class TestRepresentationResolver:
         self, unicode_representation_resolver, op, wire, target
     ):
         """Test that an Operator instance is properly resolved."""
-        assert unicode_representation_resolver.operator_representation(op, wire) == target
+        assert unicode_representation_resolver.operator_representation(op, Wires(wire)) == target
 
     @pytest.mark.parametrize(
         "op,wire,target",
@@ -399,7 +400,7 @@ class TestRepresentationResolver:
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):
         """Test that an Operator instance is properly resolved."""
-        assert ascii_representation_resolver.operator_representation(op, wire) == target
+        assert ascii_representation_resolver.operator_representation(op, Wires(wire)) == target
 
     @pytest.mark.parametrize(
         "obs,wire,target",
@@ -546,14 +547,14 @@ class TestRepresentationResolver:
         self, unicode_representation_resolver, obs, wire, target
     ):
         """Test that an Observable instance with return type is properly resolved."""
-        assert unicode_representation_resolver.output_representation(obs, wire) == target
+        assert unicode_representation_resolver.output_representation(obs, Wires(wire)) == target
 
     def test_fallback_output_representation_unicode(self, unicode_representation_resolver):
         """Test that an Observable instance with return type is properly resolved."""
         obs = qml.PauliZ(0)
         obs.return_type = "TestReturnType"
 
-        assert unicode_representation_resolver.output_representation(obs, 0) == "TestReturnType[Z]"
+        assert unicode_representation_resolver.output_representation(obs, Wires(0)) == "TestReturnType[Z]"
 
     @pytest.mark.parametrize(
         "obs,wire,target",
@@ -698,15 +699,15 @@ class TestRepresentationResolver:
     )
     def test_output_representation_ascii(self, ascii_representation_resolver, obs, wire, target):
         """Test that an Observable instance with return type is properly resolved."""
-        assert ascii_representation_resolver.output_representation(obs, wire) == target
+        assert ascii_representation_resolver.output_representation(obs, Wires(wire)) == target
 
     def test_element_representation_none(self, unicode_representation_resolver):
         """Test that element_representation properly handles None."""
-        assert unicode_representation_resolver.element_representation(None, 0) == ""
+        assert unicode_representation_resolver.element_representation(None, Wires(0)) == ""
 
     def test_element_representation_str(self, unicode_representation_resolver):
         """Test that element_representation properly handles strings."""
-        assert unicode_representation_resolver.element_representation("Test", 0) == "Test"
+        assert unicode_representation_resolver.element_representation("Test", Wires(0)) == "Test"
 
     def test_element_representation_calls_output(self, unicode_representation_resolver):
         """Test that element_representation calls output_representation for returned observables."""
@@ -716,9 +717,9 @@ class TestRepresentationResolver:
         obs = qml.sample(qml.PauliX(3))
         wire = 3
 
-        unicode_representation_resolver.element_representation(obs, wire)
+        unicode_representation_resolver.element_representation(obs, Wires(wire))
 
-        assert unicode_representation_resolver.output_representation.call_args[0] == (obs, wire)
+        assert unicode_representation_resolver.output_representation.call_args[0] == (obs, Wires(wire))
 
     def test_element_representation_calls_operator(self, unicode_representation_resolver):
         """Test that element_representation calls operator_representation for all operators that are not returned."""
@@ -728,6 +729,6 @@ class TestRepresentationResolver:
         op = qml.PauliX(3)
         wire = 3
 
-        unicode_representation_resolver.element_representation(op, wire)
+        unicode_representation_resolver.element_representation(op, Wires(wire))
 
-        assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
+        assert unicode_representation_resolver.operator_representation.call_args[0] == (op, Wires(wire))
