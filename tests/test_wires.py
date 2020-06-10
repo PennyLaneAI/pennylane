@@ -169,13 +169,13 @@ class TestWires:
         assert list_ == [4, 0, 1]
 
     def test_at_index_method(self):
-        """Tests the at_index() method."""
+        """Tests the get_label() method."""
 
         wires = Wires([0, 'q1', 16])
 
-        assert wires.at_index(0) == 0
-        assert wires.at_index(1) == 'q1'
-        assert wires.at_index(2) == 16
+        assert wires.get_label(0) == 0
+        assert wires.get_label(1) == 'q1'
+        assert wires.get_label(2) == 16
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])

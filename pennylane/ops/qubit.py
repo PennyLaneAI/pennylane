@@ -73,6 +73,15 @@ class Hadamard(Observable, Operation):
         """
         return [RY(-np.pi / 4, wires=self.wires)]
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            PhaseShift(np.pi / 2, wires=wires),
+            RX(np.pi / 2, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
+        ]
+        return decomp_ops
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -115,6 +124,15 @@ class PauliX(Observable, Operation):
             computational basis.
         """
         return [Hadamard(wires=self.wires)]
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            PhaseShift(np.pi / 2, wires=wires),
+            RX(np.pi, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
+        ]
+        return decomp_ops
 
 
 class PauliY(Observable, Operation):
@@ -161,6 +179,15 @@ class PauliY(Observable, Operation):
         """
         return [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [
+            PhaseShift(np.pi / 2, wires=wires),
+            RY(np.pi, wires=wires),
+            PhaseShift(np.pi / 2, wires=wires),
+        ]
+        return decomp_ops
+
 
 class PauliZ(Observable, DiagonalOperation):
     r"""PauliZ(wires)
@@ -193,6 +220,11 @@ class PauliZ(Observable, DiagonalOperation):
     def diagonalizing_gates(self):
         return []
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [PhaseShift(np.pi, wires=wires)]
+        return decomp_ops
+
 
 class S(DiagonalOperation):
     r"""S(wires)
@@ -223,6 +255,11 @@ class S(DiagonalOperation):
     def _eigvals(cls, *params):
         return np.array([1, 1j])
 
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [PhaseShift(np.pi / 2, wires=wires)]
+        return decomp_ops
+
 
 class T(DiagonalOperation):
     r"""T(wires)
@@ -252,6 +289,11 @@ class T(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [PhaseShift(np.pi / 4, wires=wires)]
+        return decomp_ops
 
 
 class CNOT(Operation):
@@ -589,6 +631,11 @@ class PhaseShift(DiagonalOperation):
     def _eigvals(cls, *params):
         phi = params[0]
         return np.array([1, cmath.exp(1j * phi)])
+
+    @staticmethod
+    def decomposition(phi, wires):
+        decomp_ops = [RZ(phi, wires=wires)]
+        return decomp_ops
 
 
 class Rot(Operation):
