@@ -125,15 +125,15 @@ class DefaultTensorTF(DefaultTensor):
     _operation_map = copy.copy(DefaultTensor._operation_map)
     _operation_map.update(
         {
-            "PhaseShift": ops.Rphi,
-            "RX": ops.Rotx,
-            "RY": ops.Roty,
-            "RZ": ops.Rotz,
-            "Rot": ops.Rot3,
-            "CRX": ops.CRotx,
-            "CRY": ops.CRoty,
-            "CRZ": ops.CRotz,
-            "CRot": ops.CRot3,
+            "PhaseShift": ops.PhaseShift,
+            "RX": ops.RX,
+            "RY": ops.RY,
+            "RZ": ops.RZ,
+            "Rot": ops.Rot,
+            "CRX": ops.CRX,
+            "CRY": ops.CRY,
+            "CRZ": ops.CRZ,
+            "CRot": ops.CRot,
         }
     )
 
