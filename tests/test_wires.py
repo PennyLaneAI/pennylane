@@ -168,7 +168,7 @@ class TestWires:
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
 
-    def test_at_index_method(self):
+    def test_get_label_method(self):
         """Tests the get_label() method."""
 
         wires = Wires([0, 'q1', 16])
