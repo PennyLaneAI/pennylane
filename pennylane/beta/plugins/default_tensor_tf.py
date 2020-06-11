@@ -29,7 +29,7 @@ except ImportError as e:
 
 from pennylane.variable import Variable
 from pennylane.beta.plugins.default_tensor import DefaultTensor
-from pennylane.beta.plugins import tf_ops as ops
+from pennylane.plugins import tf_ops as ops
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -125,14 +125,14 @@ class DefaultTensorTF(DefaultTensor):
     _operation_map = copy.copy(DefaultTensor._operation_map)
     _operation_map.update(
         {
-            "PhaseShift": ops.PhaseShift,
+            "PhaseShift": lambda phi: tf.linalg.diag(ops.PhaseShift(phi)),
             "RX": ops.RX,
             "RY": ops.RY,
-            "RZ": ops.RZ,
+            "RZ": lambda theta: tf.linalg.diag(ops.RZ(theta)),
             "Rot": ops.Rot,
             "CRX": ops.CRX,
             "CRY": ops.CRY,
-            "CRZ": ops.CRZ,
+            "CRZ": lambda theta: tf.linalg.diag(ops.CRZ(theta)),
             "CRot": ops.CRot,
         }
     )
