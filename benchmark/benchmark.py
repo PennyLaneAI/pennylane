@@ -126,6 +126,13 @@ def cli():
         help="comma-separated list of devices to run the benchmark on (default: %(default)s)",
     )
     parser.add_argument(
+        "-q",
+        "--qnode",
+        type=lambda x: x.split(","),
+        default="QNode",
+        help="comma-separated list of QNode subclasses to run the benchmark on (default: %(default)s)",
+    )
+    parser.add_argument(
         "-w",
         "--wires",
         type=int,
@@ -177,19 +184,20 @@ def cli():
         return
 
     for d in args.device:
-        dev = qml.device(d, wires=args.wires)
-        bm = mod.Benchmark(dev, args.verbose)
-        bm.setup()
-        text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{d}", "magenta")
-        if args.cmd == "time":
-            print("Timing:", text)
-            timing(bm.benchmark)
-        elif args.cmd == "profile":
-            print("Profiling:", text)
-            profile(bm.benchmark, identifier=short_hash + "_" + d)
-        else:
-            raise ValueError("Unknown command.")
-        bm.teardown()
+        for q in args.qnode:
+            dev = qml.device(d, wires=args.wires)
+            bm = mod.Benchmark(dev, verbose=args.verbose, qnode_type=q)
+            bm.setup()
+            text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{d}, {q}", "magenta")
+            if args.cmd == "time":
+                print("Timing:", text)
+                timing(bm.benchmark)
+            elif args.cmd == "profile":
+                print("Profiling:", text)
+                profile(bm.benchmark, identifier=short_hash + "_" + d)
+            else:
+                raise ValueError("Unknown command.")
+            bm.teardown()
 
 
 if __name__ == "__main__":
