@@ -136,7 +136,7 @@ class Wires(Sequence):
             int: index of wire to return
 
         Returns:
-            Number or str: representation of the wire
+            Number or str: label of the wire
         """
         return self.wire_tuple[idx]
 
