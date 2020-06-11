@@ -84,6 +84,12 @@
   to calculate losses and costs on circuits with trainable parameters.
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
+* The ``default.tensor`` plugin has been significantly upgraded. It now allows two different
+  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a 
+  exact factorized representation of quantum states, while the latter uses a matrix product state 
+  representation.
+  ([#572](https://github.com/XanaduAI/pennylane/pull/572))
+  ([#599](https://github.com/XanaduAI/pennylane/pull/599))
 
 <h3>Improvements</h3>
 
@@ -148,7 +154,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)

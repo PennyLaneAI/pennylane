@@ -75,26 +75,6 @@ def qubit_device_3_wires():
 
 
 @pytest.fixture(scope="session")
-def tensornet_device(n_subsystems):
-    return qml.device('default.tensor', wires=n_subsystems)
-
-
-@pytest.fixture(scope="function")
-def tensornet_device_1_wire():
-    return qml.device('default.tensor', wires=1)
-
-
-@pytest.fixture(scope="function")
-def tensornet_device_2_wires():
-    return qml.device('default.tensor', wires=2)
-
-
-@pytest.fixture(scope="function")
-def tensornet_device_3_wires():
-    return qml.device('default.tensor', wires=3)
-
-
-@pytest.fixture(scope="session")
 def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=n_subsystems)
