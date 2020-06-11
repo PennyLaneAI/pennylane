@@ -82,7 +82,7 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
             where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state. The first
             entry is considered the wire of the particle, and the second entry the wire of the hole, while all
-            wires in between define the qubits "between" particle and hole in the representation.
+            wires in-between represent the occupied and virtual orbitals in the interval [r, p].
         pphh (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that specify the indices
             ``[s, ...,r]`` and ``[q,..., p]`` defining the 2particle-2hole configurations (pphh)
             :math:`\vert \mathrm{pphh} \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
