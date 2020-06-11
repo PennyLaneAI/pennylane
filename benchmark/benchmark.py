@@ -169,14 +169,18 @@ def cli():
 
     # execute the command
     if args.cmd == "plot":
-        print("Performance plot: '{}' benchmark on {}".format(mod.Benchmark.name, args.device))
-        bms = [mod.Benchmark(qml.device(d, wires=args.wires), args.verbose) for d in args.device]
+        print("Performance plot: '{}' benchmark on {}, {}".format(mod.Benchmark.name, args.device, args.qnode))
+        bms = [
+            mod.Benchmark(qml.device(d, wires=args.wires), qnode_type=q, verbose=args.verbose)
+            for d in args.device
+            for q in args.qnode
+        ]
         for k in bms:
             k.setup()
         plot(
             title,
             [k.benchmark for k in bms],
-            [args.benchmark + " " + k.device.short_name for k in bms],
+            [f"{args.benchmark} {k.device.short_name} {k.qnode_type}" for k in bms],
             mod.Benchmark.n_vals,
         )
         for k in bms:
@@ -186,7 +190,7 @@ def cli():
     for d in args.device:
         for q in args.qnode:
             dev = qml.device(d, wires=args.wires)
-            bm = mod.Benchmark(dev, verbose=args.verbose, qnode_type=q)
+            bm = mod.Benchmark(dev, qnode_type=q, verbose=args.verbose)
             bm.setup()
             text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{d}, {q}", "magenta")
             if args.cmd == "time":
