@@ -227,6 +227,7 @@ class DefaultTensor(Device):
               wires (Sequence(list[int])): the wires for each factorized component of the state
               names (Sequence[str]): name for each factorized component of the state
         """
+        # pylint: disable=too-many-branches
         if not len(tensors) == len(wires) == len(names):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
@@ -361,7 +362,7 @@ class DefaultTensor(Device):
             elif len(wires) == 2:
                 if abs(wires[1] - wires[0]) == 1:
                     # TODO: set ``max_singular_values`` or ``max_truncation_error``
-                    ret = self.mps.apply_two_site_gate(op_node, *wires)
+                    self.mps.apply_two_site_gate(op_node, *wires)
                     for wire in wires:
                         self._free_wire_edges[wire] = self.mps.nodes[wire][1]
                 else:
