@@ -421,13 +421,15 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires1 (Iterable or Wires): Wires of the qubits representing the first particle-hole pair.
-            The first wire is interpreted as ``s`` and the last wire is interpreted as ``r``. Wires in between
-            represent the particles/holes in between the pair.
-            Must be of minimum length 2.
-        wires2 (Iterable or Wires): Wires of the qubits representing the second particle-hole pair.
-            The first wire is interpreted as ``q`` and the last wire is interpreted as ``p``.
-            Must be of minimum length 2.
+        wires1 (Iterable or Wires): Wires of the qubits representing the subset of occupied orbitals
+            in the interval ``[s, r]``. Accepts an iterable of numbers or strings, or a Wires object,
+            with minimum length 2. The first wire is interpreted as ``s`` and the last wire as ``r``.
+            Wires in between are acted on with CNOT gates to compute the parity of the set of qubits.
+        wires2 (Iterable or Wires): Wires of the qubits representing the subset of virtual orbitals
+            in the interval ``[q, p]``. Accepts an iterable of numbers or strings, or a Wires object.
+            Must be of minimum length 2. The first wire is interpreted as ``q`` and the last wire is
+            interpreted as ``p``. Wires in between are acted on with CNOT gates to compute the parity
+            of the set of qubits.
 
     Raises:
         ValueError: if inputs do not have the correct format
