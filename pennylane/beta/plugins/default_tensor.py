@@ -54,7 +54,7 @@ class DefaultTensor(Device):
     Tensor network simulators can faster or more efficient for certain types of
     circuit structures.
 
-    To use this device, you will need to install TensorNetwork:
+    To use this device, you will need to install TensorNetwork version 0.3:
 
     .. code-block:: bash
 
