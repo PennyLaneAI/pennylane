@@ -124,7 +124,7 @@ class Wires(Sequence):
         return list(self.wire_tuple)
 
     def get_label(self, idx):
-        """Returns the wire representation at the given position in the wires object.
+        """Returns the wire label at the given position in the wires object.
 
         >>> w = Wires([0, 'q1', 16])
         >>> w.get_label(1)
