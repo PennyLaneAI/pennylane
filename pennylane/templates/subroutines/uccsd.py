@@ -77,7 +77,7 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             excitation operator.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
-        ph (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]`` of the
+        ph (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]`` resulting from the
             1particle-1hole (ph) configuration :math:`\vert \mathrm{ph} \rangle =
             \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
             where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state. The first
