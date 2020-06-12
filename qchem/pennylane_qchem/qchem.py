@@ -696,7 +696,7 @@ __all__ = [
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
-    "convert_hamiltonian",
+    "convert_observable",
     "generate_hamiltonian",
     "sd_excitations",
     "hf_state",
