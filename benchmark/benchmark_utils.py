@@ -16,6 +16,8 @@ Benchmarking utilities.
 """
 import abc
 
+from types import ModuleType
+
 import pennylane as qml
 
 
@@ -105,3 +107,12 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd", qnode_type="
             qnode = qml.QNode(qfunc, device)
 
     return qnode
+
+
+def expval(obs):
+    """Returns the expectation value of an observable ``obs``, in a way that is
+    compatible with all versions of PennyLane."""
+    if type(qml.expval) == ModuleType:  # pylint: disable=unidiomatic-typecheck
+        return getattr(obs, qml.expval)
+    else:
+        return qml.expval(obs)

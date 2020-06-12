@@ -33,11 +33,6 @@ if hasattr(qml, "DiagonalQubitUnitary"):
 else:
     CCZ = lambda wires: qml.QubitUnitary(CCZ_matrix, wires=wires)
 
-if type(expval) == ModuleType: # pylint: disable=unidiomatic-typecheck
-    meas_function = lambda w: expval.PauliZ(w)
-else:
-    meas_function = lambda w: expval(qml.PauliZ(w))
-
 def random_iqp_wires(n_wires):
     """Create a random set of IQP wires.
 
@@ -92,7 +87,7 @@ class Benchmark(bu.BaseBenchmark):
             for i in range(self.n_wires):
                 qml.Hadamard(i)
 
-            return meas_function(0)
+            return bu.expval(qml.PauliZ(0))
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True)
         qnode()
