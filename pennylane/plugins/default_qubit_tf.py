@@ -153,6 +153,8 @@ class DefaultQubitTF(DefaultQubit):
     _cast = staticmethod(tf.cast)
     _transpose = staticmethod(tf.transpose)
     _tensordot = staticmethod(tf.tensordot)
+    _conj = staticmethod(tf.math.conj)
+    _imag = staticmethod(tf.math.conj)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
