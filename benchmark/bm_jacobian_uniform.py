@@ -15,7 +15,6 @@
 Benchmark for a computing the jacobian of a QNode, where the parametrized
 gates are uniformly distributed throughout the circuit.
 """
-import numpy as np
 import pennylane as qml
 
 import benchmark_utils as bu
@@ -35,10 +34,12 @@ class Benchmark(bu.BaseBenchmark):
     def setup(self):
         # The global seed was fixed during benchmark construction
         # so this is actually deterministic
-        self.random_angles = np.random.uniform(high = 2 * np.pi, size=self.n_wires)
+        angles = qml.numpy.random.uniform(high = 2 * qml.numpy.pi, size=self.n_wires)
+        angles.requires_grad = True
+        self.random_angles = angles
 
     def benchmark(self, n=10):
-        np.random.seed(143)
+        qml.numpy.random.seed(143)
 
         # n is the number of parametrized layers in the circuit
         if self.verbose:
@@ -46,16 +47,16 @@ class Benchmark(bu.BaseBenchmark):
 
         all_wires = range(self.n_wires)
 
-        def circuit():
+        def circuit(angles):
             """Parametrized circuit."""
             for layer in range(n):
                 qml.broadcast(
-                    qml.RX, pattern="single", wires=all_wires, parameters=self.random_angles
+                    qml.RX, pattern="single", wires=all_wires, parameters=angles
                 )
                 qml.broadcast(qml.CNOT, pattern="double", wires=all_wires)
             return [bu.expval(qml.PauliZ(w)) for w in all_wires]
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True, qnode_type=self.qnode_type)
-        qnode()
+        qnode.jacobian([self.random_angles])
 
         return True
