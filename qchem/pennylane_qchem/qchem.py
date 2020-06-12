@@ -474,7 +474,9 @@ def convert_observable(qubit_observable):
         qubit_observable (QubitOperator): Observable represented as an OpenFermion `QubitOperator`
 
     Returns:
-        (pennylane.Hamiltonian): Pennylane VQE observable
+        (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
+        represents any operator expressed as linear combinations of observables, e.g.,
+        :math:`\sum_{k=0}^{N-1} c_k O_k`.
     """
 
     return Hamiltonian(*_qubit_operator_to_terms(qubit_observable))
