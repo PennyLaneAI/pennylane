@@ -26,7 +26,7 @@ class Benchmark(bu.BaseBenchmark):
     """Jacobian computation benchmark.
 
     Creates a parametrized quantum circuit with a front-weighted
-    distribution of parametrized gates throughout in circuit
+    distribution of parametrized gates in the circuit
     and evaluates its Jacobian.
     """
 
