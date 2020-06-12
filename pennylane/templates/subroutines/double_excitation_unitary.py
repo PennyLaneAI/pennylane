@@ -44,8 +44,7 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -54,7 +53,7 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
     RX(-np.pi / 2, wires=q)
     Hadamard(wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -88,8 +87,7 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -98,7 +96,7 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
     RX(-np.pi / 2, wires=q)
     RX(-np.pi / 2, wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -132,8 +130,7 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -142,7 +139,7 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
     RX(-np.pi / 2, wires=q)
     RX(-np.pi / 2, wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -176,8 +173,7 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -186,7 +182,7 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
     Hadamard(wires=q)
     RX(-np.pi / 2, wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -220,8 +216,7 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -230,7 +225,7 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
     Hadamard(wires=q)
     Hadamard(wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -264,8 +259,7 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -274,7 +268,7 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
     Hadamard(wires=q)
     Hadamard(wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -308,8 +302,7 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -318,7 +311,7 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
     RX(-np.pi / 2, wires=q)
     Hadamard(wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -352,8 +345,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
         r (int): qubit index ``r``
         q (int): qubit index ``q``
         p (int): qubit index ``p``
-        set_cnot_wires (sequence[int]): two-element sequence with the indices of the qubits
-            the CNOT gates act on
+        set_cnot_wires (list[Wires]): list of CNOT wires
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -362,7 +354,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
     Hadamard(wires=q)
     RX(-np.pi / 2, wires=p)
 
-    # Applying CNOTs between wires 's' and 'p'
+    # Applying CNOTs
     for cnot_wires in set_cnot_wires:
         CNOT(wires=cnot_wires)
 
@@ -381,7 +373,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
 
 
 @template
-def DoubleExcitationUnitary(weight, wires=None):
+def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
     fermionic double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
@@ -429,8 +421,15 @@ def DoubleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable or Wires): Wires ``s, r, q, p`` that the template acts on. Must be of length 4.
-            Accepts an iterable of numbers or strings, or a Wires object.
+        wires1 (Iterable or Wires): Wires of the qubits representing the subset of occupied orbitals
+            in the interval ``[s, r]``. Accepts an iterable of numbers or strings, or a Wires object,
+            with minimum length 2. The first wire is interpreted as ``s`` and the last wire as ``r``.
+            Wires in between are acted on with CNOT gates to compute the parity of the set of qubits.
+        wires2 (Iterable or Wires): Wires of the qubits representing the subset of virtual orbitals
+            in the interval ``[q, p]``. Accepts an iterable of numbers or strings, or a Wires object.
+            Must be of minimum length 2. The first wire is interpreted as ``q`` and the last wire is
+            interpreted as ``p``. Wires in between are acted on with CNOT gates to compute the parity
+            of the set of qubits.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -487,10 +486,19 @@ def DoubleExcitationUnitary(weight, wires=None):
     ##############
     # Input checks
 
-    wires = Wires(wires)
+    wires1 = Wires(wires1)
+    wires2 = Wires(wires2)
 
-    if len(wires) != 4:
-        raise ValueError("expected 4 wires; got {}".format(len(wires)))
+    if len(wires1) < 2:
+        raise ValueError(
+            "expected at least two wires representing the occupied orbitals; "
+            "got {}".format(len(wires1))
+        )
+    if len(wires2) < 2:
+        raise ValueError(
+            "expected at least two wires representing the unoccupied orbitals; "
+            "got {}".format(len(wires2))
+        )
 
     expected_shape = ()
     check_shape(
@@ -499,21 +507,18 @@ def DoubleExcitationUnitary(weight, wires=None):
         msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
     )
 
-    wire_list = wires.tolist()  # TODO: delete the following checks for non-consec wires
-    if wire_list != sorted(wire_list):
-        raise ValueError(
-            "Elements of 'wires' must satisfy that wires_3 > wires_2 > wires_1 > wires_0.\n"
-            "Got wires[3]={}, wires[2]={}, wires[1]={}, wires[0]={}".format(*wires)
-        )
-
     ###############
 
-    s, r, q, p = wires.tolist()  # TODO: need to change logic here when introducing non-consec wires
+    s = wires1[0]
+    r = wires1[-1]
+    q = wires2[0]
+    p = wires2[-1]
 
-    # Sequence of the wires entering the CNOTs between wires 's' and 'p'
-    set_cnot_wires = (  # TODO: change logic for non-consec wires
-        [[l, l + 1] for l in range(s, r)] + [[r, q]] + [[l, l + 1] for l in range(q, p)]
-    )
+    # Sequence of the wires entering the CNOTs
+    cnots_occ = [wires1.subset([l, l + 1]) for l in range(len(wires1) - 1)]
+    cnots_unocc = [wires2.subset([l, l + 1]) for l in range(len(wires2) - 1)]
+
+    set_cnot_wires = cnots_occ + [Wires([r, q])] + cnots_unocc
 
     # Apply the first layer
     _layer1(weight, s, r, q, p, set_cnot_wires)
