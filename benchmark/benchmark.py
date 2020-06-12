@@ -198,7 +198,7 @@ def cli():
                 timing(bm.benchmark)
             elif args.cmd == "profile":
                 print("Profiling:", text)
-                profile(bm.benchmark, identifier=short_hash + "_" + d)
+                profile(bm.benchmark, identifier="_".join([short_hash, d, q]))
             else:
                 raise ValueError("Unknown command.")
             bm.teardown()
