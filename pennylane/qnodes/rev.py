@@ -69,7 +69,7 @@ class ReversibleQNode(QubitQNode):
     """
 
     def __init__(self, func, device, mutable=True, **kwargs):
-        if "reversible" not in device._capabilities or not device._capabilities["reversible"]:
+        if not device.capabilities().get("reversible_diff", False):
             raise ValueError(
                 "Reversible differentiation method not supported on {}".format(device.short_name)
             )

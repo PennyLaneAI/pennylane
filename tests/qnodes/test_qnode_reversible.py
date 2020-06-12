@@ -653,8 +653,8 @@ class TestIntegration:
         is specified for a device which does not have reversible capability."""
         dev = qml.device("default.qubit", wires=1)
         capabilities = {**dev._capabilities}
-        capabilities["reversible"] = False
-        monkeypatch.setattr(dev, "_capabilities", capabilities)
+        capabilities["reversible_diff"] = False
+        monkeypatch.setattr(dev.__class__, "_capabilities", capabilities)
 
         def circuit(a):
             qml.RX(a, wires=0)
