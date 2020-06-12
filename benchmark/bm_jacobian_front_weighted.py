@@ -15,6 +15,8 @@
 Benchmark for a computing the jacobian of a QNode, where the parametrized
 gates are uniformly distributed throughout the circuit.
 """
+from math import pi
+
 import pennylane as qml
 
 import benchmark_utils as bu
@@ -33,8 +35,9 @@ class Benchmark(bu.BaseBenchmark):
     n_vals = range(3, 27, 3)
 
     def setup(self):
+        # pylint: disable=attribute-defined-outside-init,no-member
         qml.numpy.random.seed(143)
-        angles = qml.numpy.random.uniform(high=2 * qml.numpy.pi, size=self.n_wires)
+        angles = qml.numpy.random.uniform(high=2 * pi, size=self.n_wires)
         angles.requires_grad = True
         self.random_angles = angles
 
@@ -47,9 +50,9 @@ class Benchmark(bu.BaseBenchmark):
 
         def circuit(angles):
             """Parametrized circuit."""
-            for layer in range(n):
+            for _ in range(n):
                 qml.broadcast(qml.RX, pattern="single", wires=all_wires, parameters=angles)
-            for layer in range(n):
+            for _ in range(n):
                 qml.broadcast(qml.CNOT, pattern="double", wires=all_wires)
             return [bu.expval(qml.PauliZ(w)) for w in all_wires]
 

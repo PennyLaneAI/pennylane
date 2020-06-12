@@ -17,13 +17,11 @@ Benchmark for a circuit of the Instantaneous Quantum Polynomial-time (IQP) compl
 # pylint: disable=invalid-name
 import math
 import random
-from types import ModuleType
 
 import numpy as np
 import pennylane as qml
 
 import benchmark_utils as bu
-from pennylane import expval
 
 CCZ_diag = np.array([1, 1, 1, 1, 1, 1, 1, -1])
 CCZ_matrix = np.diag(CCZ_diag)
@@ -32,6 +30,7 @@ if hasattr(qml, "DiagonalQubitUnitary"):
     CCZ = lambda wires: qml.DiagonalQubitUnitary(CCZ_diag, wires=wires)
 else:
     CCZ = lambda wires: qml.QubitUnitary(CCZ_matrix, wires=wires)
+
 
 def random_iqp_wires(n_wires):
     """Create a random set of IQP wires.
@@ -60,7 +59,6 @@ class Benchmark(bu.BaseBenchmark):
     name = "IQP circuit"
     min_wires = 1
     n_vals = range(3, 27, 3)
-        
 
     def benchmark(self, n=10):
         # Set seed to make iqp circuits deterministic
