@@ -17,6 +17,7 @@ gates are uniformly distributed throughout the circuit.
 """
 from math import pi
 
+import numpy as np
 import pennylane as qml
 
 import benchmark_utils as bu
@@ -36,9 +37,8 @@ class Benchmark(bu.BaseBenchmark):
 
     def setup(self):
         # pylint: disable=attribute-defined-outside-init,no-member
-        qml.numpy.random.seed(143)
-        angles = qml.numpy.random.uniform(high=2 * pi, size=self.n_wires)
-        angles.requires_grad = True
+        np.random.seed(143)
+        angles = np.random.uniform(high=2 * pi, size=self.n_wires)
         self.random_angles = angles
         self.all_wires = range(self.n_wires)
 
@@ -55,6 +55,7 @@ class Benchmark(bu.BaseBenchmark):
             return [bu.expval(qml.PauliZ(w)) for w in self.all_wires]
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True, qnode_type=self.qnode_type)
-        qnode.jacobian([self.random_angles])
+        args = qml.numpy.array(self.random_angles, copy=True, requires_grad=True)
+        qnode.jacobian([args])
 
         return True
