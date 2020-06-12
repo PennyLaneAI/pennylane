@@ -22,3 +22,4 @@ from .decorator import qnode, QNode
 from .jacobian import JacobianQNode
 from .qubit import QubitQNode
 from .passthru import PassthruQNode
+from .rev import ReversibleQNode

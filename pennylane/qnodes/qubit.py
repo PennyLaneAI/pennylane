@@ -34,7 +34,7 @@ from .jacobian import JacobianQNode
 
 
 class QubitQNode(JacobianQNode):
-    """Quantum node for qubit parameter shift analytic differentiation"""
+    """Quantum node for qubit parameter-shift analytic differentiation method."""
 
     def _best_method(self, idx):
         """Determine the correct partial derivative computation method for a free parameter.
