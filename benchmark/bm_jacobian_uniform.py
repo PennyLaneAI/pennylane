@@ -47,15 +47,15 @@ class Benchmark(bu.BaseBenchmark):
         if self.verbose:
             print("circuit: {} parameters, {} wires".format(n * self.n_wires, self.n_wires))
 
-        def circuit(angles):
+        params = [qml.numpy.array(self.random_angles, copy=True, requires_grad=True) for _ in range(n)]
+        def circuit(params):
             """Parametrized circuit."""
-            for _ in range(n):
-                qml.broadcast(qml.RX, pattern="single", wires=self.all_wires, parameters=angles)
+            for layer in range(n):
+                qml.broadcast(qml.RX, pattern="single", wires=self.all_wires, parameters=params[layer])
                 qml.broadcast(qml.CNOT, pattern="double", wires=self.all_wires)
             return [bu.expval(qml.PauliZ(w)) for w in self.all_wires]
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True, qnode_type=self.qnode_type)
-        args = qml.numpy.array(self.random_angles, copy=True, requires_grad=True)
-        qnode.jacobian([args])
+        qnode.jacobian([params])
 
         return True
