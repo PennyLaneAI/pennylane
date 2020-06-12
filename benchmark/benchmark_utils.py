@@ -114,5 +114,4 @@ def expval(obs):
     compatible with all versions of PennyLane."""
     if type(qml.expval) == ModuleType:  # pylint: disable=unidiomatic-typecheck
         return getattr(obs, qml.expval)
-    else:
-        return qml.expval(obs)
+    return qml.expval(obs)
