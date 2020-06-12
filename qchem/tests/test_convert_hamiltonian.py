@@ -284,9 +284,9 @@ from pennylane import qchem
         ),
     ],
 )
-def test_hamiltonian_conversion(mol_name, terms_ref, monkeypatch):
+def test_observable_conversion(mol_name, terms_ref, monkeypatch):
 
-    r"""Test the correctness of the QubitOperator Hamiltonian conversion from
+    r"""Test the correctness of the QubitOperator observable conversion from
     OpenFermion to Pennylane.
 
     The parametrized inputs are `.terms` attribute of the output `QubitOperator`s based on
@@ -299,9 +299,9 @@ def test_hamiltonian_conversion(mol_name, terms_ref, monkeypatch):
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_hamiltonian = qchem.convert_hamiltonian(qOp)
+    vqe_observable = qchem.convert_observable(qOp)
 
-    assert qchem._qubit_operators_equivalent(qOp, vqe_hamiltonian)
+    assert qchem._qubit_operators_equivalent(qOp, vqe_observable)
 
 
 def test_not_xyz_terms_to_qubit_operator():
@@ -347,26 +347,26 @@ def test_not_xyz_terms_to_qubit_operator():
         ),
     ],
 )
-def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, expected_cost, tol):
-    r"""Test if `convert_hamiltonian()` in qchem integrates with `VQECost()` in pennylane"""
+def test_integration_observable_to_vqe_cost(monkeypatch, mol_name, terms_ref, expected_cost, tol):
+    r"""Test if `convert_observable()` in qchem integrates with `VQECost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_hamiltonian = qchem.convert_hamiltonian(qOp)
+    vqe_observable = qchem.convert_observable(qOp)
 
     # maybe make num_qubits a @property of the Hamiltonian class?
-    num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for w in op.wires])))
+    num_qubits = max(1, len(set([w for op in vqe_observable.ops for w in op.wires])))
 
     dev = qml.device("default.qubit", wires=num_qubits)
-    print(vqe_hamiltonian.terms)
+    print(vqe_observable.terms)
 
     # can replace the ansatz with more suitable ones later.
     def dummy_ansatz(phis, wires):
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
 
-    dummy_cost = qml.VQECost(dummy_ansatz, vqe_hamiltonian, dev)
+    dummy_cost = qml.VQECost(dummy_ansatz, vqe_observable, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -387,7 +387,7 @@ def test_integration_hamiltonian_to_vqe_cost(monkeypatch, mol_name, terms_ref, e
 def test_integration_mol_file_to_vqe_cost(
     hf_filename, docc_mo, act_mo, type_of_transformation, expected_cost, tol
 ):
-    r"""Test if the output of `decompose_hamiltonian()` works with `convert_hamiltonian()`
+    r"""Test if the output of `decompose_hamiltonian()` works with `convert_observable()`
     to generate `VQECost()`"""
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -399,7 +399,7 @@ def test_integration_mol_file_to_vqe_cost(
         active_mo_indices=act_mo,
     )
 
-    vqe_hamiltonian = qchem.convert_hamiltonian(transformed_hamiltonian)
+    vqe_hamiltonian = qchem.convert_observable(transformed_hamiltonian)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
 
     num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for w in op.wires])))

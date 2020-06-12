@@ -458,30 +458,26 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops)
 
 
-def convert_hamiltonian(qubit_hamiltonian):
-    r"""Converts OpenFermion :class:`~.QubitOperator` Hamiltonian to Pennylane VQE Hamiltonian
+def convert_observable(qubit_observable):
+    r"""Converts OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
     **Example usage**
 
     >>> h_of = decompose_hamiltonian('h2', './pyscf/sto-3g/')
-    >>> h_pl = convert_hamiltonian(h_of)
+    >>> h_pl = convert_observable(h_of)
     >>> h_pl.coeffs
     [-0.04207898+0.j  0.17771287+0.j  0.17771287+0.j -0.2427428 +0.j -0.2427428 +0.j  0.17059738+0.j
     0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.12293305+0.j  0.16768319+0.j
     0.16768319+0.j  0.12293305+0.j  0.17627641+0.j]
 
     Args:
-        qubit_hamiltonian (QubitOperator): Hamiltonian represented as an OpenFermion `QubitOperator`
+        qubit_observable (QubitOperator): Observable represented as an OpenFermion `QubitOperator`
 
     Returns:
-        (pennylane.Hamiltonian): Pennylane VQE Hamiltonian
+        (pennylane.Hamiltonian): Pennylane VQE observable
     """
 
-    # The `_qubit_operator_to_terms` function is separated out from this function
-    # in case there could be other observables, apart from the electronic Hamiltonian,
-    # to be converted in the future.
-
-    return Hamiltonian(*_qubit_operator_to_terms(qubit_hamiltonian))
+    return Hamiltonian(*_qubit_operator_to_terms(qubit_observable))
 
 
 def generate_hamiltonian(
@@ -561,7 +557,7 @@ def generate_hamiltonian(
         2 * len(active_indices),
     )
 
-    return convert_hamiltonian(h_of), nr_qubits
+    return convert_observable(h_of), nr_qubits
 
 
 def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
