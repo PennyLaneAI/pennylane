@@ -23,8 +23,8 @@ import benchmark_utils as bu
 class Benchmark(bu.BaseBenchmark):
     """Jacobian computation benchmark.
 
-    Creates a parametrized quantum circuit with a uniform
-    distribution of parametrized gates throughout the circuit
+    Creates a parametrized quantum circuit with a front-weighted
+    distribution of parametrized gates throughout in circuit
     and evaluates its Jacobian.
     """
 
@@ -37,19 +37,21 @@ class Benchmark(bu.BaseBenchmark):
         angles = qml.numpy.random.uniform(high=2 * qml.numpy.pi, size=self.n_wires)
         angles.requires_grad = True
         self.random_angles = angles
-        self.all_wires = range(self.n_wires)
 
     def benchmark(self, n=10):
         # n is the number of parametrized layers in the circuit
         if self.verbose:
             print("circuit: {} parameters, {} wires".format(n * self.n_wires, self.n_wires))
 
+        all_wires = range(self.n_wires)
+
         def circuit(angles):
             """Parametrized circuit."""
             for layer in range(n):
-                qml.broadcast(qml.RX, pattern="single", wires=self.all_wires, parameters=angles)
-                qml.broadcast(qml.CNOT, pattern="double", wires=self.all_wires)
-            return [bu.expval(qml.PauliZ(w)) for w in self.all_wires]
+                qml.broadcast(qml.RX, pattern="single", wires=all_wires, parameters=angles)
+            for layer in range(n):
+                qml.broadcast(qml.CNOT, pattern="double", wires=all_wires)
+            return [bu.expval(qml.PauliZ(w)) for w in all_wires]
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True, qnode_type=self.qnode_type)
         qnode.jacobian([self.random_angles])
