@@ -781,7 +781,7 @@ def ph_pphh_wires(ph_confs, pphh_confs, wires=None):
         pphh.append([pphh1_wires, pphh2_wires])
 
     return ph, pphh
-    
+
 
 __all__ = [
     "read_structure",
@@ -795,4 +795,5 @@ __all__ = [
     "generate_hamiltonian",
     "sd_excitations",
     "hf_state",
+    "ph_pphh_wires",
 ]
