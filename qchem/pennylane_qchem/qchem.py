@@ -731,6 +731,13 @@ def ph_pphh_wires(ph_confs, pphh_confs, wires=None):
         the Unitary Coupled-Cluster Singles and Doubles (UCCSD) template will act on.
     """
 
+    if (not ph_confs) and (not pphh_confs):
+        raise ValueError(
+            "'ph_confs' and 'pphh_confs' lists can not be both empty;\
+            got ph_confs = {}, pphh_confs = {}".
+            format(ph_confs, pphh_confs)
+        )
+
     expected_shape = (2,)
     for ph_confs_ in ph_confs:
         if np.array(ph_confs_).shape != expected_shape:
@@ -747,14 +754,19 @@ def ph_pphh_wires(ph_confs, pphh_confs, wires=None):
                 format(np.array(pphh_confs_).shape)
             )
 
+    max_idx = 0
+    if ph_confs:
+        max_idx = np.max(ph_confs)
+    if pphh_confs:
+        max_idx = max(np.max(pphh_confs), max_idx)
+
     if wires is not None:
-        num_wires = max(np.max(ph_confs), np.max(pphh_confs)) + 1
-        if len(wires) != num_wires:
+        if len(wires) != max_idx + 1:
             raise ValueError(
-                "Expected number of wires is {}; got {}".format(num_wires, len(wires)))
+                "Expected number of wires is {}; got {}".format(max_idx + 1, len(wires)))
 
     if wires is None:
-        wires = range(max(np.max(ph_confs), np.max(pphh_confs)) + 1)
+        wires = range(max_idx + 1)
 
     ph = []
     for r, p in ph_confs:
@@ -770,10 +782,10 @@ def ph_pphh_wires(ph_confs, pphh_confs, wires=None):
 
     return ph, pphh
 
-# ph_confs = [[0, 2], [1, 3]]
+# ph_confs = [[0, 2]]
 # pphh_confs = [[0, 1, 2, 3]]
-# wires = ['a0', 'b1', 'c2', 'd3']
-# #wires=None
+# # wires = ['a0', 'b1', 'c2', 'd3']
+# wires=None
 
 # ph, pphh = ph_pphh_wires(ph_confs, pphh_confs, wires=wires)
 
