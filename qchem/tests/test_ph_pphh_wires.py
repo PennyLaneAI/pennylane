@@ -1,7 +1,9 @@
 import os
 
 import pytest
-
+import numpy as np
+import pennylane as qml
+from pennylane.templates.subroutines import UCCSD
 from pennylane import qchem
 
 @pytest.mark.parametrize(
@@ -52,3 +54,29 @@ def test_ph_pphh_exceptions(ph_confs, pphh_confs, wires, message_match):
 
     with pytest.raises(ValueError, match=message_match):
         qchem.ph_pphh_wires(ph_confs, pphh_confs, wires=wires)
+
+
+@pytest.mark.parametrize(
+    ("weights", "ph_confs", "pphh_confs", "expected"),
+    [
+        (np.array([3.90575761, -1.89772083, -1.36689032]),
+         [[0, 2], [1, 3]], [[0, 1, 2, 3]],
+         [-0.14619406, -0.06502792, 0.14619406, 0.06502792])
+    ]
+)
+def test_integration_with_uccsd(weights, ph_confs, pphh_confs, expected, tol):
+    """Test integration with the UCCSD template"""
+
+    ph, pphh = qchem.ph_pphh_wires(ph_confs, pphh_confs)
+
+    N = 4
+    wires = range(N)
+    dev = qml.device('default.qubit', wires=N)
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0]))
+        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+
+    res = circuit(weights)
+    assert np.allclose(res, np.array(expected), **tol)
