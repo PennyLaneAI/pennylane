@@ -459,7 +459,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
 
 
 def convert_observable(qubit_observable):
-    r"""Converts a OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
+    r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
     **Example usage**
 
@@ -471,7 +471,7 @@ def convert_observable(qubit_observable):
     0.16768319+0.j  0.12293305+0.j  0.17627641+0.j]
 
     Args:
-        qubit_observable (QubitOperator): Observable represented as an OpenFermion `QubitOperator`
+        qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
 
     Returns:
         (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
