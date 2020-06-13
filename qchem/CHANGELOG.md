@@ -26,7 +26,6 @@
   [['a0', 'b1', 'c2'], ['b1', 'c2', 'd3']]
   [[['a0', 'b1'], ['c2', 'd3']]]
   ```
-
 * The function ``hf_state`` outputs an array with the occupation-number
   representation of the Hartree-Fock (HF) state. This function can be used to
   set the qubit register to encode the HF state which is the typical starting
