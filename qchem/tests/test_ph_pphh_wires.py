@@ -1,10 +1,12 @@
 import os
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
-from pennylane.templates.subroutines import UCCSD
 from pennylane import qchem
+from pennylane.templates.subroutines import UCCSD
+
 
 @pytest.mark.parametrize(
     ("ph_confs", "pphh_confs", "wires", "ph_expected", "pphh_expected"),
