@@ -759,19 +759,17 @@ def ph_pphh_wires(ph_confs, pphh_confs, wires=None):
     if pphh_confs:
         max_idx = max(np.max(pphh_confs), max_idx)
 
-    if wires is not None:
+    if wires is None:
+        wires = range(max_idx + 1)
+    else:
         if len(wires) != max_idx + 1:
             raise ValueError(
                 "Expected number of wires is {}; got {}".format(max_idx + 1, len(wires)))
-
-    if wires is None:
-        wires = range(max_idx + 1)
 
     ph = []
     for r, p in ph_confs:
         ph_wires = [wires[i] for i in range(r, p + 1)]
         ph.append(ph_wires)
-
 
     pphh = []
     for s, r, q, p in pphh_confs:
