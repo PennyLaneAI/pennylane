@@ -152,7 +152,7 @@ def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
             def circuit(weights):
                 BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ, interactions)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-            
+
         >>> circuit([[pi, pi, pi, pi]])
         [-1, 1, -1, 1]
     """
@@ -181,7 +181,7 @@ def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
     for layer in range(repeat):
 
         broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        if interactions == None:
+        if interactions is None:
             broadcast(unitary=CNOT, pattern="ring", wires=wires)
         else:
             check_type(interactions, [list], msg="'interactions' must be list of wire index pairs")

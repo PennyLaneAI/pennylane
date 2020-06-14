@@ -144,6 +144,7 @@
 * The `BasicEntanglerLayers` template now has an argument, `interactions`, which allows a custom 
   braodcasting pattern of CNOT gates to be used within each layer, with "ring" being 
   the default.
+  [(#681)](https://github.com/XanaduAI/pennylane/pull/681)
 
 <h3>Breaking changes</h3>
 
