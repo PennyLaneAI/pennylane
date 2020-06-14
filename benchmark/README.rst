@@ -84,5 +84,9 @@ Included benchmarks
   then evaluates it and its Jacobian. The size parameter ``n`` is the number of layers.
 * ``bm_mutable_rotations``: Evaluates a mutable QNode consisting of ``k`` simple rotations on one qubit
   several times, varying ``k`` from 0 to ``n``. The qfunc is called each time due to the mutability.
+* ``bm_mutable_complicated_params``: Measure the efficiency of ``JacobianQNode._construct`` for
+    mutable QNodes, using an extreme case where the QNode has lots of primary parameters with
+    a complicated nested structure, but relatively few auxiliary parameters, and only a few
+    of the primary parameters are actually used in the circuit.
 * ``bm_iqp_circuit``:  Evaluates an IQP circuit on ``w`` wires with ``n*w`` gates chosen from the 
   set ``Z``, ``CZ`` and ``CCZ``.

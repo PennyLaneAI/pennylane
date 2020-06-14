@@ -80,7 +80,7 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
         device (~pennylane.Device): device for executing the circuit
         mutable (bool): whether the QNode should mutable
         interface (str, None): interface used for classical backpropagation,
-            in ('autograd', 'torch, 'tf', None)
+            in ('autograd', 'torch', 'tf', None)
 
     Returns:
         BaseQNode: constructed QNode
@@ -91,10 +91,14 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
         )
     except AttributeError:
         # versions before the "new-style" QNodes
-        qnode = qml.QNode(qfunc, device, cache=not mutable)
-        if interface == "torch":
-            return qnode.to_torch()
-        if interface == "tf":
-            return qnode.to_tf()
+        try:
+            qnode = qml.QNode(qfunc, device, cache=not mutable)
+            if interface == "torch":
+                return qnode.to_torch()
+            if interface == "tf":
+                return qnode.to_tf()
+        except TypeError:
+            # versions before mutable arg
+            qnode = qml.QNode(qfunc, device)
 
     return qnode

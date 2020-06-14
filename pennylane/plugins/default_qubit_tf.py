@@ -17,7 +17,6 @@ reference plugin.
 import numpy as np
 
 from pennylane.operation import DiagonalOperation
-from pennylane.plugins import DefaultQubit
 
 try:
     import tensorflow as tf
@@ -42,6 +41,7 @@ try:
 except ImportError:
     pass
 
+from . import DefaultQubit
 from . import tf_ops
 
 
@@ -153,6 +153,8 @@ class DefaultQubitTF(DefaultQubit):
     _cast = staticmethod(tf.cast)
     _transpose = staticmethod(tf.transpose)
     _tensordot = staticmethod(tf.tensordot)
+    _conj = staticmethod(tf.math.conj)
+    _imag = staticmethod(tf.math.conj)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

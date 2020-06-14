@@ -59,6 +59,14 @@
   ```python
   model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
+* Added a new "reversible" differentiation method which can be used in simulators, but not hardware.
+  The reversible approach is similar to backpropagation, but trades off extra computation for
+  enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
+  a forward pass, the reversible method only caches the final pre-measurement state. Compared to 
+  the parameter-shift method, the reversible method can be faster or slower, depending on the 
+  density and location of parametrized gates in a circuit (circuits with higher density of 
+  parametrized gates near the end of the circuit will see a benefit).
+  [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
 
 * Contains the new template `DoubleExcitationUnitary` implementing the quantum circuit to
   exponentiate the Coupled-Cluster double excitation operator. This template is required to
@@ -76,8 +84,18 @@
   to calculate losses and costs on circuits with trainable parameters.
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
+* The ``default.tensor`` plugin has been significantly upgraded. It now allows two different
+  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a 
+  exact factorized representation of quantum states, while the latter uses a matrix product state 
+  representation.
+  ([#572](https://github.com/XanaduAI/pennylane/pull/572))
+  ([#599](https://github.com/XanaduAI/pennylane/pull/599))
 
 <h3>Improvements</h3>
+
+* Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
+  decomposes each of these gates into rotation gates. 
+  [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
 
 * The `CircuitGraph` class now supports serializing contained circuit operations
   and measurement basis rotations to an OpenQASM2.0 script via the new
@@ -136,7 +154,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
