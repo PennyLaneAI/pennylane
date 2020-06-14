@@ -23,12 +23,14 @@ from pennylane.templates.utils import (
     check_no_variable,
     check_number_of_layers,
     get_shape,
+    check_type,
+    check_shapes
 )
 from pennylane.wires import Wires
 
 
 @template
-def BasicEntanglerLayers(weights, wires, rotation=None):
+def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
 
@@ -62,6 +64,8 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
+        interactions (array[wires]): array of wire index pairs (elements of shape (2,)) that acts as a custom `pattern` for the placement of CNOT gates,
+                                            if ``None``, `pattern="ring"` is used as default
     Raises:
         ValueError: if inputs do not have the correct format
 
@@ -133,6 +137,24 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
+
+        **Using the `interactions` argument**
+
+        By using `interactions`, and custom broadcasting pattern of CNOT gates can be placed on the circuit.
+
+        .. code-block:: python
+
+            n_wires = 4
+            dev = qml.device('default.qubit', wires=n_wires)
+            interactions = [[0, 1], [2, 3]]
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ, interactions)
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+            
+        >>> circuit([[pi, pi, pi, pi]])
+        [-1, 1, -1, 1]
     """
 
     #############
@@ -159,4 +181,22 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
     for layer in range(repeat):
 
         broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        broadcast(unitary=CNOT, pattern="ring", wires=wires)
+        if (interactions == None):
+            broadcast(unitary=CNOT, pattern="ring", wires=wires)
+        else:
+            check_type(
+                interactions, 
+                [list], 
+                msg="'interactions' must be list of wire index pairs"
+            )
+            check_shapes(
+                interactions, 
+                [(2,)], 
+                msg="Elements of 'interactions' must be of shape (2,)"
+            )
+            for i in interactions:
+                if (i[0] == i[1]):
+                    raise ValueError("CNOT gates must be applied between two different wires")
+                if ((i[0] not in wires.tolist()) or (i[1] not in wires.tolist())):
+                    raise ValueError("Wire index pair {} is out of range".format(i))
+            broadcast(unitary=CNOT, pattern=interactions, wires=wires)

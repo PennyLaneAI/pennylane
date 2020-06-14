@@ -141,6 +141,10 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
+* The `BasicEntanglerLayers` template now has an argument, `interactions`, which allows a custom 
+  braodcasting pattern of CNOT gates to be used within each layer, with "ring" being 
+  the default.
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.5.

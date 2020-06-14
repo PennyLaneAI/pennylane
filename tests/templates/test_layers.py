@@ -641,3 +641,104 @@ class TestBasicEntangler:
         expectations = circuit(weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+    def test_interactions_type(self):
+        """Tests that an error is raised when 'interactions' is not a list"""
+        
+        n_wires = 3
+        weights=[[1, 2, 1]]
+        interactions = (0, 1, 2)
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit(weights)
+        assert "'interactions' must be list of wire index pairs" in str(info.value)
+
+    def test_interactions_shape(self):
+        """Tests that an error is raised when the shape of elements in 'interactions' is not (2,)"""
+
+        n_wires = 3
+        weights=[[1, 2, 1]]
+        interactions = [1, 1, 1]
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit(weights)
+        assert "Elements of 'interactions' must be of shape (2,)" in str(info.value)
+
+    def test_interactions_same_wires(self):
+        """Tests that an error is raised when a 'interactions' contains a pair of the form [a, b] with a = b"""
+
+        n_wires = 3
+        weights=[[1, 2, 1]]
+        interactions = [[0, 1], [1, 2], [1, 1]]
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit(weights)
+        assert "CNOT gates must be applied between two different wires" in str(info.value)
+
+    @pytest.mark.parametrize(
+        "interactions, index",
+        [
+            ([[0, 1], [1, 2], [2, 3]], [2, 3]),
+            ([[5, 1], [1, 2]], [5, 1]),
+            ([[5, 4], [1, 2], [2, 1]], [5, 4]),
+        ],
+    )
+    def test_interactions_range(self, interactions, index):
+        """Tests that an error is raised when a 'interactions' contains a pair of wires that is out of range"""
+
+        n_wires = 3
+        weights=[[1, 2, 1]]
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit(weights)
+        assert "Wire index pair {} is out of range".format(index) in str(info.value)
+
+    @pytest.mark.parametrize(
+        "weights, n_wires, target, interactions",
+        [
+            ([[np.pi] * 2], 2, [-1, 1], [[0, 1]]),
+            ([[np.pi] * 3], 3, [-1, 1, 1], [[0, 1], [0, 2]]),
+            ([[np.pi] * 4], 4, [-1, 1, -1, 1], [[0, 1], [2, 3]]),
+        ],
+    )
+    def test_simple_interactions(self, weights, n_wires, target, interactions):
+        """Tests the result of the template for simple cases, with 'interactions' != None."""
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        expectations = circuit(weights)
+        for exp, target_exp in zip(expectations, target):
+            assert exp == target_exp
