@@ -24,7 +24,7 @@ from pennylane.templates.utils import (
     check_number_of_layers,
     get_shape,
     check_type,
-    check_shapes
+    check_shapes,
 )
 from pennylane.wires import Wires
 
@@ -181,22 +181,16 @@ def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
     for layer in range(repeat):
 
         broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        if (interactions == None):
+        if interactions == None:
             broadcast(unitary=CNOT, pattern="ring", wires=wires)
         else:
-            check_type(
-                interactions, 
-                [list], 
-                msg="'interactions' must be list of wire index pairs"
-            )
+            check_type(interactions, [list], msg="'interactions' must be list of wire index pairs")
             check_shapes(
-                interactions, 
-                [(2,)], 
-                msg="Elements of 'interactions' must be of shape (2,)"
+                interactions, [(2,)], msg="Elements of 'interactions' must be of shape (2,)"
             )
             for i in interactions:
-                if (i[0] == i[1]):
+                if i[0] == i[1]:
                     raise ValueError("CNOT gates must be applied between two different wires")
-                if ((i[0] not in wires.tolist()) or (i[1] not in wires.tolist())):
+                if (i[0] not in wires.tolist()) or (i[1] not in wires.tolist()):
                     raise ValueError("Wire index pair {} is out of range".format(i))
             broadcast(unitary=CNOT, pattern=interactions, wires=wires)
