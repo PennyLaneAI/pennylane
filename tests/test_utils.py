@@ -104,11 +104,12 @@ class TestDecomposition:
             no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
             assert all_identities or no_identities
 
+    @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types(self, hamiltonian):
+    def test_observable_types(self, hamiltonian, hide_identity):
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
+        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian, hide_identity)
         assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
