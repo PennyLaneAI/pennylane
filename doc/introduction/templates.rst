@@ -198,6 +198,21 @@ of other templates.
     :description: Interferometer
     :figure: ../_static/templates/subroutines/interferometer.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.SingleExcitationUnitary.html
+    :description: SingleExcitationUnitary
+    :figure: ../_static/templates/subroutines/single_excitation_unitary.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.DoubleExcitationUnitary.html
+    :description: DoubleExcitationUnitary
+    :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.UCCSD.html
+    :description: UCCSD
+    :figure: ../_static/templates/subroutines/uccsd.png  
+
 .. raw:: html
 
         <div style='clear:both'></div>

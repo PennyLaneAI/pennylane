@@ -55,6 +55,15 @@ class TestPassthruBasics:
         """String representation."""
         assert repr(mock_qnode) == "<PassthruQNode: device='mock_device', func=circuit, wires=2>"
 
+    def test_immutable_error(self, mock_device):
+        """Test that an error is raised if the mutable=False option is passed
+        upon instantiation"""
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match=r"PassthruQNode does not support immutable mode"):
+            node = PassthruQNode(circuit, mock_device, mutable=False)
 
 @pytest.mark.skipif(tf is None, reason="TensorFlow 2.0 not found.")
 @pytest.fixture(scope="function")
@@ -146,6 +155,32 @@ class TestPassthruTF:
         assert res.shape == (2,)
         assert res.dtype == self.DTYPE
         assert res.numpy() == pytest.approx(ref_res, abs=tol)
+
+    def test_circuit_with_decomposition(self, tol):
+        """Tests a PassthruQNode in which the circuit contains an operation
+        that needs to be decomposed."""
+        theta = 0.543
+        phi = -0.234
+        lam = 0.654
+        p = [theta, phi, lam]
+
+        dev = qml.device("default.tensor.tf", wires=1)
+
+        def circuit(weights):
+            qml.QubitStateVector(1j*np.array([1, -1])/np.sqrt(2), wires=[0])
+            qml.U3(weights[0], weights[1], weights[2], wires=[0])    # <--- decomposition is required
+            return qml.expval(qml.PauliX(0))
+
+        node = PassthruQNode(circuit, dev, interface="tf")
+
+        params = tf.Variable(p, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch(params)
+            res = node(params)
+
+        expected = np.sin(lam)*np.sin(phi) - np.cos(theta)*np.cos(lam)*np.cos(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("vectorize_jacobian", [True, False])
     def test_jacobian(self, tensornet_tf_device, vectorize_jacobian, tol):

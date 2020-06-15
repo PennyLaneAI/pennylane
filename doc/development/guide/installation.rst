@@ -6,7 +6,7 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.5
+* `Python <http://python.org/>`_ >= 3.6
 
 as well as the following Python packages:
 
@@ -37,7 +37,7 @@ requirements are required.
 
 * **PyTorch interface**: ``pytorch >= 1.1``
 
-* **TensorFlow interface**: ``tensorflow >= 1.12``
+* **TensorFlow interface**: ``tensorflow >= 1.15``
 
   Note that any version of TensorFlow supporting eager execution mode
   is supported, however there are slight differences between the eager
@@ -49,9 +49,7 @@ requirements are required.
   This includes:
 
   - If ``tf.__version__[0] == "1"``, running ``tf.enable_eager_execution()``
-    before execution, and importing ``Variable`` from ``tensorflow.contrib.eager``.
-
-  - If ``tf.__version__[0] == "2"``, importing ``Variable`` from ``tensorflow``.
+    before execution.
 
   - Only using the ``tf.GradientTape`` context for gradient computation.
 

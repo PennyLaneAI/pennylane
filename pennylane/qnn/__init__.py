@@ -13,4 +13,7 @@
 # limitations under the License.
 """This module contains classes and functions for constructing quantum neural networks from QNodes."""
 
+import pennylane.qnn.cost
+
 from .keras import KerasLayer
+from .torch import TorchLayer

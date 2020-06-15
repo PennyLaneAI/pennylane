@@ -62,12 +62,20 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return "{}.\nInstance: ".format(self.__module__, self.__class__.__name__, self.name)
+        return "<{} device (wires={}, shots={}) at {}>".format(
+            self.__class__.__name__, self.num_wires, self.shots, hex(id(self))
+        )
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nName: \nAPI version: \nPlugin version: \nAuthor: ".format(
-            self.name, self.pennylane_requires, self.version, self.author
+        return "{}\nShort name: {}\nPackage: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
+            self.name,
+            self.short_name,
+            self.__module__.split(".")[0],
+            self.version,
+            self.author,
+            self.num_wires,
+            self.shots,
         )
 
     @property
@@ -183,24 +191,31 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                self.apply(operation.name, operation.wires, operation.parameters)
+                self.apply(operation.name, operation.wires.tolist(), operation.parameters)
 
             self.post_apply()
 
             self.pre_measure()
 
             for obs in observables:
+
+                if isinstance(obs, Tensor):
+                    # if obs is a tensor observable, use a list of individual wires
+                    wires = [ob.wires.tolist() for ob in obs.obs]
+                else:
+                    wires = obs.wires.tolist()
+
                 if obs.return_type is Expectation:
-                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
+                    results.append(self.expval(obs.name, wires, obs.parameters))
 
                 elif obs.return_type is Variance:
-                    results.append(self.var(obs.name, obs.wires, obs.parameters))
+                    results.append(self.var(obs.name, wires, obs.parameters))
 
                 elif obs.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
 
                 elif obs.return_type is Probability:
-                    results.append(list(self.probability(wires=obs.wires).values()))
+                    results.append(list(self.probability(wires=wires).values()))
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError(

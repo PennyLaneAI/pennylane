@@ -34,7 +34,7 @@ from .jacobian import JacobianQNode
 
 
 class QubitQNode(JacobianQNode):
-    """Quantum node for qubit parameter shift analytic differentiation"""
+    """Quantum node for qubit parameter-shift analytic differentiation method."""
 
     def _best_method(self, idx):
         """Determine the correct partial derivative computation method for a free parameter.
@@ -243,7 +243,7 @@ class QubitQNode(JacobianQNode):
             # for each operation in the layer, get the generator and convert it to a variance
             for n, op in enumerate(curr_ops):
                 gen, s = op.generator
-                w = op.wires
+                w = op.wires.tolist()
 
                 if gen is None:
                     raise QuantumFunctionError(
