@@ -4,31 +4,36 @@
 Architectural overview
 ======================
 
-TODO: intro sentence
+PennyLane allows optimization and machine learning of quantum and hybrid
+quantum-classical computations by integrating several key components. A
+*quantum device* can be matched with a *quantum node* to return statistics upon
+evaluation. To process these, *interfaces* allow using familiar classical
+frameworks. Built-in *optimizers* help on the way to finding desired
+parameters to the quantum circuit.
+
+In most cases, computations with PennyLane are performed on a local machine
+using a simulator. Through using PennyLane plugins, one can, however, also
+utilize remote quantum devices and simulators.
 
 Components of PennyLane
 #######################
 
-TODO: intro to components (?)
-
-TODO: more high-resolution picture ?
-
 .. image:: architecture_diagram.png
-	:width: 800px
+    :width: 800px
 
 Devices
 *******
 
 In PennyLane, the abstraction of a quantum device is encompassed within the
-:class:`Device` class, making it one of the basic components of the
+:class:`~.Device` class, making it one of the basic components of the
 library. It includes basic functionality that is shared for quantum
 devices, independent of the qubit and CV models. PennyLane gives access to
 multiple simulators and hardware chips through its plugins, each of these
 devices is implemented as a custom class. These classes have the
 ``Device`` class as their parent class.
 
-``QNodes`` are another important component in PennyLane, they serve as the
-abstraction for quantum circuits to be run on a device.
+A ``QNode`` is another important component in PennyLane (later detailed), they
+serve as the abstraction for quantum circuits to be run on a device.
 
 The purpose of the ``Device`` class can be summarized as:
 
@@ -38,7 +43,7 @@ The purpose of the ``Device`` class can be summarized as:
   can be used with QNodes.
 
 Qubit based devices can use shared utilities by using the
-:class:`QubitDevice`.
+:class:`~.QubitDevice`.
 
 :html:`<div class="state_vec_list" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content1" class="collapsed"><p class="first admonition-title">Statevector simulators (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content1" class="collapse" data-parent="#aside1" style="height: 0px;">`
 
@@ -106,6 +111,12 @@ Qubit based devices can use shared utilities by using the
    * - `Forest QVMDevice <https://pennylane-forest.readthedocs.io/en/latest/code/qvm.html>`__
      - ``"forest.qvm"``, ``qvm_url`` needs to be set to use the Lisp QVM
      - Forest QVM device supporting both the Rigetti Lisp QVM, as well as the built-in pyQuil pyQVM
+   * - `AQT Ideal ion-trap simulator <https://pennylane-aqt.readthedocs.io/en/latest/devices.html#ideal-ion-trap-simulator>`__
+     - ``"aqt.sim"``
+     - Ideal noiseless ion-trap simulator
+   * - `AQT Noisy ion-trap simulator <https://pennylane-aqt.readthedocs.io/en/latest/devices.html#noisy-ion-trap-simulator>`__
+     - ``"aqt.noisy_sim"``
+     - Noisy ion-trap simulator for more realisatic simulations
 
 :html:`</div></div>`
 
@@ -155,57 +166,63 @@ QNodes
 
 A  quantum  node or ``QNode`` (represented by a subclass to
 :class:`~.BaseQNode`) is an encapsulation of a function :math:`f(x;θ):R^m→R^n`
-that is executed by means of quantum information processing on a quantum
+that is executed using quantum information processing on a quantum
 device.
 
-See for a list of qnodes :ref:`qml_qnodes`.
+Each ``QNode`` represents the quantum circuit by building a
+:class:`~.CircuitGraph` instance, but the way differentiation is done is custom
+to the differentiation method offered by the ``QNode``.
+
+For further details on qnodes, the mutability of qnodes we refer to
+:class:`~.BaseQNode` and for a list of qnodes to :ref:`qml_qnodes`.
 
 Interfaces
 **********
 
-TODO: rephrase, what to keep?
+The integration between classical and quantum computations is encompassed by
+interfaces.
 
-PennyLane offers seamless integration between classical and quantum
-computations. Code up quantum circuits in PennyLane, and connect them easily to
-the top scientific computing and machine learning libraries.
-
-The bridge between the quantum and classical worlds is provided in PennyLane
-via interfaces. Currently, there are three built-in interfaces: NumPy, PyTorch,
-and TensorFlow. These interfaces make each of these libraries quantum-aware,
-allowing quantum circuits to be treated just like any other operation.
+We refer to the :ref:`intro_interfaces` page for a more in-depth introduction
+and a list of available interfaces.
 
 Optimizers
 **********
 
-Design decisions
-================
+Optimizers are objects which can be used to automatically update the parameters
+of a quantum or hybrid machine learning model.
 
-The following are more in-depth points related to how PennyLane works
-internally.
+We refer to the :ref:`intro_ref_opt` page for a more in-depth introduction
+and a list of available optimizers.
 
-The page could include a section on the following:
+Key design details
+##################
 
-* Queing behaviour of operations
+The following are key design details related to how PennyLane works internally.
 
-TODO: can this be somehow shared with the docstring of the ``QueingContext``? 
+Queuing of operators
+********************
 
-    In PennyLane, the construction of quantum gates is separated from the
-    specific quantum node (:class:`BaseQNode`) that they belong to. However,
-    including logic for this when creating an instance of :class:`Operator`
-    does not align with the current architecture. Therefore, there is a need to
-    use a high level object that holds information about the relationship
-    between quantum gates and a quantum node.
+In PennyLane, the construction of quantum gates is separated from the specific
+quantum node (:class:`~.BaseQNode`) that they belong to. However, including
+logic for this when creating an instance of :class:`~.Operator` does not align
+with the current architecture. Therefore, there is a need to use a high-level
+object that holds information about the relationship between quantum gates and
+a quantum node.
 
-    The ``QueuingContext`` class realizes this by providing access to the
-    current QNode.  Furthermore, it provides the flexibility to have multiple
-    objects record the creation of quantum gates.
+The :class:`~.QueuingContext` class realizes this by providing access to the current
+QNode.  Furthermore, it provides the flexibility to have multiple objects
+record the creation of quantum gates.
 
-    The QueuingContext class both acts as the abstract base class for all
-    classes that expose a queue for Operations (so-called contexts), as well
-    as the interface to said queues. The active contexts contain maximally one QNode
-    and an arbitrary number of other contexts like the OperationRecorder.
+The ``QueuingContext`` class both acts as the abstract base class for all
+classes that expose a queue for Operations (so-called contexts), as well as the
+interface to said queues. The active contexts contain maximally one QNode and
+an arbitrary number of other contexts like the :class:`~.OperationRecorder`.
 
-* Variable system
+Variables
+*********
 
-  short intro on symbolic computation and link to the variable page
-  TODO: add general description, symbolic computation
+Circuit parameters in PennyLane are tracked and updated using
+:class:`~.Variable`. They play a key role in the evaluation of a ``QNode``.
+
+We refer to the :ref:`qml_variable` page for a more in-depth description of how
+``Variables`` are used during execution.
