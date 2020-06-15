@@ -90,6 +90,10 @@
   representation.
   ([#572](https://github.com/XanaduAI/pennylane/pull/572))
   ([#599](https://github.com/XanaduAI/pennylane/pull/599))
+  
+* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to 
+  decompose a Hamiltonian into a linear combination of Pauli operators.
+  [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
 
 <h3>Improvements</h3>
 
