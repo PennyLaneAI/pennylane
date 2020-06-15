@@ -79,16 +79,20 @@ test_hamiltonians = [
 class TestDecomposition:
     """Tests the decompose_hamiltonian function"""
 
-    def test_wrong_dimension(self):
+    @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
+    def test_wrong_shape(self, hamiltonian):
+        """Tests that an exception is raised if the Hamiltonian does not have
+        the correct shape."""
         with pytest.raises(
             ValueError,
             match=re.escape(
                 "The Hamiltonian should have shape"
             ),
         ):
-            pu.decompose_hamiltonian(np.ones((3, 3)))
+            pu.decompose_hamiltonian(hamiltonian)
 
     def test_not_hermitian(self):
+        """Tests that the Hamiltonian is Hermitian, """
         with pytest.raises(ValueError, match="The Hamiltonian is not Hermitian"):
             pu.decompose_hamiltonian(np.array([[1, 2], [3, 4]]))
 

@@ -74,7 +74,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     n = int(np.log2(len(H)))
     N = 2 ** n
 
-    if len(H) - N != 0:
+    if H.shape != (N, N):
         raise ValueError("The Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1")
 
     if not np.allclose(H, H.conj().T):
