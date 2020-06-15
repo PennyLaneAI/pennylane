@@ -82,7 +82,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
     def test_wrong_shape(self, hamiltonian):
         """Tests that an exception is raised if the Hamiltonian does not have
-        the correct shape."""
+        the correct shape"""
         with pytest.raises(
             ValueError,
             match=re.escape(
@@ -92,7 +92,8 @@ class TestDecomposition:
             pu.decompose_hamiltonian(hamiltonian)
 
     def test_not_hermitian(self):
-        """Tests that the Hamiltonian is Hermitian, """
+        """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
+        equal to its own conjugate transpose"""
         with pytest.raises(ValueError, match="The Hamiltonian is not Hermitian"):
             pu.decompose_hamiltonian(np.array([[1, 2], [3, 4]]))
 
@@ -111,6 +112,8 @@ class TestDecomposition:
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
+        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
+        the identity matrix, and Pauli matrices."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
         decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian, hide_identity)
@@ -118,6 +121,8 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
+        """Tests that tensors are composed of a number of terms equal to the number
+        of qubits."""
         decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
         n = int(np.log2(len(hamiltonian)))
 
