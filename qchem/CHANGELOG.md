@@ -15,15 +15,15 @@
   >>> n_spinorbitals = 4
   >>> ph_confs, pphh_confs = sd_excitations(n_electrons, n_spinorbitals)
   >>> print(ph_confs)
-  >>> print(pphh_confs)
   [[0, 2], [1, 3]]
+  >>> print(pphh_confs)
   [[0, 1, 2, 3]]
 
   >>> wires=['a0', 'b1', 'c2', 'd3']
   >>> ph, pphh = ph_pphh_wires(ph_confs, pphh_confs, wires=wires)
   >>> print(ph)
-  >>> print(pphh)
   [['a0', 'b1', 'c2'], ['b1', 'c2', 'd3']]
+  >>> print(pphh)
   [[['a0', 'b1'], ['c2', 'd3']]]
   ```
 * The function ``hf_state`` outputs an array with the occupation-number
