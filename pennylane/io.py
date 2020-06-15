@@ -57,7 +57,6 @@ def load(quantum_circuit_object, format: str):
         object
     """
 
-    print(format,plugin_converters, iter_entry_points("pennylane.io"))
     if format in plugin_converters:
 
         # loads the plugin load function
