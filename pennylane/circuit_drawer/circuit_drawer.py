@@ -159,20 +159,20 @@ class CircuitDrawer:
 
             representation_grid.append_layer(representation_layer)
 
-    def add_multi_wire_connectors_to_layer(self, subsystems, decoration_layer):
+    def add_multi_wire_connectors_to_layer(self, registers, decoration_layer):
         """Add multi wire connectors for the given wires to a layer.
 
         Args:
-            subsystems (list[int]): The indices of wires that are to be connected
+            registers (list[int]): The indices of wires that are to be connected
             decoration_layer (list[str]): The decoration layer to which the wires will be added
         """
-        min_wire = min(subsystems)
-        max_wire = max(subsystems)
+        min_wire = min(registers)
+        max_wire = max(registers)
 
         decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
 
         for k in range(min_wire + 1, max_wire):
-            if k in subsystems:
+            if k in registers:
                 decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
             else:
                 decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR

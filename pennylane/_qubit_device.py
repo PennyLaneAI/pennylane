@@ -281,8 +281,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                subsystems = self.wire_map(obs.wires)
-                results.append(self.probability(wires=subsystems))
+                results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -403,19 +402,19 @@ class QubitDevice(Device):
 
         wires = Wires(wires)
         # get indices of wires on the device's register
-        subsystems = self.wire_map(wires)
+        registers = self.wire_map(wires)
         # consider only the requested wires
-        subsystems = np.hstack(subsystems)
+        registers = np.hstack(registers)
 
-        samples = self._samples[:, np.array(subsystems)]
+        samples = self._samples[:, np.array(registers)]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        unraveled_indices = [2] * len(subsystems)
+        unraveled_indices = [2] * len(registers)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
 
         # count the basis state occurrences, and construct the probability vector
         basis_states, counts = np.unique(indices, return_counts=True)
-        prob = np.zeros([2 ** len(subsystems)], dtype=np.float64)
+        prob = np.zeros([2 ** len(registers)], dtype=np.float64)
         prob[basis_states] = counts / self.shots
         return self._asarray(prob, dtype=self.R_DTYPE)
 
@@ -480,50 +479,45 @@ class QubitDevice(Device):
 
         wires = Wires(wires)
         # get indices of wires on the device's register
-        subsystems = self.wire_map(wires)
+        registers = self.wire_map(wires)
 
-        subsystems = np.hstack(subsystems)
+        registers = np.hstack(registers)
 
         # determine which subsystems are to be summed over
-        inactive_subsystems = list(set(range(self.num_wires)) - set(subsystems))
+        inactive_registers = list(set(range(self.num_wires)) - set(registers))
 
         # reshape the probability so that each axis corresponds to a wire
         prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = self._flatten(self._reduce_sum(prob, inactive_subsystems))
+        prob = self._flatten(self._reduce_sum(prob, inactive_registers))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(subsystems))))
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(registers))))
         perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(subsystems))].T, [2] * len(subsystems)
+            basis_states[:, np.argsort(np.argsort(registers))].T, [2] * len(registers)
         )
         return self._gather(prob, perm)
 
     def expval(self, observable):
 
-        # get indices of wires on the device
-        subsystems = self.wire_map(observable.wires)
-
         if self.analytic:
             # exact expectation value
             eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            prob = self.probability(wires=subsystems)
+            prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
         # estimate the ev
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        # get indices of wires on the device
-        subsystems = self.wire_map(observable.wires)
 
         if self.analytic:
             # exact variance value
             eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            prob = self.probability(wires=subsystems)
+            prob = self.probability(wires=observable.wires)
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
@@ -531,17 +525,17 @@ class QubitDevice(Device):
 
     def sample(self, observable):
         # get indices of wires on the device
-        subsystems = self.wire_map(observable.wires)
+        registers = self.wire_map(observable.wires)
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, subsystems[0]]
+            return 1 - 2 * self._samples[:, registers[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        subsystems = np.hstack(subsystems)
-        samples = self._samples[:, np.array(subsystems)]
-        unraveled_indices = [2] * len(subsystems)
+        registers = np.hstack(registers)
+        samples = self._samples[:, np.array(registers)]
+        unraveled_indices = [2] * len(registers)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]

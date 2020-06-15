@@ -703,14 +703,14 @@ class DefaultGaussian(Device):
     def apply(self, operation, wires, par):
 
         # get indices of the wires on the device's register
-        subsystems = self.wire_map(wires)
+        registers = self.wire_map(wires)
 
         if operation == "Displacement":
-            self._state = displacement(self._state, subsystems[0], par[0] * cmath.exp(1j * par[1]))
+            self._state = displacement(self._state, registers[0], par[0] * cmath.exp(1j * par[1]))
             return  # we are done here
 
         if operation == "GaussianState":
-            if len(subsystems) != self.num_wires:
+            if len(registers) != self.num_wires:
                 raise ValueError(
                     "GaussianState means vector or covariance matrix is "
                     "the incorrect size for the number of subsystems."
@@ -722,14 +722,14 @@ class DefaultGaussian(Device):
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
-            self._state = set_state(self._state, subsystems[0], mu, cov)
+            self._state = set_state(self._state, registers[0], mu, cov)
             return  # we are done here
 
         # get the symplectic matrix
         S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
-        S = self.expand(S, subsystems)
+        S = self.expand(S, registers)
 
         # apply symplectic matrix to the means vector
         means = S @ self._state[0]
@@ -738,12 +738,12 @@ class DefaultGaussian(Device):
 
         self._state = [means, cov]
 
-    def expand(self, S, subsystems):
+    def expand(self, S, registers):
         r"""Expands a Symplectic matrix S to act on the entire subsystem.
 
         Args:
             S (array): a :math:`2M\times 2M` Symplectic matrix
-            subsystems (Sequence[int]): indices of the wires of the modes that S acts on
+            registers (Sequence[int]): indices of the wires of the modes that S acts on
 
         Returns:
             array: the resulting :math:`2N\times 2N` Symplectic matrix
@@ -753,7 +753,7 @@ class DefaultGaussian(Device):
             return S
 
         N = self.num_wires
-        w = np.asarray(subsystems)
+        w = np.asarray(registers)
 
         if np.any(w < 0) or np.any(w >= N) or len(set(w)) != len(w):
             raise ValueError("Invalid target subsystems provided in 'wires' argument.")
@@ -761,7 +761,7 @@ class DefaultGaussian(Device):
         M = len(S) // 2
         S2 = np.identity(2 * N)
 
-        if M != len(subsystems):
+        if M != len(registers):
             raise ValueError("Incorrect number of subsystems for provided operation.")
 
         S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:M, :M].copy()  # XX
@@ -773,15 +773,15 @@ class DefaultGaussian(Device):
 
     def expval(self, observable, wires, par):
         # get indices of wires on this device's register
-        subsystems = self.wire_map(wires)
+        registers = self.wire_map(wires)
 
         if observable == "PolyXP":
             mu, cov = self._state
         else:
-            mu, cov = self.reduced_state(subsystems)
+            mu, cov = self.reduced_state(registers)
 
         ev, var = self._observable_map[observable](
-            mu, cov, subsystems, par, self.num_wires, hbar=self.hbar
+            mu, cov, registers, par, self.num_wires, hbar=self.hbar
         )
 
         if not self.analytic:
@@ -794,11 +794,11 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
         # get indices of wires on this device's register
-        subsystems = self.wire_map(wires)
+        registers = self.wire_map(wires)
 
-        mu, cov = self.reduced_state(subsystems)
+        mu, cov = self.reduced_state(registers)
         _, var = self._observable_map[observable](
-            mu, cov, subsystems, par, hbar=self.hbar, total_wires=self.num_wires
+            mu, cov, registers, par, hbar=self.hbar, total_wires=self.num_wires
         )
         return var
 
@@ -813,7 +813,7 @@ class DefaultGaussian(Device):
 
         Args:
             observable (str): name of the observable
-            wires (Wires): subsystems the observable is to be measured on
+            wires (Wires): wires the observable is to be measured on
             par (tuple): parameters for the observable
 
         Returns:
@@ -821,9 +821,9 @@ class DefaultGaussian(Device):
         """
 
         # get indices of wires on this device's register
-        subsystems = self.wire_map(wires)
+        registers = self.wire_map(wires)
 
-        if len(subsystems) != 1:
+        if len(registers) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")
 
         if observable == "X":
@@ -837,7 +837,7 @@ class DefaultGaussian(Device):
                 "default.gaussian does not support sampling {}".format(observable)
             )
 
-        mu, cov = self.reduced_state(subsystems)
+        mu, cov = self.reduced_state(registers)
         rot = rotation(phi)
 
         muphi = rot.T @ mu
@@ -852,30 +852,30 @@ class DefaultGaussian(Device):
         # init the state vector to |00..0>
         self._state = vacuum_state(self.num_wires, self.hbar)
 
-    def reduced_state(self, subsystems):
+    def reduced_state(self, registers):
         r""" Returns the vector of means and the covariance matrix of the specified wires.
 
         Args:
-            subsystems (Iterable[int] or int): indices of the requested wires
+            registers (Iterable[int] or int): indices of the requested wires
 
         Returns:
             tuple (means, cov): means is an array containing the vector of means,
             and cov is a square array containing the covariance matrix
         """
-        if subsystems == list(range(self.num_wires)):
+        if registers == list(range(self.num_wires)):
             # reduced state is full state
             return self._state
 
         # reduce rho down to specified subsystems
-        if isinstance(subsystems, int):
-            subsystems = [subsystems]
+        if isinstance(registers, int):
+            registers = [registers]
 
-        if np.any(np.array(subsystems) > self.num_wires):
+        if np.any(np.array(registers) > self.num_wires):
             raise ValueError(
                 "The specified wires cannot " "be larger than the number of subsystems."
             )
 
-        ind = np.concatenate([np.array(subsystems), np.array(subsystems) + self.num_wires])
+        ind = np.concatenate([np.array(registers), np.array(registers) + self.num_wires])
         rows = ind.reshape(-1, 1)
         cols = ind.reshape(1, -1)
 
