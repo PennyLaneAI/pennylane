@@ -40,7 +40,7 @@ def decompose_hamiltonian(H, hide_identity=False):
             the tensor products of the decomposition if ``True``
 
     Returns:
-        tuple[list[float], list[~.Observable]]: Returns a list of coefficients and a list
+        tuple[list[float], list[~.Observable]]: a list of coefficients and a list
         of corresponding tensor products of Pauli observables that decompose the Hamiltonian.
 
     **Example:**
