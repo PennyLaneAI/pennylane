@@ -83,7 +83,7 @@ class TestDecomposition:
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"
+                "Hamiltonian should have shape"
             ),
         ):
             pu.decompose_hamiltonian(np.ones((3, 3)))
