@@ -1275,7 +1275,7 @@ class TestDefaultTensorIntegration:
 
         # text warning raised if matrix is complex
         with pytest.warns(RuntimeWarning, match="Nonvanishing imaginary part"):
-            dev.ev(obs_node, wires=[[0]])
+            dev.ev(obs_node, subsystems=[[0]])
 
     @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
     def test_correct_state_no_params(self, rep, method):
