@@ -18,10 +18,9 @@ import pytest
 import functools
 import numpy as np
 from numpy.linalg import multi_dot
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.templates.layers import StronglyEntanglingLayers
+from pennylane.wires import Wires
 
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli
 
@@ -329,6 +328,131 @@ class TestOperations:
         op = ops(wires=range(ops.num_wires))
         res = op.matrix
         assert np.allclose(res, mat, atol=tol, rtol=0)
+
+    def test_x_decomposition(self, tol):
+        """Tests that the decomposition of the PauliX is correct"""
+        op = qml.PauliX(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 3
+
+        assert res[0].name == "PhaseShift"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 2
+        
+        assert res[1].name == "RX"
+        assert res[1].wires == qml.wires.Wires([0])
+        assert res[1].params[0] == np.pi
+        
+        assert res[2].name == "PhaseShift"
+        assert res[2].wires == qml.wires.Wires([0])
+        assert res[2].params[0] == np.pi / 2
+
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_y_decomposition(self, tol):
+        """Tests that the decomposition of the PauliY is correct"""
+        op = qml.PauliY(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 3
+
+        assert res[0].name == "PhaseShift"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 2
+        
+        assert res[1].name == "RY"
+        assert res[1].wires == qml.wires.Wires([0])
+        assert res[1].params[0] == np.pi
+        
+        assert res[2].name == "PhaseShift"
+        assert res[2].wires == qml.wires.Wires([0])
+        assert res[2].params[0] == np.pi / 2
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_z_decomposition(self, tol):
+        """Tests that the decomposition of the PauliZ is correct"""
+        op = qml.PauliZ(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 1
+
+        assert res[0].name == "PhaseShift"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi
+        
+        decomposed_matrix = res[0].matrix
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_s_decomposition(self, tol):
+        """Tests that the decomposition of the S gate is correct"""
+        op = qml.S(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 1
+
+        assert res[0].name == "PhaseShift"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 2
+        
+        decomposed_matrix = res[0].matrix
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_t_decomposition(self, tol):
+        """Tests that the decomposition of the T gate is correct"""
+        op = qml.T(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 1
+
+        assert res[0].name == "PhaseShift"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 4
+        
+        decomposed_matrix = res[0].matrix
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_hadamard_decomposition(self, tol):
+        """Tests that the decomposition of the Hadamard gate is correct"""
+        op = qml.Hadamard(wires=0)
+        res = op.decomposition(0)
+
+        assert len(res) == 3
+
+        assert res[0].name == "PhaseShift"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 2
+
+        assert res[1].name == "RX"
+        assert res[1].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 2
+        
+        assert res[2].name == "PhaseShift"
+        assert res[2].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == np.pi / 2
+        
+        decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+
+    def test_phase_decomposition(self, tol):
+        """Tests that the decomposition of the Phase gate is correct"""
+        phi = 0.3
+        op = qml.PhaseShift(phi, wires=0)
+        res = op.decomposition(phi, 0)
+
+        assert len(res) == 1
+
+        assert res[0].name == "RZ"
+        assert res[0].wires == qml.wires.Wires([0])
+        assert res[0].params[0] == 0.3
+        
+        decomposed_matrix = res[0].matrix
+        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
 
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
@@ -686,7 +810,7 @@ class TestPauliRot:
         assert len(decomp_ops) == 1
 
         assert decomp_ops[0].name == "MultiRZ"
-        assert decomp_ops[0].wires == [0, 1]
+        assert decomp_ops[0].wires == Wires([0, 1])
         assert decomp_ops[0].params[0] == theta
 
     def test_PauliRot_decomposition_XY(self):
@@ -699,21 +823,21 @@ class TestPauliRot:
         assert len(decomp_ops) == 5
 
         assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == [0]
+        assert decomp_ops[0].wires == Wires([0])
 
         assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == [1]
+        assert decomp_ops[1].wires == Wires([1])
         assert decomp_ops[1].params[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == [0, 1]
+        assert decomp_ops[2].wires == Wires([0, 1])
         assert decomp_ops[2].params[0] == theta
 
         assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == [0]
+        assert decomp_ops[3].wires == Wires([0])
 
         assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == [1]
+        assert decomp_ops[4].wires == Wires([1])
         assert decomp_ops[4].params[0] == -np.pi / 2
 
     def test_PauliRot_decomposition_XIYZ(self):
@@ -726,21 +850,21 @@ class TestPauliRot:
         assert len(decomp_ops) == 5
 
         assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == [0]
+        assert decomp_ops[0].wires == Wires([0])
 
         assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == [2]
+        assert decomp_ops[1].wires == Wires([2])
         assert decomp_ops[1].params[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == [0, 2, 3]
+        assert decomp_ops[2].wires == Wires([0, 2, 3])
         assert decomp_ops[2].params[0] == theta
 
         assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == [0]
+        assert decomp_ops[3].wires == Wires([0])
 
         assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == [2]
+        assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].params[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
@@ -786,25 +910,31 @@ class TestPauliRot:
     def test_matrix_incorrect_pauli_word_error(self):
         """Test that _matrix throws an error if a wrong Pauli word is supplied."""
 
-        with pytest.raises(ValueError, match="The given Pauli word \".*\" contains characters that are not allowed." \
-            " Allowed characters are I, X, Y and Z"):
+        with pytest.raises(
+            ValueError,
+            match='The given Pauli word ".*" contains characters that are not allowed.'
+            " Allowed characters are I, X, Y and Z",
+        ):
             qml.PauliRot._matrix(0.3, "IXYZV")
 
     def test_init_incorrect_pauli_word_error(self):
         """Test that __init__ throws an error if a wrong Pauli word is supplied."""
 
-        with pytest.raises(ValueError, match="The given Pauli word \".*\" contains characters that are not allowed." \
-            " Allowed characters are I, X, Y and Z"):
+        with pytest.raises(
+            ValueError,
+            match='The given Pauli word ".*" contains characters that are not allowed.'
+            " Allowed characters are I, X, Y and Z",
+        ):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
-    @pytest.mark.parametrize("pauli_word,wires", [
-        ("XYZ", [0, 1]),
-        ("XYZ", [0, 1, 2, 3]),
-    ])
+    @pytest.mark.parametrize("pauli_word,wires", [("XYZ", [0, 1]), ("XYZ", [0, 1, 2, 3]),])
     def test_init_incorrect_pauli_word_length_error(self, pauli_word, wires):
         """Test that __init__ throws an error if a Pauli word of wrong length is supplied."""
 
-        with pytest.raises(ValueError, match="The given Pauli word has length .*, length .* was expected for wires .*"):
+        with pytest.raises(
+            ValueError,
+            match="The given Pauli word has length .*, length .* was expected for wires .*",
+        ):
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
 
@@ -841,14 +971,14 @@ class TestMultiRZ:
         decomp_ops = op.decomposition(theta, wires=[0, 1])
 
         assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == [1, 0]
+        assert decomp_ops[0].wires == Wires([1, 0])
 
         assert decomp_ops[1].name == "RZ"
-        assert decomp_ops[1].wires == [0]
+        assert decomp_ops[1].wires == Wires([0])
         assert decomp_ops[1].params[0] == theta
 
         assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == [1, 0]
+        assert decomp_ops[2].wires == Wires([1, 0])
 
     def test_MultiRZ_decomposition_ZZZ(self):
         """Test that the decomposition for a ZZZ rotation is correct."""
@@ -858,20 +988,20 @@ class TestMultiRZ:
         decomp_ops = op.decomposition(theta, wires=[0, 2, 3])
 
         assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == [3, 2]
+        assert decomp_ops[0].wires == Wires([3, 2])
 
         assert decomp_ops[1].name == "CNOT"
-        assert decomp_ops[1].wires == [2, 0]
+        assert decomp_ops[1].wires == Wires([2, 0])
 
         assert decomp_ops[2].name == "RZ"
-        assert decomp_ops[2].wires == [0]
+        assert decomp_ops[2].wires == Wires([0])
         assert decomp_ops[2].params[0] == theta
 
         assert decomp_ops[3].name == "CNOT"
-        assert decomp_ops[3].wires == [2, 0]
+        assert decomp_ops[3].wires == Wires([2, 0])
 
         assert decomp_ops[4].name == "CNOT"
-        assert decomp_ops[4].wires == [3, 2]
+        assert decomp_ops[4].wires == Wires([3, 2])
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_differentiability(self, angle):
@@ -915,3 +1045,17 @@ class TestMultiRZ:
         assert np.squeeze(circuit.jacobian(angle)) == pytest.approx(
             np.squeeze(decomp_circuit.jacobian(angle)), abs=tol
         )
+
+
+class TestDiagonalQubitUnitary:
+    """Test the DiagonalQubitUnitary operation."""
+
+    def test_decomposition(self):
+        """Test that DiagonalQubitUnitary falls back to QubitUnitary."""
+        D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
+
+        decomp = qml.DiagonalQubitUnitary.decomposition(D, [0, 1, 2])
+
+        assert decomp[0].name == "QubitUnitary"
+        assert decomp[0].wires == Wires([0, 1, 2])
+        assert np.allclose(decomp[0].params[0], np.diag(D))

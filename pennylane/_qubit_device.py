@@ -26,6 +26,7 @@ import numpy as np
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
+from pennylane.wires import Wires
 
 
 class QubitDevice(Device):
@@ -66,7 +67,28 @@ class QubitDevice(Device):
     """
 
     # pylint: disable=too-many-public-methods
+    C_DTYPE = np.complex128
+    R_DTYPE = np.float64
     _asarray = staticmethod(np.asarray)
+    _dot = staticmethod(np.dot)
+    _abs = staticmethod(np.abs)
+    _reduce_sum = staticmethod(lambda array, axes: np.apply_over_axes(np.sum, array, axes))
+    _reshape = staticmethod(np.reshape)
+    _flatten = staticmethod(lambda array: array.flatten())
+    _gather = staticmethod(lambda array, indices: array[indices])
+    _einsum = staticmethod(np.einsum)
+    _cast = staticmethod(np.asarray)
+    _transpose = staticmethod(np.transpose)
+    _tensordot = staticmethod(np.tensordot)
+    _conj = staticmethod(np.conj)
+    _imag = staticmethod(np.imag)
+
+    @staticmethod
+    def _scatter(indices, array, new_dimensions):
+        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+        new_array[indices] = array
+        return new_array
+
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
     def __init__(self, wires=1, shots=1000, analytic=True):
@@ -195,8 +217,8 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires # returns a list of wires
-        [0]
+        >>> op.wires # returns a Wires object representing the wires that the operation acts on
+        Wires([0])
         >>> op.parameters # returns a list of parameters
         [0.2]
         >>> op.inverse # check if the operation should be inverted
@@ -223,13 +245,11 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            set[int]: the set of wires activated by the specified operators
+            Wires: all wires activated by the specified operators
         """
-        wires = []
-        for op in operators:
-            wires.extend(op.wires)
+        list_of_wires = [op.wires for op in operators]
 
-        return set(wires)
+        return Wires.all_wires(list_of_wires)
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
@@ -259,7 +279,7 @@ class QubitDevice(Device):
                 results.append(np.array(self.sample(obs)))
 
             elif obs.return_type is Probability:
-                results.append(self.probability(wires=obs.wires))
+                results.append(self.probability(wires=obs.wires.tolist()))
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
@@ -382,7 +402,7 @@ class QubitDevice(Device):
         # consider only the requested wires
         wires = np.hstack(wires)
 
-        samples = self._samples[:, np.array(wires)]
+        samples = self._samples[:, np.array(wires)]  # TODO: Use indices for nonconsec wires
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(wires)
@@ -392,7 +412,7 @@ class QubitDevice(Device):
         basis_states, counts = np.unique(indices, return_counts=True)
         prob = np.zeros([2 ** len(wires)], dtype=np.float64)
         prob[basis_states] = counts / self.shots
-        return prob
+        return self._asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None):
         """Return either the analytic probability or estimated probability of
@@ -434,7 +454,10 @@ class QubitDevice(Device):
 
             .. math::
 
-                \mathbb{P}^{(2, 0)} = \[ |00\rangle, |10\rangle, |01\rangle, |11\rangle\]
+                \mathbb{P}^{(2, 0)}
+                            = \left[
+                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                              \right]
 
         Args:
             prob: The probabilities to return the marginal probabilities
@@ -450,16 +473,16 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)
+        wires = np.hstack(wires)  # TODO: re-asses for nonconsecutive wires
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = prob.reshape([2] * self.num_wires)
+        prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = np.apply_over_axes(np.sum, prob, inactive_wires).flatten()
+        prob = self._flatten(self._reduce_sum(prob, inactive_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -468,34 +491,34 @@ class QubitDevice(Device):
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
         )
-        return prob[perm]
+        return self._gather(prob, perm)
 
     def expval(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact expectation value
-            eigvals = observable.eigvals
+            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=wires)
-            return (eigvals @ prob).real
+            return self._dot(eigvals, prob)
 
         # estimate the ev
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact variance value
-            eigvals = observable.eigvals
+            eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=wires)
-            return (eigvals ** 2) @ prob - (eigvals @ prob).real ** 2
+            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        wires = observable.wires
+        wires = observable.wires.tolist()  # TODO: re-asses for nonconsecutive wires
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:

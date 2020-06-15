@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
+from pennylane.wires import Wires, WireError
 
 
 @pytest.fixture(scope="function")
@@ -342,7 +343,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == 0
+        assert qnode.ops[0].wires[0] == Wires(0)
 
 
 class TestQNodeExceptions:
@@ -521,11 +522,11 @@ class TestQNodeExceptions:
         """Error: wire arguments must be intergers."""
 
         def circuit(x):
-            qml.RX(x, wires=[0.5])
+            qml.RX(x, wires=[qml.PauliX])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match="Wires must be integers"):
+        with pytest.raises(WireError, match="Wires must be represented by"):
             node(1)
 
     def test_arg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -536,7 +537,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(TypeError, match="Wires must be integers"):
+        with pytest.raises(WireError, match="Wires must be represented by"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -547,7 +548,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(TypeError, match="Wires must be integers"):
+        with pytest.raises(WireError, match="Wires must be represented by"):
             node(x=1)
 
     @pytest.mark.xfail(
@@ -774,11 +775,11 @@ class TestQNodeArgs:
 
         node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(np.pi, q=1)
-        assert node.ops[0].wires == [1]
+        assert node.ops[0].wires == Wires([1])
         assert c == pytest.approx(-1.0, abs=tol)
 
         c = node(np.pi)
-        assert node.ops[0].wires == [default_q]
+        assert node.ops[0].wires == Wires([default_q])
         assert c == pytest.approx(-1.0, abs=tol)
 
     def test_keywordargs_used(self, qubit_device_1_wire, tol):
@@ -1129,7 +1130,8 @@ class TestDecomposition:
 
             @staticmethod
             def decomposition(wires=None):
-                ops = [qml.Hadamard(wires=wires)]
+                phi = 0.3
+                ops = [qml.RZ(phi, wires=wires)]
                 return ops
 
         queue = [qml.Rot(0, 1, 2, wires=0), DummyOp(wires=0), qml.RX(6, wires=0)]
@@ -1295,6 +1297,59 @@ class TestQNodeVariableMap:
         for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
             assert var == expected
 
+    def test_non_trainable_args(self, mock_device):
+        """Test that non trainable args are not converted to Variables"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args({0, 3})
+        var_values = [1.0, 2.0, 3.0, 4.0]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [
+            Variable(0, "a"),
+            var_values[1],
+            var_values[2],
+            Variable(3, "d"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+        assert not kwarg_vars
+
+    def test_numpy_scalars(self, mock_device):
+        """Test that non-differentiable NumPy scalars are correctly cast to Python numeric literals
+        during Variable creation."""
+
+        def circuit(a, b):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args({0})
+        var_values = [np.array(1.0), np.array(2.0)]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [
+            Variable(0, "a[]"),
+            var_values[1].item(),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+        assert not kwarg_vars
+
 
 class TestQNodeDraw:
     """Test functionality related to draw."""
@@ -1319,3 +1374,111 @@ class TestQNodeDraw:
             match="The QNode can only be drawn after its CircuitGraph has been constructed",
         ):
             circuit.draw()
+
+
+class TestTrainableArgs:
+    """Test functionality related to trainable argument setting and validation"""
+
+    def test_all_trainable(self, mock_device):
+        """Test that setting trainable_args to None treats all
+        arguments as differentiable"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args(None)
+        var_values = [1.0, 2.0, 3.0, 4.0]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [
+            Variable(0, "a"),
+            Variable(1, "b"),
+            Variable(2, "c"),
+            Variable(3, "d"),
+        ]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+    def test_none_trainable(self, mock_device):
+        """Test that an empty set results in no trainable arguments"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+        node.set_trainable_args(set())
+        var_values = [1.0, 2.0, 3.0, 4.0]
+        arg_vars, kwarg_vars = node._make_variables(var_values, {})
+
+        expected_arg_vars = [1.0, 2.0, 3.0, 4.0]
+
+        for var, expected in zip(qml.utils._flatten(arg_vars), expected_arg_vars):
+            assert var == expected
+
+    def test_invalid_index_type(self, mock_device):
+        """Test floats and/or negative integers passed raise an exception"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        with pytest.raises(ValueError, match="Argument indices must be positive integers"):
+            node.set_trainable_args({-1, 2})
+
+        with pytest.raises(ValueError, match="Argument indices must be positive integers"):
+            node.set_trainable_args({0.5})
+
+    def test_invalid_index_value(self, mock_device):
+        """Test that an exception is raised if a specified trainable argument doesn't exist"""
+
+        def circuit(a, b, c, d):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        with pytest.raises(ValueError, match=r"not available\. QNode has at most 4 arguments"):
+            node.set_trainable_args({0, 1, 5})
+
+        # QNodes with variable positional arguments turn this check off
+
+        def circuit(a, b, c, d, *args):
+            qml.RX(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            qml.RZ(d, wires=[0])
+
+            return qml.expval(qml.PauliX(0))
+
+        node = BaseQNode(circuit, mock_device)
+
+        assert node.func.var_pos
+        assert node.func.n_pos == 4
+
+        # The following will no longer raise an exception,
+        # since we do not know in advance how many arguments
+        # the user will evaluate the QNode with.
+        node.set_trainable_args({0, 1, 6})
+        assert node.get_trainable_args() == {0, 1, 6}

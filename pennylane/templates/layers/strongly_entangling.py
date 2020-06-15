@@ -21,11 +21,11 @@ from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
     check_no_variable,
-    check_wires,
     check_type,
     check_number_of_layers,
     get_shape,
 )
+from pennylane.wires import Wires
 
 
 def strongly_entangling_layer(weights, wires, r, imprimitive):
@@ -33,7 +33,7 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
 
     Args:
         weights (array[float]): array of weights of shape ``(len(wires), 3)``
-        wires (Sequence[int]): sequence of qubit indices that the template acts on
+        wires (Wires): wires that the template acts on
         r (int): range of the imprimitive gates of this layer, defaults to 1
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
     """
@@ -43,7 +43,9 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
     n_wires = len(wires)
     if n_wires > 1:
         for i in range(n_wires):
-            imprimitive(wires=[wires[i], wires[(i + r) % n_wires]])
+            act_on = wires.subset([i, i + r], periodic_boundary=True)
+            act_on = act_on.tolist()  # Todo: remove when operator takes Wires object
+            imprimitive(wires=act_on)
 
 
 @template
@@ -69,8 +71,9 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
-        wires (Sequence[int] or int): qubit indices that the template acts on
+        weights (array[float]): array of weights of shape ``(L, M, 3)``
+        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
+            a Wires object.
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None
                                 using :math:`r=l \mod M` for the :math:`l`th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
@@ -82,10 +85,10 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     #############
     # Input checks
 
+    wires = Wires(wires)
+
     check_no_variable(ranges, msg="'ranges' cannot be differentiable")
     check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
-
-    wires = check_wires(wires)
 
     repeat = check_number_of_layers([weights])
 
