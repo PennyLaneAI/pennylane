@@ -408,7 +408,7 @@ class TestDefaultGaussianDevice:
             p = U
             gaussian_dev.apply('Interferometer', wires=[0], par=[p])
 
-        with pytest.raises(ValueError, match="Invalid target subsystems provided in 'wires' argument"):
+        with pytest.raises(qml.wires.WireError, match="Wire with label"):
             p = U2
             #dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
             gaussian_dev.apply('Interferometer', wires=[0, 1, 2], par=[p])

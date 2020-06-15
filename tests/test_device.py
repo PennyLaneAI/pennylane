@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane import Device, DeviceError
 from pennylane.qnodes import QuantumFunctionError
+from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -493,9 +494,9 @@ class TestOperations:
             m.setattr(Device, 'apply', lambda self, op, wires, params: call_history.append([op, wires, params]))
             dev.execute(queue, observables)
 
-        assert call_history[0] == ["PauliX", [0], []]
-        assert call_history[1] == ["PauliY", [1], []]
-        assert call_history[2] == ["PauliZ", [2], []]
+        assert call_history[0] == ["PauliX", Wires([0]), []]
+        assert call_history[1] == ["PauliY", Wires([1]), []]
+        assert call_history[2] == ["PauliZ", Wires([2]), []]
 
     def test_unsupported_operations_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
@@ -577,9 +578,9 @@ class TestObservables:
             m.setattr(Device, 'sample', lambda self, *args: sample_args.extend(args))
             dev.execute([], observables)
 
-        assert expval_args == ["PauliX", [0], []]
-        assert var_args == ["PauliY", [1], []]
-        assert sample_args == ["PauliZ", [2], []]
+        assert expval_args == ["PauliX", Wires([0]), []]
+        assert var_args == ["PauliY", Wires([1]), []]
+        assert sample_args == ["PauliZ", Wires([2]), []]
 
     def test_unsupported_observables_raise_error(self, mock_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""

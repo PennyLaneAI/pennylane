@@ -155,9 +155,12 @@ class Wires(Sequence):
             if len(wire) != 1:
                 raise WireError("Can only retrieve index of a Wires object of length 1.")
 
-            return self.wire_tuple.index(wire.wire_tuple[0])
+            wire = wire.wire_tuple[0]
 
-        return self.wire_tuple.index(wire)
+        try:
+            return self.wire_tuple.index(wire)
+        except ValueError:
+            raise WireError("Wire with label {} not found in {}.".format(wire, self))
 
     def indices(self, wires):
         """

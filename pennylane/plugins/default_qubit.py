@@ -27,6 +27,7 @@ import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
+from pennylane.wires import Wires
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -38,9 +39,9 @@ class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
     Args:
-        wires (int or iterable): Number of subsystems represented by the device, or iterable that contains
-            unique labels for the subsystems as numbers (i.e., ``[0, 2, 3]``) or strings (``['ancilla', 'q1', 'q2']``).
-            Default 1 if not specified.
+        wires (Union[int, Iterable[Union[Number, str]]]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, then the number of shots is ignored
@@ -328,18 +329,17 @@ class DefaultQubit(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
-    def analytic_probability(self, subsystems=None):
-        """Return the (marginal) analytic probability of each computational basis state.
+    def analytic_probability(self, wires=None):
 
-        Args:
-            subsystems (Sequence[int]): indices of the target wires
-
-        Returns:
-            array: vector of marginal probabilities
-        """
         if self._state is None:
             return None
 
-        subsystems = subsystems or range(self.num_wires)
+        if wires is None:
+            subsystems = list(range(self.num_wires))
+        else:
+            wires = Wires(wires)
+            # get indices of wires on the device's register
+            subsystems = self.wire_map(wires)
+
         prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, subsystems)
         return prob

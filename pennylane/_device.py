@@ -43,9 +43,9 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int or iterable): Number of subsystems represented by the device, or iterable that contains
-            unique labels for the subsystems as numbers (i.e., ``[0, 2, 3]``) or strings (``['ancilla', 'q1', 'q2']``).
-            Default 1 if not specified.
+        wires (Union[int, Iterable[Union[Number, str]]]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
@@ -206,9 +206,7 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                # indices of the wires in the device's register
-                subsystems = self.wire_map(operation.wires)
-                self.apply(operation.name, subsystems, operation.parameters)
+                self.apply(operation.name, operation.wires, operation.parameters)
 
             self.post_apply()
 
@@ -218,22 +216,21 @@ class Device(abc.ABC):
 
                 if isinstance(obs, Tensor):
                     # if obs is a tensor observable, retrieve indices of subsystems
-                    subsystems = [self.wire_map(ob.wires) for ob in obs.obs]
+                    wires = [ob.wires for ob in obs.obs]
                 else:
-                    # indices of the wires in the device's register
-                    subsystems = self.wire_map(obs.wires)
+                    wires = obs.wires
 
                 if obs.return_type is Expectation:
-                    results.append(self.expval(obs.name, subsystems, obs.parameters))
+                    results.append(self.expval(obs.name, wires, obs.parameters))
 
                 elif obs.return_type is Variance:
-                    results.append(self.var(obs.name, subsystems, obs.parameters))
+                    results.append(self.var(obs.name, wires, obs.parameters))
 
                 elif obs.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, subsystems, obs.parameters)))
+                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
 
                 elif obs.return_type is Probability:
-                    results.append(list(self.probability(subsystems=subsystems).values()))
+                    results.append(list(self.probability(wires=wires).values()))
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError(
@@ -488,7 +485,7 @@ class Device(abc.ABC):
 
         Args:
             operation (str): name of the operation
-            wires (Sequence[int]): subsystems the operation is applied on
+            wires (Wires): wires that the operation is applied to
             par (tuple): parameters for the operation
         """
 
@@ -501,7 +498,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
@@ -516,7 +513,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Raises:
@@ -540,7 +537,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (List[int] or List[List[int]]): subsystems the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Raises:

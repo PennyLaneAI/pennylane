@@ -191,6 +191,9 @@ class TestWires:
         # check that Wires of length >1 produce an error
         with pytest.raises(WireError, match="Can only retrieve index"):
             wires.index(Wires([1, 2]))
+        # check that error raised when wire does not exist
+        with pytest.raises(WireError, match="Wire with label d not found"):
+            wires.index(Wires(['d']))
 
     def test_indices_method(self):
         """Tests the ``indices()`` method."""
