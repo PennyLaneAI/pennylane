@@ -153,7 +153,7 @@ class CircuitGraph:
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
         self.register = register
-        """Wires: register of wires that are adressed in the operations. 
+        """Wires: register of wires that are addressed in the operations. 
         Required to translate between wires and indices of the wires in the register."""
         self.num_wires = len(register)
         """int: number of wires the circuit contains"""
