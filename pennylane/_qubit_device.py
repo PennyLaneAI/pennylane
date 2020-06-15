@@ -393,7 +393,7 @@ class QubitDevice(Device):
         using the generated samples.
 
         Args:
-                wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to calculate
+            wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to calculate
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
@@ -427,8 +427,7 @@ class QubitDevice(Device):
 
         Args:
             wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to return
-                marginal probabilities for. Wires not provided
-                are traced out of the system.
+                marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
             List[float]: list of the probabilities

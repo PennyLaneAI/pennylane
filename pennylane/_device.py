@@ -215,7 +215,6 @@ class Device(abc.ABC):
             for obs in observables:
 
                 if isinstance(obs, Tensor):
-                    # if obs is a tensor observable, retrieve indices of subsystems
                     wires = [ob.wires for ob in obs.obs]
                 else:
                     wires = obs.wires
