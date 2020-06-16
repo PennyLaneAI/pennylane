@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires.tolist())
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 
@@ -360,13 +360,13 @@ class BaseQNode(qml.QueuingContext):
 
     def _append_operator(self, operator):
         if operator.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
-            if set(operator.wires.tolist()) != set(range(self.num_wires)):
+            if set(operator.wires) != set(range(self.num_wires)):
                 raise QuantumFunctionError(
                     "Operator {} must act on all wires".format(operator.name)
                 )
 
         # Make sure only existing wires are used.
-        for w in operator.wires.tolist():  # TODO: re-assess for for nonconsec wires
+        for w in operator.wires:
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "

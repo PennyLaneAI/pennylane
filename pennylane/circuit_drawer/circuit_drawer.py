@@ -132,7 +132,7 @@ class CircuitDrawer:
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
             qml.utils._flatten(raw_observable_grid)
         )
-        all_wires = [op.wires.tolist() for op in all_operators if op is not None]
+        all_wires = [op.wires for op in all_operators if op is not None]
         circuit_wires = sorted(set(qml.utils._flatten(all_wires)))
         internal_wires = list(range(len(circuit_wires)))
 
@@ -229,7 +229,7 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                wires = op.wires.tolist()
+                wires = op.wires
 
                 if len(wires) > 1:
                     internal_wires = self.circuit_wires_to_internal_wires(wires)
@@ -307,7 +307,7 @@ class CircuitDrawer:
                     continue
 
                 if len(op.wires) > 1:
-                    sorted_wires = op.wires.tolist().copy()
+                    sorted_wires = op.wires.copy()
                     sorted_wires.sort()
 
                     blocked_wires = list(range(sorted_wires[0], sorted_wires[-1] + 1))
@@ -318,7 +318,7 @@ class CircuitDrawer:
                         if other_op is None:
                             continue
 
-                        other_sorted_wires = other_op.wires.tolist().copy()
+                        other_sorted_wires = other_op.wires.copy()
                         other_sorted_wires.sort()
                         other_blocked_wires = list(
                             range(other_sorted_wires[0], other_sorted_wires[-1] + 1)
