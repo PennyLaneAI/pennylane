@@ -21,14 +21,14 @@ from pennylane.templates.subroutines import UCCSD
           [['a0', 'b1', 'c2'], ['e4', 'f5', 'g6']]]),
     ]
 )
-def test_mapping_from_ph_to_wires(
+def test_mapping_from_excitations_to_wires(
     ph_confs, pphh_confs, wires, ph_expected, pphh_expected
 ):
 
     r"""Test the correctness of the mapping between indices of the particle-hole
     configurations and the list of wires to be passed to the quantum circuit"""
 
-    ph_res, pphh_res = qchem.ph_pphh_wires(ph_confs, pphh_confs, wires=wires)
+    ph_res, pphh_res = qchem.excitations_to_wires(ph_confs, pphh_confs, wires=wires)
 
     assert len(ph_res) == len(ph_expected)
     assert len(pphh_res) == len(pphh_expected)
@@ -49,13 +49,13 @@ def test_mapping_from_ph_to_wires(
             "Expected number of wires is"),
     ]
 )
-def test_ph_pphh_exceptions(ph_confs, pphh_confs, wires, message_match):
+def test_excitations_to_wires_exceptions(ph_confs, pphh_confs, wires, message_match):
 
-    r"""Test that the function 'ph_pphh_wires()' throws an exception if ``ph_confs``,
+    r"""Test that the function 'excitations_to_wires()' throws an exception if ``ph_confs``,
     ``pphh_confs`` or ``wires`` parameter has illegal shapes or size"""
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.ph_pphh_wires(ph_confs, pphh_confs, wires=wires)
+        qchem.excitations_to_wires(ph_confs, pphh_confs, wires=wires)
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_ph_pphh_exceptions(ph_confs, pphh_confs, wires, message_match):
 def test_integration_with_uccsd(weights, ph_confs, pphh_confs, expected, tol):
     """Test integration with the UCCSD template"""
 
-    ph, pphh = qchem.ph_pphh_wires(ph_confs, pphh_confs)
+    ph, pphh = qchem.excitations_to_wires(ph_confs, pphh_confs)
 
     N = 4
     wires = range(N)
