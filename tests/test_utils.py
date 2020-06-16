@@ -20,7 +20,6 @@ import functools
 import itertools
 from unittest.mock import MagicMock
 import pytest
-import re
 
 import numpy as np
 
