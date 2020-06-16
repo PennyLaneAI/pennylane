@@ -28,7 +28,7 @@ In PennyLane, the abstraction of a quantum device is encompassed within the
 :class:`~.Device` class, making it one of the basic components of the
 library. It includes basic functionality that is shared for quantum
 devices, independent of the qubit and CV models. PennyLane gives access to
-multiple simulators and hardware chips through its plugins, each of these
+multiple simulators and hardware chips through its plugins; each of these
 devices is implemented as a custom class. These classes have the
 ``Device`` class as their parent class.
 
