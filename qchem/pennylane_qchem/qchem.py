@@ -700,14 +700,14 @@ def excitations_to_wires(ph_confs, pphh_confs, wires=None):
 
     >>> ph_confs = [[0, 2], [1, 3]]
     >>> pphh_confs = [[0, 1, 2, 3]]
-    >>> ph, pphh = ph_pphh_wires(ph_confs, pphh_confs)
+    >>> ph, pphh = excitations_to_wires(ph_confs, pphh_confs)
     >>> print(ph)
     [[0, 1, 2], [1, 2, 3]]
     >>> print(pphh)
     [[[0, 1], [2, 3]]]
 
     >>> wires=['a0', 'b1', 'c2', 'd3']
-    >>> ph, pphh = ph_pphh_wires(ph_confs, pphh_confs, wires=wires)
+    >>> ph, pphh = excitations_to_wires(ph_confs, pphh_confs, wires=wires)
     >>> print(ph)
     [['a0', 'b1', 'c2'], ['b1', 'c2', 'd3']]
     >>> print(pphh)
