@@ -41,6 +41,17 @@ def s2_me_table(sz, n_spin_orbs):
     :math:`\varphi_\alpha({\bf r})` and spin :math:`\chi_{m_\alpha}(s_z)` wave functions,
     respectively, of the single-particle state :math:`\vert \alpha \rangle`.
 
+    **Example**
+
+    >>> sz = np.array([0.5, -0.5])
+    >>> print(s2_me_table(sz, 2))
+    [[ 0.    0.    0.    0.    0.25]
+     [ 0.    1.    1.    0.   -0.25]
+     [ 1.    0.    0.    1.   -0.25]
+     [ 1.    1.    1.    1.    0.25]
+     [ 0.    1.    0.    1.    0.5 ]
+     [ 1.    0.    1.    0.    0.5 ]]
+
     Args:
         sz (array[float]): spin-projection quantum number of the spin-orbitals
         n_spin_orbs (int): number of spin orbitals
@@ -85,6 +96,33 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
     generates the table with the matrix elements of the two-particle spin operator
     :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
 
+    **Example**
+    >>> get_s2_me('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
+    [[ 0.    0.    0.    0.    0.25]
+     [ 0.    1.    1.    0.   -0.25]
+     [ 0.    2.    2.    0.    0.25]
+     [ 0.    3.    3.    0.   -0.25]
+     [ 1.    0.    0.    1.   -0.25]
+     [ 1.    1.    1.    1.    0.25]
+     [ 1.    2.    2.    1.   -0.25]
+     [ 1.    3.    3.    1.    0.25]
+     [ 2.    0.    0.    2.    0.25]
+     [ 2.    1.    1.    2.   -0.25]
+     [ 2.    2.    2.    2.    0.25]
+     [ 2.    3.    3.    2.   -0.25]
+     [ 3.    0.    0.    3.   -0.25]
+     [ 3.    1.    1.    3.    0.25]
+     [ 3.    2.    2.    3.   -0.25]
+     [ 3.    3.    3.    3.    0.25]
+     [ 0.    1.    0.    1.    0.5 ]
+     [ 0.    3.    2.    1.    0.5 ]
+     [ 1.    0.    1.    0.    0.5 ]
+     [ 1.    2.    3.    0.    0.5 ]
+     [ 2.    1.    0.    3.    0.5 ]
+     [ 2.    3.    2.    3.    0.5 ]
+     [ 3.    0.    1.    2.    0.5 ]
+     [ 3.    2.    3.    2.    0.5 ]] 1.5
+
     Args:
         mol_name (str): name of the molecule
         hf_data (str): path to the directory with the HF electronic structure data file
@@ -113,6 +151,7 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
     n_spin_orbs = 2*len(active_indices)
     
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    print(sz)
     
     return s2_me_table(sz, n_spin_orbs), 3/4*n_electrons
 
@@ -153,6 +192,29 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit observable is
     post-processed by the function :func:`~.convert_observable` to make it a PennyLane observable.
 
+    **Example**
+    >>> s2_me_table, init_term = get_s2_me('h2', './pyscf/sto-3g')
+    >>> s2_obs = observable(s2_me_table, init_term=init_term)
+    (0.75) [I<Wires = [0]>]
+    + (0.375) [Z<Wires = [1]>]
+    + (-0.375) [Z<Wires = [0]> Z<Wires = [1]>]
+    + (0.125) [Z<Wires = [0]> Z<Wires = [2]>]
+    + (0.375) [Z<Wires = [0]>]
+    + (-0.125) [Z<Wires = [0]> Z<Wires = [3]>]
+    + (-0.125) [Z<Wires = [1]> Z<Wires = [2]>]
+    + (0.125) [Z<Wires = [1]> Z<Wires = [3]>]
+    + (0.375) [Z<Wires = [2]>]
+    + (0.375) [Z<Wires = [3]>]
+    + (-0.375) [Z<Wires = [2]> Z<Wires = [3]>]
+    + (0.125) [Y<Wires = [0]> X<Wires = [1]> Y<Wires = [2]> X<Wires = [3]>]
+    + (0.125) [Y<Wires = [0]> Y<Wires = [1]> X<Wires = [2]> X<Wires = [3]>]
+    + (0.125) [Y<Wires = [0]> Y<Wires = [1]> Y<Wires = [2]> Y<Wires = [3]>]
+    + (-0.125) [Y<Wires = [0]> X<Wires = [1]> X<Wires = [2]> Y<Wires = [3]>]
+    + (-0.125) [X<Wires = [0]> Y<Wires = [1]> Y<Wires = [2]> X<Wires = [3]>]
+    + (0.125) [X<Wires = [0]> X<Wires = [1]> X<Wires = [2]> X<Wires = [3]>]
+    + (0.125) [X<Wires = [0]> X<Wires = [1]> Y<Wires = [2]> Y<Wires = [3]>]
+    + (0.125) [X<Wires = [0]> Y<Wires = [1]> X<Wires = [2]> Y<Wires = [3]>]
+
     Args:
         me_table (array[float]): Numpy array with the table of matrix elements.
             For a single-particle operator this array will have shape
@@ -189,9 +251,17 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     # Map the fermionic to a qubit operator measurable in PennyLane
     if mapping.strip().lower() == "bravyi_kitaev":
-        return convert_hamiltonian(bravyi_kitaev(mb_obs))
+        return qchem.convert_observable(bravyi_kitaev(mb_obs))
 
-    return convert_hamiltonian(jordan_wigner(mb_obs))    
+    return qchem.convert_observable(jordan_wigner(mb_obs))
+
+
+# sz = np.where(np.arange(2) % 2 == 0, 0.5, -0.5)
+# print(sz)
+# a = s2_me_table(sz, 2)
+# print(s2_me_table(sz, 2))
+# exit()
+
 
 mol_name = "h2"
 geo_file = "h2.xyz"
@@ -204,9 +274,19 @@ n_orbitals = 2
 
 geometry = qchem.read_structure(geo_file)
 hf_data = qchem.meanfield_data("h2", geometry, charge, multiplicity, basis)
+print(hf_data)
 s2_me_table, init_term = get_s2_me(
     mol_name, hf_data,
     n_active_electrons=n_electrons,
     n_active_orbitals=n_orbitals
 )
 print(s2_me_table, init_term)
+#exit()
+
+s2_observable = observable(s2_me_table, init_term=init_term, mapping="jordan_wigner")
+#print(type(s2_observable))
+print(s2_observable)
+print(s2_observable.coeffs)
+print(s2_observable.ops)
+print(type(s2_observable.coeffs))
+print(type(s2_observable.ops))
