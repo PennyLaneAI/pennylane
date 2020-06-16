@@ -841,7 +841,7 @@ class DefaultGaussian(Device):
         r""" Returns the vector of means and the covariance matrix of the specified wires.
 
         Args:
-            wires (Iterable[int] or int): indices of the requested wires
+            wires (int of Sequence[int]): indices of the requested wires
 
         Returns:
             tuple (means, cov): means is an array containing the vector of means,

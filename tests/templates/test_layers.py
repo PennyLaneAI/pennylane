@@ -28,7 +28,6 @@ from pennylane.templates.layers import (
 )
 from pennylane.templates.layers.random import random_layer
 from pennylane import RX, RY, RZ, CZ, CNOT
-from pennylane.wires import Wires
 
 TOLERANCE = 1e-8
 
@@ -191,7 +190,7 @@ class TestStronglyEntangling:
 
         assert len(rec.queue) == n_layers
         assert all([isinstance(q, qml.Rot) for q in rec.queue])
-        assert all([q._wires[0] == Wires(0) for q in rec.queue])
+        assert all([q._wires[0] == 0 for q in rec.queue])
 
     def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
         """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
@@ -320,11 +319,11 @@ class TestRandomLayers:
         weights = [[0.1, 0.2, 0.3]]
 
         def circuit1(weights):
-            RandomLayers(weights=weights, wires=range(2), seed=10)
+            RandomLayers(weights=weights, wires=range(2), seed=1)
             return qml.expval(qml.PauliZ(0))
 
         def circuit2(weights):
-            RandomLayers(weights=weights, wires=range(2), seed=20)
+            RandomLayers(weights=weights, wires=range(2), seed=2)
             return qml.expval(qml.PauliZ(0))
 
         qnode1 = qml.QNode(circuit1, dev)
@@ -387,7 +386,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=Wires(range(n_wires)),
+                wires=range(n_wires),
                 ratio_imprim=ratio,
                 imprimitive=CNOT,
                 rotations=[RX, RY, RZ],
@@ -406,7 +405,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=Wires(range(n_subsystems)),
+                wires=range(n_subsystems),
                 ratio_imprim=0.3,
                 imprimitive=impr,
                 rotations=rots,
@@ -426,7 +425,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=Wires(range(n_subsystems)),
+                wires=range(n_subsystems),
                 ratio_imprim=0.3,
                 imprimitive=qml.CNOT,
                 rotations=[RX, RY, RZ],
@@ -444,14 +443,14 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=Wires(range(n_subsystems)),
+                wires=range(n_subsystems),
                 ratio_imprim=0.3,
                 imprimitive=qml.CNOT,
                 rotations=[RX, RY, RZ],
                 seed=42,
             )
 
-        wires = [q._wires.tolist() for q in rec.queue]
+        wires = [q._wires for q in rec.queue]
         wires_flat = [item for w in wires for item in w]
         mean_wire = np.mean(wires_flat)
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)
@@ -465,7 +464,7 @@ class TestRandomLayers:
         with qml.utils.OperationRecorder() as rec:
             random_layer(
                 weights=weights,
-                wires=Wires(range(n_subsystems)),
+                wires=range(n_subsystems),
                 ratio_imprim=0.3,
                 imprimitive=qml.CNOT,
                 rotations=[RX, RY, RZ],

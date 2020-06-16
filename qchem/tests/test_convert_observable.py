@@ -356,7 +356,7 @@ def test_integration_observable_to_vqe_cost(monkeypatch, mol_name, terms_ref, ex
     vqe_observable = qchem.convert_observable(qOp)
 
     # maybe make num_qubits a @property of the Hamiltonian class?
-    num_qubits = max(1, len(set([w for op in vqe_observable.ops for w in op.wires])))
+    num_qubits = max(1, len(set([w for op in vqe_observable.ops for ws in op.wires for w in ws])))
 
     dev = qml.device("default.qubit", wires=num_qubits)
     print(vqe_observable.terms)
@@ -402,7 +402,7 @@ def test_integration_mol_file_to_vqe_cost(
     vqe_hamiltonian = qchem.convert_observable(transformed_hamiltonian)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
 
-    num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for w in op.wires])))
+    num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for ws in op.wires for w in ws])))
     assert num_qubits == 2 * len(act_mo)
 
     dev = qml.device("default.qubit", wires=num_qubits)

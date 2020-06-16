@@ -172,7 +172,7 @@ class TestCircuitGraphHash:
                         (
                          [],
                          [observable3],
-                        '|||[\'PauliZ\', \'PauliZ\'][0, 1]'
+                        '|||[\'PauliZ\', \'PauliZ\'][[0], [1]]'
                         )
 
                      ]

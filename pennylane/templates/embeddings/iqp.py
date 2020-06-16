@@ -15,18 +15,19 @@ r"""
 Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Sequence, Iterable
+from collections import Sequence
 from itertools import combinations
+
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
+    check_wires,
     check_type,
     get_shape,
     check_no_variable,
 )
-from pennylane.wires import Wires
 
 
 @template
@@ -81,8 +82,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
 
     Args:
         features (array): array of features to encode
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Sequence[int] or int): qubit indices that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
         pattern (list[int]): specifies the wires and features of the entanglers
 
@@ -192,7 +192,7 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     #############
     # Input checks
 
-    wires = Wires(wires)
+    wires = check_wires(wires)
 
     check_no_variable(features, msg="'features' cannot be differentiable")
 
@@ -207,24 +207,39 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         n_repeats, [int], msg="'n_repeats' must be an integer; got type {}".format(type(n_repeats))
     )
 
-    if pattern is None:
-        # default is an all-to-all pattern
-        pattern = [Wires(wire_pair) for wire_pair in combinations(wires, 2)]
-    else:
-        # do some checks
-        check_type(
-            pattern,
-            [Iterable, type(None)],
-            msg="'pattern' must be a list of pairs of wires; got {}".format(pattern),
-        )
+    check_type(
+        pattern,
+        [Sequence, type(None)],
+        msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
+    )
+
+    if pattern is not None:
+
+        # check type
+        for p in pattern:
+            check_type(
+                p,
+                [list],
+                msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
+            )
+
+            for w in p:
+                check_type(
+                    w,
+                    [int],
+                    msg="'pattern' must be None or a list of wire pairs; got {}".format(pattern),
+                )
+
+        # check shape
         shape = get_shape(pattern)
         if len(shape) != 2 or shape[1] != 2:
             raise ValueError("'pattern' must be a list of pairs of wires; got {}".format(pattern))
 
-        # convert wire pairs to Wires object
-        pattern = [Wires(wire_pair) for wire_pair in pattern]
-
     #####################
+
+    if pattern is None:
+        # default is an all-to-all pattern
+        pattern = [list(wire_pair) for wire_pair in combinations(wires, 2)]
 
     for i in range(n_repeats):
 
@@ -233,11 +248,12 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
         # encode features into block of RZ rotations
         broadcast(unitary=RZ, pattern="single", wires=wires, parameters=features)
 
-        # create new features for entangling block
+        # entangling block
         products = []
         for wire_pair in pattern:
             # get the position of the wire indices in the array
-            idx1, idx2 = wires.indices(wire_pair)
+            idx1 = wires.index(wire_pair[0])
+            idx2 = wires.index(wire_pair[1])
             # create products of parameters
             products.append(features[idx1] * features[idx2])
 

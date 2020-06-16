@@ -20,11 +20,12 @@ from pennylane import numpy as np
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (
+    check_no_variable,
     check_shape,
     check_type,
+    check_wires,
     get_shape,
 )
-from pennylane.wires import Wires
 
 
 @template
@@ -71,11 +72,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable or Wires): Wires that the template acts on representing the subset of
-            orbitals in the interval ``[r, p]``. Accepts an iterable of numbers or strings
-            or a Wires object, which must be of minimum length 2. The first wire is interpreted as ``r``
-            and the last wire as ``p``. Wires in between are acted on with CNOT gates to compute
-            the parity of the set of qubits.
+        wires (sequence[int]): two-element sequence with the qubit indices ``r, p``
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -92,7 +89,7 @@ def SingleExcitationUnitary(weight, wires=None):
                \bigg[H, R_x(-\frac{\pi}{2}), R_z(-\theta/2) \bigg] \Bigg\}
 
         #. For a given pair ``[r, p]``, ten single-qubit operations are applied. Notice also that
-           CNOT gates act only on qubits ``wires[1]`` to ``wires[-2]``. The operations
+           CNOT gates act only on qubits with indices between ``r`` and ``p``. The operations
            performed across these qubits are shown in dashed lines in the figure above.
 
         An example of how to use this template is shown below:
@@ -105,22 +102,29 @@ def SingleExcitationUnitary(weight, wires=None):
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
-            def circuit(weight, wires=None):
-                SingleExcitationUnitary(weight, wires=wires)
+            def circuit(weight, ph=None):
+                SingleExcitationUnitary(weight, wires=ph)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 0.56
-            print(circuit(weight, wires=[0, 1, 2]))
+            single_excitation = [0, 2]
+            print(circuit(weight, ph=single_excitation))
 
     """
 
     ##############
     # Input checks
 
-    wires = Wires(wires)
+    check_no_variable(wires, msg="'wires' cannot be differentiable")
 
-    if len(wires) < 2:
-        raise ValueError("expected at least two wires; got {}".format(len(wires)))
+    wires = check_wires(wires)
+
+    expected_shape = (2,)
+    check_shape(
+        wires,
+        expected_shape,
+        msg="'wires' must be of shape {}; got {}".format(expected_shape, get_shape(wires)),
+    )
 
     expected_shape = ()
     check_shape(
@@ -129,14 +133,23 @@ def SingleExcitationUnitary(weight, wires=None):
         msg="'weight' must be of shape {}; got {}".format(expected_shape, get_shape(weight)),
     )
 
+    check_type(wires, [list], msg="'wires' must be a list; got {}".format(wires))
+    for w in wires:
+        check_type(w, [int], msg="'wires' must be a list of integers; got {}".format(wires))
+
+    if wires[1] <= wires[0]:
+        raise ValueError(
+            "wires_1 must be greater than wires_0; got wires[1]={}, wires[0]={}".format(
+                wires[1], wires[0]
+            )
+        )
+
     ###############
 
-    # Interpret first and last wire as r and p
-    r = wires[0]
-    p = wires[-1]
+    r, p = wires
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [wires.subset([l, l + 1]) for l in range(len(wires) - 1)]
+    set_cnot_wires = [[l, l + 1] for l in range(r, p)]
 
     # ------------------------------------------------------------------
     # Apply the first layer

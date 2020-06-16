@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
-from pennylane.wires import Wires, WireError
 
 
 @pytest.fixture(scope="function")
@@ -343,7 +342,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == Wires(0)
+        assert qnode.ops[0].wires[0] == 0
 
 
 class TestQNodeExceptions:
@@ -522,11 +521,11 @@ class TestQNodeExceptions:
         """Error: wire arguments must be intergers."""
 
         def circuit(x):
-            qml.RX(x, wires=[qml.PauliX])
+            qml.RX(x, wires=[0.5])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(TypeError, match="Wires must be integers"):
             node(1)
 
     def test_arg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -537,7 +536,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(2))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(TypeError, match="Wires must be integers"):
             node(1)
 
     def test_kwarg_as_wire_argument(self, operable_mock_device_2_wires):
@@ -548,7 +547,7 @@ class TestQNodeExceptions:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         node = BaseQNode(circuit, operable_mock_device_2_wires, mutable=False)
-        with pytest.raises(WireError, match="Wires must be represented by"):
+        with pytest.raises(TypeError, match="Wires must be integers"):
             node(x=1)
 
     @pytest.mark.xfail(
@@ -775,11 +774,11 @@ class TestQNodeArgs:
 
         node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(np.pi, q=1)
-        assert node.ops[0].wires == Wires([1])
+        assert node.ops[0].wires == [1]
         assert c == pytest.approx(-1.0, abs=tol)
 
         c = node(np.pi)
-        assert node.ops[0].wires == Wires([default_q])
+        assert node.ops[0].wires == [default_q]
         assert c == pytest.approx(-1.0, abs=tol)
 
     def test_keywordargs_used(self, qubit_device_1_wire, tol):

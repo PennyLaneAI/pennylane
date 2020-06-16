@@ -20,11 +20,11 @@ from pennylane.ops import RX, RY, RZ, MultiRZ, Hadamard
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
+    check_wires,
     check_is_in_options,
     check_number_of_layers,
     get_shape,
 )
-from pennylane.wires import Wires
 
 
 def qaoa_feature_encoding_hamiltonian(features, wires):
@@ -32,7 +32,7 @@ def qaoa_feature_encoding_hamiltonian(features, wires):
 
     Args:
         features (array): array of features to encode
-        wires (Wires): wires that the template acts on
+        wires (list[int]): qubit indices that the template acts on
     """
 
     feature_encoding_wires = wires[: len(features)]
@@ -47,7 +47,7 @@ def qaoa_ising_hamiltonian(weights, wires, local_fields):
 
     Args:
         weights (array): array of weights for one layer
-        wires (Wires): qubit indices that the template acts on
+        wires (list[int]): qubit indices that the template acts on
         local_fields (str): gate implementing the local field
     """
 
@@ -116,8 +116,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     Args:
         features (array): array of features to encode
         weights (array): array of weights
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Sequence[int] or int): `n` qubit indices that the template acts on
         local_field (str): type of local field used, one of ``'X'``, ``'Y'``, or ``'Z'``
 
     Raises:
@@ -215,7 +214,7 @@ def QAOAEmbedding(features, weights, wires, local_field="Y"):
     #############
     # Input checks
 
-    wires = Wires(wires)
+    wires = check_wires(wires)
 
     expected_shape = (len(wires),)
     check_shape(

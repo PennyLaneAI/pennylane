@@ -18,9 +18,10 @@ import pytest
 import functools
 import numpy as np
 from numpy.linalg import multi_dot
+from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane.templates.layers import StronglyEntanglingLayers
 
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, CZ, S, T, CSWAP, Toffoli
 
@@ -810,7 +811,7 @@ class TestPauliRot:
         assert len(decomp_ops) == 1
 
         assert decomp_ops[0].name == "MultiRZ"
-        assert decomp_ops[0].wires == Wires([0, 1])
+        assert decomp_ops[0].wires == [0, 1]
         assert decomp_ops[0].params[0] == theta
 
     def test_PauliRot_decomposition_XY(self):
@@ -823,21 +824,21 @@ class TestPauliRot:
         assert len(decomp_ops) == 5
 
         assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        assert decomp_ops[0].wires == [0]
 
         assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == Wires([1])
+        assert decomp_ops[1].wires == [1]
         assert decomp_ops[1].params[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 1])
+        assert decomp_ops[2].wires == [0, 1]
         assert decomp_ops[2].params[0] == theta
 
         assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
+        assert decomp_ops[3].wires == [0]
 
         assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == Wires([1])
+        assert decomp_ops[4].wires == [1]
         assert decomp_ops[4].params[0] == -np.pi / 2
 
     def test_PauliRot_decomposition_XIYZ(self):
@@ -850,21 +851,21 @@ class TestPauliRot:
         assert len(decomp_ops) == 5
 
         assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        assert decomp_ops[0].wires == [0]
 
         assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == Wires([2])
+        assert decomp_ops[1].wires == [2]
         assert decomp_ops[1].params[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 2, 3])
+        assert decomp_ops[2].wires == [0, 2, 3]
         assert decomp_ops[2].params[0] == theta
 
         assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
+        assert decomp_ops[3].wires == [0]
 
         assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == Wires([2])
+        assert decomp_ops[4].wires == [2]
         assert decomp_ops[4].params[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
@@ -971,14 +972,14 @@ class TestMultiRZ:
         decomp_ops = op.decomposition(theta, wires=[0, 1])
 
         assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([1, 0])
+        assert decomp_ops[0].wires == [1, 0]
 
         assert decomp_ops[1].name == "RZ"
-        assert decomp_ops[1].wires == Wires([0])
+        assert decomp_ops[1].wires == [0]
         assert decomp_ops[1].params[0] == theta
 
         assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == Wires([1, 0])
+        assert decomp_ops[2].wires == [1, 0]
 
     def test_MultiRZ_decomposition_ZZZ(self):
         """Test that the decomposition for a ZZZ rotation is correct."""
@@ -988,20 +989,20 @@ class TestMultiRZ:
         decomp_ops = op.decomposition(theta, wires=[0, 2, 3])
 
         assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([3, 2])
+        assert decomp_ops[0].wires == [3, 2]
 
         assert decomp_ops[1].name == "CNOT"
-        assert decomp_ops[1].wires == Wires([2, 0])
+        assert decomp_ops[1].wires == [2, 0]
 
         assert decomp_ops[2].name == "RZ"
-        assert decomp_ops[2].wires == Wires([0])
+        assert decomp_ops[2].wires == [0]
         assert decomp_ops[2].params[0] == theta
 
         assert decomp_ops[3].name == "CNOT"
-        assert decomp_ops[3].wires == Wires([2, 0])
+        assert decomp_ops[3].wires == [2, 0]
 
         assert decomp_ops[4].name == "CNOT"
-        assert decomp_ops[4].wires == Wires([3, 2])
+        assert decomp_ops[4].wires == [3, 2]
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_differentiability(self, angle):
@@ -1057,5 +1058,5 @@ class TestDiagonalQubitUnitary:
         decomp = qml.DiagonalQubitUnitary.decomposition(D, [0, 1, 2])
 
         assert decomp[0].name == "QubitUnitary"
-        assert decomp[0].wires == Wires([0, 1, 2])
+        assert decomp[0].wires == [0, 1, 2]
         assert np.allclose(decomp[0].params[0], np.diag(D))

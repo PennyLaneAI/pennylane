@@ -21,11 +21,11 @@ from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
     check_no_variable,
+    check_wires,
     check_is_in_options,
     check_type,
     get_shape,
 )
-from pennylane.wires import Wires
 
 
 @template
@@ -48,8 +48,7 @@ def AngleEmbedding(features, wires, rotation="X"):
     Args:
         features (array): input array of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
-            a Wires object.
+        wires (Sequence[int] or int): qubit indices that the template acts on
         rotation (str): Type of rotations used
 
     Raises:
@@ -59,9 +58,9 @@ def AngleEmbedding(features, wires, rotation="X"):
     #############
     # Input checks
 
-    wires = Wires(wires)
-
     check_no_variable(rotation, msg="'rotation' cannot be differentiable")
+
+    wires = check_wires(wires)
 
     check_shape(
         features,

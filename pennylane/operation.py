@@ -105,7 +105,6 @@ import functools
 import numbers
 from collections.abc import Sequence
 from enum import Enum, IntEnum
-from pennylane.wires import Wires
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -230,8 +229,8 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (Iterable, Number, str, Wires): Iterable containing representations of the wires that the operator acts
-            on, or Wires object. If not given, args[-1] is interpreted as wires.
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
@@ -365,20 +364,6 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        # turn wires into Wires object
-        self._wires = Wires(wires)  #: Wires: wires on which the operator acts
-
-        # check that the number of wires given corresponds to required number
-        if (
-            self.num_wires != AllWires
-            and self.num_wires != AnyWires
-            and len(self._wires) != self.num_wires
-        ):
-            raise ValueError(
-                "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
-            )
-
         if len(params) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "
@@ -391,12 +376,18 @@ class Operator(abc.ABC):
                 self.check_domain(p)
         self.params = list(params)  #: list[Any]: parameters of the operator
 
+        # apply the operator on the given wires
+        if not isinstance(wires, Sequence):
+            wires = [wires]
+        self._check_wires(wires)
+        self._wires = wires  #: tuple[int]: wires on which the operator acts
+
         if do_queue:
             self.queue()
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires.tolist())
+        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires)
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -405,8 +396,41 @@ class Operator(abc.ABC):
         # the last evaluation.
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
-        return "{}(wires={})".format(self.name, self.wires.tolist())
+            return "{}({}, wires={})".format(self.name, params, self.wires)
+        return "{}(wires={})".format(self.name, self.wires)
+
+    def _check_wires(self, wires):
+        """Check the validity of the operator wires.
+
+        Args:
+            wires (Sequence[Any]): wires to check
+        Raises:
+            TypeError, ValueError: list of wires is invalid
+        Returns:
+            tuple[int]: wires converted to integers
+        """
+        for w in wires:
+            if not isinstance(w, numbers.Integral):
+                raise TypeError(
+                    "{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.".format(
+                        self.name
+                    )
+                )
+
+        if (
+            self.num_wires != AllWires
+            and self.num_wires != AnyWires
+            and len(wires) != self.num_wires
+        ):
+            raise ValueError(
+                "{}: wrong number of wires. "
+                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
+            )
+
+        if len(set(wires)) != len(wires):
+            raise ValueError("{}: wires must be unique, got {}.".format(self.name, wires))
+
+        return tuple(int(w) for w in wires)
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -471,10 +495,10 @@ class Operator(abc.ABC):
 
     @property
     def wires(self):
-        """Wires of this operator.
+        """Wire values.
 
         Returns:
-            Wires: wires
+            tuple[int]: wire values
         """
         return self._wires
 
@@ -894,7 +918,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+            return repr(self.return_type) + "(wires={})".format(self.wires)
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -978,16 +1002,17 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len(self.wires)
+        return len(list(_flatten(self.wires)))
 
     @property
     def wires(self):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            Wires: wires addressed by the observables in the tensor product
+            list[list[Any]]: nested list containing the wires per observable
+            in the tensor product
         """
-        return Wires([o.wires for o in self.obs])
+        return [o.wires for o in self.obs]
 
     @property
     def params(self):
@@ -1070,7 +1095,7 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires.tolist())
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1144,7 +1169,7 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires.tolist()):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1226,8 +1251,6 @@ class CV:
         Returns:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
-
-        # TODO: re-assess this function for non-consec wires
         U_dim = len(U)
         nw = len(self.wires)
 
@@ -1237,7 +1260,7 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
-        if num_wires == 0 or self.wires.tolist() == list(range(num_wires)):
+        if num_wires == 0 or list(self.wires) == list(range(num_wires)):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
@@ -1259,7 +1282,7 @@ class CV:
         if U.ndim == 1:
             W = np.zeros(dim)
             W[0] = U[0]
-            for k, w in enumerate(self.wires.tolist()):
+            for k, w in enumerate(self.wires):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
             if isinstance(self, Observable):
@@ -1269,7 +1292,7 @@ class CV:
 
             W[0, 0] = U[0, 0]
 
-            for k1, w1 in enumerate(self.wires.tolist()):
+            for k1, w1 in enumerate(self.wires):
                 s1 = loc(k1)
                 d1 = loc(w1)
 
@@ -1278,7 +1301,7 @@ class CV:
                 # first row (for gates, the first row is always (1, 0, 0, ...), but not for observables!)
                 W[0, d1] = U[0, s1]
 
-                for k2, w2 in enumerate(self.wires.tolist()):
+                for k2, w2 in enumerate(self.wires):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         return W
 

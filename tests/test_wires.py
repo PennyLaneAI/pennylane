@@ -59,7 +59,7 @@ class TestWires:
         wires = Wires(iterable)
         assert wires.wire_tuple == tuple(iterable)
 
-    @pytest.mark.parametrize("wire", [1, -2, 'a', 'q1', -1.4])
+    @pytest.mark.parametrize("wire", [1, 'a', -1.4])
     def test_creation_from_single_object(self, wire):
         """Tests that a Wires object can be created from a non-iterable object
         representing a single wire index."""
@@ -168,15 +168,6 @@ class TestWires:
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
 
-    def test_get_label_method(self):
-        """Tests the get_label() method."""
-
-        wires = Wires([0, 'q1', 16])
-
-        assert wires.get_label(0) == 0
-        assert wires.get_label(1) == 'q1'
-        assert wires.get_label(2) == 16
-
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
     def test_index_method(self, iterable):
@@ -196,9 +187,9 @@ class TestWires:
         """Tests the ``indices()`` method."""
 
         wires = Wires([4, 0, 1])
-        # for Wires inputs
-        assert wires.indices(Wires([1, 4])) == [2, 0]
         # for non-Wires inputs
+        assert wires.indices(Wires([1, 4])) == [2, 0]
+        # for Wires inputs
         assert wires.indices([1, 4]) == [2, 0]
 
     def test_select_random_method(self):
@@ -221,9 +212,6 @@ class TestWires:
         assert wires.subset([2, 3, 0]) == Wires([1, 5, 4])
         assert wires.subset(1) == Wires([0])
         assert wires.subset([4, 5, 7], periodic_boundary=True) == Wires([6, 4, 1])
-        # if index does not exist
-        with pytest.raises(WireError, match="Cannot subset wire at index"):
-            wires.subset([10])
 
     def test_all_wires_method(self):
         """Tests the ``all_wires()`` method."""
