@@ -173,8 +173,8 @@ Each ``QNode`` represents the quantum circuit by building a
 :class:`~.CircuitGraph` instance, but the way differentiation is done is custom
 to the differentiation method offered by the ``QNode``.
 
-For further details on qnodes, the mutability of qnodes we refer to
-:class:`~.BaseQNode` and for a list of qnodes to :ref:`qml_qnodes`.
+For further details on QNodes, and for a full list of QNodes, refer to the 
+:doc:`/code/qml_qnodes` module.
 
 Interfaces
 **********
