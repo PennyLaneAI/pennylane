@@ -156,7 +156,7 @@ class ReversibleQNode(QubitQNode):
         wires = obs.wires
 
         vec1_indices = ABC[: self.num_wires]
-        obs_in_indices = "".join(ABC_ARRAY[wires.tolist()].tolist())
+        obs_in_indices = "".join(ABC_ARRAY[wires].tolist())
         obs_out_indices = ABC[self.num_wires : self.num_wires + len(wires)]
         obs_indices = "".join([obs_in_indices, obs_out_indices])
         vec2_indices = reduce(

@@ -121,25 +121,24 @@ class DefaultQubit(QubitDevice):
         Args:
             operation (~.Operation): operation to apply on the device
         """
-        wires = operation.wires.tolist()  # TODO: translation to nonconsec wires indices
 
         if isinstance(operation, QubitStateVector):
-            self._apply_state_vector(operation.parameters[0], wires)
+            self._apply_state_vector(operation.parameters[0], operation.wires)
             return
 
         if isinstance(operation, BasisState):
-            self._apply_basis_state(operation.parameters[0], wires)
+            self._apply_basis_state(operation.parameters[0], operation.wires)
             return
 
         matrix = self._get_unitary_matrix(operation)
 
         if isinstance(operation, DiagonalOperation):
-            self._apply_diagonal_unitary(matrix, wires)
+            self._apply_diagonal_unitary(matrix, operation.wires)
         elif len(operation.wires) <= 2:
             # Einsum is faster for small gates
-            self._apply_unitary_einsum(matrix, wires)
+            self._apply_unitary_einsum(matrix, operation.wires)
         else:
-            self._apply_unitary(matrix, wires)
+            self._apply_unitary(matrix, operation.wires)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.

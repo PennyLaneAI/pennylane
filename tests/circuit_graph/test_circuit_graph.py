@@ -206,7 +206,7 @@ class TestCircuitGraph:
 
         assert len(diag_gates) == 1
         assert isinstance(diag_gates[0], qml.Hadamard)
-        assert diag_gates[0].wires == Wires([0])
+        assert diag_gates[0].wires == [0]  # Wires([0])
 
     def test_is_sampled(self):
         """Test that circuit graphs with sampled observables properly return
