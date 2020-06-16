@@ -26,7 +26,6 @@ import numpy as np
 from pennylane.operation import Sample, Variance, Expectation, Probability
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
-from pennylane.wires import Wires
 
 
 class QubitDevice(Device):
