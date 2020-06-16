@@ -408,38 +408,6 @@ class Operator(abc.ABC):
             return "{}({}, wires={})".format(self.name, params, self.wires)
         return "{}(wires={})".format(self.name, self.wires)
 
-    def _check_wires(self, wires):
-        """Check the validity of the operator wires.
-        Args:
-            wires (Sequence[Any]): wires to check
-        Raises:
-            TypeError, ValueError: list of wires is invalid
-        Returns:
-            tuple[int]: wires converted to integers
-        """
-        for w in wires:
-            if not isinstance(w, numbers.Integral):
-                raise TypeError(
-                    "{}: Wires must be integers, or integer-valued nondifferentiable parameters in mutable circuits.".format(
-                        self.name
-                    )
-                )
-
-        if (
-            self.num_wires != AllWires
-            and self.num_wires != AnyWires
-            and len(wires) != self.num_wires
-        ):
-            raise ValueError(
-                "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(self.name, len(wires), self.num_wires)
-            )
-
-        if len(set(wires)) != len(wires):
-            raise ValueError("{}: wires must be unique, got {}.".format(self.name, wires))
-
-        return tuple(int(w) for w in wires)
-
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
 
