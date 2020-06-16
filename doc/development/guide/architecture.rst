@@ -116,7 +116,7 @@ Qubit based devices can use shared utilities by using the
      - Ideal noiseless ion-trap simulator
    * - `AQT Noisy ion-trap simulator <https://pennylane-aqt.readthedocs.io/en/latest/devices.html#noisy-ion-trap-simulator>`__
      - ``"aqt.noisy_sim"``
-     - Noisy ion-trap simulator for more realisatic simulations
+     - Noisy ion-trap simulator for more realistic simulations
 
 :html:`</div></div>`
 
