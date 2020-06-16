@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane.utils` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
-import operator
 import functools
 import itertools
 from unittest.mock import MagicMock
