@@ -84,7 +84,7 @@ class TestDecomposition:
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
-            ValueError, match=re.escape("The Hamiltonian should have shape"),
+            ValueError, match="The Hamiltonian should have shape",
         ):
             pu.decompose_hamiltonian(hamiltonian)
 
