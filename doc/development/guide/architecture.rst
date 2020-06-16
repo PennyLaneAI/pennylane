@@ -165,7 +165,7 @@ QNodes
 ******
 
 A  quantum  node or ``QNode`` (represented by a subclass to
-:class:`~.BaseQNode`) is an encapsulation of a function :math:`f(x;θ):R^m→R^n`
+:class:`~.BaseQNode`) is an encapsulation of a function :math:`f(x;\theta)=R^m\rightarrow R^n`
 that is executed using quantum information processing on a quantum
 device.
 
