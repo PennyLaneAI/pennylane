@@ -23,7 +23,7 @@ from openfermion.transforms import bravyi_kitaev, jordan_wigner
 from pennylane import qchem
 
 def s2_me_table(sz, n_spin_orbs):
-    r"""Generates a table with the matrix elements
+    r"""Computes the matrix elements
     :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
     of the two-particle spin operator :math:`\hat{s}_1 \cdot \hat{s}_2`.
 
@@ -78,3 +78,57 @@ def s2_me_table(sz, n_spin_orbs):
     
     # combine the off diagonal and diagonal tables into a single table
     return np.vstack([diag, off_diag])
+
+
+def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+    r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active space and
+    generates the table with the matrix elements of the two-particle spin operator
+    :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
+
+    Args:
+        mol_name (str): name of the molecule
+        hf_data (str): path to the directory with the HF electronic structure data file
+        n_active_electrons (int): number of active electrons
+        n_active_orbitals (int): number of active orbitals
+   
+    Returns: 
+        tuple: the contribution of doubly-occupied orbitals, if any, or other quantity
+        required to initialize the many-body observable and a Numpy array with the table
+        of matrix elements
+    """
+    
+    docc_indices, active_indices = qchem.active_space(
+        mol_name,
+        hf_data,
+        n_active_electrons=n_active_electrons,
+        n_active_orbitals=n_active_orbitals
+    )
+    
+    if n_active_electrons == None:
+        hf_elect_struct = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
+        n_electrons = hf_elect_struct.n_electrons
+    else:
+        n_electrons = n_active_electrons        
+        
+    n_spin_orbs = 2*len(active_indices)
+    
+    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    
+    return s2_me_table(sz, n_spin_orbs), 3/4*n_electrons
+
+mol_name = "h2"
+geo_file = "h2.xyz"
+charge = 0
+multiplicity = 1
+basis = "sto-3g"
+
+n_electrons = 2
+n_orbitals = 2
+
+geometry = qchem.read_structure(geo_file)
+hf_data = qchem.meanfield_data("h2", geometry, charge, multiplicity, basis)
+s2_me_table, init_term = get_s2_me(
+    mol_name, hf_data,
+    n_active_electrons=n_electrons,
+    n_active_orbitals=n_orbitals
+)
