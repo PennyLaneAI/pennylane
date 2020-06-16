@@ -116,6 +116,83 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
     
     return s2_me_table(sz, n_spin_orbs), 3/4*n_electrons
 
+
+def observable(me_table, init_term=0, mapping="jordan_wigner"):
+
+    r"""Builds the many-body observable whose expectation value can be
+    measured in PennyLane
+
+    This function can be used to build second-quantized operators in the basis
+    of single-particle states (e.g., HF states) and to transform them into
+    PennyLane observables. One- and two-particle operators can be expanded in a
+    given active space as follows, 
+
+    .. math::
+
+        \hat A = \sum_{\alpha \leq 2N_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
+        \vert \alpha \rangle ~ \hat{n}_\alpha +
+        \sum_{\alpha, \beta ~ \in ~ \mathrm{active~space}} \langle \alpha \vert \hat{\mathcal{A}}
+        \vert \beta \rangle ~ \hat{c}_\alpha^\dagger\hat{c}_\beta,
+
+        \hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2N_\mathrm{docc}}
+        \langle \alpha, \beta \vert \hat{\mathcal{B}} \vert \beta, \alpha \rangle
+        ~ \hat{n}_\alpha \hat{n}_\beta + \sum_{\alpha, \beta, \gamma, \delta ~
+        \in ~ \mathrm{active~space}} \langle \alpha, \beta \vert \hat{\mathcal{B}}
+        \vert \gamma, \delta \rangle ~ \hat{c}_{\alpha}^\dagger \hat{c}_{\beta}^\dagger
+        \hat{c}_{\gamma} \hat{c}_{\delta} \right\}.
+
+    In the latter equations :math:`N_\mathrm{docc}` denotes the doubly-occupied orbitals,
+    if any, not included in the active space and
+    :math:`\langle \alpha \vert \hat{\mathcal{A}} \vert \beta \rangle` and
+    :math:`\langle \alpha, \beta \vert\hat{\mathcal{B}} \vert \gamma, \delta \rangle`
+    are the matrix elements of the one- and two-particle operators
+    :math:`\hat{\mathcal{A}}` and :math:`\hat{\mathcal{B}}`, respectively.
+
+    The function utilizes tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
+    to buil the second-quantized opeerator and map it to basis of Pauli matrices via the
+    Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit observable is
+    post-processed by the function :func:`~.convert_observable` to make it a PennyLane observable.
+
+    Args:
+        me_table (array[float]): Numpy array with the table of matrix elements.
+            For a single-particle operator this array will have shape
+            ``(me_table.shape[0], 3)`` with each row containing the indices
+            :math:`alpha`, :math:`beta` and the matrix element :math:`\alpha \vert
+            \hat{\mathcal{A}}\vert \beta \rangle`. For a two-particle operator this
+            array will have shape ``(me_table.shape[0], 5)`` with each row containing
+            the indices :math:`alpha`, :math:`beta`, :math:`gamma`, :math:`delta` and
+            the matrix elements :math:`\langle \alpha, \beta \vert \hat{\mathcal{B}}
+            \vert \gamma, \delta \rangle`.
+        init_term: the contribution of doubly-occupied orbitals, if any, or other quantity
+            required to initialize the many-body observable.
+        mapping (str): optional argument to specify the fermion-to-qubit mapping.
+            Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+    
+    Returns:
+        pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
+    """
+
+    # Initialize the FermionOperator
+    mb_obs = FermionOperator() + FermionOperator('')*init_term
+
+    for i in me_table:
+        
+        if i.shape == (5,):
+
+            # two-particle operator
+            mb_obs += FermionOperator(
+                ((int(i[0]),1),(int(i[1]),1),(int(i[2]),0), (int(i[3]),0)), i[4])
+
+        elif i.shape == (3,):
+            # single-particle operator
+            mb_obs += FermionOperator(((int(i[0]),1),(int(i[1]),0)), i[2])
+
+    # Map the fermionic to a qubit operator measurable in PennyLane
+    if mapping.strip().lower() == "bravyi_kitaev":
+        return convert_hamiltonian(bravyi_kitaev(mb_obs))
+
+    return convert_hamiltonian(jordan_wigner(mb_obs))    
+
 mol_name = "h2"
 geo_file = "h2.xyz"
 charge = 0
@@ -132,3 +209,4 @@ s2_me_table, init_term = get_s2_me(
     n_active_electrons=n_electrons,
     n_active_orbitals=n_orbitals
 )
+print(s2_me_table, init_term)
