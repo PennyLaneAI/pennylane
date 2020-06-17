@@ -53,7 +53,7 @@ from openfermion.ops._qubit_operator import QubitOperator
     ],
 )
 def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
-    r"""Tests the correctness of the 'observable' used to build many-body observables.
+    r"""Tests the correctness of the 'observable' function used to build many-body observables.
 
     The parametrized inputs `terms_exp` are `.terms` attribute of the corresponding
     `QubitOperator. The equality checking is implemented in the `qchem` module itself
@@ -68,23 +68,20 @@ def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
     assert qchem._qubit_operators_equivalent(qubit_op, res_obs)
 
 
-@pytest.mark.parametrize(
-    ("me_table", "message_match"),
+@pytest.mark.parametrize("me_table",
     [
-        (np.array([[0., 0., 1., 0.5], [1., 1., -0.5]]),
-         "expected entries of 'me_table' to be of shape"),
-        (np.array([[0., 0., 1., 0.5], [1., -0.5]]),
-         "expected entries of 'me_table' to be of shape"),
-        (np.array([[0., 0., 1., 2., 0.5], [1., -0.5]]),
-         "expected entries of 'me_table' to be of shape"),
-        (np.array([[0., 0., 1., 2., 3., 0.5], [1., 0., -0.5]]),
-         "expected entries of 'me_table' to be of shape"),
+        np.array([[0., 0., 1., 0.5], [1., 1., -0.5]]),
+        np.array([[0., 0., 1., 0.5], [1., -0.5]]),
+        np.array([[0., 0., 1., 2., 0.5], [1., -0.5]]),
+        np.array([[0., 0., 1., 2., 3., 0.5], [1., 0., -0.5]]),
     ],
 )
-def test_exceptions_observable(me_table,message_match):
+def test_exceptions_observable(
+    me_table,
+    message_match="expected entries of 'me_table' to be of shape"
+):
     """Test that the 'observable' function throws an exception if the
-    array containing he matrix elements has illegal shapes and if the
-    fermionic-to-qubit mapping is not properly defined."""
+    array containing the matrix elements has illegal shapes."""
 
     with pytest.raises(ValueError, match=message_match):
         qchem.obs.observable(me_table)
@@ -97,4 +94,4 @@ def test_mapping_observable(message_match="transformation is not available"):
     me_table = np.array([[0., 0., 0.5], [1., 1., -0.5]])
 
     with pytest.raises(TypeError, match=message_match):
-        qchem.obs.observable(me_table, mapping="no_valid_transformation")        
+        qchem.obs.observable(me_table, mapping="no_valid_transformation")
