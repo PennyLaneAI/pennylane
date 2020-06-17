@@ -93,7 +93,9 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd", qnode_type="
     """
     try:
         qnode_type = getattr(qml.qnodes, qnode_type)
-        qnode = qnode_type(qfunc, device, mutable=mutable, interface=interface,)
+        qnode = qnode_type(
+            qfunc, device, mutable=mutable, interface=interface,
+        )
     except AttributeError:
         # versions before the "new-style" QNodes
         try:
