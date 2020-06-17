@@ -76,7 +76,9 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd", qnode_type="
 
     Takes care of the backwards compatibility of the benchmarks.
 
-    By default, uses the parameter-shift method for computing Jacobians.
+    If not provided, will use the default QNode, as determined by PennyLane's
+    `qnodes/decorator.py` file. For older versions of PennyLane with only one
+    QNode type, it will use that object.
 
     Args:
         qfunc (Callable): quantum function defining a circuit
