@@ -150,8 +150,8 @@ Certain operators can serve as both quantum gates and observables (e.g.
 
 Quantum operators are used to build quantum functions
 which are evaluated by a ``QNode`` on a bound device. Users can define such quantum
-functions by creating regular Python functions and incorporating ``Operator``
-instances.
+functions by creating regular Python functions and instantiating ``Operator``
+instances in temporal order, one per line.
 
 The following is an example of this using the :func:`~.qnode` decorator and a
 valid pre-defined device (``dev``).
