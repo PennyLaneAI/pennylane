@@ -93,6 +93,7 @@ def to_layer(operation_list, num_wires):
     layer = [None] * num_wires
 
     for op in operation_list:
+        # TODO: This function only works if the device's wires are consecutive integers
         for wire in op.wires.tolist():
             layer[wire] = op
 
