@@ -38,11 +38,28 @@ Devices
 
 In PennyLane, the abstraction of a quantum computation device is encompassed
 within the :class:`~.Device` class, making it one of the basic components of
-the library. It includes basic functionality that is shared for quantum
-devices, independent of the quantum information model used. PennyLane gives
-access to multiple simulators and hardware chips through its plugins; each of
-these devices is implemented as a custom class. These classes have the
-``Device`` class as their parent class.
+the library. The :class:`~.Device` class provides a common API for accessing quantum
+devices, independent of both the type of device (both simulators and hardware are supported),
+as well as the quantum information model used.
+
+In particular, the :class:`~.Device` class provides a common API for:
+
+* Initializing various device parameters such as the number of samples/shots,
+
+* Executing quantum circuits,
+
+* Retrieving measurement and state results (including samples, measurement statistics, and probabilities).
+
+There are also device subclasses available, containing shared logic for particular types of devices.
+For example, qubit-based devices can inherit from the :class:`~.QubitDevice` class, easing development.
+
+To register a new device with PennyLane, they must register an `entry point
+<https://packaging.python.org/specifications/entry-points/>`__under the `pennylane.plugins`
+namespace using Setuptools. Once registered, the device can be instantiated using the :func:`~.device`
+loader function.
+
+A Python package that registers one or more PennyLane device is known as a *plugin*. For more details
+on plugins and devices, see :doc:`/development/plugins`.
 
 The purpose of the ``Device`` class can be summarized as:
 
@@ -56,7 +73,7 @@ Qubit based devices can use shared utilities by using the
 QNodes
 ******
 
-A  quantum node or QNode (represented by a subclass to
+A  quantum node or QNode (represented by a subclass of
 :class:`~.BaseQNode`) is an encapsulation of a function
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device.
@@ -74,11 +91,11 @@ PennyLane offers the following qnode types and differentiation rules:
 * :class:`~.QubitQNode`: qubit parameter-shift rule
 * :class:`~.CVQNode`: CV parameter-shift rule
 * :class:`~.JacobianQNode`: finite differences
-* :class:`~.DeviceJacobianQNode`: device based gradient rule
+* :class:`~.DeviceJacobianQNode`: queries the device directly for the gradient
 * :class:`~.PassthruQNode`: classical backpropagation
 * :class:`~.ReversibleQNode`: reversible backpropagation
 
-These qnode types are available to users through the :func:`~.qnode` decorator by
+These QNode types are available to users through the :func:`~.qnode` decorator by
 passing the user-facing ``diff_method`` option. This decorator then uses the
 :func:`~.QNode` constructor function to create the specific type of qnode based on
 the device, interface, and quantum function.
@@ -97,7 +114,7 @@ Interfaces
 **********
 
 The integration between classical and quantum computations is encompassed by
-interfaces. Differentiable and Jacobian ``QNodes`` have interfacing functions
+interfaces. QNodes that provide black-box gradient rules are 'wrapped' by an interface function.
 that provide a 'wrapper' around QNodes such. These wrappers further transform
 the ``QNode`` such that the quantum gradient rules of the QNodes are registered
 to the machine learning interface via a custom gradient class or function.
@@ -131,10 +148,10 @@ Certain operators can serve as both quantum gates and observables (e.g.
 :class:`~.PauliZ`, :class:`~.PauliX`, etc.). Such classes inherit from both
 ``Operation`` and ``Observable`` classes.
 
-Quantum operator instances, in general, are used to build quantum functions
-which are used within ``QNode`` instances. Users can define such quantum
-functions by creating regular Python functions and incorporating ``Operator``
-instances.
+Quantum operators are used to build quantum functions
+which are evaluated by a ``QNode`` on a bound device. Users can define such quantum
+functions by creating regular Python functions and instantiating ``Operator``
+instances in temporal order, one per line.
 
 The following is an example of this using the :func:`~.qnode` decorator and a
 valid pre-defined device (``dev``).
@@ -170,7 +187,7 @@ help with this.
 
 The :class:`~.QueuingContext` class realizes this by providing access to the
 current QNode using the concept of a Python context manager. This is achieved
-by inheriting the ``BaseQNode`` class from ``QueuingContext``.  Furthermore, it
+by subclassing the ``BaseQNode`` class from ``QueuingContext``.  Furthermore, it
 provides the flexibility to have multiple objects record the creation of
 quantum gates.
 
@@ -197,8 +214,10 @@ Variables
 *********
 
 Circuit parameters in PennyLane are tracked and updated using
-:class:`~.Variable`. They play a key role in the evaluation of a ``QNode`` as
-the symbolic parameters are substituted with numeric values.
+:class:`~.Variable`. They play a key role in the evaluation of ``QNode`` gradients, as
+the symbolic parameters are substituted with numeric values. The ``Variable`` class plays
+an important role in book-keeping, allowing PennyLane to keep track of which parameters are
+used in which operations, and automatically perform the product and chain rule where required.
 
 We refer to the :ref:`qml_variable` page for a more in-depth description of how
 ``Variables`` are used during execution.
