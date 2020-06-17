@@ -9,7 +9,7 @@ quantum-classical computations. The library provides a unified architecture for
 near-term quantum computing devices, supporting various quantum information
 paradigms.
 
-PennyLane’s core feature is the ability to compute gradients of variational
+PennyLane's core feature is the ability to compute gradients of variational
 quantum circuits in a way that is compatible with classical techniques such as
 backpropagation. PennyLane thus extends the automatic differentiation
 algorithms common in optimization and machine learning to include quantum and
@@ -56,17 +56,17 @@ Qubit based devices can use shared utilities by using the
 QNodes
 ******
 
-A  quantum node or ``QNode`` (represented by a subclass to
+A  quantum node or QNode (represented by a subclass to
 :class:`~.BaseQNode`) is an encapsulation of a function
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device.
 
-Apart from incorporating quantum functions, ``QNodes`` also offer custom
+Apart from incorporating quantum functions, QNodes also offer custom
 quantum differentiation rules. Using the so-called `parameter-shift rules
 <https://pennylane.ai/qml/glossary/parameter_shift.html>`__, many quantum
 functions can be expressed through the linear combination of other quantum
 functions. As these rules allow quantum gradients to be obtained from
-``QNodes``, hybrid computations may include ``QNodes`` as part of training deep
+QNodes, hybrid computations may include QNodes as part of training deep
 learnings models.
 
 PennyLane offers the following qnode types and differentiation rules:
