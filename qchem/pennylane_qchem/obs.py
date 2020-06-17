@@ -200,7 +200,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
     **Example**
-    
+
     >>> s2_me_table, init_term = get_s2_me('h2', './pyscf/sto-3g')
     >>> s2_obs = observable(s2_me_table, init_term=init_term)
     >>> print(type(s2_obs))
