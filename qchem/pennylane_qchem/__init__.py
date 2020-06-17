@@ -12,5 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The PennyLane Qchem package."""
-import pennylane_qchem.qchem
-from pennylane_qchem._version import __version__
+from .qchem import *
+from ._version import __version__
+from . import obs

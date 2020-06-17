@@ -20,7 +20,7 @@ from openfermion.hamiltonians import MolecularData
 from openfermion.ops import FermionOperator
 from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
-from pennylane import qchem
+from . import qchem
 
 def s2_me_table(sz, n_spin_orbs):
     r"""Computes the matrix elements
@@ -55,8 +55,8 @@ def s2_me_table(sz, n_spin_orbs):
     Args:
         sz (array[float]): spin-projection quantum number of the spin-orbitals
         n_spin_orbs (int): number of spin orbitals
-   
-    Returns: 
+
+    Returns:
         array: NumPy array with the table of matrix elements
     """
 
@@ -66,7 +66,7 @@ def s2_me_table(sz, n_spin_orbs):
     beta = n.reshape(1, -1, 1, 1)
     gamma = n.reshape(1, 1, -1, 1)
     delta = n.reshape(1, 1, 1, -1)
-    
+
     # we only care about indices satisfying the following boolean mask
     mask = np.logical_and(alpha // 2 == delta // 2, beta // 2 == gamma // 2)
 
@@ -76,7 +76,7 @@ def s2_me_table(sz, n_spin_orbs):
     diag_values = (sz[alpha] * sz[beta]).flatten()
 
     diag = np.vstack([diag_indices.T, diag_values]).T
-    
+
     # off-diagonal elements
     m1 = np.logical_and(sz[alpha] == sz[delta] + 1, sz[beta] == sz[gamma] - 1)
     m2 = np.logical_and(sz[alpha] == sz[delta] - 1, sz[beta] == sz[gamma] + 1)
@@ -86,7 +86,7 @@ def s2_me_table(sz, n_spin_orbs):
     off_diag_values = np.full([len(off_diag_indices)], 0.5)
 
     off_diag = np.vstack([off_diag_indices.T, off_diag_values]).T
-    
+
     # combine the off diagonal and diagonal tables into a single table
     return np.vstack([diag, off_diag])
 
@@ -128,31 +128,31 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
         hf_data (str): path to the directory with the HF electronic structure data file
         n_active_electrons (int): number of active electrons
         n_active_orbitals (int): number of active orbitals
-   
-    Returns: 
+
+    Returns:
         tuple: the contribution of doubly-occupied orbitals, if any, or other quantity
         required to initialize the many-body observable and a Numpy array with the table
         of matrix elements
     """
-    
+
     docc_indices, active_indices = qchem.active_space(
         mol_name,
         hf_data,
         n_active_electrons=n_active_electrons,
         n_active_orbitals=n_active_orbitals
     )
-    
+
     if n_active_electrons == None:
         hf_elect_struct = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
         n_electrons = hf_elect_struct.n_electrons
     else:
-        n_electrons = n_active_electrons        
-        
+        n_electrons = n_active_electrons
+
     n_spin_orbs = 2*len(active_indices)
-    
+
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
     print(sz)
-    
+
     return s2_me_table(sz, n_spin_orbs), 3/4*n_electrons
 
 
@@ -164,7 +164,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
     PennyLane observables. One- and two-particle operators can be expanded in a
-    given active space as follows, 
+    given active space as follows,
 
     .. math::
 
@@ -229,7 +229,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
             required to initialize the many-body observable.
         mapping (str): optional argument to specify the fermion-to-qubit mapping.
             Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
-    
+
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
     """
@@ -238,7 +238,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     mb_obs = FermionOperator() + FermionOperator('')*init_term
 
     for i in me_table:
-        
+
         if i.shape == (5,):
 
             # two-particle operator
@@ -256,37 +256,37 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     return qchem.convert_observable(jordan_wigner(mb_obs))
 
 
-# sz = np.where(np.arange(2) % 2 == 0, 0.5, -0.5)
-# print(sz)
-# a = s2_me_table(sz, 2)
-# print(s2_me_table(sz, 2))
-# exit()
+# # sz = np.where(np.arange(2) % 2 == 0, 0.5, -0.5)
+# # print(sz)
+# # a = s2_me_table(sz, 2)
+# # print(s2_me_table(sz, 2))
+# # exit()
 
 
-mol_name = "h2"
-geo_file = "h2.xyz"
-charge = 0
-multiplicity = 1
-basis = "sto-3g"
+# mol_name = "h2"
+# geo_file = "h2.xyz"
+# charge = 0
+# multiplicity = 1
+# basis = "sto-3g"
 
-n_electrons = 2
-n_orbitals = 2
+# n_electrons = 2
+# n_orbitals = 2
 
-geometry = qchem.read_structure(geo_file)
-hf_data = qchem.meanfield_data("h2", geometry, charge, multiplicity, basis)
-print(hf_data)
-s2_me_table, init_term = get_s2_me(
-    mol_name, hf_data,
-    n_active_electrons=n_electrons,
-    n_active_orbitals=n_orbitals
-)
-print(s2_me_table, init_term)
-#exit()
+# geometry = qchem.read_structure(geo_file)
+# hf_data = qchem.meanfield_data("h2", geometry, charge, multiplicity, basis)
+# print(hf_data)
+# s2_me_table, init_term = get_s2_me(
+#     mol_name, hf_data,
+#     n_active_electrons=n_electrons,
+#     n_active_orbitals=n_orbitals
+# )
+# print(s2_me_table, init_term)
+# #exit()
 
-s2_observable = observable(s2_me_table, init_term=init_term, mapping="jordan_wigner")
-#print(type(s2_observable))
-print(s2_observable)
-print(s2_observable.coeffs)
-print(s2_observable.ops)
-print(type(s2_observable.coeffs))
-print(type(s2_observable.ops))
+# s2_observable = observable(s2_me_table, init_term=init_term, mapping="jordan_wigner")
+# #print(type(s2_observable))
+# print(s2_observable)
+# print(s2_observable.coeffs)
+# print(s2_observable.ops)
+# print(type(s2_observable.coeffs))
+# print(type(s2_observable.ops))
