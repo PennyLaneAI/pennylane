@@ -19,6 +19,7 @@ import argparse
 import importlib
 import subprocess
 import time
+from copy import copy
 
 import numpy as np
 
@@ -168,7 +169,7 @@ def cli():
     mod = importlib.import_module(args.benchmark)
 
     # check for additional device args
-    devs = args.device
+    devs = copy(args.device)
     dev_kwargs = []
     for idx, dev in enumerate(devs):
         dev_kwargs.append({})
@@ -176,7 +177,6 @@ def cli():
             # check for additional args
             device_full = dev.split("-")
             devs[idx] = device_full[0]
-            print(device_full)
             if len(device_full) > 1:
                 dev_kwargs[idx]["representation"] = device_full[1]
 
@@ -188,8 +188,8 @@ def cli():
             )
         )
         bms = [
-            mod.Benchmark(qml.device(d, wires=args.wires, **k), qnode_type=q, verbose=args.verbose)
-            for d, k in zip(devs, dev_kwargs)
+            mod.Benchmark(qml.device(short_name, wires=args.wires, **k), qnode_type=q, verbose=args.verbose)
+            for short_name, k in zip(devs, dev_kwargs)
             for q in args.qnode
         ]
         for k in bms:
@@ -204,18 +204,18 @@ def cli():
             k.teardown()
         return
 
-    for dev, k in zip(devs, dev_kwargs):
-        dev = qml.device(dev, wires=args.wires, **k)
+    for supplied_name, short_name, k in zip(args.device, devs, dev_kwargs):
+        dev = qml.device(short_name, wires=args.wires, **k)
         for q in args.qnode:
             bm = mod.Benchmark(dev, qnode_type=q, verbose=args.verbose)
             bm.setup()
-            text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{d}, {q}", "magenta")
+            text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{supplied_name}, {q}", "magenta")
             if args.cmd == "time":
                 print("Timing:", text)
                 timing(bm.benchmark)
             elif args.cmd == "profile":
                 print("Profiling:", text)
-                profile(bm.benchmark, identifier="_".join([short_hash, d, q]))
+                profile(bm.benchmark, identifier="_".join([short_hash, supplied_name, q]))
             else:
                 raise ValueError("Unknown command.")
             bm.teardown()
