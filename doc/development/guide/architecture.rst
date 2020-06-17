@@ -187,7 +187,7 @@ help with this.
 
 The :class:`~.QueuingContext` class realizes this by providing access to the
 current QNode using the concept of a Python context manager. This is achieved
-by inheriting the ``BaseQNode`` class from ``QueuingContext``.  Furthermore, it
+by subclassing the ``BaseQNode`` class from ``QueuingContext``.  Furthermore, it
 provides the flexibility to have multiple objects record the creation of
 quantum gates.
 
