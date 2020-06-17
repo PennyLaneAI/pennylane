@@ -30,7 +30,7 @@ info = {
     "long_description": open("README.rst").read(),
     "provides": ["pennylane_qchem"],
     "install_requires": requirements,
-    "entry_points": {"pennylane.qchem": ["OpenFermion = pennylane_qchem.qchem"]},
+    "entry_points": {"pennylane.qchem": ["OpenFermion = pennylane_qchem"]},
 }
 
 classifiers = [

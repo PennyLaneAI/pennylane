@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from pennylane import qchem
-from pennylane_qchem import obs
 
 from openfermion.ops._qubit_operator import QubitOperator
 
@@ -33,7 +32,7 @@ def test_s2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = obs.s2_me_table(sz, n_spin_orbs)
+    s2_me_result = qchem.obs.s2_me_table(sz, n_spin_orbs)
 
     assert np.allclose(s2_me_result, s2_me_expected, **tol)
 
@@ -98,7 +97,7 @@ def test_get_s2_matrix_elements(
     r"""Test that the table of matrix elements and the term use to initialize the
     FermionOperator are computed corrrectly for different active spaces."""
 
-    s2_me_res, init_term_res = obs.get_s2_me(
+    s2_me_res, init_term_res = qchem.obs.get_s2_me(
         mol_name,
         ref_dir,
         n_active_electrons=n_act_elect,
@@ -192,14 +191,14 @@ def test_build_s2_observable(
     something useful to the users as well.
     """
 
-    s2_me_table, init_term = obs.get_s2_me(
+    s2_me_table, init_term = qchem.obs.get_s2_me(
         mol_name,
         ref_dir,
         n_active_electrons=n_act_elect,
         n_active_orbitals=n_act_orb
     )
 
-    s2_obs = obs.observable(s2_me_table, init_term=init_term, mapping=mapping)
+    s2_obs = qchem.obs.observable(s2_me_table, init_term=init_term, mapping=mapping)
 
     s2_qubit_op = QubitOperator()
     monkeypatch.setattr(s2_qubit_op, "terms", terms_exp)
