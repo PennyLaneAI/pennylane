@@ -80,8 +80,9 @@
 * Added the new templates `UCCSD`, `SingleExcitationUnitary`, and`DoubleExcitationUnitary`,
   which together implement the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz
   to perform VQE-based quantum chemistry simulations using PennyLane-QChem.
-  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
+  [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
   [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
+  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
   [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
 
