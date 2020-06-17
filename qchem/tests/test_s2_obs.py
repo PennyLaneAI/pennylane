@@ -3,13 +3,8 @@ import os
 import numpy as np
 import pytest
 
-#from pennylane import obs
 from pennylane import qchem
 from pennylane_qchem import obs
-#from pennylane import obs
-
-from pennylane import (Identity, PauliX, PauliY, PauliZ)
-from pennylane.operation import Tensor
 
 from openfermion.ops._qubit_operator import QubitOperator
 
