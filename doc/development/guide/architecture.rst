@@ -73,7 +73,7 @@ Qubit based devices can use shared utilities by using the
 QNodes
 ******
 
-A  quantum node or ``QNode`` (represented by a subclass to
+A  quantum node or QNode (represented by a subclass of
 :class:`~.BaseQNode`) is an encapsulation of a function
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device.
