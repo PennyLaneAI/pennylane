@@ -17,13 +17,11 @@ Benchmark for a circuit of the Instantaneous Quantum Polynomial-time (IQP) compl
 # pylint: disable=invalid-name
 import math
 import random
-from types import ModuleType
 
 import numpy as np
 import pennylane as qml
 
 import benchmark_utils as bu
-from pennylane import expval
 
 CCZ_diag = np.array([1, 1, 1, 1, 1, 1, 1, -1])
 CCZ_matrix = np.diag(CCZ_diag)
@@ -32,11 +30,6 @@ if hasattr(qml, "DiagonalQubitUnitary"):
     CCZ = lambda wires: qml.DiagonalQubitUnitary(CCZ_diag, wires=wires)
 else:
     CCZ = lambda wires: qml.QubitUnitary(CCZ_matrix, wires=wires)
-
-if type(expval) == ModuleType: # pylint: disable=unidiomatic-typecheck
-    meas_function = expval.PauliZ
-else:
-    meas_function = lambda w: expval(qml.PauliZ(w))
 
 
 def random_iqp_wires(n_wires):
@@ -92,7 +85,7 @@ class Benchmark(bu.BaseBenchmark):
             for i in range(self.n_wires):
                 qml.Hadamard(i)
 
-            return meas_function(0)
+            return bu.expval(qml.PauliZ(0))
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True)
         qnode()

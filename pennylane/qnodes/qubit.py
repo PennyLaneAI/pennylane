@@ -243,7 +243,7 @@ class QubitQNode(JacobianQNode):
             # for each operation in the layer, get the generator and convert it to a variance
             for n, op in enumerate(curr_ops):
                 gen, s = op.generator
-                w = op.wires.tolist()
+                w = op.wires
 
                 if gen is None:
                     raise QuantumFunctionError(
