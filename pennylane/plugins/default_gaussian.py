@@ -601,6 +601,7 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.0):
 
 def fock_expectation(mu, cov, wires, params, total_wires, hbar=2.0):
     r"""Calculates the expectation and variance of a Fock state probability.
+    
     Args:
         mu (array): length-:math:`2N` vector of means
         cov (array): :math:`2N\times 2N` covariance matrix
