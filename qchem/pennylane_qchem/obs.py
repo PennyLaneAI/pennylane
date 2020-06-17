@@ -23,11 +23,11 @@ from openfermion.transforms import bravyi_kitaev, jordan_wigner
 from . import qchem
 
 def s2_me_table(sz, n_spin_orbs):
-    r"""Computes the matrix elements
+    r"""Generates the table of the matrix elements
     :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
     of the two-particle spin operator :math:`\hat{s}_1 \cdot \hat{s}_2`.
 
-    The latter matrix elements are computed as follows:
+    The matrix elements are evaluated using the expression,
 
     .. math:
 
@@ -98,8 +98,8 @@ def s2_me_table(sz, n_spin_orbs):
 
 def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
     r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active space and
-    generates the table with the matrix elements of the two-particle spin operator
-    :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
+    generates the table of matrix elements required to build the second-quantized
+    total-spin operator :math:`\hat{S}^2`.
 
     **Example**
     >>> get_s2_me('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
@@ -130,14 +130,14 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
 
     Args:
         mol_name (str): name of the molecule
-        hf_data (str): path to the directory with the HF electronic structure data file
+        hf_data (str): path to the directory with the HF electronic structure data
         n_active_electrons (int): number of active electrons
         n_active_orbitals (int): number of active orbitals
 
     Returns:
-        tuple: the contribution of doubly-occupied orbitals, if any, or other quantity
-        required to initialize the many-body observable and a Numpy array with the table
-        of matrix elements
+        tuple: the table of two-particle matrix elements and the single-particle
+        contribution :math:`\frac{3N_e}{4}` required to build the second-quantized 
+        total-spin operator.
     """
 
     docc_indices, active_indices = qchem.active_space(
@@ -166,8 +166,8 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
-    PennyLane observables. One- and two-particle operators can be expanded in a
-    given active space as follows,
+    PennyLane observables. In general, single- and two-particle operators can be
+    expanded in a truncated set of orbitals that define an active space,
 
     .. math::
 
@@ -191,13 +191,17 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     :math:`\hat{\mathcal{A}}` and :math:`\hat{\mathcal{B}}`, respectively.
 
     The function utilizes tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
-    to buil the second-quantized opeerator and map it to basis of Pauli matrices via the
-    Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit observable is
-    post-processed by the function :func:`~.convert_observable` to make it a PennyLane observable.
+    to buil the second-quantized operator and map it to basis of Pauli matrices via the
+    Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is
+    converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
     **Example**
     >>> s2_me_table, init_term = get_s2_me('h2', './pyscf/sto-3g')
     >>> s2_obs = observable(s2_me_table, init_term=init_term)
+    >>> print(type(s2_obs))
+    <class 'pennylane.vqe.vqe.Hamiltonian'>
+
+    >>> print(s2_obs)
     (0.75) [I<Wires = [0]>]
     + (0.375) [Z<Wires = [1]>]
     + (-0.375) [Z<Wires = [0]> Z<Wires = [1]>]
@@ -230,8 +234,8 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
             \vert \gamma, \delta \rangle`.
         init_term: the contribution of doubly-occupied orbitals, if any, or other quantity
             required to initialize the many-body observable.
-        mapping (str): optional argument to specify the fermion-to-qubit mapping.
-            Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        mapping (str): specifies the fermion-to-qubit mapping. Input values can
+            be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
@@ -258,11 +262,9 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     for i in me_table:
 
         if i.shape == (5,):
-
             # two-particle operator
             mb_obs += FermionOperator(
                 ((int(i[0]),1),(int(i[1]),1),(int(i[2]),0), (int(i[3]),0)), i[4])
-
         elif i.shape == (3,):
             # single-particle operator
             mb_obs += FermionOperator(((int(i[0]),1),(int(i[1]),0)), i[2])
