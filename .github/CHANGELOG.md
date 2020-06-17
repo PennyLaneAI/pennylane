@@ -51,28 +51,30 @@
 
   A PennyLane QNode can be converted into a `torch.nn` layer using the `qml.qnn.TorchLayer` class:
 
-  ```python
-  @qml.qnode(dev)
-  def qnode(inputs, weights_0, weight_1):
-     # define the circuit
-     # ...
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def qnode(inputs, weights_0, weight_1):
+  ...    # define the circuit
+  ...    # ...
 
-  weight_shapes = {"weights_0": 3, "weight_1": 1}
-  qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+  >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
+  >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
   ```
   
   A hybrid model can then be easily constructed:
 
-  ```python
-  model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
+  ```pycon
+  >>> model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
 * Added a new "reversible" differentiation method which can be used in simulators, but not hardware.
+
   The reversible approach is similar to backpropagation, but trades off extra computation for
   enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
-  a simulated evolution, the reversible method only caches the final pre-measurement state. Compared to 
-  the parameter-shift method, the reversible method can be faster or slower, depending on the 
-  density and location of parametrized gates in a circuit (circuits with higher density of 
-  parametrized gates near the end of the circuit will see a benefit).
+  a simulated evolution, the reversible method only caches the final pre-measurement state. 
+  
+  Compared to the parameter-shift method, the reversible method can be faster or slower, 
+  depending on the density and location of parametrized gates in a circuit 
+  (circuits with higher density of   parametrized gates near the end of the circuit will see a benefit).
   [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
   
   ```pycon
