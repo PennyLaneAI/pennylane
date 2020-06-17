@@ -245,11 +245,11 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     sp_op_shape = (3,)
     tp_op_shape = (5,)
-    for i in me_table:
-        if i.shape not in (sp_op_shape, tp_op_shape):
+    for i_table in me_table:
+        if np.array(i_table).shape not in (sp_op_shape, tp_op_shape):
             raise ValueError(
                 "expected entries of 'me_table' to be of shape (3,) or (5,) ; got {}".
-                format(i.shape)
+                format(np.array(i_table).shape)
             )
 
     # Initialize the FermionOperator
