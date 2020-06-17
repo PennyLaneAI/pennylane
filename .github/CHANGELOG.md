@@ -75,6 +75,18 @@
   parametrized gates near the end of the circuit will see a benefit).
   [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
   
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  ... @qml.qnode(dev, diff_method="reversible")
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     qml.RX(x, wires=0)
+  ...     qml.CNOT(wires=[0,1])
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> qml.grad(circuit)(0.5, 1.2)
+  (array(-0.47942554),)
+  ```
+  
 <h4>New templates and cost functions</h4>  
 
 * Added the new templates `UCCSD`, `SingleExcitationUnitary`, and`DoubleExcitationUnitary`,
