@@ -37,6 +37,17 @@ def test_s2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
     assert np.allclose(s2_me_result, s2_me_expected, **tol)
 
 
+def test_excep_s2_me_table(message_match="Size of 'sz' must be equal to 'n_spin_orbs'"):
+    """Test that the 's2_me_table' function throws an exception if the
+    size of 'sz' is not equal to 'n_spin_orbs'."""
+
+    n_spin_orbs = 4
+    sz = np.where(np.arange(n_spin_orbs+1) % 2 == 0, 0.5, -0.5)
+
+    with pytest.raises(ValueError, match=message_match):
+        qchem.obs.s2_me_table(sz, n_spin_orbs)
+
+
 me = np.array([[ 0.,    0.,    0.,    0.,    0.25], [ 0.,    1.,    1.,    0.,   -0.25],
                [ 0.,    2.,    2.,    0.,    0.25], [ 0.,    3.,    3.,    0.,   -0.25],
                [ 1.,    0.,    0.,    1.,   -0.25], [ 1.,    1.,    1.,    1.,    0.25],
