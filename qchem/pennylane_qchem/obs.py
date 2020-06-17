@@ -103,6 +103,7 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
     total-spin operator :math:`\hat{S}^2`.
 
     **Example**
+
     >>> get_s2_me('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
     [[ 0.    0.    0.    0.    0.25]
      [ 0.    1.    1.    0.   -0.25]
@@ -199,6 +200,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
     **Example**
+    
     >>> s2_me_table, init_term = get_s2_me('h2', './pyscf/sto-3g')
     >>> s2_obs = observable(s2_me_table, init_term=init_term)
     >>> print(type(s2_obs))
