@@ -188,7 +188,9 @@ def cli():
             )
         )
         bms = [
-            mod.Benchmark(qml.device(short_name, wires=args.wires, **k), qnode_type=q, verbose=args.verbose)
+            mod.Benchmark(
+                qml.device(short_name, wires=args.wires, **k), qnode_type=q, verbose=args.verbose
+            )
             for short_name, k in zip(devs, dev_kwargs)
             for q in args.qnode
         ]
@@ -209,7 +211,11 @@ def cli():
         for q in args.qnode:
             bm = mod.Benchmark(dev, qnode_type=q, verbose=args.verbose)
             bm.setup()
-            text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{supplied_name}, {q}", "magenta")
+            text = (
+                col(f"'{bm.name}'", "blue")
+                + " benchmark on "
+                + col(f"{supplied_name}, {q}", "magenta")
+            )
             if args.cmd == "time":
                 print("Timing:", text)
                 timing(bm.benchmark)
