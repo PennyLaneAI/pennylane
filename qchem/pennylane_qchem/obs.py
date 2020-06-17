@@ -237,7 +237,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
     """
 
-    if mapping not in ("jordan_wigner", "bravyi_kitaev"):
+    if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
             "The '{}' transformation is not available. \n "
             "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
@@ -272,54 +272,3 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
         return qchem.convert_observable(bravyi_kitaev(mb_obs))
 
     return qchem.convert_observable(jordan_wigner(mb_obs))
-
-# n_spin_orbs=3
-# sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
-# print(sz)
-# print(s2_me_table(sz, n_spin_orbs))
-# exit()
-
-# hf_data = '/home/agran/work/software/pennylane/qchem/tests/test_ref_files'
-# mol_name = 'lih_anion'
-# hf_elect_struct = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
-
-# s2_me_table, init_term = get_s2_me(
-#     mol_name, hf_data,
-#     n_active_electrons=3,
-#     n_active_orbitals=3
-# )
-# print(hf_elect_struct.n_electrons, hf_elect_struct.n_orbitals)
-
-# s2_observable = observable(s2_me_table, init_term=init_term, mapping="bravyi_kitaev")
-# #print(s2_observable.terms)
-# # print(s2_observable.coeffs)
-# # print(s2_observable.ops)
-# exit()
-
-# mol_name = "h2"
-# geo_file = "h2.xyz"
-# charge = 0
-# multiplicity = 1
-# basis = "sto-3g"
-
-# n_electrons = 2
-# n_orbitals = 2
-
-# geometry = qchem.read_structure(geo_file)
-# hf_data = qchem.meanfield_data("h2", geometry, charge, multiplicity, basis)
-# print(hf_data)
-# s2_me_table, init_term = get_s2_me(
-#     mol_name, hf_data,
-#     n_active_electrons=n_electrons,
-#     n_active_orbitals=n_orbitals
-# )
-# print(s2_me_table, init_term)
-# #exit()
-
-# s2_observable = observable(s2_me_table, init_term=init_term, mapping="jordan_wigner")
-# #print(type(s2_observable))
-# print(s2_observable)
-# print(s2_observable.coeffs)
-# print(s2_observable.ops)
-# print(type(s2_observable.coeffs))
-# print(type(s2_observable.ops))
