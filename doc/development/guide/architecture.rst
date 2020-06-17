@@ -148,8 +148,8 @@ Certain operators can serve as both quantum gates and observables (e.g.
 :class:`~.PauliZ`, :class:`~.PauliX`, etc.). Such classes inherit from both
 ``Operation`` and ``Observable`` classes.
 
-Quantum operator instances, in general, are used to build quantum functions
-which are used within ``QNode`` instances. Users can define such quantum
+Quantum operators are used to build quantum functions
+which are evaluated by a ``QNode`` on a bound device. Users can define such quantum
 functions by creating regular Python functions and incorporating ``Operator``
 instances.
 
