@@ -214,8 +214,10 @@ Variables
 *********
 
 Circuit parameters in PennyLane are tracked and updated using
-:class:`~.Variable`. They play a key role in the evaluation of a ``QNode`` as
-the symbolic parameters are substituted with numeric values.
+:class:`~.Variable`. They play a key role in the evaluation of ``QNode`` gradients, as
+the symbolic parameters are substituted with numeric values. The ``Variable`` class plays
+an important role in book-keeping, allowing PennyLane to keep track of which parameters are
+used in which operations, and automatically perform the product and chain rule where required.
 
 We refer to the :ref:`qml_variable` page for a more in-depth description of how
 ``Variables`` are used during execution.
