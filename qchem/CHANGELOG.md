@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* The new module ``obs`` has been added to build many-body operators
+  whose expectation values can be computed in PennyLane to simulate
+  properties of interest of quantum systems. In particular, this PR adds
+  the required functions to build the total-spin operator S^2. The adopted
+  methodology is very general and is not restricted to molecular systems.
+  [(#689)](https://github.com/XanaduAI/pennylane/pull/689)
+
 * The function ``hf_state`` outputs an array with the occupation-number
   representation of the Hartree-Fock (HF) state. This function can be used to
   set the qubit register to encode the HF state which is the typical starting
