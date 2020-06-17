@@ -23,40 +23,31 @@ from pennylane.templates.utils import (
     check_no_variable,
     check_number_of_layers,
     get_shape,
-    check_type,
-    check_shapes,
 )
 from pennylane.wires import Wires
 
 
 @template
-def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
+def BasicEntanglerLayers(weights, wires, rotation=None):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
-
     The ring of CNOT gates connects every qubit with its neighbour,
     with the last qubit being considered as a neighbour to the first qubit.
-
     .. figure:: ../../_static/templates/layers/basic_entangler.png
         :align: center
         :width: 40%
         :target: javascript:void(0);
-
     The number of layers :math:`L` is determined by the first dimension of the argument ``weights``.
     When using a single wire, the template only applies the single
     qubit gates in each layer.
-
     .. note::
-
         This template follows the convention of dropping the entanglement between the last and the first
         qubit when using only two wires, so the entangler is not repeated on the same wires.
         In this case, only one CNOT gate is applied in each layer:
-
         .. figure:: ../../_static/templates/layers/basic_entangler_2wires.png
             :align: center
             :width: 30%
             :target: javascript:void(0);
-
     Args:
         weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
                                 for the rotation
@@ -64,97 +55,51 @@ def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
-        interactions (array[wires]): array of wire index pairs (elements of shape (2,)) that acts as a custom `pattern` for the placement of CNOT gates,
-                                            if ``None``, `pattern="ring"` is used as default
     Raises:
         ValueError: if inputs do not have the correct format
-
     .. UsageDetails::
-
         The template is used inside a qnode:
-
         .. code-block:: python
-
             import pennylane as qml
             from pennylane.templates import BasicEntanglerLayers
             from math import pi
-
             n_wires = 3
             dev = qml.device('default.qubit', wires=n_wires)
-
             @qml.qnode(dev)
             def circuit(weights):
                 BasicEntanglerLayers(weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
         >>> circuit([[pi, pi, pi]])
         [1., 1., -1.]
-
         **Parameter initialization function**
-
         The :mod:`~pennylane.init` module has two parameter initialization functions, ``basic_entangler_layers_normal``
         and ``basic_entangler_layers_uniform``.
-
         .. code-block:: python
-
             from pennylane.init import basic_entangler_layers_normal
-
             n_layers = 4
             weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires)
-
             circuit(weights)
-
-
         **No periodic boundary for two wires**
-
         When using two wires, the convention is to drop the periodic boundary condition.
         This means that the connection from the second to the first wire is omitted.
-
         .. code-block:: python
-
             n_wires = 2
             dev = qml.device('default.qubit', wires=n_wires)
-
             @qml.qnode(dev)
             def circuit(weights):
                 BasicEntanglerLayers(weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
         >>> circuit([[pi, pi]])
         [-1, 1]
-
-
         **Changing the rotation gate**
-
         Any single-qubit gate can be used as a rotation gate, as long as it only takes a single parameter. The default is the ``RX`` gate.
-
         .. code-block:: python
-
             @qml.qnode(dev)
             def circuit(weights):
                 BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
-
-        **Using the `interactions` argument**
-
-        By using `interactions`, and custom broadcasting pattern of CNOT gates can be placed on the circuit.
-
-        .. code-block:: python
-
-            n_wires = 4
-            dev = qml.device('default.qubit', wires=n_wires)
-            interactions = [[0, 1], [2, 3]]
-
-            @qml.qnode(dev)
-            def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ, interactions)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        >>> circuit([[pi, pi, pi, pi]])
-        [-1, 1, -1, 1]
     """
 
     #############
@@ -181,16 +126,4 @@ def BasicEntanglerLayers(weights, wires, rotation=None, interactions=None):
     for layer in range(repeat):
 
         broadcast(unitary=rotation, pattern="single", wires=wires, parameters=weights[layer])
-        if interactions is None:
-            broadcast(unitary=CNOT, pattern="ring", wires=wires)
-        else:
-            check_type(interactions, [list], msg="'interactions' must be list of wire index pairs")
-            check_shapes(
-                interactions, [(2,)], msg="Elements of 'interactions' must be of shape (2,)"
-            )
-            for i in interactions:
-                if i[0] == i[1]:
-                    raise ValueError("CNOT gates must be applied between two different wires")
-                if (i[0] not in wires.tolist()) or (i[1] not in wires.tolist()):
-                    raise ValueError("Wire index pair {} is out of range".format(i))
-            broadcast(unitary=CNOT, pattern=interactions, wires=wires)
+        broadcast(unitary=CNOT, pattern="ring", wires=wires)
