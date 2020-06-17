@@ -138,7 +138,7 @@ class BaseQNode(qml.QueuingContext):
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance represeting
+    The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance representing
     the quantum circuit. The circuit can be either
 
     * *mutable*, which means the quantum function is called each time the QNode is evaluated, or
