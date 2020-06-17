@@ -31,15 +31,11 @@ multiple simulators and hardware chips through its plugins; each of these
 devices is implemented as a custom class. These classes have the
 ``Device`` class as their parent class.
 
-A ``QNode`` is another important component in PennyLane (later detailed), they
-serve as the abstraction for quantum circuits to be run on a device.
-
 The purpose of the ``Device`` class can be summarized as:
 
-* Providing a common API for QNodes to execute a quantum circuit and request
+* Providing a common API to execute a quantum circuit and request
   the measurement of the associated observable.
-* Providing an easy way of developing a new device for PennyLane that
-  can be used with QNodes.
+* Providing an easy way of developing a new device for PennyLane
 
 Qubit based devices can use shared utilities by using the
 :class:`~.QubitDevice`.
