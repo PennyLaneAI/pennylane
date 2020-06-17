@@ -23,7 +23,6 @@ from pennylane.templates.utils import (
     check_no_variable,
     check_number_of_layers,
     get_shape,
-    check_type,
     check_shapes,
 )
 from pennylane.wires import Wires
@@ -33,7 +32,7 @@ from pennylane.wires import Wires
 def CustomEntanglerLayers(
     rotation_weights, wires, rotation=None, coupling=None, coupling_weights=None, pattern=None
 ):
-    r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of 
+    r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of
     parametrized double-qubit gates
 
     The placement of double-qubit gates on the circuit is determined by a user-passed
@@ -69,7 +68,7 @@ def CustomEntanglerLayers(
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
-        pattern (?????): A keyword that determined how the double-qubit gates will be placed on the circuit.`pattern='ring'` is used 
+        pattern (?????): A keyword that determined how the double-qubit gates will be placed on the circuit.`pattern='ring'` is used
                          as default.
     Raises:
         ValueError: if inputs do not have the correct format
@@ -237,7 +236,7 @@ def CustomEntanglerLayers(
                 "".format(expected_shape, get_shape(coupling_weights)),
             )
 
-        elif type(pattern) == list:
+        elif isinstance(pattern, list):
             expected_shape = (repeat_coupling, len(pattern))
             check_shape(
                 coupling_weights,
