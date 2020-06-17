@@ -66,3 +66,35 @@ def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
     assert qchem._qubit_operators_equivalent(qubit_op, res_obs)
+
+
+@pytest.mark.parametrize(
+    ("me_table", "message_match"),
+    [
+        (np.array([[0., 0., 1., 0.5], [1., 1., -0.5]]),
+         "expected entries of 'me_table' to be of shape"),
+        (np.array([[0., 0., 1., 0.5], [1., -0.5]]),
+         "expected entries of 'me_table' to be of shape"),
+        (np.array([[0., 0., 1., 2., 0.5], [1., -0.5]]),
+         "expected entries of 'me_table' to be of shape"),
+        (np.array([[0., 0., 1., 2., 3., 0.5], [1., 0., -0.5]]),
+         "expected entries of 'me_table' to be of shape"),
+    ],
+)
+def test_exceptions_observable(me_table,message_match):
+    """Test that the 'observable' function throws an exception if the
+    array containing he matrix elements has illegal shapes and if the
+    fermionic-to-qubit mapping is not properly defined."""
+
+    with pytest.raises(ValueError, match=message_match):
+        qchem.obs.observable(me_table)
+
+
+def test_mapping_observable(message_match="transformation is not available"):
+    """Test that the 'observable' function throws an exception if the
+    fermionic-to-qubit mapping is not properly defined."""
+
+    me_table = np.array([[0., 0., 0.5], [1., 1., -0.5]])
+
+    with pytest.raises(TypeError, match=message_match):
+        qchem.obs.observable(me_table, mapping="no_valid_transformation")        
