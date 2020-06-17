@@ -95,7 +95,7 @@ PennyLane offers the following qnode types and differentiation rules:
 * :class:`~.PassthruQNode`: classical backpropagation
 * :class:`~.ReversibleQNode`: reversible backpropagation
 
-These qnode types are available to users through the :func:`~.qnode` decorator by
+These QNode types are available to users through the :func:`~.qnode` decorator by
 passing the user-facing ``diff_method`` option. This decorator then uses the
 :func:`~.QNode` constructor function to create the specific type of qnode based on
 the device, interface, and quantum function.
