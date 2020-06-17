@@ -83,7 +83,7 @@
   ...     qml.RX(x, wires=0)
   ...     qml.CNOT(wires=[0,1])
   ...     return qml.expval(qml.PauliZ(0))
-  >>> qml.grad(circuit)(0.5, 1.2)
+  >>> qml.grad(circuit)(0.5)
   (array(-0.47942554),)
   ```
   
