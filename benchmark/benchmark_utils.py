@@ -16,6 +16,8 @@ Benchmarking utilities.
 """
 import abc
 
+from types import ModuleType
+
 import pennylane as qml
 
 
@@ -32,8 +34,9 @@ class BaseBenchmark(abc.ABC):
     min_wires = 1  #: int: minimum number of quantum wires required by the benchmark
     n_vals = None  #: Sequence[Any]: range of benchmark parameter values for perfplot
 
-    def __init__(self, device=None, verbose=False):
+    def __init__(self, device=None, qnode_type=None, verbose=False):
         self.device = device
+        self.qnode_type = qnode_type
         if device is not None:
             if device.num_wires < self.min_wires:
                 raise ValueError(
@@ -68,12 +71,14 @@ class BaseBenchmark(abc.ABC):
         """
 
 
-def create_qnode(qfunc, device, mutable=True, interface="autograd"):
+def create_qnode(qfunc, device, mutable=True, interface="autograd", qnode_type="QNode"):
     """Utility function for creating a quantum node.
 
     Takes care of the backwards compatibility of the benchmarks.
 
-    Implicitly uses the parameter-shift method for computing Jacobians.
+    If not provided, will use the default QNode, as determined by PennyLane's
+    `qnodes/decorator.py` file. For older versions of PennyLane with only one
+    QNode type, it will use that object.
 
     Args:
         qfunc (Callable): quantum function defining a circuit
@@ -81,13 +86,15 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
         mutable (bool): whether the QNode should mutable
         interface (str, None): interface used for classical backpropagation,
             in ('autograd', 'torch', 'tf', None)
+        qnode_type (str): name of the specific QNode subclass to use
 
     Returns:
         BaseQNode: constructed QNode
     """
     try:
-        qnode = qml.qnodes.QNode(
-            qfunc, device, mutable=mutable, diff_method="parameter-shift", interface=interface,
+        qnode_type = getattr(qml.qnodes, qnode_type)
+        qnode = qnode_type(
+            qfunc, device, mutable=mutable, interface=interface,
         )
     except AttributeError:
         # versions before the "new-style" QNodes
@@ -102,3 +109,11 @@ def create_qnode(qfunc, device, mutable=True, interface="autograd"):
             qnode = qml.QNode(qfunc, device)
 
     return qnode
+
+
+def expval(obs):
+    """Returns the expectation value of an observable ``obs``, in a way that is
+    compatible with all versions of PennyLane."""
+    if type(qml.expval) == ModuleType:  # pylint: disable=unidiomatic-typecheck
+        return getattr(obs, qml.expval)
+    return qml.expval(obs)
