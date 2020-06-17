@@ -8,8 +8,7 @@ PennyLane allows optimization and machine learning of quantum and hybrid
 quantum-classical computations by integrating several key components. A
 *quantum device* can be matched with a *quantum node* to return statistics upon
 evaluation. To process these, *interfaces* allow using familiar classical
-frameworks. Built-in *optimizers* help on the way to finding desired
-parameters to the quantum circuit.
+frameworks.
 
 In most cases, computations with PennyLane are performed on a local machine
 using a simulator. Through using PennyLane plugins, one can, however, also
@@ -184,15 +183,6 @@ interfaces.
 
 We refer to the :ref:`intro_interfaces` page for a more in-depth introduction
 and a list of available interfaces.
-
-Optimizers
-**********
-
-Optimizers are objects which can be used to automatically update the parameters
-of a quantum or hybrid machine learning model.
-
-We refer to the :ref:`intro_ref_opt` page for a more in-depth introduction
-and a list of available optimizers.
 
 Key design details
 ##################
