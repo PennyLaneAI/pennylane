@@ -38,11 +38,28 @@ Devices
 
 In PennyLane, the abstraction of a quantum computation device is encompassed
 within the :class:`~.Device` class, making it one of the basic components of
-the library. It includes basic functionality that is shared for quantum
-devices, independent of the quantum information model used. PennyLane gives
-access to multiple simulators and hardware chips through its plugins; each of
-these devices is implemented as a custom class. These classes have the
-``Device`` class as their parent class.
+the library. The :class:`~.Device` class provides a common API for accessing quantum
+devices, independent of both the type of device (both simulators and hardware are supported),
+as well as the quantum information model used.
+
+In particular, the :class:`~.Device` class provides a common API for:
+
+* Initializing various device parameters such as the number of samples/shots,
+
+* Executing quantum circuits,
+
+* Retrieving measurement and state results (including samples, measurement statistics, and probabilities).
+
+There are also device subclasses available, containing shared logic for particular types of devices.
+For example, qubit-based devices can inherit from the :class:`~.QubitDevice` class, easing development.
+
+To register a new device with PennyLane, they must register an `entry point
+<https://packaging.python.org/specifications/entry-points/>`__under the `pennylane.plugins`
+namespace using Setuptools. Once registered, the device can be instantiated using the :func:`~.device`
+loader function.
+
+A Python package that registers one or more PennyLane device is known as a *plugin*. For more details
+on plugins and devices, see :doc:`/development/plugins`.
 
 The purpose of the ``Device`` class can be summarized as:
 
