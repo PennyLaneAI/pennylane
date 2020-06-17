@@ -22,6 +22,7 @@ from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
 from . import qchem
 
+
 def s2_me_table(sz, n_spin_orbs):
     r"""Generates the table of the matrix elements
     :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
@@ -61,8 +62,8 @@ def s2_me_table(sz, n_spin_orbs):
     """
 
     if sz.size != n_spin_orbs:
-        raise ValueError("Size of 'sz' must be equal to 'n_spin_orbs'; got {}"
-            .format(sz.size)
+        raise ValueError(
+            "Size of 'sz' must be equal to 'n_spin_orbs'; got {}".format(sz.size)
         )
 
     n = np.arange(n_spin_orbs)
@@ -136,27 +137,29 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
 
     Returns:
         tuple: the table of two-particle matrix elements and the single-particle
-        contribution :math:`\frac{3N_e}{4}` required to build the second-quantized 
+        contribution :math:`\frac{3N_e}{4}` required to build the second-quantized
         total-spin operator.
     """
 
-    docc_indices, active_indices = qchem.active_space(
+    active_indices = qchem.active_space(
         mol_name,
         hf_data,
         n_active_electrons=n_active_electrons,
-        n_active_orbitals=n_active_orbitals
-    )
+        n_active_orbitals=n_active_orbitals,
+    )[1]
 
-    if n_active_electrons == None:
-        hf_elect_struct = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
+    if n_active_electrons is None:
+        hf_elect_struct = MolecularData(
+            filename=os.path.join(hf_data.strip(), mol_name.strip())
+        )
         n_electrons = hf_elect_struct.n_electrons
     else:
         n_electrons = n_active_electrons
 
-    n_spin_orbs = 2*len(active_indices)
+    n_spin_orbs = 2 * len(active_indices)
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    return s2_me_table(sz, n_spin_orbs), 3/4*n_electrons
+    return s2_me_table(sz, n_spin_orbs), 3 / 4 * n_electrons
 
 
 def observable(me_table, init_term=0, mapping="jordan_wigner"):
@@ -244,7 +247,9 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
             "The '{}' transformation is not available. \n "
-            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
+            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(
+                mapping
+            )
         )
 
     sp_op_shape = (3,)
@@ -252,22 +257,24 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     for i_table in me_table:
         if np.array(i_table).shape not in (sp_op_shape, tp_op_shape):
             raise ValueError(
-                "expected entries of 'me_table' to be of shape (3,) or (5,) ; got {}".
-                format(np.array(i_table).shape)
+                "expected entries of 'me_table' to be of shape (3,) or (5,) ; got {}".format(
+                    np.array(i_table).shape
+                )
             )
 
     # Initialize the FermionOperator
-    mb_obs = FermionOperator() + FermionOperator('')*init_term
+    mb_obs = FermionOperator() + FermionOperator("") * init_term
 
     for i in me_table:
 
         if i.shape == (5,):
             # two-particle operator
             mb_obs += FermionOperator(
-                ((int(i[0]),1),(int(i[1]),1),(int(i[2]),0), (int(i[3]),0)), i[4])
+                ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4]
+            )
         elif i.shape == (3,):
             # single-particle operator
-            mb_obs += FermionOperator(((int(i[0]),1),(int(i[1]),0)), i[2])
+            mb_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
 
     # Map the fermionic to a qubit operator measurable in PennyLane
     if mapping.strip().lower() == "bravyi_kitaev":
