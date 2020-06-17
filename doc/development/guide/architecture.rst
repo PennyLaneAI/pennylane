@@ -177,14 +177,16 @@ valid pre-defined device (``dev``).
         return qml.expval(qml.PauliZ(0))
 
 This syntax of PennyLane results in the Operator instances not being "recorded"
-by the Python function. What is more, there is actually *no composition logic*
-in between the ``QNode`` that is being created and the ``Operator`` instances
-(``qml.PauliX(0)`` and ``qml.PauliZ(0)``), as there are merely class
-instantiations happening upon calling the ``circuit`` quantum function.
+by the ``QNode``. This is so because there is *no association or composition
+logic* in between the ``QNode`` that is being created and the ``Operator``
+instances: the ``QNode`` does not *contain* any instances of quantum operators.
+By executing ``circuit``, instances of the ``qml.PauliX`` and ``qml.PauliZ``
+classes are created, but they are not associated with the ``QNode`` itself.
+This creates the problem of quantum functions (``circuit``) not being able to
+keep track of which quantum operations and observables are being applied.
 
-How does then PennyLane keep track of which ``Operations`` and ``Observables``
-were instantiated within a quantum function? The solution to this problem is
-related to the queuing of operators.
+How does then PennyLane solve this problem? This is closely related to the
+queuing of operators.
 
 Queuing of operators
 ********************
