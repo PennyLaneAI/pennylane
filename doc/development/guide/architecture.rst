@@ -98,7 +98,9 @@ PennyLane offers the following qnode types and differentiation rules:
 These QNode types are available to users through the :func:`~.qnode` decorator by
 passing the user-facing ``diff_method`` option. This decorator then uses the
 :func:`~.QNode` constructor function to create the specific type of qnode based on
-the device, interface, and quantum function.
+the device, interface, and quantum function. If ``diff_method`` option is not
+provided, the QNode constructor function attempts to determine the ``"best"``
+differentiation method, based on the available device and interface.
 
 A widespread representation of quantum circuits is by creating a `Directed
 Acyclic Graph (DAG)
@@ -118,6 +120,17 @@ interfaces. QNodes that provide black-box gradient rules are 'wrapped' by an int
 that provide a 'wrapper' around QNodes such. These wrappers further transform
 the ``QNode`` such that the quantum gradient rules of the QNodes are registered
 to the machine learning interface via a custom gradient class or function.
+
+An interface integrates QNodes with external libraries by the following:
+
+* It wraps the QNode, returning a QNode that accepts and returns the core data
+structure of the classical machine learning library (e.g., a TF tensor, Torch
+tensor, Autograd NumPy array, etc).
+* It unwraps the input data structures to simple NumPy arrays, so that the
+quantum device can execute the user's quantum function.
+* It registers the ``QNode.jacobian()`` method as a custom gradient method, so that
+the machine learning library can 'backpropagate' across the QNode, when
+integrated into a classical computation.
 
 We refer to the :ref:`intro_interfaces` page for a more in-depth introduction
 and a list of available interfaces.
