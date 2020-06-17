@@ -91,7 +91,7 @@ PennyLane offers the following qnode types and differentiation rules:
 * :class:`~.QubitQNode`: qubit parameter-shift rule
 * :class:`~.CVQNode`: CV parameter-shift rule
 * :class:`~.JacobianQNode`: finite differences
-* :class:`~.DeviceJacobianQNode`: device based gradient rule
+* :class:`~.DeviceJacobianQNode`: queries the device directly for the gradient
 * :class:`~.PassthruQNode`: classical backpropagation
 * :class:`~.ReversibleQNode`: reversible backpropagation
 
