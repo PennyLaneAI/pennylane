@@ -1,5 +1,3 @@
-.. _qml_variable:
-
 qml.variable
 ============
 
