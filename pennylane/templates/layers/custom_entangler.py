@@ -30,8 +30,10 @@ from pennylane.wires import Wires
 
 
 @template
-def CustomEntanglerLayers(rotation_weights, wires, rotation=None, coupling=None, coupling_weights=None, pattern=None):
-r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of 
+def CustomEntanglerLayers(
+    rotation_weights, wires, rotation=None, coupling=None, coupling_weights=None, pattern=None
+):
+    r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of 
     parametrized double-qubit gates
 
     The placement of double-qubit gates on the circuit is determined by a user-passed
@@ -190,63 +192,72 @@ r"""Layers consisting of one-parameter single-qubit rotations on each qubit, fol
     check_shape(
         rotation_weights,
         expected_shape,
-        msg="'rotation_weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(rotation_weights)),
+        msg="'rotation_weights' must be of shape {}; got {}"
+        "".format(expected_shape, get_shape(rotation_weights)),
     )
 
     # Checks the coupling input/weights
 
     if pattern is None:
-        pattern = 'ring'
+        pattern = "ring"
 
     if coupling is None:
         coupling = CNOT
 
     if coupling.num_wires != 2:
-        raise ValueError("`coupling` accepts 2-wire gates, instead got {} wire(s)".format(coupling.num_wires))
+        raise ValueError(
+            "`coupling` accepts 2-wire gates, instead got {} wire(s)".format(coupling.num_wires)
+        )
 
     if coupling.num_params == 0 and coupling_weights is not None:
         raise ValueError("Gate '{}' does not take parameters".format(coupling))
-    
+
     if coupling.num_params != 0 and coupling_weights is None:
         raise ValueError("Gate '{}' must take parameters".format(coupling))
 
     # Checks cases where there are coupling parameters
 
     if isinstance(pattern, list):
-        check_shapes(pattern, [(2,)], msg="Elements of custom 'pattern' must be of shape (2,)") 
+        check_shapes(pattern, [(2,)], msg="Elements of custom 'pattern' must be of shape (2,)")
 
     if coupling_weights is not None:
 
         repeat_coupling = check_number_of_layers([coupling_weights])
         if repeat_coupling != repeat:
-            raise ValueError("First dimension of `rotation_weights` and `coupling_weights` must be the same")
+            raise ValueError(
+                "First dimension of `rotation_weights` and `coupling_weights` must be the same"
+            )
 
         if pattern in OPTIONS:
             expected_shape = (repeat_coupling, n_parameters[pattern])
             check_shape(
                 coupling_weights,
                 expected_shape,
-                msg="'coupling_weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(coupling_weights)),
-                )
+                msg="'coupling_weights' must be of shape {}; got {}"
+                "".format(expected_shape, get_shape(coupling_weights)),
+            )
 
         elif type(pattern) == list:
             expected_shape = (repeat_coupling, len(pattern))
             check_shape(
                 coupling_weights,
                 expected_shape,
-                msg="'coupling_weights' must be of shape {}; got {}" "".format(expected_shape, get_shape(coupling_weights)),
-                )
+                msg="'coupling_weights' must be of shape {}; got {}"
+                "".format(expected_shape, get_shape(coupling_weights)),
+            )
 
     # Checks that the pattern is the list/parameters have right length
-
-
 
     ###############
 
     for layer in range(repeat):
 
-        broadcast(unitary=rotation, pattern="single", wires=wires, parameters=rotation_weights[layer])
+        broadcast(
+            unitary=rotation, pattern="single", wires=wires, parameters=rotation_weights[layer]
+        )
         if coupling_weights is not None:
-            broadcast(unitary=coupling, pattern=pattern, wires=wires, parameters=coupling_weights[layer])
+            broadcast(
+                unitary=coupling, pattern=pattern, wires=wires, parameters=coupling_weights[layer]
+            )
         else:
             broadcast(unitary=coupling, pattern=pattern, wires=wires)
