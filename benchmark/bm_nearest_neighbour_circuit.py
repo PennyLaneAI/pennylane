@@ -39,7 +39,7 @@ class Benchmark(bu.BaseBenchmark):
         # pylint: disable=attribute-defined-outside-init,no-member
         np.random.seed(143)
         self.params1 = np.random.uniform(high=2 * pi, size=self.n_wires)
-        self.params2 = np.random.uniform(high=2 * pi, size=self.n_wires-1)
+        self.params2 = np.random.uniform(high=2 * pi, size=self.n_wires - 1)
         self.all_wires = range(self.n_wires)
 
     def benchmark(self, n=10):
@@ -49,11 +49,16 @@ class Benchmark(bu.BaseBenchmark):
 
         params1 = [qml.numpy.array(self.params1, copy=True, requires_grad=True) for _ in range(n)]
         params2 = [qml.numpy.array(self.params2, copy=True, requires_grad=True) for _ in range(n)]
+
         def circuit(params1, params2):
             """Parametrized circuit with nearest-neighbour gates."""
             for layer in range(n):
-                qml.broadcast(qml.RX, pattern="single", wires=self.all_wires, parameters=params1[layer])
-                qml.broadcast(qml.CRY, pattern="chain", wires=self.all_wires, parameters=params2[layer])
+                qml.broadcast(
+                    qml.RX, pattern="single", wires=self.all_wires, parameters=params1[layer],
+                )
+                qml.broadcast(
+                    qml.CRY, pattern="chain", wires=self.all_wires, parameters=params2[layer],
+                )
             return bu.expval(qml.PauliZ(0))
 
         qnode = bu.create_qnode(circuit, self.device, mutable=True, qnode_type=self.qnode_type)

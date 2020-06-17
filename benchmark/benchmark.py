@@ -167,12 +167,29 @@ def cli():
     # import the requested benchmark module
     mod = importlib.import_module(args.benchmark)
 
+    # check for additional device args
+    devs = args.device
+    dev_kwargs = []
+    for idx, dev in enumerate(devs):
+        dev_kwargs.append({})
+        if "default.tensor" in dev:
+            # check for additional args
+            device_full = dev.split("-")
+            devs[idx] = device_full[0]
+            print(device_full)
+            if len(device_full) > 1:
+                dev_kwargs[idx]["representation"] = device_full[1]
+
     # execute the command
     if args.cmd == "plot":
-        print("Performance plot: '{}' benchmark on {}, {}".format(mod.Benchmark.name, args.device, args.qnode))
+        print(
+            "Performance plot: '{}' benchmark on {}, {}".format(
+                mod.Benchmark.name, args.device, args.qnode
+            )
+        )
         bms = [
-            mod.Benchmark(qml.device(d, wires=args.wires), qnode_type=q, verbose=args.verbose)
-            for d in args.device
+            mod.Benchmark(qml.device(d, wires=args.wires, **k), qnode_type=q, verbose=args.verbose)
+            for d, k in zip(devs, dev_kwargs)
             for q in args.qnode
         ]
         for k in bms:
@@ -187,9 +204,9 @@ def cli():
             k.teardown()
         return
 
-    for d in args.device:
+    for dev, k in zip(devs, dev_kwargs):
+        dev = qml.device(dev, wires=args.wires, **k)
         for q in args.qnode:
-            dev = qml.device(d, wires=args.wires)
             bm = mod.Benchmark(dev, qnode_type=q, verbose=args.verbose)
             bm.setup()
             text = col(f"'{bm.name}'", "blue") + " benchmark on " + col(f"{d}, {q}", "magenta")
