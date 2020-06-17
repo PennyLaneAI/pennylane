@@ -283,3 +283,10 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
         return qchem.convert_observable(bravyi_kitaev(mb_obs))
 
     return qchem.convert_observable(jordan_wigner(mb_obs))
+
+
+__all__ = [
+    "s2_me_table",
+    "get_s2_me",
+    "observable",
+]
