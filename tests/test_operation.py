@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.operation import Tensor
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
+from pennylane.wires import Wires
 
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -131,7 +132,7 @@ class TestOperation:
         op = test_class(*pars, wires=ww)
         assert op.name == test_class.__name__
         assert op.params == pars
-        assert op._wires == ww
+        assert op._wires == ww #Wires(ww)
 
         # too many parameters
         with pytest.raises(ValueError, match='wrong number of parameters'):
@@ -150,7 +151,7 @@ class TestOperation:
                 test_class(*pars, wires=list(range(w-1)))
             # repeated wires
             if w > 1:
-                with pytest.raises(ValueError, match='wires must be unique'):
+                with pytest.raises(qml.wires.WireError, match='Wires must be unique'):
                     test_class(*pars, wires=w*[0])
 
         if n == 0:
@@ -294,7 +295,7 @@ class TestOperatorConstruction:
             num_params = 1
             par_domain = 'R'
 
-        with pytest.raises(ValueError, match="wires must be unique"):
+        with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
 
     def test_incorrect_num_params(self):
@@ -520,7 +521,7 @@ class TestObservableConstruction:
         cv_obs = qml.TensorN(wires=[0, 1])
 
         assert isinstance(cv_obs, qml.TensorN)
-        assert cv_obs.wires == [0, 1]
+        assert cv_obs.wires == [0, 1]  #Wires([0, 1])
         assert cv_obs.ev_order is None
 
     def test_tensor_n_single_mode_wires_explicit(self):
@@ -529,7 +530,7 @@ class TestObservableConstruction:
         cv_obs = qml.TensorN(wires=[0])
 
         assert isinstance(cv_obs, qml.NumberOperator)
-        assert cv_obs.wires == [0]
+        assert cv_obs.wires == list([0])
         assert cv_obs.ev_order == 2
 
     def test_tensor_n_single_mode_wires_implicit(self):
@@ -538,7 +539,7 @@ class TestObservableConstruction:
         cv_obs = qml.TensorN(1)
 
         assert isinstance(cv_obs, qml.NumberOperator)
-        assert cv_obs.wires == [1]
+        assert cv_obs.wires == list([1])
         assert cv_obs.ev_order == 2
 
 
@@ -598,6 +599,7 @@ class TestOperationIntegration:
                 .format(dev1.short_name)):
             mean_photon_gaussian(0.015, 0.02, 0.005)
 
+
 class TestTensor:
     """Unit tests for the Tensor class"""
 
@@ -636,7 +638,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.wires == [0, 1, 2]
+        assert t.wires == list([0, 1, 2])
 
     def test_params(self):
         """Test that the correct flattened list of parameters is returned"""
@@ -794,20 +796,20 @@ class TestTensor:
 
         # diagonalize the PauliX on wire 0 (H.X.H = Z)
         assert isinstance(res[0], qml.Hadamard)
-        assert res[0].wires == [0]
+        assert res[0].wires == list([0])
 
         # diagonalize the PauliY on wire 1 (U.Y.U^\dagger = Z
         # where U = HSZ).
         assert isinstance(res[1], qml.PauliZ)
-        assert res[1].wires == [1]
+        assert res[1].wires == list([1])
         assert isinstance(res[2], qml.S)
-        assert res[2].wires == [1]
+        assert res[2].wires == list([1])
         assert isinstance(res[3], qml.Hadamard)
-        assert res[3].wires == [1]
+        assert res[3].wires == list([1])
 
         # diagonalize the Hermitian observable on wires 5, 6
         assert isinstance(res[4], qml.QubitUnitary)
-        assert res[4].wires == [5, 6]
+        assert res[4].wires == list([5, 6])
 
         O = O @ qml.Hadamard(4)
         res = O.diagonalizing_gates()
@@ -815,7 +817,7 @@ class TestTensor:
         # diagonalize the Hadamard observable on wire 4
         # (RY(-pi/4).H.RY(pi/4) = Z)
         assert isinstance(res[-1], qml.RY)
-        assert res[-1].wires == [4]
+        assert res[-1].wires == list([4])
         assert np.allclose(res[-1].parameters, -np.pi/4, atol=tol, rtol=0)
 
     def test_diagonalizing_gates_numerically_diagonalizes(self, tol):
@@ -1017,27 +1019,27 @@ class TestDecomposition:
 
         assert rec.queue[0].name == "RZ"
         assert rec.queue[0].parameters == [np.pi/2]
-        assert rec.queue[0].wires == [1]
+        assert rec.queue[0].wires == list([1])
 
         assert rec.queue[1].name == "RY"
         assert rec.queue[1].parameters == [phi/2]
-        assert rec.queue[1].wires == [1]
+        assert rec.queue[1].wires == list([1])
 
         assert rec.queue[2].name == "CNOT"
         assert rec.queue[2].parameters == []
-        assert rec.queue[2].wires == [0, 1]
+        assert rec.queue[2].wires == list([0, 1])
 
         assert rec.queue[3].name == "RY"
         assert rec.queue[3].parameters == [-phi/2]
-        assert rec.queue[3].wires == [1]
+        assert rec.queue[3].wires == list([1])
 
         assert rec.queue[4].name == "CNOT"
         assert rec.queue[4].parameters == []
-        assert rec.queue[4].wires == [0, 1]
+        assert rec.queue[4].wires == list([0, 1])
 
         assert rec.queue[5].name == "RZ"
         assert rec.queue[5].parameters == [-np.pi/2]
-        assert rec.queue[5].wires == [1]
+        assert rec.queue[5].wires == list([1])
 
     @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
     def test_crx_decomposition_correctness(self, phi, tol):
@@ -1064,19 +1066,19 @@ class TestDecomposition:
 
         assert rec.queue[0].name == "RY"
         assert rec.queue[0].parameters == [phi/2]
-        assert rec.queue[0].wires == [1]
+        assert rec.queue[0].wires == list([1])
 
         assert rec.queue[1].name == "CNOT"
         assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == operation_wires
+        assert rec.queue[1].wires == list(operation_wires)
 
         assert rec.queue[2].name == "RY"
         assert rec.queue[2].parameters == [-phi/2]
-        assert rec.queue[2].wires == [1]
+        assert rec.queue[2].wires == list([1])
 
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == operation_wires
+        assert rec.queue[3].wires == list(operation_wires)
 
     @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
     def test_cry_decomposition_correctness(self, phi, tol):
@@ -1087,7 +1089,6 @@ class TestDecomposition:
 
         obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
 
     def test_crz_decomposition(self):
         """Test the decomposition of the controlled Z
@@ -1103,19 +1104,19 @@ class TestDecomposition:
 
         assert rec.queue[0].name == "PhaseShift"
         assert rec.queue[0].parameters == [phi/2]
-        assert rec.queue[0].wires == [1]
+        assert rec.queue[0].wires == list([1])
 
         assert rec.queue[1].name == "CNOT"
         assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == operation_wires
+        assert rec.queue[1].wires == list(operation_wires)
 
         assert rec.queue[2].name == "PhaseShift"
         assert rec.queue[2].parameters == [-phi/2]
-        assert rec.queue[2].wires == [1]
+        assert rec.queue[2].wires == list([1])
 
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == operation_wires
+        assert rec.queue[3].wires == list(operation_wires)
 
     @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
     def test_crz_decomposition_correctness(self, phi, tol):

@@ -71,7 +71,7 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
 
     Args:
 
-        weights (array[float]): array of weights of shape ``(:math:`L`, :math:`M`, 3)``
+        weights (array[float]): array of weights of shape ``(L, M, 3)``
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer; if None

@@ -22,10 +22,18 @@ from .device_jacobian import DeviceJacobianQNode
 from .jacobian import JacobianQNode
 from .qubit import QubitQNode
 from .passthru import PassthruQNode
+from .rev import ReversibleQNode
 
 
 PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
-ALLOWED_DIFF_METHODS = ("best", "backprop", "device", "parameter-shift", "finite-diff")
+ALLOWED_DIFF_METHODS = (
+    "best",
+    "backprop",
+    "device",
+    "parameter-shift",
+    "finite-diff",
+    "reversible",
+)
 ALLOWED_INTERFACES = ("autograd", "numpy", "torch", "tf")
 
 
@@ -100,6 +108,14 @@ def _get_qnode_class(device, interface, diff_method):
         raise ValueError(
             "The parameter shift rule is not available for devices with model {}.".format(model)
         )
+
+    if diff_method == "reversible":
+        # pylint: disable=protected-access
+        if not device.capabilities().get("reversible_diff", False):
+            raise ValueError(
+                "Reversible differentiation method not supported on {}".format(device.short_name)
+            )
+        return ReversibleQNode
 
     if diff_method in ALLOWED_DIFF_METHODS:
         # finite differences
@@ -192,8 +208,16 @@ def QNode(func, device, *, interface="autograd", mutable=True, diff_method="best
             * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
-              QNode can only be used with the machine learning framework supported
+              QNode can only be used with the machine-learning framework supported
               by the device; a separate ``interface`` argument should not be passed.
+
+            * ``"reversible"``: Uses a reversible method for computing the gradient.
+              This method is similar to ``"backprop"``, but trades off increased
+              runtime with significantly lower memory usage. Compared to the
+              parameter-shift rule, the reversible method can be faster or slower,
+              depending on the density and location of parametrized gates in a circuit.
+              Only allowed on (simulator) devices with the "reversible" capability,
+              for example :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient rules.
@@ -270,6 +294,14 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine learning framework supported
               by the device; a separate ``interface`` argument should not be passed.
+
+            * ``"reversible"``: Uses a reversible method for computing the gradient.
+              This method is similar to ``"backprop"``, but trades off increased
+              runtime with significantly lower memory usage. Compared to the
+              parameter-shift rule, the reversible method can be faster or slower,
+              depending on the density and location of parametrized gates in a circuit.
+              Only allowed on (simulator) devices with the "reversible" capability,
+              for example :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient rules.

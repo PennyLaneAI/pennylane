@@ -53,7 +53,7 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = "0.10"
     version = "0.10.0"
     author = "Xanadu Inc."
-    _capabilities = {"inverse_operations": True}
+    _capabilities = {"inverse_operations": True, "reversible_diff": True}
 
     operations = {
         "BasisState",
@@ -121,6 +121,7 @@ class DefaultQubit(QubitDevice):
         Args:
             operation (~.Operation): operation to apply on the device
         """
+
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], operation.wires)
             return

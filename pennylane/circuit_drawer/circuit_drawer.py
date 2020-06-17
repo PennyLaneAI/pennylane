@@ -229,11 +229,7 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                if isinstance(op, qml.operation.Tensor):
-                    # pylint: disable=protected-access
-                    wires = list(qml.utils._flatten(op.wires))
-                else:
-                    wires = op.wires
+                wires = op.wires
 
                 if len(wires) > 1:
                     internal_wires = self.circuit_wires_to_internal_wires(wires)

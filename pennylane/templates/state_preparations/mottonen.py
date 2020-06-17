@@ -124,7 +124,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     control_indices = [
         int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
-        for i in range(num_selections)  # TODO: non-consecutive ordering
+        for i in range(num_selections)  # TODO: re-asses for nonconsecutive wires
     ]
 
     for i, control_index in enumerate(control_indices):
@@ -293,8 +293,6 @@ def MottonenStatePreparation(state_vector, wires):
         alpha_y_k = _get_alpha_y(a, n_wires, k)  # type: sparse.dok_matrix
         control = wires[k:]
         target = wires[k - 1]
-        control = control.tolist()  # TODO: remove when operators accept Wires object
-        target = target.tolist()[0]  # TODO: remove when operators accept Wires object
         _uniform_rotation_y_dagger(alpha_y_k, control, target)
 
     # Apply z rotations
@@ -302,7 +300,5 @@ def MottonenStatePreparation(state_vector, wires):
         alpha_z_k = _get_alpha_z(omega, n_wires, k)
         control = wires[k:]
         target = wires[k - 1]
-        control = control.tolist()  # TODO: remove when operators accept Wires object
-        target = target.tolist()[0]  # TODO: remove when operators accept Wires object
         if len(alpha_z_k) > 0:
             _uniform_rotation_z_dagger(alpha_z_k, control, target)

@@ -77,14 +77,21 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             excitation operator.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
-        ph (Sequence[list]): Sequence of two-element lists containing the indices ``r, p`` that
-            define the 1particle-1hole (ph) configuration :math:`\vert \mathrm{ph} \rangle =
+        ph (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]`` resulting from the
+            1particle-1hole (ph) configuration :math:`\vert \mathrm{ph} \rangle =
             \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF} \rangle`,
-            where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state.
-        pphh (Sequence[list]): Sequence of four-elements lists containing the indices
-            ``s, r, q, p`` that define the 2particle-2hole configuration (pphh)
+            where :math:`\vert \mathrm{HF} \rangle` denotes the Hartee-Fock (HF) reference state. The first
+            entry ``r`` is considered the wire representing the occupied orbital where the particle is annihilated
+            (hole created), and the last entry ``p`` is the wire representing the unoccupied (virtual) orbital where the
+            particle is created.
+        pphh (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that specify the indices
+            ``[s, ...,r]`` and ``[q,..., p]`` defining the 2particle-2hole configurations (pphh)
             :math:`\vert \mathrm{pphh} \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r
-            \hat{c}_s \vert \mathrm{HF} \rangle`.
+            \hat{c}_s \vert \mathrm{HF} \rangle`. The entries ``s`` and ``r`` are wires representing
+            two occupied orbitals where the two particles are annihilated (holes created)
+            while the entries ``q`` and ``p`` correspond to the wires representing two virtual
+            orbitals where the particles are created. Wires in-between represent the occupied
+            and virtual orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the qubit register.
 
@@ -149,42 +156,6 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             "'ph' and 'pphh' lists can not be both empty; got ph={}, pphh={}".format(ph, pphh)
         )
 
-    check_type(ph, [list], msg="'ph' must be a list; got {}".format(ph))
-    expected_shape = (2,)
-    for i_ph in ph:
-        check_type(i_ph, [list], msg="Each element of 'ph' must be a list; got {}".format(i_ph))
-        check_shape(
-            i_ph,
-            expected_shape,
-            msg="Elements of 'ph' must be of shape {}; got {}".format(
-                expected_shape, get_shape(i_ph)
-            ),
-        )
-        for i in i_ph:
-            check_type(
-                i, [int], msg="Each element of 'ph' must be a list of integers; got {}".format(i_ph)
-            )
-
-    check_type(pphh, [list], msg="'pphh' must be a list; got {}".format(pphh))
-    expected_shape = (4,)
-    for i_pphh in pphh:
-        check_type(
-            i_pphh, [list], msg="Each element of 'pphh' must be a list; got {}".format(i_pphh)
-        )
-        check_shape(
-            i_pphh,
-            expected_shape,
-            msg="Elements of 'pphh' must be of shape {}; got {}".format(
-                expected_shape, get_shape(i_pphh)
-            ),
-        )
-        for i in i_pphh:
-            check_type(
-                i,
-                [int],
-                msg="Each element of 'pphh' must be a list of integers; got {}".format(i_pphh),
-            )
-
     check_type(
         init_state,
         [np.ndarray],
@@ -213,14 +184,24 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
         ),
     )
 
-    ###############
+    for pphh_ in pphh:
+        if len(pphh_) != 2:
+            raise ValueError(
+                "expected entries of pphh to be of size 2; got {} of length {}".format(
+                    pphh_, len(pphh_)
+                )
+            )
 
-    wires = wires.tolist()  # TODO: Remove when ops accept wires
+    ###############
 
     qml.BasisState(np.flip(init_state), wires=wires)
 
-    for d, i_pphh in enumerate(pphh):
-        DoubleExcitationUnitary(weights[len(ph) + d], wires=i_pphh)
+    # turn wire arguments into Wires objects
+    ph = [Wires(w) for w in ph]
+    pphh = [[Wires(w1), Wires(w2)] for w1, w2 in pphh]
+
+    for d, (w1, w2) in enumerate(pphh):
+        DoubleExcitationUnitary(weights[len(ph) + d], wires1=w1, wires2=w2)
 
     for s, i_ph in enumerate(ph):
         SingleExcitationUnitary(weights[s], wires=i_ph)

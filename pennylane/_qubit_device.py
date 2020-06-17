@@ -79,6 +79,8 @@ class QubitDevice(Device):
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
     _tensordot = staticmethod(np.tensordot)
+    _conj = staticmethod(np.conj)
+    _imag = staticmethod(np.imag)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -214,7 +216,7 @@ class QubitDevice(Device):
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
         "RX"
-        >>> op.wires # returns a list of wires
+        >>> op.wires # wires that the operation acts on
         [0]
         >>> op.parameters # returns a list of parameters
         [0.2]
@@ -244,11 +246,9 @@ class QubitDevice(Device):
         Returns:
             set[int]: the set of wires activated by the specified operators
         """
-        wires = []
-        for op in operators:
-            wires.extend(op.wires)
+        list_of_wires = [w for op in operators for w in op.wires]
 
-        return set(wires)
+        return set(list_of_wires)
 
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
@@ -401,7 +401,7 @@ class QubitDevice(Device):
         # consider only the requested wires
         wires = np.hstack(wires)
 
-        samples = self._samples[:, np.array(wires)]
+        samples = self._samples[:, np.array(wires)]  # TODO: Use indices for nonconsec wires
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(wires)
@@ -472,7 +472,7 @@ class QubitDevice(Device):
             # no need to marginalize
             return prob
 
-        wires = np.hstack(wires)
+        wires = np.hstack(wires)  # TODO: re-asses for nonconsecutive wires
 
         # determine which wires are to be summed over
         inactive_wires = list(set(range(self.num_wires)) - set(wires))
@@ -493,7 +493,7 @@ class QubitDevice(Device):
         return self._gather(prob, perm)
 
     def expval(self, observable):
-        wires = observable.wires
+        wires = observable.wires  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact expectation value
@@ -505,7 +505,7 @@ class QubitDevice(Device):
         return np.mean(self.sample(observable))
 
     def var(self, observable):
-        wires = observable.wires
+        wires = observable.wires  # TODO: re-asses for nonconsecutive wires
 
         if self.analytic:
             # exact variance value
@@ -517,7 +517,7 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        wires = observable.wires
+        wires = observable.wires  # TODO: re-asses for nonconsecutive wires
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:

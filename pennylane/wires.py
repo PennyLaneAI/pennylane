@@ -31,6 +31,10 @@ def _process(wires):
         # if input is already a Wires object, just return its wire tuple
         return wires.wire_tuple
 
+    elif isinstance(wires, (Number, str)):
+        # interpret as a single wire
+        return (wires,)
+
     elif isinstance(wires, Iterable) and all(isinstance(w, Wires) for w in wires):
         # if the elements are themselves Wires objects, merge them to a new one
         return tuple(w for wires_ in wires for w in wires_.tolist())
@@ -41,10 +45,6 @@ def _process(wires):
         # if the elements are strings or numbers, turn iterable into tuple
         return tuple(wires)
 
-    elif isinstance(wires, Number):
-        # if the input is a single number, interpret as a single wire
-        return (wires,)
-
     else:
         raise WireError(
             "Wires must be represented by a number or string; got {} of type {}.".format(
@@ -54,9 +54,9 @@ def _process(wires):
 
 
 class Wires(Sequence):
-    """
-    A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\text{th}` object
-    addresses the :math:`i\text{th}` quantum subsystem.
+    r"""
+    A bookkeeping class for wires, which are ordered collections of unique objects. The :math:`i\mathrm{th}` object
+    addresses the :math:`i\mathrm{th}` quantum subsystem.
 
     There is no conceptual difference between registers of multiple wires and single wires,
     which are just wire registers of length one.
@@ -122,6 +122,23 @@ class Wires(Sequence):
             List: list representing Wires object
         """
         return list(self.wire_tuple)
+
+    def get_label(self, idx):
+        """Returns the wire label at the given position in the wires object.
+
+        >>> w = Wires([0, 'q1', 16])
+        >>> w.get_label(1)
+        'q1'
+        >>> w.get_label(2)
+        16
+
+        Args:
+            int: index of wire to return
+
+        Returns:
+            Number or str: label of the wire
+        """
+        return self.wire_tuple[idx]
 
     def index(self, wire):
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
