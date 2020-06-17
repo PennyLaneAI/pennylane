@@ -60,6 +60,11 @@ def s2_me_table(sz, n_spin_orbs):
         array: NumPy array with the table of matrix elements
     """
 
+    if sz.size != n_spin_orbs:
+        raise ValueError("Size of 'sz' must be equal to 'n_spin_orbs'; got {}"
+            .format(sz.size)
+        )
+
     n = np.arange(n_spin_orbs)
 
     alpha = n.reshape(-1, 1, 1, 1)
@@ -231,6 +236,21 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
     """
+
+    if mapping not in ("jordan_wigner", "bravyi_kitaev"):
+        raise TypeError(
+            "The '{}' transformation is not available. \n "
+            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
+        )
+
+    sp_op_shape = (3,)
+    tp_op_shape = (5,)
+    for i in me_table:
+        if i.shape not in (sp_op_shape, tp_op_shape):
+            raise ValueError(
+                "expected entries of 'me_table' to be of shape (3,) or (5,) ; got {}".
+                format(i.shape)
+            )
 
     # Initialize the FermionOperator
     mb_obs = FermionOperator() + FermionOperator('')*init_term
