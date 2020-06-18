@@ -91,6 +91,11 @@
   ([#572](https://github.com/XanaduAI/pennylane/pull/572))
   ([#599](https://github.com/XanaduAI/pennylane/pull/599))
 
+* Adds ``pennylane.templates.CustomEntanglerLayers``, a new rotation/coupling ansatz 
+  that allows for a customizable pattern of coupling gates, and for the parametrization 
+  of coupling gates.
+  [(#681)](https://github.com/XanaduAI/pennylane/pull/681)
+
 <h3>Improvements</h3>
 
 * Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
@@ -154,7 +159,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
 
 
 # Release 0.9.0 (current release)
