@@ -30,7 +30,7 @@ utilize remote quantum devices and simulators.
 Components of PennyLane
 #######################
 
-.. image:: architecture_diagram.jpg
+.. image:: architecture_diagram.png
     :width: 800px
 
 Devices
