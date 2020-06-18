@@ -366,7 +366,7 @@ class BaseQNode(qml.QueuingContext):
                 )
 
         # Make sure only existing wires are used.
-        for w in operator.wires:
+        for w in _flatten(operator.wires):
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
@@ -691,7 +691,7 @@ class BaseQNode(qml.QueuingContext):
             )
 
         # check that no wires are measured more than once
-        m_wires = list(w for ob in res for w in ob.wires)
+        m_wires = list(w for ob in res for w in _flatten(ob.wires))
         if len(m_wires) != len(set(m_wires)):
             raise QuantumFunctionError(
                 "Each wire in the quantum circuit can only be measured once."

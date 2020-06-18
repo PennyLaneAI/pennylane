@@ -112,7 +112,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 
-from .utils import pauli_eigs
+from .utils import _flatten, pauli_eigs
 from .variable import Variable
 
 # =============================================================================
@@ -978,7 +978,7 @@ class Tensor(Observable):
         Returns:
             int: number of wires
         """
-        return len(self.wires)
+        return len(list(_flatten(self.wires)))
 
     @property
     def wires(self):
@@ -987,7 +987,7 @@ class Tensor(Observable):
         Returns:
             list[int]: wires addressed by the observables in the tensor product
         """
-        return [w for o in self.obs for w in o.wires]
+        return [o.wires for o in self.obs]
 
     @property
     def params(self):

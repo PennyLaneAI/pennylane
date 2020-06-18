@@ -155,9 +155,11 @@ class CircuitGraph:
         self.num_wires = 0
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(op.wires) + 1)
+            self.num_wires = max(self.num_wires, max(list(_flatten(op.wires))) + 1)
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(op.wires):
+            for w in set(
+                _flatten(op.wires)
+            ):  # flatten the nested wires lists of Tensor observables
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
