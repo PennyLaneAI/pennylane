@@ -36,7 +36,7 @@ def CustomEntanglerLayers(
     double-qubit gates (parametrized or non-parametrized)
 
     The placement of the two-qubit gates on the circuit is determined by a user-provided
-    `pattern`  keyword, with possible values listed in :func:`~pennylane.broadcast`.
+    `pattern` argument, with allowed values listed in :func:`~pennylane.broadcast`.
 
     .. figure:: ../../_static/templates/layers/basic_entangler.png
         :align: center
@@ -67,7 +67,8 @@ def CustomEntanglerLayers(
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         pattern (str or "Custom" list): Determines how the double-qubit gates will be placed on the
-                                        circuit. If ``None``, ``ring`` is used as default.
+                                        circuit. Allowed values of this argument are listed in :func:`~pennylane.broadcast`. 
+                                        If ``None``, ``ring`` is used as default.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default.
         coupling (pennylane.ops.Operation): one-parameter two-qubit gate to use,
@@ -201,4 +202,3 @@ def CustomEntanglerLayers(
             )
         else:
             broadcast(unitary=coupling, pattern=pattern, wires=wires)
-            
