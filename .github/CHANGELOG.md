@@ -36,7 +36,7 @@
   [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.plugins.DefaultQubitTF.html)
   for more details.
 
-* The [``default.tensor`` plugin](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/plugins/default_tensor.py) has been significantly upgraded. It now allows two different
+* The [default.tensor plugin](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/plugins/default_tensor.py) has been significantly upgraded. It now allows two different
   tensor network representations to be used: `"exact"` and `"mps"`. The former uses a 
   exact factorized representation of quantum states, while the latter uses a matrix product state 
   representation.
