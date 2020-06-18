@@ -112,7 +112,7 @@ def test_exceptions_observable(
     me_table, message_match="expected entries of 'me_table' to be of shape"
 ):
     """Test that the 'observable' function throws an exception if the
-    array containing the matrix elements has illegal shapes."""
+    array containing the matrix elements has incorrect shapes."""
 
     with pytest.raises(ValueError, match=message_match):
         qchem.obs.observable(me_table)
