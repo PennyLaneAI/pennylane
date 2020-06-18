@@ -35,7 +35,7 @@ def CustomEntanglerLayers(
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of
     double-qubit gates (parametrized or non-parametrized)
 
-    The placement of double-qubit gates on the circuit is determined by a user-passed
+    The placement of the two-qubit gates on the circuit is determined by a user-provided
     `pattern`  keyword, with possible values listed in :func:`~pennylane.broadcast`.
 
     .. figure:: ../../_static/templates/layers/basic_entangler.png
