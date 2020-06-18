@@ -48,10 +48,12 @@ In particular, the :class:`~.Device` class provides a common API for:
 
 * Executing quantum circuits,
 
-* Retrieving measurement and state results (including samples, measurement statistics, and probabilities).
+* Retrieving measurement and state results (including samples, measurement
+  statistics, and probabilities).
 
-There are also device subclasses available, containing shared logic for particular types of devices.
-For example, qubit-based devices can inherit from the :class:`~.QubitDevice` class, easing development.
+There are also device subclasses available, containing shared logic for
+particular types of devices.  For example, qubit-based devices can inherit from
+the :class:`~.QubitDevice` class, easing development.
 
 To register a new device with PennyLane, they must register an `entry point
 <https://packaging.python.org/specifications/entry-points/>`__under the `pennylane.plugins`
@@ -66,9 +68,6 @@ The purpose of the ``Device`` class can be summarized as:
 * Providing a common API to execute a quantum circuit and request
   the measurement of the associated observable.
 * Providing an easy way of developing a new device for PennyLane
-
-Qubit based devices can use shared utilities by using the
-:class:`~.QubitDevice`.
 
 QNodes
 ******
@@ -86,15 +85,6 @@ functions. As these rules allow quantum gradients to be obtained from
 QNodes, hybrid computations may include QNodes as part of training deep
 learnings models.
 
-PennyLane offers the following qnode types and differentiation rules:
-
-* :class:`~.QubitQNode`: qubit parameter-shift rule
-* :class:`~.CVQNode`: CV parameter-shift rule
-* :class:`~.JacobianQNode`: finite differences
-* :class:`~.DeviceJacobianQNode`: queries the device directly for the gradient
-* :class:`~.PassthruQNode`: classical backpropagation
-* :class:`~.ReversibleQNode`: reversible backpropagation
-
 These QNode types are available to users through the :func:`~.qnode` decorator by
 passing the user-facing ``diff_method`` option. This decorator then uses the
 :func:`~.QNode` constructor function to create the specific type of qnode based on
@@ -109,8 +99,8 @@ and representing quantum operations within such a graph. Each ``QNode``
 represents the quantum circuit by building such a DAG by creating a
 :class:`~.CircuitGraph` instance.
 
-For further details on QNodes, and a full list of QNodes, refer to the
-:doc:`/code/qml_qnodes` module.
+For further details on QNodes, and a full list of QNodes with their custom
+differentiation rule, refer to the :doc:`/code/qml_qnodes` module.
 
 Interfaces
 **********
@@ -178,54 +168,20 @@ valid pre-defined device (``dev``).
         qml.PauliX(0)
         return qml.expval(qml.PauliZ(0))
 
-This syntax of PennyLane results in the Operator instances not being "recorded"
-by the ``QNode``. This is so because there is *no association or composition
-logic* in between the ``QNode`` that is being created and the ``Operator``
-instances: the ``QNode`` does not *contain* any instances of quantum operators.
-By executing ``circuit``, instances of the ``qml.PauliX`` and ``qml.PauliZ``
-classes are created, but they are not associated with the ``QNode`` itself.
-This creates the problem of quantum functions (``circuit``) not being able to
-keep track of which quantum operations and observables are being applied.
-
-How does then PennyLane solve this problem? This is closely related to the
-queuing of operators.
-
 Queuing of operators
 ********************
 
 In PennyLane, the construction of quantum gates is separated from the specific
-quantum node (:class:`~.BaseQNode`) that they belong to. The reason for this is
-that, as mentioned before, the syntax of how ``Operator`` instances are
-included in quantum functions does not rely on or use ``QNode`` instances.
-Therefore, ``QNodes`` cannot keep track by default, which operators were
-included in the quantum function. A high-level object that holds information
-about the relationship between quantum gates and a quantum node can, however,
-help with this.
+QNode that they belong to. QNode circuit construction happens only when the
+QNode is evaluated. On QNode evaluation, the quantum function is executed.
 
-The :class:`~.QueuingContext` class realizes this by providing access to the
-current QNode using the concept of a Python context manager. This is achieved
-by subclassing the ``BaseQNode`` class from ``QueuingContext``.  Furthermore, it
-provides the flexibility to have multiple objects record the creation of
-quantum gates.
+Operators are queued to the QNode on instantiation, by having :meth:`Operator.__init__`
+call the :meth:`Operator.queue` method. The operators themselves queue themselves to
+the surrounding :class:`~.QueuingContext`.
 
-Details of queueing and specific operators can be described as follows:
+Measurement functions such as :meth:`qml.expval` are responsible for queuing observables.
 
-* ``Operators`` in a quantum function are queued on initialization.  This
-  happens via a call to :meth:`Operator.queue` which then interacts with the
-  ``QueuingContext``;
-* ``Observables`` do not queue themselves; the measurement functions
-  :meth:`~.measure.expval`, :meth:`~.measure.var` etc. do the queueing. Hence, observables
-  can be instantiated before queueing;
-* Already instantiated operators cannot be re-queued unless the ``op.queue``
-  method is manually called within the ``QueuingContext``.
-
-The ``QueuingContext`` class both acts as the abstract base class for all
-classes that expose a queue for Operations (so-called contexts), as well as the
-interface to these queues. The active contexts contain maximally one QNode and
-an arbitrary number of other contexts like the :class:`~.OperationRecorder`.
-
-``OperationRecorders`` are context managers that help record the quantum
-operations instantiated within the context and can play a key role in testing.
+For further details, refer to the description in :class:`~.QueuingContext`.
 
 Variables
 *********
