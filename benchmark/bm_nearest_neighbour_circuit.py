@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Benchmark for evaluating a circuit consisting only of nearest-neighbour
-two-qubit gates.
+Benchmark for evaluating a circuit consisting only of single-qubit
+gates and nearest-neighbour two-qubit gates.
 """
 from math import pi
 
