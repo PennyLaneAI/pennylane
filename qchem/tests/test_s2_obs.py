@@ -34,26 +34,26 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ),
     ],
 )
-def test_s2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
+def test_spin2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
     r"""Test the calculation of the matrix elements of the two-particle spin operator
     :math:`\hat{s}_1 \cdot \hat{s}_2`"""
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = qchem.obs.s2_me_table(sz, n_spin_orbs)
+    s2_me_result = qchem.obs.spin2_matrix_elements(sz, n_spin_orbs)
 
     assert np.allclose(s2_me_result, s2_me_expected, **tol)
 
 
-def test_exception_s2_me_table(message_match="Size of 'sz' must be equal to 'n_spin_orbs'"):
-    """Test that the 's2_me_table' function throws an exception if the
+def test_exception_spin2_me(message_match="Size of 'sz' must be equal to 'n_spin_orbs'"):
+    """Test that the 'spin2_matrix_elements' function throws an exception if the
     size of 'sz' is not equal to 'n_spin_orbs'."""
 
     n_spin_orbs = 4
     sz = np.where(np.arange(n_spin_orbs + 1) % 2 == 0, 0.5, -0.5)
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.obs.s2_me_table(sz, n_spin_orbs)
+        qchem.obs.spin2_matrix_elements(sz, n_spin_orbs)
 
 
 me = np.array(
@@ -154,13 +154,13 @@ me_lih = np.array(
         ("lih", None, 3, me_lih, 3.0),
     ],
 )
-def test_get_s2_matrix_elements(
+def test_get_spin2_matrix_elements(
     mol_name, n_act_elect, n_act_orb, s2_me_exp, init_term_exp, tol
 ):
     r"""Test that the table of matrix elements and the term use to initialize the
     FermionOperator are computed correctly for different active spaces."""
 
-    s2_me_res, init_term_res = qchem.obs.get_s2_me(
+    s2_me_res, init_term_res = qchem.obs.get_spin2_matrix_elements(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
     )
 
@@ -250,14 +250,14 @@ terms_lih_anion_bk = {
 def test_build_s2_observable(
     mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch
 ):
-    r"""Tests the correctness of the built total-spin many-body observable.
+    r"""Tests the correctness of the built total-spin observable.
 
     The parametrized inputs are `.terms` attribute of the total spin `QubitOperator.
     The equality checking is implemented in the `qchem` module itself as it could be
     something useful to the users as well.
     """
 
-    s2_me_table, init_term = qchem.obs.get_s2_me(
+    s2_me_table, init_term = qchem.obs.get_spin2_matrix_elements(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
     )
 

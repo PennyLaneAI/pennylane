@@ -24,7 +24,7 @@ from openfermion.transforms import bravyi_kitaev, jordan_wigner
 from . import structure
 
 
-def s2_me_table(sz, n_spin_orbs):
+def spin2_matrix_elements(sz, n_spin_orbs):
     r"""Generates the table of the matrix elements
     :math:`\langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
     of the two-particle spin operator :math:`\hat{s}_1 \cdot \hat{s}_2`.
@@ -34,8 +34,8 @@ def s2_me_table(sz, n_spin_orbs):
     .. math:
 
         \langle \alpha, \beta \vert \hat{\bf{s}}_1 \cdot \hat {\bf{s}}_2
-        \vert \gamma, \delta \rangle = && \delta_{\alpha,\delta} \delta_{\beta,\gamma} \times \\
-        && \left( \frac{1}{2} \delta_{m_\alpha, m_\delta+1} \delta_{m_\beta, m_\gamma-1}
+        \vert \gamma, \delta \rangle = \delta_{\alpha,\delta} \delta_{\beta,\gamma}
+        \left( \frac{1}{2} \delta_{m_\alpha, m_\delta+1} \delta_{m_\beta, m_\gamma-1}
         + \frac{1}{2} \delta_{m_\alpha, m_\delta-1} \delta_{m_\beta, m_\gamma+1}
         + m_\alpha m_\beta \delta_{m_\alpha, m_\delta} \delta_{m_\beta, m_\gamma} \right),
 
@@ -43,28 +43,31 @@ def s2_me_table(sz, n_spin_orbs):
     :math:`\varphi_\alpha({\bf r})` and spin :math:`\chi_{m_\alpha}(s_z)` wave functions,
     respectively, of the single-particle state :math:`\vert \alpha \rangle`.
 
-    **Example**
+    Args:
+        sz (array[float]): spin-projection quantum number of the spin-orbitals
+        n_spin_orbs (int): number of spin orbitals
 
+    Returns:
+        array: NumPy array with the table of matrix elements. First four columns
+        contains the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta`
+        and the fifth column the computed matrix element.
+
+    **Example**
+    
+    >>> n_spin_orbs = 2
     >>> sz = np.array([0.5, -0.5])
-    >>> print(s2_me_table(sz, 2))
+    >>> print(spin2_matrix_elements(sz, n_spin_orbs))
     [[ 0.    0.    0.    0.    0.25]
      [ 0.    1.    1.    0.   -0.25]
      [ 1.    0.    0.    1.   -0.25]
      [ 1.    1.    1.    1.    0.25]
      [ 0.    1.    0.    1.    0.5 ]
      [ 1.    0.    1.    0.    0.5 ]]
-
-    Args:
-        sz (array[float]): spin-projection quantum number of the spin-orbitals
-        n_spin_orbs (int): number of spin orbitals
-
-    Returns:
-        array: NumPy array with the table of matrix elements
     """
 
     if sz.size != n_spin_orbs:
         raise ValueError(
-            "Size of 'sz' must be equal to 'n_spin_orbs'; got {}".format(sz.size)
+            "Size of 'sz' must be equal to 'n_spin_orbs'; size got for 'sz' {}".format(sz.size)
         )
 
     n = np.arange(n_spin_orbs)
@@ -98,14 +101,29 @@ def s2_me_table(sz, n_spin_orbs):
     return np.vstack([diag, off_diag])
 
 
-def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
     r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active space and
     generates the table of matrix elements required to build the second-quantized
     total-spin operator :math:`\hat{S}^2`.
 
+    Args:
+        mol_name (str): name of the molecule
+        hf_data (str): path to the directory with the HF electronic structure data
+        n_active_electrons (int): number of active electrons
+        n_active_orbitals (int): number of active orbitals
+
+    Returns:
+        tuple: the table of two-particle matrix elements and the single-particle
+        contribution :math:`\frac{3N_e}{4}` required to build the second-quantized
+        total-spin operator.
+
     **Example**
 
-    >>> get_s2_me('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
+    >>> get_spin2_matrix_elements(
+        'h2',
+        './pyscf/sto-3g',
+        n_active_electrons=2,
+        n_active_orbitals=2)
     [[ 0.    0.    0.    0.    0.25]
      [ 0.    1.    1.    0.   -0.25]
      [ 0.    2.    2.    0.    0.25]
@@ -130,17 +148,6 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
      [ 2.    3.    2.    3.    0.5 ]
      [ 3.    0.    1.    2.    0.5 ]
      [ 3.    2.    3.    2.    0.5 ]] 1.5
-
-    Args:
-        mol_name (str): name of the molecule
-        hf_data (str): path to the directory with the HF electronic structure data
-        n_active_electrons (int): number of active electrons
-        n_active_orbitals (int): number of active orbitals
-
-    Returns:
-        tuple: the table of two-particle matrix elements and the single-particle
-        contribution :math:`\frac{3N_e}{4}` required to build the second-quantized
-        total-spin operator.
     """
 
     active_indices = structure.active_space(
@@ -161,7 +168,7 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
     n_spin_orbs = 2 * len(active_indices)
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    return s2_me_table(sz, n_spin_orbs), 3 / 4 * n_electrons
+    return spin2_matrix_elements(sz, n_spin_orbs), 3 / 4 * n_electrons
 
 
 def observable(me_table, init_term=0, mapping="jordan_wigner"):
@@ -176,12 +183,12 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     .. math::
 
-        \hat A = \sum_{\alpha \leq 2N_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
+        &&\hat A = \sum_{\alpha \leq 2N_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
         \vert \alpha \rangle ~ \hat{n}_\alpha +
         \sum_{\alpha, \beta ~ \in ~ \mathrm{active~space}} \langle \alpha \vert \hat{\mathcal{A}}
         \vert \beta \rangle ~ \hat{c}_\alpha^\dagger\hat{c}_\beta,
 
-        \hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2N_\mathrm{docc}}
+        &&\hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2N_\mathrm{docc}}
         \langle \alpha, \beta \vert \hat{\mathcal{B}} \vert \beta, \alpha \rangle
         ~ \hat{n}_\alpha \hat{n}_\beta + \sum_{\alpha, \beta, \gamma, \delta ~
         \in ~ \mathrm{active~space}} \langle \alpha, \beta \vert \hat{\mathcal{B}}
@@ -200,34 +207,6 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
-    **Example**
-
-    >>> s2_me_table, init_term = get_s2_me('h2', './pyscf/sto-3g')
-    >>> s2_obs = observable(s2_me_table, init_term=init_term)
-    >>> print(type(s2_obs))
-    <class 'pennylane.vqe.vqe.Hamiltonian'>
-
-    >>> print(s2_obs)
-    (0.75) [I<Wires = [0]>]
-    + (0.375) [Z<Wires = [1]>]
-    + (-0.375) [Z<Wires = [0]> Z<Wires = [1]>]
-    + (0.125) [Z<Wires = [0]> Z<Wires = [2]>]
-    + (0.375) [Z<Wires = [0]>]
-    + (-0.125) [Z<Wires = [0]> Z<Wires = [3]>]
-    + (-0.125) [Z<Wires = [1]> Z<Wires = [2]>]
-    + (0.125) [Z<Wires = [1]> Z<Wires = [3]>]
-    + (0.375) [Z<Wires = [2]>]
-    + (0.375) [Z<Wires = [3]>]
-    + (-0.375) [Z<Wires = [2]> Z<Wires = [3]>]
-    + (0.125) [Y<Wires = [0]> X<Wires = [1]> Y<Wires = [2]> X<Wires = [3]>]
-    + (0.125) [Y<Wires = [0]> Y<Wires = [1]> X<Wires = [2]> X<Wires = [3]>]
-    + (0.125) [Y<Wires = [0]> Y<Wires = [1]> Y<Wires = [2]> Y<Wires = [3]>]
-    + (-0.125) [Y<Wires = [0]> X<Wires = [1]> X<Wires = [2]> Y<Wires = [3]>]
-    + (-0.125) [X<Wires = [0]> Y<Wires = [1]> Y<Wires = [2]> X<Wires = [3]>]
-    + (0.125) [X<Wires = [0]> X<Wires = [1]> X<Wires = [2]> X<Wires = [3]>]
-    + (0.125) [X<Wires = [0]> X<Wires = [1]> Y<Wires = [2]> Y<Wires = [3]>]
-    + (0.125) [X<Wires = [0]> Y<Wires = [1]> X<Wires = [2]> Y<Wires = [3]>]
-
     Args:
         me_table (array[float]): Numpy array with the table of matrix elements.
             For a single-particle operator this array will have shape
@@ -245,6 +224,34 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
+
+    **Example**
+
+    >>> s2_matrix_elements, init_term = get_spin2_matrix_elements('h2', './pyscf/sto-3g')
+    >>> s2_obs = observable(s2_matrix_elements, init_term=init_term)
+    >>> print(type(s2_obs))
+    <class 'pennylane.vqe.vqe.Hamiltonian'>
+
+    >>> print(s2_obs)
+    (0.75) [I0]
+    + (0.375) [Z1]
+    + (-0.375) [Z0 Z1]
+    + (0.125) [Z0 Z2]
+    + (0.375) [Z0]
+    + (-0.125) [Z0 Z3]
+    + (-0.125) [Z1 Z2]
+    + (0.125) [Z1 Z3]
+    + (0.375) [Z2]
+    + (0.375) [Z3]
+    + (-0.375) [Z2 Z3]
+    + (0.125) [Y0 X1 Y2 X3]
+    + (0.125) [Y0 Y1 X2 X3]
+    + (0.125) [Y0 Y1 Y2 Y3]
+    + (-0.125) [Y0 X1 X2 Y3]
+    + (-0.125) [X0 Y1 Y2 X3]
+    + (0.125) [X0 X1 X2 X3]
+    + (0.125) [X0 X1 Y2 Y3]
+    + (0.125) [X0 Y1 X2 Y3]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
@@ -287,7 +294,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
 
 __all__ = [
-    "s2_me_table",
-    "get_s2_me",
+    "spin2_matrix_elements",
+    "get_spin2_matrix_elements",
     "observable",
 ]
