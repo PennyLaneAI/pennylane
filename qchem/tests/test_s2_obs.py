@@ -158,7 +158,7 @@ def test_get_s2_matrix_elements(
     mol_name, n_act_elect, n_act_orb, s2_me_exp, init_term_exp, tol
 ):
     r"""Test that the table of matrix elements and the term use to initialize the
-    FermionOperator are computed corrrectly for different active spaces."""
+    FermionOperator are computed correctly for different active spaces."""
 
     s2_me_res, init_term_res = qchem.obs.get_s2_me(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb

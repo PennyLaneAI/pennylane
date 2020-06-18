@@ -26,7 +26,7 @@ from . import structure
 
 def s2_me_table(sz, n_spin_orbs):
     r"""Generates the table of the matrix elements
-    :math:`\langle \alpha, beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
+    :math:`\langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
     of the two-particle spin operator :math:`\hat{s}_1 \cdot \hat{s}_2`.
 
     The matrix elements are evaluated using the expression,
@@ -167,7 +167,7 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
 def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     r"""Builds the many-body observable whose expectation value can be
-    measured in PennyLane
+    measured in PennyLane.
 
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
@@ -232,10 +232,10 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
         me_table (array[float]): Numpy array with the table of matrix elements.
             For a single-particle operator this array will have shape
             ``(me_table.shape[0], 3)`` with each row containing the indices
-            :math:`alpha`, :math:`beta` and the matrix element :math:`\alpha \vert
+            :math:`\alpha`, :math:`\beta` and the matrix element :math:`\langle \alpha \vert
             \hat{\mathcal{A}}\vert \beta \rangle`. For a two-particle operator this
             array will have shape ``(me_table.shape[0], 5)`` with each row containing
-            the indices :math:`alpha`, :math:`beta`, :math:`gamma`, :math:`delta` and
+            the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix elements :math:`\langle \alpha, \beta \vert \hat{\mathcal{B}}
             \vert \gamma, \delta \rangle`.
         init_term: the contribution of doubly-occupied orbitals, if any, or other quantity
