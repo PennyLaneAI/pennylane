@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("pennylane_qchem/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
@@ -25,7 +25,7 @@ info = {
     "maintainer": "Xanadu Inc.",
     "maintainer_email": "software@xanadu.ai",
     "url": "http://xanadu.ai",
-    "packages": ["pennylane_qchem"],
+    "packages": find_packages(where="."),
     "description": "Package for quantum chemistry applications",
     "long_description": open("README.rst").read(),
     "provides": ["pennylane_qchem"],
