@@ -638,7 +638,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.wires == list([0, 1, 2])
+        assert t.wires == [[0], [1, 2]]
 
     def test_params(self):
         """Test that the correct flattened list of parameters is returned"""
