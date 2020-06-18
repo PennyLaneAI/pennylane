@@ -25,9 +25,10 @@ from pennylane.templates.layers import (
     RandomLayers,
     BasicEntanglerLayers,
     SimplifiedTwoDesign,
+    CustomEntanglerLayers
 )
 from pennylane.templates.layers.random import random_layer
-from pennylane import RX, RY, RZ, CZ, CNOT
+from pennylane import RX, RY, RZ, CZ, CNOT, CRY, CRX, CRZ, CSWAP
 from pennylane.wires import Wires
 
 TOLERANCE = 1e-8
@@ -642,113 +643,265 @@ class TestBasicEntangler:
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
 
-    def test_interactions_type(self):
-        """Tests that an error is raised when 'interactions' is not a list"""
+class TestCustomEntangler:
+    """Tests for the CustomEntanglerLayers method from the pennylane.templates.layers module."""
 
-        n_wires = 3
-        weights = [[1, 2, 1]]
-        interactions = (0, 1, 2)
+    @pytest.mark.parametrize("n_wires, n_coupling, pattern", [(1, 0, "ring"), (2, 1, "pyramid"), (3, 3, "all_to_all"), (4, 2, [[0, 1], [1, 2]])])
+    def test_circuit_queue(self, n_wires, n_coupling, pattern):
+        """Tests the gate types in the circuit."""
+        np.random.seed(42)
+        n_layers = 2
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        rotation_weights = np.random.randn(n_layers, n_wires)
+        coupling_weights = np.random.randn(n_layers, n_coupling)
 
-        @qml.qnode(dev)
-        def circuit(weights):
-            BasicEntanglerLayers(
-                weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions
-            )
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        with qml.utils.OperationRecorder() as rec:
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights,
+                coupling_weights=coupling_weights,
+                wires=range(n_wires),
+                pattern=pattern
+                )
 
-        with pytest.raises(ValueError) as info:
-            output = circuit(weights)
-        assert "'interactions' must be list of wire index pairs" in str(info.value)
+        # Test that gates appear in the right order
+        exp_gates = [qml.RX] * n_wires + [qml.CRX] * n_coupling
+        exp_gates *= n_layers
+        res_gates = rec.queue
 
-    def test_interactions_shape(self):
-        """Tests that an error is raised when the shape of elements in 'interactions' is not (2,)"""
+        for op1, op2 in zip(res_gates, exp_gates):
+            assert isinstance(op1, op2)
+    
+    @pytest.mark.parametrize("n_wires, n_coupling", [(1, 0), (2, 1), (3, 3), (4, 4)])
+    def test_circuit_parameters(self, n_wires, n_coupling):
+        """Tests the parameter values in the circuit."""
+        np.random.seed(42)
+        n_layers = 2
 
-        n_wires = 3
-        weights = [[1, 2, 1]]
-        interactions = [1, 1, 1]
+        rotation_weights = np.random.randn(n_layers, n_wires)
+        coupling_weights = np.random.randn(n_layers, n_coupling)
 
-        dev = qml.device("default.qubit", wires=n_wires)
+        with qml.utils.OperationRecorder() as rec:
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires)
+                )
 
-        @qml.qnode(dev)
-        def circuit(weights):
-            BasicEntanglerLayers(
-                weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions
-            )
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        # test the device parameters
+        for l in range(n_layers):
+            # only select the rotation gates
+            rotation_ops = rec.queue[l * (n_wires + n_coupling) : l * (n_wires + n_coupling) + n_wires]
 
-        with pytest.raises(ValueError) as info:
-            output = circuit(weights)
-        assert "Elements of 'interactions' must be of shape (2,)" in str(info.value)
+            # check each rotation gate parameter
+            for n in range(n_wires):
+                res_param = rotation_ops[n].parameters[0]
+                exp_param = rotation_weights[l, n]
+                assert res_param == exp_param
 
-    def test_interactions_same_wires(self):
-        """Tests that an error is raised when a 'interactions' contains a pair of the form [a, b] with a = b"""
+            # only select the couplng gates
+            coupling_ops = rec.queue[l * (n_wires + n_coupling) + n_wires : (l + 1) * (n_wires + n_coupling)]
 
-        n_wires = 3
-        weights = [[1, 2, 1]]
-        interactions = [[0, 1], [1, 2], [1, 1]]
+            # check each coupling gate parameter
+            for n in range(n_coupling):
+                res_param = coupling_ops[n].parameters[0]
+                exp_param = coupling_weights[l, n]
+                assert res_param == exp_param
 
-        dev = qml.device("default.qubit", wires=n_wires)
+    @pytest.mark.parametrize("rotation, coupling", [(RX, CRY), (RY, CRZ), (RZ, CRX)])
+    def test_custom(self, rotation, coupling):
+        """Tests that non-default gates are used correctly."""
+        n_layers = 2
+        n_wires = 4
+        rotation_weights = np.ones(shape=(n_layers, n_wires))
+        coupling_weights = np.ones(shape=(n_layers, n_wires))
 
-        @qml.qnode(dev)
-        def circuit(weights):
-            BasicEntanglerLayers(
-                weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions
-            )
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+        with qml.utils.OperationRecorder() as rec:
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires), 
+                rotation=rotation,
+                coupling=coupling)
 
-        with pytest.raises(ValueError) as info:
-            output = circuit(weights)
-        assert "CNOT gates must be applied between two different wires" in str(info.value)
+        # assert queue contains the custom rotations and couplings only
+        gates = rec.queue
+        for op in gates:
+            if not isinstance(op, coupling):
+                assert isinstance(op, rotation)
 
     @pytest.mark.parametrize(
-        "interactions, index",
+        "rotation_weights, coupling_weights, n_wires, target, pattern ",
         [
-            ([[0, 1], [1, 2], [2, 3]], [2, 3]),
-            ([[5, 1], [1, 2]], [5, 1]),
-            ([[5, 4], [1, 2], [2, 1]], [5, 4]),
+            ([[np.pi]], [[]], 1, [-1], "all_to_all"),
+            ([[np.pi] * 2], [[np.pi]], 2, [-1, 1], "ring"),
+            ([[np.pi] * 3], [[np.pi] * 2], 3, [-1, 1, 1], [[0, 1], [0, 2]]),
+            ([[np.pi] * 4], [[np.pi] * 3], 4, [-1, 1, -1, 1], "pyramid"),
         ],
     )
-    def test_interactions_range(self, interactions, index):
-        """Tests that an error is raised when a 'interactions' contains a pair of wires that is out of range"""
-
-        n_wires = 3
-        weights = [[1, 2, 1]]
-
+    def test_custom_final(self, rotation_weights, coupling_weights, n_wires, target, pattern):
+        """Tests the result of the template for simple cases."""
         dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
-        def circuit(weights):
-            BasicEntanglerLayers(
-                weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions
+        def circuit(rotation_weights, coupling_weights):
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires), 
+                pattern=pattern
             )
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError) as info:
-            output = circuit(weights)
-        assert "Wire index pair {} is out of range".format(index) in str(info.value)
-
-    @pytest.mark.parametrize(
-        "weights, n_wires, target, interactions",
-        [
-            ([[np.pi] * 2], 2, [-1, 1], [[0, 1]]),
-            ([[np.pi] * 3], 3, [-1, 1, 1], [[0, 1], [0, 2]]),
-            ([[np.pi] * 4], 4, [-1, 1, -1, 1], [[0, 1], [2, 3]]),
-        ],
-    )
-    def test_simple_interactions(self, weights, n_wires, target, interactions):
-        """Tests the result of the template for simple cases, with 'interactions' != None."""
-
-        dev = qml.device("default.qubit", wires=n_wires)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            BasicEntanglerLayers(
-                weights=weights, wires=range(n_wires), rotation=RX, interactions=interactions
-            )
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        expectations = circuit(weights)
+    
+        expectations = circuit(rotation_weights, coupling_weights)
         for exp, target_exp in zip(expectations, target):
             assert exp == target_exp
+
+    """Tests if the appropriate errors are raised"""
+
+    def test_three_qubit_gate(self):
+        """Tests that an error is thrown if a 3-qubit gate is passed as `coupling`"""
+
+        n_wires = 3
+        weights = [[1, 2, 1]]
+        coupling = CSWAP
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            CustomEntanglerLayers(
+                rotation_weights=weights, 
+                wires=range(n_wires), 
+                pattern="all_to_all",
+                coupling=coupling
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as info:
+            output = circuit(weights)
+        assert "`coupling` accepts 2-wire gates, instead got {} wire(s)".format(coupling.num_wires) in str(info.value)
+    
+    def test_coupling_params(self):
+
+        n_wires = 3
+        rotation_weights = [[1, 2, 1]]
+        coupling_weights = [[1, 1, 1]]
+        coupling = CNOT
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(rotation_weights, coupling_weights):
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires), 
+                pattern="all_to_all",
+                coupling=coupling
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as info:
+            output = circuit(rotation_weights, coupling_weights)
+        assert "Gate '{}' does not take parameters".format(coupling) in str(info.value)
+
+    def test_no_coupling_params(self):
+
+        n_wires = 3
+        weights = [[1, 2, 1]]
+        coupling = CRX
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            CustomEntanglerLayers(
+                rotation_weights=weights, 
+                wires=range(n_wires), 
+                pattern="all_to_all",
+                coupling=coupling
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as info:
+            output = circuit(weights)
+        assert "Gate '{}' must take parameters".format(coupling) in str(info.value)
+
+    def test_custom_shape(self):
+
+        n_wires = 3
+        rotation_weights = [[1, 2, 1]]
+        coupling_weights = [[1, 1, 1]]
+        coupling = CRX
+        pattern = [[1, 1, 1], [0, 1]]
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(rotation_weights, coupling_weights):
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires), 
+                pattern=pattern,
+                coupling=coupling
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as info:
+            output = circuit(rotation_weights, coupling_weights)
+        assert "Elements of custom 'pattern' must be of shape (2,)" in str(info.value)
+
+    def test_first_dimension(self):
+
+        n_wires = 3
+        rotation_weights = [[1, 2, 1]]
+        coupling_weights = [[1, 1, 1], [1, 1, 1]]
+        coupling = CRY
+        pattern = [[1, 2], [0, 1]]
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(rotation_weights, coupling_weights):
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires), 
+                pattern=pattern,
+                coupling=coupling
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as info:
+            output = circuit(rotation_weights, coupling_weights)
+        assert "First dimension of `rotation_weights` and `coupling_weights` must be the same" in str(info.value)
+    
+    @pytest.mark.parametrize(
+        "n_wires, layers, pattern, coupling_weights, real_shape, target_shape",
+        [
+            (2, 2, "ring", [[1, 1], [1, 1]], (2, 2), (2, 1)),
+            (3, 1, [[0, 1], [1, 2]], [[1, 1, 1, 1]], (1, 4), (1, 2)),
+        ],
+    )
+    def test_coupling_shape(self, n_wires, layers, pattern, coupling_weights, real_shape, target_shape):
+        """Tests that the shape errors are thrown"""
+        rotation_weights = [[1] * n_wires] * layers
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(rotation_weights, coupling_weights):
+            CustomEntanglerLayers(
+                rotation_weights=rotation_weights, 
+                coupling_weights=coupling_weights,
+                wires=range(n_wires), 
+                pattern=pattern,
+            )
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError) as info:
+            output = circuit(rotation_weights, coupling_weights)
+        assert "'coupling_weights' must be of shape {}; got {}".format(target_shape, real_shape) in str(info.value)
+
+

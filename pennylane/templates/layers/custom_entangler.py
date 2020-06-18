@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``BasicEntanglerLayers`` template.
+Contains the ``CustomEntanglerLayers`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.templates.decorator import template
-from pennylane.ops import CNOT, RX
+from pennylane.ops import CNOT, RX, CRX
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
@@ -33,7 +33,7 @@ def CustomEntanglerLayers(
     rotation_weights, wires, rotation=None, coupling=None, coupling_weights=None, pattern=None
 ):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of
-    parametrized double-qubit gates
+    double-qubit gates (parametrized or non-parametrized)
 
     The placement of double-qubit gates on the circuit is determined by a user-passed
     `pattern`.
@@ -44,7 +44,7 @@ def CustomEntanglerLayers(
         :target: javascript:void(0);
 
     The number of layers :math:`L` is determined by the first dimension of the
-    first element of the argument ``weights``.
+    first argument ``rotation_weights``.
     When using a single wire, the template only applies the single
     qubit gates in each layer.
 
@@ -62,14 +62,14 @@ def CustomEntanglerLayers(
     Args:
         rotation_weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
                                 for the rotation
-        coupling_weights (array[float]): array of weights with shape ``(L, len(wires))``, each weight is used as a parameter
+        coupling_weights (array[float]): array of weights with shape ``(L, len(OPTION))``, each weight is used as a parameter
                                 for the coupling
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
-        pattern (?????): A keyword that determined how the double-qubit gates will be placed on the circuit.`pattern='ring'` is used
-                         as default.
+        pattern (str or "Custom" list): A keyword that determines how the double-qubit gates will be placed on the 
+                                        circuit. `pattern='ring'` is used as default.
     Raises:
         ValueError: if inputs do not have the correct format
 
@@ -87,78 +87,17 @@ def CustomEntanglerLayers(
             dev = qml.device('default.qubit', wires=n_wires)
 
             @qml.qnode(dev)
-            def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            def circuit(rotation_weights, coupling_weights):
+                CustomEntanglerLayers(rotation_weights=rotation_weights, 
+                                      coupling_weights=coupling_weights, 
+                                      wires=range(n_wires),
+                                      rotation=qml.RX,
+                                      coupling=qml.CRX,
+                                      pattern=[[0, 1]])
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
-        [1., 1., -1.]
-
-        **Parameter initialization function**
-
-        The :mod:`~pennylane.init` module has two parameter initialization functions, ``basic_entangler_layers_normal``
-        and ``basic_entangler_layers_uniform``.
-
-        .. code-block:: python
-
-            from pennylane.init import basic_entangler_layers_normal
-
-            n_layers = 4
-            weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires)
-
-            circuit(weights)
-
-
-        **No periodic boundary for two wires**
-
-        When using two wires, the convention is to drop the periodic boundary condition.
-        This means that the connection from the second to the first wire is omitted.
-
-        .. code-block:: python
-
-            n_wires = 2
-            dev = qml.device('default.qubit', wires=n_wires)
-
-            @qml.qnode(dev)
-            def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires))
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        >>> circuit([[pi, pi]])
-        [-1, 1]
-
-
-        **Changing the rotation gate**
-
-        Any single-qubit gate can be used as a rotation gate, as long as it only takes a single parameter. The default is the ``RX`` gate.
-
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        Accidentally using a gate that expects more parameters throws a
-        ``ValueError: Wrong number of parameters``.
-
-        **Using the `interactions` argument**
-
-        By using `interactions`, and custom broadcasting pattern of CNOT gates can be placed on the circuit.
-
-        .. code-block:: python
-
-            n_wires = 4
-            dev = qml.device('default.qubit', wires=n_wires)
-            interactions = [[0, 1], [2, 3]]
-
-            @qml.qnode(dev)
-            def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ, interactions)
-                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        >>> circuit([[pi, pi, pi, pi]])
-        [-1, 1, -1, 1]
+        [-1., 1., -1.]
     """
 
     #############
@@ -175,8 +114,6 @@ def CustomEntanglerLayers(
     }
 
     OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
-
-    # Checks the rotation input/weights
 
     if rotation is None:
         rotation = RX
@@ -195,13 +132,14 @@ def CustomEntanglerLayers(
         "".format(expected_shape, get_shape(rotation_weights)),
     )
 
-    # Checks the coupling input/weights
-
     if pattern is None:
         pattern = "ring"
 
-    if coupling is None:
+    if coupling is None and coupling_weights is None:
         coupling = CNOT
+    
+    if coupling is None and coupling_weights is not None:
+        coupling = CRX
 
     if coupling.num_wires != 2:
         raise ValueError(
@@ -213,8 +151,6 @@ def CustomEntanglerLayers(
 
     if coupling.num_params != 0 and coupling_weights is None:
         raise ValueError("Gate '{}' must take parameters".format(coupling))
-
-    # Checks cases where there are coupling parameters
 
     if isinstance(pattern, list):
         check_shapes(pattern, [(2,)], msg="Elements of custom 'pattern' must be of shape (2,)")
@@ -244,8 +180,6 @@ def CustomEntanglerLayers(
                 msg="'coupling_weights' must be of shape {}; got {}"
                 "".format(expected_shape, get_shape(coupling_weights)),
             )
-
-    # Checks that the pattern is the list/parameters have right length
 
     ###############
 
