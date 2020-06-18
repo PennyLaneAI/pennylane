@@ -53,7 +53,7 @@ def spin2_matrix_elements(sz, n_spin_orbs):
         and the fifth column the computed matrix element.
 
     **Example**
-    
+
     >>> n_spin_orbs = 2
     >>> sz = np.array([0.5, -0.5])
     >>> print(spin2_matrix_elements(sz, n_spin_orbs))
