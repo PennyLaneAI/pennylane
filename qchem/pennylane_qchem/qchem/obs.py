@@ -31,9 +31,13 @@ def spin2_matrix_elements(sz, n_spin_orbs):
 
     The matrix elements are evaluated using the expression,
 
-    .. math:
+    .. math::
 
         \langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2
+        \vert \gamma, \delta \rangle = \delta_{\alpha,\delta} \delta_{\beta,\gamma}
+        \left( \frac{1}{2} \delta_{m_\alpha, m_\delta+1} \delta_{m_\beta, m_\gamma-1}
+        + \frac{1}{2} \delta_{m_\alpha, m_\delta-1} \delta_{m_\beta, m_\gamma+1}
+        + m_\alpha m_\beta \delta_{m_\alpha, m_\delta} \delta_{m_\beta, m_\gamma} \right),
 
     where :math:`\alpha` and :math:`m_\alpha` refer to the quantum numbers of the spatial
     :math:`\varphi_\alpha({\bf r})` and spin :math:`\chi_{m_\alpha}(s_z)` wave functions,
@@ -182,8 +186,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
         &&\hat A = \sum_{\alpha \leq 2N_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
         \vert \alpha \rangle ~ \hat{n}_\alpha +
         \sum_{\alpha, \beta ~ \in ~ \mathrm{active~space}} \langle \alpha \vert \hat{\mathcal{A}}
-        \vert \beta \rangle ~ \hat{c}_\alpha^\dagger\hat{c}_\beta,
-
+        \vert \beta \rangle ~ \hat{c}_\alpha^\dagger\hat{c}_\beta \\
         &&\hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2N_\mathrm{docc}}
         \langle \alpha, \beta \vert \hat{\mathcal{B}} \vert \beta, \alpha \rangle
         ~ \hat{n}_\alpha \hat{n}_\beta + \sum_{\alpha, \beta, \gamma, \delta ~
