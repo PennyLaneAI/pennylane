@@ -189,7 +189,7 @@ def cli():
         )
         bms = [
             mod.Benchmark(
-                qml.device(short_name, wires=args.wires, **k), qnode_type=q, verbose=args.verbose
+                qml.device(short_name, wires=args.wires, **k), qnode_type=q, verbose=args.verbose,
             )
             for short_name, k in zip(devs, dev_kwargs)
             for q in args.qnode
