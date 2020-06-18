@@ -44,7 +44,7 @@ def CustomEntanglerLayers(
         :target: javascript:void(0);
 
     The number of layers :math:`L` is determined by the first dimension of the
-    first argument ``rotation_weights``. It is necessary for the first dimensions of 
+    first argument ``rotation_weights``. It is necessary for the first dimensions of
     ``coupling_weights`` and ``rotation_weights`` to be equal.
 
     When using a single wire, the template only applies the single
@@ -67,14 +67,14 @@ def CustomEntanglerLayers(
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
         pattern (str or "Custom" list): Determines how the double-qubit gates will be placed on the
-                                        circuit. Allowed values of this argument are listed in :func:`~pennylane.broadcast`. 
+                                        circuit. Allowed values of this argument are listed in :func:`~pennylane.broadcast`.
                                         If ``None``, ``ring`` is used as default.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default.
         coupling (pennylane.ops.Operation): one-parameter two-qubit gate to use,
-                                            if ``None`` with ``coupling_weights`` also ``None``, 
+                                            if ``None`` with ``coupling_weights`` also ``None``,
                                             :class:`~pennylane.ops.CNOT` is used as default. If
-                                            ``None`` with ``coupling_weights`` not ``None``, 
+                                            ``None`` with ``coupling_weights`` not ``None``,
                                             :class:`~pennylane.ops.CRX` is used as default.
         coupling_weights (array[float]): array of weights with first dimension ``L``. Each weight is used as a parameter
                                 for the coupling.
