@@ -124,13 +124,15 @@ to the machine learning interface via a custom gradient class or function.
 An interface integrates QNodes with external libraries by the following:
 
 * It wraps the QNode, returning a QNode that accepts and returns the core data
-structure of the classical machine learning library (e.g., a TF tensor, Torch
-tensor, Autograd NumPy array, etc).
+  structure of the classical machine learning library (e.g., a TF tensor, Torch
+  tensor, Autograd NumPy array, etc).
+
 * It unwraps the input data structures to simple NumPy arrays, so that the
-quantum device can execute the user's quantum function.
+  quantum device can execute the user's quantum function.
+
 * It registers the ``QNode.jacobian()`` method as a custom gradient method, so that
-the machine learning library can 'backpropagate' across the QNode, when
-integrated into a classical computation.
+  the machine learning library can 'backpropagate' across the QNode, when
+  integrated into a classical computation.
 
 We refer to the :ref:`intro_interfaces` page for a more in-depth introduction
 and a list of available interfaces.
