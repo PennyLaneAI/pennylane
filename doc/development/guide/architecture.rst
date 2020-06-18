@@ -236,5 +236,5 @@ the symbolic parameters are substituted with numeric values. The ``Variable`` cl
 an important role in book-keeping, allowing PennyLane to keep track of which parameters are
 used in which operations, and automatically perform the product and chain rule where required.
 
-We refer to the :ref:`qml_variable` page for a more in-depth description of how
+We refer to the :doc:`/code/qml_variable` page for a more in-depth description of how
 ``Variables`` are used during execution.
