@@ -158,9 +158,7 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     )[1]
 
     if n_active_electrons is None:
-        hf_elect_struct = MolecularData(
-            filename=os.path.join(hf_data.strip(), mol_name.strip())
-        )
+        hf_elect_struct = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
         n_electrons = hf_elect_struct.n_electrons
     else:
         n_electrons = n_active_electrons
@@ -202,7 +200,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     :math:`\hat{\mathcal{A}}` and :math:`\hat{\mathcal{B}}`, respectively.
 
     The function utilizes tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
-    to buil the second-quantized operator and map it to basis of Pauli matrices via the
+    to build the second-quantized operator and map it to basis of Pauli matrices via the
     Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
@@ -256,9 +254,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
             "The '{}' transformation is not available. \n "
-            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(
-                mapping
-            )
+            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
         )
 
     sp_op_shape = (3,)

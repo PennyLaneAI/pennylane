@@ -28,5 +28,5 @@ __all__ = [
     "generate_hamiltonian",
     "sd_excitations",
     "hf_state",
-    "obs"
+    "obs",
 ]
