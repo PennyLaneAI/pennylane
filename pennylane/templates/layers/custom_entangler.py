@@ -68,7 +68,7 @@ def CustomEntanglerLayers(
             a Wires object.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
                                             if ``None``, :class:`~pennylane.ops.RX` is used as default
-        pattern (str or "Custom" list): A keyword that determines how the double-qubit gates will be placed on the 
+        pattern (str or "Custom" list): A keyword that determines how the double-qubit gates will be placed on the
                                         circuit. `pattern='ring'` is used as default.
     Raises:
         ValueError: if inputs do not have the correct format
@@ -88,8 +88,8 @@ def CustomEntanglerLayers(
 
             @qml.qnode(dev)
             def circuit(rotation_weights, coupling_weights):
-                CustomEntanglerLayers(rotation_weights=rotation_weights, 
-                                      coupling_weights=coupling_weights, 
+                CustomEntanglerLayers(rotation_weights=rotation_weights,
+                                      coupling_weights=coupling_weights,
                                       wires=range(n_wires),
                                       rotation=qml.RX,
                                       coupling=qml.CRX,
@@ -137,7 +137,7 @@ def CustomEntanglerLayers(
 
     if coupling is None and coupling_weights is None:
         coupling = CNOT
-    
+
     if coupling is None and coupling_weights is not None:
         coupling = CRX
 
