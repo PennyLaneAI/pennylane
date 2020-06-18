@@ -33,7 +33,7 @@ def spin2_matrix_elements(sz, n_spin_orbs):
 
     .. math:
 
-        \langle \alpha, \beta \vert \hat{\bf{s}}_1 \cdot \hat {\bf{s}}_2
+        \langle \alpha, \beta \vert \hat{\bf{s}}_1 \cdot \hat{\bf{s}}_2
         # \vert \gamma, \delta \rangle = \delta_{\alpha,\delta} \delta_{\beta,\gamma}
         # \left( \frac{1}{2} \delta_{m_\alpha, m_\delta+1} \delta_{m_\beta, m_\gamma-1}
         # + \frac{1}{2} \delta_{m_\alpha, m_\delta-1} \delta_{m_\beta, m_\gamma+1}
