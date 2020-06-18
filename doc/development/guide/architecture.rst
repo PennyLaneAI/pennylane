@@ -126,10 +126,12 @@ An interface integrates QNodes with external libraries by the following:
 * It wraps the QNode, returning a QNode that accepts and returns the core data
   structure of the classical machine learning library (e.g., a TF tensor, Torch
   tensor, Autograd NumPy array, etc).
+
 * It unwraps the input data structures to simple NumPy arrays, so that the
   quantum device can execute the user's quantum function.
-* It registers the ``QNode.jacobian()`` method as a custom gradient method, so
-  that the machine learning library can 'backpropagate' across the QNode, when
+
+* It registers the ``QNode.jacobian()`` method as a custom gradient method, so that
+  the machine learning library can 'backpropagate' across the QNode, when
   integrated into a classical computation.
 
 We refer to the :ref:`intro_interfaces` page for a more in-depth introduction
@@ -234,5 +236,5 @@ the symbolic parameters are substituted with numeric values. The ``Variable`` cl
 an important role in book-keeping, allowing PennyLane to keep track of which parameters are
 used in which operations, and automatically perform the product and chain rule where required.
 
-We refer to the :ref:`qml_variable` page for a more in-depth description of how
+We refer to the :doc:`/code/qml_variable` page for a more in-depth description of how
 ``Variables`` are used during execution.
