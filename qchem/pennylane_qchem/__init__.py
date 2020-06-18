@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The PennyLane Qchem package."""
-from .qchem import *
+"""The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
+and Psi4 for quantum chemistry calculations using PennyLane.
+"""
+from . import qchem
 from ._version import __version__
-from . import obs

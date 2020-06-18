@@ -129,6 +129,7 @@ except ImportError:
     MOCK_MODULES = [
         'pennylane_qchem',
         'pennylane_qchem.qchem',
+        'pennylane_qchem.obs',
         ]
 
     mock_fn = Mock(__name__='foo')

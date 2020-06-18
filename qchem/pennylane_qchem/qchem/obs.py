@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains functions to construct many-body observables whose expectation
-values can be used to simulate molecular properties."""
+values can be used to simulate molecular properties.
+"""
 # pylint: disable=too-many-arguments, too-few-public-methods
 import os
 import numpy as np
@@ -20,7 +21,7 @@ from openfermion.hamiltonians import MolecularData
 from openfermion.ops import FermionOperator
 from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
-from . import qchem
+from . import structure
 
 
 def s2_me_table(sz, n_spin_orbs):
@@ -142,7 +143,7 @@ def get_s2_me(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None
         total-spin operator.
     """
 
-    active_indices = qchem.active_space(
+    active_indices = structure.active_space(
         mol_name,
         hf_data,
         n_active_electrons=n_active_electrons,
@@ -280,9 +281,9 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     # Map the fermionic to a qubit operator measurable in PennyLane
     if mapping.strip().lower() == "bravyi_kitaev":
-        return qchem.convert_observable(bravyi_kitaev(mb_obs))
+        return structure.convert_observable(bravyi_kitaev(mb_obs))
 
-    return qchem.convert_observable(jordan_wigner(mb_obs))
+    return structure.convert_observable(jordan_wigner(mb_obs))
 
 
 __all__ = [
