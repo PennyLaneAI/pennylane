@@ -18,6 +18,7 @@ Contains the ``CustomEntanglerLayers`` template.
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, CRX
 from pennylane.templates import broadcast
+from pennylane.templates.broadcast import *
 from pennylane.templates.utils import (
     check_shape,
     check_no_variable,

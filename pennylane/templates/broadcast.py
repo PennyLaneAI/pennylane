@@ -63,11 +63,8 @@ def wires_all_to_all(wires):
     return sequence
 
 
-###################
-
-OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
-
 def get_param_numbers(wires, custom_pattern=None):
+    """Returns an object of parameter numbers for each pattern"""
     n_parameters = {
         "single": len(wires),
         "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
@@ -79,6 +76,12 @@ def get_param_numbers(wires, custom_pattern=None):
         "custom": len(custom_pattern) if custom_pattern is not None else None,
     }
     return n_parameters
+
+
+###################
+
+OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
+
 
 @template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
