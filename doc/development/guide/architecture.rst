@@ -107,7 +107,7 @@ Interfaces
 
 The integration between classical and quantum computations is encompassed by
 interfaces. QNodes that provide black-box gradient rules are 'wrapped' by an interface function.
-that provide a 'wrapper' around QNodes such. These wrappers further transform
+These wrappers further transform
 the ``QNode`` such that the quantum gradient rules of the QNodes are registered
 to the machine learning interface via a custom gradient class or function.
 
