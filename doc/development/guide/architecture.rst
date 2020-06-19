@@ -85,12 +85,11 @@ functions. As these rules allow quantum gradients to be obtained from
 QNodes, hybrid computations may include QNodes as part of training deep
 learnings models.
 
-These QNode types are available to users through the :func:`~.qnode` decorator by
-passing the user-facing ``diff_method`` option. This decorator then uses the
-:func:`~.QNode` constructor function to create the specific type of qnode based on
-the device, interface, and quantum function. If ``diff_method`` option is not
-provided, the QNode constructor function attempts to determine the ``"best"``
-differentiation method, based on the available device and interface.
+Users don't typically instantiate QNodes directly---instead, the :func:`~.qnode` decorator or
+:func:`~.QNode` constructor function automates the process of creating a QNode from a provided
+quantum function and device. The constructor attempts to determine the ``"best"`` QNode
+subclass/differentiation method for the provided device and interface. For more fine-grained control,
+the differentiation method can be specified directly via the ``diff_method`` option.
 
 A common representation of quantum circuits is by creating a `Directed
 Acyclic Graph (DAG)
