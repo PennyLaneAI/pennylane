@@ -56,7 +56,7 @@ particular types of devices.  For example, qubit-based devices can inherit from
 the :class:`~.QubitDevice` class, easing development.
 
 To register a new device with PennyLane, they must register an `entry point
-<https://packaging.python.org/specifications/entry-points/>`__under the `pennylane.plugins`
+<https://packaging.python.org/specifications/entry-points/>`__ under the `pennylane.plugins`
 namespace using Setuptools. Once registered, the device can be instantiated using the :func:`~.device`
 loader function.
 
