@@ -77,12 +77,13 @@ A  quantum node or QNode (represented by a subclass of
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device.
 
-Apart from incorporating quantum functions, QNodes also offer custom quantum
-differentiation rules. Using the so-called :doc:`parameter-shift rules
-<glossary/parameter_shift>`, many quantum functions can be expressed through
-the linear combination of other quantum functions. As these rules allow quantum
-gradients to be obtained from QNodes, hybrid computations may include QNodes as
-part of training deep learnings models.
+Apart from encapsulating quantum functions, QNodes also provide custom quantum
+differentiation rules. Examples include the :doc:`parameter-shift rules
+<glossary/parameter_shift>` parameter-shift rule, where the derivative of
+quantum functions can be expressed by a linear combination of the other quantum
+function. As these rules allow quantum gradients to be obtained from QNodes,
+hybrid computations may include QNodes as part of training deep learnings
+models.
 
 These QNode types are available to users through the :func:`~.qnode` decorator by
 passing the user-facing ``diff_method`` option. This decorator then uses the
