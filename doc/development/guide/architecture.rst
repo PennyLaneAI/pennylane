@@ -111,7 +111,7 @@ that provide a 'wrapper' around QNodes such. These wrappers further transform
 the ``QNode`` such that the quantum gradient rules of the QNodes are registered
 to the machine learning interface via a custom gradient class or function.
 
-An interface integrates QNodes with external libraries by the following:
+Typically, an interface integrates QNodes with external libraries as follows:
 
 * It wraps the QNode, returning a QNode that accepts and returns the core data
   structure of the classical machine learning library (e.g., a TF tensor, Torch
