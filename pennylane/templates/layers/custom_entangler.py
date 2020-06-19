@@ -111,17 +111,7 @@ def CustomEntanglerLayers(
     #############
     # Input checks
 
-    n_parameters = {
-        "single": len(wires),
-        "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
-        "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
-        "chain": 0 if len(wires) in [0, 1] else len(wires) - 1,
-        "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-        "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
-        "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
-    }
-
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all"]
+    n_parameters = get_param_numbers(wires)
 
     if rotation is None:
         rotation = RX

@@ -65,6 +65,20 @@ def wires_all_to_all(wires):
 
 ###################
 
+OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
+
+def get_param_numbers(wires, custom_pattern=None):
+    n_parameters = {
+        "single": len(wires),
+        "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
+        "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
+        "chain": 0 if len(wires) in [0, 1] else len(wires) - 1,
+        "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
+        "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
+        "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
+        "custom": len(custom_pattern) if custom_pattern is not None else None,
+    }
+    return n_parameters
 
 @template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
@@ -489,8 +503,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
                 circuit(pars)
     """
 
-    OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
-
     #########
     # Input checks
 
@@ -522,16 +534,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         # set "pattern" to "custom", indicating that custom settings have to be used
         pattern = "custom"
 
-    n_parameters = {
-        "single": len(wires),
-        "double": 0 if len(wires) in [0, 1] else len(wires) // 2,
-        "double_odd": 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
-        "chain": 0 if len(wires) in [0, 1] else len(wires) - 1,
-        "ring": 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-        "pyramid": 0 if len(wires) in [0, 1] else sum(i + 1 for i in range(len(wires) // 2)),
-        "all_to_all": 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
-        "custom": len(custom_pattern) if custom_pattern is not None else None,
-    }
+    n_parameters = get_param_numbers(wires, custom_pattern)
 
     # check that there are enough parameters for pattern
     if parameters is not None:
