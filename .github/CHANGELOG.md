@@ -146,6 +146,10 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
+* Instead of being variables inside the `pennylane.broadcast()` method, the `n_parameters` 
+  and `wire_sequence` dictionaries can be accessed through the method `get_param_numbers` and 
+  `get_wire_sequences`, in `pennylane.templates.broadcast`.
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.5.

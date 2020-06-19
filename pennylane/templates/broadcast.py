@@ -77,11 +77,23 @@ def get_param_numbers(wires, custom_pattern=None):
     }
     return n_parameters
 
+def get_wire_sequences(wires, custom_pattern=None):
+    """Returns the wire sequences for the patterns"""
+    wire_sequence = {
+        "single": [wires[i] for i in range(len(wires))],
+        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
+        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
+        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
+        "ring": wires_ring(wires),
+        "pyramid": wires_pyramid(wires),
+        "all_to_all": wires_all_to_all(wires),
+        "custom": custom_pattern,
+    }
+    return wire_sequence
 
 ###################
 
 OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
-
 
 @template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
@@ -563,18 +575,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         parameters = [[] for _ in range(n_parameters[pattern])]
 
     #########
-
-    # define wire sequences for patterns
-    wire_sequence = {
-        "single": [wires[i] for i in range(len(wires))],
-        "double": [wires.subset([i, i + 1]) for i in range(0, len(wires) - 1, 2)],
-        "double_odd": [wires.subset([i, i + 1]) for i in range(1, len(wires) - 1, 2)],
-        "chain": [wires.subset([i, i + 1]) for i in range(len(wires) - 1)],
-        "ring": wires_ring(wires),
-        "pyramid": wires_pyramid(wires),
-        "all_to_all": wires_all_to_all(wires),
-        "custom": custom_pattern,
-    }
 
     # broadcast the unitary
     for wires, pars in zip(wire_sequence[pattern], parameters):
