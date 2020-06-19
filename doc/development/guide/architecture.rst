@@ -63,7 +63,7 @@ loader function.
 A Python package that registers one or more PennyLane device is known as a *plugin*. For more details
 on plugins and devices, see :doc:`/development/plugins`.
 
-The purpose of the ``Device`` class can be summarized as:
+The purpose of the :class:`Device` class can be summarized as:
 
 * Providing a common API to execute a quantum circuit and request
   the measurement of the associated observable.
