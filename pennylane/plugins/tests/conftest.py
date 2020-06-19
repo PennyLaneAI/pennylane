@@ -42,8 +42,17 @@ def init_state():
         state /= np.linalg.norm(state)
         return state
 
-    return _init_state
+    return
 
+
+# Fixture to skip tests
+@pytest.fixture(scope="session")
+def skip_if():
+    """Fixture to skip tests."""
+    def _skip_if(condition):
+        if condition:
+            pytest.skip("Test does not apply to this device.")
+    return _skip_if()
 
 # ============================
 # These functions are required to define the device name to run the tests for
