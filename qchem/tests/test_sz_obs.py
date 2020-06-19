@@ -9,17 +9,18 @@ from openfermion.ops._qubit_operator import QubitOperator
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
-me = np.array([[ 0.,   0.,   0.5],
-               [ 1.,   1.,  -0.5],
-               [ 2.,   2.,   0.5],
-               [ 3.,   3.,  -0.5]])
+me = np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5], [2.0, 2.0, 0.5], [3.0, 3.0, -0.5]])
 
-me_lih = np.array([[ 0.,   0.,   0.5],
-                   [ 1.,   1.,  -0.5],
-                   [ 2.,   2.,   0.5],
-                   [ 3.,   3.,  -0.5],
-                   [ 4.,   4.,   0.5],
-                   [ 5.,   5.,  -0.5]])
+me_lih = np.array(
+    [
+        [0.0, 0.0, 0.5],
+        [1.0, 1.0, -0.5],
+        [2.0, 2.0, 0.5],
+        [3.0, 3.0, -0.5],
+        [4.0, 4.0, 0.5],
+        [5.0, 5.0, -0.5],
+    ]
+)
 
 
 @pytest.mark.parametrize(
@@ -31,9 +32,7 @@ me_lih = np.array([[ 0.,   0.,   0.5],
         ("lih", None, 3, me_lih),
     ],
 )
-def test_get_spinZ_matrix_elements(
-    mol_name, n_act_elect, n_act_orb, sz_me_exp, tol
-):
+def test_get_spinZ_matrix_elements(mol_name, n_act_elect, n_act_orb, sz_me_exp, tol):
     r"""Test that the table of matrix elements
     :math:`\langle \alpha \vert \hat{s}_z \vert \beta \rangle` are computed correctly
     for different choices of the active space."""
@@ -46,19 +45,19 @@ def test_get_spinZ_matrix_elements(
 
 
 terms_lih_jw = {
-    ((0, 'Z'),): (-0.25+0j),
-    ((1, 'Z'),): (0.25+0j),
-    ((2, 'Z'),): (-0.25+0j),
-    ((3, 'Z'),): (0.25+0j),
+    ((0, "Z"),): (-0.25 + 0j),
+    ((1, "Z"),): (0.25 + 0j),
+    ((2, "Z"),): (-0.25 + 0j),
+    ((3, "Z"),): (0.25 + 0j),
 }
 
 terms_lih_anion_bk = {
-    ((0, 'Z'),): (-0.25+0j),
-    ((0, 'Z'), (1, 'Z')): (0.25+0j),
-    ((2, 'Z'),): (-0.25+0j),
-    ((1, 'Z'), (2, 'Z'), (3, 'Z')): (0.25+0j),
-    ((4, 'Z'),): (-0.25+0j),
-    ((4, 'Z'), (5, 'Z')): (0.25+0j),
+    ((0, "Z"),): (-0.25 + 0j),
+    ((0, "Z"), (1, "Z")): (0.25 + 0j),
+    ((2, "Z"),): (-0.25 + 0j),
+    ((1, "Z"), (2, "Z"), (3, "Z")): (0.25 + 0j),
+    ((4, "Z"),): (-0.25 + 0j),
+    ((4, "Z"), (5, "Z")): (0.25 + 0j),
 }
 
 
@@ -69,9 +68,7 @@ terms_lih_anion_bk = {
         ("lih_anion", 3, 3, "bravyi_KITAEV", terms_lih_anion_bk),
     ],
 )
-def test_build_sz_observable(
-    mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch
-):
+def test_build_sz_observable(mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the built total-spin projection observable :math:`\hat{S}_z`.
 
     The parametrized inputs are `.terms` attribute of the total spin `QubitOperator.
