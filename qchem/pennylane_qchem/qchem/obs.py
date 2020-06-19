@@ -349,5 +349,5 @@ __all__ = [
     "spin2_matrix_elements",
     "get_spin2_matrix_elements",
     "observable",
-    "spinz_matrix_elements",
+    "get_spinZ_matrix_elements",
 ]
