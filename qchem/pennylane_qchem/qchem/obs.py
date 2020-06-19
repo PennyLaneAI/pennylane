@@ -328,7 +328,7 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     [ 3.   3.  -0.5]]
     """
 
-    active_indices = qchem.active_space(
+    active_indices = structure.active_space(
         mol_name,
         hf_data,
         n_active_electrons=n_active_electrons,
