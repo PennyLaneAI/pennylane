@@ -91,7 +91,7 @@ def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
     as it could be something useful to the users as well.
     """
 
-    res_obs = qchem.obs.observable(me_table, init_term=init_term, mapping=mapping)
+    res_obs = qchem.observable(me_table, init_term=init_term, mapping=mapping)
 
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
@@ -115,7 +115,7 @@ def test_exceptions_observable(
     array containing the matrix elements has incorrect shapes."""
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.obs.observable(me_table)
+        qchem.observable(me_table)
 
 
 def test_mapping_observable(message_match="transformation is not available"):
@@ -125,4 +125,4 @@ def test_mapping_observable(message_match="transformation is not available"):
     me_table = np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])
 
     with pytest.raises(TypeError, match=message_match):
-        qchem.obs.observable(me_table, mapping="no_valid_transformation")
+        qchem.observable(me_table, mapping="no_valid_transformation")

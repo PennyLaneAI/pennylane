@@ -40,7 +40,7 @@ def test_spin2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = qchem.obs.spin2_matrix_elements(sz, n_spin_orbs)
+    s2_me_result = qchem.spin2_matrix_elements(sz, n_spin_orbs)
 
     assert np.allclose(s2_me_result, s2_me_expected, **tol)
 
@@ -53,7 +53,7 @@ def test_exception_spin2_me(message_match="Size of 'sz' must be equal to 'n_spin
     sz = np.where(np.arange(n_spin_orbs + 1) % 2 == 0, 0.5, -0.5)
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.obs.spin2_matrix_elements(sz, n_spin_orbs)
+        qchem.spin2_matrix_elements(sz, n_spin_orbs)
 
 
 me = np.array(
@@ -160,7 +160,7 @@ def test_get_spin2_matrix_elements(
     r"""Test that the table of matrix elements and the term use to initialize the
     FermionOperator are computed correctly for different active spaces."""
 
-    s2_me_res, init_term_res = qchem.obs.get_spin2_matrix_elements(
+    s2_me_res, init_term_res = qchem.get_spin2_matrix_elements(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
     )
 
@@ -257,11 +257,11 @@ def test_build_s2_observable(
     something useful to the users as well.
     """
 
-    s2_me_table, init_term = qchem.obs.get_spin2_matrix_elements(
+    s2_me_table, init_term = qchem.get_spin2_matrix_elements(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
     )
 
-    s2_obs = qchem.obs.observable(s2_me_table, init_term=init_term, mapping=mapping)
+    s2_obs = qchem.observable(s2_me_table, init_term=init_term, mapping=mapping)
 
     s2_qubit_op = QubitOperator()
     monkeypatch.setattr(s2_qubit_op, "terms", terms_exp)
