@@ -77,6 +77,7 @@ def get_param_numbers(wires, custom_pattern=None):
     }
     return n_parameters
 
+
 def get_wire_sequences(wires, custom_pattern=None):
     """Returns the wire sequences for the patterns"""
     wire_sequence = {
@@ -91,9 +92,11 @@ def get_wire_sequences(wires, custom_pattern=None):
     }
     return wire_sequence
 
+
 ###################
 
 OPTIONS = ["single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"]
+
 
 @template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
@@ -577,6 +580,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     #########
 
     # broadcast the unitary
-    for wires, pars in zip(get_wire_sequences(wires, custom_pattern=custom_pattern)[pattern], parameters):
+    for wires, pars in zip(
+        get_wire_sequences(wires, custom_pattern=custom_pattern)[pattern], parameters
+    ):
         wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
         unitary(*pars, wires=wires, **kwargs)
