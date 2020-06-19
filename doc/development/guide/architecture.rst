@@ -179,7 +179,7 @@ Operators are queued to the QNode on instantiation, by having :meth:`.Operator._
 call the :meth:`.Operator.queue` method. The operators themselves queue themselves to
 the surrounding :class:`~.QueuingContext`.
 
-Measurement functions such as :meth:`qml.expval` are responsible for queuing observables.
+Measurement functions such as :func:`~.expval` are responsible for queuing observables.
 
 For further details, refer to the description in :class:`~.QueuingContext`.
 
