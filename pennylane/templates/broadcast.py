@@ -577,6 +577,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     #########
 
     # broadcast the unitary
-    for wires, pars in zip(wire_sequence[pattern], parameters):
+    for wires, pars in zip(get_wire_sequences(wires, custom_pattern=custom_pattern)[pattern], parameters):
         wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
         unitary(*pars, wires=wires, **kwargs)
