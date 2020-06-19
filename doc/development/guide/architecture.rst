@@ -92,7 +92,7 @@ the device, interface, and quantum function. If ``diff_method`` option is not
 provided, the QNode constructor function attempts to determine the ``"best"``
 differentiation method, based on the available device and interface.
 
-A widespread representation of quantum circuits is by creating a `Directed
+A common representation of quantum circuits is by creating a `Directed
 Acyclic Graph (DAG)
 <https://pennylane.ai/qml/glossary/hybrid_computation.html#directed-acyclic-graphs>`__
 and representing quantum operations within such a graph. Each ``QNode``
