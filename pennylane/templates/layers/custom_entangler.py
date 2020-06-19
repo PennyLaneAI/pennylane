@@ -18,7 +18,7 @@ Contains the ``CustomEntanglerLayers`` template.
 from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, CRX
 from pennylane.templates import broadcast
-from pennylane.templates.broadcast import *
+from pennylane.templates.broadcast import get_param_numbers, OPTIONS
 from pennylane.templates.utils import (
     check_shape,
     check_no_variable,
@@ -34,7 +34,7 @@ def CustomEntanglerLayers(
     rotation_weights, wires, pattern=None, rotation=None, coupling=None, coupling_weights=None
 ):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a sequence of
-    double-qubit gates (parametrized or non-parametrized)
+    two-qubit gates. The gate types and connectivity are fully customizable.
 
     The placement of the two-qubit gates on the circuit is determined by a user-provided
     `pattern` argument, with allowed values listed in :func:`~pennylane.broadcast`.
