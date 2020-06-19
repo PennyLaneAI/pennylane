@@ -288,8 +288,66 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     return structure.convert_observable(jordan_wigner(mb_obs))
 
 
+def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+    r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
+    space and generates the table of matrix elements required to build the second-quantized
+    spin-projection operator :math:`\hat{S}_z`.
+
+    The single-particle operator :math:`\hat{s}_z` is diagonal in the basis
+    of HF spin-orbitals and its matrix elements are computed using the expression,
+
+    .. math::
+
+        \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
+
+    where :math:`m_\alpha` refers to the quantum number of the spin wave function
+    :math:`\chi_{m_\alpha}(s_z)` of the spin-orbital :math:`\vert \alpha \rangle`.
+
+    Args:
+        mol_name (str): name of the molecule
+        hf_data (str): path to the directory with the HF electronic structure data
+        n_active_electrons (int): number of active electrons
+        n_active_orbitals (int): number of active orbitals
+
+    Returns:
+        array: NumPy array with the table of matrix elements. First two columns
+        contains the index :math:`\alpha` and the third column the computed (diagonal) 
+        matrix element.
+
+    **Example**
+
+    >>> get_spinZ_matrix_elements(
+        'h2',
+        './pyscf/sto-3g',
+        n_active_electrons=2,
+        n_active_orbitals=2)
+    >>> print(get_spinZ_matrix_elements)
+    [[ 0.   0.   0.5]
+    [ 1.   1.  -0.5]
+    [ 2.   2.   0.5]
+    [ 3.   3.  -0.5]]
+    """
+
+    active_indices = qchem.active_space(
+        mol_name,
+        hf_data,
+        n_active_electrons=n_active_electrons,
+        n_active_orbitals=n_active_orbitals,
+    )[1]
+
+    n_spin_orbs = 2 * len(active_indices)
+    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+
+    spinz_matrix_elements = np.zeros((n_spin_orbs, 3))
+    for alpha in range(n_spin_orbs):
+        spinz_matrix_elements[alpha] = np.array([alpha, alpha, sz[alpha]])
+
+    return spinz_matrix_elements
+
+
 __all__ = [
     "spin2_matrix_elements",
     "get_spin2_matrix_elements",
     "observable",
+    "spinz_matrix_elements",
 ]
