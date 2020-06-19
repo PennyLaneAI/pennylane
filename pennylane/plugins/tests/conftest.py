@@ -23,6 +23,10 @@ np.random.seed(42)
 
 TOL = 1e-3
 
+# List of all devices that are included in PennyLane
+# by default
+LIST_CORE_DEVICES = {'default.gaussian', 'default.qubit', 'default.qubit.tf'}
+
 
 @pytest.fixture(scope="session")
 def tol():
@@ -41,8 +45,22 @@ def init_state():
     return _init_state
 
 
-@pytest.fixture(scope="session")
-def skip_if_not_analytic(analytic):
-    if not analytic:
-        pytest.skip("Skipped, no torch support")
+# ============================
+# These functions are required to define the device name to run the tests for
 
+
+def pytest_addoption(parser):
+    parser.addoption("--device", action="store", default="device to run tests for")
+
+
+def pytest_generate_tests(metafunc):
+    # This is called for every test. Only get/set command line arguments
+    # if the argument is specified in the list of test "fixturenames".
+
+    option_value = metafunc.config.option.device
+    if 'device' in metafunc.fixturenames and option_value is not None:
+        # if command line argument given, run tests on the requested device
+        metafunc.parametrize("device_name", [option_value])
+    else:
+        # if no command line argument given, run tests on core devices
+        metafunc.parametrize("device_name", LIST_CORE_DEVICES)

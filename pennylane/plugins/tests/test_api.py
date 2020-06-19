@@ -11,24 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This subpackage provides integration tests for the devices with PennyLane's core
-functionalities.
-
-They can be run by navigating to the parent directory and running:
-
->>> python3 -m pytest tests/*
-
-The tests can also be run on an external device from a PennyLane plugin, such as
-``'qiskit.aer'``. For this, make sure you have the correct dependencies installed and
-run
-
->>> python3 -m pytest -s tests* --device qiskit.aer
-
-(where ``qiskit.aer`` is replaced by the device to be tested).
-
-Most tests query the device's capabilities and only get executed if they apply to the device.
-"""
+"""Tests that a device has the right attributes, arguments and functions."""
+import pennylane as qml
+import pytest
 
 
-
+class TestCloudAPI:
+    """Test that the interaction with a cloud API works well."""
