@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* The function ``get_spinZ_matrix_elements`` has been added to the
+  ``obs`` module to generate the matrix elements required to build
+  the total-spin projection operator by using the generic function
+  ``observable`` as implemented in the same module.
+  [(#)]()
+
 * The new module ``obs`` has been added to build many-body operators
   whose expectation values can be computed in PennyLane to simulate
   properties of interest of quantum systems. In particular, this PR adds
