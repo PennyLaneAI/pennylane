@@ -18,9 +18,9 @@ algorithms common in optimization and machine learning to include quantum and
 A plugin system makes the framework compatible with any gate-based quantum
 simulator or hardware.
 
-Using PennyLane, quantum computing devices (``Devices``) can be used to
-evaluate quantum nodes (``QNodes``) and to return statistics of the results. To
-process the classical information obtained, ``Interfaces`` allow using
+Using PennyLane, quantum computing *devices* can be used to
+evaluate quantum nodes (*QNodes*) and to return statistics of the results. To
+process the classical information obtained, *interfaces* allow using
 accelerated machine learning libraries.
 
 In most cases, computations with PennyLane are performed on a local machine
