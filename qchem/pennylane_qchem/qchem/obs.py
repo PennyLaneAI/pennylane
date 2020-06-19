@@ -294,7 +294,7 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     spin-projection operator :math:`\hat{S}_z`.
 
     The single-particle operator :math:`\hat{s}_z` is diagonal in the basis
-    of HF spin-orbitals and its matrix elements are computed using the expression,
+    of spin-orbitals and its matrix elements are computed as follows,
 
     .. math::
 
