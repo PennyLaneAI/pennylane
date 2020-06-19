@@ -6,7 +6,7 @@
   ``obs`` module to generate the matrix elements required to build
   the total-spin projection operator by using the generic function
   ``observable`` as implemented in the same module.
-  [(#)]()
+  [(#696)](https://github.com/XanaduAI/pennylane/pull/696)
 
 * The new module ``obs`` has been added to build many-body operators
   whose expectation values can be computed in PennyLane to simulate
