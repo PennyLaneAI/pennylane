@@ -138,7 +138,7 @@ Operators
 Quantum operators are incorporated by the :class:`~.Operator` class which
 contains basic information about the operator (e.g. number of parameters,
 number of wires it acts on, etc.) and further convenience methods (e.g.
-:attr:`~.Operator.matrix`, :attr:`~.Operator.eigvals`.
+:attr:`~.Operator.matrix`, :attr:`~.Operator.eigvals`).
 
 Two important subclasses of the ``Operator`` class are:
 
