@@ -31,7 +31,7 @@ of PennyLane, plugins, and devices.
 
 .. titlecard::
     :name: Architecture Design Records
-    :description: A document that discusses important PennyLane architectural decisions, its context, and consequences.
+    :description: Proposing important PennyLane architectural decisions.
     :link: guide/adr.html
 
 .. .. titlecard::
