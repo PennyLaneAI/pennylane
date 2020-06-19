@@ -175,8 +175,8 @@ In PennyLane, the construction of quantum gates is separated from the specific
 QNode that they belong to. QNode circuit construction happens only when the
 QNode is evaluated. On QNode evaluation, the quantum function is executed.
 
-Operators are queued to the QNode on instantiation, by having :meth:`Operator.__init__`
-call the :meth:`Operator.queue` method. The operators themselves queue themselves to
+Operators are queued to the QNode on instantiation, by having :meth:`.Operator.__init__`
+call the :meth:`.Operator.queue` method. The operators themselves queue themselves to
 the surrounding :class:`~.QueuingContext`.
 
 Measurement functions such as :meth:`qml.expval` are responsible for queuing observables.
