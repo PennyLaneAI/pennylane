@@ -14,6 +14,7 @@
 """Tests that the different measurement types work correctly on a device."""
 import numpy as np
 import pennylane as qml
+from flaky import flaky
 
 # ==========================================================
 # Some useful global variables
@@ -23,15 +24,16 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j],
               [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 
+@flaky(max_runs=10)
 class TestExpval:
     """Test expectation values"""
 
     def test_identity_expectation(self, device_name, tol, skip_if):
         """Test that identity expectation value (i.e. the trace) is 1."""
 
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -48,9 +50,9 @@ class TestExpval:
 
     def test_pauliz_expectation(self, device_name, tol, skip_if):
         """Test that PauliZ expectation value is correct"""
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -67,9 +69,9 @@ class TestExpval:
 
     def test_paulix_expectation(self, device_name, tol, skip_if):
         """Test that PauliX expectation value is correct"""
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -86,9 +88,9 @@ class TestExpval:
 
     def test_pauliy_expectation(self, device_name, tol, skip_if):
         """Test that PauliY expectation value is correct"""
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -105,9 +107,9 @@ class TestExpval:
 
     def test_hadamard_expectation(self, device_name, tol, skip_if):
         """Test that Hadamard expectation value is correct"""
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -127,9 +129,9 @@ class TestExpval:
 
     def test_hermitian_expectation(self, device_name, tol, skip_if):
         """Test that arbitrary Hermitian expectation values are correct"""
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -154,9 +156,9 @@ class TestExpval:
 
     def test_multi_mode_hermitian_expectation(self, device_name, tol, skip_if):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -191,16 +193,17 @@ class TestExpval:
         assert np.allclose(res, expected, tol)
 
 
+@flaky(max_runs=10)
 class TestTensorExpval:
     """Test tensor expectation values"""
 
     def test_paulix_pauliy(self, device_name, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(device_name, wires=3)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -222,11 +225,11 @@ class TestTensorExpval:
 
     def test_pauliz_hadamard(self, device_name, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(device_name, wires=3)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -249,11 +252,11 @@ class TestTensorExpval:
 
     def test_hermitian(self, device_name, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(device_name, wires=3)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -287,6 +290,7 @@ class TestTensorExpval:
         assert np.allclose(res, expected, tol)
 
 
+@flaky(max_runs=10)
 class TestSample:
     """Tests for the sample return type."""
 
@@ -294,8 +298,9 @@ class TestSample:
         """Tests if the samples returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=1, shots=8192)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
+        dev = qml.device(device_name, wires=1, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         @qml.qnode(dev)
         def circuit():
@@ -311,8 +316,9 @@ class TestSample:
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=1, shots=8192)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
+        dev = qml.device(device_name, wires=1, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         A = np.array([[1, 2j], [-2j, 0]])
         theta = 0.543
@@ -337,8 +343,9 @@ class TestSample:
         """Tests if the samples of a multi-qubit Hermitian observable returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=2, shots=8192)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.543
         A = np.array(
@@ -377,15 +384,17 @@ class TestSample:
         assert np.allclose(np.mean(res), expected, tol)
 
 
+@flaky(max_runs=10)
 class TestTensorSample:
     """Test tensor sample values."""
 
     def test_paulix_pauliy(self, device_name, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(device_name, wires=3, shots=8192)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -422,10 +431,11 @@ class TestTensorSample:
 
     def test_pauliz_hadamard(self, device_name, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(device_name, wires=3, shots=8192)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -460,10 +470,11 @@ class TestTensorSample:
 
     def test_hermitian(self, device_name, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(device_name, wires=3, shots=8192)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
 
         theta = 0.432
@@ -539,6 +550,7 @@ class TestTensorSample:
         assert np.allclose(var, expected, tol)
 
 
+@flaky(max_runs=10)
 class TestVar:
     """Tests for the variance return type"""
 
@@ -546,9 +558,9 @@ class TestVar:
         """Tests if the samples returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         phi = 0.543
         theta = 0.6543
@@ -568,9 +580,9 @@ class TestVar:
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=2, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if(not capabilities['model'] == 'qubit')
 
         phi = 0.543
         theta = 0.6543
@@ -595,16 +607,17 @@ class TestVar:
         assert np.allclose(res, expected, tol)
 
 
+@flaky(max_runs=10)
 class TestTensorVar:
     """Test tensor variance measurements."""
 
     def test_paulix_pauliy(self, device_name, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(device_name, wires=3)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -633,11 +646,11 @@ class TestTensorVar:
 
     def test_pauliz_hadamard(self, device_name, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(device_name, wires=3)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123
@@ -664,11 +677,11 @@ class TestTensorVar:
 
     def test_hermitian(self, device_name, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(device_name, wires=3)
-        cond = 'tensor_observable' in dev.__class__.capabilities() and dev.__class__.capabilities()['tensor_observable']
-        skip_if(not cond)
-        skip_if(not dev.__class__.capabilities()['model'] == 'qubit')
-        skip_if(not dev.analytic)
+        dev = qml.device(device_name, wires=3, shots=28192)
+        capabilities = dev.__class__.capabilities()
+        skip_if('tensor_observable' not in capabilities)
+        skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
+        skip_if(not capabilities['model'] == 'qubit')
 
         theta = 0.432
         phi = 0.123

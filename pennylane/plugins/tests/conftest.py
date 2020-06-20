@@ -21,7 +21,7 @@ import os
 
 np.random.seed(42)
 
-TOL = 1e-3
+TOL = 1e-2
 
 # List of all devices that are included in PennyLane
 # by default
