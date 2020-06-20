@@ -60,7 +60,7 @@ To register a new device with PennyLane, they must register an `entry point
 namespace using Setuptools. Once registered, the device can be instantiated using the :func:`~.device`
 loader function.
 
-A Python package that registers one or more PennyLane device is known as a *plugin*. For more details
+A Python package that registers one or more PennyLane devices is known as a *plugin*. For more details
 on plugins and devices, see :doc:`/development/plugins`.
 
 The purpose of the :class:`Device` class can be summarized as:
