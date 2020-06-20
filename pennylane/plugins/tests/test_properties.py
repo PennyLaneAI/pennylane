@@ -14,6 +14,7 @@
 """Tests that a device has the right attributes, arguments and methods."""
 import pennylane as qml
 import pytest
+from pennylane._device import DeviceError
 
 
 class TestDeviceProperties:
@@ -31,20 +32,20 @@ class TestDeviceProperties:
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
             qml.device(device_name)
 
-    def test_nonanalytic_no_0_shots(self, device_name, skip_if_analytic):
-        """Test that hardware devices cannot accept 0 shots."""
+    def test_nonanalytic_no_0_shots(self, device_name, skip_if):
+        """Test that non-analytic devices cannot accept 0 shots."""
         # first create a valid device to extract its capabilities
         dev = qml.device(device_name, wires=2)
-        skip_if_analytic(dev.analytic)
+        skip_if(not dev.analytic)
 
-        with pytest.raises(TypeError, match="missing 1 required positional argument"):
+        with pytest.raises(DeviceError, match="The specified number of shots needs to be"):
             qml.device(device_name, wires=2, shots=0)
 
-    def test_analytic_no_0_shots(self, device_name, skip_if_not_analytic):
-        """Test that hardware devices cannot accept 0 shots."""
+    def test_analytic_0_shots(self, device_name, skip_if):
+        """Test that analytic devices can accept 0 shots."""
         # first create a valid device to extract its capabilities
         dev = qml.device(device_name, wires=1)
-        skip_if_not_analytic(dev.analytic)
+        skip_if(dev.analytic)
 
         # a state simulator will allow shots=0
         dev = qml.device(device_name, wires=1, shots=0)

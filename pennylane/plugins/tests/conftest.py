@@ -42,7 +42,7 @@ def init_state():
         state /= np.linalg.norm(state)
         return state
 
-    return
+    return _init_state
 
 
 # Fixture to skip tests
@@ -52,24 +52,24 @@ def skip_if():
     def _skip_if(condition):
         if condition:
             pytest.skip("Test does not apply to this device.")
-    return _skip_if()
+    return _skip_if
 
 # ============================
 # These functions are required to define the device name to run the tests for
 
 
 def pytest_addoption(parser):
-    parser.addoption("--device", action="store", default="device to run tests for")
+    parser.addoption("--device", action="store", default=None)
 
 
 def pytest_generate_tests(metafunc):
-    # This is called for every test. Only get/set command line arguments
-    # if the argument is specified in the list of test "fixturenames".
+    # This is called for every test. Only gets/sets command line arguments
+    # if the argument is specified in the list of test's "fixturenames".
 
     option_value = metafunc.config.option.device
-    if 'device' in metafunc.fixturenames and option_value is not None:
+    if 'device_name' in metafunc.fixturenames and option_value is not None:
         # if command line argument given, run tests on the requested device
-        metafunc.parametrize("device_name", [option_value])
+        metafunc.parametrize('device_name', [option_value])
     else:
         # if no command line argument given, run tests on core devices
-        metafunc.parametrize("device_name", LIST_CORE_DEVICES)
+        metafunc.parametrize('device_name', LIST_CORE_DEVICES)
