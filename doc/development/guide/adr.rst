@@ -38,11 +38,13 @@ development team.
 What to include in a PennyLane ADR
 ----------------------------------
 
-The ADR is typically a Markdown or reStructuredText document that outlines:
+The ADR is a Markdown or reStructuredText document that outlines:
+
 
 * The context behind this design discussion,
 
-* Analysis of potential options, pro/cons of each approaches, and any implementation 'gotchas' that
+* Analysis of potential options, pros/cons of each approach, and any implementation 'gotchas' that
+
   might arise, and
 
 * A summary of the decision and an outline of the required work package.
@@ -52,7 +54,7 @@ The ADR must have the following components:
 **Title**
     The title should directly reflect the decision made by the ADR.
 
-    The title should be 50 characters or less, reflects the final decision, and is written in present
+    The title should be 50 characters or less, reflect the final decision, and be written in present
     tense imperative form. For example, "Move common plugin utilities to PennyLane core", or "Add a
     high-level ``qnn`` module to PennyLane".
 
