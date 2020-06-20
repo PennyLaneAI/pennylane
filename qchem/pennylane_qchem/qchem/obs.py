@@ -25,7 +25,7 @@ from . import structure
 
 
 def spin2_matrix_elements(sz, n_spin_orbs):
-    r"""Generates the table of the matrix elements
+    r"""Generates the table of matrix elements
     :math:`\langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
     of the two-particle spin operator :math:`\hat{s}_1 \cdot \hat{s}_2`.
 
@@ -48,9 +48,9 @@ def spin2_matrix_elements(sz, n_spin_orbs):
         n_spin_orbs (int): number of spin orbitals
 
     Returns:
-        array: NumPy array with the table of matrix elements. First four columns
-        contains the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta`
-        and the fifth column the computed matrix element.
+        array: NumPy array with the table of matrix elements. The first four columns
+        contain the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta`
+        and the fifth column stores the computed matrix element.
 
     **Example**
 
@@ -226,9 +226,6 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     >>> s2_matrix_elements, init_term = get_spin2_matrix_elements('h2', './pyscf/sto-3g')
     >>> s2_obs = observable(s2_matrix_elements, init_term=init_term)
-    >>> print(type(s2_obs))
-    <class 'pennylane.vqe.vqe.Hamiltonian'>
-
     >>> print(s2_obs)
     (0.75) [I0]
     + (0.375) [Z1]
@@ -281,7 +278,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
             # single-particle operator
             mb_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
 
-    # Map the fermionic to a qubit operator measurable in PennyLane
+    # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
         return structure.convert_observable(bravyi_kitaev(mb_obs))
 
