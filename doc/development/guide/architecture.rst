@@ -4,10 +4,10 @@
 Architectural overview
 ======================
 
-PennyLane allows optimization and machine learning of quantum and hybrid
-quantum-classical computations. The library provides a unified architecture for
-near-term quantum computing devices, supporting various quantum information
-paradigms.
+PennyLane is a framework for optimization and machine learning of quantum and
+hybrid quantum-classical computations. The library provides a unified
+architecture for near-term quantum computing devices, supporting various
+quantum information paradigms.
 
 PennyLane's core feature is the ability to compute gradients of variational
 quantum circuits in a way that is compatible with classical techniques such as
