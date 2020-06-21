@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
+import os
 import numpy as np
 import pytest
-import os
+import pennylane as qml
 
 # ==========================================================
 # pytest fixtures
@@ -24,7 +25,6 @@ np.random.seed(42)
 TOL = 1e-2
 
 # List of all devices that are included in PennyLane
-# by default
 LIST_CORE_DEVICES = {'default.gaussian', 'default.qubit', 'default.qubit.tf'}
 
 
@@ -36,7 +36,7 @@ def tol():
 
 @pytest.fixture(scope="session")
 def init_state():
-    """Fixture to create an n-qubit initial state vector."""
+    """Fixture to create an n-qubit random initial state vector."""
     def _init_state(n):
         state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
         state /= np.linalg.norm(state)
@@ -45,7 +45,6 @@ def init_state():
     return _init_state
 
 
-# Fixture to skip tests
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
@@ -53,6 +52,14 @@ def skip_if():
         if condition:
             pytest.skip("Test does not apply to this device.")
     return _skip_if
+
+
+@pytest.fixture(scope="session")
+def device(device_name, device_kwargs):
+    """Fixture to create a device."""
+    def _device(n_wires):
+        return qml.device(device_name, wires=n_wires, **device_kwargs)
+    return _device
 
 # ============================
 # These functions are required to define the device name to run the tests for
@@ -66,10 +73,12 @@ def pytest_generate_tests(metafunc):
     # This is called for every test. Only gets/sets command line arguments
     # if the argument is specified in the list of test's "fixturenames".
 
-    option_value = metafunc.config.option.device
-    if 'device_name' in metafunc.fixturenames and option_value is not None:
-        # if command line argument given, run tests on the requested device
-        metafunc.parametrize('device_name', [option_value])
+    device_value = metafunc.config.option.device
+    print(metafunc.config)
+    # if device_name is a test argument and it was given by the command line
+    if 'device_name' in metafunc.fixturenames and device_value is not None:
+        metafunc.parametrize('device_name', [device_value])
+
     else:
         # if no command line argument given, run tests on core devices
         metafunc.parametrize('device_name', LIST_CORE_DEVICES)

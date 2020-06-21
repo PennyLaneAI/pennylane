@@ -26,12 +26,14 @@ class TestDeviceProperties:
         assert dev.num_wires == 2
         assert dev.shots == 424
         assert dev.short_name == device_name
+        assert 'model' in dev.__class__.capabilities()
 
     def test_not_enough_args(self, device_name):
         """Test that the device requires correct arguments."""
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
             qml.device(device_name)
 
+    # TODO: These tests do not run for default.tensor.tf
     def test_nonanalytic_no_0_shots(self, device_name, skip_if):
         """Test that non-analytic devices cannot accept 0 shots."""
         # first create a valid device to extract its capabilities

@@ -23,11 +23,17 @@ The tests can also be run on an external device from a PennyLane plugin, such as
 ``'qiskit.aer'``. For this, make sure you have the correct dependencies installed and
 run
 
->>> python3 -m pytest -s tests* --device qiskit.aer
+>>> python3 -m pytest tests/* --device qiskit.aer
 
 (where ``qiskit.aer`` is replaced by the device to be tested).
 
 Most tests query the device's capabilities and only get executed if they apply to the device.
+Both analytic (with an exact probability distribution) and non-analytic devices (with an estimated
+probability distribution) are tested.
+
+For non-analytic tests, the tolerance of the assert statements
+is set to a high enough value to account for stochastic fluctuations, and flaky is used to automatically
+repeat failed tests.
 """
 
 
