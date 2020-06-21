@@ -13,7 +13,7 @@
   
   * If `--shots` is not given, a default of 50000 is used.
   
-  * If `--analytic` is not given, the device's default is used
+  * If `--analytic` is not given, the device's default is used.
                                                                                                                                                         
   If the test is run on external devices, the device and its dependencies must be 
   installed locally. At the moment, no other keyword arguments can be set, which means 
