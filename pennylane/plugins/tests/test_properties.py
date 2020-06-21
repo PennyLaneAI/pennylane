@@ -22,12 +22,12 @@ class TestDeviceProperties:
 
     def test_load_device(self, device_kwargs):
         """Test that the QVM device loads correctly."""
-        device_kwargs['wires'] = 2
+        device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
-        assert dev.num_wires == device_kwargs['wires']
-        assert dev.shots == device_kwargs['shots']
-        assert dev.short_name == device_kwargs['name']
-        assert 'model' in dev.__class__.capabilities()
+        assert dev.num_wires == device_kwargs["wires"]
+        assert dev.shots == device_kwargs["shots"]
+        assert dev.short_name == device_kwargs["name"]
+        assert "model" in dev.__class__.capabilities()
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
@@ -37,12 +37,10 @@ class TestDeviceProperties:
     def test_no_0_shots(self, device_kwargs):
         """Test that non-analytic devices cannot accept 0 shots."""
         # first create a valid device to extract its capabilities
-        device_kwargs['wires'] = 2
+        device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
 
-        device_kwargs['shots'] = 0
+        device_kwargs["shots"] = 0
 
         with pytest.raises(DeviceError, match="The specified number of shots needs to be"):
             qml.device(**device_kwargs)
-
-

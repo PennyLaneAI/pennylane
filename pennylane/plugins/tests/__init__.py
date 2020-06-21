@@ -35,6 +35,3 @@ For non-analytic tests, the tolerance of the assert statements
 is set to a high enough value to account for stochastic fluctuations, and flaky is used to automatically
 repeat failed tests.
 """
-
-
-

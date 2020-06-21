@@ -73,56 +73,53 @@ single_qubit_param = [
     # (qml.PhaseShift(0, wires=0), phase_shift),
     (qml.RX, rx),
     (qml.RY, ry),
-    (qml.RZ, rz)]
+    (qml.RZ, rz),
+]
 # list of all non-parametrized two-qubit gates
-two_qubit = [
-    (qml.CNOT, CNOT),
-    (qml.SWAP, SWAP),
-    (qml.CZ, CZ)
-]
+two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CZ, CZ)]
 # list of all parametrized two-qubit gates
-two_qubit_param = [
-    (qml.CRZ, crz)
-]
+two_qubit_param = [(qml.CRZ, crz)]
 # list of all three-qubit gates
-three_qubit = [
-    (qml.Toffoli, toffoli),
-    (qml.CSWAP, CSWAP)
-]
+three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
 
 # single qubit unitary matrix
-U = np.array([[0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-              [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j]])
+U = np.array(
+    [
+        [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+        [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+    ]
+)
 
 # two qubit unitary matrix
-U2 = np.array([[0, 1, 1, 1],
-               [1, 0, 1, -1],
-               [1, -1, 0, 1],
-               [1, 1, -1, 0]]) / np.sqrt(3)
+U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
 
 # single qubit Hermitian observable
-A = np.array([[1.02789352, 1.61296440 - 0.3498192j],
-              [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
 
 # ===============================================================
+
 
 @flaky(max_runs=10)
 class TestGatesQubit:
     """Test qubit-based devices' probability vector after application of gates.
     """
 
-    @pytest.mark.parametrize("basis_state", [np.array([0, 0, 1, 0]),
-                                             np.array([0, 0, 1, 0]),
-                                             np.array([1, 0, 1, 0]),
-                                             np.array([1, 1, 1, 1])]
-                             )
+    @pytest.mark.parametrize(
+        "basis_state",
+        [
+            np.array([0, 0, 1, 0]),
+            np.array([0, 0, 1, 0]),
+            np.array([1, 0, 1, 0]),
+            np.array([1, 1, 1, 1]),
+        ],
+    )
     def test_basis_state(self, device, basis_state, tol, skip_if):
         """Test basis state initialization."""
         n_wires = 4
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         @qml.qnode(dev)
         def circuit():
@@ -140,7 +137,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -160,7 +157,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -182,7 +179,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -202,7 +199,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -228,7 +225,7 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -252,7 +249,7 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -275,7 +272,7 @@ class TestGatesQubit:
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -296,7 +293,7 @@ class TestGatesQubit:
         n_wires = 3
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -322,9 +319,9 @@ class TestInverseGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities['model'] == 'qubit')
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
+        skip_if(not capabilities["model"] == "qubit")
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
 
         rnd_state = init_state(1)
 
@@ -347,9 +344,9 @@ class TestInverseGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -371,9 +368,9 @@ class TestInverseGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(1)
         a = 0.542
@@ -399,9 +396,9 @@ class TestInverseGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -424,9 +421,9 @@ class TestInverseGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(2)
 
@@ -449,9 +446,9 @@ class TestInverseGatesQubit:
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -473,9 +470,9 @@ class TestInverseGatesQubit:
         n_wires = 3
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operations' not in capabilities)
-        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
-        skip_if(not capabilities['model'] == 'qubit')
+        skip_if("inverse_operations" not in capabilities)
+        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(not capabilities["model"] == "qubit")
 
         rnd_state = init_state(3)
 

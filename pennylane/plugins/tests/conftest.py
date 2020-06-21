@@ -29,24 +29,27 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 50000
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {'default.gaussian', 'default.qubit', 'default.qubit.tf'}
+LIST_CORE_DEVICES = {"default.gaussian", "default.qubit", "default.qubit.tf"}
 
 
 @pytest.fixture(scope="function")
 def tol():
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
     probing analytic or non-analytic devices (yielding deterministic or stochastic test results)."""
+
     def _tol(analytic):
         if analytic:
             return float(os.environ.get("TOL", TOL))
         else:
             return TOL_STOCHASTIC
+
     return _tol
 
 
 @pytest.fixture(scope="session")
 def init_state():
     """Fixture to create an n-qubit random initial state vector."""
+
     def _init_state(n):
         state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
         state /= np.linalg.norm(state)
@@ -58,9 +61,11 @@ def init_state():
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
+
     def _skip_if(condition):
         if condition:
             pytest.skip("Test does not apply to this device.")
+
     return _skip_if
 
 
@@ -69,10 +74,11 @@ def device(device_kwargs):
     """Fixture to create a device."""
 
     def _device(n_wires):
-        device_kwargs['wires'] = n_wires
+        device_kwargs["wires"] = n_wires
         return qml.device(**device_kwargs)
 
     return _device
+
 
 # ============================
 # These functions are required to define the device name to run the tests for
@@ -94,39 +100,38 @@ def pytest_generate_tests(metafunc):
     opt = metafunc.config.option
 
     device_kwargs = {
-        'name': opt.device,
-        'shots': opt.shots,
-        'analytic': opt.analytic,
+        "name": opt.device,
+        "shots": opt.shots,
+        "analytic": opt.analytic,
     }
 
     # =======================
     # some processing of the command line options
-    if device_kwargs['shots'] is None:
-        device_kwargs['shots'] = N_SHOTS
-    if device_kwargs['analytic'] is None:
+    if device_kwargs["shots"] is None:
+        device_kwargs["shots"] = N_SHOTS
+    if device_kwargs["analytic"] is None:
         # use default value of device
-        device_kwargs.pop('analytic')
+        device_kwargs.pop("analytic")
     else:
         # turn string into boolean
-        if device_kwargs['analytic'] == "False":
-            device_kwargs['analytic'] = False
+        if device_kwargs["analytic"] == "False":
+            device_kwargs["analytic"] = False
         else:
-            device_kwargs['analytic'] = True
+            device_kwargs["analytic"] = True
 
     # ====================
 
     # parametrize function if device_kwargs is an argument
     # this is needed for the "device" fixture
-    if 'device_kwargs' in metafunc.fixturenames:
+    if "device_kwargs" in metafunc.fixturenames:
         if opt.device is None:
             # if no command line argument for device given, run tests on core devices
             list_device_kwargs = []
             for dev_name in LIST_CORE_DEVICES:
                 core_dev_kwargs = device_kwargs.copy()
-                core_dev_kwargs['name'] = dev_name
+                core_dev_kwargs["name"] = dev_name
                 list_device_kwargs.append(core_dev_kwargs)
 
-            metafunc.parametrize('device_kwargs', list_device_kwargs)
+            metafunc.parametrize("device_kwargs", list_device_kwargs)
         else:
-            metafunc.parametrize('device_kwargs', [device_kwargs])
-
+            metafunc.parametrize("device_kwargs", [device_kwargs])
