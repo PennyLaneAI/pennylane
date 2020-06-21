@@ -5,7 +5,7 @@
 * The function ``get_particle_number_table`` has been added to the
   ``obs`` to build the particle number operator using the function 
   ``observable`` as implemented in the same module.
-  [()]()
+  [(#698)](https://github.com/XanaduAI/pennylane/pull/698)
 
 * The function ``get_spinZ_matrix_elements`` has been added to the
   ``obs`` module to generate the matrix elements required to build
