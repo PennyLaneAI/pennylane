@@ -11,7 +11,7 @@
    
   * If `--device` is not given, the tests are run on the core devices that ship with PennyLane. 
   
-  * If `--shots` is not given, a default of 50000 is used
+  * If `--shots` is not given, a default of 50000 is used.
   
   * If `--analytic` is not given, the device's default is used
                                                                                                                                                         
