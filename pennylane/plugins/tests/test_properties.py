@@ -20,35 +20,29 @@ from pennylane._device import DeviceError
 class TestDeviceProperties:
     """Test the device is created with the expected properties."""
 
-    def test_load_device(self, device_name):
+    def test_load_device(self, device_kwargs):
         """Test that the QVM device loads correctly."""
-        dev = qml.device(device_name, wires=2, shots=424)
-        assert dev.num_wires == 2
-        assert dev.shots == 424
-        assert dev.short_name == device_name
+        device_kwargs['wires'] = 2
+        dev = qml.device(**device_kwargs)
+        assert dev.num_wires == device_kwargs['wires']
+        assert dev.shots == device_kwargs['shots']
+        assert dev.short_name == device_kwargs['name']
         assert 'model' in dev.__class__.capabilities()
 
-    def test_not_enough_args(self, device_name):
+    def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            qml.device(device_name)
+            qml.device(**device_kwargs)
 
-    # TODO: These tests do not run for default.tensor.tf
-    def test_nonanalytic_no_0_shots(self, device_name, skip_if):
+    def test_no_0_shots(self, device_kwargs):
         """Test that non-analytic devices cannot accept 0 shots."""
         # first create a valid device to extract its capabilities
-        dev = qml.device(device_name, wires=2)
-        skip_if(not dev.analytic)
+        device_kwargs['wires'] = 2
+        dev = qml.device(**device_kwargs)
+
+        device_kwargs['shots'] = 0
 
         with pytest.raises(DeviceError, match="The specified number of shots needs to be"):
-            qml.device(device_name, wires=2, shots=0)
+            qml.device(**device_kwargs)
 
-    def test_analytic_0_shots(self, device_name, skip_if):
-        """Test that analytic devices can accept 0 shots."""
-        # first create a valid device to extract its capabilities
-        dev = qml.device(device_name, wires=1)
-        skip_if(dev.analytic)
 
-        # a state simulator will allow shots=0
-        dev = qml.device(device_name, wires=1, shots=0)
-        assert dev.shots == 0

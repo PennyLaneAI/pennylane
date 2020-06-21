@@ -28,10 +28,10 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j],
 class TestExpval:
     """Test expectation values"""
 
-    def test_identity_expectation(self, device_name, tol, skip_if):
+    def test_identity_expectation(self, device, tol, skip_if):
         """Test that identity expectation value (i.e. the trace) is 1."""
-
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -46,11 +46,12 @@ class TestExpval:
             return qml.expval(qml.Identity(wires=0)), qml.expval(qml.Identity(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([1, 1]), tol)
+        assert np.allclose(res, np.array([1, 1]), atol=tol(dev.analytic))
 
-    def test_pauliz_expectation(self, device_name, tol, skip_if):
+    def test_pauliz_expectation(self, device, tol, skip_if):
         """Test that PauliZ expectation value is correct"""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -65,11 +66,12 @@ class TestExpval:
             return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([np.cos(theta), np.cos(theta) * np.cos(phi)]), tol)
+        assert np.allclose(res, np.array([np.cos(theta), np.cos(theta) * np.cos(phi)]), atol=tol(dev.analytic))
 
-    def test_paulix_expectation(self, device_name, tol, skip_if):
+    def test_paulix_expectation(self, device, tol, skip_if):
         """Test that PauliX expectation value is correct"""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -84,11 +86,15 @@ class TestExpval:
             return qml.expval(qml.PauliX(wires=0)), qml.expval(qml.PauliX(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([np.sin(theta) * np.sin(phi), np.sin(phi)]), tol)
+        expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
+        print(type(res), res)
+        print(type(expected), expected)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_pauliy_expectation(self, device_name, tol, skip_if):
+    def test_pauliy_expectation(self, device, tol, skip_if):
         """Test that PauliY expectation value is correct"""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -103,11 +109,13 @@ class TestExpval:
             return qml.expval(qml.PauliY(wires=0)), qml.expval(qml.PauliY(wires=1))
 
         res = circuit()
-        assert np.allclose(res, np.array([0, -np.cos(theta) * np.sin(phi)]), tol)
+        expected = np.array([0., -np.cos(theta) * np.sin(phi)])
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_hadamard_expectation(self, device_name, tol, skip_if):
+    def test_hadamard_expectation(self, device, tol, skip_if):
         """Test that Hadamard expectation value is correct"""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -125,11 +133,12 @@ class TestExpval:
         expected = np.array(
             [np.sin(theta) * np.sin(phi) + np.cos(theta), np.cos(theta) * np.cos(phi) + np.sin(phi)]
         ) / np.sqrt(2)
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_hermitian_expectation(self, device_name, tol, skip_if):
+    def test_hermitian_expectation(self, device, tol, skip_if):
         """Test that arbitrary Hermitian expectation values are correct"""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -152,11 +161,12 @@ class TestExpval:
         ev2 = ((a - d) * np.cos(theta) * np.cos(phi) + 2 * re_b * np.sin(phi) + a + d) / 2
         expected = np.array([ev1, ev2])
 
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_multi_mode_hermitian_expectation(self, device_name, tol, skip_if):
+    def test_multi_mode_hermitian_expectation(self, device, tol, skip_if):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -190,16 +200,17 @@ class TestExpval:
                 - 6
         )
 
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
 
 @flaky(max_runs=10)
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    def test_paulix_pauliy(self, device_name, tol, skip_if):
+    def test_paulix_pauliy(self, device, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -221,11 +232,12 @@ class TestTensorExpval:
         res = circuit()
 
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_pauliz_hadamard(self, device_name, tol, skip_if):
+    def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -248,11 +260,12 @@ class TestTensorExpval:
         res = circuit()
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_hermitian(self, device_name, tol, skip_if):
+    def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -287,18 +300,19 @@ class TestTensorExpval:
                 + 3 * np.cos(varphi) * np.sin(phi)
                 + np.sin(phi)
         )
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
 
 @flaky(max_runs=10)
 class TestSample:
     """Tests for the sample return type."""
 
-    def test_sample_values(self, device_name, tol, skip_if):
+    def test_sample_values(self, device, tol, skip_if):
         """Tests if the samples returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -310,13 +324,14 @@ class TestSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, tol)
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
-    def test_sample_values_hermitian(self, device_name, tol, skip_if):
+    def test_sample_values_hermitian(self, device, tol, skip_if):
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -333,17 +348,18 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A)
-        assert np.allclose(sorted(list(set(res))), sorted(eigvals), tol)
+        assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
         # the analytic mean is 2*sin(theta)+0.5*cos(theta)+0.5
-        assert np.allclose(np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, tol)
+        assert np.allclose(np.mean(res), 2 * np.sin(theta) + 0.5 * np.cos(theta) + 0.5, atol=tol(False))
         # the analytic variance is 0.25*(sin(theta)-4*cos(theta))^2
-        assert np.allclose(np.var(res), 0.25 * (np.sin(theta) - 4 * np.cos(theta)) ** 2, tol)
+        assert np.allclose(np.var(res), 0.25 * (np.sin(theta) - 4 * np.cos(theta)) ** 2, atol=tol(False))
 
-    def test_sample_values_hermitian_multi_qubit(self, device_name, tol, skip_if):
+    def test_sample_values_hermitian_multi_qubit(self, device, tol, skip_if):
         """Tests if the samples of a multi-qubit Hermitian observable returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -369,7 +385,7 @@ class TestSample:
         # res should only contain the eigenvalues of
         # the hermitian matrix
         eigvals = np.linalg.eigvalsh(A)
-        assert np.allclose(sorted(list(set(res))), sorted(eigvals), tol)
+        assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
 
         # make sure the mean matches the analytic mean
         expected = (
@@ -381,16 +397,17 @@ class TestSample:
                            + 27 * np.cos(3 * theta)
                            + 6
                    ) / 32
-        assert np.allclose(np.mean(res), expected, tol)
+        assert np.allclose(np.mean(res), expected, atol=tol(False))
 
 
 @flaky(max_runs=10)
 class TestTensorSample:
     """Test tensor sample values."""
 
-    def test_paulix_pauliy(self, device_name, tol, skip_if):
+    def test_paulix_pauliy(self, device, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -412,11 +429,11 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, tol)
+        assert np.allclose(res ** 2, 1, atol=tol(dev.analytic))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(mean, expected, tol)
+        assert np.allclose(mean, expected, atol=tol(dev.analytic))
 
         var = np.var(res)
         expected = (
@@ -427,11 +444,12 @@ class TestTensorSample:
                            + 2 * np.cos(2 * phi)
                            + 14
                    ) / 16
-        assert np.allclose(var, expected, tol)
+        assert np.allclose(var, expected, atol=tol(False))
 
-    def test_pauliz_hadamard(self, device_name, tol, skip_if):
+    def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -453,11 +471,11 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, tol)
+        assert np.allclose(res ** 2, 1, atol=tol(dev.analytic))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(mean, expected, tol)
+        assert np.allclose(mean, expected, atol=tol(dev.analytic))
 
         var = np.var(res)
         expected = (
@@ -466,11 +484,12 @@ class TestTensorSample:
                            - np.cos(2 * theta) * np.sin(varphi) ** 2
                            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
                    ) / 4
-        assert np.allclose(var, expected, tol)
+        assert np.allclose(var, expected, atol=tol(False))
 
-    def test_hermitian(self, device_name, tol, skip_if):
+    def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -505,7 +524,7 @@ class TestTensorSample:
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A))
-        assert np.allclose(sorted(list(set(res))), sorted(eigvals), tol)
+        assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
 
         mean = np.mean(res)
         expected = 0.5 * (
@@ -514,7 +533,7 @@ class TestTensorSample:
                 + 3 * np.cos(varphi) * np.sin(phi)
                 + np.sin(phi)
         )
-        assert np.allclose(mean, expected, tol)
+        assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
         expected = (
@@ -547,18 +566,19 @@ class TestTensorSample:
                                    )
                            )
                    ) / 16
-        assert np.allclose(var, expected, tol)
+        assert np.allclose(var, expected, atol=tol(False))
 
 
 @flaky(max_runs=10)
 class TestVar:
     """Tests for the variance return type"""
 
-    def test_var(self, device_name, tol, skip_if):
+    def test_var(self, device, tol, skip_if):
         """Tests if the samples returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
@@ -574,20 +594,21 @@ class TestVar:
         res = circuit()
 
         expected = 0.25 * (3 - np.cos(2 * theta) - 2 * np.cos(theta) ** 2 * np.cos(2 * phi))
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_var_hermitian(self, device_name, tol, skip_if):
+    def test_var_hermitian(self, device, tol, skip_if):
         """Tests if the samples of a Hermitian observable returned by sample have
         the correct values
         """
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
         phi = 0.543
         theta = 0.6543
         # test correct variance for <H> of a rotated state
-        H = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        H = 0.1*np.array([[4, -1 + 6j], [-1 - 6j, 2]])
 
         @qml.qnode(dev)
         def circuit():
@@ -597,23 +618,24 @@ class TestVar:
 
         res = circuit()
 
-        expected = 0.5 * (
+        expected = 0.01 * 0.5 * (
                 2 * np.sin(2 * theta) * np.cos(phi) ** 2
                 + 24 * np.sin(phi) * np.cos(phi) * (np.sin(theta) - np.cos(theta))
                 + 35 * np.cos(2 * phi)
                 + 39
         )
 
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
 
 @flaky(max_runs=10)
 class TestTensorVar:
     """Test tensor variance measurements."""
 
-    def test_paulix_pauliy(self, device_name, tol, skip_if):
+    def test_paulix_pauliy(self, device, tol, skip_if):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -642,11 +664,12 @@ class TestTensorVar:
                            + 2 * np.cos(2 * phi)
                            + 14
                    ) / 16
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_pauliz_hadamard(self, device_name, tol, skip_if):
+    def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -673,11 +696,12 @@ class TestTensorVar:
                            - np.cos(2 * theta) * np.sin(varphi) ** 2
                            - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
                    ) / 4
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_hermitian(self, device_name, tol, skip_if):
+    def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if('tensor_observable' not in capabilities)
         skip_if('tensor_observable' in capabilities and not capabilities['tensor_observable'])
@@ -738,4 +762,4 @@ class TestTensorVar:
                            )
                    ) / 16
 
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))

@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from scipy.linalg import block_diag
+from flaky import flaky
 
 np.random.seed(42)
 
@@ -106,6 +107,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j],
 
 # ===============================================================
 
+@flaky(max_runs=10)
 class TestGatesQubit:
     """Test qubit-based devices' probability vector after application of gates.
     """
@@ -115,244 +117,262 @@ class TestGatesQubit:
                                              np.array([1, 0, 1, 0]),
                                              np.array([1, 1, 1, 1])]
                              )
-    def test_basis_state(self, device_name, basis_state, tol, skip_if):
+    def test_basis_state(self, device, basis_state, tol, skip_if):
         """Test basis state initialization."""
-        dev = qml.device(device_name, wires=4, shots=28192)
+        n_wires = 4
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
         @qml.qnode(dev)
         def circuit():
-            qml.BasisState(basis_state, wires=range(4))
-            return qml.probs()
+            qml.BasisState(basis_state, wires=range(n_wires))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
-        expected = np.zeros([2 ** 4])
-        expected[np.ravel_multi_index(basis_state, [2] * 4)] = 1
-        assert np.allclose(res, expected, tol)
+        expected = np.zeros([2 ** n_wires])
+        expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_qubit_state_vector(self, device_name, init_state, tol, skip_if):
+    def test_qubit_state_vector(self, device, init_state, tol, skip_if):
         """Test QubitStateVector initialisation."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(1)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            return qml.probs(range(n_wires))
 
         res = circuit()
-
         expected = np.abs(rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, device_name, init_state, op, mat, tol, skip_if):
+    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
         """Test PauliX application."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(1)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            op(wires=[0])
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(wires=range(n_wires))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device_name, init_state, op, func, theta, tol, skip_if):
+    def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
         """Test single qubit gates."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(1)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            op(theta, wires=[0])
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(theta, wires=range(n_wires))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(func(theta) @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_rotation(self, device_name, init_state, tol, skip_if):
+    def test_rotation(self, device, init_state, tol, skip_if):
         """Test three axis rotation gate."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(1)
+        rnd_state = init_state(n_wires)
+
+        rnd_state = init_state(n_wires)
         a = 0.542
         b = 1.3432
         c = -0.654
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            qml.Rot(a, b, c, wires=0)
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.Rot(a, b, c, wires=range(n_wires))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(rot(a, b, c) @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op,mat", two_qubit)
-    def test_two_qubit_no_parameters(self, device_name, init_state, op, mat, tol, skip_if):
+    def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
         """Test two qubit gates."""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(2)
+        rnd_state = init_state(n_wires)
+
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0, 1])
-            op(wires=[0, 1])
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(wires=range(n_wires))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device_name, init_state, op, func, theta, tol, skip_if):
+    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
         """Test parametrized two qubit gates."""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(2)
+        rnd_state = init_state(n_wires)
+
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0, 1])
-            op(theta, wires=[0, 1])
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(theta, wires=range(n_wires))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(func(theta) @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("mat", [U, U2])
-    def test_qubit_unitary(self, device_name, init_state, mat, tol, skip_if):
+    def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
         """Test QubitUnitary gate."""
-        N = int(np.log2(len(mat)))
-        dev = qml.device(device_name, wires=N, shots=28192)
+        n_wires = int(np.log2(len(mat)))
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(N)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(N))
-            qml.QubitUnitary(mat, wires=list(range(N)))
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.QubitUnitary(mat, wires=list(range(n_wires)))
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op, mat", three_qubit)
-    def test_three_qubit_no_parameters(self, device_name, init_state, op, mat, tol, skip_if):
+    def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
         """Test three qubit gates without parameters."""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(3)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0, 1, 2])
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
             op(wires=[0, 1, 2])
-            return qml.probs()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
 
-class TestInverseGates:
+@flaky(max_runs=10)
+class TestInverseGatesQubit:
     """Test the device's probability vector after application of inverse of gates."""
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, device_name, init_state, op, mat, tol, skip_if):
+    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
         """Test PauliX application."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
         skip_if(not capabilities['model'] == 'qubit')
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
 
         rnd_state = init_state(1)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            op(wires=[0]).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(wires=range(n_wires)).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device_name, init_state, op, func, theta, tol, skip_if):
+    def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
         """Test single qubit gates."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(1)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            op(theta, wires=[0]).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(theta, wires=range(n_wires)).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = func(theta)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_rotation(self, device_name, init_state, tol, skip_if):
+    def test_rotation(self, device, init_state, tol, skip_if):
         """Test three axis rotation gate."""
-        dev = qml.device(device_name, wires=1, shots=28192)
+        n_wires = 1
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
         skip_if(not capabilities['model'] == 'qubit')
 
         rnd_state = init_state(1)
@@ -362,108 +382,111 @@ class TestInverseGates:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0])
-            qml.Rot(a, b, c, wires=0).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.Rot(a, b, c, wires=range(n_wires)).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = rot(a, b, c)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op,mat", two_qubit)
-    def test_two_qubit_no_parameters(self, device_name, init_state, op, mat, tol, skip_if):
+    def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
         """Test two qubit gates."""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(2)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0, 1])
-            op(wires=[0, 1]).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(wires=range(n_wires)).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device_name, init_state, op, func, theta, tol, skip_if):
+    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
         """Test parametrized two qubit gates."""
-        dev = qml.device(device_name, wires=2, shots=28192)
+        n_wires = 2
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
         skip_if(not capabilities['model'] == 'qubit')
 
         rnd_state = init_state(2)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0, 1])
-            op(theta, wires=[0, 1]).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(theta, wires=range(n_wires)).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = func(theta)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("mat", [U, U2])
-    def test_qubit_unitary(self, device_name, init_state, mat, tol, skip_if):
+    def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
         """Test QubitUnitary gate."""
-        N = int(np.log2(len(mat)))
-        dev = qml.device(device_name, wires=N, shots=28192)
+        n_wires = int(np.log2(len(mat)))
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
         skip_if(not capabilities['model'] == 'qubit')
 
-        rnd_state = init_state(N)
+        rnd_state = init_state(n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=range(N))
-            qml.QubitUnitary(mat, wires=list(range(N))).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.QubitUnitary(mat, wires=list(range(n_wires))).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op, mat", three_qubit)
-    def test_three_qubit_no_parameters(self, device_name, init_state, op, mat, tol, skip_if):
+    def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
         """Test three qubit gates without parameters."""
-        dev = qml.device(device_name, wires=3, shots=28192)
+        n_wires = 3
+        dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if('inverse_operation' not in capabilities)
-        skip_if('inverse_operation' in capabilities and not capabilities['inverse_operation'])
+        skip_if('inverse_operations' not in capabilities)
+        skip_if('inverse_operations' in capabilities and not capabilities['inverse_operations'])
         skip_if(not capabilities['model'] == 'qubit')
 
         rnd_state = init_state(3)
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(rnd_state, wires=[0, 1, 2])
-            op(wires=[0, 1, 2]).inv()
-            return qml.probs()
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            op(wires=range(n_wires)).inv()
+            return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
-        assert np.allclose(res, expected, tol)
+        assert np.allclose(res, expected, atol=tol(dev.analytic))
