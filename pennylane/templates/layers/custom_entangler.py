@@ -67,7 +67,7 @@ def CustomEntanglerLayers(
                                 for the rotation.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers or strings, or
             a Wires object.
-        pattern (str or "Custom" list): Determines how the double-qubit gates will be placed on the
+        pattern (str or list[float]): Determines how the double-qubit gates will be placed on the
                                         circuit. Allowed values of this argument are listed in :func:`~pennylane.broadcast`.
                                         If ``None``, ``ring`` is used as default.
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
@@ -89,7 +89,7 @@ def CustomEntanglerLayers(
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import BasicEntanglerLayers
+            from pennylane.templates import CustomEntanglerLayers
             from math import pi
 
             n_wires = 3
@@ -100,13 +100,46 @@ def CustomEntanglerLayers(
                 CustomEntanglerLayers(rotation_weights=rotation_weights,
                                       coupling_weights=coupling_weights,
                                       wires=range(n_wires),
-                                      rotation=qml.RX,
-                                      coupling=qml.CRX,
                                       pattern=[[0, 1]])
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        >>> circuit([[pi, pi, pi]])
+        >>> circuit([[pi, pi, pi]], [[pi]])
         [-1., 1., -1.]
+
+        **Changing the gate types**
+
+        Any one/two qubit gates can be used the rotation/coupling layers respectively:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.templates import CustomEntanglerLayers
+            from math import pi
+
+            n_wires = 3
+            dev = qml.device('default.qubit', wires=n_wires)
+
+            @qml.qnode(dev)
+            def circuit(rotation_weights, coupling_weights):
+                CustomEntanglerLayers(rotation_weights=rotation_weights,
+                                      coupling_weights=coupling_weights,
+                                      wires=range(n_wires),
+                                      rotation=qml.RY
+                                      coupling=qml.CRY
+                                      pattern="all_to_all")
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        >>> circuit([[pi, pi, pi]], [[pi, pi, pi]])
+        [-1., 1., 1.]
+
+        **Parameter initialization function**
+        The :mod:`~pennylane.init` module has two parameter initialization functions, ``custom_entangler_layers_normal``
+        and ``custom_entangler_layers_uniform``.
+        .. code-block:: python
+            from pennylane.init import custom_entangler_layers_normal
+            n_layers = 4
+            weights = basic_entangler_layers_normal(n_layers=n_layers, n_wires=n_wires, pattern="all_to_all")
+            circuit(rotation_weights, coupling_weights)
     """
 
     #############

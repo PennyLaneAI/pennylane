@@ -18,6 +18,7 @@ to use in templates.
 # pylint: disable=too-many-arguments
 from math import pi
 from pennylane import numpy as np
+from pennylane.templates.broadcast import get_param_numbers, OPTIONS
 
 
 def qaoa_embedding_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
@@ -1011,3 +1012,96 @@ def basic_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
 
     return params
+
+
+def custom_entangler_layers_normal(n_layers, n_wires, mean=0, std=0.1, pattern=None, seed=None):
+    r"""Creates a parameter array for :func:`~.CustomEntanglerLayers`, drawn from a normal
+    distribution.
+
+    The first two dimensions of the array are ``(2, n_layers,)`` and each parameter is drawn
+    from a normal distribution with mean ``mean`` and standard deviation ``std``.
+    The parameters define the rotation and coupling angles applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        pattern (str or list[float]): pattern of placement of two-qubit gates
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if pattern is None:
+        pattern = "ring"
+
+    if pattern not in OPTIONS and (not isinstance(pattern, list)):
+        raise ValueError("'{}' is not a valid pattern".format(pattern))
+
+    custom_pattern = None
+    if isinstance(pattern, list):
+        if np.array(pattern).shape != (len(pattern), 2):
+            raise ValueError("Elements of custom pattern must have length 2")
+        custom_pattern = pattern
+        pattern = "custom"
+
+    custom_pattern = None
+    if isinstance(pattern, list):
+        custom_pattern = pattern
+        pattern = "custom"
+
+    number_coupling = get_param_numbers(range(n_wires), custom_pattern=custom_pattern)
+    final_number = number_coupling[pattern]
+
+    rot_params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires))
+    coupling_params = np.random.normal(loc=mean, scale=std, size=(n_layers, final_number))
+
+    return [rot_params, coupling_params]
+
+
+def custom_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None, pattern=None):
+    r"""Creates a parameter array for :func:`~.CustomEntanglerLayers`, drawn from a uniform
+    distribution.
+
+    The first two dimensions of the array are ``(2, n_layers,)`` and each parameter is drawn uniformly at random
+    from between ``low`` and ``high``. The parameters define the rotation angles
+    applied in each layer.
+
+    Args:
+        n_layers (int): number of layers
+        n_wires (int): number of qubits
+        pattern (str or list[float]): pattern of placement of two-qubit gates
+        mean (float): mean of parameters
+        std (float): standard deviation of parameters
+        seed (int): seed used in sampling the parameters, makes function call deterministic
+
+    Returns:
+        array: parameter array
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    if pattern is None:
+        pattern = "ring"
+
+    if pattern not in OPTIONS and (not isinstance(pattern, list)):
+        raise ValueError("'{}' is not a valid pattern".format(pattern))
+
+    custom_pattern = None
+    if isinstance(pattern, list):
+        if np.array(pattern).shape != (len(pattern), 2):
+            raise ValueError("Elements of custom pattern must have length 2")
+        custom_pattern = pattern
+        pattern = "custom"
+
+    number_coupling = get_param_numbers(range(n_wires), custom_pattern=custom_pattern)
+    final_number = number_coupling[pattern]
+
+    rot_params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires))
+    coupling_params = np.random.uniform(low=low, high=high, size=(n_layers, final_number))
+
+    return [rot_params, coupling_params]
