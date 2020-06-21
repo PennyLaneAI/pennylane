@@ -28,7 +28,7 @@ run
 (where ``qiskit.aer`` is replaced by the device to be tested).
 
 Most tests query the device's capabilities and only get executed if they apply to the device.
-Both analytic (with an exact probability distribution) and non-analytic devices (with an estimated
+Both analytic devices (producing an exact probability distribution) and non-analytic devices (producing an estimated
 probability distribution) are tested.
 
 For non-analytic tests, the tolerance of the assert statements
