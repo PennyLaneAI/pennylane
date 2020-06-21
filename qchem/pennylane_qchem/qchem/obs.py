@@ -349,12 +349,12 @@ def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_acti
 
     .. math::
 
-        \hat{N} = 2 n_\mathrm{docc} + \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
+        \hat{N} = 2 n_{\mathrm{docc}} + \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
 
-    where :math:`2n_\mathrm{docc}` is the number of particles occupying
-    :math:`n_\mathrm{docc}` (frozen) core orbitals and :math:`\hat{c}_\alpha^\dagger`
+    where :math:`2 n_{\mathrm{docc}}` is the number of particles occupying
+    :math:`n_{\mathrm{docc}}` (frozen) core orbitals and :math:`\hat{c}_\alpha^\dagger`
     (:math:`\hat{c}_\alpha`) is the creation (annihilation) particle operator acting on
-    the :math:`\alpha`th active orbital.
+    the :math:`\alpha`-th active orbital.
 
     Args:
         mol_name (str): name of the molecule
