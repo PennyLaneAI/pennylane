@@ -2,6 +2,23 @@
 
 <h3>New features since last release</h3>
 
+* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
+  to run generic tests on core or external devices calling 
+  
+  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False                                                                                                                                                                                                                                                                     >
+  
+  The command line arguments are optional.
+   
+  * If `--device` is not given, the tests are run on the core devices that ship with PennyLane. 
+  
+  * If `--shots` is not given, a default of 50000 is used
+  
+  * If `--analytic` is not given, the device's default is used
+                                                                                                                                                        
+  If the test is run on external devices, the device and its dependencies must be 
+  installed locally. At the moment, no other keyword arguments can be set, which means 
+  that only devices that do not take mandatory keyword arguments can be tested.
+
 * Adds a new device, `default.qubit.tf`, a pure-state qubit simulator written using TensorFlow.
   As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
   be faster than the parameter-shift rule for analytic quantum gradients
