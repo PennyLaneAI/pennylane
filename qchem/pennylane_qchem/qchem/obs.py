@@ -365,20 +365,20 @@ def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_acti
 
     Returns:
 
-        tuple: NumPy array with the table required to build the fermionic operator.
+        tuple: NumPy array with the table used to build the fermionic operator.
         The first two columns contain the index :math:`\alpha` while the element
         stored in the third column is constant and equal to one.
-        The second element of the tuple is the number of particles occupying the
-        core orbitals.
+        The second element of the tuple is the number of particles occupying
+        the core orbitals.
 
     **Example**
 
-    >>> pn_table, pn_in_docc = get_particle_number_table(
+    >>> pn_table, pn_docc = get_particle_number_table(
         'h2o',
         './pyscf/sto-3g',
         n_active_electrons=4,
         n_active_orbitals=4)
-    >>> print(pn_table, pn_in_docc)
+    >>> print(pn_table, pn_docc)
     [[0. 0. 1.]
     [1. 1. 1.]
     [2. 2. 1.]

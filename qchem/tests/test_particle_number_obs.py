@@ -60,8 +60,8 @@ def test_get_particle_number_table(
     pn_docc_exp,
     tol
 ):
-    r"""Test the correctness of the table required to build the particle number
-    operator for different choices of the active space."""
+    r"""Test the correctness of the table used to build the particle number
+    operator for different active spaces."""
 
     pn_table_res, pn_docc_res = qchem.get_particle_number_table(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
@@ -119,9 +119,9 @@ def test_build_particle_number_observable(
     terms_exp,
     monkeypatch
 ):
-    r"""Tests the correctness of the built particle number observable :math:`\hat{N}`.
+    r"""Tests the correctness of the generated particle number observable :math:`\hat{N}`.
 
-    The parametrized inputs are `.terms` attribute of the particle number `QubitOperator.
+    The parametrized inputs are `.terms` attribute of the particle number `QubitOperator`.
     The equality checking is implemented in the `qchem` module itself as it could be
     something useful to the users as well.
     """
