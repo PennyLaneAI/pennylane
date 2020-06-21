@@ -342,9 +342,73 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
+def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+    r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
+    space and generates the table required to build the particle number operator :math:`\hat{N}`.
+
+    In general, if an active space is defined, the particle number operator reads,
+
+    .. math::
+
+        \hat{N} = 2 n_\mathrm{docc} + \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
+
+    where :math:`2n_\mathrm{docc}` is the number of particles occupying
+    :math:`n_\mathrm{docc}` (frozen) core orbitals and :math:`\hat{c}_\alpha^\dagger`
+    (:math:`\hat{c}_\alpha`) is the creation (annihilation) particle operator acting on
+    the :math:`\alpha`th active orbital.
+
+    Args:
+        mol_name (str): name of the molecule
+        hf_data (str): path to the directory with the HF electronic structure data
+        n_active_electrons (int): number of active electrons
+        n_active_orbitals (int): number of active orbitals
+
+    Returns:
+
+        tuple: NumPy array with the table required to build the fermionic operator.
+        The first two columns contain the index :math:`\alpha` while the element
+        stored in the third column is constant and equal to one.
+        The second element of the tuple is the number of particles occupying the
+        core orbitals.
+
+    **Example**
+
+    >>> pn_table, pn_in_docc = get_particle_number_table(
+        'h2o',
+        './pyscf/sto-3g',
+        n_active_electrons=4,
+        n_active_orbitals=4)
+    >>> print(pn_table, pn_in_docc)
+    [[0. 0. 1.]
+    [1. 1. 1.]
+    [2. 2. 1.]
+    [3. 3. 1.]
+    [4. 4. 1.]
+    [5. 5. 1.]
+    [6. 6. 1.]
+    [7. 7. 1.]] 6
+    """
+
+    docc_indices, active_indices = structure.active_space(
+        mol_name,
+        hf_data,
+        n_active_electrons=n_active_electrons,
+        n_active_orbitals=n_active_orbitals,
+    )
+
+    n_spin_orbs = 2 * len(active_indices)
+
+    particle_number_table = np.ones((n_spin_orbs, 3))
+    for alpha in range(n_spin_orbs):
+        particle_number_table[alpha, :2] = alpha
+
+    return particle_number_table, 2 * len(docc_indices)
+
+
 __all__ = [
     "spin2_matrix_elements",
     "get_spin2_matrix_elements",
     "observable",
     "get_spinZ_matrix_elements",
+    "get_particle_number_table",
 ]
