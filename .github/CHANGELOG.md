@@ -15,7 +15,7 @@
   
   * If `--analytic` is not given, the device's default is used.
                                                                                                                                                         
-  If the test is run on external devices, the device and its dependencies must be 
+  If the tests are run on external devices, the device and its dependencies must be 
   installed locally. At the moment, no other keyword arguments can be set, which means 
   that only devices that do not take mandatory keyword arguments can be tested.
 
