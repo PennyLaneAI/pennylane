@@ -307,9 +307,9 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
         n_active_orbitals (int): number of active orbitals
 
     Returns:
-        array: NumPy array with the table of matrix elements. First two columns
-        contains the index :math:`\alpha` and the third column the computed (diagonal) 
-        matrix element.
+        array: NumPy array with the table of matrix elements. The first two columns
+        contains the index :math:`\alpha` and the third column stores the computed
+        (diagonal) matrix element.
 
     **Example**
 
@@ -318,7 +318,6 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
         './pyscf/sto-3g',
         n_active_electrons=2,
         n_active_orbitals=2)
-    >>> print(get_spinZ_matrix_elements)
     [[ 0.   0.   0.5]
     [ 1.   1.  -0.5]
     [ 2.   2.   0.5]
