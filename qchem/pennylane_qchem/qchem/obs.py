@@ -114,8 +114,7 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
     Returns:
         tuple: the table of two-particle matrix elements and the single-particle
-        contribution :math:`\frac{3N_e}{4}` required to build the second-quantized
-        total-spin operator.
+        contribution :math:`\frac{3N}{4}` with :math:`N` being the number of particles.
 
     **Example**
 
@@ -181,18 +180,18 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     .. math::
 
-        &&\hat A = \sum_{\alpha \leq 2N_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
+        &&\hat A = \sum_{\alpha \leq 2n_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
         \vert \alpha \rangle ~ \hat{n}_\alpha +
         \sum_{\alpha, \beta ~ \in ~ \mathrm{active~space}} \langle \alpha \vert \hat{\mathcal{A}}
         \vert \beta \rangle ~ \hat{c}_\alpha^\dagger\hat{c}_\beta \\
-        &&\hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2N_\mathrm{docc}}
+        &&\hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2n_\mathrm{docc}}
         \langle \alpha, \beta \vert \hat{\mathcal{B}} \vert \beta, \alpha \rangle
         ~ \hat{n}_\alpha \hat{n}_\beta + \sum_{\alpha, \beta, \gamma, \delta ~
         \in ~ \mathrm{active~space}} \langle \alpha, \beta \vert \hat{\mathcal{B}}
         \vert \gamma, \delta \rangle ~ \hat{c}_{\alpha}^\dagger \hat{c}_{\beta}^\dagger
         \hat{c}_{\gamma} \hat{c}_{\delta} \right\}.
 
-    In the latter equations :math:`N_\mathrm{docc}` denotes the doubly-occupied orbitals,
+    In the latter equations :math:`n_\mathrm{docc}` denotes the doubly-occupied orbitals,
     if any, not included in the active space and
     :math:`\langle \alpha \vert \hat{\mathcal{A}} \vert \beta \rangle` and
     :math:`\langle \alpha, \beta \vert\hat{\mathcal{B}} \vert \gamma, \delta \rangle`
