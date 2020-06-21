@@ -5,7 +5,7 @@
 * Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
   to run generic tests on core or external devices calling 
   
-  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False                                                                                                                                                                                                                                                                     >
+  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False                                                                                                                                                                                                                                                                    
   
   The command line arguments are optional.
    
