@@ -96,6 +96,11 @@
   of coupling gates.
   [(#681)](https://github.com/XanaduAI/pennylane/pull/681)
 
+* Adds ``pennylane.init.custom_entangler_layers_normal`` and 
+  ``pennylane.init.custom_entangler_layers_uniform`` parameter 
+  initialization functions.
+  [(#681)](https://github.com/XanaduAI/pennylane/pull/681) 
+
 <h3>Improvements</h3>
 
 * Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
@@ -149,6 +154,7 @@
 * Instead of being variables inside the `pennylane.broadcast()` method, the `n_parameters` 
   and `wire_sequence` dictionaries can be accessed through the method `get_param_numbers` and 
   `get_wire_sequences`, in `pennylane.templates.broadcast`.
+  [(#681)](https://github.com/XanaduAI/pennylane/pull/681)
 
 <h3>Breaking changes</h3>
 
