@@ -733,24 +733,27 @@ def excitations_to_wires(ph_confs, pphh_confs, wires=None):
     if (not ph_confs) and (not pphh_confs):
         raise ValueError(
             "'ph_confs' and 'pphh_confs' lists can not be both empty;\
-            got ph_confs = {}, pphh_confs = {}".
-            format(ph_confs, pphh_confs)
+            got ph_confs = {}, pphh_confs = {}".format(
+                ph_confs, pphh_confs
+            )
         )
 
     expected_shape = (2,)
     for ph_confs_ in ph_confs:
         if np.array(ph_confs_).shape != expected_shape:
             raise ValueError(
-                "expected entries of 'ph_confs' to be of shape (2,); got {}".
-                format(np.array(ph_confs_).shape)
+                "expected entries of 'ph_confs' to be of shape (2,); got {}".format(
+                    np.array(ph_confs_).shape
+                )
             )
 
     expected_shape = (4,)
     for pphh_confs_ in pphh_confs:
         if np.array(pphh_confs_).shape != expected_shape:
             raise ValueError(
-                "expected entries of 'pphh_confs' to be of shape (4,); got {}".
-                format(np.array(pphh_confs_).shape)
+                "expected entries of 'pphh_confs' to be of shape (4,); got {}".format(
+                    np.array(pphh_confs_).shape
+                )
             )
 
     max_idx = 0
