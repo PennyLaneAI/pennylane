@@ -299,7 +299,9 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
         \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
     where :math:`m_\alpha` refers to the quantum number of the spin wave function
-    :math:`\chi_{m_\alpha}(s_z)` of the spin-orbital :math:`\vert \alpha \rangle`.
+    :math:`\chi_{m_\alpha}(s_z)` of the spin-orbital :math:`\vert \alpha \rangle`
+    and :math:`\hat{c}^\dagger` (:math:`\hat{c}`) is the creation (annihilation)
+    particle operator acting on the active orbitals.
 
     Args:
         mol_name (str): name of the molecule
