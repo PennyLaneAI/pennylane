@@ -39,10 +39,10 @@ of PennyLane, plugins, and devices.
 ..     :description: General best practices for contributing and developing for PennyLane.
 ..     :link: guide/bestpractices.html
 
-.. .. titlecard::
-..     :name: Architectural overview
-..     :description: Architectural overview of PennyLane, its plugins and devices.
-..     :link: guide/architecture.html
+.. titlecard::
+    :name: Architectural overview
+    :description: Architectural overview of PennyLane, its plugins and devices.
+    :link: guide/architecture.html
 
 .. raw:: html
 
@@ -57,5 +57,5 @@ of PennyLane, plugins, and devices.
     guide/documentation
     guide/pullrequests
     guide/adr
+    guide/architecture
 ..    guide/bestpractices
-..    guide/architecture
