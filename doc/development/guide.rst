@@ -29,6 +29,11 @@ of PennyLane, plugins, and devices.
     :description: Creating and submitting a pull request to the PennyLane repository.
     :link: guide/pullrequests.html
 
+.. titlecard::
+    :name: Architecture Design Records
+    :description: Proposing important PennyLane architectural decisions.
+    :link: guide/adr.html
+
 .. .. titlecard::
 ..     :name: Best practices
 ..     :description: General best practices for contributing and developing for PennyLane.
@@ -51,5 +56,6 @@ of PennyLane, plugins, and devices.
     guide/tests
     guide/documentation
     guide/pullrequests
+    guide/adr
     guide/architecture
 ..    guide/bestpractices
