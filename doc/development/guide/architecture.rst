@@ -112,7 +112,7 @@ to the machine learning interface via a custom gradient class or function.
 Typically, an interface integrates QNodes with external libraries as follows:
 
 * It wraps the QNode, returning a QNode that accepts and returns the core data
-  structure of the classical machine learning library (e.g., a TF tensor, Torch
+  structure of the classical machine learning library (e.g., a TensorFlow or PyTorch
   tensor, Autograd NumPy array, etc).
 
 * It unwraps the input data structures to simple NumPy arrays, so that the
