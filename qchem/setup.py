@@ -16,8 +16,7 @@ from setuptools import setup
 with open("pennylane_qchem/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
-requirements = ["pennylane", "openfermion", "openfermionpyscf",
-        "openfermionpsi4", "pyscf<=1.7.1"]
+requirements = ["pennylane>=0.10", "openfermion", "openfermionpyscf", "openfermionpsi4", "pyscf<=1.7.1"]
 
 info = {
     "name": "PennyLane-Qchem",
