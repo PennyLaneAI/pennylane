@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to 
+  decompose a Hamiltonian into a linear combination of Pauli operators.
+  [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
+  
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -11,6 +15,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
