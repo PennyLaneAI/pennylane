@@ -28,5 +28,6 @@ __all__ = [
     "generate_hamiltonian",
     "sd_excitations",
     "hf_state",
+    "excitations_to_wires",
     "obs",
 ]

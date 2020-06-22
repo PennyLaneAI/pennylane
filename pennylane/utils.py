@@ -19,14 +19,91 @@ across the PennyLane submodules.
 from collections.abc import Iterable
 from collections import OrderedDict
 import copy
-import numbers
 import functools
 import inspect
+import itertools
+import numbers
+from operator import matmul
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.variable import Variable
+
+
+def decompose_hamiltonian(H, hide_identity=False):
+    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+
+    Args:
+        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`
+        hide_identity (bool): does not include the :class:`~.Identity` observable within
+            the tensor products of the decomposition if ``True``
+
+    Returns:
+        tuple[list[float], list[~.Observable]]: a list of coefficients and a list
+        of corresponding tensor products of Pauli observables that decompose the Hamiltonian.
+
+    **Example:**
+
+    We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
+    matrix:
+
+    >>> A = np.array(
+    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
+    >>> coeffs, obs_list = decompose_hamiltonian(A)
+    >>> coeffs
+    [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5]
+
+    We can use the output coefficients and tensor Pauli terms to construct a :class:`~.Hamiltonian`:
+
+    >>> H = qml.Hamiltonian(coeffs, obs_list)
+    >>> print(H)
+    (-1.0) [I0 I1]
+    + (-1.5) [X1]
+    + (-0.5) [Y1]
+    + (-1.0) [Z1]
+    + (-1.5) [X0]
+    + (-1.0) [X0 X1]
+    + (-0.5) [X0 Z1]
+    + (1.0) [Y0 Y1]
+    + (-0.5) [Z0 X1]
+    + (-0.5) [Z0 Y1]
+
+    This Hamiltonian can then be used in defining VQE problems using :class:`~.VQECost`.
+    """
+    n = int(np.log2(len(H)))
+    N = 2 ** n
+
+    if H.shape != (N, N):
+        raise ValueError(
+            "The Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"
+        )
+
+    if not np.allclose(H, H.conj().T):
+        raise ValueError("The Hamiltonian is not Hermitian")
+
+    paulis = [qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ]
+    obs = []
+    coeffs = []
+
+    for term in itertools.product(paulis, repeat=n):
+        matrices = [i._matrix() for i in term]
+        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
+        coeff = np.real_if_close(coeff).item()
+
+        if not np.allclose(coeff, 0):
+            coeffs.append(coeff)
+
+            if not all(t is qml.Identity for t in term) and hide_identity:
+                obs.append(
+                    functools.reduce(
+                        matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity],
+                    )
+                )
+            else:
+                obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
+
+    return coeffs, obs
 
 
 def _flatten(x):
