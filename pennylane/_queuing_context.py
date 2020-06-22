@@ -34,7 +34,7 @@ class QueuingContext(abc.ABC):
     The ``QueuingContext`` class both acts as the abstract base class for all
     classes that expose a queue for Operations (so-called contexts), as well as the
     interface to said queues. The active contexts contain maximally one QNode and
-    an arbitrary number of other contexts like the `~.OperationRecorder`.
+    an arbitrary number of other contexts like the :class:`~.OperationRecorder`.
     """
 
     _active_contexts = []
