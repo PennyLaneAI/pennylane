@@ -1,4 +1,4 @@
-# Release 0.10.0 (development release)
+# Release 0.10.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -36,15 +36,16 @@
   [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.plugins.DefaultQubitTF.html)
   for more details.
 
-* The [default.tensor plugin](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/plugins/default_tensor.py) has been significantly upgraded. It now allows two different
-  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a 
-  exact factorized representation of quantum states, while the latter uses a matrix product state 
+* The [default.tensor plugin](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/plugins/default_tensor.py)
+  has been significantly upgraded. It now allows two different
+  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a
+  exact factorized representation of quantum states, while the latter uses a matrix product state
   representation.
   ([#572](https://github.com/XanaduAI/pennylane/pull/572))
   ([#599](https://github.com/XanaduAI/pennylane/pull/599))
-  
-<h4>New machine learning functionality and integrations</h4>  
-  
+
+<h4>New machine learning functionality and integrations</h4>
+
 * PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
   hybrid models using the `torch.nn` API.
   [(#588)](https://github.com/XanaduAI/pennylane/pull/588)
@@ -60,23 +61,24 @@
   >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
   >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
   ```
-  
+
   A hybrid model can then be easily constructed:
 
   ```pycon
   >>> model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
+
 * Added a new "reversible" differentiation method which can be used in simulators, but not hardware.
 
   The reversible approach is similar to backpropagation, but trades off extra computation for
   enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
-  a simulated evolution, the reversible method only caches the final pre-measurement state. 
-  
-  Compared to the parameter-shift method, the reversible method can be faster or slower, 
-  depending on the density and location of parametrized gates in a circuit 
-  (circuits with higher density of   parametrized gates near the end of the circuit will see a benefit).
+  a simulated evolution, the reversible method only caches the final pre-measurement state.
+
+  Compared to the parameter-shift method, the reversible method can be faster or slower,
+  depending on the density and location of parametrized gates in a circuit
+  (circuits with higher density of parametrized gates near the end of the circuit will see a benefit).
   [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
   ... @qml.qnode(dev, diff_method="reversible")
@@ -88,8 +90,8 @@
   >>> qml.grad(circuit)(0.5)
   (array(-0.47942554),)
   ```
-  
-<h4>New templates and cost functions</h4>  
+
+<h4>New templates and cost functions</h4>
 
 * Added the new templates `UCCSD`, `SingleExcitationUnitary`, and`DoubleExcitationUnitary`,
   which together implement the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz
@@ -138,15 +140,15 @@
   it is automatically excluded from quantum gradient computations.
   [(#655)](https://github.com/XanaduAI/pennylane/pull/655)
   [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
-  
+
 * QNodes have two new public methods: `QNode.set_trainable_args()` and `QNode.get_trainable_args()`.
   These are designed to be called by interfaces, to specify to the QNode which of its
   input arguments are differentiable. Arguments which are non-differentiable will not be converted
   to PennyLane Variable objects within the QNode.
   [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
-  
+
 * Added `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
-  decomposes each of these gates into rotation gates. 
+  decomposes each of these gates into rotation gates.
   [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
 
 * The `CircuitGraph` class now supports serializing contained circuit operations
@@ -160,18 +162,18 @@
   [(#639)](https://github.com/XanaduAI/pennylane/pull/639)
 
 <h3>Documentation</h3>
-* Various small typos were fixed.
 
-<h3>Bug fixes</h3>
+* Various small typos were fixed.
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Theodor Isacsson, Josh Izaac,
+Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 
-# Release 0.9.0 (current release)
+# Release 0.9.0
 
 <h3>New features since last release</h3>
 
@@ -448,7 +450,7 @@ Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, An
 
 <h3>Improvements</h3>
 
-* A new `Wires` class was introduced for the internal 
+* A new `Wires` class was introduced for the internal
   bookkeeping of wire indices.
   [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
 
