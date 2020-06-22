@@ -289,10 +289,12 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     space and generates the table of matrix elements required to build the second-quantized
     spin-projection operator :math:`\hat{S}_z`.
 
-    The single-particle operator :math:`\hat{s}_z` is diagonal in the basis
-    of spin-orbitals and its matrix elements are computed as follows,
+    The second-quantized operator :math:`\hat{S}_z` reads,
 
     .. math::
+
+        \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
+        ~ \hat{c}_\alpha^\dagger\hat{c}_\beta,
 
         \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
@@ -306,9 +308,10 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
         n_active_orbitals (int): number of active orbitals
 
     Returns:
-        array: NumPy array with the table of matrix elements. The first two columns
+        array: NumPy array with the table of the diagonal matrix elements 
+        :math:`\langle \alpha \vert \hat{s}_z \vert \beta \rangle`. The first two columns
         contains the index :math:`\alpha` and the third column stores the computed
-        (diagonal) matrix element.
+        element.
 
     **Example**
 
