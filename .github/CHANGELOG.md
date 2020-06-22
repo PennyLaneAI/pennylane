@@ -1,4 +1,4 @@
-# Release 0.10.0 (development release)
+# Release 0.10.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -173,7 +173,7 @@ Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Theodor Isacsson, Josh Izaac,
 Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 
-# Release 0.9.0 (current release)
+# Release 0.9.0
 
 <h3>New features since last release</h3>
 

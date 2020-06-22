@@ -1,4 +1,4 @@
-# Release 0.10.0 (development release)
+# Release 0.10.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -10,11 +10,11 @@
 
 <h3>Improvements</h3>
 
-* The function ``convert_hamiltonian`` has been renamed to ``convert_observable`` 
+* The function ``convert_hamiltonian`` has been renamed to ``convert_observable``
   since it can be used to convert any OpenFermion QubitOperator to a PennyLane
   Observable. ``convert_observable`` will be used in the ``obs`` module to build
   observables linked to molecular properties.
-  [(#677)](https://github.com/XanaduAI/pennylane/pull/677) 
+  [(#677)](https://github.com/XanaduAI/pennylane/pull/677)
 
 <h3>Breaking changes</h3>
 
@@ -30,3 +30,7 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Alain Delgado, Josh Izaac, Soran Jahangiri, Maria Schuld
+
+# Release 0.9.0
+
+Initial release.
