@@ -293,9 +293,10 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
     .. math::
 
-        &&\hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
-        ~ \hat{c}_\alpha^\dagger\hat{c}_\beta \\
-        &&\langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
+        \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
+        ~ \hat{c}_\alpha^\dagger\hat{c}_\beta,
+
+        \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
     where :math:`m_\alpha` refers to the quantum number of the spin wave function
     :math:`\chi_{m_\alpha}(s_z)` of the spin-orbital :math:`\vert \alpha \rangle`.
