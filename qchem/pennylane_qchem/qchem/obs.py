@@ -312,11 +312,7 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
     **Example**
 
-    >>> get_spinZ_matrix_elements(
-        'h2',
-        './pyscf/sto-3g',
-        n_active_electrons=2,
-        n_active_orbitals=2)
+    >>> get_spinZ_matrix_elements('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
     [[ 0.   0.   0.5]
     [ 1.   1.  -0.5]
     [ 2.   2.   0.5]
