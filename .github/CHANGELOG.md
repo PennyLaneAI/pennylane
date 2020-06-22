@@ -76,7 +76,7 @@
 
   Compared to the parameter-shift method, the reversible method can be faster or slower,
   depending on the density and location of parametrized gates in a circuit
-  (circuits with higher density of   parametrized gates near the end of the circuit will see a benefit).
+  (circuits with higher density of parametrized gates near the end of the circuit will see a benefit).
   [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
 
   ```pycon
