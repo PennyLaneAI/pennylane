@@ -89,7 +89,7 @@ and plugin device-specific options.
         backend_options = {"validation_threshold" = 1e-6}
 
         [qiskit.ibmq]
-        Default options for IBMQ
+        # Default options for IBMQ
 
         # IBM Quantum Experience authentication token
         ibmqx_token = "XXX"
