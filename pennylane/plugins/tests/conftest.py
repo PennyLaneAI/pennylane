@@ -79,6 +79,7 @@ def device(device_kwargs):
 
     return _device
 
+
 # ============================
 # These functions are required to define the device name to run the tests for
 
