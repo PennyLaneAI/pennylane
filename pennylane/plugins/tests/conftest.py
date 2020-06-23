@@ -127,7 +127,6 @@ def pytest_generate_tests(metafunc):
             device_kwargs["analytic"] = False
         else:
             device_kwargs["analytic"] = True
-
     # ====================
 
     # parametrize function if device_kwargs is an argument
