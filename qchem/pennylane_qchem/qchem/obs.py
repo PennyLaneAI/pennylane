@@ -110,7 +110,7 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
     .. math::
 
-        \hat{S}^2 = \frac{3}{4}N + \sum_{\alpha, \beta, \gamma, \delta\}
+        \hat{S}^2 = \frac{3}{4}N + \sum_{\alpha, \beta, \gamma, \delta}
         \langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2
         \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
         \hat{c}_\gamma \hat{c}_\delta,
