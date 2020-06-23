@@ -115,6 +115,7 @@ def profile(func, identifier, *, min_time=5):
 def cli():
     """Parse the command line arguments, perform the requested action.
     """
+    # pylint: disable=too-many-branches
     parser = argparse.ArgumentParser(description="PennyLane benchmarking tool")
     parser.add_argument("--noinfo", action="store_true", help="suppress information output")
     parser.add_argument("--version", action="version", version=__version__)
