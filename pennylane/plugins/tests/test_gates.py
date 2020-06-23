@@ -119,7 +119,7 @@ class TestGatesQubit:
         n_wires = 4
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         @qml.qnode(dev)
         def circuit():
@@ -137,7 +137,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -157,7 +157,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -179,7 +179,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -199,7 +199,7 @@ class TestGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -225,7 +225,7 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -249,7 +249,7 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -272,7 +272,7 @@ class TestGatesQubit:
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -293,7 +293,7 @@ class TestGatesQubit:
         n_wires = 3
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -319,7 +319,7 @@ class TestInverseGatesQubit:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
 
@@ -346,7 +346,7 @@ class TestInverseGatesQubit:
         capabilities = dev.__class__.capabilities()
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -370,7 +370,7 @@ class TestInverseGatesQubit:
         capabilities = dev.__class__.capabilities()
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(1)
         a = 0.542
@@ -398,7 +398,7 @@ class TestInverseGatesQubit:
         capabilities = dev.__class__.capabilities()
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -423,7 +423,7 @@ class TestInverseGatesQubit:
         capabilities = dev.__class__.capabilities()
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(2)
 
@@ -448,7 +448,7 @@ class TestInverseGatesQubit:
         capabilities = dev.__class__.capabilities()
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -472,7 +472,7 @@ class TestInverseGatesQubit:
         capabilities = dev.__class__.capabilities()
         skip_if("inverse_operations" not in capabilities)
         skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(3)
 

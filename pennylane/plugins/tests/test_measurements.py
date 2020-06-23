@@ -32,7 +32,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -52,7 +52,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -74,7 +74,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -95,7 +95,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -116,7 +116,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -139,7 +139,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -167,7 +167,7 @@ class TestExpval:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -213,7 +213,7 @@ class TestTensorExpval:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -240,7 +240,7 @@ class TestTensorExpval:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -271,7 +271,7 @@ class TestTensorExpval:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -316,7 +316,7 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         @qml.qnode(dev)
         def circuit():
@@ -335,7 +335,7 @@ class TestSample:
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         A = np.array([[1, 2j], [-2j, 0]])
         theta = 0.543
@@ -367,7 +367,7 @@ class TestSample:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.543
         A = np.array(
@@ -417,7 +417,7 @@ class TestTensorSample:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -459,7 +459,7 @@ class TestTensorSample:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -501,7 +501,7 @@ class TestTensorSample:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -587,7 +587,7 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         phi = 0.543
         theta = 0.6543
@@ -610,7 +610,7 @@ class TestVar:
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         phi = 0.543
         theta = 0.6543
@@ -650,7 +650,7 @@ class TestTensorVar:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -684,7 +684,7 @@ class TestTensorVar:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123
@@ -718,7 +718,7 @@ class TestTensorVar:
         capabilities = dev.__class__.capabilities()
         skip_if("tensor_observable" not in capabilities)
         skip_if("tensor_observable" in capabilities and not capabilities["tensor_observable"])
-        skip_if(not capabilities["model"] == "qubit")
+        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.432
         phi = 0.123

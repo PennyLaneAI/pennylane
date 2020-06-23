@@ -79,16 +79,6 @@ def device(device_kwargs):
 
     return _device
 
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
-
 # ============================
 # These functions are required to define the device name to run the tests for
 
@@ -96,9 +86,7 @@ def pytest_collection_modifyitems(config, items):
 def pytest_addoption(parser):
     """Add command line option to pytest."""
 
-    # TODO: find a way to pass an unknown number of optional command line options to pytest
-    # so we can optionally provide compulsory args like "cutoff_dim" or specific args such as a backend
-
+    # The options are the three arguments every device takes
     parser.addoption("--device", action="store", default=None)
     parser.addoption("--shots", action="store", default=None, type=int)
     parser.addoption("--analytic", action="store", default=None)
@@ -114,22 +102,25 @@ def pytest_generate_tests(metafunc):
         "analytic": opt.analytic,
     }
 
-    # =======================
+    # ===========================================
     # some processing of the command line options
+
     if device_kwargs["shots"] is None:
-        device_kwargs["shots"] = N_SHOTS
+        # use default value of device
+        device_kwargs.pop("shots")
     if device_kwargs["analytic"] is None:
         # use default value of device
         device_kwargs.pop("analytic")
     else:
-        # turn string into boolean
         if device_kwargs["analytic"].lower() == "false":
+            # turn string into boolean
             device_kwargs["analytic"] = False
         else:
             device_kwargs["analytic"] = True
-    # ====================
 
-    # parametrize function if device_kwargs is an argument
+    # ==============================================
+
+    # parametrize all functions that take device_kwargs as an argument
     # this is needed for the "device" fixture
     if "device_kwargs" in metafunc.fixturenames:
         if opt.device is None:
@@ -139,7 +130,8 @@ def pytest_generate_tests(metafunc):
                 core_dev_kwargs = device_kwargs.copy()
                 core_dev_kwargs["name"] = dev_name
                 list_device_kwargs.append(core_dev_kwargs)
-
             metafunc.parametrize("device_kwargs", list_device_kwargs)
+
         else:
+            # run tests on specified device
             metafunc.parametrize("device_kwargs", [device_kwargs])

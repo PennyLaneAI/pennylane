@@ -23,11 +23,12 @@ class TestDeviceProperties:
     def test_load_device(self, device_kwargs):
         """Test that the QVM device loads correctly."""
         device_kwargs["wires"] = 2
+        device_kwargs["shots"] = 1234
+
         dev = qml.device(**device_kwargs)
-        assert dev.num_wires == device_kwargs["wires"]
-        assert dev.shots == device_kwargs["shots"]
+        assert dev.num_wires == 2
+        assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
-        assert "model" in dev.__class__.capabilities()
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
