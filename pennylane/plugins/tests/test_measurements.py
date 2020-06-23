@@ -88,8 +88,6 @@ class TestExpval:
 
         res = circuit()
         expected = np.array([np.sin(theta) * np.sin(phi), np.sin(phi)])
-        print(type(res), res)
-        print(type(expected), expected)
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     def test_pauliy_expectation(self, device, tol, skip_if):

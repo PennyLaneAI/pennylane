@@ -315,7 +315,7 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
-        """Test PauliX application."""
+        """Test inverse PauliX application."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -340,7 +340,7 @@ class TestInverseGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
     def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test single qubit gates."""
+        """Test inverse single qubit gates."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -364,7 +364,7 @@ class TestInverseGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     def test_rotation(self, device, init_state, tol, skip_if):
-        """Test three axis rotation gate."""
+        """Test inverse three axis rotation gate."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -392,7 +392,7 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("op,mat", two_qubit)
     def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
-        """Test two qubit gates."""
+        """Test inverse two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -417,7 +417,7 @@ class TestInverseGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
     def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test parametrized two qubit gates."""
+        """Test inverse parametrized two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -442,7 +442,7 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("mat", [U, U2])
     def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
-        """Test QubitUnitary gate."""
+        """Test inverse QubitUnitary gate."""
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -466,7 +466,7 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("op, mat", three_qubit)
     def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
-        """Test three qubit gates without parameters."""
+        """Test inverse three qubit gates without parameters."""
         n_wires = 3
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()

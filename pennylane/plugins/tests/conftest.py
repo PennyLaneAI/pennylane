@@ -80,6 +80,15 @@ def device(device_kwargs):
     return _device
 
 
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
 # ============================
 # These functions are required to define the device name to run the tests for
 
@@ -114,7 +123,7 @@ def pytest_generate_tests(metafunc):
         device_kwargs.pop("analytic")
     else:
         # turn string into boolean
-        if device_kwargs["analytic"] == "False":
+        if device_kwargs["analytic"].lower() == "false":
             device_kwargs["analytic"] = False
         else:
             device_kwargs["analytic"] = True
