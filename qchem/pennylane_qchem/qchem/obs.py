@@ -24,7 +24,7 @@ from openfermion.transforms import bravyi_kitaev, jordan_wigner
 from . import structure
 
 
-def spin2_matrix_elements(sz, n_spin_orbs):
+def _spin2_matrix_elements(sz, n_spin_orbs):
     r"""Generates the table of matrix elements
     :math:`\langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2 \vert \gamma, \delta \rangle`
     of the two-particle spin operator :math:`\hat{s}_1 \cdot \hat{s}_2`.
@@ -56,7 +56,7 @@ def spin2_matrix_elements(sz, n_spin_orbs):
 
     >>> n_spin_orbs = 2
     >>> sz = np.array([0.5, -0.5])
-    >>> print(spin2_matrix_elements(sz, n_spin_orbs))
+    >>> print(_spin2_matrix_elements(sz, n_spin_orbs))
     [[ 0.    0.    0.    0.    0.25]
      [ 0.    1.    1.    0.   -0.25]
      [ 1.    0.    0.    1.   -0.25]
@@ -192,7 +192,7 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     n_spin_orbs = 2 * len(active_indices)
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    return spin2_matrix_elements(sz, n_spin_orbs), 3 / 4 * n_electrons
+    return _spin2_matrix_elements(sz, n_spin_orbs), 3 / 4 * n_electrons
 
 
 def observable(me_table, init_term=0, mapping="jordan_wigner"):
@@ -431,7 +431,7 @@ def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_acti
 
 
 __all__ = [
-    "spin2_matrix_elements",
+    "_spin2_matrix_elements",
     "get_spin2_matrix_elements",
     "observable",
     "get_spinZ_matrix_elements",

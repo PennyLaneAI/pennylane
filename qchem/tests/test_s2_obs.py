@@ -40,7 +40,7 @@ def test_spin2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = qchem.spin2_matrix_elements(sz, n_spin_orbs)
+    s2_me_result = qchem._spin2_matrix_elements(sz, n_spin_orbs)
 
     assert np.allclose(s2_me_result, s2_me_expected, **tol)
 
@@ -53,7 +53,7 @@ def test_exception_spin2_me(message_match="Size of 'sz' must be equal to 'n_spin
     sz = np.where(np.arange(n_spin_orbs + 1) % 2 == 0, 0.5, -0.5)
 
     with pytest.raises(ValueError, match=message_match):
-        qchem.spin2_matrix_elements(sz, n_spin_orbs)
+        qchem._spin2_matrix_elements(sz, n_spin_orbs)
 
 
 me = np.array(
