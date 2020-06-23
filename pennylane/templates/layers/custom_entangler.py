@@ -172,7 +172,7 @@ def CustomEntanglerLayers(
 
     if coupling is None and coupling_weights is not None:
         coupling = CRX
-    
+
     # Checks that inputs are valid
 
     if coupling.num_wires != 2:
@@ -191,7 +191,7 @@ def CustomEntanglerLayers(
         check_shapes(pattern, [(2,)], msg="Elements of custom 'pattern' must be of shape (2,)")
         custom_pattern = pattern
         pattern = "custom"
-    
+
     n_parameters = get_param_numbers(wires, custom_pattern=custom_pattern)
 
     if coupling_weights is not None:
