@@ -1,0 +1,51 @@
+[main]
+# Global PennyLane options.
+# Affects every loaded plugin if applicable.
+shots = 1000
+
+[strawberryfields.global]
+# Options for the Strawberry Fields plugin
+# For more details, see the PennyLane-SF documentation:
+# https://pennylane-sf.readthedocs.io
+hbar = 2
+shots = 100
+
+    [strawberryfields.fock]
+    # Options for the strawberryfields.fock device
+    cutoff_dim = 10
+    hbar = 2
+
+    [strawberryfields.gaussian]
+    # Indentation doesn't matter in TOML files,
+    # but helps provide clarity.
+
+[qiskit.global]
+# Global options for the Qiskit plugin.
+# For more details, see the PennyLane-Qiskit documentation:
+# https://pennylaneqiskit.readthedocs.io/en/latest/index.html
+
+backend = "qasm_simulator"
+
+    [qiskit.aer]
+    # Default options for Qiskit Aer
+
+    # set the default backend options for the Qiskit Aer device
+    # Note that, in TOML, dictionary key-value pairs are defined
+    # using '=' rather than ':'.
+    backend_options = {"validation_threshold" = 1e-6}
+
+    [qiskit.ibmq]
+    # Default options for IBMQ
+
+    # IBM Quantum Experience authentication token
+    ibmqx_token = "7475f9b72d39e62261835af13b264ec7510a39f706b7f0c5a1582e4f9ece91b9a6ad6c2a360e603627638c4ebc7df06356c4e1085a9a1b90db8b2d0f50981a72"
+
+    # hardware backend device
+    backend = "ibmq_rome"
+
+[projectq.global]
+
+    [projectq.ibmq]
+    # Options for the PQ-IBM plugin.
+
+    token = "7475f9b72d39e62261835af13b264ec7510a39f706b7f0c5a1582e4f9ece91b9a6ad6c2a360e603627638c4ebc7df06356c4e1085a9a1b90db8b2d0f50981a72"
