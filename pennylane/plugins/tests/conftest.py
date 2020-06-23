@@ -75,7 +75,15 @@ def device(device_kwargs):
 
     def _device(n_wires):
         device_kwargs["wires"] = n_wires
-        return qml.device(**device_kwargs)
+
+        try:
+            dev = qml.device(**device_kwargs)
+        except qml.DeviceError:
+            # Wrap the error message
+            raise qml.DeviceError("Device {} cannot be created. To run the device tests on an external device, the "
+                                  "plugin and all of its dependencies must be installed.".format(device_kwargs["name"]))
+
+        return dev
 
     return _device
 

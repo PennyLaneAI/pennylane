@@ -15,17 +15,20 @@
 This subpackage provides integration tests for the devices with PennyLane's core
 functionalities.
 
-They can be run by navigating to the parent directory and running:
+To run the tests, navigate to the parent directory of this file and run (i.e., for 'default.qubit'):
 
->>> python3 -m pytest tests/*
+>>> python3 -m pytest tests/* --device default.qubit --shots 1234 --analytic False
+
+The command line arguments are optional.
+
+* If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
+
+* If `--shots` is not given, a default of 50000 is used.
+
+* If `--analytic` is not given, the device's default is used.
 
 The tests can also be run on an external device from a PennyLane plugin, such as
-``'qiskit.aer'``. For this, make sure you have the correct dependencies installed and
-run
-
->>> python3 -m pytest tests/* --device qiskit.aer
-
-where ``qiskit.aer`` is replaced by the device to be tested.
+``'qiskit.aer'``. For this, make sure you have the correct dependencies installed
 
 Most tests query the device's capabilities and only get executed if they apply to the device.
 Both analytic devices (producing an exact probability distribution) and non-analytic devices (producing an estimated

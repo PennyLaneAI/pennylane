@@ -14,10 +14,12 @@
   * If `--shots` is not given, a default of 50000 is used.
   
   * If `--analytic` is not given, the device's default is used.
+  
+  Other arguments of the device, such as `strawberryfields.fock`'s compulsory `cutoff_dim`, 
+  can be defined in the `config.toml` file containing custom PennyLane configurations.
                                                                                                                                                         
   If the tests are run on external devices, the device and its dependencies must be 
-  installed locally. At the moment, no other keyword arguments can be set, which means 
-  that only devices that do not take mandatory keyword arguments can be tested.
+  installed locally. 
   
 * Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to 
   decompose a Hamiltonian into a linear combination of Pauli operators.
