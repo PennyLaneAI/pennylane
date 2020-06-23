@@ -392,9 +392,9 @@ def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_acti
     Returns:
 
         tuple: NumPy array with the table used to build the fermionic operator and
-        the number of particles occupying the core orbitals. In this specific case
-        of the particle number operator the first two columns of the table contain
-        the index :math:`\alpha` and the third element the constant value one.
+        the number of particles occupying the core orbitals. The first two columns of
+        the table contain the index :math:`\alpha` and, in the particular case of :math:`\hat{N}`,
+        the entries of the third column are all equal to one.
 
     **Example**
 
