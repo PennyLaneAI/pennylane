@@ -311,8 +311,8 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
     Returns:
         array: NumPy array with the table of matrix elements. Since :math:`\hat{S}_z` is
-        diagonal in the basis of HF orbitals the first two columns
-        contains the index :math:`\alpha` and the third column stores the matrix element
+        diagonal in the basis of HF orbitals the first two columns contains the index
+        :math:`\alpha` and the third column stores the matrix element
         element.
 
     **Example**
