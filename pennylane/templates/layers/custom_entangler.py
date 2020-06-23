@@ -145,8 +145,6 @@ def CustomEntanglerLayers(
     #############
     # Input checks
 
-    n_parameters = get_param_numbers(wires)
-
     if rotation is None:
         rotation = RX
 
@@ -164,6 +162,8 @@ def CustomEntanglerLayers(
         "".format(expected_shape, get_shape(rotation_weights)),
     )
 
+    # Sets default values for pattern/coupling gate type
+
     if pattern is None:
         pattern = "ring"
 
@@ -172,6 +172,8 @@ def CustomEntanglerLayers(
 
     if coupling is None and coupling_weights is not None:
         coupling = CRX
+    
+    # Checks that inputs are valid
 
     if coupling.num_wires != 2:
         raise ValueError(
@@ -184,8 +186,13 @@ def CustomEntanglerLayers(
     if coupling.num_params != 0 and coupling_weights is None:
         raise ValueError("Gate '{}' must take parameters".format(coupling))
 
+    custom_pattern = None
     if isinstance(pattern, list):
         check_shapes(pattern, [(2,)], msg="Elements of custom 'pattern' must be of shape (2,)")
+        custom_pattern = pattern
+        pattern = "custom"
+    
+    n_parameters = get_param_numbers(wires, custom_pattern=custom_pattern)
 
     if coupling_weights is not None:
 
@@ -204,16 +211,10 @@ def CustomEntanglerLayers(
                 "".format(expected_shape, get_shape(coupling_weights)),
             )
 
-        elif isinstance(pattern, list):
-            expected_shape = (repeat_coupling, len(pattern))
-            check_shape(
-                coupling_weights,
-                expected_shape,
-                msg="'coupling_weights' must be of shape {}; got {}"
-                "".format(expected_shape, get_shape(coupling_weights)),
-            )
-
     ###############
+
+    if custom_pattern is not None:
+        pattern = custom_pattern
 
     for layer in range(repeat):
 
