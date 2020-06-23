@@ -154,9 +154,7 @@ me_lih = np.array(
         ("lih", None, 3, me_lih, 3.0),
     ],
 )
-def test_get_spin2_matrix_elements(
-    mol_name, n_act_elect, n_act_orb, s2_me_exp, init_term_exp, tol
-):
+def test_get_spin2_matrix_elements(mol_name, n_act_elect, n_act_orb, s2_me_exp, init_term_exp, tol):
     r"""Test that the table of matrix elements and the term use to initialize the
     FermionOperator are computed correctly for different active spaces."""
 
@@ -247,9 +245,7 @@ terms_lih_anion_bk = {
         ("lih_anion", 3, 3, "bravyi_KITAEV", terms_lih_anion_bk),
     ],
 )
-def test_build_s2_observable(
-    mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch
-):
+def test_build_s2_observable(mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the built total-spin observable.
 
     The parametrized inputs are `.terms` attribute of the total spin `QubitOperator.
