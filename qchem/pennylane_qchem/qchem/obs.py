@@ -369,7 +369,8 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
 def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
     r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
-    space and generates the table required to build the particle number operator :math:`\hat{N}`.
+    space and generates the table required to build the particle number operator
+    :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`.
 
     In general, if an active space is defined, the particle number operator reads,
 
@@ -390,11 +391,10 @@ def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_acti
 
     Returns:
 
-        tuple: NumPy array with the table used to build the fermionic operator.
-        The first two columns contain the index :math:`\alpha` while the element
-        stored in the third column is constant and equal to one.
-        The second element of the tuple is the number of particles occupying
-        the core orbitals.
+        tuple: NumPy array with the table used to build the fermionic operator and
+        the number of particles occupying the core orbitals. In this specific case
+        of the particle number operator the first two columns of the table contain
+        the index :math:`\alpha` and the third element the constant value one.
 
     **Example**
 
