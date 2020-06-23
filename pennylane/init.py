@@ -1068,7 +1068,7 @@ def custom_entangler_layers_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=
     distribution.
 
     The first two dimensions of the array are ``(2, n_layers,)`` and each parameter is drawn uniformly at random
-    from between ``low`` and ``high``. The parameters define the rotation angles
+    from between ``low`` and ``high``. The parameters define the rotation and coupling angles
     applied in each layer.
 
     Args:
