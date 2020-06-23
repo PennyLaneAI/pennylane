@@ -140,7 +140,7 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     Returns:
         tuple: the table of the two-particle matrix elements and the single-particle
         contribution :math:`\frac{3N}{4}`. The first four columns of the table contains the
-        indices :math:`\alpha`, :math:`\beta`, :math:`\gamma` and :math:`\delta` and the
+        indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and the
         fifth column the value of the matrix elements.
 
     **Example**
