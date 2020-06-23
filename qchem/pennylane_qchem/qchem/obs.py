@@ -103,8 +103,33 @@ def spin2_matrix_elements(sz, n_spin_orbs):
 
 def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
     r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active space and
-    generates the table of matrix elements required to build the second-quantized
-    total-spin operator :math:`\hat{S}^2`.
+    generates the table of matrix elements required to build the total-spin
+    operator :math:`\hat{S}^2`.
+
+    The second-quantized expression for the operator :math:`\hat{S}^2` reads,
+
+    .. math::
+
+        \hat{S}^2 = \frac{3}{4}N + \sum_{\alpha, \beta, \gamma, \delta}
+        \langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2
+        \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
+        \hat{c}_\gamma \hat{c}_\delta,
+    
+    where the two-particle matrix elements are computedas,
+
+    .. math::
+
+        \langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2
+        \vert \gamma, \delta \rangle = \delta_{\alpha,\delta} \delta_{\beta,\gamma}
+        \left( \frac{1}{2} \delta_{m_\alpha, m_\delta+1} \delta_{m_\beta, m_\gamma-1}
+        + \frac{1}{2} \delta_{m_\alpha, m_\delta-1} \delta_{m_\beta, m_\gamma+1}
+        + m_\alpha m_\beta \delta_{m_\alpha, m_\delta} \delta_{m_\beta, m_\gamma} \right).
+
+    In the equations above :math:`N` is the number of particles, :math:`m_\alpha` refers to
+    the quantum number of the spin wave function :math:`\chi_{m_\alpha}(s_z)` of the
+    spin-orbital :math:`\vert \alpha \rangle` and :math:`\hat{c}_\alpha^\dagger`
+    (:math:`\hat{c}_\alpha`) is the creation (annihilation) particle operator acting
+    on the :math:`\alpha`-th active orbital.
 
     Args:
         mol_name (str): name of the molecule
@@ -113,8 +138,10 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
         n_active_orbitals (int): number of active orbitals
 
     Returns:
-        tuple: the table of two-particle matrix elements and the single-particle
-        contribution :math:`\frac{3N}{4}` with :math:`N` being the number of particles.
+        tuple: the table of the two-particle matrix elements and the single-particle
+        contribution :math:`\frac{3N}{4}`. The first four columns of the table contains the
+        indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and the
+        fifth column the value of the matrix elements.
 
     **Example**
 
