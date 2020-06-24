@@ -26,7 +26,8 @@ from pennylane.templates.subroutines import (
     ArbitraryUnitary,
     SingleExcitationUnitary,
     DoubleExcitationUnitary,
-    UCCSD
+    UCCSD,
+    SWAPTest
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -799,3 +800,100 @@ class TestUCCSDUnitary:
         jac_A = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="A")
         jac_F = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)
+
+class TestSWAPTest:
+
+    def test_unique_error(self):
+        """Tests that the correct error is thrown when there are duplicate indices"""
+
+        N = 5
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        register1 = [1, 2]
+        register2 = [0, 3]
+        ancilla = 2
+
+        @qml.qnode(dev)
+        def circuit():
+            SWAPTest(register1, register2, ancilla)
+            return qml.expval(qml.PauliZ(ancilla))
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit()
+        assert (
+            "Wire indices for both registers and the ancilla must be unique"
+            in str(info.value)
+        )
+    
+    def test_length_error(self):
+
+        N = 5
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        register1 = [1, 2, 3]
+        register2 = [0]
+        ancilla = 2
+
+        @qml.qnode(dev)
+        def circuit():
+            SWAPTest(register1, register2, ancilla)
+            return qml.expval(qml.PauliZ(ancilla))
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit()
+        assert (
+            "Length of qubit registers must be the same, got {} and {}".format(len(register1), len(register2))
+            in str(info.value)
+        )
+    
+    def test_ancilla_error(self):
+
+        N = 4
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        register1 = [1]
+        register2 = [0]
+        ancilla = [2, 3]
+
+        @qml.qnode(dev)
+        def circuit():
+            SWAPTest(register1, register2, ancilla)
+            return qml.expval(qml.PauliZ(ancilla))
+        
+        with pytest.raises(ValueError) as info:
+            output = circuit()
+        assert (
+            "`ancilla` argument takes one wire index, got {}".format(len(ancilla))
+            in str(info.value)
+        )
+
+    @pytest.mark.parametrize(
+        ("gates", "reg_num", "wire_seq", "result"),
+        [
+            ([qml.Hadamard, qml.Hadamard], 2, [3, 4], 0.25),
+            ([qml.PauliZ, qml.Hadamard, qml.PauliZ, qml.Hadamard], 3, [4, 5, 6, 6], 0.25),
+            ([qml.PauliX, qml.PauliX, qml.Hadamard, qml.CNOT], 2, [1, 2, 3, [3, 4]], 0.5)
+        ]
+    ) 
+    def test_swap(self, gates, reg_num, wire_seq, result, tol):
+
+        N = 2*reg_num + 1
+        wires = range(N)
+        dev = qml.device('default.qubit', wires=N)
+
+        ancilla = 0
+        register1 = wires[1:int((N+1)/2)]
+        register2 = wires[int((N+1)/2):]
+
+        @qml.qnode(dev)
+        def circuit():
+            for i in range(0, len(gates)):
+                gates[i](wires=wire_seq[i])
+            SWAPTest(register1, register2, ancilla)
+            return qml.expval(qml.PauliZ(ancilla))
+
+        res = circuit()
+        assert np.allclose(res, result, atol=tol)
