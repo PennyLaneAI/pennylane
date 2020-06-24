@@ -99,3 +99,5 @@ Included benchmarks
   and evaluates its Jacobian.
 * ``bm_iqp_circuit``:  Evaluates an IQP circuit on ``w`` wires with ``n*w`` gates chosen from the 
   set ``Z``, ``CZ`` and ``CCZ``.
+* ``bm_nearest_neighbour_circuit``: Evaluates a circuit consisting only of single-qubit and
+  nearest-neighbour two-qubit gates.
