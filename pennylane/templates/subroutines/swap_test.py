@@ -19,6 +19,7 @@ from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
+
 @template
 def SWAPTest(register1, register2, ancilla):
 
@@ -67,16 +68,20 @@ def SWAPTest(register1, register2, ancilla):
 
     # Register lengths are the same and ancilla length is 1
 
-    if (len(register1) != len(register2)):
-        raise ValueError("Length of qubit registers must be the same, got {} and {}".format(len(register1), len(register2)))
-    
-    if (len(ancilla) != 1):
+    if len(register1) != len(register2):
+        raise ValueError(
+            "Length of qubit registers must be the same, got {} and {}".format(
+                len(register1), len(register2)
+            )
+        )
+
+    if len(ancilla) != 1:
         raise ValueError("`ancilla` argument takes one wire index, got {}".format(len(ancilla)))
 
     # No repeats in the registers
 
-    unique = (Wires.unique_wires ([register1, register2, ancilla])).tolist()
-    if (unique != register1.tolist() + register2.tolist() + ancilla.tolist()):
+    unique = (Wires.unique_wires([register1, register2, ancilla])).tolist()
+    if unique != register1.tolist() + register2.tolist() + ancilla.tolist():
         raise ValueError("Wire indices for both registers and the ancilla must be unique")
 
     #############
@@ -85,5 +90,5 @@ def SWAPTest(register1, register2, ancilla):
 
     for i in range(0, len(register1)):
         qml.CSWAP(wires=[ancilla, register1[i], register2[i]])
-    
+
     qml.Hadamard(wires=ancilla)
