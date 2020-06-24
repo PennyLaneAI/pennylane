@@ -16,14 +16,13 @@ Contains the ``SWAP Test`` template.
 """
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_shape, get_shape
 from pennylane.wires import Wires
 
 
 @template
 def SWAPTest(register1, register2, ancilla):
 
-    r""" A controlled-SWAP subroutine that can be used to create a 
+    r""" A controlled-SWAP subroutine that can be used to create a
     `SWAP test <https://en.wikipedia.org/wiki/Swap_test>`__ between
     two qubit registers.
 
