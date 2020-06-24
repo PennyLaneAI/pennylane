@@ -80,6 +80,7 @@ def device(device_kwargs):
             dev = qml.device(**device_kwargs)
         except qml.DeviceError:
             # Wrap the error message
+
             raise qml.DeviceError("Device {} cannot be created. To run the device tests on an external device, the "
                                   "plugin and all of its dependencies must be installed.".format(device_kwargs["name"]))
 
