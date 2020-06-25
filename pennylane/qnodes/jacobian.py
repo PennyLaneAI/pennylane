@@ -268,6 +268,15 @@ class JacobianQNode(BaseQNode):
             )
 
         if method == "A":
+
+            probs_required = any(
+                ob.return_type is ObservableReturnTypes.Probability for ob in self.circuit.observables
+            )
+            if self.model == "cv" and probs_required:
+                raise ValueError(
+                    "Analytic gradients are not supported for circuits extracting Fock state probabilities."
+                )
+
             bad = inds_using("F")
 
             # get bad argument name
