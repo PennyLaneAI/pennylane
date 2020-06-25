@@ -2,6 +2,30 @@
 
 <h3>New features since last release</h3>
 
+* The user can now specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, of type
+  `str` or `Number`. For this, pass a list to the wires argument when creating the device:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
+  ```
+  The quantum operations are now called with the user-defined wire labels:
+    
+  ``` python
+  @qml.qnode(dev)
+  def circuit():
+     qml.Hadamard(wires='anc2')
+     qml.CNOT(wires=['anc1', 3])
+     ...
+  ```
+  The previous version, in which the number of wires is specified, still works as usual.   
+  
+  Fourier```pycon
+  >>> dev = qml.device("default.qubit", wires=5)
+  ```
+  
+  
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
+  
 * Adds a new device, `default.qubit.tf`, a pure-state qubit simulator written using TensorFlow.
   As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
   be faster than the parameter-shift rule for analytic quantum gradients
@@ -92,6 +116,9 @@
   ([#599](https://github.com/XanaduAI/pennylane/pull/599))
 
 <h3>Improvements</h3>
+
+* Improves the wire management by making the ``Operator.wires`` attribute a ``wires`` object.
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
 * Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
   decomposes each of these gates into rotation gates. 
