@@ -95,8 +95,8 @@ class DefaultTensor(Device):
     # pylint: disable=attribute-defined-outside-init
     name = "PennyLane TensorNetwork simulator plugin"
     short_name = "default.tensor"
-    pennylane_requires = "0.10"
-    version = "0.10.0"
+    pennylane_requires = "0.11"
+    version = "0.11.0"
     author = "Xanadu Inc."
     _capabilities = {"model": "qubit", "tensor_observables": True}
 

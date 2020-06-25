@@ -20,21 +20,21 @@ import abc
 class QueuingContext(abc.ABC):
     """Abstract base class for classes that exposes a queue for Operations.
 
-    In PennyLane, the construction of quantum gates is separated from the
-    specific quantum node (:class:`BaseQNode`) that they belong to. However,
-    including logic for this when creating an instance of :class:`Operator`
-    does not align with the current architecture. Therefore, there is a need to
-    use a high level object that holds information about the relationship
-    between quantum gates and a quantum node.
+    In PennyLane, the construction of quantum gates is separated from the specific
+    quantum node (:class:`~.BaseQNode`) that they belong to. However, including
+    logic for this when creating an instance of :class:`~.Operator` does not align
+    with the current architecture. Therefore, there is a need to use a high level
+    object that holds information about the relationship between quantum gates and
+    a quantum node.
 
-    The ``QueuingContext`` class realizes this by providing access to the
-    current QNode.  Furthermore, it provides the flexibility to have multiple
-    objects record the creation of quantum gates.
+    The :class:`~.QueuingContext` class realizes this by providing access to
+    the current QNode.  Furthermore, it provides the flexibility to have
+    multiple objects record the creation of quantum gates.
 
-    The QueuingContext class both acts as the abstract base class for all
-    classes that expose a queue for Operations (so-called contexts), as well
-    as the interface to said queues. The active contexts contain maximally one QNode
-    and an arbitrary number of other contexts like the OperationRecorder.
+    The ``QueuingContext`` class both acts as the abstract base class for all
+    classes that expose a queue for Operations (so-called contexts), as well as the
+    interface to said queues. The active contexts contain maximally one QNode and
+    an arbitrary number of other contexts like the :class:`~.OperationRecorder`.
     """
 
     _active_contexts = []
