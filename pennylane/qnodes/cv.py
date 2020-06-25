@@ -81,6 +81,11 @@ class CVQNode(JacobianQNode):
                     elif ob.return_type == ObservableReturnTypes.Variance:
                         if ob.ev_order is None or ob.ev_order >= 2:
                             x = "F"
+
+                    elif ob.return_type is ObservableReturnTypes.Probability:
+                        raise ValueError(
+                            "Analytic gradients are not supported for circuits extracting Fock state probabilities."
+                        )
                     elif ob.ev_order is None or ob.ev_order >= 2:
                         x = "B"
                     else:
