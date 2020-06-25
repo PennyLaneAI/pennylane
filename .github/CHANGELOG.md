@@ -2,11 +2,26 @@
 
 <h3>New features since last release</h3>
 
-* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to 
+* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
-  
+
 <h3>Improvements</h3>
+
+* Returning probabilities is now supported from photonic QNodes.
+  As with qubit QNodes, photonic QNodes returning probabilities are
+  end-to-end differentiable.
+  [(#699)](https://github.com/XanaduAI/pennylane/pull/699/)
+
+  ```pycon
+  >>> dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=5)
+  >>> @qml.qnode(dev)
+  ... def circuit(a):
+  ...     qml.Displacement(a, 0, wires=0)
+  ...     return qml.probs(wires=0)
+  >>> print(circuit(0.5))
+  [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -16,7 +31,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Nicola Vitucci
+Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
