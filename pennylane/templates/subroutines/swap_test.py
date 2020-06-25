@@ -24,7 +24,7 @@ def SWAPTest(register1, register2, ancilla):
 
     r""" A controlled-SWAP subroutine that can be used to create a
     `SWAP test <https://en.wikipedia.org/wiki/Swap_test>`__ between
-    two qubit registers.
+    two registers.
 
     Args:
         register1 (Iterable or Wires): The first register of wires passed into the template.
@@ -69,7 +69,7 @@ def SWAPTest(register1, register2, ancilla):
 
     if len(register1) != len(register2):
         raise ValueError(
-            "Length of qubit registers must be the same, got {} and {}".format(
+            "Lengths of qubit registers must be the same, got {} and {}".format(
                 len(register1), len(register2)
             )
         )

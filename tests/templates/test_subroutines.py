@@ -825,49 +825,29 @@ class TestSWAPTest:
             "Wire indices for both registers and the ancilla must be unique"
             in str(info.value)
         )
-    
-    def test_length_error(self):
+
+    @pytest.mark.parametrize(
+        ("reg1", "reg2", "ancilla", "error"),
+        [
+            ([1, 2, 3], [0], 2, "Lengths of qubit registers must be the same, got 3 and 1"),
+            ([0], [1], [2, 3], "`ancilla` argument takes one wire index, got 2")
+        ]
+    ) 
+    def test_length_errors(self, reg1, reg2, ancilla, error):
 
         N = 5
         wires = range(N)
         dev = qml.device('default.qubit', wires=N)
 
-        register1 = [1, 2, 3]
-        register2 = [0]
-        ancilla = 2
-
         @qml.qnode(dev)
         def circuit():
-            SWAPTest(register1, register2, ancilla)
+            SWAPTest(reg1, reg2, ancilla)
             return qml.expval(qml.PauliZ(ancilla))
         
         with pytest.raises(ValueError) as info:
             output = circuit()
         assert (
-            "Length of qubit registers must be the same, got {} and {}".format(len(register1), len(register2))
-            in str(info.value)
-        )
-    
-    def test_ancilla_error(self):
-
-        N = 4
-        wires = range(N)
-        dev = qml.device('default.qubit', wires=N)
-
-        register1 = [1]
-        register2 = [0]
-        ancilla = [2, 3]
-
-        @qml.qnode(dev)
-        def circuit():
-            SWAPTest(register1, register2, ancilla)
-            return qml.expval(qml.PauliZ(ancilla))
-        
-        with pytest.raises(ValueError) as info:
-            output = circuit()
-        assert (
-            "`ancilla` argument takes one wire index, got {}".format(len(ancilla))
-            in str(info.value)
+            error in str(info.value)
         )
 
     @pytest.mark.parametrize(
