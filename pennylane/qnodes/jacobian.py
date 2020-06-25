@@ -268,7 +268,6 @@ class JacobianQNode(BaseQNode):
             )
 
         if method == "A":
-
             bad = inds_using("F")
 
             # get bad argument name
