@@ -320,13 +320,11 @@ class JacobianQNode(BaseQNode):
                 continue
 
             if par_method == "A":
-                print("analytic")
                 if variances_required:
                     grad[:, i] = self._pd_analytic_var(k, flat_args, kwargs, **options)
                 else:
                     grad[:, i] = self._pd_analytic(k, flat_args, kwargs, **options)
             elif par_method == "F":
-                print("fd")
                 grad[:, i] = self._pd_finite_diff(k, flat_args, kwargs, **options)
             else:
                 raise ValueError("Unknown gradient method.")
