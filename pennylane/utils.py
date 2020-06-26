@@ -324,46 +324,36 @@ def inv(operation_list):
 
     The following example illuminates the inversion of a template:
 
-    .. code-block:: python3
-
-        @qml.template
-        def ansatz(weights, wires):
-            for idx, wire in enumerate(wires):
-                qml.RX(weights[idx], wires=[wire])
-
-            for idx in range(len(wires) - 1):
-                qml.CNOT(wires=[wires[idx], wires[idx + 1]])
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.inv(ansatz(weights, wires=[0, 1]))
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    >>> @qml.template
+    ... def ansatz(weights, wires):
+    ...     for idx, wire in enumerate(wires):
+    ...         qml.RX(weights[idx], wires=[wire])
+    ...
+    ...     for idx in range(len(wires) - 1):
+    ...         qml.CNOT(wires=[wires[idx], wires[idx + 1]])
+    >>> @qml.qnode(dev)
+    ... def circuit(weights):
+    ...     qml.inv(ansatz(weights, wires=[0, 1]))
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     We may also invert an operation sequence:
 
-    .. code-block:: python3
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit1():
-            qml.T(wires=[0]).inv()
-            qml.Hadamard(wires=[0]).inv()
-            qml.S(wires=[0]).inv()
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        @qml.qnode(dev)
-        def circuit2():
-            qml.inv([qml.S(wires=[0]), qml.Hadamard(wires=[0]), qml.T(wires=[0])])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    >>> @qml.qnode(dev)
+    ... def circuit1():
+    ...     qml.T(wires=[0]).inv()
+    ...     qml.Hadamard(wires=[0]).inv()
+    ...     qml.S(wires=[0]).inv()
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    >>> @qml.qnode(dev)
+    ... def circuit2():
+    ...     qml.inv([qml.S(wires=[0]), qml.Hadamard(wires=[0]), qml.T(wires=[0])])
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     Double checking that both circuits produce the same output:
 
     >>> ZZ1 = circuit1()
     >>> ZZ2 = circuit2()
-    >>> assert ZZ1 == ZZ2
+    >>> ZZ1 == ZZ2
     True
 
     Args:
