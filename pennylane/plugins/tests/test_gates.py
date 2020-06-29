@@ -56,6 +56,16 @@ crz = lambda theta: np.array(
         [0, 0, 0, np.exp(1j * theta / 2)],
     ]
 )
+cry = lambda theta: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(theta / 2), -math.sin(theta / 2)], [0, 0, math.sin(theta / 2), math.cos(theta / 2)]])
+crx = lambda theta: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(theta / 2), 1j * math.sin(-theta / 2)], [0, 0, 1j * math.sin(-theta / 2), math.cos(theta / 2)]])
+crot = lambda phi, theta, omega: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, cmath.exp(-0.5j * (phi + omega)) * math.cos(theta / 2), -cmath.exp(0.5j * (phi - omega)) * math.sin(theta / 2)],
+        [0, 0, cmath.exp(-0.5j * (phi - omega)) * math.sin(theta / 2), cmath.exp(0.5j * (phi + omega)) * math.cos(theta / 2)],
+    ]
+)
 
 # list of all non-parametrized single-qubit gates,
 # along with the PennyLane operation name
