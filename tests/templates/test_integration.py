@@ -673,17 +673,16 @@ class TestNonConsecutiveWires:
         kwargs_nonconsec = nondiffable.copy()
         if 'wires' in kwargs_nonconsec:
             kwargs_nonconsec['wires'] = nonconsecutive_wires
-
+        # DoubleExcitationLayers does not have a wires kwarg
+        if 'wires1' in kwargs_nonconsec:
+            kwargs_nonconsec['wires1'] = nonconsecutive_wires[:2]
+            kwargs_nonconsec['wires2'] = nonconsecutive_wires[2:]
         # some kwargs in UCSSD need to be manually replaced
         if 'ph' in kwargs_nonconsec:
              kwargs_nonconsec['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
         if 'pphh' in kwargs_nonconsec:
              kwargs_nonconsec['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
-        # some kwargs in DoubleExcitationLayers need to be manually replaced
-        if 'wires1' in kwargs_nonconsec:
-            kwargs_nonconsec['wires1'] = nonconsecutive_wires[:2]
-            kwargs_nonconsec['wires2'] = nonconsecutive_wires[2:]
-
+            
         dev_nonconsec = qml.device('default.qubit', wires=nonconsecutive_wires)
 
         @qml.qnode(dev_nonconsec)
