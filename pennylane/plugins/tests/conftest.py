@@ -83,7 +83,7 @@ def device(device_kwargs):
         except qml.DeviceError:
             # This prevents pytest from running (and failing) all the tests
             # if the device does not exist.
-            pytest.fail(
+            pytest.exit(
                 "Device {} cannot be created. To run the device tests on an external device, the "
                 "plugin and all of its dependencies must be installed.".format(
                     device_kwargs["name"]
