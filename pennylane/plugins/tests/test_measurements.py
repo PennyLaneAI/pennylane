@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
+# pylint: disable=no-self-use
 import numpy as np
 import pennylane as qml
 from flaky import flaky
@@ -171,7 +172,7 @@ class TestExpval:
 
         theta = 0.432
         phi = 0.123
-        A = np.array(
+        A_ = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -185,7 +186,7 @@ class TestExpval:
             qml.RY(theta, wires=[0])
             qml.RY(phi, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hermitian(A, wires=[0, 1]))
+            return qml.expval(qml.Hermitian(A_, wires=[0, 1]))
 
         res = circuit()
 
@@ -276,7 +277,7 @@ class TestTensorExpval:
         theta = 0.432
         phi = 0.123
         varphi = -0.543
-        A = np.array(
+        A_ = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -292,7 +293,7 @@ class TestTensorExpval:
             qml.RX(phi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.Hermitian(A, wires=[1, 2]))
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -337,13 +338,13 @@ class TestSample:
         capabilities = dev.__class__.capabilities()
         skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
-        A = np.array([[1, 2j], [-2j, 0]])
+        A_ = np.array([[1, 2j], [-2j, 0]])
         theta = 0.543
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(theta, wires=[0])
-            return qml.sample(qml.Hermitian(A, wires=0))
+            return qml.sample(qml.Hermitian(A_, wires=0))
 
         res = circuit()
 
@@ -370,7 +371,7 @@ class TestSample:
         skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         theta = 0.543
-        A = np.array(
+        A_ = np.array(
             [
                 [1, 2j, 1 - 2j, 0.5j],
                 [-2j, 0, 3 + 4j, 1],
@@ -384,7 +385,7 @@ class TestSample:
             qml.RX(theta, wires=[0])
             qml.RY(2 * theta, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Hermitian(A, wires=[0, 1]))
+            return qml.sample(qml.Hermitian(A_, wires=[0, 1]))
 
         res = circuit()
 
@@ -507,7 +508,7 @@ class TestTensorSample:
         phi = 0.123
         varphi = -0.543
 
-        A = np.array(
+        A_ = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -523,14 +524,14 @@ class TestTensorSample:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A, wires=[1, 2]))
+            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
         # res should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
-        eigvals = np.linalg.eigvalsh(np.kron(Z, A))
+        eigvals = np.linalg.eigvalsh(np.kron(Z, A_))
         assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
 
         mean = np.mean(res)
@@ -724,7 +725,7 @@ class TestTensorVar:
         phi = 0.123
         varphi = -0.543
 
-        A = np.array(
+        A_ = np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -740,7 +741,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A, wires=[1, 2]))
+            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 

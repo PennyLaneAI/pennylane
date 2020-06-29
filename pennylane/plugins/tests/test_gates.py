@@ -15,12 +15,14 @@
 Tests that application of gates and state preparations
 works correctly an a device.
 """
-import pytest
+# pylint: disable=no-self-use
+# pylint: disable=too-many-arguments
+from cmath import exp
+from math import cos, sin, sqrt
 
+import pytest
 import numpy as np
 import pennylane as qml
-from math import cos, sin, sqrt
-from cmath import exp
 from scipy.linalg import block_diag
 from flaky import flaky
 
