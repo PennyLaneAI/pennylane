@@ -57,6 +57,16 @@ crz = lambda theta: np.array(
         [0, 0, 0, np.exp(1j * theta / 2)],
     ]
 )
+cry = lambda theta: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(theta / 2), -math.sin(theta / 2)], [0, 0, math.sin(theta / 2), math.cos(theta / 2)]])
+crx = lambda theta: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(theta / 2), 1j * math.sin(-theta / 2)], [0, 0, 1j * math.sin(-theta / 2), math.cos(theta / 2)]])
+crot = lambda phi, theta, omega: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, cmath.exp(-0.5j * (phi + omega)) * math.cos(theta / 2), -cmath.exp(0.5j * (phi - omega)) * math.sin(theta / 2)],
+        [0, 0, cmath.exp(-0.5j * (phi - omega)) * math.sin(theta / 2), cmath.exp(0.5j * (phi + omega)) * math.cos(theta / 2)],
+    ]
+)
 
 # list of all non-parametrized single-qubit gates,
 # along with the PennyLane operation name
@@ -80,7 +90,8 @@ single_qubit_param = [
 # list of all non-parametrized two-qubit gates
 two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CZ, CZ)]
 # list of all parametrized two-qubit gates
-two_qubit_param = [(qml.CRZ, crz)]
+two_qubit_param = [(qml.CRX, crx), (qml.CRY, cry), (qml.CRZ, crz)]
+two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
 three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
 
@@ -177,7 +188,7 @@ class TestGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
     def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test single qubit gates."""
+        """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -317,7 +328,7 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
-        """Test inverse PauliX application."""
+        """Test inverse single qubit gate application."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -342,7 +353,7 @@ class TestInverseGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
     def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test inverse single qubit gates."""
+        """Test inverse single qubit gates taking one scalar parameter."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
@@ -419,7 +430,7 @@ class TestInverseGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
     def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test inverse parametrized two qubit gates."""
+        """Test inverse of two qubit gates taking one parameter."""
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()

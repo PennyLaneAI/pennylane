@@ -15,7 +15,7 @@
   
   * If `--analytic` is not given, the device's default is used.
   
-  Other arguments of the device, such as `strawberryfields.fock`'s compulsory `cutoff_dim`, 
+  Other arguments of the device, such as `qiskit.aer`'s compulsory `backend_options`, 
   can be defined in the `config.toml` file containing custom PennyLane configurations.
                                                                                                                                                         
   If the tests are run on external devices, the device and its dependencies must be 
