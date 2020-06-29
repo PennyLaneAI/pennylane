@@ -53,8 +53,8 @@ class DefaultQubit(QubitDevice):
 
     name = "Default qubit PennyLane plugin"
     short_name = "default.qubit"
-    pennylane_requires = "0.10"
-    version = "0.10.0"
+    pennylane_requires = "0.11"
+    version = "0.11.0"
     author = "Xanadu Inc."
     _capabilities = {"inverse_operations": True, "reversible_diff": True}
 
