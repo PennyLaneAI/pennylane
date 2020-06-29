@@ -30,6 +30,14 @@ class TestDeviceProperties:
         assert dev.num_wires == 2
         assert dev.shots == 1234
         assert dev.short_name == device_kwargs["name"]
+        assert hasattr(dev, 'analytic')
+
+    def test_has_capabilities(self, device_kwargs):
+        """Test that the device class has a capabilities() method returning a dictionary."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.__class__.capabilities()
+        assert isinstance(cap, dict)
 
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""

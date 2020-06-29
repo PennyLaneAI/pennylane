@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This subpackage provides integration tests for the devices with PennyLane's core
-functionalities.
+functionalities. At the moment, the tests only run on devices based on the 'qubit' model.
 
 To run the tests, navigate to the parent directory of this file and run (i.e., for 'default.qubit'):
 
@@ -21,20 +21,20 @@ To run the tests, navigate to the parent directory of this file and run (i.e., f
 
 The command line arguments are optional.
 
-* If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
+* If `--device` is not given, the tests are run on the qubit core devices that ship with PennyLane.
 
 * If `--shots` is not given, a default of 50000 is used.
 
 * If `--analytic` is not given, the device's default is used.
 
 The tests can also be run on an external device from a PennyLane plugin, such as
-``'qiskit.aer'``. For this, make sure you have the correct dependencies installed
+``'qiskit.aer'``. For this, make sure you have the correct dependencies installed.
 
 Most tests query the device's capabilities and only get executed if they apply to the device.
 Both analytic devices (producing an exact probability distribution) and non-analytic devices (producing an estimated
 probability distribution) are tested.
 
 For non-analytic tests, the tolerance of the assert statements
-is set to a high enough value to account for stochastic fluctuations, and flaky is used to automatically
+is set to a high enough value to account for stochastic fluctuations. Flaky is used to automatically
 repeat failed tests.
 """

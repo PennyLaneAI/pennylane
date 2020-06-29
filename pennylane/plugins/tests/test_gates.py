@@ -154,12 +154,10 @@ class TestGatesQubit:
             np.array([1, 1, 1, 1]),
         ],
     )
-    def test_basis_state(self, device, basis_state, tol, skip_if):
+    def test_basis_state(self, device, basis_state, tol):
         """Test basis state initialization."""
         n_wires = 4
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         @qml.qnode(dev)
         def circuit():
@@ -172,12 +170,10 @@ class TestGatesQubit:
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_qubit_state_vector(self, device, init_state, tol, skip_if):
+    def test_qubit_state_vector(self, device, init_state, tol):
         """Test QubitStateVector initialisation."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -192,12 +188,10 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol):
         """Test PauliX application."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -214,12 +208,10 @@ class TestGatesQubit:
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol):
         """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -234,14 +226,10 @@ class TestGatesQubit:
         expected = np.abs(func(theta) @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    def test_rotation(self, device, init_state, tol, skip_if):
+    def test_rotation(self, device, init_state, tol):
         """Test three axis rotation gate."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
-
-        rnd_state = init_state(n_wires)
 
         rnd_state = init_state(n_wires)
         a = 0.542
@@ -260,14 +248,10 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op,mat", two_qubit)
-    def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol):
         """Test two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
-
-        rnd_state = init_state(n_wires)
 
         rnd_state = init_state(n_wires)
 
@@ -284,14 +268,10 @@ class TestGatesQubit:
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol):
         """Test parametrized two qubit gates taking a single scalar argument."""
         n_wires = 2
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
-
-        rnd_state = init_state(n_wires)
 
         rnd_state = init_state(n_wires)
 
@@ -307,12 +287,10 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("mat", [U, U2])
-    def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
+    def test_qubit_unitary(self, device, init_state, mat, tol):
         """Test QubitUnitary gate."""
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -328,12 +306,10 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     @pytest.mark.parametrize("op, mat", three_qubit)
-    def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol):
         """Test three qubit gates without parameters."""
         n_wires = 3
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
 
         rnd_state = init_state(n_wires)
 
@@ -358,10 +334,7 @@ class TestInverseGatesQubit:
         """Test inverse single qubit gate application."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(1)
 
@@ -383,10 +356,7 @@ class TestInverseGatesQubit:
         """Test inverse single qubit gates taking one scalar parameter."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(n_wires)
 
@@ -407,10 +377,7 @@ class TestInverseGatesQubit:
         """Test inverse three axis rotation gate."""
         n_wires = 1
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(1)
         a = 0.542
@@ -435,10 +402,7 @@ class TestInverseGatesQubit:
         """Test inverse two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(n_wires)
 
@@ -460,10 +424,7 @@ class TestInverseGatesQubit:
         """Test inverse of two qubit gates taking one parameter."""
         n_wires = 2
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(2)
 
@@ -485,10 +446,7 @@ class TestInverseGatesQubit:
         """Test inverse QubitUnitary gate."""
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(n_wires)
 
@@ -509,10 +467,7 @@ class TestInverseGatesQubit:
         """Test inverse three qubit gates without parameters."""
         n_wires = 3
         dev = device(n_wires)
-        capabilities = dev.__class__.capabilities()
-        skip_if("inverse_operations" not in capabilities)
-        skip_if("inverse_operations" in capabilities and not capabilities["inverse_operations"])
-        skip_if("model" not in capabilities or not capabilities["model"] == "qubit")
+        skip_if(dev, {"inverse_operations": False})
 
         rnd_state = init_state(3)
 
