@@ -326,7 +326,7 @@ class TestInverseGatesQubit:
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
-        """Test inverse PauliX application."""
+        """Test inverse single qubit gate application."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
