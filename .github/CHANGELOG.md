@@ -165,20 +165,14 @@ Antal Száva, Nicola Vitucci
 
 <h3>Improvements</h3>
 
-<<<<<<< HEAD
 * Improves the wire management by making the ``Operator.wires`` attribute a ``wires`` object.
   [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
-* Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
-  decomposes each of these gates into rotation gates. 
-  [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
-=======
 * A significant improvement with respect to how QNodes and interfaces mark quantum function
   arguments as differentiable when using Autograd, designed to improve performance and make
   QNodes more intuitive.
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
   [(#650)](https://github.com/XanaduAI/pennylane/pull/650)
->>>>>>> allow_non_consecutive_wires
 
   In particular, the following changes have been made:
 
