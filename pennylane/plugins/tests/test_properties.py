@@ -21,7 +21,7 @@ class TestDeviceProperties:
     """Test the device is created with the expected properties."""
 
     def test_load_device(self, device_kwargs):
-        """Test that the QVM device loads correctly."""
+        """Test that the device loads correctly."""
         device_kwargs["wires"] = 2
         device_kwargs["shots"] = 1234
 
