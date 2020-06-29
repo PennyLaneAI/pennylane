@@ -73,16 +73,22 @@ def skip_if():
 def device(device_kwargs):
     """Fixture to create a device."""
 
+    __tracebackhide__ = True
+
     def _device(n_wires):
         device_kwargs["wires"] = n_wires
 
         try:
             dev = qml.device(**device_kwargs)
         except qml.DeviceError:
-            # Wrap the error message
-
-            raise qml.DeviceError("Device {} cannot be created. To run the device tests on an external device, the "
-                                  "plugin and all of its dependencies must be installed.".format(device_kwargs["name"]))
+            # This prevents pytest from running (and failing) all the tests
+            # if the device does not exist.
+            pytest.fail(
+                "Device {} cannot be created. To run the device tests on an external device, the "
+                "plugin and all of its dependencies must be installed.".format(
+                    device_kwargs["name"]
+                )
+            )
 
         return dev
 

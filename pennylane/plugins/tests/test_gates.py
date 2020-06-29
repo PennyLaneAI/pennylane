@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from math import cos, sin, sqrt
+from cmath import exp
 from scipy.linalg import block_diag
 from flaky import flaky
 
@@ -57,14 +58,38 @@ crz = lambda theta: np.array(
         [0, 0, 0, np.exp(1j * theta / 2)],
     ]
 )
-cry = lambda theta: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(theta / 2), -math.sin(theta / 2)], [0, 0, math.sin(theta / 2), math.cos(theta / 2)]])
-crx = lambda theta: np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, math.cos(theta / 2), 1j * math.sin(-theta / 2)], [0, 0, 1j * math.sin(-theta / 2), math.cos(theta / 2)]])
+cry = lambda theta: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, cos(theta / 2), -math.sin(theta / 2)],
+        [0, 0, sin(theta / 2), cos(theta / 2)],
+    ]
+)
+crx = lambda theta: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, cos(theta / 2), 1j * sin(-theta / 2)],
+        [0, 0, 1j * sin(-theta / 2), cos(theta / 2)],
+    ]
+)
 crot = lambda phi, theta, omega: np.array(
     [
         [1, 0, 0, 0],
         [0, 1, 0, 0],
-        [0, 0, cmath.exp(-0.5j * (phi + omega)) * math.cos(theta / 2), -cmath.exp(0.5j * (phi - omega)) * math.sin(theta / 2)],
-        [0, 0, cmath.exp(-0.5j * (phi - omega)) * math.sin(theta / 2), cmath.exp(0.5j * (phi + omega)) * math.cos(theta / 2)],
+        [
+            0,
+            0,
+            exp(-0.5j * (phi + omega)) * cos(theta / 2),
+            -exp(0.5j * (phi - omega)) * sin(theta / 2),
+        ],
+        [
+            0,
+            0,
+            exp(-0.5j * (phi - omega)) * sin(theta / 2),
+            exp(0.5j * (phi + omega)) * cos(theta / 2),
+        ],
     ]
 )
 
