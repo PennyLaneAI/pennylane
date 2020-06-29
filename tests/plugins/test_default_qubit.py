@@ -1671,3 +1671,55 @@ class TestProbabilityIntegration:
         dev._state = None
 
         assert dev.analytic_probability() is None
+
+
+class TestWiresIntegration:
+    """Test that the device integrates with PennyLane's wire management."""
+
+    def make_circuit_prob(self, wires):
+        """Factory for a qnode returning probabilities using arbitrary wire labels."""
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.5, wires=wires[0])
+            qml.RY(2., wires=wires[1])
+            qml.CNOT(wires=[wires[0], wires[2]])
+            qml.CNOT(wires=[wires[2], wires[1]])
+            return qml.probs(wires=wires)
+
+        return circuit
+
+    def make_circuit_expval(self, wires):
+        """Factory for a qnode returning expvals using arbitrary wire labels."""
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.5, wires=wires[0])
+            qml.RY(2., wires=wires[1])
+            qml.CNOT(wires=[wires[0], wires[2]])
+            qml.CNOT(wires=[wires[2], wires[1]])
+            return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
+
+        return circuit
+
+    @pytest.mark.parametrize("wires1, wires2", [(['a', 'c', 'd'], [2, 3, 0]),
+                                                ([-1, -2, -3], ['q1', 'ancilla', 2])])
+    def test_wires_probs(self, wires1, wires2, tol):
+        """Test that the probability vector of a circuit is independent from the wire labels used."""
+
+        circuit1 = self.make_circuit_prob(wires1)
+        circuit2 = self.make_circuit_prob(wires2)
+
+        assert np.allclose(circuit1(), circuit2(), tol)
+
+    @pytest.mark.parametrize("wires1, wires2", [(['a', 'c', 'd'], [2, 3, 0]),
+                                                ([-1, -2, -3], ['q1', 'ancilla', 2])])
+    def test_wires_expval(self, wires1, wires2, tol):
+        """Test that the expectation of a circuit is independent from the wire labels used."""
+
+        circuit1 = self.make_circuit_expval(wires1)
+        circuit2 = self.make_circuit_expval(wires2)
+
+        assert np.allclose(circuit1(), circuit2(), tol)

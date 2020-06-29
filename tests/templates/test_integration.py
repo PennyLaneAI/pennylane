@@ -682,7 +682,7 @@ class TestNonConsecutiveWires:
              kwargs_nonconsec['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
         if 'pphh' in kwargs_nonconsec:
              kwargs_nonconsec['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
-            
+
         dev_nonconsec = qml.device('default.qubit', wires=nonconsecutive_wires)
 
         @qml.qnode(dev_nonconsec)
