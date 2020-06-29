@@ -27,7 +27,7 @@ TOL = 1e-6
 # Tolerance for non-analytic tests
 TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
-N_SHOTS = 50000
+N_SHOTS = 10000
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {"default.gaussian", "default.qubit", "default.qubit.tf"}
 

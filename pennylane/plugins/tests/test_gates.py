@@ -19,6 +19,7 @@ import pytest
 
 import numpy as np
 import pennylane as qml
+from math import cos, sin, sqrt
 from scipy.linalg import block_diag
 from flaky import flaky
 
@@ -32,7 +33,7 @@ I = np.identity(2)
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
-H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+H = np.array([[1, 1], [1, -1]]) / sqrt(2)
 S = np.diag([1, 1j])
 T = np.diag([1, np.exp(1j * np.pi / 4)])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
@@ -44,9 +45,9 @@ CSWAP = block_diag(I, I, SWAP)
 
 # parametrized qubit gates
 phase_shift = lambda phi: np.array([[1, 0], [0, np.exp(1j * phi)]])
-rx = lambda theta: np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * X
-ry = lambda theta: np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Y
-rz = lambda theta: np.cos(theta / 2) * I + 1j * np.sin(-theta / 2) * Z
+rx = lambda theta: cos(theta / 2) * I + 1j * sin(-theta / 2) * X
+ry = lambda theta: cos(theta / 2) * I + 1j * sin(-theta / 2) * Y
+rz = lambda theta: cos(theta / 2) * I + 1j * sin(-theta / 2) * Z
 rot = lambda a, b, c: rz(c) @ (ry(b) @ rz(a))
 crz = lambda theta: np.array(
     [
@@ -69,8 +70,9 @@ single_qubit = [
 ]
 
 # list of all parametrized single-qubit gates
+# taking a single parameter
 single_qubit_param = [
-    # (qml.PhaseShift(0, wires=0), phase_shift),
+    (qml.PhaseShift, phase_shift),
     (qml.RX, rx),
     (qml.RY, ry),
     (qml.RZ, rz),
@@ -91,7 +93,7 @@ U = np.array(
 )
 
 # two qubit unitary matrix
-U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
+U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / sqrt(3)
 
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
