@@ -52,7 +52,6 @@ def mock_qubit_device(monkeypatch):
         yield get_qubit_device
 
 
-
 @pytest.fixture(scope="function")
 def mock_qubit_device_extract_stats(monkeypatch):
     """ A function to create a mock device that mocks the methods related to
@@ -118,7 +117,6 @@ def mock_qubit_device_with_paulis_and_methods(monkeypatch):
             return QubitDevice(wires=wires)
 
         yield get_qubit_device
-
 
 
 @pytest.fixture(scope="function")
@@ -583,6 +581,10 @@ class TestMarginalProb:
             ([0, 2], [1]),
             ([1, 2], [0]),
             ([0, 1, 2], []),
+            (Wires([0]), [1, 2]),
+            (Wires([0, 1]), [2]),
+            (Wires([0, 1, 2]), []),
+
         ],
     )
     def test_correct_arguments_for_marginals(
@@ -609,7 +611,7 @@ class TestMarginalProb:
 
     marginal_test_data = [
         (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.4, 0.6]), [1]),
-        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.3, 0.7]), [0]),
+        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.3, 0.7]), Wires([0])),
         (
             np.array(
                 [
