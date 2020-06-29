@@ -85,7 +85,7 @@ def gaussian_device(n_subsystems):
 
 @pytest.fixture(scope="session")
 def gaussian_dummy():
-    """Dummy device modes."""
+    """Gaussian device with dummy Kerr gate."""
     return DummyDevice
 
 
