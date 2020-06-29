@@ -350,7 +350,7 @@ class TestSample:
 
         # res should only contain the eigenvalues of
         # the hermitian matrix
-        eigvals = np.linalg.eigvalsh(A)
+        eigvals = np.linalg.eigvalsh(A_)
         assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
         # the analytic mean is 2*sin(theta)+0.5*cos(theta)+0.5
         assert np.allclose(
@@ -391,7 +391,7 @@ class TestSample:
 
         # res should only contain the eigenvalues of
         # the hermitian matrix
-        eigvals = np.linalg.eigvalsh(A)
+        eigvals = np.linalg.eigvalsh(A_)
         assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
 
         # make sure the mean matches the analytic mean
