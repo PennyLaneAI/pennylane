@@ -223,7 +223,3 @@ class TestCircuitGraph:
 
         circuit = CircuitGraph([qml.expval(qml.PauliX(0)), qml.sample(qml.PauliZ(1))], {}, Wires([0, 1]))
         assert circuit.is_sampled
-
-    def test_register(self):
-        """Test that register attribute is set correctly"""
-
