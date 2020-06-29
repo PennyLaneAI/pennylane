@@ -186,7 +186,7 @@ class TestGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
     def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test single qubit gates."""
+        """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
