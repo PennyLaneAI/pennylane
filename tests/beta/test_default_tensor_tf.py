@@ -758,3 +758,31 @@ class TestHybridInterfaceDeviceIntegration:
 
         with pytest.raises(ValueError, match="Device default.tensor.tf only supports diff_method='backprop' when using the tf interface"):
             res = cost_raising_error(params)
+
+
+class TestWiresIntegration:
+    """Test that the device integrates with PennyLane's wire management."""
+
+    def make_circuit_expval(self, wires):
+        """Factory for a qnode returning expvals using arbitrary wire labels."""
+        dev = qml.device("default.tensor.tf", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.5, wires=wires[0])
+            qml.RY(2., wires=wires[1])
+            qml.CNOT(wires=[wires[0], wires[2]])
+            qml.CNOT(wires=[wires[2], wires[1]])
+            return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
+
+        return circuit
+
+    @pytest.mark.parametrize("wires1, wires2", [(['a', 'c', 'd'], [2, 3, 0]),
+                                                ([-1, -2, -3], ['q1', 'ancilla', 2])])
+    def test_wires_expval(self, wires1, wires2, tol):
+        """Test that the expectation of a circuit is independent from the wire labels used."""
+
+        circuit1 = self.make_circuit_expval(wires1)
+        circuit2 = self.make_circuit_expval(wires2)
+
+        assert np.allclose(circuit1(), circuit2(), tol)

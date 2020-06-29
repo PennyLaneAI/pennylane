@@ -1244,7 +1244,7 @@ class TestWiresIntegration:
 
     def make_circuit_prob(self, wires):
         """Factory for a qnode returning probabilities using arbitrary wire labels."""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.tf", wires=wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -1258,7 +1258,7 @@ class TestWiresIntegration:
 
     def make_circuit_expval(self, wires):
         """Factory for a qnode returning expvals using arbitrary wire labels."""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.tf", wires=wires)
 
         @qml.qnode(dev)
         def circuit():
