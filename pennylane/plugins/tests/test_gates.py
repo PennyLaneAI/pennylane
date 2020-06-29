@@ -428,7 +428,7 @@ class TestInverseGatesQubit:
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
     def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
-        """Test inverse parametrized two qubit gates."""
+        """Test inverse of two qubit gates taking one parameter."""
         n_wires = 2
         dev = device(n_wires)
         capabilities = dev.__class__.capabilities()
