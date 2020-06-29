@@ -61,6 +61,7 @@ def init_state():
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
+
     def _skip_if(dev, capabilities):
         """ Skip test if device has any of the given capabilities. """
 
@@ -68,9 +69,11 @@ def skip_if():
         for capability, value in capabilities.items():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
-                pytest.skip("Test skipped for {} device with capability {}:{}.".format(
-                    dev.name, capability, value
-                ))
+                pytest.skip(
+                    "Test skipped for {} device with capability {}:{}.".format(
+                        dev.name, capability, value
+                    )
+                )
 
     return _skip_if
 
@@ -98,9 +101,7 @@ def device(device_kwargs):
         capabilities = dev.__class__.capabilities()
         if "model" not in capabilities or not capabilities["model"] == "qubit":
             # exit the tests if device based on cv model (currently not supported)
-            pytest.exit(
-                "The device test suite currently only runs on qubit-based devices."
-            )
+            pytest.exit("The device test suite currently only runs on qubit-based devices.")
 
         return dev
 
