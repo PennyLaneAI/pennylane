@@ -1,10 +1,47 @@
-# Release 0.10.0 (development release)
+# Release 0.11.0 (development release)
 
 <h3>New features since last release</h3>
 
-* Adds a new device, `default.qubit.tf`, a pure-state qubit simulator written using TensorFlow.
+* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
+  decompose a Hamiltonian into a linear combination of Pauli operators.
+  [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
+
+<h3>Improvements</h3>
+
+* Returning probabilities is now supported from photonic QNodes.
+  As with qubit QNodes, photonic QNodes returning probabilities are
+  end-to-end differentiable.
+  [(#699)](https://github.com/XanaduAI/pennylane/pull/699/)
+
+  ```pycon
+  >>> dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=5)
+  >>> @qml.qnode(dev)
+  ... def circuit(a):
+  ...     qml.Displacement(a, 0, wires=0)
+  ...     return qml.probs(wires=0)
+  >>> print(circuit(0.5))
+  [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
+  ```
+
+<h3>Breaking changes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Antal Száva, Nicola Vitucci
+
+# Release 0.10.0 (current release)
+
+<h3>New features since last release</h3>
+
+<h4>New and improved simulators</h4>
+
+* Added a new device, `default.qubit.tf`, a pure-state qubit simulator written using TensorFlow.
   As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
-  be faster than the parameter-shift rule for analytic quantum gradients
+  be faster than the parameter-shift rule for computing quantum gradients
   when the number of parameters to be optimized is large.
 
   `default.qubit.tf` is designed to be used with end-to-end classical backpropagation
@@ -34,9 +71,15 @@
   [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.plugins.DefaultQubitTF.html)
   for more details.
 
-* Contains the new template `UCCSD` implementing the Unitary Coupled-Cluster (UCCSD) ansatz
-  to perform VQE-based quantum chemistry simulations using PennyLane-QChem.
-  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
+* The [default.tensor plugin](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/plugins/default_tensor.py)
+  has been significantly upgraded. It now allows two different
+  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a
+  exact factorized representation of quantum states, while the latter uses a matrix product state
+  representation.
+  ([#572](https://github.com/XanaduAI/pennylane/pull/572))
+  ([#599](https://github.com/XanaduAI/pennylane/pull/599))
+
+<h4>New machine learning functionality and integrations</h4>
 
 * PennyLane QNodes can now be converted into Torch layers, allowing for creation of quantum and
   hybrid models using the `torch.nn` API.
@@ -44,83 +87,63 @@
 
   A PennyLane QNode can be converted into a `torch.nn` layer using the `qml.qnn.TorchLayer` class:
 
-  ```python
-  @qml.qnode(dev)
-  def qnode(inputs, weights_0, weight_1):
-     # define the circuit
-     # ...
+  ```pycon
+  >>> @qml.qnode(dev)
+  ... def qnode(inputs, weights_0, weight_1):
+  ...    # define the circuit
+  ...    # ...
 
-  weight_shapes = {"weights_0": 3, "weight_1": 1}
-  qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+  >>> weight_shapes = {"weights_0": 3, "weight_1": 1}
+  >>> qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
   ```
 
   A hybrid model can then be easily constructed:
 
-  ```python
-  model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
+  ```pycon
+  >>> model = torch.nn.Sequential(qlayer, torch.nn.Linear(2, 2))
   ```
+
 * Added a new "reversible" differentiation method which can be used in simulators, but not hardware.
+
   The reversible approach is similar to backpropagation, but trades off extra computation for
   enhanced memory efficiency. Where backpropagation caches the state tensors at each step during
-  a forward pass, the reversible method only caches the final pre-measurement state. Compared to 
-  the parameter-shift method, the reversible method can be faster or slower, depending on the 
-  density and location of parametrized gates in a circuit (circuits with higher density of 
-  parametrized gates near the end of the circuit will see a benefit).
+  a simulated evolution, the reversible method only caches the final pre-measurement state.
+
+  Compared to the parameter-shift method, the reversible method can be faster or slower,
+  depending on the density and location of parametrized gates in a circuit
+  (circuits with higher density of parametrized gates near the end of the circuit will see a benefit).
   [(#670)](https://github.com/XanaduAI/pennylane/pull/670)
 
-* Contains the new template `DoubleExcitationUnitary` implementing the quantum circuit to
-  exponentiate the Coupled-Cluster double excitation operator. This template is required to
-  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
-  [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
-  [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  ... @qml.qnode(dev, diff_method="reversible")
+  ... def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     qml.RX(x, wires=0)
+  ...     qml.CNOT(wires=[0,1])
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> qml.grad(circuit)(0.5)
+  (array(-0.47942554),)
+  ```
 
-* Contains the new template `SingleExcitationUnitary` implementing the quantum circuit to
-  exponentiate the Coupled-Cluster single excitation operator. This template is required to
-  build the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz for VQE simulations.
+<h4>New templates and cost functions</h4>
+
+* Added the new templates `UCCSD`, `SingleExcitationUnitary`, and`DoubleExcitationUnitary`,
+  which together implement the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz
+  to perform VQE-based quantum chemistry simulations using PennyLane-QChem.
   [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
+  [(#638)](https://github.com/XanaduAI/pennylane/pull/638)
+  [(#654)](https://github.com/XanaduAI/pennylane/pull/654)
   [(#659)](https://github.com/XanaduAI/pennylane/pull/659)
+  [(#622)](https://github.com/XanaduAI/pennylane/pull/622)
 
-* Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module will contain classes
-  to calculate losses and costs on circuits with trainable parameters.
+* Added module `pennylane.qnn.cost` with class `SquaredErrorLoss`. The module contains classes
+  to calculate losses and cost functions on circuits with trainable parameters.
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
-
-* The ``default.tensor`` plugin has been significantly upgraded. It now allows two different
-  tensor network representations to be used: `"exact"` and `"mps"`. The former uses a 
-  exact factorized representation of quantum states, while the latter uses a matrix product state 
-  representation.
-  ([#572](https://github.com/XanaduAI/pennylane/pull/572))
-  ([#599](https://github.com/XanaduAI/pennylane/pull/599))
 
 <h3>Improvements</h3>
 
-* Adds `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
-  decomposes each of these gates into rotation gates. 
-  [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
-
-* The `CircuitGraph` class now supports serializing contained circuit operations
-  and measurement basis rotations to an OpenQASM2.0 script via the new
-  `CircuitGraph.to_openqasm()` method.
-  [(#623)](https://github.com/XanaduAI/pennylane/pull/623)
-
-* The QNode Torch interface now inspects QNode positional arguments.
-  If any argument does not have the attribute `requires_grad=True`, it
-  is automatically excluded from quantum gradient computations.
-  [(#652)](https://github.com/XanaduAI/pennylane/pull/652)
-  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
-
-* The QNode TF interface now inspects QNode positional arguments.
-  If any argument is not being watched by a `tf.GradientTape()`,
-  it is automatically excluded from quantum gradient computations.
-  [(#655)](https://github.com/XanaduAI/pennylane/pull/655)
-  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
-
-* QNodes have two new public methods: `QNode.set_trainable_args()` and `QNode.get_trainable_args()`.
-  These are designed to be called by interfaces, to specify to the QNode which of its
-  input arguments are differentiable. Arguments which are non-differentiable will not be converted
-  to PennyLane Variable objects within the QNode.
-  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
-
-* A significant refactor with respect to how QNodes and interfaces mark quantum function
+* A significant improvement with respect to how QNodes and interfaces mark quantum function
   arguments as differentiable when using Autograd, designed to improve performance and make
   QNodes more intuitive.
   [(#648)](https://github.com/XanaduAI/pennylane/pull/648)
@@ -141,6 +164,33 @@
     The ability to pass `argnum` has been retained for backwards compatibility, and
     if present the old behaviour persists.
 
+* The QNode Torch interface now inspects QNode positional arguments.
+  If any argument does not have the attribute `requires_grad=True`, it
+  is automatically excluded from quantum gradient computations.
+  [(#652)](https://github.com/XanaduAI/pennylane/pull/652)
+  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
+
+* The QNode TF interface now inspects QNode positional arguments.
+  If any argument is not being watched by a `tf.GradientTape()`,
+  it is automatically excluded from quantum gradient computations.
+  [(#655)](https://github.com/XanaduAI/pennylane/pull/655)
+  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
+
+* QNodes have two new public methods: `QNode.set_trainable_args()` and `QNode.get_trainable_args()`.
+  These are designed to be called by interfaces, to specify to the QNode which of its
+  input arguments are differentiable. Arguments which are non-differentiable will not be converted
+  to PennyLane Variable objects within the QNode.
+  [(#660)](https://github.com/XanaduAI/pennylane/pull/660)
+
+* Added `decomposition` method to PauliX, PauliY, PauliZ, S, T, Hadamard, and PhaseShift gates, which
+  decomposes each of these gates into rotation gates.
+  [(#668)](https://github.com/XanaduAI/pennylane/pull/668)
+
+* The `CircuitGraph` class now supports serializing contained circuit operations
+  and measurement basis rotations to an OpenQASM2.0 script via the new
+  `CircuitGraph.to_openqasm()` method.
+  [(#623)](https://github.com/XanaduAI/pennylane/pull/623)
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.5.
@@ -148,16 +198,17 @@
 
 <h3>Documentation</h3>
 
-<h3>Bug fixes</h3>
+* Various small typos were fixed.
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Theodor Isacsson, Josh Izaac,
+Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 
-# Release 0.9.0 (current release)
+# Release 0.9.0
 
 <h3>New features since last release</h3>
 
@@ -434,7 +485,7 @@ Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Josh Izaac, Nathan Killoran, An
 
 <h3>Improvements</h3>
 
-* A new `Wires` class was introduced for the internal 
+* A new `Wires` class was introduced for the internal
   bookkeeping of wire indices.
   [(#615)](https://github.com/XanaduAI/pennylane/pull/615)
 

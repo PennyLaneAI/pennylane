@@ -518,7 +518,7 @@ class Device(abc.ABC):
             NotImplementedError: if the device does not support sampling
 
         Returns:
-            array[float]: samples in an array of dimension ``(n, num_wires)``
+            array[float]: samples in an array of dimension ``(shots,)``
         """
         raise NotImplementedError(
             "Returning samples from QNodes not currently supported by {}".format(self.short_name)

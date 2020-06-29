@@ -657,7 +657,14 @@ class BaseQNode(qml.QueuingContext):
                 self.output_conversion = np.squeeze
             elif res.return_type is ObservableReturnTypes.Probability:
                 self.output_conversion = np.squeeze
-                self.output_dim = 2 ** len(res.wires)
+
+                if self.model == "qubit":
+                    num_basis_states = 2
+                elif self.model == "cv":
+                    num_basis_states = getattr(self.device, "cutoff", 10)
+
+                self.output_dim = num_basis_states ** len(res.wires)
+
             else:
                 self.output_conversion = float
 

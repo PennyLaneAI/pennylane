@@ -81,6 +81,8 @@ class CVQNode(JacobianQNode):
                     elif ob.return_type == ObservableReturnTypes.Variance:
                         if ob.ev_order is None or ob.ev_order >= 2:
                             x = "F"
+                    elif ob.return_type == ObservableReturnTypes.Probability:
+                        x = "F"
                     elif ob.ev_order is None or ob.ev_order >= 2:
                         x = "B"
                     else:
