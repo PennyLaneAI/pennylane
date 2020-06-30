@@ -17,7 +17,8 @@
      qml.CNOT(wires=['anc1', 3])
      ...
   ```
-  The previous version, in which the number of wires is specified, still works as usual.   
+  The existing behaviour, in which the number of wires is specified on device initialization,
+  continues to work as usual.   
   
   ```pycon
   >>> dev = qml.device("default.qubit", wires=5)
