@@ -59,7 +59,6 @@ Antal Száva, Nicola Vitucci
 <h4>New and improved simulators</h4>
 
 * Added a new device, `default.qubit.tf`, a pure-state qubit simulator written using TensorFlow.
-
   As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
   be faster than the parameter-shift rule for computing quantum gradients
   when the number of parameters to be optimized is large.
