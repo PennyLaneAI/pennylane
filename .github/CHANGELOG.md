@@ -11,11 +11,10 @@
   The quantum operations are now called with the user-defined wire labels:
     
   ``` python
-  @qml.qnode(dev)
-  def circuit():
-     qml.Hadamard(wires='anc2')
-     qml.CNOT(wires=['anc1', 3])
-     ...
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...    qml.Hadamard(wires='anc2')
+  ...    qml.CNOT(wires=['anc1', 3])
   ```
   The existing behaviour, in which the number of wires is specified on device initialization,
   continues to work as usual.   
