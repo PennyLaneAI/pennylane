@@ -15,9 +15,18 @@
 This subpackage provides integration tests for the devices with PennyLane's core
 functionalities. At the moment, the tests only run on devices based on the 'qubit' model.
 
-To run the tests, navigate to the parent directory of this file and run (i.e., for 'default.qubit'):
+To run the tests against a particular device (i.e., for 'default.qubit'):
 
->>> python3 -m pytest tests/* --device default.qubit --shots 1234 --analytic False
+.. code-block:: console
+
+    python3 -m pytest path_to_pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
+
+The location of your PennyLane installation may differ depending on installation method and operating
+system. To find the location, you can execute the following Python code:
+
+>>> import os
+>>> import pennylane as qml
+>>> print(os.path.dirname(qml.__file__))
 
 The command line arguments are optional.
 
