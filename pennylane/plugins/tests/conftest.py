@@ -30,6 +30,8 @@ TOL_STOCHASTIC = 0.05
 N_SHOTS = 10000
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf"}
+#TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
+# do not have an "analytic" attribute.
 
 
 @pytest.fixture(scope="function")
@@ -65,7 +67,7 @@ def skip_if():
     def _skip_if(dev, capabilities):
         """ Skip test if device has any of the given capabilities. """
 
-        dev_capabilities = dev.__class__.capabilities()
+        dev_capabilities = dev.capabilities()
         for capability, value in capabilities.items():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
@@ -98,7 +100,7 @@ def device(device_kwargs):
                 )
             )
 
-        capabilities = dev.__class__.capabilities()
+        capabilities = dev.capabilities()
         if "model" not in capabilities or not capabilities["model"] == "qubit":
             # exit the tests if device based on cv model (currently not supported)
             pytest.exit("The device test suite currently only runs on qubit-based devices.")

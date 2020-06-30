@@ -32,7 +32,8 @@ The command line arguments are optional:
 
 * If `--device` is not given, the tests are run on the qubit core devices that ship with PennyLane.
 
-* If `--shots` is not given, a default of 50000 is used.
+* If `--shots` is not given, a default of 10000 is used. The shots argument is ignored for devices running in
+  analytic mode.
 
 * If `--analytic` is not given, the device's default is used.
 
