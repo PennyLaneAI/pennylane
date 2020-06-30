@@ -28,7 +28,7 @@ system. To find the location, you can execute the following Python code:
 >>> import pennylane as qml
 >>> print(os.path.dirname(qml.__file__))
 
-The command line arguments are optional.
+The command line arguments are optional:
 
 * If `--device` is not given, the tests are run on the qubit core devices that ship with PennyLane.
 
