@@ -876,4 +876,4 @@ class TestSWAPTest:
             return qml.expval(qml.PauliZ(ancilla))
 
         res = circuit()
-        assert np.allclose(res, result, atol=tol)
+        assert np.allclose(res, result)
