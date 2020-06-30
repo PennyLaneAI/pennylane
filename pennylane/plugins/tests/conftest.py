@@ -30,7 +30,7 @@ TOL_STOCHASTIC = 0.05
 N_SHOTS = 10000
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf"}
-#TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
+# TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
 # do not have an "analytic" attribute.
 
 
@@ -43,7 +43,6 @@ def tol():
         if analytic:
             return float(os.environ.get("TOL", TOL))
         return TOL_STOCHASTIC
-
 
     return _tol
 
