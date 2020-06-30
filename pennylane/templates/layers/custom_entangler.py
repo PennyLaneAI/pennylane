@@ -199,7 +199,7 @@ def CustomEntanglerLayers(
         repeat_coupling = check_number_of_layers([coupling_weights])
         if repeat_coupling != repeat:
             raise ValueError(
-                "First dimension of `rotation_weights` and `coupling_weights` must be the same"
+                "First dimension of `rotation_weights` and `coupling_weights` must be the same, got {} and {}".format(repeat, repeat_coupling)
             )
 
         if pattern in OPTIONS:
@@ -207,8 +207,7 @@ def CustomEntanglerLayers(
             check_shape(
                 coupling_weights,
                 expected_shape,
-                msg="'coupling_weights' must be of shape {}; got {}"
-                "".format(expected_shape, get_shape(coupling_weights)),
+                msg="'coupling_weights' must be of shape {}; got {}".format(expected_shape, get_shape(coupling_weights))
             )
 
     ###############
