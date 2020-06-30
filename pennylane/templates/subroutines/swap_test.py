@@ -87,7 +87,7 @@ def SWAPTest(register1, register2, ancilla):
 
     qml.Hadamard(wires=ancilla)
 
-    for i in range(0, len(register1)):
+    for i in range(len(register1)):
         qml.CSWAP(wires=[ancilla, register1[i], register2[i]])
 
     qml.Hadamard(wires=ancilla)
