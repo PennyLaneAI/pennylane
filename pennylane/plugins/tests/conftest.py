@@ -40,8 +40,8 @@ def tol():
     def _tol(analytic):
         if analytic:
             return float(os.environ.get("TOL", TOL))
-        else:
-            return TOL_STOCHASTIC
+        return TOL_STOCHASTIC
+
 
     return _tol
 
