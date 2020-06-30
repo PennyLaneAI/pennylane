@@ -870,7 +870,7 @@ class TestSWAPTest:
 
         @qml.qnode(dev)
         def circuit():
-            for i in range(0, len(gates)):
+            for i in range(len(gates)):
                 gates[i](wires=wire_seq[i])
             SWAPTest(register1, register2, ancilla)
             return qml.expval(qml.PauliZ(ancilla))
