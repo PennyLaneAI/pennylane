@@ -2,6 +2,26 @@
 
 <h3>New features since last release</h3>
 
+* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
+  to run generic tests on core or external devices calling 
+  
+  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False                                                                                                                                                                                                                                                                    
+  
+  The command line arguments are optional.
+   
+  * If `--device` is not given, the tests are run on the core devices that ship with PennyLane. 
+  
+  * If `--shots` is not given, a default of 10000 is used. The shots argument is ignored for devices running in 
+    analytic mode.
+  
+  * If `--analytic` is not given, the device's default is used.
+  
+  Other arguments of the device, such as `qiskit.aer`'s compulsory `backend_options`, 
+  can be defined in the `config.toml` file containing custom PennyLane configurations.
+                                                                                                                                                        
+  If the tests are run on external devices, the device and its dependencies must be 
+  installed locally. 
+  
 * Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)

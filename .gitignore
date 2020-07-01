@@ -29,3 +29,4 @@ timer.dat
 tmp/*
 benchmark/revisions/
 venv
+config.toml
