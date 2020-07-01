@@ -33,7 +33,8 @@ try:
         tf.enable_eager_execution()
 
 except ImportError as e:
-    pass
+    tf = lambda: None
+    tf.__version__ = "None"
 
 
 # ===================================================================

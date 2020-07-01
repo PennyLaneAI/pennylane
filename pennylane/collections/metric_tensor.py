@@ -54,6 +54,7 @@ class MetricTensor:
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             metric tensor should be executed. This can either be a single device, or a list
             of devices of length corresponding to the number of parametric layers in ``qnode``.
+            If not provided, the device bound to the input QNode will be used.
 
 
     **Example**
@@ -70,7 +71,7 @@ class MetricTensor:
     By using ``qml.MetricTensor()``, we create a metric tensor object that can be evaluated
     to compute the metric tensor of the QNode:
 
-    >>> g = qml.MetricTensor(qnode, dev)
+    >>> g = qml.MetricTensor(qnode)
 
     We can evaluate this function at various points in the QNode parameter space to
     compute the metric tensor:
@@ -107,9 +108,9 @@ class MetricTensor:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, qnode, device):
+    def __init__(self, qnode, device=None):
         self.qnode = qnode
-        self.dev = device
+        self.dev = device or qnode.device
         self.interface = qnode.interface
 
         self.qnodes = None
