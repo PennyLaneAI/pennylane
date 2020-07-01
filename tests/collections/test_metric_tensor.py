@@ -561,6 +561,7 @@ class TestMetricTensorAutodiff:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.skipif(tf.__version__[0] == "1", reason="default.qubit.tf only works with TF2")
 class TestMetricTensorBackprop:
     """Test that the metric tensor correctly works with a device that
     supports backprop."""
