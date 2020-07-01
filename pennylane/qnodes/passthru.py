@@ -16,6 +16,8 @@ PassthruQNode class
 """
 import pennylane.operation
 import pennylane.circuit_graph
+from pennylane.variable import Variable
+
 from .base import BaseQNode, QuantumFunctionError
 
 
@@ -84,6 +86,8 @@ class PassthruQNode(BaseQNode):
         if not kwargs.get("mutable"):
             raise ValueError("PassthruQNode does not support immutable mode.")
 
+        self.interface = None
+
         super().__init__(func, device, **kwargs)
 
     def __repr__(self):
@@ -92,8 +96,13 @@ class PassthruQNode(BaseQNode):
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
     def _set_variables(self, args, kwargs):
-        # do nothing, since we do not use Variables
-        pass
+        if not args:
+            return
+
+        if self.interface == "tf":
+            import tensorflow as tf
+
+            Variable.positional_arg_values = tf.concat([tf.reshape(a, [-1]) for a in args], axis=0)
 
     def _construct(self, args, kwargs):
         """Construct the quantum circuit graph by calling the quantum function.
@@ -106,27 +115,9 @@ class PassthruQNode(BaseQNode):
 
         # set up the context for Operator entry
         with self:
-            # use a try/finally block such that if any errors arise during
-            # checking, and the user manually catches the exception, the class
-            # attribute pennylane.operation.Operator.do_check_domain is
-            # properly reset to True
-            try:
-                # turn off domain checking since PassthruQNode qfuncs can take any class as input
-                pennylane.operation.Operator.do_check_domain = False
-                # generate the program queue by executing the quantum circuit function
-                res = self.func(*args, **kwargs)
-            finally:
-                pennylane.operation.Operator.do_check_domain = True
+            res = self.func(*args, **kwargs)
 
-        # use a try/finally block here too
-        try:
-            # check the validity of the circuit
-            # turn off domain checking, but outside of the context such that no
-            # queuing takes place (e.g. from decompositions)
-            pennylane.operation.Operator.do_check_domain = False
-            self._check_circuit(res)
-        finally:
-            pennylane.operation.Operator.do_check_domain = True
+        self._check_circuit(res)
 
         del self.queue
         del self.obs_queue
@@ -145,3 +136,13 @@ class PassthruQNode(BaseQNode):
                 raise QuantumFunctionError(
                     "The operations {} cannot affect the circuit output.".format(invisible)
                 )
+
+    def evaluate(self, args, kwargs):
+        try:
+            # turn off operator domain checking
+            pennylane.operation.Operator.do_check_domain = False
+            result = super().evaluate(args, kwargs)
+        finally:
+            pennylane.operation.Operator.do_check_domain = True
+
+        return result

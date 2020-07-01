@@ -232,6 +232,53 @@ def finite_diff():
 # Tests
 # ===================================================================
 
+class TestRotDecomposition:
+    """Test for the multi-parameter gate decomposition ability"""
+
+    def test_decompose_rot(self):
+        """Test that a circuit containing a 3D Rot gate
+        is correctly decomposed"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def qnode(a, b, c):
+            qml.Rot(a, b, c, wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        qnode(0.1, 0.2, 0.3)
+
+        res = qml.MetricTensor._decompose_multi_parameter_gates(qnode.circuit)
+        assert [op.name for op in res.operations] == ["RZ", "RY", "RZ"]
+
+    def test_rot_metric_tensor(self, tol):
+        """Test that a circuit containing a 3D Rot gate
+        correctly computes the metric tensor"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def qnode(a, b, c):
+            qml.Rot(a, b, c, wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        g = qml.MetricTensor(qnode, dev)
+        res = g(0.1, 0.2, 0.3)
+
+        assert g.qnodes[0].circuit.operations == []
+        assert [op.name for op in g.qnodes[1].circuit.operations] == ["RZ", "PauliZ", "S", "Hadamard"]
+        assert [op.name for op in g.qnodes[2].circuit.operations] == ["RZ", "RY"]
+
+        @qml.qnode(dev)
+        def qnode(a, b, c):
+            qml.RZ(a, wires=[0])
+            qml.RY(b, wires=[0])
+            qml.RZ(c, wires=[0])
+            return qml.expval(qml.PauliX(0))
+
+        g = qml.MetricTensor(qnode, dev)
+        expected = g(0.1, 0.2, 0.3)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestMetricTensorEvaluation:
     """Tests for metric tensor subcircuit construction and evaluation"""

@@ -205,6 +205,45 @@ class MetricTensor:
 
         return diag
 
+    @staticmethod
+    def _decompose_multi_parameter_gates(circuit):
+        """Force decompositions of multi-parameter gates if they exist.
+
+        Args:
+            circuit (~.CircuitGraph): circuit to decompose
+
+        Returns:
+            ~.CircuitGraph: circuit graph with all multi-parameter gates decomposed
+            into single parameter gates.
+        """
+        ops_to_decompose = {"Rot"}
+        allowed_ops = set(qml.ops._qubit__ops__) - ops_to_decompose
+
+        if not ops_to_decompose.intersection({op.name for op in circuit.operations}):
+            # provided circuit does not contain any operations that need decomposing
+            return circuit
+
+        # make the decomposer object
+        decomposer = type("MetricTensorDecomposer", tuple(), {})
+        decomposer.short_name = "Metric tensor decomposer"
+        decomposer.supports_operation = staticmethod(
+            lambda x: x in set(qml.ops._qubit__ops__) - {"Rot"}
+        )
+
+        # decompose operations
+        decomposed_ops = qml.qnodes.base.decompose_queue(circuit.operations, decomposer)
+
+        # construct the new variable deps dictionary
+        variable_deps = {k: [] for k in range(len(circuit.variable_deps))}
+        for op in decomposed_ops:
+            for j, p in enumerate(qml.utils._flatten(op.params)):
+                if isinstance(p, qml.variable.Variable):
+                    if not p.is_kwarg:  # ignore auxiliary arguments
+                        variable_deps[p.idx].append(qml.qnodes.base.ParameterDependency(op, j))
+
+        new_circuit = qml.CircuitGraph(decomposed_ops + circuit.observables, variable_deps)
+        return new_circuit
+
     def _make_qnodes(self, args, kwargs):
         """Helper method to construct the QNodes that generate the metric tensor."""
         if hasattr(self.qnode, "circuit"):
@@ -217,6 +256,8 @@ class MetricTensor:
         circuit = getattr(self.qnode, "circuit", None) or getattr(
             self.qnode._qnode, "circuit", None
         )
+
+        circuit = self._decompose_multi_parameter_gates(circuit)
 
         qnodes = qml.QNodeCollection()
 

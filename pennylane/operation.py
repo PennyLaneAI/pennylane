@@ -490,7 +490,7 @@ class Operator(abc.ABC):
             list[Any]: parameter values
         """
         # TODO profiling
-        def evaluate(p):
+        def evaluate(p, check_domain=True):
             """Evaluate a single parameter."""
             if isinstance(p, np.ndarray):
                 # object arrays may have Variables inside them
@@ -499,10 +499,13 @@ class Operator(abc.ABC):
                     return temp.reshape(p.shape)
                 return p
             if isinstance(p, Variable):
-                p = self.check_domain(p.val)
+                if check_domain:
+                    p = self.check_domain(p.val)
+                else:
+                    p = p.val
             return p
 
-        return [evaluate(p) for p in self.params]
+        return [evaluate(p, check_domain=self.do_check_domain) for p in self.params]
 
     def queue(self):
         """Append the operator to the Operator queue."""
