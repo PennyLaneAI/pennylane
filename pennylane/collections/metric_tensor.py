@@ -19,7 +19,6 @@ Contains an implementation of the metric tensor using QNode collections.
 import itertools
 
 import numpy as np
-from scipy.linalg import block_diag
 import pennylane as qml
 
 from . import functions as fn
@@ -226,9 +225,7 @@ class MetricTensor:
         # make the decomposer object
         decomposer = type("MetricTensorDecomposer", tuple(), {})
         decomposer.short_name = "Metric tensor decomposer"
-        decomposer.supports_operation = staticmethod(
-            lambda x: x in set(qml.ops._qubit__ops__) - {"Rot"}
-        )
+        decomposer.supports_operation = staticmethod(lambda x: x in allowed_ops)
 
         # decompose operations
         decomposed_ops = qml.qnodes.base.decompose_queue(circuit.operations, decomposer)
@@ -301,7 +298,7 @@ class MetricTensor:
             @qml.qnode(self.dev, interface=self.interface, mutable=True)
             def qn(
                 weights, _queue=queue, _obs_list=obs_list[-1], _dev=self.dev
-            ):  # pylint: disable=dangerous-default-value
+            ):  # pylint: disable=dangerous-default-value,unused-argument
                 for op in _queue:
                     op.queue()
 

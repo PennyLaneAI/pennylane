@@ -103,7 +103,6 @@ import abc
 import itertools
 import functools
 import numbers
-from collections.abc import Sequence
 from enum import Enum, IntEnum
 from pennylane.wires import Wires
 

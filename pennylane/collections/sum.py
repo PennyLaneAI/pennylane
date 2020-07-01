@@ -19,40 +19,6 @@ Contains the sum function, for summing QNode collections.
 from .apply import apply
 
 
-def _get_sum_func(interface):
-    """Helper function for :func:`~.sum` to determine
-    the correct sum function depending on the QNodeCollection
-    interface.
-
-    Args:
-        interface (str): the interface to get the sum function for
-
-    Returns:
-        callable: the required sum function
-    """
-    if interface == "tf":
-        import tensorflow as tf
-
-        return tf.reduce_sum
-
-    if interface == "torch":
-        import torch
-
-        return torch.sum
-
-    if interface in ("autograd", "numpy"):
-        from autograd import numpy as np
-
-        return np.sum
-
-    if interface is None:
-        import numpy as np
-
-        return np.sum
-
-    raise ValueError("Unknown interface {}".format(interface))
-
-
 def sum(x):
     """Lazily sum the constituent QNodes of a :class:`QNodeCollection`.
 
@@ -80,6 +46,24 @@ def sum(x):
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
-    interface = getattr(x, "interface", None)
-    sum_fn = _get_sum_func(interface)
-    return apply(sum_fn, x)
+    if hasattr(x, "interface") and x.interface is not None:
+        if x.interface == "tf":
+            import tensorflow as tf
+
+            return apply(tf.reduce_sum, x)
+
+        if x.interface == "torch":
+            import torch
+
+            return apply(torch.sum, x)
+
+        if x.interface in ("autograd", "numpy"):
+            from autograd import numpy as np
+
+            return apply(np.sum, x)
+
+        raise ValueError("Unknown interface {}".format(x.interface))
+
+    import numpy as np
+
+    return apply(np.sum, x)
