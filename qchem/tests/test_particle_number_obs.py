@@ -65,13 +65,13 @@ table_lih_anion = np.array(
         ("lih_anion", 3, None, table_lih_anion, 2),
     ],
 )
-def test_get_particle_number_elements(
+def test_get_particle_number_table(
     mol_name, n_act_elect, n_act_orb, pn_table_exp, pn_docc_exp, tol
 ):
     r"""Test the correctness of the table used to build the particle number
     operator for different active spaces."""
 
-    pn_table_res, pn_docc_res = qchem.get_particle_number_elements(
+    pn_table_res, pn_docc_res = qchem.get_particle_number_table(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
     )
 
@@ -129,7 +129,7 @@ def test_build_particle_number_observable(
     something useful to the users as well.
     """
 
-    pn_table, pn_docc = qchem.get_particle_number_elements(
+    pn_table, pn_docc = qchem.get_particle_number_table(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
     )
 

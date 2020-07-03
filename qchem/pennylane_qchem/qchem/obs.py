@@ -367,7 +367,7 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
-def get_particle_number_elements(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
+def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
     r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
     space and generates the table required to build the particle number operator
     :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`.
@@ -435,5 +435,5 @@ __all__ = [
     "get_spin2_matrix_elements",
     "observable",
     "get_spinZ_matrix_elements",
-    "get_particle_number_elements",
+    "get_particle_number_table",
 ]
