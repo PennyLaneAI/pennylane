@@ -78,7 +78,7 @@ def to_tf(qnode, dtype=None):
     """
     qnode_interface = getattr(qnode, "interface", None)
 
-    if qnode_interface == "tf":
+    if qnode_interface == "tf" and dtype == qnode._dtype:
         return qnode
 
     if qnode_interface is not None:
@@ -120,6 +120,7 @@ def to_tf(qnode, dtype=None):
         set_trainable_args = qnode.set_trainable_args
         get_trainable_args = qnode.get_trainable_args
         _qnode = qnode
+        _dtype = dtype
 
         # Bind QNode attributes. Note that attributes must be
         # bound as properties; by making use of closure, we ensure
