@@ -191,7 +191,7 @@ class Device(abc.ABC):
             self.pre_apply()
 
             for operation in queue:
-                self.apply(operation.name, operation.wires.tolist(), operation.parameters)
+                self.apply(operation.name, operation.wires, operation.parameters)
 
             self.post_apply()
 
@@ -201,9 +201,9 @@ class Device(abc.ABC):
 
                 if isinstance(obs, Tensor):
                     # if obs is a tensor observable, use a list of individual wires
-                    wires = [ob.wires.tolist() for ob in obs.obs]
+                    wires = [ob.wires for ob in obs.obs]
                 else:
-                    wires = obs.wires.tolist()
+                    wires = obs.wires
 
                 if obs.return_type is Expectation:
                     results.append(self.expval(obs.name, wires, obs.parameters))
@@ -518,7 +518,7 @@ class Device(abc.ABC):
             NotImplementedError: if the device does not support sampling
 
         Returns:
-            array[float]: samples in an array of dimension ``(n, num_wires)``
+            array[float]: samples in an array of dimension ``(shots,)``
         """
         raise NotImplementedError(
             "Returning samples from QNodes not currently supported by {}".format(self.short_name)

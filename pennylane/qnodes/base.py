@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires.tolist())
+            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 
@@ -138,7 +138,7 @@ class BaseQNode(qml.QueuingContext):
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance represeting
+    The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance representing
     the quantum circuit. The circuit can be either
 
     * *mutable*, which means the quantum function is called each time the QNode is evaluated, or
@@ -360,13 +360,13 @@ class BaseQNode(qml.QueuingContext):
 
     def _append_operator(self, operator):
         if operator.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
-            if set(operator.wires.tolist()) != set(range(self.num_wires)):
+            if set(operator.wires) != set(range(self.num_wires)):
                 raise QuantumFunctionError(
                     "Operator {} must act on all wires".format(operator.name)
                 )
 
         # Make sure only existing wires are used.
-        for w in operator.wires.tolist():  # TODO: re-assess for for nonconsec wires
+        for w in operator.wires:
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
@@ -657,7 +657,14 @@ class BaseQNode(qml.QueuingContext):
                 self.output_conversion = np.squeeze
             elif res.return_type is ObservableReturnTypes.Probability:
                 self.output_conversion = np.squeeze
-                self.output_dim = 2 ** len(res.wires)
+
+                if self.model == "qubit":
+                    num_basis_states = 2
+                elif self.model == "cv":
+                    num_basis_states = getattr(self.device, "cutoff", 10)
+
+                self.output_dim = num_basis_states ** len(res.wires)
+
             else:
                 self.output_conversion = float
 

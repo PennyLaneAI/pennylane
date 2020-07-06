@@ -85,8 +85,19 @@ Included benchmarks
 * ``bm_mutable_rotations``: Evaluates a mutable QNode consisting of ``k`` simple rotations on one qubit
   several times, varying ``k`` from 0 to ``n``. The qfunc is called each time due to the mutability.
 * ``bm_mutable_complicated_params``: Measure the efficiency of ``JacobianQNode._construct`` for
-    mutable QNodes, using an extreme case where the QNode has lots of primary parameters with
-    a complicated nested structure, but relatively few auxiliary parameters, and only a few
-    of the primary parameters are actually used in the circuit.
+  mutable QNodes, using an extreme case where the QNode has lots of primary parameters with
+  a complicated nested structure, but relatively few auxiliary parameters, and only a few
+  of the primary parameters are actually used in the circuit.
+* ``bm_jacobian_uniform``: Creates a parametrized quantum circuit with a uniform
+  distribution of parametrized gates throughout the circuit
+  and evaluates its Jacobian.
+* ``bm_jacobian_end_weighted``: Creates a parametrized quantum circuit with an end-weighted
+  distribution of parametrized gates in the circuit
+  and evaluates its Jacobian.
+* ``bm_jacobian_front_weighted``: Creates a parametrized quantum circuit with a front-weighted
+  distribution of parametrized gates in the circuit
+  and evaluates its Jacobian.
 * ``bm_iqp_circuit``:  Evaluates an IQP circuit on ``w`` wires with ``n*w`` gates chosen from the 
   set ``Z``, ``CZ`` and ``CCZ``.
+* ``bm_nearest_neighbour_circuit``: Evaluates a circuit consisting only of single-qubit and
+  nearest-neighbour two-qubit gates.

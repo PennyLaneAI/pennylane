@@ -241,12 +241,12 @@ class TestInterferometer:
             for idx, op in enumerate(rec_rect.queue[:3]):
                 assert isinstance(op, qml.Beamsplitter)
                 assert op.parameters == [theta[idx], phi[idx]]
-                assert op.wires == Wires(expected_bs_wires[idx])
+                assert op.wires == expected_bs_wires[idx]  #Wires(expected_bs_wires[idx])
 
             for idx, op in enumerate(rec.queue[3:]):
                 assert isinstance(op, qml.Rotation)
                 assert op.parameters == [varphi[idx]]
-                assert op.wires == Wires([idx])
+                assert op.wires == [idx]  #Wires([idx])
 
     def test_four_mode_rect(self, tol):
         """Test that a 4 mode interferometer using rectangular mesh gives the correct gates"""
@@ -267,12 +267,12 @@ class TestInterferometer:
         for idx, op in enumerate(rec.queue[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
-            assert op.wires == Wires(expected_bs_wires[idx])
+            assert op.wires == expected_bs_wires[idx]  #Wires(expected_bs_wires[idx])
 
         for idx, op in enumerate(rec.queue[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
-            assert op.wires == Wires([idx])
+            assert op.wires == [idx]  #Wires([idx])
 
     def test_four_mode_triangular(self, tol):
         """Test that a 4 mode interferometer using triangular mesh gives the correct gates"""
@@ -293,12 +293,12 @@ class TestInterferometer:
         for idx, op in enumerate(rec.queue[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
-            assert op.wires == Wires(expected_bs_wires[idx])
+            assert op.wires == expected_bs_wires[idx]  #Wires(expected_bs_wires[idx])
 
         for idx, op in enumerate(rec.queue[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
-            assert op.wires == Wires([idx])
+            assert op.wires == [idx]  #Wires([idx])
 
     def test_integration(self, tol):
         """test integration with PennyLane and gradient calculations"""
@@ -384,7 +384,7 @@ class TestSingleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == Wires(exp_wires)
+            assert res_wires == exp_wires  #Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -453,7 +453,7 @@ class TestArbitraryUnitary:
         with qml.utils.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0])
 
-        assert all(op.name == "PauliRot" and op.wires == Wires([0]) for op in rec.queue)
+        assert all(op.name == "PauliRot" and op.wires == [0] for op in rec.queue) # Wires([0]) for op in rec.queue)
 
         pauli_words = ["X", "Y", "Z"]
 
@@ -468,7 +468,7 @@ class TestArbitraryUnitary:
         with qml.utils.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0, 1])
 
-        assert all(op.name == "PauliRot" and op.wires == Wires([0, 1]) for op in rec.queue)
+        assert all(op.name == "PauliRot" and op.wires == [0, 1] for op in rec.queue) # Wires([0, 1]) for op in rec.queue)
 
         pauli_words = ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"]
 
@@ -570,7 +570,7 @@ class TestDoubleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == Wires(exp_wires)
+            assert res_wires == exp_wires #Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -712,7 +712,7 @@ class TestUCCSDUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == Wires(exp_wires)
+            assert res_wires == exp_wires #Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
