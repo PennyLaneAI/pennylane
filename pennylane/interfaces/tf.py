@@ -82,7 +82,7 @@ def to_tf(qnode, dtype=None):
         return qnode
 
     if qnode_interface is not None:
-        qnode = qnode._qnode
+        qnode = qnode._qnode # pylint: disable=protected-access
 
     class TFQNode(partial):
         """TensorFlow QNode"""

@@ -149,7 +149,7 @@ def to_torch(qnode):
         return qnode
 
     if qnode_interface is not None:
-        qnode = qnode._qnode
+        qnode = qnode._qnode # pylint: disable=protected-access
 
     class _TorchQNode(torch.autograd.Function):
         """The TorchQNode"""
