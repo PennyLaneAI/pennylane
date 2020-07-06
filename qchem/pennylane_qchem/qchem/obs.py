@@ -367,10 +367,9 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
-def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
-    r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
-    space and generates the table required to build the particle number operator
-    :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`.
+def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
+    r"""Builds the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` and
+    represent it in the basis of Pauli matrices.
 
     In general, if an active space is defined, the particle number operator reads,
 
@@ -381,53 +380,50 @@ def get_particle_number_table(mol_name, hf_data, n_active_electrons=None, n_acti
     where :math:`2 n_{\mathrm{docc}}` is the number of particles occupying
     :math:`n_{\mathrm{docc}}` (frozen) core orbitals and :math:`\hat{c}_\alpha^\dagger`
     (:math:`\hat{c}_\alpha`) is the creation (annihilation) particle operator acting on
-    the :math:`\alpha`-th active spin-orbital.
+    the :math:`\alpha`-th active spin-orbital. 
+
+    First, the function generates the fermionic second-quantized operator in the basis
+    of single-particle states (HF states). Then, the many-body observable is mapped to the 
+    Pauli basis and converted into a PennyLane observable.
 
     Args:
-        mol_name (str): name of the molecule
-        hf_data (str): path to the directory with the HF electronic structure data
-        n_active_electrons (int): number of active electrons
-        n_active_orbitals (int): number of active orbitals
+        mol_data (MolecularData): OpenFermion :class:`~.MolecularData` storing the Hartree-Fock
+            electronic structure data obtained from the quantum chemistry packages ``'PySCF'`` or
+            ``'Psi4'``.
+        docc_orb (list): list containing the indices of the doubly-occupied orbitals, if any.
+        act_orb (list): list containing the indices of the active molecular orbitals. If empty,
+            all molecular orbitals will be included in the active space.
+        mapping (str): specifies the fermion-to-qubit mapping. Input values can
+            be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
-
-        tuple: NumPy array with the table used to build the fermionic operator and
-        the number of particles occupying the core orbitals. The first two columns of
-        the table contain the index :math:`\alpha` and, in this particular case for :math:`\hat{N}`,
-        the entries of the third column are all equal to one.
+        pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
 
     **Example**
-
-    >>> pn_table, pn_docc = get_particle_number_table(
-        'h2o',
-        './pyscf/sto-3g',
-        n_active_electrons=4,
-        n_active_orbitals=4)
-    >>> print(pn_table, pn_docc)
-    [[0. 0. 1.]
-    [1. 1. 1.]
-    [2. 2. 1.]
-    [3. 3. 1.]
-    [4. 4. 1.]
-    [5. 5. 1.]
-    [6. 6. 1.]
-    [7. 7. 1.]] 6
+    
+    >>> name = 'h2'
+    >>> path = './pyscf/sto-3g'
+    >>> hf_data = MolecularData(filename=os.path.join(path, name))
+    >>> docc, act = qchem.active_space(name, path, n_active_electrons=2, n_active_orbitals=2)
+    >>> pn_obs = particle_number(hf_data, docc_orb=docc, act_orb=act)
+    >>> print(pn_obs)
+    (2.0) [I0]
+    + (-0.5) [Z0]
+    + (-0.5) [Z1]
+    + (-0.5) [Z2]
+    + (-0.5) [Z3]
     """
 
-    docc_indices, active_indices = structure.active_space(
-        mol_name,
-        hf_data,
-        n_active_electrons=n_active_electrons,
-        n_active_orbitals=n_active_orbitals,
-    )
+    if not act_orb:
+        act_orb = list(range(mol_data.n_orbitals))
 
-    n_spin_orbs = 2 * len(active_indices)
+    n_spin_orbs = 2 * len(act_orb)
 
-    particle_number_table = np.ones((n_spin_orbs, 3))
+    table = np.ones((n_spin_orbs, 3))
     for alpha in range(n_spin_orbs):
-        particle_number_table[alpha, :2] = alpha
+        table[alpha, :2] = alpha
 
-    return particle_number_table, 2 * len(docc_indices)
+    return observable(table, init_term=2 * len(docc_orb), mapping=mapping)
 
 
 __all__ = [
@@ -435,5 +431,5 @@ __all__ = [
     "get_spin2_matrix_elements",
     "observable",
     "get_spinZ_matrix_elements",
-    "get_particle_number_table",
+    "particle_number",
 ]
