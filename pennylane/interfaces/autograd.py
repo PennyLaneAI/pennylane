@@ -14,7 +14,6 @@
 """
 Differentiable quantum nodes with Autograd interface.
 """
-from copy import deepcopy
 import autograd.extend
 import autograd.builtins
 
@@ -107,7 +106,6 @@ def to_autograd(qnode):
 
     # define the vector-Jacobian product function for AutogradQNode.evaluate
     autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
-    converted_qnode = deepcopy(qnode)
-    converted_qnode.__class__ = AutogradQNode
-    converted_qnode._qnode = qnode  # pylint: disable=protected-access
-    return converted_qnode
+    qnode._qnode = qnode  # pylint: disable=protected-access
+    qnode.__class__ = AutogradQNode
+    return qnode

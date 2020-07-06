@@ -1050,7 +1050,6 @@ class TestConversion:
         assert qnode.interface == interface
 
         converted_qnode = to_autograd(qnode)
-        assert converted_qnode is not qnode
 
         x = 0.4
         res = converted_qnode(x)
