@@ -79,10 +79,10 @@ def to_tf(qnode, dtype=None):
     qnode_interface = getattr(qnode, "interface", None)
 
     if qnode_interface == "tf":
-        if dtype == qnode._dtype:
+        if dtype == qnode._dtype:  # pylint: disable=protected-access
             return qnode
 
-        qnode = qnode._qnode
+        qnode = qnode._qnode  # pylint: disable=protected-access
 
     elif qnode_interface is not None:
         qnode = qnode._qnode  # pylint: disable=protected-access
