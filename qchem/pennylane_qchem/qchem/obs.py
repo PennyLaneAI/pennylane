@@ -21,6 +21,8 @@ from openfermion.hamiltonians import MolecularData
 from openfermion.ops import FermionOperator
 from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
+from pennylane.templates.utils import check_type
+
 from . import structure
 
 
@@ -367,7 +369,7 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
-def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
+def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigner"):
     r"""Builds the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` and
     represent it in the basis of Pauli matrices.
 
@@ -390,9 +392,9 @@ def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
         mol_data (MolecularData): OpenFermion :class:`~.MolecularData` storing the Hartree-Fock
             electronic structure data obtained from the quantum chemistry packages ``'PySCF'`` or
             ``'Psi4'``.
-        docc_orb (list): list containing the indices of the doubly-occupied orbitals, if any.
-        act_orb (list): list containing the indices of the active molecular orbitals. If empty,
-            all molecular orbitals will be included in the active space.
+        docc_orb (list): list containing the indices of the doubly-occupied orbitals.
+        act_orb (list): list containing the indices of the active molecular orbitals. If it is
+             not specified all molecular orbitals will be included in the active space.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
@@ -414,8 +416,16 @@ def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
     + (-0.5) [Z3]
     """
 
-    if not act_orb:
+    if docc_orb is None:
+        pn_docc = 0
+    else:
+        check_type(docc_orb, [list], msg="'docc_orb' must be a list; got {}" "".format(docc_orb))
+        pn_docc = 2 * len(docc_orb)
+
+    if act_orb is None:
         act_orb = list(range(mol_data.n_orbitals))
+    else:
+        check_type(act_orb, [list], msg="'act_orb' must be a list; got {}" "".format(act_orb))
 
     n_spin_orbs = 2 * len(act_orb)
 
@@ -423,7 +433,7 @@ def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
     for alpha in range(n_spin_orbs):
         table[alpha, :2] = alpha
 
-    return observable(table, init_term=2 * len(docc_orb), mapping=mapping)
+    return observable(table, init_term=pn_docc, mapping=mapping)
 
 
 __all__ = [

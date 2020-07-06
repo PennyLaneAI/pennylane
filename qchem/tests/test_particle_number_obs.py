@@ -74,7 +74,7 @@ terms_lih_anion_bk = {
         ("lih_anion", 3, None, "bravyi_KITAEV", terms_lih_anion_bk),
     ],
 )
-def test_build_particle_number_observable(
+def test_particle_number_observable(
     mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch
 ):
     r"""Tests the correctness of the particle number observable :math:`\hat{N}` generated
@@ -97,3 +97,18 @@ def test_build_particle_number_observable(
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
     assert qchem._qubit_operators_equivalent(particle_number_qubit_op, pn_obs)
+
+
+@pytest.mark.parametrize(
+    ("docc_orb", "act_orb", "msg_match"),
+    [(2, [1, 3], "'docc_orb' must be a list"), ([0, 1], 4, "'act_orb' must be a list"),],
+)
+def test_exceptions_particle_number(docc_orb, act_orb, msg_match):
+    r"""Tests that the 'particle_number' function throws an exception if 'docc_orb' or 
+    'act_orb' are not lists."""
+
+    mol_name = "h2o_psi4"
+    mapping = "jordan_wigner"
+    mol_data = mol_data = MolecularData(filename=os.path.join(ref_dir.strip(), mol_name.strip()))
+    with pytest.raises(ValueError, match=msg_match):
+        qchem.particle_number(mol_data, docc_orb=docc_orb, act_orb=act_orb, mapping=mapping)
