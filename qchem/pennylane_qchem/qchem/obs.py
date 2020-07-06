@@ -114,7 +114,7 @@ def get_spin2_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
         \langle \alpha, \beta \vert \hat{s}_1 \cdot \hat{s}_2
         \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
         \hat{c}_\gamma \hat{c}_\delta,
-    
+
     where the two-particle matrix elements are computedas,
 
     .. math::
@@ -380,10 +380,10 @@ def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
     where :math:`2 n_{\mathrm{docc}}` is the number of particles occupying
     :math:`n_{\mathrm{docc}}` (frozen) core orbitals and :math:`\hat{c}_\alpha^\dagger`
     (:math:`\hat{c}_\alpha`) is the creation (annihilation) particle operator acting on
-    the :math:`\alpha`-th active spin-orbital. 
+    the :math:`\alpha`-th active spin-orbital.
 
     First, the function generates the fermionic second-quantized operator in the basis
-    of single-particle states (HF states). Then, the many-body observable is mapped to the 
+    of single-particle states (HF states). Then, the many-body observable is mapped to the
     Pauli basis and converted into a PennyLane observable.
 
     Args:
@@ -400,7 +400,7 @@ def particle_number(mol_data, docc_orb=[], act_orb=[], mapping="jordan_wigner"):
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
 
     **Example**
-    
+
     >>> name = 'h2'
     >>> path = './pyscf/sto-3g'
     >>> hf_data = MolecularData(filename=os.path.join(path, name))
