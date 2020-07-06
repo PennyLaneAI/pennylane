@@ -61,12 +61,6 @@ def circuit(ops):
 
 
 @pytest.fixture
-def wires():
-    """A fixture for a mixed-type wires label list of length 3."""
-    return ['a', 'q1', 3]
-
-
-@pytest.fixture
 def parameterized_circuit(wires):
     def qfunc(a, b, c, d, e, f):
         qml.Rotation(a, wires=wires[0]),
@@ -163,6 +157,7 @@ class TestCircuitGraph:
         assert circuit.wire_indices(1) == op_indices_for_wire_1
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
+    @pytest.mark.parametrize("wires", [['a', 'q1', 3]])
     def test_layers(self, parameterized_circuit, wires):
         """A test of a simple circuit with 3 layers and 6 parameters"""
 
@@ -181,6 +176,7 @@ class TestCircuitGraph:
         assert layers[2].ops == [ops[x] for x in [5, 6]]
         assert layers[2].param_inds == [4, 5]
 
+    @pytest.mark.parametrize("wires", [['a', 'q1', 3]])
     def test_iterate_layers(self, parameterized_circuit, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
