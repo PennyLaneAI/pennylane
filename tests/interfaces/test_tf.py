@@ -28,7 +28,7 @@ if tf.__version__[0] == "1":
 import pennylane as qml
 
 from pennylane.qnodes import QuantumFunctionError
-from pennylane.interfaces.tf import unflatten_tf
+from pennylane.interfaces.tf import to_tf, unflatten_tf
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
@@ -1270,3 +1270,76 @@ class TestParameterHandlingIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match="cannot be modified"):
             circuit(x, y, z)
+
+
+class TestConversion:
+    """Integration tests to make sure that to_tf() correctly converts
+    QNodes with/without pre-existing interfaces"""
+
+    @pytest.fixture
+    def qnode(self, interface, torch_support):
+        """Returns a simple QNode corresponding to cos(x),
+        with interface as determined by the interface fixture"""
+        if interface == "torch" and not torch_support:
+            pytest.skip("Skipped, no torch support")
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        return circuit
+
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_tf_conversion(self, qnode, tol):
+        """Tests that the to_tf() function ignores QNodes that already
+        have the TF interface."""
+        converted_qnode = to_tf(qnode)
+        assert converted_qnode is qnode
+
+        x = tf.Variable(0.4)
+
+        with tf.GradientTape() as tape:
+            res = converted_qnode(x)
+
+        assert np.allclose(res, tf.cos(x), atol=tol, rtol=0)
+
+        grad = tape.gradient(res, x)
+        assert np.allclose(grad, -tf.sin(x), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_torch_conversion(self, qnode, tol):
+        """Tests that the to_tf() function correctly converts torch qnodes."""
+        converted_qnode = to_tf(qnode)
+        assert converted_qnode is not qnode
+        assert converted_qnode._qnode is qnode._qnode
+
+        x = tf.Variable(0.4)
+
+        with tf.GradientTape() as tape:
+            res = converted_qnode(x)
+
+        assert np.allclose(res, tf.cos(x), atol=tol, rtol=0)
+
+        grad = tape.gradient(res, x)
+        assert np.allclose(grad, -tf.sin(x), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", [None, "autograd"])
+    def test_autograd_conversion(self, qnode, tol):
+        """Tests that the to_tf() function correctly converts both autograd qnodes
+        and QNodes with no interface."""
+        converted_qnode = to_tf(qnode)
+        assert converted_qnode is not qnode
+        assert converted_qnode._qnode is getattr(qnode, "_qnode", qnode)
+
+        x = tf.Variable(0.4)
+
+        with tf.GradientTape() as tape:
+            res = converted_qnode(x)
+
+        assert np.allclose(res, tf.cos(x), atol=tol, rtol=0)
+
+        grad = tape.gradient(res, x)
+        assert np.allclose(grad, -tf.sin(x), atol=tol, rtol=0)

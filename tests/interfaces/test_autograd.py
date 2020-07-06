@@ -1003,3 +1003,59 @@ class TestParameterHandlingIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match="cannot be modified"):
             grad_fn(x, y, z)
+
+
+class TestConversion:
+    """Integration tests to make sure that to_autograd() correctly converts
+    QNodes with/without pre-existing interfaces"""
+
+    @pytest.fixture
+    def qnode(self, interface, tf_support, torch_support):
+        """Returns a simple QNode corresponding to cos(x),
+        with interface as determined by the interface fixture"""
+        if interface == "tf" and not tf_support:
+            pytest.skip("Skipped, no tf support")
+
+        if interface == "torch" and not torch_support:
+            pytest.skip("Skipped, no torch support")
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        return circuit
+
+    @pytest.mark.parametrize("interface", ["autograd"])
+    def test_autograd_conversion(self, qnode, tol):
+        """Tests that the to_autograd() function ignores QNodes that already
+        have the autograd interface."""
+        converted_qnode = to_autograd(qnode)
+        assert converted_qnode is qnode
+
+        x = 0.4
+        res = converted_qnode(x)
+        assert np.allclose(res, np.cos(x), atol=tol, rtol=0)
+
+        grad_fn = qml.grad(converted_qnode)
+        res = grad_fn(x)
+        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", [None, "torch", "tf"])
+    def test_tf_conversion(self, interface, qnode, tol):
+        """Tests that the to_autograd() function correctly converts qnodes with pre-existing
+        or no interfaces."""
+        assert qnode.interface == interface
+
+        converted_qnode = to_autograd(qnode)
+        assert converted_qnode is not qnode
+
+        x = 0.4
+        res = converted_qnode(x)
+        assert np.allclose(res, np.cos(x), atol=tol, rtol=0)
+
+        grad_fn = qml.grad(converted_qnode)
+        res = grad_fn(x)
+        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)

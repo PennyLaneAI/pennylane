@@ -76,6 +76,13 @@ def to_tf(qnode, dtype=None):
     Returns:
         function: the QNode as a TensorFlow function
     """
+    qnode_interface = getattr(qnode, "interface", None)
+
+    if qnode_interface == "tf":
+        return qnode
+
+    if qnode_interface is not None:
+        qnode = qnode._qnode
 
     class TFQNode(partial):
         """TensorFlow QNode"""
@@ -112,6 +119,7 @@ def to_tf(qnode, dtype=None):
         func = qnode.func
         set_trainable_args = qnode.set_trainable_args
         get_trainable_args = qnode.get_trainable_args
+        _qnode = qnode
 
         # Bind QNode attributes. Note that attributes must be
         # bound as properties; by making use of closure, we ensure

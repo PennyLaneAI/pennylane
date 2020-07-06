@@ -143,6 +143,13 @@ def to_torch(qnode):
     Returns:
         torch.autograd.Function: the QNode as a PyTorch autograd function
     """
+    qnode_interface = getattr(qnode, "interface", None)
+
+    if qnode_interface == "torch":
+        return qnode
+
+    if qnode_interface is not None:
+        qnode = qnode._qnode
 
     class _TorchQNode(torch.autograd.Function):
         """The TorchQNode"""
@@ -259,6 +266,7 @@ def to_torch(qnode):
         func = qnode.func
         set_trainable_args = qnode.set_trainable_args
         get_trainable_args = qnode.get_trainable_args
+        _qnode = qnode
 
         # Bind QNode attributes. Note that attributes must be
         # bound as properties; by making use of closure, we ensure

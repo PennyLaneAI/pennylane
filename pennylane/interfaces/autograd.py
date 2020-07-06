@@ -14,6 +14,7 @@
 """
 Differentiable quantum nodes with Autograd interface.
 """
+from copy import deepcopy
 import autograd.extend
 import autograd.builtins
 
@@ -29,6 +30,13 @@ def to_autograd(qnode):
     Returns:
         AutogradQNode: an Autograd-compatible QNode
     """
+    qnode_interface = getattr(qnode, "interface", None)
+
+    if qnode_interface == "autograd":
+        return qnode
+
+    if qnode_interface is not None:
+        qnode = qnode._qnode
 
     class AutogradQNode(qnode.__class__):
         """QNode that works with Autograd."""
@@ -99,5 +107,7 @@ def to_autograd(qnode):
 
     # define the vector-Jacobian product function for AutogradQNode.evaluate
     autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
-    qnode.__class__ = AutogradQNode
-    return qnode
+    converted_qnode = deepcopy(qnode)
+    converted_qnode.__class__ = AutogradQNode
+    converted_qnode._qnode = qnode
+    return converted_qnode
