@@ -36,7 +36,7 @@ def to_autograd(qnode):
         return qnode
 
     if qnode_interface is not None:
-        qnode = qnode._qnode # pylint: disable=protected-access
+        qnode = qnode._qnode  # pylint: disable=protected-access
 
     class AutogradQNode(qnode.__class__):
         """QNode that works with Autograd."""
@@ -109,5 +109,5 @@ def to_autograd(qnode):
     autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
     converted_qnode = deepcopy(qnode)
     converted_qnode.__class__ = AutogradQNode
-    converted_qnode._qnode = qnode # pylint: disable=protected-access
+    converted_qnode._qnode = qnode  # pylint: disable=protected-access
     return converted_qnode
