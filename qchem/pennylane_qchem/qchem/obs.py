@@ -389,12 +389,12 @@ def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigne
     Pauli basis and converted into a PennyLane observable.
 
     Args:
-        mol_data (MolecularData): OpenFermion :class:`~.MolecularData` storing the Hartree-Fock
-            electronic structure data obtained from the quantum chemistry packages ``'PySCF'`` or
-            ``'Psi4'``.
-        docc_orb (list): list containing the indices of the doubly-occupied orbitals.
-        act_orb (list): list containing the indices of the active molecular orbitals. If it is
-             not specified all molecular orbitals will be included in the active space.
+        mol_data (MolecularData): OpenFermion :class:`~.MolecularData` class, it stores the
+            Hartree-Fock electronic structure obtained from the quantum chemistry packages
+            ``'PySCF'`` or ``'Psi4'``.
+        docc_orb (list): indices of doubly-occupied orbitals
+        act_orb (list): indices of active orbitals. If not specified all molecular orbitals
+            are included in the active space.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
