@@ -370,8 +370,9 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
 
 def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigner"):
-    r"""Builds the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` and
-    represent it in the basis of Pauli matrices.
+    r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` in
+    the Pauli basis. Its eigenvalue value is the number of electrons in a given state of the
+    molecule.
 
     In general, if an active space is defined the particle number operator reads,
 
