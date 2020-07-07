@@ -728,20 +728,25 @@ class TestWiresIntegration:
     def make_circuit(self, wires):
         """Factory for a qnode returning X expectations using arbitrary wire labels."""
         dev = qml.device("default.gaussian", wires=wires)
+        n_wires = len(wires)
 
         @qml.qnode(dev)
         def circuit():
-            qml.Displacement(0.5, 0.1, wires=wires[0])
-            qml.Squeezing(2., 1.4, wires=wires[1])
-            qml.Beamsplitter(1.2, 2.6, wires=[wires[0], wires[2]])
-            qml.Beamsplitter(-2.2, 0.6, wires=[wires[2], wires[1]])
+            qml.Displacement(0.5, 0.1, wires=wires[0 % n_wires])
+            qml.Squeezing(2., 1.4, wires=wires[3 % n_wires])
+            if n_wires > 1:
+                qml.Beamsplitter(1.2, 2.6, wires=[wires[0], wires[1]])
             return [qml.expval(qml.X(wires=w)) for w in wires]
 
         return circuit
 
     @pytest.mark.parametrize("wires1, wires2", [(['a', 'c', 'd'], [2, 3, 0]),
-                                                ([-1, -2, -3], ['q1', 'ancilla', 2])])
-    def test_wires_probs(self, wires1, wires2, tol):
+                                                ([-1, -2, -3], ['q1', 'ancilla', 2]),
+                                                (['a', 'c'], [3, 0]),
+                                                ([-1, -2], ['ancilla', 2]),
+                                                (['a'], ['nothing']),
+                                                ])
+    def test_wires_expval(self, wires1, wires2, tol):
         """Test that the probability vector of a circuit is independent from the wire labels used."""
 
         circuit1 = self.make_circuit(wires1)
