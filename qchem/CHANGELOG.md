@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* The function ``get_particle_number_table`` has been added to the
+* The function ``particle_number`` has been added to the
   ``obs`` to build the particle number operator using the function 
   ``observable`` as implemented in the same module.
   [(#698)](https://github.com/XanaduAI/pennylane/pull/698)
