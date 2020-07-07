@@ -2,9 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* The function ``particle_number`` has been added to the
-  ``obs`` to build the particle number operator using the function 
-  ``observable`` as implemented in the same module.
+* Adds the function `qml.qchem.particle_number`, which computes the particle
+  number operator of a given molecule.
   [(#698)](https://github.com/XanaduAI/pennylane/pull/698)
 
 * The function ``get_spinZ_matrix_elements`` has been added to the
