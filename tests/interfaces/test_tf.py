@@ -1309,26 +1309,9 @@ class TestConversion:
         grad = tape.gradient(res, x)
         assert np.allclose(grad, -tf.sin(x), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["torch"])
-    def test_torch_conversion(self, qnode, tol):
-        """Tests that the to_tf() function correctly converts torch qnodes."""
-        converted_qnode = to_tf(qnode)
-        assert converted_qnode is not qnode
-        assert converted_qnode._qnode is qnode._qnode
-
-        x = tf.Variable(0.4)
-
-        with tf.GradientTape() as tape:
-            res = converted_qnode(x)
-
-        assert np.allclose(res, tf.cos(x), atol=tol, rtol=0)
-
-        grad = tape.gradient(res, x)
-        assert np.allclose(grad, -tf.sin(x), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("interface", [None, "autograd"])
-    def test_autograd_conversion(self, qnode, tol):
-        """Tests that the to_tf() function correctly converts both autograd qnodes
+    @pytest.mark.parametrize("interface", [None, "torch", "autograd"])
+    def test_other_conversion(self, qnode, tol):
+        """Tests that the to_tf() function correctly converts both torch and autograd qnodes
         and QNodes with no interface."""
         converted_qnode = to_tf(qnode)
         assert converted_qnode is not qnode
