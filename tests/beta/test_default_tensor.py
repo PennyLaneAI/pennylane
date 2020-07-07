@@ -1783,7 +1783,7 @@ class TestWiresIntegration:
                                                 ([-1, -2], ['ancilla', 2]),
                                                 (['a'], ['nothing']),
                                                 ])
-    def test_wires_expval_3_wires(self, wires1, wires2, representation, tol):
+    def test_wires_expval(self, wires1, wires2, representation, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
 
         circuit1 = self.make_circuit_expval(wires1, representation)
