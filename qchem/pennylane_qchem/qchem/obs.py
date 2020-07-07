@@ -373,7 +373,7 @@ def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigne
     r"""Builds the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` and
     represent it in the basis of Pauli matrices.
 
-    In general, if an active space is defined, the particle number operator reads,
+    In general, if an active space is defined the particle number operator reads,
 
     .. math::
 
@@ -393,7 +393,7 @@ def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigne
             Hartree-Fock electronic structure obtained from the quantum chemistry packages
             ``'PySCF'`` or ``'Psi4'``.
         docc_orb (list): indices of doubly-occupied orbitals
-        act_orb (list): indices of active orbitals. If not specified all molecular orbitals
+        act_orb (list): Indices of active orbitals. If not specified all molecular orbitals
             are included in the active space.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
@@ -405,7 +405,7 @@ def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigne
 
     >>> name = 'h2'
     >>> path = './pyscf/sto-3g'
-    >>> hf_data = MolecularData(filename=os.path.join(path, name))
+    >>> hf_data = openfermion.MolecularData(filename=os.path.join(path, name))
     >>> docc, act = qchem.active_space(name, path, n_active_electrons=2, n_active_orbitals=2)
     >>> pn_obs = particle_number(hf_data, docc_orb=docc, act_orb=act)
     >>> print(pn_obs)
