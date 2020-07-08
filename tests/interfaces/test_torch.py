@@ -1253,25 +1253,10 @@ class TestConversion:
         assert np.allclose(res.detach().numpy(), np.cos(x_val), atol=tol, rtol=0)
         assert np.allclose(x.grad, -np.sin(x_val), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_tf_conversion(self, qnode, tol):
-        """Tests that the to_torch() function correctly converts tf qnodes."""
-        converted_qnode = to_torch(qnode)
-        assert converted_qnode is not qnode
-        assert converted_qnode._qnode is qnode._qnode
-
-        x_val = 0.4
-        x = torch.tensor(x_val, requires_grad=True)
-        res = converted_qnode(x)
-        res.backward()
-
-        assert np.allclose(res.detach().numpy(), np.cos(x_val), atol=tol, rtol=0)
-        assert np.allclose(x.grad, -np.sin(x_val), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("interface", [None, "autograd"])
-    def test_autograd_conversion(self, qnode, tol):
-        """Tests that the to_torch() function correctly converts both autograd qnodes
-        and QNodes with no interface."""
+    @pytest.mark.parametrize("interface", [None, "autograd", "tf"])
+    def test_other_conversion(self, qnode, tol):
+        """Tests that the to_torch() function correctly converts both tf and autograd qnodes and
+        QNodes with no interface."""
         converted_qnode = to_torch(qnode)
         assert converted_qnode is not qnode
         assert converted_qnode._qnode is getattr(qnode, "_qnode", qnode)
