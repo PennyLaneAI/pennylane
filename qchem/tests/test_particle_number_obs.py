@@ -91,12 +91,7 @@ def test_particle_number_observable(
         mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb,
     )
 
-    pn_obs = qchem.particle_number(
-        mol_data.n_orbitals,
-        docc_orb=docc,
-        act_orb=act,
-        mapping=mapping
-    )
+    pn_obs = qchem.particle_number(mol_data.n_orbitals, docc_orb=docc, act_orb=act, mapping=mapping)
 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
@@ -117,8 +112,5 @@ def test_exceptions_particle_number(docc_orb, act_orb, msg_match):
     mol_data = mol_data = MolecularData(filename=os.path.join(ref_dir.strip(), mol_name.strip()))
     with pytest.raises(ValueError, match=msg_match):
         qchem.particle_number(
-            mol_data.n_orbitals,
-            docc_orb=docc_orb,
-            act_orb=act_orb,
-            mapping=mapping
+            mol_data.n_orbitals, docc_orb=docc_orb, act_orb=act_orb, mapping=mapping
         )
