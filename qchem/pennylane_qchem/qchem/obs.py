@@ -401,6 +401,7 @@ def particle_number(n_orbitals, docc_orb=None, act_orb=None, mapping="jordan_wig
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
 
     **Example**
+    
     >>> n_orbitals = 2
     >>> pn_obs = particle_number(n_orbitals)
     >>> print(pn_obs)
