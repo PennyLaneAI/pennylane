@@ -369,10 +369,10 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
-def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigner"):
+def particle_number(n_orbitals, docc_orb=None, act_orb=None, mapping="jordan_wigner"):
     r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` in
     the Pauli basis. Its eigenvalue value is the number of electrons in a given state of the
-    molecule.
+    many-particle system.
 
     In general, if an active space is defined the particle number operator reads,
 
@@ -386,29 +386,23 @@ def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigne
     the :math:`\alpha`-th active spin-orbital.
 
     First, the function generates the fermionic second-quantized operator in the basis
-    of single-particle states (HF states). Then, the many-body observable is mapped to the
+    of single-particle states. Then, the many-body observable is mapped to the
     Pauli basis and converted into a PennyLane observable.
 
     Args:
-        mol_data (MolecularData): OpenFermion :class:`~.MolecularData` class, it stores the
-            Hartree-Fock electronic structure obtained from the quantum chemistry packages
-            ``'PySCF'`` or ``'Psi4'``.
-        docc_orb (list): indices of doubly-occupied orbitals
-        act_orb (list): Indices of active orbitals. If not specified all molecular orbitals
-            are included in the active space.
-        mapping (str): specifies the fermion-to-qubit mapping. Input values can
-            be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        n_orbitals (int): Total number of orbitals
+        docc_orb (list): Indices of doubly-occupied orbitals
+        act_orb (list): Indices of active orbitals. If not specified the active space
+            will contain ``'n_orbitals'``.
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
 
     **Example**
-
-    >>> name = 'h2'
-    >>> path = './pyscf/sto-3g'
-    >>> hf_data = openfermion.MolecularData(filename=os.path.join(path, name))
-    >>> docc, act = qchem.active_space(name, path, n_active_electrons=2, n_active_orbitals=2)
-    >>> pn_obs = particle_number(hf_data, docc_orb=docc, act_orb=act)
+    >>> n_orbitals = 2
+    >>> pn_obs = particle_number(n_orbitals)
     >>> print(pn_obs)
     (2.0) [I0]
     + (-0.5) [Z0]
@@ -424,7 +418,7 @@ def particle_number(mol_data, docc_orb=None, act_orb=None, mapping="jordan_wigne
         pn_docc = 2 * len(docc_orb)
 
     if act_orb is None:
-        act_orb = list(range(mol_data.n_orbitals))
+        act_orb = list(range(n_orbitals))
     else:
         check_type(act_orb, [list], msg="'act_orb' must be a list; got {}" "".format(act_orb))
 
