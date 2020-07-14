@@ -311,11 +311,9 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     return structure.convert_observable(jordan_wigner(mb_obs))
 
 
-def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
-    r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
-    space and generates the table of matrix elements required to build the second-quantized
-    spin-projection operator :math:`\hat{S}_z`.
-
+def spin_z(n_orbitals, mapping="jordan_wigner"):
+    r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
+    
     The second-quantized operator :math:`\hat{S}_z` reads,
 
     .. math::
@@ -325,51 +323,44 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
         \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
-    where :math:`m_\alpha` refers to the quantum number of the spin wave function
-    :math:`\chi_{m_\alpha}(s_z)` of the spin-orbital :math:`\vert \alpha \rangle`
-    and :math:`\hat{c}_\alpha^\dagger` (:math:`\hat{c}_\alpha`) is the creation (annihilation)
-    particle operator acting on the :math:`\alpha`-th active orbital.
+    where :math:`m_\alpha = \pm 1/2` refers to the spin quantum number of the single-particle
+    state :math:`\vert \alpha \rangle` and :math:`\hat{c}^\dagger` and :math:`\hat{c}` denote
+    are the particle creation and annihilation operators.
 
     Args:
-        mol_name (str): name of the molecule
-        hf_data (str): path to the directory with the HF electronic structure data
-        n_active_electrons (int): number of active electrons
-        n_active_orbitals (int): number of active orbitals
+        n_orbitals (str): number of orbitals. If an active space is defined 'n_orbitals'
+            is the number of active orbitals.
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
-        array: NumPy array with the table of matrix elements. Since :math:`\hat{S}_z` is
-        diagonal in the basis of HF orbitals the first two columns contains the index
-        :math:`\alpha` and the third column stores the matrix element.
+        pennylane.Hamiltonian: the fermionic-to-qubit transformed :math:`\hat{S}_z` observable
 
     **Example**
 
-    >>> get_spinZ_matrix_elements('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
-    [[ 0.   0.   0.5]
-    [ 1.   1.  -0.5]
-    [ 2.   2.   0.5]
-    [ 3.   3.  -0.5]]
+    >>> n_orbitals = 2
+    >>> Sz_obs = spin_z(n_orbitals, mapping='jordan_wigner')
+    >>> print(Sz_obs)
+    (-0.25) [Z0]
+    + (0.25) [Z1]
+    + (-0.25) [Z2]
+    + (0.25) [Z3]
     """
 
-    active_indices = structure.active_space(
-        mol_name,
-        hf_data,
-        n_active_electrons=n_active_electrons,
-        n_active_orbitals=n_active_orbitals,
-    )[1]
-
-    n_spin_orbs = 2 * len(active_indices)
+    n_spin_orbs = 2*n_orbitals
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    spinz_matrix_elements = np.zeros((n_spin_orbs, 3))
+    # build table with matrix elements
+    table_me = np.zeros((n_spin_orbs, 3))
     for alpha in range(n_spin_orbs):
-        spinz_matrix_elements[alpha] = np.array([alpha, alpha, sz[alpha]])
+        table_me[alpha] = np.array([alpha, alpha, sz[alpha]])
 
-    return spinz_matrix_elements
+    return observable(table_me, mapping=mapping)
 
 
 __all__ = [
     "_spin2_matrix_elements",
     "get_spin2_matrix_elements",
     "observable",
-    "get_spinZ_matrix_elements",
+    "spin_z",
 ]
