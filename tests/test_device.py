@@ -406,6 +406,20 @@ class TestInternalFunctions:
         with pytest.raises(qml.DeviceError, match="specified number of shots needs to be at least 1"):
             Device(mock_device, shots=0)
 
+    def test_wire_map(self, mock_device):
+        """Tests that the wire map function works correctly."""
+        dev = mock_device(wires=['a1', 'q', -1, 3])
+        wire_subset = [-1, 'a1', 3]
+        assert dev.wire_map(wire_subset) == [2, 0, 3]
+
+    @pytest.mark.parametrize('wires, expected', [(['a1', 'q', -1, 3], Wires(['a1', 'q', -1, 3])),
+                                                 (3, Wires([0, 1, 2])),
+                                                 ([3], Wires([3]))])
+    def test_register_set_correctly(self, mock_device, wires, expected):
+        """Tests that the register attribute is set correctly."""
+        dev = mock_device(wires=wires)
+        assert dev.register == expected
+
 
 class TestClassmethods:
     """Test the classmethods of Device"""

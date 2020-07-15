@@ -334,12 +334,5 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        if wires is None:
-            registers = list(range(self.num_wires))
-        else:
-            wires = Wires(wires)
-            # get indices of wires on the device's register
-            registers = self.wire_map(wires)
-
-        prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, registers)
+        prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
         return prob

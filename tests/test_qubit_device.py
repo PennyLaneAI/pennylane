@@ -29,6 +29,7 @@ from pennylane.wires import Wires
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
+
 # pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
 
 
@@ -50,7 +51,6 @@ def mock_qubit_device(monkeypatch):
             return QubitDevice(wires=wires)
 
         yield get_qubit_device
-
 
 
 @pytest.fixture(scope="function")
@@ -120,7 +120,6 @@ def mock_qubit_device_with_paulis_and_methods(monkeypatch):
         yield get_qubit_device
 
 
-
 @pytest.fixture(scope="function")
 def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
     """A function to create a mock device that supports Paulis in its capabilities"""
@@ -148,13 +147,13 @@ class TestOperations:
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
         with pytest.raises(
-            ValueError, match="Cannot access the operation queue outside of the execution context!"
+                ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
             dev = mock_qubit_device()
             dev.op_queue
 
     def test_op_queue_is_filled_during_execution(
-        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
+            self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
            op_queue raises no error"""
@@ -167,7 +166,8 @@ class TestOperations:
         call_history = []
 
         with monkeypatch.context() as m:
-            m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
+            m.setattr(QubitDevice, "apply",
+                      lambda self, x, **kwargs: call_history.extend(x + kwargs.get('rotations', [])))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(circuit_graph)
@@ -197,31 +197,31 @@ class TestOperations:
             dev.execute(circuit_graph)
 
     numeric_queues = [
-                        [
-                            qml.RX(0.3, wires=[0])
-                        ],
-                        [
-                            qml.RX(0.3, wires=[0]),
-                            qml.RX(0.4, wires=[1]),
-                            qml.RX(0.5, wires=[2]),
-                        ]
-                     ]
+        [
+            qml.RX(0.3, wires=[0])
+        ],
+        [
+            qml.RX(0.3, wires=[0]),
+            qml.RX(0.4, wires=[1]),
+            qml.RX(0.5, wires=[2]),
+        ]
+    ]
 
     variable = Variable(1)
     symbolic_queue = [
-                        [qml.RX(variable, wires=[0])],
-                    ]
-
+        [qml.RX(variable, wires=[0])],
+    ]
 
     observables = [
-                    [qml.PauliZ(0)],
-                    [qml.PauliX(0)],
-                    [qml.PauliY(0)]
-                 ]
+        [qml.PauliZ(0)],
+        [qml.PauliX(0)],
+        [qml.PauliY(0)]
+    ]
 
     @pytest.mark.parametrize("observables", observables)
     @pytest.mark.parametrize("queue", numeric_queues + symbolic_queue)
-    def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods, monkeypatch, queue, observables):
+    def test_passing_keyword_arguments_to_execute(self, mock_qubit_device_with_paulis_rotations_and_methods,
+                                                  monkeypatch, queue, observables):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
         circuit_graph = CircuitGraph(queue + observables, {}, Wires([0, 1, 2]))
@@ -246,8 +246,8 @@ class TestObservables:
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
         with pytest.raises(
-            ValueError,
-            match="Cannot access the observable value queue outside of the execution context!",
+                ValueError,
+                match="Cannot access the observable value queue outside of the execution context!",
         ):
             dev = mock_qubit_device()
             dev.obs_queue
@@ -269,7 +269,7 @@ class TestObservables:
             dev.execute(circuit_graph)
 
     def test_unsupported_observable_return_type_raise_error(
-        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
+            self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
@@ -285,7 +285,7 @@ class TestObservables:
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
-                QuantumFunctionError, match="Unsupported return type specified for observable"
+                    QuantumFunctionError, match="Unsupported return type specified for observable"
             ):
                 dev = mock_qubit_device_with_paulis_and_methods()
                 dev.execute(circuit_graph)
@@ -298,8 +298,8 @@ class TestParameters:
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
         with pytest.raises(
-            ValueError,
-            match="Cannot access the free parameter mapping outside of the execution context!",
+                ValueError,
+                match="Cannot access the free parameter mapping outside of the execution context!",
         ):
             dev = mock_qubit_device()
             dev.parameters
@@ -544,7 +544,7 @@ class TestSample:
     """Test the sample method"""
 
     def test_only_ones_minus_ones(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+            self, mock_qubit_device_with_original_statistics, monkeypatch, tol
     ):
         """Test that pauli_eigvals_as_samples method only produces -1 and 1 samples"""
         obs = qml.PauliX(0)
@@ -557,7 +557,7 @@ class TestSample:
         assert np.allclose(res ** 2, 1, atol=tol, rtol=0)
 
     def test_correct_custom_eigenvalues(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+            self, mock_qubit_device_with_original_statistics, monkeypatch, tol
     ):
         """Test that pauli_eigvals_as_samples method only produces samples of eigenvalues"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
@@ -568,6 +568,27 @@ class TestSample:
             res = dev.sample(obs)
 
         assert np.array_equal(res, np.array([-1, 1]))
+
+
+class TestEstimateProb:
+    """Test the estimate_probability method"""
+
+    @pytest.mark.parametrize("wires, expected", [([0], [0.5, 0.5]),
+                                                 (None, [0.5, 0, 0, 0.5]),
+                                                 ([0, 1], [0.5, 0, 0, 0.5])
+                                                 ])
+    def test_estimate_probability(self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch):
+        """Tests probability method when the analytic attribute is True."""
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 0], [1, 1], [1, 1], [0, 0]])
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            m.setattr(dev, "shots", 4)
+            res = dev.estimate_probability(wires=wires)
+
+        assert np.allclose(res, expected)
 
 
 class TestMarginalProb:
@@ -583,10 +604,13 @@ class TestMarginalProb:
             ([0, 2], [1]),
             ([1, 2], [0]),
             ([0, 1, 2], []),
+            (Wires([0]), [1, 2]),
+            (Wires([0, 1]), [2]),
+            (Wires([0, 1, 2]), []),
         ],
     )
     def test_correct_arguments_for_marginals(
-        self, mock_qubit_device_with_original_statistics, monkeypatch, wires, inactive_wires, tol
+            self, mock_qubit_device_with_original_statistics, monkeypatch, wires, inactive_wires, tol
     ):
         """Test that the correct arguments are passed to the marginal_prob method"""
 
@@ -609,7 +633,7 @@ class TestMarginalProb:
 
     marginal_test_data = [
         (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.4, 0.6]), [1]),
-        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.3, 0.7]), [0]),
+        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.3, 0.7]), Wires([0])),
         (
             np.array(
                 [
@@ -630,7 +654,7 @@ class TestMarginalProb:
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned(
-        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
+            self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method"""
         num_wires = int(np.log2(len(probs)))
@@ -640,7 +664,7 @@ class TestMarginalProb:
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned_wires_none(
-        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
+            self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that passing wires=None simply returns the original probability."""
         num_wires = int(np.log2(len(probs)))

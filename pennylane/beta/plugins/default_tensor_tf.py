@@ -235,14 +235,12 @@ class DefaultTensorTF(DefaultTensor):
         self.tape.watch(self.variables)
 
         for operation in self.op_queue:
-            # get indices of wires on the device's register
-            registers = self.wire_map(operation.wires)
 
             # Apply each operation, but instead of passing operation.parameters
             # (which contains the evaluated numeric parameter values),
             # pass op_params[operation], which contains numeric values
             # for fixed parameters, and tf.Variable objects for free parameters.
-            super().apply(operation.name, registers, self.op_params[operation])
+            super().apply(operation.name, operation.wires, self.op_params[operation])
 
     def apply(self, operation, wires, par):
         # individual operations are already applied inside self.pre_apply()
