@@ -394,7 +394,7 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
     **Example**
 
     >>> n_orbitals = 2
-    >>> pn_obs = particle_number(n_orbitals, mapping='jordan_wigner')
+    >>> pn_obs = particle_number(n_orbitals, mapping="jordan_wigner")
     >>> print(pn_obs)
     (2.0) [I0]
     + (-0.5) [Z0]
