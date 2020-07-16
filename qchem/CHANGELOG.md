@@ -41,6 +41,10 @@
   ```
 <h3>Improvements</h3>
 
+* The total-spin projection observable can be built straightforwardly using the
+  function ``spin_z`` as implemented in the ``obs`` module.
+  [(#)]()
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
@@ -64,12 +68,6 @@ Juan Miguel Arrazola, Alain Delgado, Josh Izaac, Soran Jahangiri, Maria Schuld
   [(#629)](https://github.com/XanaduAI/pennylane/pull/629)
 
 <h3>Improvements</h3>
-
-* The function ``convert_hamiltonian`` has been renamed to ``convert_observable``
-  since it can be used to convert any OpenFermion QubitOperator to a PennyLane
-  Observable. ``convert_observable`` will be used in the ``obs`` module to build
-  observables linked to molecular properties.
-  [(#677)](https://github.com/XanaduAI/pennylane/pull/677)
 
 <h3>Breaking changes</h3>
 
