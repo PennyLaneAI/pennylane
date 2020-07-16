@@ -43,7 +43,7 @@
 
 * The total-spin projection observable can be built straightforwardly using the
   function ``spin_z`` as implemented in the ``obs`` module.
-  [(#)]()
+  [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
 
 <h3>Breaking changes</h3>
 
