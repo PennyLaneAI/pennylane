@@ -368,9 +368,8 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
 
 
 def particle_number(n_orbitals, mapping="jordan_wigner"):
-    r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` in
-    the Pauli basis. Its eigenvalue is the number of particles in a given state of the
-    many-body system.
+    r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
+    in the Pauli basis.
 
     The particle number operator reads,
 
@@ -394,8 +393,8 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
     **Example**
 
     >>> n_orbitals = 2
-    >>> pn_obs = particle_number(n_orbitals, mapping="jordan_wigner")
-    >>> print(pn_obs)
+    >>> N = particle_number(n_orbitals, mapping="jordan_wigner")
+    >>> print(N)
     (2.0) [I0]
     + (-0.5) [Z0]
     + (-0.5) [Z1]

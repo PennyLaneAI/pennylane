@@ -80,9 +80,9 @@ def test_particle_number_observable(n_orbitals, mapping, terms_exp, monkeypatch)
     something useful to the users as well.
     """
 
-    pn_obs = qchem.particle_number(n_orbitals, mapping=mapping)
+    N = qchem.particle_number(n_orbitals, mapping=mapping)
 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(particle_number_qubit_op, pn_obs)
+    assert qchem._qubit_operators_equivalent(particle_number_qubit_op, N)
