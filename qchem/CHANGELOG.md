@@ -69,6 +69,12 @@ Juan Miguel Arrazola, Alain Delgado, Josh Izaac, Soran Jahangiri, Maria Schuld
 
 <h3>Improvements</h3>
 
+* The function ``convert_hamiltonian`` has been renamed to ``convert_observable``
+  since it can be used to convert any OpenFermion QubitOperator to a PennyLane
+  Observable. ``convert_observable`` will be used in the ``obs`` module to build
+  observables linked to molecular properties.
+  [(#677)](https://github.com/XanaduAI/pennylane/pull/677)
+
 <h3>Breaking changes</h3>
 
 * Removes support for Python 3.5.
