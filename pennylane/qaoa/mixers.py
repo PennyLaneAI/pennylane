@@ -18,6 +18,8 @@ in QAOA workflows.
 import pennylane as qml
 from pennylane.wires import Wires
 import networkx
+from .utils import check_iterable_graph
+from collections.abc import Iterable
 
 def x_mixer(wires):
     r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__,
@@ -57,18 +59,22 @@ def xy_mixer(graph):
     ##############
     # Input checks
 
-    print(graph)
+    if isinstance(graph, networkx.Graph):
+        graph = graph.edges
 
-    if not isinstance(graph, networkx.Graph):
-        raise ValueError("Inputted graph must be a `networkx.Graph` object, got {}".format(type(graph).__name__))
+    elif isinstance(graph, Iterable):
+        check_iterable_graph(graph)
+
+    else:
+        raise ValueError("Inputted graph must be a networkx.Graph object or Iterable, got {}".format(type(graph).__name__))
 
     ##############
 
-    coeffs = 2 * [0.5 for i in graph.edges]
+    coeffs = 2 * [0.5 for i in graph]
 
     obs = []
-    for e in graph.edges:
-        obs.append(qml.PauliX(e[0]) @ qml.PauliX(e[1]))
-        obs.append(qml.PauliY(e[0]) @ qml.PauliY(e[1]))
+    for e in graph:
+        obs.append(qml.PauliX(Wires(e[0])) @ qml.PauliX(Wires(e[1])))
+        obs.append(qml.PauliY(Wires(e[0])) @ qml.PauliY(Wires(e[1])))
 
     return qml.Hamiltonian(coeffs, obs)

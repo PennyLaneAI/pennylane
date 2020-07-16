@@ -16,7 +16,9 @@ Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
 import networkx as nx
+import pennylane as qml
 from pennylane import qaoa
+import numpy as np
 
 #####################################################
 
@@ -36,27 +38,56 @@ class TestMixerHamiltonians:
         mixer_wires = [i.wires[0] for i in mixer_hamiltonian.ops]
 
         assert (
-                mixer_coeffs == [1 for i in wires] and
-                mixer_ops == ['PauliX' for i in wires] and
-                mixer_wires == list(wires)
+                mixer_coeffs == [1, 1, 1, 1] and
+                mixer_ops == ['PauliX', 'PauliX', 'PauliX', 'PauliX'] and
+                mixer_wires == [0, 1, 2, 3]
         )
 
-    def test_xy_mixer_error(self):
+    def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
 
-        graph = [(0, 1), (1, 2)]
+        graph = 12
 
         with pytest.raises(ValueError) as info:
             output = qaoa.xy_mixer(graph)
 
-        assert ("Inputted graph must be a `networkx.Graph` object, got list" in str(info.value))
+        assert ("Inputted graph must be a networkx.Graph object or Iterable, got int" in str(info.value))
 
-    def test_xy_mixer_output(self):
+    graph = nx.Graph()
+    graph.add_nodes_from([0, 1, 2])
+    graph.add_edges_from([(0, 1), (1, 2)])
+
+    @pytest.mark.parametrize(
+        ("graph", "target_hamiltonian"),
+        [
+            (
+                [(0, 1), (1, 2)], qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
+                    qml.PauliX(0) @ qml.PauliX(1),
+                    qml.PauliY(0) @ qml.PauliY(1),
+                    qml.PauliX(1) @ qml.PauliX(2),
+                    qml.PauliY(1) @ qml.PauliY(2)
+            ])
+             ),
+            (
+                (np.array([0, 1]), np.array([1, 2])), qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
+                    qml.PauliX(0) @ qml.PauliX(1),
+                    qml.PauliY(0) @ qml.PauliY(1),
+                    qml.PauliX(1) @ qml.PauliX(2),
+                    qml.PauliY(1) @ qml.PauliY(2)
+                ])
+            ),
+            (
+                graph, qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
+                    qml.PauliX(0) @ qml.PauliX(1),
+                    qml.PauliY(0) @ qml.PauliY(1),
+                    qml.PauliX(1) @ qml.PauliX(2),
+                    qml.PauliY(1) @ qml.PauliY(2)
+                ])
+            )
+        ]
+    )
+    def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
-
-        graph = nx.Graph()
-        graph.add_nodes_from([0, 1, 2])
-        graph.add_edges_from([(0, 1), (1, 2), (2, 0)])
 
         mixer_hamiltonian = qaoa.xy_mixer(graph)
 
@@ -64,20 +95,82 @@ class TestMixerHamiltonians:
         mixer_ops = [i.name for i in mixer_hamiltonian.ops]
         mixer_wires = [i.wires for i in mixer_hamiltonian.ops]
 
-        gates = [['PauliX', 'PauliX'], ['PauliY', 'PauliY']]
+        target_coeffs = target_hamiltonian.coeffs
+        target_ops = [i.name for i in target_hamiltonian.ops]
+        target_wires = [i.wires for i in target_hamiltonian.ops]
 
         assert (
-            mixer_coeffs == 2 * [0.5 for i in graph.nodes] and
-            mixer_ops == [j for i in graph.edges for j in gates] and
-            mixer_wires == [list(i) for i in graph.edges for j in range(2)]
+            mixer_coeffs == target_coeffs and
+            mixer_ops == target_ops and
+            mixer_wires == target_wires
         )
 
 class TestCostHamiltonians:
     """Tests that the cost Hamiltonians are being generated correctly"""
 
     def test_maxcut_error(self):
+        """Tests that the MaxCut Hamiltonian throws the correct error"""
 
-    def test_maxcut_output(self):
+        graph = 12
 
-class TestLayers:
-    """Tests that the QAOA layers are being generated correctly"""
+        with pytest.raises(ValueError) as info:
+            output = qaoa.MaxCut(graph)
+
+        assert ("Inputted graph must be a networkx.Graph object or Iterable, got int" in str(info.value))
+
+    graph = nx.Graph()
+    graph.add_nodes_from([0, 1, 2])
+    graph.add_edges_from([(0, 1), (1, 2)])
+
+    @pytest.mark.parametrize(
+        ("graph", "target_hamiltonian"),
+        [
+            (
+                    [(0, 1), (1, 2)],
+                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5], [
+                        qml.Identity(0) @ qml.Identity(1),
+                        qml.PauliZ(0) @ qml.PauliZ(1),
+                        qml.Identity(1) @ qml.Identity(2),
+                        qml.PauliZ(1) @ qml.PauliZ(2)
+                    ])
+            ),
+            (
+                    (np.array([0, 1]), np.array([1, 2]), np.array([0, 2])),
+                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5, 0.5, -0.5], [
+                        qml.Identity(0) @ qml.Identity(1),
+                        qml.PauliZ(0) @ qml.PauliZ(1),
+                        qml.Identity(1) @ qml.Identity(2),
+                        qml.PauliZ(1) @ qml.PauliZ(2),
+                        qml.Identity(0) @ qml.Identity(2),
+                        qml.PauliZ(0) @ qml.PauliZ(2)
+                    ])
+            ),
+            (
+                    graph,
+                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5], [
+                        qml.Identity(0) @ qml.Identity(1),
+                        qml.PauliZ(0) @ qml.PauliZ(1),
+                        qml.Identity(1) @ qml.Identity(2),
+                        qml.PauliZ(1) @ qml.PauliZ(2)
+                    ])
+            )
+        ]
+    )
+    def test_maxcut_output(self, graph, target_hamiltonian):
+        """Tests that the output of the MaxCut method is correct"""
+
+        cost_hamiltonian = qaoa.MaxCut(graph)
+
+        cost_coeffs = cost_hamiltonian.coeffs
+        cost_ops = [i.name for i in cost_hamiltonian.ops]
+        cost_wires = [i.wires for i in cost_hamiltonian.ops]
+
+        target_coeffs = target_hamiltonian.coeffs
+        target_ops = [i.name for i in target_hamiltonian.ops]
+        target_wires = [i.wires for i in target_hamiltonian.ops]
+
+        assert (
+                cost_coeffs == target_coeffs and
+                cost_ops == target_ops and
+                cost_wires == target_wires
+        )
