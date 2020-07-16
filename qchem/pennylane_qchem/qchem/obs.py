@@ -324,7 +324,7 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
         \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
     where :math:`m_\alpha = \pm 1/2` denotes the spin-projection quantum number of
-    the single-particle states :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger`
+    the single-particle state :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger`
     and :math:`\hat{c}` are the particle creation and annihilation operators, respectively.
 
     Args:
