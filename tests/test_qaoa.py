@@ -22,6 +22,10 @@ import numpy as np
 
 #####################################################
 
+graph = nx.Graph()
+graph.add_nodes_from([0, 1, 2])
+graph.add_edges_from([(0, 1), (1, 2)])
+
 class TestMixerHamiltonians:
     """Tests that the mixer Hamiltonians are being generated correctly"""
 
@@ -52,10 +56,6 @@ class TestMixerHamiltonians:
             output = qaoa.xy_mixer(graph)
 
         assert ("Inputted graph must be a networkx.Graph object or Iterable, got int" in str(info.value))
-
-    graph = nx.Graph()
-    graph.add_nodes_from([0, 1, 2])
-    graph.add_edges_from([(0, 1), (1, 2)])
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
@@ -118,10 +118,6 @@ class TestCostHamiltonians:
 
         assert ("Inputted graph must be a networkx.Graph object or Iterable, got int" in str(info.value))
 
-    graph = nx.Graph()
-    graph.add_nodes_from([0, 1, 2])
-    graph.add_edges_from([(0, 1), (1, 2)])
-
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
         [
@@ -174,3 +170,31 @@ class TestCostHamiltonians:
                 cost_ops == target_ops and
                 cost_wires == target_wires
         )
+
+class TestLayers:
+    """Tests that the cost and mixer layers are being constructed properly"""
+
+    def test_mixer_layer_errors(self):
+        """Tests that the mixer layer is throwing the correct errors"""
+
+        hamiltonian = [[1, 1], [1, 1]]
+
+        with pytest.raises(ValueError) as info:
+            output = qaoa.mixer_layer(hamiltonian)
+
+        assert (
+            "`hamiltonian` must be of type pennylane.Hamiltonian, got list"
+        )
+
+'''
+    def test_cost_layer_errors(self):
+        """Tests that the cost layer is throwing the correct errors"""
+'''
+
+'''
+    def test_cost_layer_output(self):
+        """Tests that the output of the cost layer is correct"""
+
+    def test_mixer_layer_output(self):
+        """Tests that the output of the mixer layer is correct"""
+'''
