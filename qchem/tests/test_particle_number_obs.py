@@ -6,9 +6,6 @@ import pytest
 from pennylane import qchem
 
 from openfermion.ops._qubit_operator import QubitOperator
-from openfermion.hamiltonians import MolecularData
-
-ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
 terms_h20_jw_full = {
     (): (7 + 0j),
@@ -29,7 +26,7 @@ terms_h20_jw_full = {
 }
 
 terms_h20_jw_23 = {
-    (): (11 + 0j),
+    (): (3 + 0j),
     ((0, "Z"),): (-0.5 + 0j),
     ((1, "Z"),): (-0.5 + 0j),
     ((2, "Z"),): (-0.5 + 0j),
@@ -39,7 +36,7 @@ terms_h20_jw_23 = {
 }
 
 terms_h20_bk_44 = {
-    (): (10 + 0j),
+    (): (4 + 0j),
     ((0, "Z"),): (-0.5 + 0j),
     ((0, "Z"), (1, "Z")): (-0.5 + 0j),
     ((2, "Z"),): (-0.5 + 0j),
@@ -51,7 +48,7 @@ terms_h20_bk_44 = {
 }
 
 terms_lih_anion_bk = {
-    (): (7 + 0j),
+    (): (5 + 0j),
     ((0, "Z"),): (-0.5 + 0j),
     ((0, "Z"), (1, "Z")): (-0.5 + 0j),
     ((2, "Z"),): (-0.5 + 0j),
@@ -66,17 +63,15 @@ terms_lih_anion_bk = {
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "n_act_elect", "n_act_orb", "mapping", "terms_exp"),
+    ("n_act_orb", "mapping", "terms_exp"),
     [
-        ("h2o_psi4", None, None, "JORDAN_wigner", terms_h20_jw_full),
-        ("h2o_psi4", 2, 3, "JORDAN_wigner", terms_h20_jw_23),
-        ("h2o_psi4", 4, 4, "bravyi_KITAEV", terms_h20_bk_44),
-        ("lih_anion", 3, None, "bravyi_KITAEV", terms_lih_anion_bk),
+        (7, "JORDAN_wigner", terms_h20_jw_full),
+        (3, "JORDAN_wigner", terms_h20_jw_23),
+        (4, "bravyi_KITAEV", terms_h20_bk_44),
+        (5, "bravyi_KITAEV", terms_lih_anion_bk),
     ],
 )
-def test_particle_number_observable(
-    mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch
-):
+def test_particle_number_observable(n_act_orb, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the particle number observable :math:`\hat{N}` generated
     by the ``'particle_number'`` function.
 
@@ -85,32 +80,9 @@ def test_particle_number_observable(
     something useful to the users as well.
     """
 
-    mol_data = MolecularData(filename=os.path.join(ref_dir.strip(), mol_name.strip()))
-
-    docc, act = qchem.active_space(
-        mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb,
-    )
-
-    pn_obs = qchem.particle_number(mol_data.n_orbitals, docc_orb=docc, act_orb=act, mapping=mapping)
+    pn_obs = qchem.particle_number(n_act_orb, mapping=mapping)
 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
     assert qchem._qubit_operators_equivalent(particle_number_qubit_op, pn_obs)
-
-
-@pytest.mark.parametrize(
-    ("docc_orb", "act_orb", "msg_match"),
-    [(2, [1, 3], "'docc_orb' must be a list"), ([0, 1], 4, "'act_orb' must be a list"),],
-)
-def test_exceptions_particle_number(docc_orb, act_orb, msg_match):
-    r"""Tests that the 'particle_number' function throws an exception if 'docc_orb' or 
-    'act_orb' are not lists."""
-
-    mol_name = "h2o_psi4"
-    mapping = "jordan_wigner"
-    mol_data = mol_data = MolecularData(filename=os.path.join(ref_dir.strip(), mol_name.strip()))
-    with pytest.raises(ValueError, match=msg_match):
-        qchem.particle_number(
-            mol_data.n_orbitals, docc_orb=docc_orb, act_orb=act_orb, mapping=mapping
-        )

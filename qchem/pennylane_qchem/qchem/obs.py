@@ -369,31 +369,24 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
-def particle_number(n_orbitals, docc_orb=None, act_orb=None, mapping="jordan_wigner"):
+def particle_number(n_orbitals, mapping="jordan_wigner"):
     r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha` in
-    the Pauli basis. Its eigenvalue value is the number of electrons in a given state of the
-    many-particle system.
+    the Pauli basis. Its eigenvalue is the number of particles in a given state of the
+    many-body system.
 
-    In general, if an active space is defined the particle number operator reads,
+    The particle number operator reads,
 
     .. math::
 
-        \hat{N} = 2 n_{\mathrm{docc}} + \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
+        \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
 
-    where :math:`2 n_{\mathrm{docc}}` is the number of particles occupying
-    :math:`n_{\mathrm{docc}}` (frozen) core orbitals and :math:`\hat{c}_\alpha^\dagger`
-    (:math:`\hat{c}_\alpha`) is the creation (annihilation) particle operator acting on
-    the :math:`\alpha`-th active spin-orbital.
-
-    First, the function generates the fermionic second-quantized operator in the basis
-    of single-particle states. Then, the many-body observable is mapped to the
-    Pauli basis and converted into a PennyLane observable.
+    where the index :math:`\alpha` runs over the basis of single-particle orbitals and
+    :math:`\hat{c}^\dagger` and :math:`\hat{c} denote the particle creation and annihilation
+    operator, respectively.
 
     Args:
-        n_orbitals (int): Total number of orbitals
-        docc_orb (list): Indices of doubly-occupied orbitals
-        act_orb (list): Indices of active orbitals. If not specified the active space
-            will contain ``'n_orbitals'``.
+        n_orbitals (int): Number of orbitals. If an active space is defined 'n_orbitals'
+            is the number of active orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
@@ -403,7 +396,7 @@ def particle_number(n_orbitals, docc_orb=None, act_orb=None, mapping="jordan_wig
     **Example**
     
     >>> n_orbitals = 2
-    >>> pn_obs = particle_number(n_orbitals)
+    >>> pn_obs = particle_number(n_orbitals, mapping='jordan_wigner')
     >>> print(pn_obs)
     (2.0) [I0]
     + (-0.5) [Z0]
@@ -412,24 +405,13 @@ def particle_number(n_orbitals, docc_orb=None, act_orb=None, mapping="jordan_wig
     + (-0.5) [Z3]
     """
 
-    if docc_orb is None:
-        pn_docc = 0
-    else:
-        check_type(docc_orb, [list], msg="'docc_orb' must be a list; got {}" "".format(docc_orb))
-        pn_docc = 2 * len(docc_orb)
-
-    if act_orb is None:
-        act_orb = list(range(n_orbitals))
-    else:
-        check_type(act_orb, [list], msg="'act_orb' must be a list; got {}" "".format(act_orb))
-
-    n_spin_orbs = 2 * len(act_orb)
+    n_spin_orbs = 2 * n_orbitals
 
     table = np.ones((n_spin_orbs, 3))
     for alpha in range(n_spin_orbs):
         table[alpha, :2] = alpha
 
-    return observable(table, init_term=pn_docc, mapping=mapping)
+    return observable(table, mapping=mapping)
 
 
 __all__ = [
