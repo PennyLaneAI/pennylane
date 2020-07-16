@@ -27,10 +27,7 @@ terms_2_bk = {
 
 @pytest.mark.parametrize(
     ("n_orbitals", "mapping", "terms_exp"),
-    [
-        (2 , "JORDAN_wigner", terms_1_jw),
-        (3 , "bravyi_KITAEV", terms_2_bk),
-    ],
+    [(2, "JORDAN_wigner", terms_1_jw), (3, "bravyi_KITAEV", terms_2_bk),],
 )
 def test_spin_z(n_orbitals, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
@@ -41,9 +38,9 @@ def test_spin_z(n_orbitals, mapping, terms_exp, monkeypatch):
     useful to the users as well.
     """
 
-    Sz_obs = qchem.spin_z(n_orbitals, mapping=mapping)
+    Sz = qchem.spin_z(n_orbitals, mapping=mapping)
 
     Sz_qubit_op = QubitOperator()
     monkeypatch.setattr(Sz_qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(Sz_qubit_op, Sz_obs)
+    assert qchem._qubit_operators_equivalent(Sz_qubit_op, Sz)

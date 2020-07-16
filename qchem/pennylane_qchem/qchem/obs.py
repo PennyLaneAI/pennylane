@@ -313,7 +313,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
 def spin_z(n_orbitals, mapping="jordan_wigner"):
     r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
-    
+
     The second-quantized operator :math:`\hat{S}_z` reads,
 
     .. math::
@@ -324,11 +324,11 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
         \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
     where :math:`m_\alpha = \pm 1/2` denotes the spin-projection quantum number of
-    the single-particle state :math:`\vert \alpha \rangle` and :math:`\hat{c}^\dagger`
+    the single-particle states :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger`
     and :math:`\hat{c}` are the particle creation and annihilation operators, respectively.
 
     Args:
-        n_orbitals (str): number of orbitals. If an active space is defined 'n_orbitals'
+        n_orbitals (str): Number of orbitals. If an active space is defined, 'n_orbitals'
             is the number of active orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
@@ -339,23 +339,23 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     **Example**
 
     >>> n_orbitals = 2
-    >>> Sz_obs = spin_z(n_orbitals, mapping="jordan_wigner")
-    >>> print(Sz_obs)
+    >>> Sz = spin_z(n_orbitals, mapping="jordan_wigner")
+    >>> print(Sz)
     (-0.25) [Z0]
     + (0.25) [Z1]
     + (-0.25) [Z2]
     + (0.25) [Z3]
     """
 
-    n_spin_orbs = 2*n_orbitals
-    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    n_spin_orbs = 2 * n_orbitals
+    sz_orb = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
     # build table with matrix elements
-    table_me = np.zeros((n_spin_orbs, 3))
+    table = np.zeros((n_spin_orbs, 3))
     for alpha in range(n_spin_orbs):
-        table_me[alpha] = np.array([alpha, alpha, sz[alpha]])
+        table[alpha] = np.array([alpha, alpha, sz_orb[alpha]])
 
-    return observable(table_me, mapping=mapping)
+    return observable(table, mapping=mapping)
 
 
 __all__ = [
