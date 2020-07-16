@@ -379,11 +379,11 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
         \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha.
 
     The index :math:`\alpha` runs over the basis of single-particle orbitals
-    :math:`\vert \alpha \rangle` and :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
-    the particle creation and annihilation operator, respectively.
+    :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
+    the particle creation and annihilation operators, respectively.
 
     Args:
-        n_orbitals (int): Number of orbitals. If an active space is defined 'n_orbitals'
+        n_orbitals (int): Number of orbitals. If an active space is defined, 'n_orbitals'
             is the number of active orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
