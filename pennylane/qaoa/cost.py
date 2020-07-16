@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Imports all of the functionality from within the QAOA submodule
+This file contains functions that generate cost Hamiltonians corresponding to
+different optimization problems, for use in QAOA workflows.
 """
+import pennylane as qml
+from pennylane.wires import Wires
+import networkx
 
-from .mixers import *
-from .cost import *
-from .layers import *
+def maxcut(graph):
+    """A method that build the MaxCut Hamiltonian for a given graph"""
+
+

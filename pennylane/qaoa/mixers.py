@@ -35,9 +35,6 @@ def x_mixer(wires):
 
     wires = Wires(wires)
 
-    if len(set(wires.tolist())) != len(wires):
-        raise ValueError("Wires indices must be unique")
-
     ##############
 
     coeffs = [1 for i in wires]
@@ -59,6 +56,8 @@ def xy_mixer(graph):
 
     ##############
     # Input checks
+
+    print(graph)
 
     if not isinstance(graph, networkx.Graph):
         raise ValueError("Inputted graph must be a `networkx.Graph` object, got {}".format(type(graph).__name__))
