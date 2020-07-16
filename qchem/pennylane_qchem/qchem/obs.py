@@ -21,8 +21,6 @@ from openfermion.hamiltonians import MolecularData
 from openfermion.ops import FermionOperator
 from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
-from pennylane.templates.utils import check_type
-
 from . import structure
 
 
@@ -394,7 +392,7 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
 
     **Example**
-    
+
     >>> n_orbitals = 2
     >>> pn_obs = particle_number(n_orbitals, mapping='jordan_wigner')
     >>> print(pn_obs)
