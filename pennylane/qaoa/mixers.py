@@ -16,6 +16,8 @@ This file contains functions that generate mixer Hamiltonians for use
 in QAOA workflows.
 """
 import pennylane as qml
+from pennylane.wires import Wires
+import networkx
 
 def x_mixer(wires):
     r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__,
@@ -29,9 +31,11 @@ def x_mixer(wires):
     """
 
     ##############
-    #Input checks
+    # Input checks
 
-    if len(set(wires)) != len(wires):
+    wires = Wires(wires)
+
+    if len(set(wires.tolist())) != len(wires):
         raise ValueError("Wires indices must be unique")
 
     ##############
@@ -55,6 +59,9 @@ def xy_mixer(graph):
 
     ##############
     # Input checks
+
+    if not isinstance(graph, networkx.Graph):
+        raise ValueError("Inputted graph must be a `networkx.Graph` object, got {}".format(type(graph).__name__))
 
     ##############
 
