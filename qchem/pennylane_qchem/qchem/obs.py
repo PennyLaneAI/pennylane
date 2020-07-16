@@ -376,11 +376,11 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
 
     .. math::
 
-        \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
+        \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha.
 
-    where the index :math:`\alpha` runs over the basis of single-particle orbitals and
-    :math:`\hat{c}^\dagger` and :math:`\hat{c}` denote the particle creation and annihilation
-    operator, respectively.
+    The index :math:`\alpha` runs over the basis of single-particle orbitals
+    :math:`\vert \alpha \rangle` and :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
+    the particle creation and annihilation operator, respectively.
 
     Args:
         n_orbitals (int): Number of orbitals. If an active space is defined 'n_orbitals'
