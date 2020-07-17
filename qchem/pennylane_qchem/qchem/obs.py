@@ -333,7 +333,7 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
-        pennylane.Hamiltonian: the total spin projection :math:`\hat{S}_z` observable
+        pennylane.Hamiltonian: the total spin projection observable :math:`\hat{S}_z`
 
     **Example**
 
@@ -345,6 +345,11 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     + (-0.25) [Z2]
     + (0.25) [Z3]
     """
+
+    if n_orbitals <= 0:
+        raise ValueError(
+            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+        )
 
     n_spin_orbs = 2 * n_orbitals
     r = np.arange(n_spin_orbs)

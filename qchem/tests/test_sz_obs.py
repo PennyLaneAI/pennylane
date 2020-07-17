@@ -44,3 +44,15 @@ def test_spin_z(n_orbitals, mapping, terms_exp, monkeypatch):
     monkeypatch.setattr(Sz_qubit_op, "terms", terms_exp)
 
     assert qchem._qubit_operators_equivalent(Sz_qubit_op, Sz)
+
+
+@pytest.mark.parametrize(
+    ("n_orbitals", "msg_match"),
+    [(-3, "'n_orbitals' must be greater than 0"), (0, "'n_orbitals' must be greater than 0"),],
+)
+def test_exception_spin_z(n_orbitals, msg_match):
+    """Test that the function `'spin_z'` throws an exception if the
+    number of orbitals is less than zero."""
+
+    with pytest.raises(ValueError, match=msg_match):
+        qchem.spin_z(n_orbitals)
