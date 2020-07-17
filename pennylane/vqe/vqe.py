@@ -120,6 +120,25 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
+    @property
+    def is_diagonal(self):
+        r""" Checks if a Hamiltonian is diagonal in the computational basis.
+
+        Returns:
+            bool: ``True`` if the Hamiltonian is diagonal in the computational basis, ``False`` otherwise
+        """
+
+        # Combines non-diagonal like terms
+        non_diagonl_coeffs = []
+        non_diagonal_gates = []
+
+        for i in self._ops:
+            gates = [i.name] if isinstance(i, str) else i.name
+            for j in gates:
+                if j not in diagonals:
+                    if j not in non_diagonal_gates:
+                        non_diagonal_gates.append
+
 
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
