@@ -122,82 +122,6 @@ class TestMixerHamiltonians:
         )
 
 
-class TestCostHamiltonians:
-    """Tests that the cost Hamiltonians are being generated correctly"""
-
-    def test_maxcut_error(self):
-        """Tests that the MaxCut Hamiltonian throws the correct error"""
-
-        graph = 12
-
-        with pytest.raises(ValueError) as info:
-            output = qaoa.MaxCut(graph)
-
-        assert "Inputted graph must be a networkx.Graph object or Iterable, got int" in str(
-            info.value
-        )
-
-    @pytest.mark.parametrize(
-        ("graph", "target_hamiltonian"),
-        [
-            (
-                [(0, 1), (1, 2)],
-                qml.Hamiltonian(
-                    [0.5, -0.5, 0.5, -0.5],
-                    [
-                        qml.Identity(0) @ qml.Identity(1),
-                        qml.PauliZ(0) @ qml.PauliZ(1),
-                        qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2),
-                    ],
-                ),
-            ),
-            (
-                (np.array([0, 1]), np.array([1, 2]), np.array([0, 2])),
-                qml.Hamiltonian(
-                    [0.5, -0.5, 0.5, -0.5, 0.5, -0.5],
-                    [
-                        qml.Identity(0) @ qml.Identity(1),
-                        qml.PauliZ(0) @ qml.PauliZ(1),
-                        qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2),
-                        qml.Identity(0) @ qml.Identity(2),
-                        qml.PauliZ(0) @ qml.PauliZ(2),
-                    ],
-                ),
-            ),
-            (
-                graph,
-                qml.Hamiltonian(
-                    [0.5, -0.5, 0.5, -0.5],
-                    [
-                        qml.Identity(0) @ qml.Identity(1),
-                        qml.PauliZ(0) @ qml.PauliZ(1),
-                        qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2),
-                    ],
-                ),
-            ),
-        ],
-    )
-    def test_maxcut_output(self, graph, target_hamiltonian):
-        """Tests that the output of the MaxCut method is correct"""
-
-        cost_hamiltonian = qaoa.MaxCut(graph)
-
-        cost_coeffs = cost_hamiltonian.coeffs
-        cost_ops = [i.name for i in cost_hamiltonian.ops]
-        cost_wires = [i.wires for i in cost_hamiltonian.ops]
-
-        target_coeffs = target_hamiltonian.coeffs
-        target_ops = [i.name for i in target_hamiltonian.ops]
-        target_wires = [i.wires for i in target_hamiltonian.ops]
-
-        assert (
-            cost_coeffs == target_coeffs and cost_ops == target_ops and cost_wires == target_wires
-        )
-
-
 class TestUtils:
     @pytest.mark.parametrize(
         ("graph", "error"),
@@ -215,7 +139,7 @@ class TestUtils:
         """Tests that the `check_iterable_graph` method throws the correct errors"""
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.utils.check_iterable_graph(graph)
+            output = qaoa.check_iterable_graph(graph)
         assert error in str(info.value)
 
     @pytest.mark.parametrize(
@@ -228,4 +152,4 @@ class TestUtils:
     )
     def test_nodes(self, graph, nodes):
         """Checks if the `get_nodes` method yields the correct output"""
-        assert set(qaoa.utils.get_nodes(graph)) == nodes
+        assert set(qaoa.get_nodes(graph)) == nodes
