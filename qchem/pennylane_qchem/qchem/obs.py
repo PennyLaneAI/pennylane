@@ -240,7 +240,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     **Example**
 
     >>> table = np.array([[0.0, 0.0, 0.4], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]])
-    >>> observable(table, init_term=1 / 4, mapping="bravyi_kitaev")
+    >>> print(observable(table, init_term=1 / 4, mapping="bravyi_kitaev"))
     (0.2) [I0]
     + (-0.2) [Z0]
     + (0.25) [Z0 Z1]
