@@ -239,28 +239,11 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     **Example**
 
-    >>> s2_matrix_elements, init_term = get_spin2_matrix_elements('h2', './pyscf/sto-3g')
-    >>> s2_obs = observable(s2_matrix_elements, init_term=init_term)
-    >>> print(s2_obs)
-    (0.75) [I0]
-    + (0.375) [Z1]
-    + (-0.375) [Z0 Z1]
-    + (0.125) [Z0 Z2]
-    + (0.375) [Z0]
-    + (-0.125) [Z0 Z3]
-    + (-0.125) [Z1 Z2]
-    + (0.125) [Z1 Z3]
-    + (0.375) [Z2]
-    + (0.375) [Z3]
-    + (-0.375) [Z2 Z3]
-    + (0.125) [Y0 X1 Y2 X3]
-    + (0.125) [Y0 Y1 X2 X3]
-    + (0.125) [Y0 Y1 Y2 Y3]
-    + (-0.125) [Y0 X1 X2 Y3]
-    + (-0.125) [X0 Y1 Y2 X3]
-    + (0.125) [X0 X1 X2 X3]
-    + (0.125) [X0 X1 Y2 Y3]
-    + (0.125) [X0 Y1 X2 Y3]
+    >>> table = np.array([[0.0, 0.0, 0.4], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]])
+    >>> observable(table, init_term=1 / 4, mapping="bravyi_kitaev")
+    (0.2) [I0]
+    + (-0.2) [Z0]
+    + (0.25) [Z0 Z1]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
