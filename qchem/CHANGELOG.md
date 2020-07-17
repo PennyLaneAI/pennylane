@@ -41,6 +41,10 @@
   ```
 <h3>Improvements</h3>
 
+* The total spin observable S^2 can be built straightforwardly using the
+  function `spin2` as implemented in the `obs` module.
+  [(#714)](https://github.com/XanaduAI/pennylane/pull/714)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
