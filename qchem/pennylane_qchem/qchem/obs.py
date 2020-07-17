@@ -402,6 +402,11 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
     + (-0.5) [Z3]
     """
 
+    if n_orbitals <= 0:
+        raise ValueError(
+            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+        )
+
     n_spin_orbs = 2 * n_orbitals
     r = np.arange(n_spin_orbs)
     table = np.vstack([r, r, np.ones([n_spin_orbs])]).T

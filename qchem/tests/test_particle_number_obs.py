@@ -86,3 +86,15 @@ def test_particle_number_observable(n_orbitals, mapping, terms_exp, monkeypatch)
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
     assert qchem._qubit_operators_equivalent(particle_number_qubit_op, N)
+
+
+@pytest.mark.parametrize(
+    ("n_orbitals", "msg_match"),
+    [(-3, "'n_orbitals' must be greater than 0"), (0, "'n_orbitals' must be greater than 0"),],
+)
+def test_exception_particle_number(n_orbitals, msg_match):
+    """Test that the function `'particle_number'` throws an exception if the
+    number of orbitals is less than zero."""
+
+    with pytest.raises(ValueError, match=msg_match):
+        qchem.particle_number(n_orbitals)
