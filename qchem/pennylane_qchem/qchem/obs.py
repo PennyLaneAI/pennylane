@@ -134,6 +134,8 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
             is the number of active electrons.
         n_orbitals (int): Number of orbitals. If an active space is defined, 'n_orbitals'
             is the number of active orbitals.
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
         pennylane.Hamiltonian: the total spin observable :math:`\hat{S}^2`
@@ -190,7 +192,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
     PennyLane observables. In general, single- and two-particle operators can be
-    expanded in a truncated set of orbitals that define an active space,
+    expanded in a defined active space,
 
     .. math::
 
