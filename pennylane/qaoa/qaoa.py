@@ -19,7 +19,7 @@ import networkx
 import pennylane as qml
 from pennylane.wires import Wires
 
-#############################################################
+##############################################################
 
 
 def check_iterable_graph(graph):
@@ -48,18 +48,20 @@ def check_iterable_graph(graph):
         raise ValueError("Nodes cannot be connected by more than one edge")
 
 
-############ Defines Built-In Mixer Hamiltonians ############
+##################### Mixer Hamiltonians #####################
 
 
 def x_mixer(wires):
-    r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__,
-    defined as:
+    r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__.
+    This Hamiltonian is defined as:
 
     .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
 
-    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X on the :math:`i`-th qubit.
+    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X on the :math:`i`-th qubit (wire).
     Args:
         qubits (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
+    Returns:
+        ``qml.Hamiltonian`` object encoding the Hamiltonian
     """
 
     ##############
@@ -84,7 +86,9 @@ def xy_mixer(graph):
         for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th
         qubit respectively.
         Args:
-            graph (Iterable or networkx.Graph) A graph defining the pairs of wires on which each term of the Hamiltonian acts.
+            graph (Iterable or networkx.Graph) A graph defining the pairs of qubits (wires) on which each term of the Hamiltonian acts.
+        Returns:
+            ``qml.Hamiltonian`` object encoding the Hamiltonian
         """
 
     ##############
@@ -98,7 +102,7 @@ def xy_mixer(graph):
 
     else:
         raise ValueError(
-            "Inputted graph must be a networkx.Graph object or Iterable, got {}".format(
+            "Input graph must be a networkx.Graph object or Iterable, got {}".format(
                 type(graph).__name__
             )
         )

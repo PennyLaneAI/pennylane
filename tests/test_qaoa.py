@@ -57,7 +57,7 @@ class TestMixerHamiltonians:
         with pytest.raises(ValueError) as info:
             output = qaoa.xy_mixer(graph)
 
-        assert "Inputted graph must be a networkx.Graph object or Iterable, got int" in str(
+        assert "Input graph must be a networkx.Graph object or Iterable, got int" in str(
             info.value
         )
 
