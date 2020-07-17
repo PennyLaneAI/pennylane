@@ -320,11 +320,11 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
 
         \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
         ~ \hat{c}_\alpha^\dagger \hat{c}_\beta, ~~ \langle \alpha \vert \hat{s}_z
-        \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
+        \vert \beta \rangle = s_z_\alpha \delta_{\alpha,\beta},
 
-    where :math:`m_\alpha = \pm 1/2` denotes the spin-projection quantum number of
-    the single-particle state :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger`
-    and :math:`\hat{c}` are the particle creation and annihilation operators, respectively.
+    where :math:`s_z_\alpha = \pm 1/2` is the spin-projection of the single-particle state
+    :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
+    are the particle creation and annihilation operators, respectively.
 
     Args:
         n_orbitals (str): Number of orbitals. If an active space is defined, 'n_orbitals'
