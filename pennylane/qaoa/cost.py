@@ -15,11 +15,12 @@ r"""
 This file contains functions that generate cost Hamiltonians corresponding to
 different optimization problems, for use in QAOA workflows.
 """
-import pennylane as qml
-import networkx
-from .utils import check_iterable_graph
 from collections.abc import Iterable
-from qml.wires import Wires
+import networkx
+from pennylane.wires import Wires
+import pennylane as qml
+from pennylane.qaoa.utils import check_iterable_graph
+
 
 def MaxCut(graph):
     r"""A method that builds the QAOA cost Hamiltonian corresponding to MaxCut for a given graph.
@@ -52,7 +53,10 @@ def MaxCut(graph):
 
     else:
         raise ValueError(
-            "Inputted graph must be a networkx.Graph object or Iterable, got {}".format(type(graph).__name__))
+            "Inputted graph must be a networkx.Graph object or Iterable, got {}".format(
+                type(graph).__name__
+            )
+        )
 
     ##############
 

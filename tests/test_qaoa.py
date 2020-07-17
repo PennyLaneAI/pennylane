@@ -16,15 +16,17 @@ Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
 import networkx as nx
+import numpy as np
 import pennylane as qml
 from pennylane import qaoa
-import numpy as np
+
 
 #####################################################
 
 graph = nx.Graph()
 graph.add_nodes_from([0, 1, 2])
 graph.add_edges_from([(0, 1), (1, 2)])
+
 
 class TestMixerHamiltonians:
     """Tests that the mixer Hamiltonians are being generated correctly"""
@@ -42,9 +44,9 @@ class TestMixerHamiltonians:
         mixer_wires = [i.wires[0] for i in mixer_hamiltonian.ops]
 
         assert (
-                mixer_coeffs == [1, 1, 1, 1] and
-                mixer_ops == ['PauliX', 'PauliX', 'PauliX', 'PauliX'] and
-                mixer_wires == [0, 1, 2, 3]
+            mixer_coeffs == [1, 1, 1, 1]
+            and mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
+            and mixer_wires == [0, 1, 2, 3]
         )
 
     def test_xy_mixer_type_error(self):
@@ -55,36 +57,50 @@ class TestMixerHamiltonians:
         with pytest.raises(ValueError) as info:
             output = qaoa.xy_mixer(graph)
 
-        assert ("Inputted graph must be a networkx.Graph object or Iterable, got int" in str(info.value))
+        assert "Inputted graph must be a networkx.Graph object or Iterable, got int" in str(
+            info.value
+        )
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
         [
             (
-                [(0, 1), (1, 2)], qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2)
-            ])
-             ),
-            (
-                (np.array([0, 1]), np.array([1, 2])), qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2)
-                ])
+                [(0, 1), (1, 2)],
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(1),
+                        qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(1) @ qml.PauliX(2),
+                        qml.PauliY(1) @ qml.PauliY(2),
+                    ],
+                ),
             ),
             (
-                graph, qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
-                    qml.PauliX(0) @ qml.PauliX(1),
-                    qml.PauliY(0) @ qml.PauliY(1),
-                    qml.PauliX(1) @ qml.PauliX(2),
-                    qml.PauliY(1) @ qml.PauliY(2)
-                ])
-            )
-        ]
+                (np.array([0, 1]), np.array([1, 2])),
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(1),
+                        qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(1) @ qml.PauliX(2),
+                        qml.PauliY(1) @ qml.PauliY(2),
+                    ],
+                ),
+            ),
+            (
+                graph,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(1),
+                        qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(1) @ qml.PauliX(2),
+                        qml.PauliY(1) @ qml.PauliY(2),
+                    ],
+                ),
+            ),
+        ],
     )
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
@@ -100,10 +116,11 @@ class TestMixerHamiltonians:
         target_wires = [i.wires for i in target_hamiltonian.ops]
 
         assert (
-            mixer_coeffs == target_coeffs and
-            mixer_ops == target_ops and
-            mixer_wires == target_wires
+            mixer_coeffs == target_coeffs
+            and mixer_ops == target_ops
+            and mixer_wires == target_wires
         )
+
 
 class TestCostHamiltonians:
     """Tests that the cost Hamiltonians are being generated correctly"""
@@ -116,41 +133,52 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError) as info:
             output = qaoa.MaxCut(graph)
 
-        assert ("Inputted graph must be a networkx.Graph object or Iterable, got int" in str(info.value))
+        assert "Inputted graph must be a networkx.Graph object or Iterable, got int" in str(
+            info.value
+        )
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
         [
             (
-                    [(0, 1), (1, 2)],
-                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5], [
+                [(0, 1), (1, 2)],
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5],
+                    [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
                         qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2)
-                    ])
+                        qml.PauliZ(1) @ qml.PauliZ(2),
+                    ],
+                ),
             ),
             (
-                    (np.array([0, 1]), np.array([1, 2]), np.array([0, 2])),
-                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5, 0.5, -0.5], [
+                (np.array([0, 1]), np.array([1, 2]), np.array([0, 2])),
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5, 0.5, -0.5],
+                    [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
                         qml.Identity(1) @ qml.Identity(2),
                         qml.PauliZ(1) @ qml.PauliZ(2),
                         qml.Identity(0) @ qml.Identity(2),
-                        qml.PauliZ(0) @ qml.PauliZ(2)
-                    ])
+                        qml.PauliZ(0) @ qml.PauliZ(2),
+                    ],
+                ),
             ),
             (
-                    graph,
-                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5], [
+                graph,
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5],
+                    [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
                         qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2)
-                    ])
-            )
-        ]
+                        qml.PauliZ(1) @ qml.PauliZ(2),
+                    ],
+                ),
+            ),
+        ],
     )
     def test_maxcut_output(self, graph, target_hamiltonian):
         """Tests that the output of the MaxCut method is correct"""
@@ -166,21 +194,22 @@ class TestCostHamiltonians:
         target_wires = [i.wires for i in target_hamiltonian.ops]
 
         assert (
-                cost_coeffs == target_coeffs and
-                cost_ops == target_ops and
-                cost_wires == target_wires
+            cost_coeffs == target_coeffs and cost_ops == target_ops and cost_wires == target_wires
         )
 
-class TestUtils:
 
+class TestUtils:
     @pytest.mark.parametrize(
         ("graph", "error"),
         [
             ([1, 2], "Elements of `graph` must be Iterable objects, got int"),
-            ([(0, 1, 2), (2, 3)], "Elements of `graph` must be Iterable objects of length 2, got length 3"),
+            (
+                [(0, 1, 2), (2, 3)],
+                "Elements of `graph` must be Iterable objects of length 2, got length 3",
+            ),
             ([(0, 1), (1, 1)], "Edges must end in distinct nodes, got (1, 1)"),
-            ([(0, 1), (1, 2), (1, 2)], "Nodes cannot be connected by more than one edge")
-        ]
+            ([(0, 1), (1, 2), (1, 2)], "Nodes cannot be connected by more than one edge"),
+        ],
     )
     def test_iterable_graph_errors(self, graph, error):
         """Tests that the `check_iterable_graph` method throws the correct errors"""
@@ -194,8 +223,8 @@ class TestUtils:
         [
             ([(0, 1), (1, 2), (2, 0)], {0, 1, 2}),
             ((np.array([0, 1]), np.array([1, 2]), np.array([2, 3])), {0, 1, 2, 3}),
-            (np.array([["a", "b"], ["b", "c"]]), {"a", "b", "c"})
-        ]
+            (np.array([["a", "b"], ["b", "c"]]), {"a", "b", "c"}),
+        ],
     )
     def test_nodes(self, graph, nodes):
         """Checks if the `get_nodes` method yields the correct output"""

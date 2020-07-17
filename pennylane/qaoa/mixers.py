@@ -15,11 +15,12 @@ r"""
 This file contains functions that generate mixer Hamiltonians for use
 in QAOA workflows.
 """
+from collections.abc import Iterable
+import networkx
 import pennylane as qml
 from pennylane.wires import Wires
-import networkx
-from .utils import check_iterable_graph
-from collections.abc import Iterable
+from pennylane.qaoa.utils import check_iterable_graph
+
 
 def x_mixer(wires):
     r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__,
@@ -44,13 +45,14 @@ def x_mixer(wires):
 
     return qml.Hamiltonian(coeffs, obs)
 
+
 def xy_mixer(graph):
-    r""""Creates the generalized SWAP/XY mixer outlined in `this paper <https://arxiv.org/abs/1709.03489>`__, defined 
+    r""""Creates the generalized SWAP/XY mixer outlined in `this paper <https://arxiv.org/abs/1709.03489>`__, defined
         as:
 
         .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j
 
-        For some graph :math:`G`, and where :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th 
+        For some graph :math:`G`, and where :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th
         qubit respectively.
         Args:
             graph (Iterable or networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
@@ -66,7 +68,11 @@ def xy_mixer(graph):
         check_iterable_graph(graph)
 
     else:
-        raise ValueError("Inputted graph must be a networkx.Graph object or Iterable, got {}".format(type(graph).__name__))
+        raise ValueError(
+            "Inputted graph must be a networkx.Graph object or Iterable, got {}".format(
+                type(graph).__name__
+            )
+        )
 
     ##############
 

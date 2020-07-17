@@ -18,6 +18,7 @@ for example to make sure that arguments have the right shape, range or type.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from collections.abc import Iterable
 
+
 def check_iterable_graph(graph):
     """ Checks if a graph supplied in 'Iterable format' is valid
 
@@ -28,14 +29,21 @@ def check_iterable_graph(graph):
     for i in graph:
 
         if not isinstance(i, Iterable):
-            raise ValueError("Elements of `graph` must be Iterable objects, got {}".format(type(i).__name__))
+            raise ValueError(
+                "Elements of `graph` must be Iterable objects, got {}".format(type(i).__name__)
+            )
         if len(i) != 2:
-            raise ValueError("Elements of `graph` must be Iterable objects of length 2, got length {}".format(len(i)))
+            raise ValueError(
+                "Elements of `graph` must be Iterable objects of length 2, got length {}".format(
+                    len(i)
+                )
+            )
         if i[0] == i[1]:
             raise ValueError("Edges must end in distinct nodes, got {}".format(i))
 
-    if len(set([tuple(i) for i in graph])) != len(graph):
+    if len({tuple(i) for i in graph}) != len(graph):
         raise ValueError("Nodes cannot be connected by more than one edge")
+
 
 def get_nodes(graph):
     """Gets the nodes of an iterable graph
@@ -46,8 +54,5 @@ def get_nodes(graph):
             List of nodes contained in the graph
     """
 
-    node_set = set()
-    for i in graph:
-        node_set.update([i[0], i[1]])
-
+    node_set = {[i[0], i[1]] for i in graph}
     return list(node_set)
