@@ -171,30 +171,32 @@ class TestCostHamiltonians:
                 cost_wires == target_wires
         )
 
-class TestLayers:
-    """Tests that the cost and mixer layers are being constructed properly"""
+class TestUtils:
 
-    def test_mixer_layer_errors(self):
-        """Tests that the mixer layer is throwing the correct errors"""
-
-        hamiltonian = [[1, 1], [1, 1]]
+    @pytest.mark.parametrize(
+        ("graph", "error"),
+        [
+            ([1, 2], "Elements of `graph` must be Iterable objects, got int"),
+            ([(0, 1, 2), (2, 3)], "Elements of `graph` must be Iterable objects of length 2, got length 3"),
+            ([(0, 1), (1, 1)], "Edges must end in distinct nodes, got (1, 1)"),
+            ([(0, 1), (1, 2), (1, 2)], "Nodes cannot be connected by more than one edge")
+        ]
+    )
+    def test_iterable_graph_errors(self, graph, error):
+        """Tests that the `check_iterable_graph` method throws the correct errors"""
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.mixer_layer(hamiltonian)
+            output = qaoa.utils.check_iterable_graph(graph)
+        assert error in str(info.value)
 
-        assert (
-            "`hamiltonian` must be of type pennylane.Hamiltonian, got list"
-        )
-
-'''
-    def test_cost_layer_errors(self):
-        """Tests that the cost layer is throwing the correct errors"""
-'''
-
-'''
-    def test_cost_layer_output(self):
-        """Tests that the output of the cost layer is correct"""
-
-    def test_mixer_layer_output(self):
-        """Tests that the output of the mixer layer is correct"""
-'''
+    @pytest.mark.parametrize(
+        ("graph", "nodes"),
+        [
+            ([(0, 1), (1, 2), (2, 0)], {0, 1, 2}),
+            ((np.array([0, 1]), np.array([1, 2]), np.array([2, 3])), {0, 1, 2, 3}),
+            (np.array([["a", "b"], ["b", "c"]]), {"a", "b", "c"})
+        ]
+    )
+    def test_nodes(self, graph, nodes):
+        """Checks if the `get_nodes` method yields the correct output"""
+        assert set(qaoa.utils.get_nodes(graph)) == nodes

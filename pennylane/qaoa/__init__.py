@@ -17,4 +17,3 @@ Imports all of the functionality from within the QAOA submodule
 
 from .mixers import *
 from .cost import *
-from .layers import *

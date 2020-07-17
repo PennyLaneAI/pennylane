@@ -28,9 +28,9 @@ def check_iterable_graph(graph):
     for i in graph:
 
         if not isinstance(i, Iterable):
-            raise ValueError("Elements of graph must be Iterable objects, got {}".format(type(i).__name__))
+            raise ValueError("Elements of `graph` must be Iterable objects, got {}".format(type(i).__name__))
         if len(i) != 2:
-            raise ValueError("Elements of graph must be Iterable objects of length 2, got length {}".format(len(i)))
+            raise ValueError("Elements of `graph` must be Iterable objects of length 2, got length {}".format(len(i)))
         if i[0] == i[1]:
             raise ValueError("Edges must end in distinct nodes, got {}".format(i))
 
@@ -41,12 +41,12 @@ def get_nodes(graph):
     """Gets the nodes of an iterable graph
 
     Args:
-            graph (list): The graph that is being checked
+            graph (list): The graph from which the nodes are obtained
     Returns:
             List of nodes contained in the graph
     """
 
-    node_set = {}
+    node_set = set()
     for i in graph:
         node_set.update([i[0], i[1]])
 
