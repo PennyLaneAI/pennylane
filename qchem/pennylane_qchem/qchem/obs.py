@@ -319,9 +319,8 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     .. math::
 
         \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
-        ~ \hat{c}_\alpha^\dagger \hat{c}_\beta,
-
-        \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
+        ~ \hat{c}_\alpha^\dagger \hat{c}_\beta, ~~ \langle \alpha \vert \hat{s}_z
+        \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
 
     where :math:`m_\alpha = \pm 1/2` denotes the spin-projection quantum number of
     the single-particle state :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger`
@@ -334,7 +333,7 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
-        pennylane.Hamiltonian: the spin projection :math:`\hat{S}_z` observable
+        pennylane.Hamiltonian: the total spin projection :math:`\hat{S}_z` observable
 
     **Example**
 
@@ -348,12 +347,9 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     """
 
     n_spin_orbs = 2 * n_orbitals
+    r = np.arange(n_spin_orbs)
     sz_orb = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
-
-    # build table with matrix elements
-    table = np.zeros((n_spin_orbs, 3))
-    for alpha in range(n_spin_orbs):
-        table[alpha] = np.array([alpha, alpha, sz_orb[alpha]])
+    table = np.vstack([r, r, sz_orb]).T
 
     return observable(table, mapping=mapping)
 
