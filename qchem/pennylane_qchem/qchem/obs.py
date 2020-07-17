@@ -15,9 +15,7 @@
 values can be used to simulate molecular properties.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
-import os
 import numpy as np
-from openfermion.hamiltonians import MolecularData
 from openfermion.ops import FermionOperator
 from openfermion.transforms import bravyi_kitaev, jordan_wigner
 
@@ -107,7 +105,7 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
 
         \hat{S}^2 = \frac{3}{4}N + \sum_{ \bm{\alpha}, \bm{\beta}, \bm{\gamma}, \bm{\delta} }
         \langle \bm{\alpha}, \bm{\beta} \vert \hat{s}_1 \cdot \hat{s}_2
-        \vert \bm{\gamma}, \bm{\delta} \rangle ~ 
+        \vert \bm{\gamma}, \bm{\delta} \rangle ~
         \hat{c}_\bm{\alpha}^\dagger \hat{c}_\bm{\beta}^\dagger
         \hat{c}_\bm{\gamma} \hat{c}_\bm{\delta},
     
