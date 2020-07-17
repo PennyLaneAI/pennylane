@@ -334,7 +334,7 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
-        pennylane.Hamiltonian: the fermionic-to-qubit transformed :math:`\hat{S}_z` observable
+        pennylane.Hamiltonian: the spin projection :math:`\hat{S}_z` observable
 
     **Example**
 
