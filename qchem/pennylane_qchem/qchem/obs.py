@@ -371,14 +371,14 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
     r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
     in the Pauli basis.
 
-    The particle number operator reads,
+    The particle number operator is given by
 
     .. math::
 
-        \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha.
+        \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
 
-    The index :math:`\alpha` runs over the basis of single-particle orbitals
-    :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
+    where the index :math:`\alpha` runs over the basis of single-particle orbitals
+    :math:`\vert \alpha \rangle`, and the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
     the particle creation and annihilation operators, respectively.
 
     Args:
