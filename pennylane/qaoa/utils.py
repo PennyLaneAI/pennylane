@@ -54,5 +54,8 @@ def get_nodes(graph):
             List of nodes contained in the graph
     """
 
-    node_set = {[i[0], i[1]] for i in graph}
+    node_set = set()
+    for i in graph:
+        node_set.update([i[0], i[1]])
+
     return list(node_set)
