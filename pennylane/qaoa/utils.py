@@ -19,10 +19,10 @@ for example to make sure that arguments have the right shape, range or type.
 from collections.abc import Iterable
 
 def check_iterable_graph(graph):
-    """ Checks if a graph supplied in 'list format' is valid
+    """ Checks if a graph supplied in 'Iterable format' is valid
 
         Args:
-            graph (list): The graph that is being checked
+            graph (Iterable): The graph that is being checked
     """
 
     for i in graph:
@@ -41,7 +41,7 @@ def get_nodes(graph):
     """Gets the nodes of an iterable graph
 
     Args:
-            graph (list): The graph from which the nodes are obtained
+            graph (Iterable): The graph from which the nodes are obtained
     Returns:
             List of nodes contained in the graph
     """

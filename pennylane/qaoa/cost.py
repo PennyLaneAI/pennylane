@@ -19,9 +19,10 @@ import pennylane as qml
 import networkx
 from .utils import check_iterable_graph
 from collections.abc import Iterable
+from qml.wires import Wires
 
 def MaxCut(graph):
-    r"""A method that build the MaxCut Hamiltonian for a given graph.
+    r"""A method that builds the QAOA cost Hamiltonian corresponding to MaxCut for a given graph.
 
     The MaxCut problem can be formulated as follows: given some graph :math:`G`, what is the colouring
     :math:`C : V(G) \ \rightarrow \ \{0, \ 1\}` of :math:`G` that yields the maximum number of node pairs
@@ -34,10 +35,10 @@ def MaxCut(graph):
     MaxCut is an easy problem to implement and solve with QAOA, making it useful for benchmarking NISQ quantum devices.
 
     Args:
-         graph (networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
+         graph (Iterable or networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
 
     Returns:
-         A qml.Hamiltonian encoding the MaxCut Hamiltonian.
+         A ``qml.Hamiltonian`` encoding the MaxCut Hamiltonian.
     """
 
     ##############
@@ -60,10 +61,10 @@ def MaxCut(graph):
 
     for e in graph:
 
-        obs.append(qml.Identity(e[0]) @ qml.Identity(e[1]))
+        obs.append(qml.Identity(Wires(e[0])) @ qml.Identity(Wires(e[1])))
         coeffs.append(0.5)
 
-        obs.append(qml.PauliZ(e[0]) @ qml.PauliZ(e[1]))
+        obs.append(qml.PauliZ(Wires(e[0])) @ qml.PauliZ(Wires(e[1])))
         coeffs.append(-0.5)
 
     return qml.Hamiltonian(coeffs, obs)

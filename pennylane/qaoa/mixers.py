@@ -53,7 +53,7 @@ def xy_mixer(graph):
         For some graph :math:`G`, and where :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th 
         qubit respectively.
         Args:
-            graph (networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
+            graph (Iterable or networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
         """
 
     ##############
