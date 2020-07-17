@@ -141,15 +141,3 @@ class TestUtils:
         with pytest.raises(ValueError) as info:
             output = qaoa.check_iterable_graph(graph)
         assert error in str(info.value)
-
-    @pytest.mark.parametrize(
-        ("graph", "nodes"),
-        [
-            ([(0, 1), (1, 2), (2, 0)], {0, 1, 2}),
-            ((np.array([0, 1]), np.array([1, 2]), np.array([2, 3])), {0, 1, 2, 3}),
-            (np.array([["a", "b"], ["b", "c"]]), {"a", "b", "c"}),
-        ],
-    )
-    def test_nodes(self, graph, nodes):
-        """Checks if the `get_nodes` method yields the correct output"""
-        assert set(qaoa.get_nodes(graph)) == nodes

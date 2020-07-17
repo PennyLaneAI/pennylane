@@ -47,23 +47,6 @@ def check_iterable_graph(graph):
     if len({tuple(i) for i in graph}) != len(graph):
         raise ValueError("Nodes cannot be connected by more than one edge")
 
-
-def get_nodes(graph):
-    """Gets the nodes of an iterable graph
-
-    Args:
-            graph (Iterable): The graph from which the nodes are obtained
-    Returns:
-            List of nodes contained in the graph
-    """
-
-    node_set = set()
-    for i in graph:
-        node_set.update([i[0], i[1]])
-
-    return list(node_set)
-
-
 ############ Defines Built-In Mixer Hamiltonians ############
 
 
