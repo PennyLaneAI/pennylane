@@ -35,7 +35,6 @@ def _spin2_matrix_elements(sz):
         \langle ~ (\alpha, s_{z_\alpha});~ (\beta, s_{z_\beta}) ~ \vert \hat{s}_1 &&
         \cdot \hat{s}_2 \vert ~ (\gamma, s_{z_\gamma}); ~ (\delta, s_{z_\gamma}) ~ \rangle =
         \delta_{\alpha,\delta} \delta_{\beta,\gamma} \\
-
         && \times \left( \frac{1}{2} \delta_{s_{z_\alpha}, s_{z_\delta}+1}
         \delta_{s_{z_\beta}, s_{z_\gamma}-1} + \frac{1}{2} \delta_{s_{z_\alpha}, s_{z_\delta}-1}
         \delta_{s_{z_\beta}, s_{z_\gamma}+1} + s_{z_\alpha} s_{z_\beta}
@@ -43,7 +42,7 @@ def _spin2_matrix_elements(sz):
 
     where :math:`\alpha` and :math:`s_{z_\alpha}` refer to the quantum numbers of the spatial
     function and the spin projection, respectively, of the single-particle state
-    :math:`\vert \bm{\alpha} \rangle`.
+    :math:`\vert \bm{\alpha} \rangle \equiv \vert \alpha, s_{z_\alpha} \rangle`.
 
     Args:
         sz (array[float]): spin-projection of the single-particle states
@@ -115,7 +114,6 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
 
         \langle \bm{\alpha}, \bm{\beta} \vert \hat{s}_1 \cdot \hat{s}_2
         \vert \bm{\gamma}, \bm{\delta} \rangle = && \delta_{\alpha,\delta} \delta_{\beta,\gamma} \\
-
         && \times \left( \frac{1}{2} \delta_{s_{z_\alpha}, s_{z_\delta}+1}
         \delta_{s_{z_\beta}, s_{z_\gamma}-1} + \frac{1}{2} \delta_{s_{z_\alpha}, s_{z_\delta}-1}
         \delta_{s_{z_\beta}, s_{z_\gamma}+1} + s_{z_\alpha} s_{z_\beta}
@@ -123,7 +121,8 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
 
     In the equations above :math:`N` is the number of electrons, :math:`\alpha` refer to the
     quantum numbers of the spatial wave function and :math:`s_{z_\alpha}` is
-    the spin projection of the single-particle state :math:`\vert \bm{\alpha} \rangle`.
+    the spin projection of the single-particle state
+    :math:`\vert \bm{\alpha} \rangle \equiv \vert \alpha, s_{z_\alpha} \rangle`.
     The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the particle creation
     and annihilation operators, respectively.
 
