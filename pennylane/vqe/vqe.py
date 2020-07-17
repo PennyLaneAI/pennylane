@@ -128,16 +128,26 @@ class Hamiltonian:
             bool: ``True`` if the Hamiltonian is diagonal in the computational basis, ``False`` otherwise
         """
 
-        # Combines non-diagonal like terms
-        non_diagonl_coeffs = []
+        diagonals = ["PauliZ", "Identity"]
+
+        non_diagonal_coeffs = []
         non_diagonal_gates = []
 
-        for i in self._ops:
-            gates = [i.name] if isinstance(i, str) else i.name
+        for i, term in enumerate(self._ops):
+            gates = [term.name] if isinstance(term.name, str) else term.name
             for j in gates:
                 if j not in diagonals:
-                    if j not in non_diagonal_gates:
-                        non_diagonal_gates.append
+                    if gates not in non_diagonal_gates:
+                        non_diagonal_gates.append(gates)
+                        non_diagonal_coeffs.append(self._coeffs[i])
+                    else:
+                        non_diagonal_coeffs[non_diagonal_gates.index(gates)] += self._coeffs[i]
+                    break
+
+        print(non_diagonal_coeffs)
+        print(non_diagonal_gates)
+
+        return all([True if i == 0 else False for i in non_diagonal_coeffs]) or len(non_diagonal_coeffs) == 0
 
 
 class VQECost:

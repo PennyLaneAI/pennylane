@@ -184,6 +184,22 @@ class TestHamiltonian:
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert H.terms == (coeffs, ops)
 
+    @pytest.mark.parametrize(
+        ("coeffs", "ops", "is_diagonal"),
+        [
+            ([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)], True),
+            ([1, 1, 1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1), qml.PauliZ(2)], True),
+            ([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliX(2)], False),
+            ([1, -1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliX(0) @ qml.PauliX(1), qml.Identity(2)], True),
+            ([1, 1, 2], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(2), qml.Identity(2)], False)
+        ]
+    )
+    def test_hamiltonian_is_diagonal(self, coeffs, ops, is_diagonal):
+        """Tests that the is_diagonal method has the correct output"""
+
+        H = qml.Hamiltonian(coeffs, ops)
+        assert H.is_diagonal == is_diagonal
+
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
         """Tests that an exception is raised when giving an invalid
