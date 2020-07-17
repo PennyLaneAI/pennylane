@@ -123,6 +123,8 @@ class TestMixerHamiltonians:
 
 
 class TestUtils:
+    """Tests the QAOA utility functions"""
+
     @pytest.mark.parametrize(
         ("graph", "error"),
         [

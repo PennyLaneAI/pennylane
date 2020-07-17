@@ -55,11 +55,11 @@ def x_mixer(wires):
     r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__,
     defined as:
 
-    .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i}
+    .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
 
-    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X on the :math:`i`-th qubit
+    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X on the :math:`i`-th qubit.
     Args:
-        qubits (Iterable or Wires): The collection of wires on which the observables in the Hamiltonian are defined
+        qubits (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
     """
 
     ##############
@@ -79,12 +79,12 @@ def xy_mixer(graph):
     r""""Creates the generalized SWAP/XY mixer outlined in `this paper <https://arxiv.org/abs/1709.03489>`__, defined
         as:
 
-        .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j
+        .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
 
-        For some graph :math:`G`, and where :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th
+        for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th
         qubit respectively.
         Args:
-            graph (Iterable or networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
+            graph (Iterable or networkx.Graph) A graph defining the pairs of wires on which each term of the Hamiltonian acts.
         """
 
     ##############
