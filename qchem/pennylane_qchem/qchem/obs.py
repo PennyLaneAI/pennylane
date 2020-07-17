@@ -314,7 +314,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 def spin_z(n_orbitals, mapping="jordan_wigner"):
     r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
 
-    The second-quantized operator :math:`\hat{S}_z` reads,
+    The total spin operator :math:`\hat{S}_z` is given by
 
     .. math::
 
