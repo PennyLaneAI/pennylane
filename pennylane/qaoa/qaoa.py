@@ -47,6 +47,7 @@ def check_iterable_graph(graph):
     if len({tuple(i) for i in graph}) != len(graph):
         raise ValueError("Nodes cannot be connected by more than one edge")
 
+
 ############ Defines Built-In Mixer Hamiltonians ############
 
 
