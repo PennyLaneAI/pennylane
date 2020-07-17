@@ -320,9 +320,9 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
 
         \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
         ~ \hat{c}_\alpha^\dagger \hat{c}_\beta, ~~ \langle \alpha \vert \hat{s}_z
-        \vert \beta \rangle = s_z_\alpha \delta_{\alpha,\beta},
+        \vert \beta \rangle = s_{z_\alpha} \delta_{\alpha,\beta},
 
-    where :math:`s_z_\alpha = \pm 1/2` is the spin-projection of the single-particle state
+    where :math:`s_{z_\alpha} = \pm 1/2` is the spin-projection of the single-particle state
     :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
     are the particle creation and annihilation operators, respectively.
 
