@@ -144,7 +144,7 @@ class Hamiltonian:
                         non_diagonal_coeffs[non_diagonal_gates.index(gates)] += self._coeffs[i]
                     break
 
-        return all([True if i == 0 else False for i in non_diagonal_coeffs]) or len(non_diagonal_coeffs) == 0
+        return all([not bool(i) for i in non_diagonal_coeffs]) or len(non_diagonal_coeffs) == 0
 
 
 class VQECost:
