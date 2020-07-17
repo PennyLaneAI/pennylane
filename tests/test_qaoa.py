@@ -57,9 +57,7 @@ class TestMixerHamiltonians:
         with pytest.raises(ValueError) as info:
             output = qaoa.xy_mixer(graph)
 
-        assert "Input graph must be a networkx.Graph object or Iterable, got int" in str(
-            info.value
-        )
+        assert "Input graph must be a networkx.Graph object or Iterable, got int" in str(info.value)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
