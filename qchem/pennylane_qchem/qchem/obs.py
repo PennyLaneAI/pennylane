@@ -403,10 +403,8 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
     """
 
     n_spin_orbs = 2 * n_orbitals
-
-    table = np.ones((n_spin_orbs, 3))
-    for alpha in range(n_spin_orbs):
-        table[alpha, :2] = alpha
+    r = np.arange(n_spin_orbs)
+    table = np.vstack([r, r, np.ones([n_spin_orbs])]).T
 
     return observable(table, mapping=mapping)
 
