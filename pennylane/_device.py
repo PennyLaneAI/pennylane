@@ -465,7 +465,7 @@ class Device(abc.ABC):
                         )
                     )
 
-    def wire_map(self, wires):
+    def indices_on_register(self, wires):
         """Get the indices of the wires in the register of this device.
 
         Args:

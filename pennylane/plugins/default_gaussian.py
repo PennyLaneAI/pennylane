@@ -703,7 +703,7 @@ class DefaultGaussian(Device):
 
     def apply(self, operation, wires, par):
 
-        wire_indices = self.wire_map(wires)
+        wire_indices = self.indices_on_register(wires)
 
         if operation == "Displacement":
             self._state = displacement(
@@ -772,7 +772,7 @@ class DefaultGaussian(Device):
 
     def expval(self, observable, wires, par):
 
-        wire_indices = self.wire_map(wires)
+        wire_indices = self.indices_on_register(wires)
 
         if observable == "PolyXP":
             mu, cov = self._state
@@ -793,7 +793,7 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
 
-        wire_indices = self.wire_map(wires)
+        wire_indices = self.indices_on_register(wires)
 
         mu, cov = self.reduced_state(wire_indices)
         _, var = self._observable_map[observable](
@@ -819,7 +819,7 @@ class DefaultGaussian(Device):
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
 
-        wire_indices = self.wire_map(wires)
+        wire_indices = self.indices_on_register(wires)
 
         if len(wire_indices) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")

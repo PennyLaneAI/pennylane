@@ -410,7 +410,7 @@ class TestInternalFunctions:
         """Tests that the wire map function works correctly."""
         dev = mock_device(wires=['a1', 'q', -1, 3])
         wire_subset = [-1, 'a1', 3]
-        assert dev.wire_map(wire_subset) == [2, 0, 3]
+        assert dev.indices_on_register(wire_subset) == [2, 0, 3]
 
     @pytest.mark.parametrize('wires, expected', [(['a1', 'q', -1, 3], Wires(['a1', 'q', -1, 3])),
                                                  (3, Wires([0, 1, 2])),

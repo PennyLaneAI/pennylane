@@ -404,7 +404,7 @@ class QubitDevice(Device):
         else:
             wires = Wires(wires)
         # get indices of wires on the device's register
-        wire_indices = self.wire_map(wires)
+        wire_indices = self.indices_on_register(wires)
         # consider only the requested wires
         wire_indices = np.hstack(wire_indices)
 
@@ -480,7 +480,7 @@ class QubitDevice(Device):
 
         wires = Wires(wires)
         # get indices of wires on the device's register
-        wire_indices = self.wire_map(wires)
+        wire_indices = self.indices_on_register(wires)
 
         wire_indices = np.hstack(wire_indices)
 
@@ -526,7 +526,7 @@ class QubitDevice(Device):
 
     def sample(self, observable):
 
-        wire_indices = self.wire_map(observable.wires)
+        wire_indices = self.indices_on_register(observable.wires)
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
