@@ -143,5 +143,5 @@ class TestUtils:
         """Tests that the `check_iterable_graph` method throws the correct errors"""
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.check_iterable_graph(graph)
+            output = qaoa.qaoa._check_iterable_graph(graph)
         assert error in str(info.value)

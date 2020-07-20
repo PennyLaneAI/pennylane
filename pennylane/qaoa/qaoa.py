@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
-def check_iterable_graph(graph):
+def _check_iterable_graph(graph):
     """ Checks if a graph supplied in 'Iterable format' is formatted correctly
 
         Args:
@@ -94,7 +94,7 @@ def xy_mixer(graph):
         graph = graph.edges
 
     elif isinstance(graph, Iterable):
-        check_iterable_graph(graph)
+        _check_iterable_graph(graph)
 
     else:
         raise ValueError(
