@@ -118,18 +118,19 @@ class CVQNode(JacobianQNode):
         return "A"
 
     @staticmethod
-    def _transform_observable(obs, w, Z):
+    def _transform_observable(obs, w, Z, register):
         """Apply a Gaussian linear transformation to each index of an observable.
 
         Args:
             obs (Observable): observable to transform
             w (int): number of wires in the circuit
             Z (array[float]): Heisenberg picture representation of the linear transformation
+            register (Wires): register of wires on the device
 
         Returns:
             Observable: transformed observable
         """
-        q = obs.heisenberg_obs(w)
+        q = obs.heisenberg_obs(w, register=register)
 
         if q.ndim != obs.ev_order:
             raise QuantumFunctionError(
@@ -199,14 +200,14 @@ class CVQNode(JacobianQNode):
                 # evaluate transformed observables at the original parameter point
                 # first build the Heisenberg picture transformation matrix Z
                 self._set_variables(shift_p1, kwargs)
-                Z2 = op.heisenberg_tr(w)
+                Z2 = op.heisenberg_tr(w, register=self.device.register)
                 self._set_variables(shift_p2, kwargs)
-                Z1 = op.heisenberg_tr(w)
+                Z1 = op.heisenberg_tr(w, register=self.device.register)
                 Z = (Z2 - Z1) * multiplier  # derivative of the operation
 
                 unshifted_args = np.r_[args, args[idx]]
                 self._set_variables(unshifted_args, kwargs)
-                Z0 = op.heisenberg_tr(w, inverse=True)
+                Z0 = op.heisenberg_tr(w, register=self.device.register, inverse=True)
                 Z = Z @ Z0
 
                 # conjugate Z with all the descendant operations
@@ -217,8 +218,8 @@ class CVQNode(JacobianQNode):
                         # if the descendant gate is non-Gaussian in parameter-shift differentiation
                         # mode, then there must be no observable following it.
                         continue
-                    B = BB.heisenberg_tr(w) @ B
-                    B_inv = B_inv @ BB.heisenberg_tr(w, inverse=True)
+                    B = BB.heisenberg_tr(w, register=self.device.register) @ B
+                    B_inv = B_inv @ BB.heisenberg_tr(w, register=self.device.register, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
                 # transform the descendant observables into their derivatives using Z

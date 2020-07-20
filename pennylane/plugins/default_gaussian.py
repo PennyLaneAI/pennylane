@@ -492,7 +492,7 @@ def set_state(state, wire, mu, cov):
 # ========================================================
 
 
-def photon_number(mu, cov, wires, params, total_wires, hbar=2.0):
+def photon_number(mu, cov, wires, params, total_wires, register, hbar=2.0):
     r"""Calculates the mean photon number for a given one-mode state.
 
     Args:
@@ -501,6 +501,7 @@ def photon_number(mu, cov, wires, params, total_wires, hbar=2.0):
         wires (Wires): wires to calculate the expectation for
         params (None): no parameters are used for this expectation value
         total_wires (int): total number of wires in the system
+        register (Wires): register of wires on the device
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -526,7 +527,7 @@ def homodyne(phi=None):
     """
     if phi is not None:
 
-        def _homodyne(mu, cov, wires, params, total_wires, hbar=2.0):
+        def _homodyne(mu, cov, wires, params, total_wires, register, hbar=2.0):
             """Arbitrary angle homodyne expectation."""
             # pylint: disable=unused-argument
             rot = rotation(phi)
@@ -536,7 +537,7 @@ def homodyne(phi=None):
 
         return _homodyne
 
-    def _homodyne(mu, cov, wires, params, total_wires, hbar=2.0):
+    def _homodyne(mu, cov, wires, params, total_wires, register, hbar=2.0):
         """Arbitrary angle homodyne expectation."""
         # pylint: disable=unused-argument
         rot = rotation(params[0])
@@ -547,7 +548,7 @@ def homodyne(phi=None):
     return _homodyne
 
 
-def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.0):
+def poly_quad_expectations(mu, cov, wires, params, total_wires, register, hbar=2.0):
     r"""Calculates the expectation and variance for an arbitrary
     polynomial of quadrature operators.
 
@@ -559,6 +560,7 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.0):
             and quadratic coefficients of the quadrature operators
             :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
         total_wires (int): total number of wires in the system
+        register (Wires): register of wires on the device
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -570,7 +572,7 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.0):
     # HACK, we need access to the Poly instance in order to expand the matrix!
     # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
     op = qml.ops.PolyXP(Q, wires=wires)
-    Q = op.heisenberg_obs(total_wires)
+    Q = op.heisenberg_obs(total_wires, register=register)
 
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
@@ -599,7 +601,7 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, hbar=2.0):
     return ex, var
 
 
-def fock_expectation(mu, cov, wires, params, total_wires, hbar=2.0):
+def fock_expectation(mu, cov, wires, params, total_wires, register, hbar=2.0):
     r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
@@ -608,6 +610,7 @@ def fock_expectation(mu, cov, wires, params, total_wires, hbar=2.0):
         wires (Wires): wires to calculate the expectation for
         params (Sequence[int]): the Fock state to return the expectation value for
         total_wires (int): total number of wires in the system
+        register (Wires): register of wires on the device
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -780,7 +783,7 @@ class DefaultGaussian(Device):
             mu, cov = self.reduced_state(wire_indices)
 
         ev, var = self._observable_map[observable](
-            mu, cov, wire_indices, par, self.num_wires, hbar=self.hbar
+            mu, cov, wire_indices, par, self.num_wires, self.register, hbar=self.hbar
         )
 
         if not self.analytic:
@@ -797,7 +800,7 @@ class DefaultGaussian(Device):
 
         mu, cov = self.reduced_state(wire_indices)
         _, var = self._observable_map[observable](
-            mu, cov, wire_indices, par, hbar=self.hbar, total_wires=self.num_wires
+            mu, cov, wire_indices, par, self.num_wires, self.register, hbar=self.hbar
         )
         return var
 

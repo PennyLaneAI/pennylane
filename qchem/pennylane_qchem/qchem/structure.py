@@ -383,7 +383,7 @@ def _qubit_operator_to_terms(qubit_operator):
         *[
             (
                 coef,
-                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=q[0]) for q in term])
+                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=q[0]) for q in term])  # TODO: nonconsecutive wires
                 if term
                 else qml.operation.Tensor(qml.Identity(0))
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
