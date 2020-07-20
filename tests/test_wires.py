@@ -122,6 +122,8 @@ class TestWires:
         assert wires2 > wires1
         assert wires2 > wires3
         assert wires2 > wires1
+        assert not wires1 < ['q1', 2, 1]
+        assert not ['q1', 2, 1] > wires1
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
