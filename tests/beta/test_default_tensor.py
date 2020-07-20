@@ -476,7 +476,7 @@ class TestDefaultTensorNetworkParametrize:
         dev = qml.device("default.tensor", wires=num_wires, representation=rep)
         dev._clear_network_data()
 
-        with pytest.raises(ValueError, match="incompatible with provided sequence of registers"):
+        with pytest.raises(ValueError, match="incompatible with provided wire indices"):
             dev._add_initial_state_nodes(tensors, wires, ["dummy_name"] * num_wires)
 
     def test_add_node(self, rep, tol):
@@ -489,9 +489,9 @@ class TestDefaultTensorNetworkParametrize:
         zero_state = np.array([1.0, 0])
         one_qubit_gate = np.array([[0, 1], [1, 0]])
         two_qubit_gate = np.eye(4)
-        dev._add_node(one_qubit_gate, registers=[0], name="NewNodeX")
-        dev._add_node(one_qubit_gate, registers=[1], name="NewNodeY")
-        dev._add_node(two_qubit_gate, registers=[0, 1], name="NewNodeZ")
+        dev._add_node(one_qubit_gate, wire_indices=[0], name="NewNodeX")
+        dev._add_node(one_qubit_gate, wire_indices=[1], name="NewNodeY")
+        dev._add_node(two_qubit_gate, wire_indices=[0, 1], name="NewNodeZ")
         assert len(dev._nodes["state"]) == 5
         node_names = [n.name for n in dev._nodes["state"]]
         assert set(node_names) == set(
@@ -512,7 +512,7 @@ class TestDefaultTensorNetworkParametrize:
 
         assert "state" in dev._nodes
         assert len(dev._nodes) == 1
-        dev._add_node(np.array([[0, 1], [1, 0]]), registers=[0], key="junk")
+        dev._add_node(np.array([[0, 1], [1, 0]]), wire_indices=[0], key="junk")
         assert "junk" in dev._nodes
         assert len(dev._nodes) == 2
 
@@ -1275,7 +1275,7 @@ class TestDefaultTensorIntegration:
 
         # text warning raised if matrix is complex
         with pytest.warns(RuntimeWarning, match="Nonvanishing imaginary part"):
-            dev.ev(obs_node, registers=[[0]])
+            dev.ev(obs_node, sequence_of_wire_indices=[[0]])
 
     @pytest.mark.parametrize("method", ["auto", "greedy", "branch", "optimal"])
     def test_correct_state_no_params(self, rep, method):

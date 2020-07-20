@@ -247,7 +247,7 @@ class QubitDevice(Device):
                 we are gathering the active wires
 
         Returns:
-            Wires: all wires activated by the specified operators
+            Wires: wires activated by the specified operators
         """
         list_of_wires = [op.wires for op in operators]
 
@@ -404,14 +404,14 @@ class QubitDevice(Device):
         else:
             wires = Wires(wires)
         # get indices of wires on the device's register
-        registers = self.wire_map(wires)
+        wire_indices = self.wire_map(wires)
         # consider only the requested wires
-        registers = np.hstack(registers)
+        wire_indices = np.hstack(wire_indices)
 
-        samples = self._samples[:, np.array(registers)]
+        samples = self._samples[:, np.array(wire_indices)]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        unraveled_indices = [2] * len(registers)
+        unraveled_indices = [2] * len(wire_indices)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
 
         # count the basis state occurrences, and construct the probability vector
@@ -480,12 +480,12 @@ class QubitDevice(Device):
 
         wires = Wires(wires)
         # get indices of wires on the device's register
-        registers = self.wire_map(wires)
+        wire_indices = self.wire_map(wires)
 
-        registers = np.hstack(registers)
+        wire_indices = np.hstack(wire_indices)
 
         # determine which subsystems are to be summed over
-        inactive_registers = list(set(range(self.num_wires)) - set(registers))
+        inactive_registers = list(set(range(self.num_wires)) - set(wire_indices))
 
         # reshape the probability so that each axis corresponds to a wire
         prob = self._reshape(prob, [2] * self.num_wires)
@@ -496,9 +496,9 @@ class QubitDevice(Device):
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(registers))))
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wire_indices))))
         perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(registers))].T, [2] * len(registers)
+            basis_states[:, np.argsort(np.argsort(wire_indices))].T, [2] * len(wire_indices)
         )
         return self._gather(prob, perm)
 
@@ -525,18 +525,18 @@ class QubitDevice(Device):
         return np.var(self.sample(observable))
 
     def sample(self, observable):
-        # get indices of wires on the device
-        registers = self.wire_map(observable.wires)
+
+        wire_indices = self.wire_map(observable.wires)
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, registers[0]]
+            return 1 - 2 * self._samples[:, wire_indices[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        registers = np.hstack(registers)
-        samples = self._samples[:, np.array(registers)]
-        unraveled_indices = [2] * len(registers)
+        wire_indices = np.hstack(wire_indices)
+        samples = self._samples[:, np.array(wire_indices)]
+        unraveled_indices = [2] * len(wire_indices)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
