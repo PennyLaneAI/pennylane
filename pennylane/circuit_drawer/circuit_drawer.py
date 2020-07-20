@@ -21,6 +21,7 @@ import pennylane as qml
 from .charsets import UnicodeCharSet
 from .representation_resolver import RepresentationResolver
 from .grid import Grid
+from pennylane.wires import Wires
 
 # pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements,too-many-statements,consider-using-enumerate,too-many-instance-attributes
 
@@ -134,11 +135,11 @@ class CircuitDrawer:
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
             qml.utils._flatten(raw_observable_grid)
         )
-        all_wires = [op.wires for op in all_operators if op is not None]
+        all_wires_with_duplicates = [op.wires for op in all_operators if op is not None]
         # make Wires object containing all used wires
-        all_wires = qml.wires.Wires.all_wires(all_wires)
+        all_wires = Wires.all_wires(all_wires_with_duplicates)
         # shared wires will observe the ordering of the register
-        shared_wires = qml.wires.Wires.shared_wires([self.register, all_wires])
+        shared_wires = Wires.shared_wires([self.register, all_wires])
         return shared_wires
 
     def resolve_representation(self, grid, representation_grid):
@@ -151,28 +152,28 @@ class CircuitDrawer:
         for i in range(grid.num_layers):
             representation_layer = [""] * grid.num_wires
 
-            for subsystem, operator in enumerate(grid.layer(i)):
-                wire = self.active_register[subsystem]
+            for wire_indices, operator in enumerate(grid.layer(i)):
+                wire = self.active_register[wire_indices]
                 representation_layer[
-                    subsystem
+                    wire_indices
                 ] = self.representation_resolver.element_representation(operator, wire)
 
             representation_grid.append_layer(representation_layer)
 
-    def add_multi_wire_connectors_to_layer(self, registers, decoration_layer):
+    def add_multi_wire_connectors_to_layer(self, wire_indices, decoration_layer):
         """Add multi wire connectors for the given wires to a layer.
 
         Args:
-            registers (list[int]): The indices of wires that are to be connected
+            wire_indices (list[int]): The indices of wires that are to be connected
             decoration_layer (list[str]): The decoration layer to which the wires will be added
         """
-        min_wire = min(registers)
-        max_wire = max(registers)
+        min_wire = min(wire_indices)
+        max_wire = max(wire_indices)
 
         decoration_layer[min_wire] = self.charset.TOP_MULTI_LINE_GATE_CONNECTOR
 
         for k in range(min_wire + 1, max_wire):
-            if k in registers:
+            if k in wire_indices:
                 decoration_layer[k] = self.charset.MIDDLE_MULTI_LINE_GATE_CONNECTOR
             else:
                 decoration_layer[k] = self.charset.EMPTY_MULTI_LINE_GATE_CONNECTOR
@@ -205,11 +206,11 @@ class CircuitDrawer:
                     continue
 
                 wires = op.wires
-                subsystems = self.active_register.indices(wires)
+                wire_indices = self.active_register.indices(wires)
 
-                if len(subsystems) > 1:
-                    min_wire = min(subsystems)
-                    max_wire = max(subsystems)
+                if len(wire_indices) > 1:
+                    min_wire = min(wire_indices)
+                    max_wire = max(wire_indices)
 
                     # If there is a conflict between decorations, we start a new decoration_layer
                     if any(
@@ -221,7 +222,7 @@ class CircuitDrawer:
 
                         decoration_layer = [""] * grid.num_wires
 
-                    self.add_multi_wire_connectors_to_layer(subsystems, decoration_layer)
+                    self.add_multi_wire_connectors_to_layer(wire_indices, decoration_layer)
 
             representation_grid.insert_layer(i + j, decoration_layer)
             inserted_indices.append(i + j)
@@ -281,11 +282,11 @@ class CircuitDrawer:
                     continue
 
                 # translate wires to their indices in the register
-                subsystems = self.active_register.indices(op.wires)
+                wire_indices = self.active_register.indices(op.wires)
 
                 if len(op.wires) > 1:
 
-                    sorted_wires = subsystems.copy()
+                    sorted_wires = wire_indices.copy()
                     sorted_wires.sort()
 
                     blocked_wires = list(range(sorted_wires[0], sorted_wires[-1] + 1))
@@ -297,11 +298,11 @@ class CircuitDrawer:
                             continue
 
                         # translate wires to their indices in the register
-                        other_subsystems = self.active_register.indices(other_op.wires)
-                        other_sorted_wires = other_subsystems.copy()
-                        other_sorted_wires.sort()
+                        other_wire_indices = self.active_register.indices(other_op.wires)
+                        other_sorted_wire_indices = other_wire_indices.copy()
+                        other_sorted_wire_indices.sort()
                         other_blocked_wires = list(
-                            range(other_sorted_wires[0], other_sorted_wires[-1] + 1)
+                            range(other_sorted_wire_indices[0], other_sorted_wire_indices[-1] + 1)
                         )
 
                         if not set(other_blocked_wires).isdisjoint(set(blocked_wires)):

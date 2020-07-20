@@ -235,7 +235,6 @@ class DefaultTensorTF(DefaultTensor):
         self.tape.watch(self.variables)
 
         for operation in self.op_queue:
-
             # Apply each operation, but instead of passing operation.parameters
             # (which contains the evaluated numeric parameter values),
             # pass op_params[operation], which contains numeric values
