@@ -140,7 +140,7 @@ class CircuitGraph:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
-        register (Wires): the register of wires
+        register (Wires): the base register of wires (passed from the device)
     """
 
     # pylint: disable=too-many-public-methods
@@ -161,28 +161,28 @@ class CircuitGraph:
             op.queue_idx = k  # store the queue index in the Operator
             for w in op.wires:
                 # get the index of the wire on the register
-                subsystem = register.index(w)
+                wire = register.index(w)
                 # add op to the grid, to the end of wire w
-                self._grid.setdefault(subsystem, []).append(op)
+                self._grid.setdefault(wire, []).append(op)
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
         # Iterate over each (populated) wire in the grid
-        for subsystem in self._grid.values():
+        for wire in self._grid.values():
             # Add the first operator on the wire to the graph
             # This operator does not depend on any others
-            self._graph.add_node(subsystem[0])
+            self._graph.add_node(wire[0])
 
-            for i in range(1, len(subsystem)):
+            for i in range(1, len(wire)):
                 # For subsequent operators on the wire:
-                if subsystem[i] not in self._graph:
+                if wire[i] not in self._graph:
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
-                    self._graph.add_node(subsystem[i])
+                    self._graph.add_node(wire[i])
 
                 # Create an edge between this and the previous operator
-                self._graph.add_edge(subsystem[i - 1], subsystem[i])
+                self._graph.add_edge(wire[i - 1], wire[i])
 
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
