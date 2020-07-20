@@ -50,7 +50,7 @@ def _check_iterable_graph(graph):
 
 
 def x_mixer(wires):
-    r""""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__.
+    r"""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__.
     This Hamiltonian is defined as:
 
     .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
