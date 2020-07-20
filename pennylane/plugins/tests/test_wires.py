@@ -29,19 +29,23 @@ class TestWiresIntegration:
         @qml.qnode(device)
         def circuit():
             qml.RX(0.5, wires=wires[0 % n_wires])
-            qml.RY(2., wires=wires[1 % n_wires])
+            qml.RY(2.0, wires=wires[1 % n_wires])
             if n_wires > 1:
                 qml.CNOT(wires=[wires[0], wires[1]])
             return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
 
         return circuit
 
-    @pytest.mark.parametrize("wires1, wires2", [(['a', 'c', 'd'], [2, 3, 0]),
-                                                ([-1, -2, -3], ['q1', 'ancilla', 2]),
-                                                (['a', 'c'], [3, 0]),
-                                                ([-1, -2], ['ancilla', 2]),
-                                                (['a'], ['nothing']),
-                                                ])
+    @pytest.mark.parametrize(
+        "wires1, wires2",
+        [
+            (["a", "c", "d"], [2, 3, 0]),
+            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            (["a", "c"], [3, 0]),
+            ([-1, -2], ["ancilla", 2]),
+            (["a"], ["nothing"]),
+        ],
+    )
     def test_wires_expval(self, device, wires1, wires2, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)
