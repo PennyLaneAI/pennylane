@@ -19,32 +19,30 @@ import networkx
 import pennylane as qml
 from pennylane.wires import Wires
 
-##############################################################
-
 
 def check_iterable_graph(graph):
-    """ Checks if a graph supplied in 'Iterable format' is valid
+    """ Checks if a graph supplied in 'Iterable format' is formatted correctly
 
         Args:
             graph (Iterable): The graph that is being checked
     """
 
-    for i in graph:
+    for g in graph:
 
-        if not isinstance(i, Iterable):
+        if not isinstance(g, Iterable):
             raise ValueError(
-                "Elements of `graph` must be Iterable objects, got {}".format(type(i).__name__)
+                "Elements of `graph` must be Iterable objects, got {}".format(type(g).__name__)
             )
-        if len(i) != 2:
+        if len(g) != 2:
             raise ValueError(
                 "Elements of `graph` must be Iterable objects of length 2, got length {}".format(
-                    len(i)
+                    len(g)
                 )
             )
-        if i[0] == i[1]:
-            raise ValueError("Edges must end in distinct nodes, got {}".format(i))
+        if g[0] == g[1]:
+            raise ValueError("Edges must end in distinct nodes, got {}".format(g))
 
-    if len({tuple(i) for i in graph}) != len(graph):
+    if len({tuple(g) for g in graph}) != len(graph):
         raise ValueError("Nodes cannot be connected by more than one edge")
 
 
@@ -57,7 +55,7 @@ def x_mixer(wires):
 
     .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
 
-    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X on the :math:`i`-th qubit (wire).
+    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X operator on the :math:`i`-th qubit (wire).
     Args:
         wires (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
     Returns:
@@ -69,10 +67,8 @@ def x_mixer(wires):
 
     wires = Wires(wires)
 
-    ##############
-
-    coeffs = [1 for i in wires]
-    obs = [qml.PauliX(i) for i in wires]
+    coeffs = [1 for w in wires]
+    obs = [qml.PauliX(w) for w in wires]
 
     return qml.Hamiltonian(coeffs, obs)
 
@@ -107,13 +103,11 @@ def xy_mixer(graph):
             )
         )
 
-    ##############
-
-    coeffs = 2 * [0.5 for i in graph]
+    coeffs = 2 * [0.5 for g in graph]
 
     obs = []
-    for e in graph:
-        obs.append(qml.PauliX(Wires(e[0])) @ qml.PauliX(Wires(e[1])))
-        obs.append(qml.PauliY(Wires(e[0])) @ qml.PauliY(Wires(e[1])))
+    for g in graph:
+        obs.append(qml.PauliX(Wires(g[0])) @ qml.PauliX(Wires(g[1])))
+        obs.append(qml.PauliY(Wires(g[0])) @ qml.PauliY(Wires(g[1])))
 
     return qml.Hamiltonian(coeffs, obs)
