@@ -63,26 +63,30 @@ class TestMixerHamiltonians:
         ("graph", "target_hamiltonian"),
         [
             (
-                [(0, 1), (1, 2)],
+                [(0, 1), (1, 2), (2, 3)],
                 qml.Hamiltonian(
-                    [0.5, 0.5, 0.5, 0.5],
+                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                     [
                         qml.PauliX(0) @ qml.PauliX(1),
                         qml.PauliY(0) @ qml.PauliY(1),
                         qml.PauliX(1) @ qml.PauliX(2),
                         qml.PauliY(1) @ qml.PauliY(2),
+                        qml.PauliX(2) @ qml.PauliX(3),
+                        qml.PauliY(2) @ qml.PauliY(3)
                     ],
                 ),
             ),
             (
-                (np.array([0, 1]), np.array([1, 2])),
+                (np.array([0, 1]), np.array([1, 2]), np.array([2, 0])),
                 qml.Hamiltonian(
-                    [0.5, 0.5, 0.5, 0.5],
+                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                     [
                         qml.PauliX(0) @ qml.PauliX(1),
                         qml.PauliY(0) @ qml.PauliY(1),
                         qml.PauliX(1) @ qml.PauliX(2),
                         qml.PauliY(1) @ qml.PauliY(2),
+                        qml.PauliX(2) @ qml.PauliX(0),
+                        qml.PauliY(2) @ qml.PauliY(0)
                     ],
                 ),
             ),
