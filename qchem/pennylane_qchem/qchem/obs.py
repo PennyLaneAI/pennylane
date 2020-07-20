@@ -28,7 +28,7 @@ def _spin2_matrix_elements(sz):
     \bm{\gamma}, \bm{\delta} \rangle` of the two-particle spin operator
     :math:`\hat{s}_1 \cdot \hat{s}_2`.
 
-    The matrix elements are evaluated using the expression,
+    The matrix elements are evaluated using the expression
 
     .. math::
 
@@ -108,7 +108,7 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
         \hat{c}_\bm{\alpha}^\dagger \hat{c}_\bm{\beta}^\dagger
         \hat{c}_\bm{\gamma} \hat{c}_\bm{\delta},
     
-    where the two-particle matrix elements are computedas,
+    where the two-particle matrix elements are computed as,
 
     .. math::
 
