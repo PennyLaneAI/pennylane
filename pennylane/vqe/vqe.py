@@ -144,7 +144,10 @@ class Hamiltonian:
                         non_diagonal_coeffs.append(self._coeffs[i])
                     break
 
-        return np.allclose(non_diagonal_coeffs, [0.0 for i in non_diagonal_coeffs]) or len(non_diagonal_coeffs) == 0
+        return (
+            np.allclose(non_diagonal_coeffs, [0.0 for i in non_diagonal_coeffs])
+            or len(non_diagonal_coeffs) == 0
+        )
 
 
 class VQECost:
