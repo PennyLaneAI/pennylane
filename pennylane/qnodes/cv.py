@@ -224,7 +224,7 @@ class CVQNode(JacobianQNode):
 
                 # transform the descendant observables into their derivatives using Z
                 desc = self._op_descendants(op, "O")
-                obs = [self._transform_observable(x, w, Z) for x in desc]
+                obs = [self._transform_observable(x, w, Z, self.device.register) for x in desc]
                 # Measure the transformed observables.
                 # The other observables do not depend on this parameter instance,
                 # hence their partial derivatives are zero.
