@@ -299,7 +299,6 @@ def parameterized_qubit_qnode():
 
     return qnode
 
-
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_variable_names():
     """The rendered circuit representation of the above qubit circuit with variable names."""
@@ -603,6 +602,38 @@ def drawn_qubit_circuit_with_probs():
     )
 
 
+@pytest.fixture
+def qubit_circuit_with_interesting_wires():
+    """A qubit ciruit with mixed-type wire labels."""
+
+    def qfunc():
+        qml.PauliX(0)
+        qml.PauliX('b')
+        qml.PauliX(-1)
+        qml.Toffoli(wires=['b', 'q2', 0])
+
+        return qml.expval(qml.PauliY(0))
+
+    dev = qml.device("default.qubit", wires=[0, 'q2', -1, 2, 3, 'b'])
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+
+@pytest.fixture
+def drawn_qubit_circuit_with_interesting_wires():
+    """The rendered circuit representation of the above qubit circuit."""
+    return (
+        "  0: ──X──╭X──┤ ⟨Y⟩ \n"
+        + " q2: ─────├C──┤     \n"
+        + " -1: ──X──│───┤     \n"
+        + "  b: ──X──╰C──┤     \n"
+    )
+
+
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
 
@@ -639,6 +670,14 @@ class TestCircuitDrawerIntegration:
         output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
+
+    def test_qubit_circuit_with_interesting_wires(
+        self, qubit_circuit_with_interesting_wires, drawn_qubit_circuit_with_interesting_wires
+    ):
+        """Test that non-consecutive wires show correctly."""
+        output = qubit_circuit_with_interesting_wires.draw(show_variable_names=False)
+
+        assert output == drawn_qubit_circuit_with_interesting_wires
 
     def test_wide_cv_circuit(self, wide_cv_qnode, drawn_wide_cv_qnode):
         """Test that a wide CV circuit renders correctly."""

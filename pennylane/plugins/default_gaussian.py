@@ -756,9 +756,6 @@ class DefaultGaussian(Device):
         N = self.num_wires
         w = np.asarray(registers)
 
-        if np.any(w < 0) or np.any(w >= N) or len(set(w)) != len(w):
-            raise ValueError("Invalid target subsystems provided in 'wires' argument.")
-
         M = len(S) // 2
         S2 = np.identity(2 * N)
 
