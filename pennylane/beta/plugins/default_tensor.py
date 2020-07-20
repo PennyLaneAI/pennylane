@@ -411,7 +411,9 @@ class DefaultTensor(Device):
             offset = len(s)
             tensors.append(self._reshape(A, [2] * offset * 2))
 
-        nodes = self._create_nodes_from_tensors(tensors, wire_indices_sequence, observable, key="observables")
+        nodes = self._create_nodes_from_tensors(
+            tensors, wire_indices_sequence, observable, key="observables"
+        )
         return self.ev(nodes, wire_indices_sequence)
 
     def var(self, observable, wires, par):
@@ -424,7 +426,9 @@ class DefaultTensor(Device):
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        tensors = [self._reshape(A, [2] * len(s) * 2) for A, s in zip(matrices, wire_indices_sequence)]
+        tensors = [
+            self._reshape(A, [2] * len(s) * 2) for A, s in zip(matrices, wire_indices_sequence)
+        ]
         tensors_of_squared_matrices = [
             self._reshape(A @ A, [2] * len(s) * 2) for A, s in zip(matrices, wire_indices_sequence)
         ]
@@ -436,7 +440,10 @@ class DefaultTensor(Device):
             tensors_of_squared_matrices, wire_indices_sequence, observable, key="observables"
         )
 
-        return self.ev(obs_nodes_for_squares, wire_indices_sequence) - self.ev(obs_nodes, wire_indices_sequence) ** 2
+        return (
+            self.ev(obs_nodes_for_squares, wire_indices_sequence)
+            - self.ev(obs_nodes, wire_indices_sequence) ** 2
+        )
 
     def sample(self, observable, wires, par):
 

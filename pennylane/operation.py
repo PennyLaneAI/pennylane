@@ -1069,9 +1069,7 @@ class Tensor(Observable):
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(
-            self.obs, key=lambda x: x.wires
-        )
+        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1145,9 +1143,7 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(
-            self.obs, lambda x: x.wires
-        ):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
