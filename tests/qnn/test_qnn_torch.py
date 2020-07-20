@@ -219,7 +219,8 @@ class TestTorchLayer:
         weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
 
         circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+
+        assert np.allclose(layer_out, circuit_out, atol=1e-4)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_shuffled_args(self, get_circuit, output_dim, n_qubits):
