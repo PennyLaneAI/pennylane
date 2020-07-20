@@ -218,10 +218,10 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     Args:
         me_table (array[float]): Numpy array with the table of matrix elements.
-            For a single-particle operator this array will have shape
+            For single-particle operators this array will have shape
             ``(me_table.shape[0], 3)`` with each row containing the indices
             :math:`\alpha`, :math:`\beta` and the matrix element :math:`\langle \alpha \vert
-            \hat{\mathcal{A}}\vert \beta \rangle`. For a two-particle operator this
+            \hat{\mathcal{A}}\vert \beta \rangle`. For two-particle operators this
             array will have shape ``(me_table.shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix elements :math:`\langle \alpha, \beta \vert \hat{\mathcal{B}}
