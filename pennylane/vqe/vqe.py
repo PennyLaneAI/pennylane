@@ -131,20 +131,20 @@ class Hamiltonian:
         diagonals = ["PauliZ", "Identity"]
 
         non_diagonal_coeffs = []
-        non_diagonal_gates = []
+        non_diagonal_obs = []
 
         for i, term in enumerate(self._ops):
             gates = [term.name] if isinstance(term.name, str) else term.name
-            for j in gates:
-                if j not in diagonals:
-                    if gates not in non_diagonal_gates:
-                        non_diagonal_gates.append(gates)
-                        non_diagonal_coeffs.append(self._coeffs[i])
+            for g in gates:
+                if g not in diagonals:
+                    if gates in non_diagonal_obs:
+                        non_diagonal_coeffs[non_diagonal_obs.index(gates)] += self._coeffs[i]
                     else:
-                        non_diagonal_coeffs[non_diagonal_gates.index(gates)] += self._coeffs[i]
+                        non_diagonal_obs.append(gates)
+                        non_diagonal_coeffs.append(self._coeffs[i])
                     break
 
-        return all([not bool(i) for i in non_diagonal_coeffs]) or len(non_diagonal_coeffs) == 0
+        return np.allclose(non_diagonal_coeffs, [0.0 for i in non_diagonal_coeffs]) or len(non_diagonal_coeffs) == 0
 
 
 class VQECost:
