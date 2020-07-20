@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Imports all of the functionality from within the QAOA submodule
+Imports all functionality from the QAOA submodule
 """
 
 from .qaoa import *

@@ -59,7 +59,7 @@ def x_mixer(wires):
 
     where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X on the :math:`i`-th qubit (wire).
     Args:
-        qubits (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
+        wires (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
     Returns:
         ``qml.Hamiltonian`` object encoding the Hamiltonian
     """
@@ -83,7 +83,7 @@ def xy_mixer(graph):
 
         .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
 
-        for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y on the :math:`i`-th
+        for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y operators on the :math:`i`-th
         qubit respectively.
         Args:
             graph (Iterable or networkx.Graph) A graph defining the pairs of qubits (wires) on which each term of the Hamiltonian acts.
