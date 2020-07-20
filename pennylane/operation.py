@@ -230,8 +230,8 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (Iterable, Number, str, Wires): Iterable containing representations of the wires that the operator acts
-            on, or Wires object. If not given, args[-1] is interpreted as wires.
+        wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): Wires that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
@@ -365,7 +365,6 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        # turn wires into Wires object
         self._wires = Wires(wires)  #: Wires: wires on which the operator acts
 
         # check that the number of wires given corresponds to required number
@@ -1071,8 +1070,8 @@ class Tensor(Observable):
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
         obs_sorted = sorted(
-            self.obs, key=lambda x: x.wires.tolist()
-        )  # TODO: Can we circumvent this sorting?
+            self.obs, key=lambda x: x.wires
+        )
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1147,8 +1146,8 @@ class Tensor(Observable):
         # group the observables based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(
-            self.obs, lambda x: x.wires.tolist()
-        ):  # TODO: Is this necessary?
+            self.obs, lambda x: x.wires
+        ):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
