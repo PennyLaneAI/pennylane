@@ -3,9 +3,9 @@
 
 ###################################
 
-.. |CI| image:: https://img.shields.io/travis/com/XanaduAI/pennylane/master.svg?style=popout-square
-    :alt: Travis
-    :target: https://travis-ci.com/XanaduAI/pennylane/
+.. |CI| image:: https://img.shields.io/github/workflow/status/XanaduAI/pennylane/Tests/master?logo=github&style=flat-square
+    :alt: GitHub Workflow Status (branch)
+    :target: https://github.com/XanaduAI/pennylane/actions?query=workflow%3ATests
 
 .. |COV| image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?style=popout-square
     :alt: Codecov coverage
