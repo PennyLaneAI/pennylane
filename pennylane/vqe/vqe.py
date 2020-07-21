@@ -120,7 +120,6 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
-    @property
     def is_diagonal(self):
         r""" Checks if a Hamiltonian is diagonal in the computational basis.
 
