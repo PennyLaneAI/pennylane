@@ -124,7 +124,7 @@ class Hamiltonian:
         r""" Checks if a Hamiltonian is diagonal in the computational basis.
 
         Returns:
-            bool: ``True`` if the Hamiltonian is diagonal in the computational basis, ``False`` otherwise
+            bool: ``True`` if the Hamiltonian is diagonal in the computational basis, ``False`` otherwise.
         """
 
         diagonals = ["PauliZ", "Identity"]
