@@ -11,8 +11,8 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
-        tf: 0
-        torch: 0
+        tf: [0]
+        torch: [0]
         include:
           - python-version: 3.6
             tf: 2.2
