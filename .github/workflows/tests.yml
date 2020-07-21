@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        python-version: [3.8]
         include:
           python-version: 3.6
           tf: 2.2
@@ -22,10 +23,6 @@ jobs:
           python-version: 3.8
           tf: 0
           torch: 1.5.1
-        include:
-          python-version: 3.8
-          tf: 0
-          torch: 0
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
