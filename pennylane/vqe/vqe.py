@@ -132,8 +132,13 @@ class Hamiltonian:
         non_diagonal_coeffs = []
         non_diagonal_obs = []
 
+        # Loops through each term of the Hamiltonian
         for i, term in enumerate(self._ops):
+
+            # Re-packages observables for consistent unpackaging
             gates = [term.name] if isinstance(term.name, str) else term.name
+
+            # Sums coefficients of like terms (provided they aren't diagonal)
             for g in gates:
                 if g not in diagonals:
                     if gates in non_diagonal_obs:
@@ -143,6 +148,7 @@ class Hamiltonian:
                         non_diagonal_coeffs.append(self._coeffs[i])
                     break
 
+        # If simplified Hamiltonian has no non-zero off diagonal terms, output True
         return (
             np.allclose(non_diagonal_coeffs, [0.0 for i in non_diagonal_coeffs])
             or len(non_diagonal_coeffs) == 0
