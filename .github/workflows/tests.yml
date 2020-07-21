@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install wheel pytest pytest-cov --upgrade
+          pip install wheel pytest pytest-cov pytest-mock --upgrade
       - name: Conditionally install PyTorch
         if: ${{ matrix.torch }}
         run: pip3 install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
@@ -74,7 +74,7 @@ jobs:
         run: |
           sudo apt-get install -y openbabel
           conda install psi4 psi4-rt python=3.7 -c psi4
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov pytest-mock
       - name: Install QChem
         run: |
           pip install -r requirements.txt
