@@ -40,7 +40,7 @@ def _check_iterable_graph(graph):
                 )
             )
         if g[0] == g[1]:
-            raise ValueError("Edges must end in distinct nodes, got {}".format(g))
+            raise ValueError("Edges must end in distinct nodes, got (1, 1)")
 
     if len({tuple(g) for g in graph}) != len(graph):
         raise ValueError("Nodes cannot be connected by more than one edge")
@@ -50,7 +50,8 @@ def _check_iterable_graph(graph):
 
 
 def x_mixer(wires):
-    r"""Creates the basic Pauli-X mixer Hamiltonian used in the original `QAOA paper <https://arxiv.org/abs/1411.4028>`__.
+    r"""Creates the basic Pauli-X mixer Hamiltonian used in the original.
+
     This Hamiltonian is defined as:
 
     .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
@@ -74,17 +75,18 @@ def x_mixer(wires):
 
 
 def xy_mixer(graph):
-    r"""Creates the generalized SWAP/XY mixer outlined in `this paper <https://arxiv.org/abs/1709.03489>`__, defined
-        as:
+    r"""Creates the generalized SWAP/XY mixer.
 
-        .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
+    This mixer Hamiltonian is defined as:
 
-        for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y operators on the :math:`i`-th
-        qubit respectively.
-        Args:
-            graph (Iterable or networkx.Graph) A graph defining the pairs of qubits (wires) on which each term of the Hamiltonian acts.
-        Returns:
-            ``qml.Hamiltonian`` object encoding the Hamiltonian
+    .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
+
+    for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y operators on the :math:`i`-th
+    qubit respectively.
+    Args:
+        graph (Iterable or networkx.Graph) A graph defining the pairs of qubits (wires) on which each term of the Hamiltonian acts.
+    Returns:
+        ``qml.Hamiltonian`` object encoding the Hamiltonian
         """
 
     ##############

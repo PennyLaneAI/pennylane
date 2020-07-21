@@ -15,4 +15,4 @@ r"""
 Imports all functionality from the QAOA submodule
 """
 
-from .qaoa import *
+from .mixers import *
