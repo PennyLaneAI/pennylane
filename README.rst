@@ -7,31 +7,31 @@
     :alt: GitHub Workflow Status (branch)
     :target: https://github.com/XanaduAI/pennylane/actions?query=workflow%3ATests
 
-.. |COV| image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?style=popout-square
+.. |COV| image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?logo=codecov&style=flat-square
     :alt: Codecov coverage
     :target: https://codecov.io/gh/XanaduAI/pennylane
 
-.. |PEP| image:: https://img.shields.io/codacy/grade/83940d926ef5444798a46378e528249d.svg?style=popout-square
+.. |PEP| image:: https://img.shields.io/codacy/grade/83940d926ef5444798a46378e528249d.svg?logo=codacy&style=flat-square
     :alt: Codacy grade
     :target: https://app.codacy.com/app/XanaduAI/pennylane?utm_source=github.com&utm_medium=referral&utm_content=XanaduAI/pennylane&utm_campaign=badger
 
-.. |DOC| image:: https://img.shields.io/readthedocs/pennylane.svg?style=popout-square
+.. |DOC| image:: https://img.shields.io/readthedocs/pennylane.svg?logo=read-the-docs&style=flat-square
     :alt: Read the Docs
     :target: https://pennylane.readthedocs.io
 
-.. |VERS| image:: https://img.shields.io/pypi/v/PennyLane.svg?style=popout-square
+.. |VERS| image:: https://img.shields.io/pypi/v/PennyLane.svg?logo=pypi&style=flat-square
     :alt: PyPI
     :target: https://pypi.org/project/PennyLane
 
-.. |PY| image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?style=popout-square
+.. |PY| image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?logo=python&style=flat-square
     :alt: PyPI - Python Version
     :target: https://pypi.org/project/PennyLane
 
-.. |FORUM| image:: https://img.shields.io/discourse/https/discuss.pennylane.ai/posts.svg?style=popout-square
+.. |FORUM| image:: https://img.shields.io/discourse/https/discuss.pennylane.ai/posts.svg?logo=discourse&style=flat-square
     :alt: Discourse posts
     :target: https://discuss.pennylane.ai
 
-.. |LIC| image:: https://img.shields.io/pypi/l/PennyLane.svg?style=popout-square
+.. |LIC| image:: https://img.shields.io/pypi/l/PennyLane.svg?logo=apache&style=flat-square
     :alt: PyPI - License
     :target: https://www.apache.org/licenses/LICENSE-2.0
 
