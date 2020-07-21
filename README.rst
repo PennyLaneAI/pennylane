@@ -19,11 +19,11 @@
     :alt: Read the Docs
     :target: https://pennylane.readthedocs.io
 
-.. |VERS| image:: https://img.shields.io/pypi/v/PennyLane.svg?logo=pypi&style=flat-square
+.. |VERS| image:: https://img.shields.io/pypi/v/PennyLane.svg?style=flat-square
     :alt: PyPI
     :target: https://pypi.org/project/PennyLane
 
-.. |PY| image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?logo=python&style=flat-square
+.. |PY| image:: https://img.shields.io/pypi/pyversions/PennyLane.svg?style=flat-square
     :alt: PyPI - Python Version
     :target: https://pypi.org/project/PennyLane
 
