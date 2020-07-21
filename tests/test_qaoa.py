@@ -43,21 +43,17 @@ class TestMixerHamiltonians:
         mixer_ops = [i.name for i in mixer_hamiltonian.ops]
         mixer_wires = [i.wires[0] for i in mixer_hamiltonian.ops]
 
-        assert (
-            mixer_coeffs == [1, 1, 1, 1]
-            and mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-            and mixer_wires == [0, 1, 2, 3]
-        )
+        assert mixer_coeffs == [1, 1, 1, 1]
+        assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
+        assert mixer_wires == [0, 1, 2, 3]
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
 
         graph = 12
 
-        with pytest.raises(ValueError) as info:
+        with pytest.raises(ValueError, match=r"Input graph must be a networkx\.Graph object or Iterable"):
             output = qaoa.xy_mixer(graph)
-
-        assert "Input graph must be a networkx.Graph object or Iterable, got int" in str(info.value)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
@@ -117,11 +113,9 @@ class TestMixerHamiltonians:
         target_ops = [i.name for i in target_hamiltonian.ops]
         target_wires = [i.wires for i in target_hamiltonian.ops]
 
-        assert (
-            mixer_coeffs == target_coeffs
-            and mixer_ops == target_ops
-            and mixer_wires == target_wires
-        )
+        assert mixer_coeffs == target_coeffs
+        assert mixer_ops == target_ops
+        assert mixer_wires == target_wires
 
 
 class TestUtils:
@@ -143,5 +137,5 @@ class TestUtils:
         """Tests that the `check_iterable_graph` method throws the correct errors"""
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.qaoa._check_iterable_graph(graph)
+            output = qaoa.mixers._check_iterable_graph(graph)
         assert error in str(info.value)
