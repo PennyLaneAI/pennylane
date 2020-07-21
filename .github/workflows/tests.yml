@@ -1,0 +1,86 @@
+name: Tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          python-version: 3.6
+          tf: 2.2
+          torch: 1.5.1
+        include:
+          python-version: 3.7
+          tf: 2.2
+          torch: 0
+        include:
+          python-version: 3.8
+          tf: 0
+          torch: 1.5.1
+        include:
+          python-version: 3.8
+          tf: 0
+          torch: 0
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install wheel pytest pytest-cov --upgrade
+      - name: Conditionally install PyTorch
+        if: ${{ matrix.torch }}
+        run: pip3 install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Conditionally install TensorFlow
+        if: ${{ matrix.tf }}
+        run: pip3 install tensorflow==${{ matrix.tf }}
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+      - name: Run tests
+        run: python -m pytest tests --cov=pennylane --cov-report=term-missing -p no:warnings --tb=native
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.7
+        with:
+          file: ./.coverage
+
+  qchem-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          activate-conda: true
+          python-version: 3.7
+          conda-channels: anaconda, conda-forge
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y openbabel
+          conda install psi4 psi4-rt python=3.7 -c psi4
+          pip install pytest pytest-cov
+      - name: Install QChem
+        run: |
+          pip install -r requirements.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+          cd qchem && python setup.py bdist_wheel && cd ../
+          pip install qchem/dist/PennyLane_Qchem*.whl
+      - name: Run tests
+        run: |
+          cd qchem && python -m pytest tests --cov=pennylane_qchem --cov-report=term-missing -p no:warnings --tb=native
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.7
+        with:
+          file: ./.coverage
