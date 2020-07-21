@@ -24,7 +24,7 @@ from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
 
-TOL = 1e-4
+TOL = 1e-6
 
 
 def indices_up_to(n_max):
