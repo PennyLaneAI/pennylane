@@ -406,8 +406,8 @@ class TestInternalFunctions:
         with pytest.raises(qml.DeviceError, match="specified number of shots needs to be at least 1"):
             Device(mock_device, shots=0)
 
-    def test_wire_map(self, mock_device):
-        """Tests that the wire map function works correctly."""
+    def test_indices_on_register(self, mock_device):
+        """Tests that the indices_on_register function works correctly."""
         dev = mock_device(wires=['a1', 'q', -1, 3])
         wire_subset = [-1, 'a1', 3]
         assert dev.indices_on_register(wire_subset) == [2, 0, 3]

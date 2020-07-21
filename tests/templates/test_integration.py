@@ -36,6 +36,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 
+
 #######################################
 # Interfaces
 
@@ -669,7 +670,8 @@ class TestNonConsecutiveWires:
             return qml.expval(qml.Identity(wires=0))
 
         # construct qnode with nonconsecutive wires
-        nonconsecutive_wires = np.random.choice(['a', 'b', 'c', 'd', 'e', 'f'], size=n_wires, replace=False)
+        non_consecutive_strings = ['z', 'b', 'f', 'a', 'k', 'c', 'r']
+        nonconsecutive_wires = non_consecutive_strings[: n_wires]
         kwargs_nonconsec = nondiffable.copy()
         if 'wires' in kwargs_nonconsec:
             kwargs_nonconsec['wires'] = nonconsecutive_wires
@@ -713,7 +715,8 @@ class TestNonConsecutiveWires:
 
         # Construct qnode with nonconsecutive wires
         kwargs_nonconsec = nondiffable.copy()
-        nonconsecutive_wires = np.random.choice(['a', 'b', 'c', 'd', 'e', 'f'], size=n_wires, replace=False)
+        non_consecutive_strings = ['z', 'b', 'f', 'a', 'k', 'c', 'r']
+        nonconsecutive_wires = non_consecutive_strings[: n_wires]
         kwargs_nonconsec['wires'] = nonconsecutive_wires
         dev_nonconsec = gaussian_dummy(wires=nonconsecutive_wires)
 
