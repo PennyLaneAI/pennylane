@@ -34,10 +34,10 @@ def MaxCut(graph):
     MaxCut is an easy problem to implement and solve with QAOA, making it useful for benchmarking NISQ quantum devices.
 
     Args:
-         graph (networkx.Graph) A graph defining the pairs of qubits on which each term of the Hamiltonian acts.
+         graph (networkx.Graph) A graph defining the pairs of indices of wires on which each term of the Hamiltonian acts.
 
     Returns:
-        ~.Hamiltonian
+        ~.Hamiltonian:
     """
 
     ##############
