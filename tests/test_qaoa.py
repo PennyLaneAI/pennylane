@@ -15,18 +15,19 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
-import networkx as nx
 import numpy as np
 import pennylane as qml
 from pennylane import qaoa
+from networkx import Graph
 
 
 #####################################################
 
-graph = nx.Graph()
+graph = Graph()
 graph.add_nodes_from([0, 1, 2])
 graph.add_edges_from([(0, 1), (1, 2)])
 
+non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 
 class TestMixerHamiltonians:
     """Tests that the mixer Hamiltonians are being generated correctly"""
@@ -50,16 +51,16 @@ class TestMixerHamiltonians:
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
 
-        graph = 12
+        graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"Input graph must be a networkx\.Graph object or Iterable"):
+        with pytest.raises(ValueError, match=r"Input graph must be a networkx.Graph object, got list"):
             output = qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
         [
             (
-                [(0, 1), (1, 2), (2, 3)],
+                Graph([(0, 1), (1, 2), (2, 3)]),
                 qml.Hamiltonian(
                     [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                     [
@@ -73,16 +74,16 @@ class TestMixerHamiltonians:
                 ),
             ),
             (
-                (np.array([0, 1]), np.array([1, 2]), np.array([2, 0])),
+                Graph((np.array([0, 1]), np.array([1, 2]), np.array([2, 0]))),
                 qml.Hamiltonian(
                     [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
                     [
                         qml.PauliX(0) @ qml.PauliX(1),
                         qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(0) @ qml.PauliX(2),
+                        qml.PauliY(0) @ qml.PauliY(2),
                         qml.PauliX(1) @ qml.PauliX(2),
-                        qml.PauliY(1) @ qml.PauliY(2),
-                        qml.PauliX(2) @ qml.PauliX(0),
-                        qml.PauliY(2) @ qml.PauliY(0)
+                        qml.PauliY(1) @ qml.PauliY(2)
                     ],
                 ),
             ),
@@ -98,10 +99,28 @@ class TestMixerHamiltonians:
                     ],
                 ),
             ),
+            (
+                non_consecutive_graph,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(4),
+                        qml.PauliY(0) @ qml.PauliY(4),
+                        qml.PauliX(0) @ qml.PauliX(2),
+                        qml.PauliY(0) @ qml.PauliY(2),
+                        qml.PauliX(4) @ qml.PauliX(3),
+                        qml.PauliY(4) @ qml.PauliY(3),
+                        qml.PauliX(2) @ qml.PauliX(1),
+                        qml.PauliY(2) @ qml.PauliY(1)
+                    ]
+                )
+            )
         ],
     )
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
+
+        print(graph.edges)
 
         mixer_hamiltonian = qaoa.xy_mixer(graph)
 
@@ -116,26 +135,3 @@ class TestMixerHamiltonians:
         assert mixer_coeffs == target_coeffs
         assert mixer_ops == target_ops
         assert mixer_wires == target_wires
-
-
-class TestUtils:
-    """Tests the QAOA utility functions"""
-
-    @pytest.mark.parametrize(
-        ("graph", "error"),
-        [
-            ([1, 2], "Elements of `graph` must be Iterable objects, got int"),
-            (
-                [(0, 1, 2), (2, 3)],
-                "Elements of `graph` must be Iterable objects of length 2, got length 3",
-            ),
-            ([(0, 1), (1, 1)], "Edges must end in distinct nodes, got (1, 1)"),
-            ([(0, 1), (1, 2), (1, 2)], "Nodes cannot be connected by more than one edge"),
-        ],
-    )
-    def test_iterable_graph_errors(self, graph, error):
-        """Tests that the `check_iterable_graph` method throws the correct errors"""
-
-        with pytest.raises(ValueError) as info:
-            output = qaoa.mixers._check_iterable_graph(graph)
-        assert error in str(info.value)

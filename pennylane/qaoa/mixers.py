@@ -20,47 +20,20 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
-def _check_iterable_graph(graph):
-    """ Checks if a graph supplied in 'Iterable format' is formatted correctly
-
-        Args:
-            graph (Iterable): The graph that is being checked
-    """
-
-    for g in graph:
-
-        if not isinstance(g, Iterable):
-            raise ValueError(
-                "Elements of `graph` must be Iterable objects, got {}".format(type(g).__name__)
-            )
-        if len(g) != 2:
-            raise ValueError(
-                "Elements of `graph` must be Iterable objects of length 2, got length {}".format(
-                    len(g)
-                )
-            )
-        if g[0] == g[1]:
-            raise ValueError("Edges must end in distinct nodes, got (1, 1)")
-
-    if len({tuple(g) for g in graph}) != len(graph):
-        raise ValueError("Nodes cannot be connected by more than one edge")
-
-
-##################### Mixer Hamiltonians #####################
-
-
 def x_mixer(wires):
-    r"""Creates the basic Pauli-X mixer Hamiltonian used in the original.
+    r"""Creates the basic Pauli-X mixer Hamiltonian used in the original QAOA paper.
 
     This Hamiltonian is defined as:
 
     .. math:: H_M \ = \ \displaystyle\sum_{i} X_{i},
 
-    where :math:`i` ranges over all qubits, and :math:`X_i` denotes the Pauli-X operator on the :math:`i`-th qubit (wire).
+    where :math:`i` ranges over all wires, and :math:`X_i` denotes the Pauli-X operator on the :math:`i`-th wire.
+
     Args:
         wires (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
     Returns:
-        ``qml.Hamiltonian`` object encoding the Hamiltonian
+        type: description
+        ~.Hamiltonian
     """
 
     ##############
@@ -82,11 +55,13 @@ def xy_mixer(graph):
     .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
 
     for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y operators on the :math:`i`-th
-    qubit respectively.
+    wire respectively.
+
     Args:
-        graph (Iterable or networkx.Graph) A graph defining the pairs of qubits (wires) on which each term of the Hamiltonian acts.
+        graph (networkx.Graph) A graph defining the pairs of wires on which each term of the Hamiltonian acts.
     Returns:
-        ``qml.Hamiltonian`` object encoding the Hamiltonian
+        type: description
+         ~.Hamiltonian
         """
 
     ##############
@@ -95,12 +70,9 @@ def xy_mixer(graph):
     if isinstance(graph, networkx.Graph):
         graph = graph.edges
 
-    elif isinstance(graph, Iterable):
-        _check_iterable_graph(graph)
-
     else:
         raise ValueError(
-            "Input graph must be a networkx.Graph object or Iterable, got {}".format(
+            "Input graph must be a networkx.Graph object, got {}".format(
                 type(graph).__name__
             )
         )
