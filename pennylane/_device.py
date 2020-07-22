@@ -43,7 +43,7 @@ class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (Union[int, Iterable[Union[Number, str]]]): Number of subsystems represented by the device,
+        wires (int or Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
@@ -467,6 +467,12 @@ class Device(abc.ABC):
 
     def indices_on_register(self, wires):
         """Get the indices of the wires in the register of this device.
+
+        Example:
+        >>> dev = device('my.device', wires=['a', 'b', 'c'])
+        >>> wires = Wires(['c', 'a'])
+        >>> dev.indices_on_register(wires)
+        [2, 0]
 
         Args:
             wires (Wires): wires object

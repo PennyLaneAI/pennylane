@@ -109,7 +109,7 @@ class DefaultQubitTF(DefaultQubit):
 
 
     Args:
-        wires (Union[int, Iterable[Union[Number, str]]]): Number of subsystems represented by the device,
+        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate

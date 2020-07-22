@@ -130,6 +130,7 @@ class CVQNode(JacobianQNode):
         Returns:
             Observable: transformed observable
         """
+        wire_indices
         q = obs.heisenberg_obs(w, register=register)
 
         if q.ndim != obs.ev_order:
@@ -200,7 +201,8 @@ class CVQNode(JacobianQNode):
                 # evaluate transformed observables at the original parameter point
                 # first build the Heisenberg picture transformation matrix Z
                 self._set_variables(shift_p1, kwargs)
-                Z2 = op.heisenberg_tr(w, register=self.device.register)
+                wire_indices = self.register.indices(op.wires)
+                Z2 = op.heisenberg_tr(w, wire_indices)
                 self._set_variables(shift_p2, kwargs)
                 Z1 = op.heisenberg_tr(w, register=self.device.register)
                 Z = (Z2 - Z1) * multiplier  # derivative of the operation

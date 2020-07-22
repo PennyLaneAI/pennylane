@@ -58,7 +58,7 @@ class QubitDevice(Device):
       into the observable eigenbasis.
 
     Args:
-        wires (Union[int, Iterable[Union[Number, str]]]): Number of subsystems represented by the device,
+        wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): number of circuit evaluations/random samples used to estimate
@@ -380,7 +380,7 @@ class QubitDevice(Device):
             to calculate the marginal probability distribution.
 
         Args:
-            wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to return
+            wires (Iterable[Number, str], Number, str, Wires): wires to return
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
@@ -393,7 +393,7 @@ class QubitDevice(Device):
         using the generated samples.
 
         Args:
-            wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to calculate
+            wires (Iterable[Number, str], Number, str, Wires): wires to calculate
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
@@ -428,7 +428,7 @@ class QubitDevice(Device):
         estimated probability.
 
         Args:
-            wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to return
+            wires (Iterable[Number, str], Number, str, Wires): wires to return
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
@@ -466,7 +466,7 @@ class QubitDevice(Device):
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
-            wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): wires to return
+            wires (Iterable[Number, str], Number, str, Wires): wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
@@ -481,8 +481,6 @@ class QubitDevice(Device):
         wires = Wires(wires)
         # get indices of wires on the device's register
         wire_indices = self.indices_on_register(wires)
-
-        wire_indices = np.hstack(wire_indices)
 
         # determine which subsystems are to be summed over
         inactive_registers = list(set(range(self.num_wires)) - set(wire_indices))
@@ -535,7 +533,6 @@ class QubitDevice(Device):
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        wire_indices = np.hstack(wire_indices)
         samples = self._samples[:, np.array(wire_indices)]
         unraveled_indices = [2] * len(wire_indices)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)

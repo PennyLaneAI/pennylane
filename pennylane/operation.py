@@ -230,7 +230,7 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): Wires that the operator acts on.
+        wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
@@ -1218,7 +1218,7 @@ class CV:
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
             num_wires (int): total number of wires in the quantum circuit. If zero, return ``U`` as is.
-            wire_indices (list[int]): indices of operator wires on the device register
+            wire_indices (list[int]): indices of wires on the device that the observable gets applied to
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
@@ -1359,7 +1359,7 @@ class CVOperation(CV, Operation):
         U1 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return (U2 - U1) * multiplier  # partial derivative of the transformation
 
-    def heisenberg_tr(self, num_wires, register, inverse=False):
+    def heisenberg_tr(self, num_wires, wire_indices, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried
         out by the gate at current parameter values.
 
@@ -1378,6 +1378,7 @@ class CVOperation(CV, Operation):
 
         Args:
             num_wires (int): total number of wires in the quantum circuit
+            wire_indices (list[int]): indices of wires on the device that the observable gets applied to
             inverse  (bool): if True, return the inverse transformation instead
 
         Raises:
@@ -1403,7 +1404,6 @@ class CVOperation(CV, Operation):
                 )
             )
 
-        wire_indices = register.indices(self.wires)
         return self.heisenberg_expand(U, num_wires, wire_indices)
 
 
@@ -1427,7 +1427,7 @@ class CVObservable(CV, Observable):
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
-    def heisenberg_obs(self, num_wires, register):
+    def heisenberg_obs(self, num_wires, wire_indices):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
@@ -1441,11 +1441,10 @@ class CVObservable(CV, Observable):
 
         Args:
             num_wires (int): total number of wires in the quantum circuit
-            register (Wires): register of the device that the observable gets applied to
+            wire_indices (list[int]): indices of wires on the device that the observable gets applied to
         Returns:
             array[float]: :math:`q`
         """
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        wire_indices = register.indices(self.wires)
         return self.heisenberg_expand(U, num_wires, wire_indices)

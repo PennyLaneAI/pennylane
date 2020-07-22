@@ -492,16 +492,13 @@ def set_state(state, wire, mu, cov):
 # ========================================================
 
 
-def photon_number(mu, cov, wires, params, total_wires, register, hbar=2.0):
+def photon_number(mu, cov, params, hbar=2.0):
     r"""Calculates the mean photon number for a given one-mode state.
 
     Args:
         mu (array): length-2 vector of means
         cov (array): :math:`2\times 2` covariance matrix
-        wires (Wires): wires to calculate the expectation for
         params (None): no parameters are used for this expectation value
-        total_wires (int): total number of wires in the system
-        register (Wires): register of wires on the device
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -527,7 +524,7 @@ def homodyne(phi=None):
     """
     if phi is not None:
 
-        def _homodyne(mu, cov, wires, params, total_wires, register, hbar=2.0):
+        def _homodyne(mu, cov, params, hbar=2.0):
             """Arbitrary angle homodyne expectation."""
             # pylint: disable=unused-argument
             rot = rotation(phi)
@@ -537,7 +534,7 @@ def homodyne(phi=None):
 
         return _homodyne
 
-    def _homodyne(mu, cov, wires, params, total_wires, register, hbar=2.0):
+    def _homodyne(mu, cov, params, hbar=2.0):
         """Arbitrary angle homodyne expectation."""
         # pylint: disable=unused-argument
         rot = rotation(params[0])
@@ -548,19 +545,19 @@ def homodyne(phi=None):
     return _homodyne
 
 
-def poly_quad_expectations(mu, cov, wires, params, total_wires, register, hbar=2.0):
+def poly_quad_expectations(mu, cov, wires, register, params, total_wires, hbar=2.0):
     r"""Calculates the expectation and variance for an arbitrary
     polynomial of quadrature operators.
 
     Args:
         mu (array): vector of means
         cov (array): covariance matrix
-        wires (Wires): wires to calculate the expectation for
+        wires (Wires): indices of wires to calculate the expectation for
+        register (Wires): wires on the device
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
             :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
         total_wires (int): total number of wires in the system
-        register (Wires): register of wires on the device
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -601,16 +598,13 @@ def poly_quad_expectations(mu, cov, wires, params, total_wires, register, hbar=2
     return ex, var
 
 
-def fock_expectation(mu, cov, wires, params, total_wires, register, hbar=2.0):
+def fock_expectation(mu, cov, params, hbar=2.0):
     r"""Calculates the expectation and variance of a Fock state probability.
 
     Args:
         mu (array): length-:math:`2N` vector of means
         cov (array): :math:`2N\times 2N` covariance matrix
-        wires (Wires): wires to calculate the expectation for
         params (Sequence[int]): the Fock state to return the expectation value for
-        total_wires (int): total number of wires in the system
-        register (Wires): register of wires on the device
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -643,7 +637,7 @@ class DefaultGaussian(Device):
     r"""Default Gaussian device for PennyLane.
 
     Args:
-        wires (Union[int, Iterable[Union[Number, str]]]): Number of subsystems represented by the device,
+        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
             or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
@@ -779,12 +773,14 @@ class DefaultGaussian(Device):
 
         if observable == "PolyXP":
             mu, cov = self._state
+            ev, var = self._observable_map[observable](
+                mu, cov, wire_indices, self.register, par, self.num_wires, hbar=self.hbar
+            )
         else:
             mu, cov = self.reduced_state(wire_indices)
-
-        ev, var = self._observable_map[observable](
-            mu, cov, wire_indices, par, self.num_wires, self.register, hbar=self.hbar
-        )
+            ev, var = self._observable_map[observable](
+                mu, cov, par, hbar=self.hbar
+            )
 
         if not self.analytic:
             # estimate the ev
@@ -799,9 +795,15 @@ class DefaultGaussian(Device):
         wire_indices = self.indices_on_register(wires)
 
         mu, cov = self.reduced_state(wire_indices)
-        _, var = self._observable_map[observable](
-            mu, cov, wire_indices, par, self.num_wires, self.register, hbar=self.hbar
-        )
+
+        if observable == "PolyXP":
+            _, var = self._observable_map[observable](
+                mu, cov, wires, self.register, par, self.num_wires, hbar=self.hbar
+            )
+        else:
+            _, var = self._observable_map[observable](
+                mu, cov, par, hbar=self.hbar
+            )
         return var
 
     def sample(self, observable, wires, par):
