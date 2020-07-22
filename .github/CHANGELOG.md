@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* The user can now specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, of type
+* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, of type
   `str` or `numbers.Number`. For this, pass a list to the wires argument when creating the device:
   
   ```pycon
