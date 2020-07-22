@@ -14,13 +14,12 @@
 r"""
 This file contains built-in functions for defining QAOA workflows
 """
-from collections.abc import Iterable
 import networkx
 import pennylane as qml
 from pennylane.wires import Wires
 
 
-def x_mixer(wires):
+def x_mixer(n):
     r"""Creates the basic Pauli-X mixer Hamiltonian used in the original QAOA paper.
 
     This Hamiltonian is defined as:
@@ -30,7 +29,7 @@ def x_mixer(wires):
     where :math:`i` ranges over all wires, and :math:`X_i` denotes the Pauli-X operator on the :math:`i`-th wire.
 
     Args:
-        wires (Iterable or Wires): The collection of wires to which the observables in the Hamiltonian correspond.
+        n (int): The number of wires on which the Hamiltonian is applied
     Returns:
         type: description
         ~.Hamiltonian
@@ -39,7 +38,7 @@ def x_mixer(wires):
     ##############
     # Input checks
 
-    wires = Wires(wires)
+    wires = range(n)
 
     coeffs = [1 for w in wires]
     obs = [qml.PauliX(w) for w in wires]
@@ -72,9 +71,7 @@ def xy_mixer(graph):
 
     else:
         raise ValueError(
-            "Input graph must be a networkx.Graph object, got {}".format(
-                type(graph).__name__
-            )
+            "Input graph must be a networkx.Graph object, got {}".format(type(graph).__name__)
         )
 
     coeffs = 2 * [0.5 for g in graph]

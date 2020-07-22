@@ -29,6 +29,7 @@ graph.add_edges_from([(0, 1), (1, 2)])
 
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 
+
 class TestMixerHamiltonians:
     """Tests that the mixer Hamiltonians are being generated correctly"""
 
@@ -36,9 +37,7 @@ class TestMixerHamiltonians:
         """Tests that the output of the Pauli-X mixer is correct"""
 
         num_qubits = 4
-        wires = range(num_qubits)
-
-        mixer_hamiltonian = qaoa.x_mixer(wires)
+        mixer_hamiltonian = qaoa.x_mixer(num_qubits)
 
         mixer_coeffs = mixer_hamiltonian.coeffs
         mixer_ops = [i.name for i in mixer_hamiltonian.ops]
@@ -53,7 +52,9 @@ class TestMixerHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"Input graph must be a networkx.Graph object, got list"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a networkx.Graph object, got list"
+        ):
             output = qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
@@ -69,7 +70,7 @@ class TestMixerHamiltonians:
                         qml.PauliX(1) @ qml.PauliX(2),
                         qml.PauliY(1) @ qml.PauliY(2),
                         qml.PauliX(2) @ qml.PauliX(3),
-                        qml.PauliY(2) @ qml.PauliY(3)
+                        qml.PauliY(2) @ qml.PauliY(3),
                     ],
                 ),
             ),
@@ -83,7 +84,7 @@ class TestMixerHamiltonians:
                         qml.PauliX(0) @ qml.PauliX(2),
                         qml.PauliY(0) @ qml.PauliY(2),
                         qml.PauliX(1) @ qml.PauliX(2),
-                        qml.PauliY(1) @ qml.PauliY(2)
+                        qml.PauliY(1) @ qml.PauliY(2),
                     ],
                 ),
             ),
@@ -111,10 +112,10 @@ class TestMixerHamiltonians:
                         qml.PauliX(4) @ qml.PauliX(3),
                         qml.PauliY(4) @ qml.PauliY(3),
                         qml.PauliX(2) @ qml.PauliX(1),
-                        qml.PauliY(2) @ qml.PauliY(1)
-                    ]
-                )
-            )
+                        qml.PauliY(2) @ qml.PauliY(1),
+                    ],
+                ),
+            ),
         ],
     )
     def test_xy_mixer_output(self, graph, target_hamiltonian):
