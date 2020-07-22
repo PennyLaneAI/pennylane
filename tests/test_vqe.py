@@ -29,8 +29,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        #tf.enable_eager_execution()
-        pass
+        tf.enable_eager_execution()
 
     from tensorflow import Variable
 except ImportError as e:
@@ -227,7 +226,6 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="observables are not valid"):
             H = qml.vqe.Hamiltonian(coeffs, obs)
 
-'''
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
@@ -501,4 +499,3 @@ class TestMultipleInterfaceIntegration:
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
-'''
