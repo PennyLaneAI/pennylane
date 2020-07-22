@@ -2,13 +2,13 @@
 
 <h3>New features since last release</h3>
 
-* The user can now specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, whethe labels
+* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
   can be strings or numbers. For this, pass a list to the wires argument when creating the device:
   
   ```pycon
   >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
   ```
-  The quantum operations are now called with the user-defined wire labels:
+  The quantum operations are now called with the custom wire labels:
     
   ``` python
   >>> @qml.qnode(dev)

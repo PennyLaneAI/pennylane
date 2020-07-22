@@ -110,7 +110,7 @@ class TestWires:
         assert wires1 != wires2
         assert wires1 == wires3
 
-    def test_less_an_greater_than(self):
+    def test_less_than_greater_than(self):
         """Tests that we can compare Wires objects with the '>' and '<' operators."""
 
         wires1 = Wires([1, 'q2', 3])
