@@ -127,26 +127,25 @@ class Hamiltonian:
             bool: ``True`` if the Hamiltonian is diagonal in the computational basis, ``False`` otherwise.
         """
 
-        diagonals = ["PauliZ", "Identity"]
-
         non_diagonal_coeffs = []
         non_diagonal_obs = []
 
         # Loops through each term of the Hamiltonian
         for i, term in enumerate(self._ops):
 
-            # Re-packages observables for consistent unpackaging
-            gates = [term.name] if isinstance(term.name, str) else term.name
+            # Prunes identity from all tensor products
+            term = term.prune() if isinstance(term, qml.operation.Tensor) else term
 
-            # Sums coefficients of like terms (provided they aren't diagonal)
-            for g in gates:
-                if g not in diagonals:
-                    if gates in non_diagonal_obs:
-                        non_diagonal_coeffs[non_diagonal_obs.index(gates)] += self._coeffs[i]
-                    else:
-                        non_diagonal_obs.append(gates)
-                        non_diagonal_coeffs.append(self._coeffs[i])
-                    break
+            # Combines like terms (provided they are non-diagonal)
+            if bool(np.count_nonzero(term.matrix - np.diag(np.diagonal(term.matrix)))):
+
+                t = [term.matrix.tolist(), term.wires]
+
+                if t in non_diagonal_obs:
+                    non_diagonal_coeffs[non_diagonal_obs.index(t)] += self._coeffs[i]
+                else:
+                    non_diagonal_obs.append(t)
+                    non_diagonal_coeffs.append(self._coeffs[i])
 
         # If simplified Hamiltonian has no non-zero off diagonal terms, output True
         return (
