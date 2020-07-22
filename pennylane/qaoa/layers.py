@@ -12,3 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pennylane as qml
+from pennylane.templates import ApproxTimeEvolution
+
+
+def cost_layer(hamiltonian):
+
+    ##############
+    # Input checks
+
+    if not isinstance(hamiltonian, qml.Hamiltonian):
+        raise ValueError("`hamiltonian` must be of type pennylane.Hamiltonian, got {}".format(type(hamiltonian).__name__))
+
+    if not hamiltonian.is_diagonal():
+        raise ValueError("`hamiltonian` must be diagonal in the computational basis")
+
+    ##############
+
+    return lambda gamma, wires : ApproxTimeEvolution(hamiltonian, wires, gamma, n=1)
+
+def mixer_layer(hamiltonian):
+
+    ##############
+    # Input checks
+
+    if not isinstance(hamiltonian, qml.Hamiltonian):
+        raise ValueError("`hamiltonian` must be of type pennylane.Hamiltonian, got {}".format(type(hamiltonian).__name__))
+
+    ##############
+
+    return lambda alpha, wires : ApproxTimeEvolution(hamiltonian, wires, alpha, n=1)
+
