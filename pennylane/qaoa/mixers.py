@@ -30,9 +30,10 @@ def x_mixer(n):
 
     Args:
         n (int): The number of wires on which the Hamiltonian is applied
+
     Returns:
         type: description
-        ~.Hamiltonian
+        ~.Hamiltonian:
     """
 
     ##############
@@ -58,9 +59,10 @@ def xy_mixer(graph):
 
     Args:
         graph (networkx.Graph) A graph defining the pairs of wires on which each term of the Hamiltonian acts.
+
     Returns:
         type: description
-         ~.Hamiltonian
+         ~.Hamiltonian:
         """
 
     ##############
