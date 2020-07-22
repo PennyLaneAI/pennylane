@@ -20,6 +20,7 @@ import networkx
 from pennylane.wires import Wires
 import pennylane as qml
 
+
 def MaxCut(graph):
     r"""A method that builds the QAOA cost Hamiltonian corresponding to MaxCut for a given graph.
 
@@ -47,9 +48,7 @@ def MaxCut(graph):
 
     else:
         raise ValueError(
-            "Inputted graph must be a networkx.Graph object, got {}".format(
-                type(graph).__name__
-            )
+            "Inputted graph must be a networkx.Graph object, got {}".format(type(graph).__name__)
         )
 
     ##############

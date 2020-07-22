@@ -38,41 +38,50 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError) as info:
             output = qaoa.MaxCut(graph)
 
-        assert ("Inputted graph must be a networkx.Graph object, got list" in str(info.value))
+        assert "Inputted graph must be a networkx.Graph object, got list" in str(info.value)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
         [
             (
-                    Graph([(0, 1), (1, 2)]),
-                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5], [
+                Graph([(0, 1), (1, 2)]),
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5],
+                    [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
                         qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2)
-                    ])
+                        qml.PauliZ(1) @ qml.PauliZ(2),
+                    ],
+                ),
             ),
             (
-                    Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
-                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5, 0.5, -0.5], [
+                Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5, 0.5, -0.5],
+                    [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
                         qml.Identity(0) @ qml.Identity(2),
                         qml.PauliZ(0) @ qml.PauliZ(2),
                         qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2)
-                    ])
+                        qml.PauliZ(1) @ qml.PauliZ(2),
+                    ],
+                ),
             ),
             (
-                    graph,
-                    qml.Hamiltonian([0.5, -0.5, 0.5, -0.5], [
+                graph,
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5],
+                    [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
                         qml.Identity(1) @ qml.Identity(2),
-                        qml.PauliZ(1) @ qml.PauliZ(2)
-                    ])
-            )
-        ]
+                        qml.PauliZ(1) @ qml.PauliZ(2),
+                    ],
+                ),
+            ),
+        ],
     )
     def test_maxcut_output(self, graph, target_hamiltonian):
         """Tests that the output of the MaxCut method is correct"""
@@ -88,7 +97,5 @@ class TestCostHamiltonians:
         target_wires = [i.wires for i in target_hamiltonian.ops]
 
         assert (
-                cost_coeffs == target_coeffs and
-                cost_ops == target_ops and
-                cost_wires == target_wires
+            cost_coeffs == target_coeffs and cost_ops == target_ops and cost_wires == target_wires
         )
