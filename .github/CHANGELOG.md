@@ -8,7 +8,7 @@
   ```pycon
   >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
   ```
-  The quantum operations are now called with the user-defined wire labels:
+  The quantum operations are now called with the custom wire labels:
     
   ``` python
   >>> @qml.qnode(dev)
