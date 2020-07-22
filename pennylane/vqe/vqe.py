@@ -153,6 +153,7 @@ class Hamiltonian:
             or len(non_diagonal_coeffs) == 0
         )
 
+
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
     expectation value of a Hamiltonian.
