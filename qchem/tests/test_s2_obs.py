@@ -7,85 +7,26 @@ from pennylane import qchem
 
 from openfermion.ops._qubit_operator import QubitOperator
 
-ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
+me_1 = np.array([[0.0, 0.0, 0.0, 0.0, 0.25],])
 
-@pytest.mark.parametrize(
-    ("n_spin_orbs", "s2_me_expected"),
-    [
-        (1, np.array([[0.0, 0.0, 0.0, 0.0, 0.25]])),
-        (
-            3,
-            np.array(
-                [
-                    [0.0, 0.0, 0.0, 0.0, 0.25],
-                    [0.0, 1.0, 1.0, 0.0, -0.25],
-                    [0.0, 2.0, 2.0, 0.0, 0.25],
-                    [1.0, 0.0, 0.0, 1.0, -0.25],
-                    [1.0, 1.0, 1.0, 1.0, 0.25],
-                    [1.0, 2.0, 2.0, 1.0, -0.25],
-                    [2.0, 0.0, 0.0, 2.0, 0.25],
-                    [2.0, 1.0, 1.0, 2.0, -0.25],
-                    [2.0, 2.0, 2.0, 2.0, 0.25],
-                    [0.0, 1.0, 0.0, 1.0, 0.5],
-                    [1.0, 0.0, 1.0, 0.0, 0.5],
-                ]
-            ),
-        ),
-    ],
-)
-def test_spin2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
-    r"""Test the calculation of the matrix elements of the two-particle spin operator
-    :math:`\hat{s}_1 \cdot \hat{s}_2`"""
-
-    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
-
-    s2_me_result = qchem._spin2_matrix_elements(sz, n_spin_orbs)
-
-    assert np.allclose(s2_me_result, s2_me_expected, **tol)
-
-
-def test_exception_spin2_me(message_match="Size of 'sz' must be equal to 'n_spin_orbs'"):
-    """Test that the 'spin2_matrix_elements' function throws an exception if the
-    size of 'sz' is not equal to 'n_spin_orbs'."""
-
-    n_spin_orbs = 4
-    sz = np.where(np.arange(n_spin_orbs + 1) % 2 == 0, 0.5, -0.5)
-
-    with pytest.raises(ValueError, match=message_match):
-        qchem._spin2_matrix_elements(sz, n_spin_orbs)
-
-
-me = np.array(
+me_3 = np.array(
     [
         [0.0, 0.0, 0.0, 0.0, 0.25],
         [0.0, 1.0, 1.0, 0.0, -0.25],
         [0.0, 2.0, 2.0, 0.0, 0.25],
-        [0.0, 3.0, 3.0, 0.0, -0.25],
         [1.0, 0.0, 0.0, 1.0, -0.25],
         [1.0, 1.0, 1.0, 1.0, 0.25],
         [1.0, 2.0, 2.0, 1.0, -0.25],
-        [1.0, 3.0, 3.0, 1.0, 0.25],
         [2.0, 0.0, 0.0, 2.0, 0.25],
         [2.0, 1.0, 1.0, 2.0, -0.25],
         [2.0, 2.0, 2.0, 2.0, 0.25],
-        [2.0, 3.0, 3.0, 2.0, -0.25],
-        [3.0, 0.0, 0.0, 3.0, -0.25],
-        [3.0, 1.0, 1.0, 3.0, 0.25],
-        [3.0, 2.0, 2.0, 3.0, -0.25],
-        [3.0, 3.0, 3.0, 3.0, 0.25],
         [0.0, 1.0, 0.0, 1.0, 0.5],
-        [0.0, 3.0, 2.0, 1.0, 0.5],
         [1.0, 0.0, 1.0, 0.0, 0.5],
-        [1.0, 2.0, 3.0, 0.0, 0.5],
-        [2.0, 1.0, 0.0, 3.0, 0.5],
-        [2.0, 3.0, 2.0, 3.0, 0.5],
-        [3.0, 0.0, 1.0, 2.0, 0.5],
-        [3.0, 2.0, 3.0, 2.0, 0.5],
     ]
 )
 
-me_lih = np.array(
+me_6 = np.array(
     [
         [0.0, 0.0, 0.0, 0.0, 0.25],
         [0.0, 1.0, 1.0, 0.0, -0.25],
@@ -146,27 +87,20 @@ me_lih = np.array(
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "n_act_elect", "n_act_orb", "s2_me_exp", "init_term_exp"),
-    [
-        ("h2_pyscf", None, None, me, 1.5),
-        ("h2_pyscf", 2, None, me, 1.5),
-        ("lih", 2, 2, me, 1.5),
-        ("lih", None, 3, me_lih, 3.0),
-    ],
+    ("n_spin_orbs", "s2_me_expected"), [(1, me_1), (3, me_3), (6, me_6)],
 )
-def test_get_spin2_matrix_elements(mol_name, n_act_elect, n_act_orb, s2_me_exp, init_term_exp, tol):
-    r"""Test that the table of matrix elements and the term use to initialize the
-    FermionOperator are computed correctly for different active spaces."""
+def test_spin2_matrix_elements(n_spin_orbs, s2_me_expected, tol):
+    r"""Test the calculation of the matrix elements of the two-particle spin operator
+    :math:`\hat{s}_1 \cdot \hat{s}_2` implemented by the function `'_spin2_matrix_elements'` """
 
-    s2_me_res, init_term_res = qchem.get_spin2_matrix_elements(
-        mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
-    )
+    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    assert np.allclose(s2_me_res, s2_me_exp, **tol)
-    assert init_term_res == init_term_exp
+    s2_me_result = qchem._spin2_matrix_elements(sz)
+
+    assert np.allclose(s2_me_result, s2_me_expected, **tol)
 
 
-terms_lih_jw = {
+terms_jw = {
     (): (0.75 + 0j),
     ((1, "Z"),): (0.375 + 0j),
     ((0, "Z"), (1, "Z")): (-0.375 + 0j),
@@ -188,7 +122,7 @@ terms_lih_jw = {
     ((0, "X"), (1, "Y"), (2, "X"), (3, "Y")): (0.125 + 0j),
 }
 
-terms_lih_anion_bk = {
+terms_bk = {
     (): (1.125 + 0j),
     ((0, "Z"), (1, "Z")): (0.375 + 0j),
     ((1, "Z"),): (-0.375 + 0j),
@@ -239,27 +173,38 @@ terms_lih_anion_bk = {
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "n_act_elect", "n_act_orb", "mapping", "terms_exp"),
-    [
-        ("lih", 2, 2, "JORDAN_wigner", terms_lih_jw),
-        ("lih_anion", 3, 3, "bravyi_KITAEV", terms_lih_anion_bk),
-    ],
+    ("n_electrons", "n_orbitals", "mapping", "terms_exp"),
+    [(2, 2, "JORDAN_wigner", terms_jw), (3, 3, "bravyi_KITAEV", terms_bk),],
 )
-def test_build_s2_observable(mol_name, n_act_elect, n_act_orb, mapping, terms_exp, monkeypatch):
-    r"""Tests the correctness of the built total-spin observable.
+def test_spin2(n_electrons, n_orbitals, mapping, terms_exp, monkeypatch):
+    r"""Tests the correctness of the total spin observable :math:`\hat{S}^2`
+    built by the function `'spin2'`.
 
     The parametrized inputs are `.terms` attribute of the total spin `QubitOperator.
     The equality checking is implemented in the `qchem` module itself as it could be
     something useful to the users as well.
     """
 
-    s2_me_table, init_term = qchem.get_spin2_matrix_elements(
-        mol_name, ref_dir, n_active_electrons=n_act_elect, n_active_orbitals=n_act_orb
-    )
+    S2 = qchem.spin2(n_electrons, n_orbitals, mapping=mapping)
 
-    s2_obs = qchem.observable(s2_me_table, init_term=init_term, mapping=mapping)
+    S2_qubit_op = QubitOperator()
+    monkeypatch.setattr(S2_qubit_op, "terms", terms_exp)
 
-    s2_qubit_op = QubitOperator()
-    monkeypatch.setattr(s2_qubit_op, "terms", terms_exp)
+    assert qchem._qubit_operators_equivalent(S2_qubit_op, S2)
 
-    assert qchem._qubit_operators_equivalent(s2_qubit_op, s2_obs)
+
+@pytest.mark.parametrize(
+    ("n_electrons", "n_orbitals", "msg_match"),
+    [
+        (-2, 2, "'n_electrons' must be greater than 0"),
+        (0, 2, "'n_electrons' must be greater than 0"),
+        (3, -3, "'n_orbitals' must be greater than 0"),
+        (3, 0, "'n_orbitals' must be greater than 0"),
+    ],
+)
+def test_exception_spin2(n_electrons, n_orbitals, msg_match):
+    """Test that the function `'spin2'` throws an exception if the
+    number of electrons or the number of orbitals is less than zero."""
+
+    with pytest.raises(ValueError, match=msg_match):
+        qchem.spin2(n_electrons, n_orbitals)
