@@ -399,10 +399,8 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
-        if wires is None:
-            wires = self.register
-        else:
-            wires = Wires(wires)
+        wires = wires or self.register
+        wires = Wires(wires)
         # get indices of wires on the device's register
         wire_indices = self.indices_on_register(wires)
         # consider only the requested wires
