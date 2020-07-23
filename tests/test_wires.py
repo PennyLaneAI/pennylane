@@ -110,21 +110,6 @@ class TestWires:
         assert wires1 != wires2
         assert wires1 == wires3
 
-    def test_less_than_greater_than(self):
-        """Tests that we can compare Wires objects with the '>' and '<' operators."""
-
-        wires1 = Wires([1, 'q2', 3])
-        wires2 = Wires(['q1', 2, 1])
-        wires3 = Wires(['a', 1, 'b'])
-        assert wires1 < wires2
-        assert wires3 < wires2
-        assert wires1 < wires2
-        assert wires2 > wires1
-        assert wires2 > wires3
-        assert wires2 > wires1
-        assert not wires1 < ['q1', 2, 1]
-        assert not wires2 > [1, 'q2', 3]
-
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
     def test_length(self, iterable):

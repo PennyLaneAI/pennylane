@@ -103,22 +103,6 @@ class Wires(Sequence):
             return self.wire_tuple == other.wire_tuple
         return False
 
-    def __lt__(self, other):
-        """Method to support the '<' operator. Compares string representations of the wire labels."""
-        if isinstance(other, self.__class__):
-            str_representation_other = [str(w) for w in other.wire_tuple]
-            string_representation_self = [str(w) for w in self.wire_tuple]
-            return string_representation_self < str_representation_other
-        return False
-
-    def __gt__(self, other):
-        """Method to support the '>' operator. Compares string representations of the wire labels."""
-        if isinstance(other, self.__class__):
-            str_representation_other = [str(w) for w in other.wire_tuple]
-            string_representation_self = [str(w) for w in self.wire_tuple]
-            return string_representation_self > str_representation_other
-        return False
-
     def __hash__(self):
         """Implements the hash function."""
         return hash(repr(self.wire_tuple))

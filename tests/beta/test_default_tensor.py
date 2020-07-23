@@ -1778,6 +1778,7 @@ class TestWiresIntegration:
 
     @pytest.mark.parametrize("representation", ["exact", "mps"])
     @pytest.mark.parametrize("wires1, wires2", [(['a', 'c', 'd'], [2, 3, 0]),
+                                                ([0, 1, 2], [2, 0, 1]),
                                                 ([-1, -2, -3], ['q1', 'ancilla', 2]),
                                                 (['a', 'c'], [3, 0]),
                                                 ([-1, -2], ['ancilla', 2]),

@@ -66,32 +66,32 @@ class TestOperation:
         op = test_class(*par, wires=ww)
 
         if issubclass(test_class, qml.operation.Observable):
-            Q = op.heisenberg_obs(0, register=Wires(ww))
+            Q = op.heisenberg_obs(0, wire_indices=ww)
             # ev_order equals the number of dimensions of the H-rep array
             assert Q.ndim == test_class.ev_order
             return
 
         # not an Expectation
 
-        U = op.heisenberg_tr(num_wires=2, register=Wires(ww))
+        U = op.heisenberg_tr(num_wires=2, wire_indices=ww)
         I = np.eye(*U.shape)
         # first row is always (1,0,0...)
         assert np.all(U[0, :] == I[:, 0])
 
         # check the inverse transform
-        V = op.heisenberg_tr(num_wires=2, register=Wires(ww), inverse=True)
+        V = op.heisenberg_tr(num_wires=2, wire_indices=ww, inverse=True)
         assert np.linalg.norm(U @ V -I) == pytest.approx(0, abs=tol)
         assert np.linalg.norm(V @ U -I) == pytest.approx(0, abs=tol)
 
         if op.grad_recipe is not None:
             # compare gradient recipe to numerical gradient
             h = 1e-7
-            U = op.heisenberg_tr(0, register=Wires(ww))
+            U = op.heisenberg_tr(0, wire_indices=ww)
             for k in range(test_class.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
                 # using finite difference
                 op.params[k] += h
-                Up = op.heisenberg_tr(0, register=Wires(ww))
+                Up = op.heisenberg_tr(0, wire_indices=ww)
                 op.params = par
                 G = (Up-U) / h
                 assert D == pytest.approx(G, abs=tol)

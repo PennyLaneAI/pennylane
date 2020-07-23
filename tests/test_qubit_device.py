@@ -147,13 +147,13 @@ class TestOperations:
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
         with pytest.raises(
-                ValueError, match="Cannot access the operation queue outside of the execution context!"
+            ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
             dev = mock_qubit_device()
             dev.op_queue
 
     def test_op_queue_is_filled_during_execution(
-            self, mock_qubit_device_with_paulis_and_methods, monkeypatch
+        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
            op_queue raises no error"""
