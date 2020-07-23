@@ -376,9 +376,9 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
 
 
 __all__ = [
-    "_spin2_matrix_elements",
-    "spin2",
     "observable",
-    "spin_z",
     "particle_number",
+    "spin_z",
+    "spin2",
+    "_spin2_matrix_elements",
 ]
