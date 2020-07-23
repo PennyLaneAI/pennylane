@@ -488,7 +488,7 @@ class Device(abc.ABC):
 
         Args:
             observable (str or list[str]): name of the observable(s)
-            wires (Wires): wires the observable(s) is to be measured on
+            wires (Wires): wires the observable(s) are to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
 
         Returns:
