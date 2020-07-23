@@ -22,7 +22,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable, CV, ActsOn, ObservableReturnTypes
+from pennylane.operation import Observable, CV, WiresEnum, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
@@ -359,7 +359,7 @@ class BaseQNode(qml.QueuingContext):
             self.queue.remove(operator)
 
     def _append_operator(self, operator):
-        if operator.num_wires == ActsOn.AllWires:
+        if operator.num_wires == WiresEnum.AllWires:
             # check here only if enough wires
             if len(operator.wires) != self.num_wires:
                 raise QuantumFunctionError(

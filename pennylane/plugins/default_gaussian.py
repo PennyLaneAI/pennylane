@@ -777,9 +777,7 @@ class DefaultGaussian(Device):
             )
         else:
             mu, cov = self.reduced_state(wire_indices)
-            ev, var = self._observable_map[observable](
-                mu, cov, par, hbar=self.hbar
-            )
+            ev, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
 
         if not self.analytic:
             # estimate the ev
@@ -800,9 +798,7 @@ class DefaultGaussian(Device):
                 mu, cov, wires, self.register, par, hbar=self.hbar
             )
         else:
-            _, var = self._observable_map[observable](
-                mu, cov, par, hbar=self.hbar
-            )
+            _, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
         return var
 
     def sample(self, observable, wires, par):

@@ -837,7 +837,7 @@ class TestDefaultTensorIntegration:
         """Tests that an error is raised if an unsupported gate is applied"""
         op = getattr(qml.ops, gate)
 
-        if op.num_wires is qml.operation.ActsOn.AnyWires or qml.operation.ActsOn.AllWires:
+        if op.num_wires is qml.operation.WiresEnum.AnyWires or qml.operation.WiresEnum.AllWires:
             wires = [0]
         else:
             wires = list(range(op.num_wires))
@@ -865,7 +865,7 @@ class TestDefaultTensorIntegration:
 
         op = getattr(qml.ops, observable)
 
-        if op.num_wires is qml.operation.ActsOn.AnyWires or qml.operation.ActsOn.AllWires:
+        if op.num_wires is qml.operation.WiresEnum.AnyWires or qml.operation.WiresEnum.AllWires:
             wires = [0]
         else:
             wires = list(range(op.num_wires))
