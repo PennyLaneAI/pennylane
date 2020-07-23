@@ -49,6 +49,10 @@
   function `spin2` as implemented in the `obs` module.
   [(#714)](https://github.com/XanaduAI/pennylane/pull/714)
 
+* The total-spin projection observable S_z can be built straightforwardly using the
+  function `spin_z` as implemented in the `obs` module.
+  [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
+
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
