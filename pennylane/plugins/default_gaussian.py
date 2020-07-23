@@ -545,7 +545,7 @@ def homodyne(phi=None):
     return _homodyne
 
 
-def poly_quad_expectations(mu, cov, wires, register, params, total_wires, hbar=2.0):
+def poly_quad_expectations(mu, cov, wires, register, params, hbar=2.0):
     r"""Calculates the expectation and variance for an arbitrary
     polynomial of quadrature operators.
 
@@ -557,7 +557,6 @@ def poly_quad_expectations(mu, cov, wires, register, params, total_wires, hbar=2
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
             :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
-        total_wires (int): total number of wires in the system
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation
             relation :math:`[\x,\p]=i\hbar`
 
@@ -569,8 +568,7 @@ def poly_quad_expectations(mu, cov, wires, register, params, total_wires, hbar=2
     # HACK, we need access to the Poly instance in order to expand the matrix!
     # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
     op = qml.ops.PolyXP(Q, wires=wires)
-    wire_indices = register.indices(wires)
-    Q = op.heisenberg_obs(total_wires, wire_indices=wire_indices)
+    Q = op.heisenberg_obs(register)
 
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
@@ -592,7 +590,7 @@ def poly_quad_expectations(mu, cov, wires, register, params, total_wires, hbar=2
     ex = np.trace(A @ cov) + k2
     var = 2 * np.trace(A @ cov @ A @ cov) + d2.T @ cov @ d2
 
-    modes = np.arange(2 * total_wires).reshape(2, -1).T
+    modes = np.arange(2 * len(register)).reshape(2, -1).T
     groenewald_correction = np.sum([np.linalg.det(hbar * A[:, m][n]) for m in modes for n in modes])
     var -= groenewald_correction
 
@@ -775,7 +773,7 @@ class DefaultGaussian(Device):
         if observable == "PolyXP":
             mu, cov = self._state
             ev, var = self._observable_map[observable](
-                mu, cov, wire_indices, self.register, par, self.num_wires, hbar=self.hbar
+                mu, cov, wire_indices, self.register, par, hbar=self.hbar
             )
         else:
             mu, cov = self.reduced_state(wire_indices)
@@ -799,7 +797,7 @@ class DefaultGaussian(Device):
 
         if observable == "PolyXP":
             _, var = self._observable_map[observable](
-                mu, cov, wires, self.register, par, self.num_wires, hbar=self.hbar
+                mu, cov, wires, self.register, par, hbar=self.hbar
             )
         else:
             _, var = self._observable_map[observable](

@@ -66,52 +66,51 @@ class TestOperation:
         op = test_class(*par, wires=ww)
 
         if issubclass(test_class, qml.operation.Observable):
-            Q = op.heisenberg_obs(0, wire_indices=ww)
+            Q = op.heisenberg_obs(Wires(ww))
             # ev_order equals the number of dimensions of the H-rep array
             assert Q.ndim == test_class.ev_order
             return
 
         # not an Expectation
 
-        U = op.heisenberg_tr(num_wires=2, wire_indices=ww)
+        U = op.heisenberg_tr(Wires(ww))
         I = np.eye(*U.shape)
         # first row is always (1,0,0...)
         assert np.all(U[0, :] == I[:, 0])
 
         # check the inverse transform
-        V = op.heisenberg_tr(num_wires=2, wire_indices=ww, inverse=True)
+        V = op.heisenberg_tr(Wires(ww), inverse=True)
         assert np.linalg.norm(U @ V -I) == pytest.approx(0, abs=tol)
         assert np.linalg.norm(V @ U -I) == pytest.approx(0, abs=tol)
 
         if op.grad_recipe is not None:
             # compare gradient recipe to numerical gradient
             h = 1e-7
-            U = op.heisenberg_tr(0, wire_indices=ww)
+            U = op.heisenberg_tr(Wires(ww))
             for k in range(test_class.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
                 # using finite difference
                 op.params[k] += h
-                Up = op.heisenberg_tr(0, wire_indices=ww)
+                Up = op.heisenberg_tr(Wires(ww))
                 op.params = par
                 G = (Up-U) / h
                 assert D == pytest.approx(G, abs=tol)
 
         # make sure that `heisenberg_expand` method receives enough wires to actually expand
-        # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
         # so only check multimode ops
         if len(op.wires) > 1:
-            with pytest.raises(ValueError, match='is too small to fit Heisenberg matrix'):
-                op.heisenberg_expand(U, len(op.wires) - 1, ww)
+            with pytest.raises(ValueError, match='of this observable are not on the device'):
+                op.heisenberg_expand(U, Wires([0]))
 
         # validate size of input for `heisenberg_expand` method
         with pytest.raises(ValueError, match='Heisenberg matrix is the wrong size'):
             U_wrong_size = U[1:, 1:]
-            op.heisenberg_expand(U_wrong_size, len(op.wires), ww)
+            op.heisenberg_expand(U_wrong_size, Wires(ww))
 
         # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
         with pytest.raises(ValueError, match='Only order-1 and order-2 arrays supported'):
             U_high_order = np.array([U] * 3)
-            op.heisenberg_expand(U_high_order, len(op.wires), ww)
+            op.heisenberg_expand(U_high_order, Wires(ww))
 
     @pytest.mark.parametrize("test_class", op_classes_param_testable)
     def test_operation_init(self, test_class, monkeypatch):

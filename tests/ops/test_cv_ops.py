@@ -190,14 +190,14 @@ class TestNonGaussian:
         op = cv.Kerr
         with pytest.raises(RuntimeError, match=r"not a Gaussian operation"):
             op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
-            op_.heisenberg_tr(op.num_wires, wire_indices=range(op.num_wires))
+            op_.heisenberg_tr(Wires(range(op.num_wires)))
 
         op = cv.CrossKerr
         with pytest.raises(RuntimeError):
             op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
-            op_.heisenberg_tr(op.num_wires, wire_indices=range(op.num_wires))
+            op_.heisenberg_tr(Wires(range(op.num_wires)))
 
         op = cv.CubicPhase
         with pytest.raises(RuntimeError):
             op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
-            op_.heisenberg_tr(op.num_wires, wire_indices=range(op.num_wires))
+            op_.heisenberg_tr(Wires(range(op.num_wires)))
