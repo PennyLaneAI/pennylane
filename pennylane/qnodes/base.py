@@ -372,7 +372,7 @@ class BaseQNode(qml.QueuingContext):
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
                     "on device with wires {}.".format(
-                        operator.name, w, self.device.register.tolist()
+                        operator.name, w.tolist(), self.device.register.tolist()
                     )
                 )
 

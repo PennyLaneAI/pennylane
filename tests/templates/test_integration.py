@@ -656,40 +656,39 @@ class TestNonConsecutiveWires:
 
     @pytest.mark.parametrize("template, diffable, nondiffable, n_wires", QUBIT_DIFFABLE_NONDIFFABLE)
     def test_qubit_result_is_wire_label_independent(self, template, diffable, nondiffable, n_wires):
-        """Tests integration of qubit templates with non-integer and non-consecutive wires."""
+        """Tests that qubit templates produce the same state when using two different wire labellings."""
 
-        # merge differentiable and non-differentiable arguments
-        nondiffable.update(diffable)
+        # merge differentiable and non-differentiable arguments:
+        # we don't need them separate here
+        kwargs = {**nondiffable, **diffable}
 
         # construct qnode with consecutive wires
         dev_consec = qml.device('default.qubit', wires=n_wires)
-
         @qml.qnode(dev_consec)
         def circuit_consec():
-            template(**nondiffable)
+            template(**kwargs)
             return qml.expval(qml.Identity(wires=0))
 
         # construct qnode with nonconsecutive wires
-        non_consecutive_strings = ['z', 'b', 'f', 'a', 'k', 'c', 'r']
-        nonconsecutive_wires = non_consecutive_strings[: n_wires]
-        kwargs_nonconsec = nondiffable.copy()
-        if 'wires' in kwargs_nonconsec:
-            kwargs_nonconsec['wires'] = nonconsecutive_wires
+        non_consecutive_strings = ['z', 'b', 'f', 'a', 'k', 'c', 'r', 's', 'd']
+        nonconsecutive_wires = non_consecutive_strings[: n_wires]  # make flexible size wires argument
+        kwargs2 = kwargs.copy()
+        if 'wires' in kwargs2:
+            kwargs2['wires'] = nonconsecutive_wires
         # DoubleExcitationLayers does not have a wires kwarg
-        if 'wires1' in kwargs_nonconsec:
-            kwargs_nonconsec['wires1'] = nonconsecutive_wires[:2]
-            kwargs_nonconsec['wires2'] = nonconsecutive_wires[2:]
+        if template.__name__ == 'DoubleExcitationUnitary':
+            kwargs2['wires1'] = nonconsecutive_wires[:2]
+            kwargs2['wires2'] = nonconsecutive_wires[2:]
         # some kwargs in UCSSD need to be manually replaced
-        if 'ph' in kwargs_nonconsec:
-             kwargs_nonconsec['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
-        if 'pphh' in kwargs_nonconsec:
-             kwargs_nonconsec['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
+        if template.__name__ == 'UCCSD':
+             kwargs2['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
+             kwargs2['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
 
         dev_nonconsec = qml.device('default.qubit', wires=nonconsecutive_wires)
 
         @qml.qnode(dev_nonconsec)
         def circuit_nonconsec():
-            template(**kwargs_nonconsec)
+            template(**kwargs2)
             return qml.expval(qml.Identity(wires=nonconsecutive_wires[0]))
 
         # run circuits
@@ -702,27 +701,28 @@ class TestNonConsecutiveWires:
     def test_cv_result_is_wire_label_independent(self, template, diffable, nondiffable, n_wires, gaussian_dummy):
         """Tests integration of cv templates with non-integer and non-consecutive wires."""
 
-        # Merge differentiable and non-differentiable arguments
-        nondiffable.update(diffable)
+        # merge differentiable and non-differentiable arguments:
+        # we don't need them separate here
+        kwargs = {**nondiffable, **diffable}
 
         # Construct qnode with consecutive wires
-        dev_consec = gaussian_dummy(wires=nondiffable['wires'])
+        dev_consec = gaussian_dummy(wires=kwargs['wires'])
 
         @qml.qnode(dev_consec)
         def circuit_consec():
-            template(**nondiffable)
+            template(**kwargs)
             return qml.expval(qml.Identity(wires=0))
 
         # Construct qnode with nonconsecutive wires
-        kwargs_nonconsec = nondiffable.copy()
-        non_consecutive_strings = ['z', 'b', 'f', 'a', 'k', 'c', 'r']
-        nonconsecutive_wires = non_consecutive_strings[: n_wires]
-        kwargs_nonconsec['wires'] = nonconsecutive_wires
+        kwargs2 = kwargs.copy()
+        non_consecutive_strings = ['z', 'b', 'f', 'a', 'k', 'c', 'r', 's', 'd']
+        nonconsecutive_wires = non_consecutive_strings[: n_wires]  # make flexible size wires argument
+        kwargs2['wires'] = nonconsecutive_wires
         dev_nonconsec = gaussian_dummy(wires=nonconsecutive_wires)
 
         @qml.qnode(dev_nonconsec)
         def circuit_nonconsec():
-            template(**kwargs_nonconsec)
+            template(**kwargs2)
             return qml.expval(qml.Identity(wires=nonconsecutive_wires[0]))
 
         circuit_consec()
