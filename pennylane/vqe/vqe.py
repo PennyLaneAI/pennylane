@@ -121,7 +121,7 @@ class Hamiltonian:
         return "\n+ ".join(terms)
 
     def is_diagonal(self):
-        r""" Checks if a Hamiltonian is diagonal in the computational basis.
+        r"""Checks if a Hamiltonian is diagonal in the computational basis.
 
         Returns:
             bool: ``True`` if the Hamiltonian is diagonal in the computational basis, ``False`` otherwise.
