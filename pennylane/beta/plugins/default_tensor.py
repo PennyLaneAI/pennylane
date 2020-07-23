@@ -295,7 +295,7 @@ class DefaultTensor(Device):
 
     def apply(self, operation, wires, par):
 
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
 
         if operation in ("QubitStateVector", "BasisState"):
             if wire_indices != [] and len(wire_indices) != self.num_wires:
@@ -401,7 +401,7 @@ class DefaultTensor(Device):
         if not isinstance(observable, list):
             observable, wires, par = [observable], [wires], [par]
 
-        wire_indices_sequence = [self.indices_on_register(w) for w in wires]
+        wire_indices_sequence = [self.register.indices(w) for w in wires]
 
         tensors = []
         for o, p, s in zip(observable, par, wire_indices_sequence):
@@ -422,7 +422,7 @@ class DefaultTensor(Device):
             observable, wires, par = [observable], [wires], [par]
 
         # get indices of wires
-        wire_indices_sequence = [self.indices_on_register(w) for w in wires]
+        wire_indices_sequence = [self.register.indices(w) for w in wires]
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
@@ -450,7 +450,7 @@ class DefaultTensor(Device):
         if not isinstance(observable, list):
             observable, wires, par = [observable], [wires], [par]
 
-        wire_indices_sequence = [self.indices_on_register(w) for w in wires]
+        wire_indices_sequence = [self.register.indices(w) for w in wires]
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 

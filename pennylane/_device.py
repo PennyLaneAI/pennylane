@@ -63,6 +63,8 @@ class Device(abc.ABC):
             # interpret wires as the number of consecutive wires
             wires = range(wires)
 
+        # The register keeps track of the labels of all wires that can
+        # be addressed by operations, as well as their order
         self._register = Wires(wires)
         self.num_wires = len(self._register)
         self._op_queue = None
@@ -464,23 +466,6 @@ class Device(abc.ABC):
                             observable_name, self.short_name
                         )
                     )
-
-    def indices_on_register(self, wires):
-        """Get the indices of the wires in the register of this device.
-
-        Example:
-        >>> dev = device('my.device', wires=['a', 'b', 'c'])
-        >>> wires = Wires(['c', 'a'])
-        >>> dev.indices_on_register(wires)
-        [2, 0]
-
-        Args:
-            wires (Wires): wires object
-
-        Return:
-            list[int]: wire indices
-        """
-        return self._register.indices(wires)
 
     @abc.abstractmethod
     def apply(self, operation, wires, par):

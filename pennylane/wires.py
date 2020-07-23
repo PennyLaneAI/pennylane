@@ -192,7 +192,7 @@ class Wires(Sequence):
         [2, 0]
 
         Args:
-            wires (Union[Iterable[Union[Number, str]], Number, str, Wires]): Wire(s) whose indices are to be found
+            wires (Iterable[Number, str], Number, str, Wires): Wire(s) whose indices are to be found
 
         Returns:
             List: index list

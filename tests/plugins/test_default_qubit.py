@@ -1487,7 +1487,7 @@ class TestTensorSample:
         dev.sample(obs)
 
         s1 = obs.eigvals
-        p = dev.probability(wires=dev.indices_on_register(obs.wires))
+        p = dev.probability(wires=dev.register.indices(obs.wires))
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)

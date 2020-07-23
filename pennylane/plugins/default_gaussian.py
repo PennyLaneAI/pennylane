@@ -552,7 +552,7 @@ def poly_quad_expectations(mu, cov, wires, register, params, total_wires, hbar=2
     Args:
         mu (array): vector of means
         cov (array): covariance matrix
-        wires (Wires): indices of wires to calculate the expectation for
+        wires (Wires): wires to calculate the expectation for
         register (Wires): wires on the device
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
@@ -700,7 +700,7 @@ class DefaultGaussian(Device):
 
     def apply(self, operation, wires, par):
 
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
 
         if operation == "Displacement":
             self._state = displacement(
@@ -769,7 +769,7 @@ class DefaultGaussian(Device):
 
     def expval(self, observable, wires, par):
 
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
 
         if observable == "PolyXP":
             mu, cov = self._state
@@ -792,7 +792,7 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
 
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
 
         mu, cov = self.reduced_state(wire_indices)
 
@@ -824,7 +824,7 @@ class DefaultGaussian(Device):
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
 
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
 
         if len(wire_indices) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")

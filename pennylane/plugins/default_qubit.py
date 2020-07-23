@@ -125,7 +125,7 @@ class DefaultQubit(QubitDevice):
             operation (~.Operation): operation to apply on the device
         """
 
-        wire_indices = self.indices_on_register(operation.wires)
+        wire_indices = self.register.indices(operation.wires)
 
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], wire_indices)

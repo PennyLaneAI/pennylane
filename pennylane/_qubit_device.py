@@ -220,7 +220,7 @@ class QubitDevice(Device):
         >>> op.name # returns the operation name
         "RX"
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
-        Wires([0])
+        <Wires = [0]>
         >>> op.parameters # returns a list of parameters
         [0.2]
         >>> op.inverse # check if the operation should be inverted
@@ -404,7 +404,7 @@ class QubitDevice(Device):
         else:
             wires = Wires(wires)
         # get indices of wires on the device's register
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
         # consider only the requested wires
         wire_indices = np.hstack(wire_indices)
 
@@ -480,7 +480,7 @@ class QubitDevice(Device):
 
         wires = Wires(wires)
         # get indices of wires on the device's register
-        wire_indices = self.indices_on_register(wires)
+        wire_indices = self.register.indices(wires)
 
         # determine which subsystems are to be summed over
         inactive_registers = list(set(range(self.num_wires)) - set(wire_indices))
@@ -524,7 +524,7 @@ class QubitDevice(Device):
 
     def sample(self, observable):
 
-        wire_indices = self.indices_on_register(observable.wires)
+        wire_indices = self.register.indices(observable.wires)
         name = observable.name
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:

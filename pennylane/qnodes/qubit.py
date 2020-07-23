@@ -245,7 +245,7 @@ class QubitQNode(JacobianQNode):
                 gen, s = op.generator
                 w = op.wires
                 # get the wire's indices on the device
-                wire_indices = self.device.indices_on_register(w)
+                wire_indices = self.device.register.indices(w)
 
                 if gen is None:
                     raise QuantumFunctionError(
