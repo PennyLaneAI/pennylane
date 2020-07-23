@@ -280,60 +280,52 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     return structure.convert_observable(jordan_wigner(mb_obs))
 
 
-def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
-    r"""Reads the Hartree-Fock (HF) electronic structure data file, defines an active
-    space and generates the table of matrix elements required to build the second-quantized
-    spin-projection operator :math:`\hat{S}_z`.
+def spin_z(n_orbitals, mapping="jordan_wigner"):
+    r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
 
-    The second-quantized operator :math:`\hat{S}_z` reads,
+    The total spin projection operator :math:`\hat{S}_z` is given by
 
     .. math::
 
         \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
-        ~ \hat{c}_\alpha^\dagger\hat{c}_\beta,
+        ~ \hat{c}_\alpha^\dagger \hat{c}_\beta, ~~ \langle \alpha \vert \hat{s}_z
+        \vert \beta \rangle = s_{z_\alpha} \delta_{\alpha,\beta},
 
-        \langle \alpha \vert \hat{s}_z \vert \beta \rangle = m_\alpha \delta_{\alpha,\beta},
-
-    where :math:`m_\alpha` refers to the quantum number of the spin wave function
-    :math:`\chi_{m_\alpha}(s_z)` of the spin-orbital :math:`\vert \alpha \rangle`
-    and :math:`\hat{c}_\alpha^\dagger` (:math:`\hat{c}_\alpha`) is the creation (annihilation)
-    particle operator acting on the :math:`\alpha`-th active orbital.
+    where :math:`s_{z_\alpha} = \pm 1/2` is the spin-projection of the single-particle state
+    :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
+    are the particle creation and annihilation operators, respectively.
 
     Args:
-        mol_name (str): name of the molecule
-        hf_data (str): path to the directory with the HF electronic structure data
-        n_active_electrons (int): number of active electrons
-        n_active_orbitals (int): number of active orbitals
+        n_orbitals (str): Number of orbitals. If an active space is defined, 'n_orbitals'
+            is the number of active orbitals.
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
 
     Returns:
-        array: NumPy array with the table of matrix elements. Since :math:`\hat{S}_z` is
-        diagonal in the basis of HF orbitals the first two columns contains the index
-        :math:`\alpha` and the third column stores the matrix element.
+        pennylane.Hamiltonian: the total spin projection observable :math:`\hat{S}_z`
 
     **Example**
 
-    >>> get_spinZ_matrix_elements('h2', './pyscf/sto-3g', n_active_electrons=2, n_active_orbitals=2)
-    [[ 0.   0.   0.5]
-    [ 1.   1.  -0.5]
-    [ 2.   2.   0.5]
-    [ 3.   3.  -0.5]]
+    >>> n_orbitals = 2
+    >>> Sz = spin_z(n_orbitals, mapping="jordan_wigner")
+    >>> print(Sz)
+    (-0.25) [Z0]
+    + (0.25) [Z1]
+    + (-0.25) [Z2]
+    + (0.25) [Z3]
     """
 
-    active_indices = structure.active_space(
-        mol_name,
-        hf_data,
-        n_active_electrons=n_active_electrons,
-        n_active_orbitals=n_active_orbitals,
-    )[1]
+    if n_orbitals <= 0:
+        raise ValueError(
+            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+        )
 
-    n_spin_orbs = 2 * len(active_indices)
-    sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    n_spin_orbs = 2 * n_orbitals
+    r = np.arange(n_spin_orbs)
+    sz_orb = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    table = np.vstack([r, r, sz_orb]).T
 
-    spinz_matrix_elements = np.zeros((n_spin_orbs, 3))
-    for alpha in range(n_spin_orbs):
-        spinz_matrix_elements[alpha] = np.array([alpha, alpha, sz[alpha]])
-
-    return spinz_matrix_elements
+    return observable(table, mapping=mapping)
 
 
 def particle_number(n_orbitals, mapping="jordan_wigner"):
@@ -384,9 +376,9 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
 
 
 __all__ = [
-    "_spin2_matrix_elements",
-    "spin2",
     "observable",
-    "get_spinZ_matrix_elements",
     "particle_number",
+    "spin_z",
+    "spin2",
+    "_spin2_matrix_elements",
 ]
