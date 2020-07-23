@@ -336,9 +336,57 @@ def get_spinZ_matrix_elements(mol_name, hf_data, n_active_electrons=None, n_acti
     return spinz_matrix_elements
 
 
+def particle_number(n_orbitals, mapping="jordan_wigner"):
+    r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
+    in the Pauli basis.
+
+    The particle number operator is given by
+
+    .. math::
+
+        \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
+
+    where the index :math:`\alpha` runs over the basis of single-particle orbitals
+    :math:`\vert \alpha \rangle`, and the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
+    the particle creation and annihilation operators, respectively.
+
+    Args:
+        n_orbitals (int): Number of orbitals. If an active space is defined, 'n_orbitals'
+            is the number of active orbitals.
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+
+    Returns:
+        pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
+
+    **Example**
+
+    >>> n_orbitals = 2
+    >>> N = particle_number(n_orbitals, mapping="jordan_wigner")
+    >>> print(N)
+    (2.0) [I0]
+    + (-0.5) [Z0]
+    + (-0.5) [Z1]
+    + (-0.5) [Z2]
+    + (-0.5) [Z3]
+    """
+
+    if n_orbitals <= 0:
+        raise ValueError(
+            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+        )
+
+    n_spin_orbs = 2 * n_orbitals
+    r = np.arange(n_spin_orbs)
+    table = np.vstack([r, r, np.ones([n_spin_orbs])]).T
+
+    return observable(table, mapping=mapping)
+
+
 __all__ = [
     "_spin2_matrix_elements",
     "spin2",
     "observable",
     "get_spinZ_matrix_elements",
+    "particle_number",
 ]
