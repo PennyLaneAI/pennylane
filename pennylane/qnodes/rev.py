@@ -139,7 +139,7 @@ class ReversibleQNode(QubitQNode):
             )
 
             # post-process to get partial derivative contribution from this op
-            multiplier *= op.params[p_idx].mult  # possible scalar multiplier
+            multiplier *= op.data[p_idx].mult  # possible scalar multiplier
             pd += 2 * multiplier * self.device._imag(matrix_elems)
 
         # reset state back to pre-measurement value
