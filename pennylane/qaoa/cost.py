@@ -22,13 +22,9 @@ import pennylane as qml
 
 
 def MaxCut(graph):
-    r"""A method that builds the QAOA cost Hamiltonian corresponding to MaxCut for a given graph.
+    r"""A method that builds a QAOA cost Hamiltonian corresponding to the MaxCut problem, for a given graph.
 
-    The MaxCut problem can be formulated as follows: given some graph :math:`G`, what is the colouring
-    :math:`C : V(G) \ \rightarrow \ \{0, \ 1\}` of :math:`G` that yields the maximum number of node pairs
-    :math:`(i, \ j) \ \in \ E` such that :math:`C(i) \ \neq \ C(j)`? More simply put, if we are tasked with
-    "painting" each node in a graph either black or white, what is the configuration of colourings that
-    yields the maximum number of edges with different coloured endpoints?
+    The goal of the MaxCut problem for a particular graph is to find the cut of t
 
     This problem is of some practical relevance in physics and circuit design, but within quantum computing,
     MaxCut is an easy problem to implement and solve with QAOA, making it useful for benchmarking NISQ quantum devices.
