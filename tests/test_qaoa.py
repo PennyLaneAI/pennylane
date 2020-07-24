@@ -38,7 +38,7 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError) as info:
             output = qaoa.MaxCut(graph)
 
-        assert "Inputted graph must be a networkx.Graph object, got list" in str(info.value)
+        assert "Input graph must be a networkx.Graph object, got list" in str(info.value)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
