@@ -35,7 +35,7 @@ def x_mixer(n):
         n (int): The number of wires on which the Hamiltonian is applied
 
     Returns:
-        Hamiltonian:
+        Hamiltonian: Mixer Hamiltonian
     """
 
     wires = range(n)
@@ -60,7 +60,7 @@ def xy_mixer(graph):
         graph (nx.Graph): A graph defining the pairs of wires on which each term of the Hamiltonian acts.
 
     Returns:
-         Hamiltonian:
+         Hamiltonian: Mixer Hamiltonian
         """
 
     if not isinstance(graph, nx.Graph):
