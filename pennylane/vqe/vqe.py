@@ -18,7 +18,10 @@ computations using PennyLane.
 # pylint: disable=too-many-arguments, too-few-public-methods
 import numpy as np
 import pennylane as qml
+import itertools
 from pennylane.operation import Observable, Tensor
+from pennylane.wires import Wires
+from pennylane.utils import decompose_hamiltonian
 
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -120,6 +123,102 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
+    def map_wires(self, wire_map):
+        r""" Maps the wires of a Hamiltonian to a new set of wires
+
+        Args:
+           wire_map (dict) : A dictionary that assigns a new wire to a subset of wires tracked in the Hamiltonian
+
+        Returns:
+            ~.Hamiltonian:
+        """
+
+        obs = {
+            "Identity" : qml.Identity,
+            "PauliX" : qml.PauliX,
+            "PauliY" : qml.PauliY,
+            "PauliZ" : qml.PauliZ,
+            "Hadamard" : qml.Hadamard,
+            "Hermitian" : qml.Hermitian
+        }
+
+        if not isinstance(wire_map, dict):
+            raise ValueError("wire_map must be of type dict, got {}".format(type(wire_map).__name__))
+
+        f = lambda wire : wire_map[wire] if wire in wire_map.keys() else wire
+        new_terms = []
+
+        for term in self.ops:
+
+            tensor_term = []
+            term = qml.operation.Tensor(term) if isinstance(term.name, str) else term
+
+            for i in term.obs:
+
+                name = i.name
+                new_wires = list(map(f, i.wires))
+
+                if name == "Hermitian":
+                    tensor_term.append(obs[name](i.matrix, wires=new_wires))
+                else:
+                    tensor_term.append(obs[name](wires=new_wires))
+
+            new_terms.append(qml.operation.Tensor(*tensor_term))
+
+        return qml.Hamiltonian(self.coeffs, new_terms)
+
+
+    def decompose(self):
+        r""" Decomposes the terms of the Hamiltonian in terms of Pauli matrices
+
+        Returns:
+             qml.Hamiltonian: The decomposed Hamiltonian
+        """
+
+        terms = []
+
+        for i, term in enumerate(self.ops):
+
+            name = [term.name] if isinstance(term.name, str) else term.name
+            term = qml.operation.Tensor(term) if len(name) == 1 else term
+
+            if "Hermitian" in name:
+                reduced_terms = []
+                for j, t in enumerate(name):
+                    if t == "Hermitian":
+                        reduced = decompose_hamiltonian(term.obs[j].matrix)
+                        reduced_hamiltonian = qml.Hamiltonian(reduced[0], reduced[1])
+                        mapped = reduced_hamiltonian.map_wires({a : b for a, b in enumerate(term.obs[j].wires)})
+                        reduced_terms.append(list(zip(mapped.coeffs, mapped.ops)))
+
+                    else:
+                        reduced_terms.append([(1, term.obs[i])])
+
+                all_terms = list(itertools.product(*reduced_terms))
+
+                for a, b in enumerate(all_terms):
+                    all_terms[a] = ((b[0][0] * self.coeffs[i], b[0][1]), b[1])
+
+                terms.extend(all_terms)
+
+            else:
+                terms.append(((self.coeffs[i], term),))
+
+        final_coeffs = []
+        final_terms = []
+
+        for term in terms:
+            coeff = 1
+            tensor = []
+            for i in term:
+                coeff *= i[0]
+                tensor.append(i[1])
+
+            final_coeffs.append(coeff)
+            final_terms.append(qml.operation.Tensor(*tensor))
+
+        return qml.Hamiltonian(final_coeffs, final_terms)
+
     def is_diagonal(self):
         r""" Checks if a Hamiltonian is diagonal in the computational basis.
 
@@ -130,8 +229,11 @@ class Hamiltonian:
         non_diagonal_coeffs = []
         non_diagonal_obs = []
 
+        # Defines the expanded Hamiltonian
+        exp_h = self.decompose()
+
         # Loops through each term of the Hamiltonian
-        for i, term in enumerate(self._ops):
+        for i, term in enumerate(exp_h.ops):
 
             # Prunes identity from all tensor products
             term = term.prune() if isinstance(term, qml.operation.Tensor) else term
