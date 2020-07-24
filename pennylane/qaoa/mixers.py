@@ -63,7 +63,7 @@ def xy_mixer(graph):
          Hamiltonian:
         """
 
-    if not isinstance(graph, nx.Graph)::
+    if not isinstance(graph, nx.Graph):
         raise ValueError(
             "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
         )

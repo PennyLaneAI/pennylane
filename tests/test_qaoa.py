@@ -52,9 +52,7 @@ class TestMixerHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(
-            ValueError, match=r"Input graph must be a networkx.Graph object, got list"
-        ):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object, got list"):
             output = qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
