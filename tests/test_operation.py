@@ -90,9 +90,9 @@ class TestOperation:
             for k in range(test_class.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
                 # using finite difference
-                op.params[k] += h
+                op.data[k] += h
                 Up = op.heisenberg_tr(0)
-                op.params = par
+                op.data = par
                 G = (Up-U) / h
                 assert D == pytest.approx(G, abs=tol)
 
@@ -131,7 +131,7 @@ class TestOperation:
         # valid call
         op = test_class(*pars, wires=ww)
         assert op.name == test_class.__name__
-        assert op.params == pars
+        assert op.data == pars
         assert op._wires == ww #Wires(ww)
 
         # too many parameters
@@ -646,7 +646,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.params == [p]
+        assert t.data == [p]
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""

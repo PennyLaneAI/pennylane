@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires)
+            decomposed_ops = op.decomposition(*op.data, wires=op.wires)
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 
@@ -584,7 +584,7 @@ class BaseQNode(qml.QueuingContext):
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
         for op in self.ops:
-            for j, p in enumerate(_flatten(op.params)):
+            for j, p in enumerate(_flatten(op.data)):
                 if isinstance(p, Variable):
                     if not p.is_kwarg:  # ignore auxiliary arguments
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
