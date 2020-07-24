@@ -11,14 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Methods that define cost and mixer layers for use in QAOA workflows.
+"""
 import pennylane as qml
 from pennylane.templates import ApproxTimeEvolution
 from pennylane.operation import Tensor
 
 
 def _diagonal_terms(hamiltonian):
+    r"""Checks if all terms in a Hamiltonian are products of diagonal Pauli gates (PauliZ and Identity).
 
+    Args:
+        hamiltonian (qml.Hamiltonian): The Hamiltonian being checked
+
+    Returns:
+        bool: ``True`` if all terms are products of diagonal Pauli gates, ``False`` otherwise
+    """
     val = True
 
     for i in hamiltonian.ops:
@@ -31,7 +40,21 @@ def _diagonal_terms(hamiltonian):
 
 
 def cost_layer(hamiltonian):
+    r"""Builds a QAOA cost layer, for a given cost Hamiltonian.
 
+    The cost layer for cost Hamiltonian :math:`H_C` is defined as the following unitary:
+
+    .. math:: U_C \ = \ e^{-i \gamma H_C}
+
+    where :math:`\gamma` is a variational parameter.
+
+    Args:
+        hamiltonian (qml.Hamiltonian): The cost Hamiltonian
+
+    Raises:
+        ValueError: if the terms of the supplied cost Hamiltonian are not
+        exclusively products of diagonal Pauli gates
+    """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
             "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
@@ -46,7 +69,17 @@ def cost_layer(hamiltonian):
 
 
 def mixer_layer(hamiltonian):
+    r"""Builds a QAOA mixer layer, for a given mixer Hamiltonian.
 
+        The mixer layer for cost Hamiltonian :math:`H_M` is defined as the following unitary:
+
+        .. math:: U_M \ = \ e^{-i \alpha H_M}
+
+        where :math:`\alpha` is a variational parameter.
+
+        Args:
+            hamiltonian (qml.Hamiltonian): The mixer Hamiltonian
+        """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
             "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
