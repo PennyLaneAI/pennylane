@@ -27,7 +27,7 @@ def x_mixer(n):
 
     where :math:`i` ranges over all wires, and :math:`X_i`
     denotes the Pauli-X operator on the :math:`i`-th wire.
-    This is the mixer that was outlined in the `original QAOA
+    This is the mixer that was used in the `original QAOA
     paper <https://arxiv.org/abs/1411.4028>`__.
 
 
