@@ -21,3 +21,4 @@ from .double_excitation_unitary import DoubleExcitationUnitary
 from .interferometer import Interferometer
 from .single_excitation_unitary import SingleExcitationUnitary
 from .uccsd import UCCSD
+from .approx_time_evolution import ApproxTimeEvolution

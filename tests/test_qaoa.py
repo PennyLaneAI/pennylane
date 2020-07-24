@@ -20,6 +20,22 @@ from pennylane import qaoa
 from pennylane.templates import ApproxTimeEvolution
 
 
+class TestUtils:
+    """Tests that the utility functions are working properly"""
+
+    @pytest.mark.parametrize(
+        ("hamiltonian", "value"),
+        (
+            (qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]), True),
+            (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]), False),
+            (qml.Hamiltonian([1, 1], [qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(1)]), True),
+            (qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]), False),
+        ),
+    )
+    def test_diagonal_terms(self, hamiltonian, value):
+        assert qaoa.layers._diagonal_terms(hamiltonian) == value
+
+
 class TestLayers:
     """Tests that the cost and mixer layers are being constructed properly"""
 
@@ -31,9 +47,7 @@ class TestLayers:
         with pytest.raises(ValueError) as info:
             output = qaoa.mixer_layer(hamiltonian)
 
-        assert (
-            "`hamiltonian` must be of type pennylane.Hamiltonian, got list"
-        )
+        assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
 
     def test_cost_layer_errors(self):
         """Tests that the cost layer is throwing the correct errors"""
@@ -43,17 +57,15 @@ class TestLayers:
         with pytest.raises(ValueError) as info:
             output = qaoa.cost_layer(hamiltonian)
 
-        assert (
-            "`hamiltonian` must be of type pennylane.Hamiltonian, got list"
-        )
+        assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
 
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
 
         with pytest.raises(ValueError) as info:
             output = qaoa.cost_layer(hamiltonian)
 
-        assert (
-            "`hamiltonian` must be diagonal in the computational basis"
+        assert "hamiltonian must be written only in terms of PauliZ and Identity gates" in str(
+            info.value
         )
 
     def test_mixer_layer_output(self):
@@ -64,10 +76,10 @@ class TestLayers:
         mixer = qaoa.mixer_layer(hamiltonian)
 
         with qml.utils.OperationRecorder() as rec1:
-            mixer(alpha)
+            mixer(alpha, wires=range(2))
 
         with qml.utils.OperationRecorder() as rec2:
-            ApproxTimeEvolution(hamiltonian, 1, n=1)
+            ApproxTimeEvolution(hamiltonian, 1, 1, range(2))
 
         for i, j in zip(rec1.operations, rec2.operations):
 
@@ -84,10 +96,10 @@ class TestLayers:
     cost = qaoa.cost_layer(hamiltonian)
 
     with qml.utils.OperationRecorder() as rec1:
-        cost(gamma)
+        cost(gamma, wires=range(2))
 
     with qml.utils.OperationRecorder() as rec2:
-        ApproxTimeEvolution(hamiltonian, 1, n=1)
+        ApproxTimeEvolution(hamiltonian, 1, 1, range(2))
 
     for i, j in zip(rec1.operations, rec2.operations):
         prep = [i.name, i.parameters, i.wires]

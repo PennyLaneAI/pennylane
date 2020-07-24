@@ -14,29 +14,44 @@
 
 import pennylane as qml
 from pennylane.templates import ApproxTimeEvolution
-from qml.operation import Tensor
+from pennylane.operation import Tensor
 
-def _check_diagonal_terms(hamiltonian)
+
+def _diagonal_terms(hamiltonian):
+
+    val = True
 
     for i in hamiltonian.ops:
         i = Tensor(i) if isinstance(i.name, str) else i
-        for j in i.terms:
-            if j.name != "PauliZ" or j.name != "Identity":
-                raise ValueError("hamiltonian must be written in terms of PauliZ and Identity gates.")
+        for j in i.obs:
+            if j.name != "PauliZ" and j.name != "Identity":
+                val = False
+
+    return val
+
 
 def cost_layer(hamiltonian):
 
     if not isinstance(hamiltonian, qml.Hamiltonian):
-        raise ValueError("hamiltonian must be of type pennylane.Hamiltonian, got {}".format(type(hamiltonian).__name__))
+        raise ValueError(
+            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+                type(hamiltonian).__name__
+            )
+        )
 
-    _check_diagonal_terms(hamiltonian)
+    if not _diagonal_terms(hamiltonian):
+        raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
 
-    return lambda gamma, wires : ApproxTimeEvolution(hamiltonian, gamma, 1, wires)
+    return lambda gamma, wires: ApproxTimeEvolution(hamiltonian, gamma, 1, wires)
+
 
 def mixer_layer(hamiltonian):
 
     if not isinstance(hamiltonian, qml.Hamiltonian):
-        raise ValueError("hamiltonian must be of type pennylane.Hamiltonian, got {}".format(type(hamiltonian).__name__))
+        raise ValueError(
+            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+                type(hamiltonian).__name__
+            )
+        )
 
-    return lambda alpha, wires : ApproxTimeEvolution(hamiltonian, alpha, 1, wires)
-
+    return lambda alpha, wires: ApproxTimeEvolution(hamiltonian, alpha, 1, wires)
