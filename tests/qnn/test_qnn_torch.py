@@ -59,9 +59,6 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
-ordered_weights = ["w{}".format(i) for i in range(1, 8)]  # we do this for Python 3.5
-
-
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
