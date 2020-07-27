@@ -215,6 +215,21 @@ class TestQueuingContext:
 class TestQueue:
     """Test the Queue class."""
 
+    def test_arbitrary_obj(self):
+        """Tests that arbitrary objects can be appended to and removed from the queue."""
+
+        objs = [5, "hi", 1.2, np.einsum, lambda x: x + 1]
+        with qml._queuing.Queue() as q:
+            for obj in objs:
+                q.append(obj)
+        assert q.queue == objs
+
+        with q:
+            for _ in range(len(objs)):
+                obj = objs.pop()
+                q.remove(obj)
+                assert q.queue == objs
+
     def test_append_qubit_gates(self):
         """Test that gates are successfully appended to the queue."""
         with qml._queuing.Queue() as q:
@@ -261,9 +276,6 @@ class TestQueue:
         assert q.queue == [A, B]
         assert tensor_op.obs == [A, B]
         assert all(not isinstance(op, qml.operation.Tensor) for op in q.queue)
-
-    def test_arbitrary_obj(self):
-        pass
 
 
 class TestOperationRecorder:
