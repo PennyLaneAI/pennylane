@@ -110,8 +110,8 @@ class Queue(QueuingContext):
     def __init__(self):
         self.queue = []
 
-    def _append(self, operator):
-        self.queue.append(operator)
+    def _append(self, obj):
+        self.queue.append(obj)
 
     def _remove(self, obj):
         self.queue.remove(obj)
