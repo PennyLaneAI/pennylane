@@ -97,22 +97,24 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
         kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
     )
 
-    # Checks is dimensions of parameters are correct
+    if len(wires) != len(unitaries):
+        raise ValueError("Expected wires to be length {}, got length {}".format(len(unitaries), len(wires)))
+
+    # Checks if dimensions of parameters are correct
 
     if parameters is not None:
         shape = get_shape(parameters)
 
+        # Gets the expected dimensions of the parameter list
         s = sum([1 if u.num_params > 0 else 0 for u in unitaries])
 
         if shape[0] != depth or shape[1] != s:
             raise ValueError("Shape of parameters must be {} got {}".format((depth, s), shape))
 
-        # repackage for consistent unpacking
+        # Repackage for consistent unpacking
         if len(shape) == 2:
             parameters = [[p if isinstance(p, Iterable) else [p] for p in parameters[j]] for j in range(0, len(parameters))]
             print(parameters)
-    else:
-        parameters = [[[] for j in range(0, len(unitaries))] for i in range(0, depth)]
 
     ##############
 
