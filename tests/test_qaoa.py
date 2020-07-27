@@ -45,7 +45,7 @@ class TestLayers:
         hamiltonian = [[1, 1], [1, 1]]
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.mixer_layer(hamiltonian)
+            output = qaoa.mixer_layer(hamiltonian, wires=range(1))
 
         assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
 
@@ -55,14 +55,14 @@ class TestLayers:
         hamiltonian = [[1, 1], [1, 1]]
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.cost_layer(hamiltonian)
+            output = qaoa.cost_layer(hamiltonian, wires=range(1))
 
         assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
 
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.cost_layer(hamiltonian)
+            output = qaoa.cost_layer(hamiltonian, wires=range(2))
 
         assert "hamiltonian must be written only in terms of PauliZ and Identity gates" in str(
             info.value
@@ -76,10 +76,10 @@ class TestLayers:
         mixer = qaoa.mixer_layer(hamiltonian)
 
         with qml.utils.OperationRecorder() as rec1:
-            mixer(alpha)
+            mixer(alpha, wires=range(2))
 
         with qml.utils.OperationRecorder() as rec2:
-            ApproxTimeEvolution(hamiltonian, 1, 1)
+            ApproxTimeEvolution(hamiltonian, 1, 1, range(2))
 
         for i, j in zip(rec1.operations, rec2.operations):
 
@@ -96,10 +96,10 @@ class TestLayers:
     cost = qaoa.cost_layer(hamiltonian)
 
     with qml.utils.OperationRecorder() as rec1:
-        cost(gamma)
+        cost(gamma, wires=range(2))
 
     with qml.utils.OperationRecorder() as rec2:
-        ApproxTimeEvolution(hamiltonian, 1, 1)
+        ApproxTimeEvolution(hamiltonian, 1, 1, range(2))
 
     for i, j in zip(rec1.operations, rec2.operations):
         prep = [i.name, i.parameters, i.wires]

@@ -65,7 +65,7 @@ def cost_layer(hamiltonian):
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
 
-    return lambda gamma: ApproxTimeEvolution(hamiltonian, gamma, 1)
+    return lambda gamma, wires: ApproxTimeEvolution(hamiltonian, gamma, 1, wires)
 
 
 def mixer_layer(hamiltonian):
@@ -87,4 +87,4 @@ def mixer_layer(hamiltonian):
             )
         )
 
-    return lambda alpha: ApproxTimeEvolution(hamiltonian, alpha, 1)
+    return lambda alpha, wires: ApproxTimeEvolution(hamiltonian, alpha, 1, wires)
