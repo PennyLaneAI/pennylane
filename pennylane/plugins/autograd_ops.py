@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Utility functions and numerical implementations of quantum operations TensorFlow devices.
+Utility functions and numerical implementations of quantum operations for Autograd-based devices.
 """
 from autograd import numpy as np
 from numpy import kron
