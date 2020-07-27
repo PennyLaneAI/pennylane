@@ -96,6 +96,7 @@ hamiltonians_with_expvals = [
 #####################################################
 # Ansatz
 
+
 def custom_fixed_ansatz(params, wires=None):
     """Custom fixed ansatz"""
     qml.RX(0.5, wires=0)
@@ -155,6 +156,7 @@ CIRCUITS = [
 #####################################################
 # Device
 
+
 @pytest.fixture(scope="function")
 def mock_device(monkeypatch):
     with monkeypatch.context() as m:
@@ -171,8 +173,10 @@ def mock_device(monkeypatch):
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
         yield qml.Device()
 
+
 #####################################################
 # Tests
+
 
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -185,21 +189,46 @@ class TestHamiltonian:
         assert H.terms == (coeffs, ops)
 
     @pytest.mark.parametrize(
-        ("coeffs", "ops", "is_diagonal"),
+        ("hamiltonian", "map", "new_coeffs", "new_ops", "new_wires"),
         [
-            ([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)], True),
-            ([1, 1, 1], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1), qml.PauliZ(2)], True),
-            ([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliX(2)], False),
-            ([1, -1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliX(0) @ qml.PauliX(1), qml.Identity(2)], True),
-            ([1, -1, 2], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1) @ qml.Identity(2), qml.Identity(2)], True),
-            ([1, -1, 2], [qml.Hermitian(np.array([[0, 1], [1, 0]]), 0) @ qml.Identity(1), qml.PauliX(0), qml.PauliZ(1)], True)
-        ]
+            (
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+                {0: 5, 1: 3},
+                [1, 1],
+                [["PauliX"], ["PauliZ"]],
+                [[5], [3]],
+            ),
+            (
+                qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(1)]),
+                {0: 5, 1: 3},
+                [1, 1],
+                [["PauliX", "PauliZ"], ["PauliZ"]],
+                [[5, 3], [3]],
+            ),
+            (
+                qml.Hamiltonian(
+                    [1, 2, 1],
+                    [
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.Hermitian(np.array([[1, 0], [0, 0]]), 1) @ qml.PauliZ(0),
+                        qml.PauliX(4),
+                    ],
+                ),
+                {0: 5, 1: 3},
+                [1, 2, 1],
+                [["PauliX", "PauliZ"], ["Hermitian", "PauliZ"], ["PauliX"]],
+                [[5, 3], [3, 5], [4]],
+            ),
+        ],
     )
-    def test_hamiltonian_is_diagonal(self, coeffs, ops, is_diagonal):
-        """Tests that the is_diagonal method has the correct output"""
+    def test_hamiltonian_map_wires(self, hamiltonian, map, new_coeffs, new_ops, new_wires):
+        coeffs = hamiltonian.map_wires(map).coeffs
+        ops = [i.name for i in hamiltonian.map_wires(map).ops]
+        wires = [i.wires for i in hamiltonian.map_wires(map).ops]
 
-        H = qml.Hamiltonian(coeffs, ops)
-        assert H.is_diagonal() == is_diagonal
+        assert coeffs == new_coeffs
+        assert ops == new_ops
+        assert wires == new_wires
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -208,7 +237,7 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="number of coefficients and operators does not match"):
             H = qml.vqe.Hamiltonian(coeffs, ops)
 
-    @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2-1j]])
+    @pytest.mark.parametrize("coeffs", [[0.2, -1j], [0.5j, 2 - 1j]])
     def test_hamiltonian_complex(self, coeffs):
         """Tests that an exception is raised when
         a complex Hamiltonian is given"""
@@ -217,7 +246,9 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="coefficients are not real-valued"):
             H = qml.vqe.Hamiltonian(coeffs, obs)
 
-    @pytest.mark.parametrize("obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]])
+    @pytest.mark.parametrize(
+        "obs", [[qml.PauliX(0), qml.CNOT(wires=[0, 1])], [qml.PauliZ, qml.PauliZ(0)]]
+    )
     def test_hamiltonian_invalid_observables(self, obs):
         """Tests that an exception is raised when
         a complex Hamiltonian is given"""
@@ -225,6 +256,7 @@ class TestHamiltonian:
 
         with pytest.raises(ValueError, match="observables are not valid"):
             H = qml.vqe.Hamiltonian(coeffs, obs)
+
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
@@ -358,8 +390,8 @@ class TestAutogradInterface:
         res = dcost(params)
 
         expected = [
-            -coeffs[0]*np.sin(a)*np.sin(b) - coeffs[1]*np.cos(a),
-            coeffs[0]*np.cos(a)*np.cos(b)
+            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
+            coeffs[0] * np.cos(a) * np.cos(b),
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -402,12 +434,11 @@ class TestTorchInterface:
         res = params.grad.numpy()
 
         expected = [
-            -coeffs[0]*np.sin(a)*np.sin(b) - coeffs[1]*np.cos(a),
-            coeffs[0]*np.cos(a)*np.cos(b)
+            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
+            coeffs[0] * np.cos(a) * np.cos(b),
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
 
 
 @pytest.mark.usefixtures("skip_if_no_tf_support")
@@ -449,8 +480,8 @@ class TestTFInterface:
             res = np.array(tape.gradient(loss, params))
 
         expected = [
-            -coeffs[0]*np.sin(a)*np.sin(b) - coeffs[1]*np.cos(a),
-            coeffs[0]*np.cos(a)*np.cos(b)
+            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
+            coeffs[0] * np.cos(a) * np.cos(b),
         ]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -466,7 +497,7 @@ class TestMultipleInterfaceIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         coeffs = [0.2, 0.5]
-        observables = [qml.PauliX(0)@qml.PauliZ(1), qml.PauliY(0)]
+        observables = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0)]
 
         H = qml.vqe.Hamiltonian(coeffs, observables)
 
