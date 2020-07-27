@@ -39,6 +39,7 @@ class QueuingContext(abc.ABC):
     interface to said queues. The active contexts contain maximally one QNode and
     an arbitrary number of other contexts like the :class:`~.OperationRecorder`.
     """
+
     # TODO: update docstring
 
     _active_contexts = []
@@ -100,6 +101,7 @@ class QueuingContext(abc.ABC):
                 context._remove(obj)  # pylint: disable=protected-access
             except ValueError:
                 pass
+
 
 class Queue(QueuingContext):
     """Lightweight class that maintains a basic queue of operations and pre/post-processing steps
@@ -165,14 +167,16 @@ class OperationRecorder(Queue):
         self.operations = list(
             filter(
                 lambda op: not (
-                    isinstance(op, qml.operation.Observable) and not op.return_type is None
+                    isinstance(op, qml.operation.Observable)
+                    and not op.return_type is None
                 ),
                 self.queue,
             )
         )
         self.observables = list(
             filter(
-                lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None,
+                lambda op: isinstance(op, qml.operation.Observable)
+                and not op.return_type is None,
                 self.queue,
             )
         )

@@ -233,11 +233,13 @@ class TestQueue:
     def test_append_qubit_gates(self):
         """Test that gates are successfully appended to the queue."""
         with qml._queuing.Queue() as q:
-            ops = [qml.RX(0.5, wires=0),
-                   qml.RY(-10.1, wires=1),
-                   qml.CNOT(wires=[0,1]),
-                   qml.PhaseShift(-1.1, wires=18),
-                   qml.T(wires=99)]
+            ops = [
+                qml.RX(0.5, wires=0),
+                qml.RY(-10.1, wires=1),
+                qml.CNOT(wires=[0, 1]),
+                qml.PhaseShift(-1.1, wires=18),
+                qml.T(wires=99),
+            ]
         assert q.queue == ops
 
     def test_append_qubit_observables(self):
@@ -246,11 +248,12 @@ class TestQueue:
         with qml._queuing.Queue() as q:
             # wire repetition is deliberate, Queue contains no checks/logic
             # for circuits
-            ops = [qml.Hadamard(wires=0),
-                   qml.PauliX(wires=1),
-                   qml.PauliY(wires=1),
-                   qml.Hermitian(np.ones([2,2]), wires=7)
-                   ]
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.PauliX(wires=1),
+                qml.PauliY(wires=1),
+                qml.Hermitian(np.ones([2, 2]), wires=7),
+            ]
         assert q.queue == ops
 
     def test_append_tensor_ops(self):
