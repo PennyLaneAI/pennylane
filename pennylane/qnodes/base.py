@@ -352,13 +352,13 @@ class BaseQNode(qml.QueuingContext):
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
 
-    def _remove_operator(self, operator):
-        if isinstance(operator, Observable) and operator.return_type is not None:
-            self.obs_queue.remove(operator)
+    def _remove(self, obj):
+        if isinstance(obj, Observable) and obj.return_type is not None:
+            self.obs_queue.remove(obj)
         else:
-            self.queue.remove(operator)
+            self.queue.remove(obj)
 
-    def _append_operator(self, operator):
+    def _append(self, operator):
         if operator.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
             if set(operator.wires) != set(range(self.num_wires)):
                 raise QuantumFunctionError(

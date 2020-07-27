@@ -320,10 +320,10 @@ def inv(operation_list):
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
     for op in operation_list:
-        qml.QueuingContext.remove_operator(op)
+        qml.QueuingContext.remove(op)
 
     for inv_op in inv_ops:
-        qml.QueuingContext.append_operator(inv_op)
+        qml.QueuingContext.append(inv_op)
 
     return inv_ops
 
