@@ -69,8 +69,52 @@ def wires_all_to_all(wires):
 def tile(unitaries, wires, depth, parameters=None, kwargs=None):
     r"""Applies a given set of wires in a tiled pattern, to a given depth.
 
+    Args:
+        unitaries (list): A list of quantum gates or templates
+        wires (list): The wires on which each gate/template act
+        depth (int): The depth to which the tiling is repeated
+        parameters (list): A list of parameters that are passed into parametrized elements of ``unitaries``
+        kwargs (dict): A dictionary of auxilliary parameters for ``unitaries``
 
+    Raises:
+        ValueError: if inputs do not have the correct format
+
+    .. UsageDetails::
+
+        **Tiling Gates**
+
+        To tile a collection of gates, the type of gate as well as the wire(s) on which
+        it acts must be specified. For example:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.tile([qml.Hadamard, qml.CNOT, qml.PauliX], [0, [0, 1], 0], 3)
+                return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+            circuit()
+
+        creates the following circuit:
+
+        .. code-block:: none
+
+             0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
+             1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+
+        **Tiling Templates**
+
+        In addition to tiling gates, we can also tile templates
+
+        **Passing Variational Parameters**
+
+        **Parametrized and Non-Parametrized Gates**
     """
+
 
     ##############
     # Input checks
