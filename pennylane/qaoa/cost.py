@@ -33,7 +33,7 @@ def MaxCut(graph):
     Recommended initialization circuit: pennylane.templates.even_superposition
 
     Args:
-         graph (nx.Graph) A graph defining the pairs of wires on which each term of the Hamiltonian acts.
+         graph (nx.Graph) A graph defining the pairs of wire indices on which each term of the Hamiltonian acts.
 
     Returns:
         ~.Hamiltonian:
