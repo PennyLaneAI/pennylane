@@ -37,7 +37,7 @@ env:
   - LOGGING=info
 install:
 - pip install -r requirements.txt
-- pip install wheel pytest pytest-cov pytest-mock absl-py --upgrade
+- pip install wheel pytest pytest-cov pytest-mock flaky absl-py --upgrade
 - if [ "$TF" = "2" ]; then pip install tensorflow==2.2; fi
 - if [ "$TF" = "1" ]; then pip install tensorflow==1.15; fi
 - if [ "$TORCH" = "1" ]; then pip install torch==1.5.0+cpu torchvision==0.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; fi

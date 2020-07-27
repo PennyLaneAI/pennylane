@@ -24,6 +24,31 @@
   If the tests are run on external devices, the device and its dependencies must be
   installed locally.
 
+* Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
+  As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
+  be faster than the parameter-shift rule for computing quantum gradients
+  when the number of parameters to be optimized is large.
+  [(#721)](https://github.com/XanaduAI/pennylane/pull/721)
+
+  `default.qubit.autograd` is designed to be used with end-to-end classical backpropagation
+  (`diff_method="backprop"`) with the Autograd interface. This is the default method
+  of differentiation when creating a QNode with this device.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit.autograd", wires=1)
+  >>> @qml.qnode(dev, diff_method="backprop")
+  ... def circuit(x):
+  ...     qml.RX(x[1], wires=0)
+  ...     qml.Rot(x[0], x[1], x[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> weights = np.array([0.2, 0.5, 0.1])
+  >>> grad_fn = qml.grad(circuit)
+  >>> print(grad_fn(weights))
+  array([-2.25267173e-01, -1.00864546e+00,  6.93889390e-18])
+  ```
+
+  See the `default.qubit.autograd` documentation for more details.
+
 * Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
@@ -59,7 +84,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Antal Száva, Nicola Vitucci
+Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
