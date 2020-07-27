@@ -45,7 +45,7 @@ class TestLayers:
         hamiltonian = [[1, 1], [1, 1]]
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.mixer_layer(hamiltonian, wires=range(1))
+            output = qaoa.mixer_layer(hamiltonian)
 
         assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
 
@@ -55,14 +55,14 @@ class TestLayers:
         hamiltonian = [[1, 1], [1, 1]]
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.cost_layer(hamiltonian, wires=range(1))
+            output = qaoa.cost_layer(hamiltonian)
 
         assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
 
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
 
         with pytest.raises(ValueError) as info:
-            output = qaoa.cost_layer(hamiltonian, wires=range(2))
+            output = qaoa.cost_layer(hamiltonian)
 
         assert "hamiltonian must be written only in terms of PauliZ and Identity gates" in str(
             info.value
