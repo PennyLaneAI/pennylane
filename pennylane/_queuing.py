@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 class QueuingContext(abc.ABC):
-    """Abstract base class for classes that exposes a queue for Operations.
+    """Abstract base class for classes that exposes a queue for objects.
 
     In PennyLane, the construction of quantum gates is separated from the specific
     quantum node (:class:`~.BaseQNode`) that they belong to. However, including
@@ -39,6 +39,7 @@ class QueuingContext(abc.ABC):
     interface to said queues. The active contexts contain maximally one QNode and
     an arbitrary number of other contexts like the :class:`~.OperationRecorder`.
     """
+    # TODO: update docstring
 
     _active_contexts = []
     """The list of contexts that are currently active."""
@@ -59,49 +60,62 @@ class QueuingContext(abc.ABC):
         QueuingContext._active_contexts.remove(self)
 
     @abc.abstractmethod
-    def _append_operator(self, operator):
-        """Append an operator to this QueuingContext instance.
+    def _append(self, obj):
+        """Append an object to this QueuingContext instance.
 
         Args:
-            operator (Operator): The Operator instance to be appended
+            obj: The object to be appended
         """
 
     @classmethod
-    def append_operator(cls, operator):
-        """Append an operator to the global queue(s).
+    def append(cls, obj):
+        """Append an object to the queue(s).
 
         Args:
-            operator (Operator): The Operator instance to be appended
+            obj: the object to be appended
         """
         for context in cls._active_contexts:
-            context._append_operator(operator)  # pylint: disable=protected-access
+            context._append(obj)  # pylint: disable=protected-access
 
     @abc.abstractmethod
-    def _remove_operator(self, operator):
-        """Remove an operator from this QueuingContext instance.
+    def _remove(self, obj):
+        """Remove an object from this QueuingContext instance.
 
         Args:
-            operator (Operator): The Operator instance to be removed
+            obj: the object to be removed
         """
 
     @classmethod
-    def remove_operator(cls, operator):
-        """Remove an operator from the global queue(s) if it is in the queue(s).
+    def remove(cls, obj):
+        """Remove an object from the queue(s) if it is in the queue(s).
 
         Args:
-            operator (Operator): The Operator instance to be removed
+            obj: the object to be removed
         """
         for context in cls._active_contexts:
             # We use the duck-typing approach to assume that the underlying remove
             # behaves like list.remove and throws a ValueError if the operator
             # is not in the list
             try:
-                context._remove_operator(operator)  # pylint: disable=protected-access
+                context._remove(obj)  # pylint: disable=protected-access
             except ValueError:
                 pass
 
+class Queue(QueuingContext):
+    """Lightweight class that maintains a basic queue of operations and pre/post-processing steps
+    for representing quantum circuits."""
 
-class OperationRecorder(QueuingContext):
+    def __init__(self):
+        self.queue = []
+
+    def _append(self, operator):
+        self.queue.append(operator)
+
+    def _remove(self, obj):
+        self.queue.remove(obj)
+
+
+class OperationRecorder(Queue):
     """A template and quantum function inspector,
     allowing easy introspection of operators that have been
     applied without requiring a QNode.
@@ -139,15 +153,9 @@ class OperationRecorder(QueuingContext):
     """
 
     def __init__(self):
-        self.queue = []
+        super().__init__()
         self.operations = None
         self.observables = None
-
-    def _append_operator(self, operator):
-        self.queue.append(operator)
-
-    def _remove_operator(self, operator):
-        self.queue.remove(operator)
 
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
