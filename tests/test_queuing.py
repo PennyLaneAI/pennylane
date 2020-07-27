@@ -27,14 +27,10 @@ def mock_queuing_context(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(QueuingContext, "__abstractmethods__", frozenset())
         m.setattr(
-            QueuingContext,
-            "_append",
-            lambda self, operator: self.queue.append(operator),
+            QueuingContext, "_append", lambda self, operator: self.queue.append(operator),
         )
         m.setattr(
-            QueuingContext,
-            "_remove",
-            lambda self, operator: self.queue.remove(operator),
+            QueuingContext, "_remove", lambda self, operator: self.queue.remove(operator),
         )
         context = QueuingContext()
         context.queue = []
@@ -48,14 +44,10 @@ def three_mock_queuing_contexts(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(QueuingContext, "__abstractmethods__", frozenset())
         m.setattr(
-            QueuingContext,
-            "_append",
-            lambda self, operator: self.queue.append(operator),
+            QueuingContext, "_append", lambda self, operator: self.queue.append(operator),
         )
         m.setattr(
-            QueuingContext,
-            "_remove",
-            lambda self, operator: self.queue.remove(operator),
+            QueuingContext, "_remove", lambda self, operator: self.queue.remove(operator),
         )
 
         contexts = [QueuingContext() for _ in range(3)]
@@ -90,18 +82,9 @@ class TestQueuingContext:
             with three_mock_queuing_contexts[1]:
                 with three_mock_queuing_contexts[2]:
                     assert len(QueuingContext._active_contexts) == 3
-                    assert (
-                        three_mock_queuing_contexts[0]
-                        in QueuingContext._active_contexts
-                    )
-                    assert (
-                        three_mock_queuing_contexts[1]
-                        in QueuingContext._active_contexts
-                    )
-                    assert (
-                        three_mock_queuing_contexts[2]
-                        in QueuingContext._active_contexts
-                    )
+                    assert three_mock_queuing_contexts[0] in QueuingContext._active_contexts
+                    assert three_mock_queuing_contexts[1] in QueuingContext._active_contexts
+                    assert three_mock_queuing_contexts[2] in QueuingContext._active_contexts
 
         assert not QueuingContext._active_contexts
 

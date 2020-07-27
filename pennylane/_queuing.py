@@ -167,16 +167,14 @@ class OperationRecorder(Queue):
         self.operations = list(
             filter(
                 lambda op: not (
-                    isinstance(op, qml.operation.Observable)
-                    and not op.return_type is None
+                    isinstance(op, qml.operation.Observable) and not op.return_type is None
                 ),
                 self.queue,
             )
         )
         self.observables = list(
             filter(
-                lambda op: isinstance(op, qml.operation.Observable)
-                and not op.return_type is None,
+                lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None,
                 self.queue,
             )
         )
