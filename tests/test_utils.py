@@ -23,6 +23,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+import pennylane._queuing
 import pennylane.utils as pu
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -454,7 +455,7 @@ class TestOperationRecorder:
 
     def test_context_adding(self, monkeypatch):
         """Test that the OperationRecorder is added to the list of contexts."""
-        with pu.OperationRecorder() as recorder:
+        with pennylane._queuing.OperationRecorder() as recorder:
             assert recorder in qml.QueuingContext._active_contexts
 
         assert recorder not in qml.QueuingContext._active_contexts
@@ -482,7 +483,7 @@ class TestOperationRecorder:
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
 
-            with pu.OperationRecorder() as recorder:
+            with pennylane._queuing.OperationRecorder() as recorder:
                 ops = [
                     qml.PauliY(0),
                     qml.PauliY(1),
@@ -518,7 +519,7 @@ class TestOperationRecorder:
             for i in range(5):
                 qml.RZ(i * x, wires=0)
 
-        with pu.OperationRecorder() as recorder:
+        with pennylane._queuing.OperationRecorder() as recorder:
             template(3)
 
         assert str(recorder) == expected_output
@@ -547,7 +548,7 @@ class TestOperationRecorder:
 
             return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with pu.OperationRecorder() as recorder:
+        with pennylane._queuing.OperationRecorder() as recorder:
             template(3)
 
         assert str(recorder) == expected_output
@@ -620,7 +621,7 @@ class TestInv:
 
     def test_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present."""
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
@@ -647,7 +648,7 @@ class TestInv:
         Test that this also works for operations that were not queued."""
         inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
 
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(inv_ops)
@@ -675,7 +676,7 @@ class TestInv:
         X0 = qml.PauliX(0)
         Z0 = qml.PauliZ(0)
 
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
@@ -704,8 +705,8 @@ class TestInv:
         X0 = qml.PauliX(0)
         Z0 = qml.PauliZ(0)
 
-        with pu.OperationRecorder() as rec1:
-            with pu.OperationRecorder() as rec2:
+        with pennylane._queuing.OperationRecorder() as rec1:
+            with pennylane._queuing.OperationRecorder() as rec2:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
@@ -735,7 +736,7 @@ class TestInv:
 
     def test_template_inversion_with_context(self):
         """Test that a template is properly inverted when a context is present."""
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(dummy_template([0, 1, 2]))
