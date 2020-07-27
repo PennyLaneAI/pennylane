@@ -36,8 +36,8 @@ class TestMixerHamiltonians:
     def test_x_mixer_output(self):
         """Tests that the output of the Pauli-X mixer is correct"""
 
-        num_wires = 4
-        mixer_hamiltonian = qaoa.x_mixer(num_wires)
+        wires = range(4)
+        mixer_hamiltonian = qaoa.x_mixer(wires)
 
         mixer_coeffs = mixer_hamiltonian.coeffs
         mixer_ops = [i.name for i in mixer_hamiltonian.ops]

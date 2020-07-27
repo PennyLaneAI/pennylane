@@ -16,9 +16,10 @@ This file contains built-in functions for constructing QAOA mixer Hamiltonians.
 """
 import networkx as nx
 import pennylane as qml
+from pennylane.wires import Wires
 
 
-def x_mixer(n):
+def x_mixer(wires):
     r"""Creates a basic Pauli-X mixer Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -32,13 +33,13 @@ def x_mixer(n):
 
 
     Args:
-        n (int): The number of wires on which the Hamiltonian is applied
+        wires (Iterable or Wires): The wires on which the Hamiltonian is applied
 
     Returns:
         Hamiltonian: Mixer Hamiltonian
     """
 
-    wires = range(n)
+    wires = Wires(wires)
 
     coeffs = [1 for w in wires]
     obs = [qml.PauliX(w) for w in wires]
