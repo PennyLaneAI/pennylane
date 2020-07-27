@@ -21,7 +21,7 @@ from pennylane.wires import Wires
 
 
 @template
-def ApproxTimeEvolution(hamiltonian, time, n, wires):
+def ApproxTimeEvolution(hamiltonian, time, n):
     r""" Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates. The general
     time-evolution operator for a time-independent Hamiltonian is given by:
@@ -63,8 +63,6 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
 
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
-        wires (Iterable or Wires): The wires on which the template is applied.
-
     Raises:
         ValueError: if inputs do not have the correct format
 
@@ -88,7 +86,7 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
 
             @qml.qnode(dev)
             def circuit(time):
-                TimeEvolution(hamiltonian, wires, time, n=1)
+                ApproxTimeEvolution(hamiltonian, time, n=1)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in wires]
 
         >>> circuit(1)
@@ -99,8 +97,6 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
 
     ###############
     # Input checks
-
-    wires = Wires(wires)
 
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
@@ -153,4 +149,4 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
     for i in range(n):
 
         for j, term in enumerate(pauli_words):
-            qml.PauliRot(theta[j], term, wires=[wires[i] for i in wire_index[j]])
+            qml.PauliRot(theta[j], term, wires=wire_index[j])
