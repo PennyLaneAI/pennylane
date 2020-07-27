@@ -166,6 +166,7 @@ class Hamiltonian:
 
         return qml.Hamiltonian(self.coeffs, new_terms)
 
+
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
     expectation value of a Hamiltonian.
