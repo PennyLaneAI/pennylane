@@ -66,6 +66,70 @@ def wires_all_to_all(wires):
 ###################
 
 
+def tile(unitaries, wires, depth, parameters=None, kwargs=None):
+    r"""Applies a given set of wires in a tiled pattern, to a given depth.
+
+
+    """
+
+    ##############
+    # Input checks
+
+    wires = [Wires(w) for w in wires]
+
+    if not isinstance(unitaries, list):
+        raise ValueError("unitaries must be of type list, got {}".format(type(unitaries).__name__))
+
+    if not isinstance(depth, int):
+        raise ValueError("depth must be of type int, got {}".format(type(depth).__name__))
+
+    check_type(
+        parameters,
+        [Iterable, type(None)],
+        msg="'parameters' must be either of type None or "
+            "Iterable; got {}".format(type(parameters)),
+    )
+
+    if kwargs is None:
+        kwargs = {}
+
+    check_type(
+        kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
+    )
+
+    # Checks is dimensions of parameters are correct
+
+    if parameters is not None:
+        shape = get_shape(parameters)
+
+        s = sum([1 if u.num_params > 0 else 0 for u in unitaries])
+
+        if shape[0] != depth or shape[1] != s:
+            raise ValueError("Shape of parameters must be {} got {}".format((depth, s), shape))
+
+        # repackage for consistent unpacking
+        if len(shape) == 2:
+            parameters = [[p if isinstance(p, Iterable) else [p] for p in parameters[j]] for j in range(0, len(parameters))]
+            print(parameters)
+    else:
+        parameters = [[[] for j in range(0, len(unitaries))] for i in range(0, depth)]
+
+    ##############
+
+    wires = [w.tolist() for w in wires]  # TODO: Delete once operator takes Wires objects
+    for d in range(0, depth):
+        c = 0
+        for i, u in enumerate(unitaries):
+            if (u.num_params > 0):
+                u(*parameters[d][c], wires=wires[i], **kwargs)
+                c += 1
+            else:
+                u(wires=wires[i], **kwargs)
+
+
+###################
+
+
 @template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
