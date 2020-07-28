@@ -142,15 +142,15 @@ class OperationRecorder(Queue):
     CNOT(wires=[1, 0])
 
     Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly accessed the applied :class:`~.Operation` and :class:`~.Observable`
+    to directly access the applied :class:`~.Operation` and :class:`~.Observable`
     objects.
 
     Attributes:
-        queue (List[~.Operators]): list of operators applied within
+        queue (List[Operator]): list of operators applied within
             the OperatorRecorder context, includes operations and observables
-        operations (List[~.Operations]): list of operations applied within
+        operations (List[Operation]): list of operations applied within
             the OperatorRecorder context
-        observables (List[~.Observables]): list of observables applied within
+        observables (List[Observable]): list of observables applied within
             the OperatorRecorder context
     """
 

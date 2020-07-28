@@ -358,11 +358,11 @@ class BaseQNode(qml.QueuingContext):
         else:
             self.queue.remove(obj)
 
-    def _append(self, operator):
-        if operator.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
-            if set(operator.wires) != set(range(self.num_wires)):
+    def _append(self, obj):
+        if obj.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
+            if set(obj.wires) != set(range(self.num_wires)):
                 raise QuantumFunctionError(
-                    "Operator {} must act on all wires".format(operator.name)
+                    "Operator {} must act on all wires".format(obj.name)
                 )
 
         # Make sure only existing wires are used.
