@@ -3,17 +3,17 @@
 
 ###################################
 
-.. |CI| image:: https://img.shields.io/github/workflow/status/XanaduAI/pennylane/Tests/master?logo=github&style=flat-square
+.. |CI| image:: https://img.shields.io/github/workflow/status/PennyLaneAI/pennylane/Tests/master?logo=github&style=flat-square
     :alt: GitHub Workflow Status (branch)
-    :target: https://github.com/XanaduAI/pennylane/actions?query=workflow%3ATests
+    :target: https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests
 
 .. |COV| image:: https://img.shields.io/codecov/c/github/xanaduai/pennylane/master.svg?logo=codecov&style=flat-square
     :alt: Codecov coverage
-    :target: https://codecov.io/gh/XanaduAI/pennylane
+    :target: https://codecov.io/gh/PennyLaneAI/pennylane
 
-.. |PEP| image:: https://img.shields.io/codacy/grade/83940d926ef5444798a46378e528249d.svg?logo=codacy&style=flat-square
-    :alt: Codacy grade
-    :target: https://app.codacy.com/app/XanaduAI/pennylane?utm_source=github.com&utm_medium=referral&utm_content=XanaduAI/pennylane&utm_campaign=badger
+.. |PEP| image:: https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square
+    :alt: Codecov coverage
+    :target: https://codecov.io/gh/PennyLaneAI/pennylane
 
 .. |DOC| image:: https://img.shields.io/readthedocs/pennylane.svg?logo=read-the-docs&style=flat-square
     :alt: Read the Docs
@@ -43,7 +43,7 @@
 
     <p align="center">
     <b>Train a quantum computer the same way as a neural network.</b>
-    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
+    <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/jigsaw.png" width="600px"  align="center">
     </p>
 
 PennyLane provides open-source tools for quantum machine learning, quantum computing, quantum chemistry, and hybrid quantum-classical computing. Extensive examples, tutorials, and demos are available at https://pennylane.ai/qml.
@@ -53,7 +53,7 @@ Key Features
 
 .. raw:: html
 
-    <img src="https://raw.githubusercontent.com/XanaduAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
+    <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="300px"  align="right">
 
 - *Device independent*.
   Access quantum hardware and simulators from **Xanadu Strawberry Fields**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, and
@@ -87,18 +87,18 @@ PennyLane-compatible quantum device.
 Available plugins
 =================
 
-* `PennyLane-SF <https://github.com/XanaduAI/pennylane-sf>`_: Supports integration with
-  `Strawberry Fields <https://github.com/XanaduAI/strawberryfields>`__, a full-stack
+* `PennyLane-SF <https://github.com/PennyLaneAI/pennylane-sf>`_: Supports integration with
+  `Strawberry Fields <https://github.com/PennyLaneAI/strawberryfields>`__, a full-stack
   Python library for simulating photonic quantum computing.
 
 
-* `PennyLane-qiskit <https://github.com/XanaduAI/pennylane-qiskit>`_: Supports
+* `PennyLane-qiskit <https://github.com/PennyLaneAI/pennylane-qiskit>`_: Supports
   integration with `Qiskit <https://qiskit.org>`__, an open-source quantum
   computation framework by IBM. Provides device support for the Qiskit Aer quantum
   simulators, and IBM Q hardware devices.
 
 
-* `PennyLane-cirq <https://github.com/XanaduAI/pennylane-cirq>`_: Supports
+* `PennyLane-cirq <https://github.com/PennyLaneAI/pennylane-cirq>`_: Supports
   integration with `Cirq <https://github.com/quantumlib/cirq>`__, an open-source quantum
   computation framework by Google.
 
@@ -111,7 +111,7 @@ Available plugins
   (QVM) and Quantum Processing Units (QPUs) hardware devices.
 
 
-* `PennyLane-Qsharp <https://github.com/XanaduAI/pennylane-qsharp>`_: Supports integration
+* `PennyLane-Qsharp <https://github.com/PennyLaneAI/pennylane-qsharp>`_: Supports integration
   with the `Microsoft Quantum Development Kit <https://www.microsoft.com/en-us/quantum/development-kit>`__,
   a quantum computation framework that uses the Q# quantum programming language.
 
@@ -139,14 +139,14 @@ significantly to the code (new plugins, new functionality, etc.) will be listed 
 We also encourage bug reports, suggestions for new features and enhancements, and even links to
 cool projects or applications built on PennyLane.
 
-See our `contributions page <https://github.com/XanaduAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
+See our `contributions page <https://github.com/PennyLaneAI/pennylane/blob/master/.github/CONTRIBUTING.md>`_
 for more details.
 
 
 Authors
 =======
 
-PennyLane is the work of `many contributors <https://github.com/XanaduAI/pennylane/graphs/contributors>`_.
+PennyLane is the work of `many contributors <https://github.com/PennyLaneAI/pennylane/graphs/contributors>`_.
 
 If you are doing research using PennyLane, please cite `our paper <https://arxiv.org/abs/1811.04968>`_:
 
@@ -159,8 +159,8 @@ If you are doing research using PennyLane, please cite `our paper <https://arxiv
 Support
 =======
 
-- **Source Code:** https://github.com/XanaduAI/pennylane
-- **Issue Tracker:** https://github.com/XanaduAI/pennylane/issues
+- **Source Code:** https://github.com/PennyLaneAI/pennylane
+- **Issue Tracker:** https://github.com/PennyLaneAI/pennylane/issues
 
 If you are having issues, please let us know by posting the issue on our Github issue tracker.
 
