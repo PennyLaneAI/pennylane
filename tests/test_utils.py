@@ -585,7 +585,7 @@ class TestInv:
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_template_inversion_without_context(self):
         """Test that a template is properly inverted."""
@@ -596,7 +596,7 @@ class TestInv:
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_double_inversion(self):
         """Test that inverting twice changes nothing."""
@@ -607,7 +607,7 @@ class TestInv:
         for inv_inv_op, exp_op in zip(inv_inv_ops, op_queue):
             assert inv_inv_op.name == exp_op.name
             assert inv_inv_op.wires == exp_op.wires
-            assert inv_inv_op.params == exp_op.params
+            assert inv_inv_op.data == exp_op.data
 
     def test_template_double_inversion(self):
         """Test that inverting twice changes nothing for a template."""
@@ -616,7 +616,7 @@ class TestInv:
         for inv_inv_op, exp_op in zip(inv_inv_ops, dummy_template([0, 1, 2])):
             assert inv_inv_op.name == exp_op.name
             assert inv_inv_op.wires == exp_op.wires
-            assert inv_inv_op.params == exp_op.params
+            assert inv_inv_op.data == exp_op.data
 
     def test_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present."""
@@ -640,7 +640,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_non_queued_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present.
@@ -667,7 +667,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_mixed_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present.
@@ -696,7 +696,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_mixed_inversion_with_nested_context(self):
         """Test that a sequence of operations is properly inverted when a nested context is present.
@@ -726,12 +726,12 @@ class TestInv:
         for inv_op, exp_op in zip(rec1.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
         for inv_op, exp_op in zip(rec2.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_template_inversion_with_context(self):
         """Test that a template is properly inverted when a context is present."""
@@ -753,7 +753,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_inversion_with_qnode(self):
         """Test that a sequence of operations is properly inverted when inside a QNode."""
@@ -784,7 +784,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_non_queued_inversion_with_qnode(self):
         """Test that a sequence of operations is properly inverted inside a QNode.
@@ -818,7 +818,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_mixed_inversion_with_qnode(self):
         """Test that a sequence of operations is properly inverted inside a QNode.
@@ -853,7 +853,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_template_inversion_with_qnode(self):
         """Test that a template is properly inverted when inside a QNode."""
@@ -882,7 +882,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_argument_wrapping(self):
         """Test that a single operation can be given to inv and is properly inverted."""
@@ -893,7 +893,7 @@ class TestInv:
 
         assert inv_ops[0].name == exp_op.name
         assert inv_ops[0].wires == exp_op.wires
-        assert inv_ops[0].params == exp_op.params
+        assert inv_ops[0].data == exp_op.data
 
     @pytest.mark.parametrize("arg", [2.3, object()])
     def test_argument_type_error(self, arg):

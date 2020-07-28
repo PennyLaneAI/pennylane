@@ -363,7 +363,7 @@ class TestSingleExcitationUnitary:
     )
     def test_single_ex_unitary_operations(self, ph, ref_gates):
         """Test the correctness of the SingleExcitationUnitary template including the gate count
-        and order, the wires each operation acts on and the correct use of parameters 
+        and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 10
@@ -398,7 +398,7 @@ class TestSingleExcitationUnitary:
         ]
     )
     def test_single_excitation_unitary_exceptions(self, weight, ph, msg_match):
-        """Test that SingleExcitationUnitary throws an exception if ``weight`` or 
+        """Test that SingleExcitationUnitary throws an exception if ``weight`` or
         ``ph`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=5)
 
@@ -457,8 +457,8 @@ class TestArbitraryUnitary:
         pauli_words = ["X", "Y", "Z"]
 
         for i, op in enumerate(rec.queue):
-            assert op.params[0] == weights[i]
-            assert op.params[1] == pauli_words[i]
+            assert op.data[0] == weights[i]
+            assert op.data[1] == pauli_words[i]
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on two wires."""
@@ -472,8 +472,8 @@ class TestArbitraryUnitary:
         pauli_words = ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"]
 
         for i, op in enumerate(rec.queue):
-            assert op.params[0] == weights[i]
-            assert op.params[1] == pauli_words[i]
+            assert op.data[0] == weights[i]
+            assert op.data[1] == pauli_words[i]
 
 
 class TestDoubleExcitationUnitary:
@@ -549,7 +549,7 @@ class TestDoubleExcitationUnitary:
     )
     def test_double_ex_unitary_operations(self, wires1, wires2, ref_gates):
         """Test the correctness of the DoubleExcitationUnitary template including the gate count
-        and order, the wires each operation acts on and the correct use of parameters 
+        and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 72
@@ -585,7 +585,7 @@ class TestDoubleExcitationUnitary:
         ]
     )
     def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
-        """Test that DoubleExcitationUnitary throws an exception if ``weight`` or 
+        """Test that DoubleExcitationUnitary throws an exception if ``weight`` or
         ``pphh`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=10)
 
@@ -681,7 +681,7 @@ class TestUCCSDUnitary:
     )
     def test_uccsd_operations(self, ph, pphh, weights, ref_gates):
         """Test the correctness of the UCCSD template including the gate count
-        and order, the wires the operation acts on and the correct use of parameters 
+        and order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 10 * len(ph) + 72 * len(pphh)
