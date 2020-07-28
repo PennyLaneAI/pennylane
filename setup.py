@@ -36,12 +36,12 @@ info = {
     'license': 'Apache License 2.0',
     'packages': find_packages(where="."),
     'entry_points': {
-        'pennylane.plugins': [
-            'default.qubit = pennylane.plugins:DefaultQubit',
-            'default.gaussian = pennylane.plugins:DefaultGaussian',
-            'default.qubit.tf = pennylane.plugins.default_qubit_tf:DefaultQubitTF',
-            'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
-            'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF',
+        'pennylane.devices': [
+            'default.qubit = pennylane.devices:DefaultQubit',
+            'default.gaussian = pennylane.devices:DefaultGaussian',
+            'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',
+            'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
+            'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
             ],
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',

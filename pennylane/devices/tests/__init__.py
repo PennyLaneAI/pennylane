@@ -19,7 +19,7 @@ To run the tests against a particular device (i.e., for 'default.qubit'):
 
 .. code-block:: console
 
-    python3 -m pytest path_to_pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
+    python3 -m pytest path_to_pennylane/devices/tests --device default.qubit --shots 1234 --analytic False
 
 The location of your PennyLane installation may differ depending on installation method and operating
 system. To find the location, you can execute the following Python code:

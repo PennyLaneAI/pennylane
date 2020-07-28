@@ -54,7 +54,7 @@ default_config = Configuration("config.toml")
 
 # get list of installed plugin devices
 plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
+    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.devices")
 }
 
 # get chemistry plugin
@@ -98,10 +98,10 @@ def device(name, *args, **kwargs):
 
     PennyLane comes with support for the following two devices:
 
-    * :mod:`'default.qubit' <pennylane.plugins.default_qubit>`: a simple pure
+    * :mod:`'default.qubit' <pennylane.devices.default_qubit>`: a simple pure
       state simulator of qubit-based quantum circuit architectures.
 
-    * :mod:`'default.gaussian' <pennylane.plugins.default_gaussian>`: a simple simulator
+    * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
     In addition, additional devices are supported through plugins — see

@@ -20,7 +20,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.plugins import DefaultGaussian
+from pennylane.devices import DefaultGaussian
 
 # defaults
 TOL = 1e-3

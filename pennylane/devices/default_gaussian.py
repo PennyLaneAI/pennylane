@@ -14,7 +14,7 @@
 # pylint: disable=inconsistent-return-statements
 """
 The :code:`default.gaussian` plugin is meant to be used as a template for writing PennyLane
-device plugins for new CV backends.
+devices for new CV backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a

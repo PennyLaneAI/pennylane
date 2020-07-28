@@ -23,7 +23,7 @@ import numpy as np
 import numpy.random
 
 import pennylane as qml
-from pennylane.plugins.default_gaussian import (
+from pennylane.devices.default_gaussian import (
     fock_prob,
     rotation, squeezing, quadratic_phase, beamsplitter, two_mode_squeezing, controlled_addition, controlled_phase,
     vacuum_state, coherent_state, squeezed_state, displaced_squeezed_state, thermal_state,

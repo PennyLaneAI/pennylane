@@ -22,7 +22,7 @@ import pytest
 tf = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
-from pennylane.plugins.default_qubit_tf import DefaultQubitTF
+from pennylane.devices.default_qubit_tf import DefaultQubitTF
 from gate_data import (
     I,
     X,
