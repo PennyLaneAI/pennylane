@@ -11,9 +11,9 @@
     :alt: Codecov coverage
     :target: https://codecov.io/gh/PennyLaneAI/pennylane
 
-.. |PEP| image:: https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square
-    :alt: Codecov coverage
-    :target: https://codecov.io/gh/PennyLaneAI/pennylane
+.. |PEP| image:: https://img.shields.io/codefactor/grade/github/PennyLaneAI/pennylane/master?logo=codefactor&style=flat-square
+    :alt: CodeFactor Grade
+    :target: https://www.codefactor.io/repository/github/pennylaneai/pennylane
 
 .. |DOC| image:: https://img.shields.io/readthedocs/pennylane.svg?logo=read-the-docs&style=flat-square
     :alt: Read the Docs
