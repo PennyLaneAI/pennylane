@@ -50,7 +50,7 @@ jobs:
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane --cov-report=term-missing --cov-report=xml --p no:warnings --tb=native
+        run: python -m pytest tests --cov=pennylane --cov-report=term-missing --cov-report=xml -p no:warnings --tb=native
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.7
         with:
