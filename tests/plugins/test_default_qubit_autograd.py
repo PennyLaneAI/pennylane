@@ -35,7 +35,7 @@ class TestQNodeIntegration:
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
-        result for a simple circuit using the old QNode."""
+        result for a simple circuit."""
         p = np.array(0.543)
 
         dev = qml.device("default.qubit.autograd", wires=1)
@@ -317,20 +317,37 @@ class TestHighLevelIntegration:
         "The Autograd Arraybox is not an iterable, so an error is raised. This can be avoided by "
         "simply modifying this type validation.",
     )
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
+    def test_template_integration(self):
+        """Test that a PassthruQNode default.qubit.autograd works with templates."""
         dev = qml.device("default.qubit.autograd", wires=2)
 
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(
-            qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="autograd"
-        )
-
-        assert qnodes.interface == "autograd"
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
 
         weights = np.array(
             qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2), requires_grad=True
         )
+
+        grad = qml.grad(circuit)(weights)[0]
+        assert grad.shape == weights.shape
+
+    def test_qnode_collection_integration(self):
+        """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
+        dev = qml.device("default.qubit.autograd", wires=2)
+
+        def ansatz(weights, **kwargs):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
+
+        assert qnodes.interface == "autograd"
+
+        weights = np.array([0.1, 0.2], requires_grad=True)
 
         def cost(weights):
             return np.sum(qnodes(weights))

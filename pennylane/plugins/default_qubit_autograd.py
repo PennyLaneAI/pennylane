@@ -126,8 +126,7 @@ class DefaultQubitAutograd(DefaultQubit):
             unitary (~.Operation): a PennyLane unitary operation
 
         Returns:
-            array[complex]: A 2D matrix representation of
-
+            array[complex]: Returns a 2D matrix representation of
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
