@@ -24,8 +24,8 @@ class TestQNodeIntegration:
     """Integration tests for default.qubit.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
 
-    def test_load_tensornet_tf_device(self):
-        """Test that the tensor network plugin loads correctly"""
+    def test_load_device(self):
+        """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.autograd", wires=2)
         assert dev.num_wires == 2
         assert dev.shots == 1000
@@ -34,7 +34,7 @@ class TestQNodeIntegration:
         assert dev.capabilities()["passthru_interface"] == "autograd"
 
     def test_qubit_circuit(self, tol):
-        """Test that the tensor network plugin provides correct
+        """Test that the device provides the correct
         result for a simple circuit using the old QNode."""
         p = np.array(0.543)
 
@@ -206,9 +206,7 @@ class TestPassthruIntegration:
         b = np.array(0.12, requires_grad=True)
 
         def cost(a, b):
-            # get the probability of wire 1
             prob_wire_1 = circuit(a, b)[0]
-            # compute Prob(|1>_1) - Prob(|0>_1)
             return prob_wire_1[1] - prob_wire_1[0]
 
         res = cost(a, b)
