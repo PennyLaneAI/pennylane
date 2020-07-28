@@ -25,7 +25,6 @@ from collections import Iterable
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_type, get_shape, check_is_in_options
 from pennylane.wires import Wires
-from pennylane.operation import Operation, Observable
 
 
 ###################
@@ -164,7 +163,7 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
         parameters,
         [Iterable, type(None)],
         msg="'parameters' must be either of type None or "
-            "Iterable; got {}".format(type(parameters)),
+        "Iterable; got {}".format(type(parameters)),
     )
 
     if kwargs is None:
@@ -175,7 +174,9 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
     )
 
     if len(wires) != len(unitaries):
-        raise ValueError("Expected wires to be length {}, got length {}".format(len(unitaries), len(wires)))
+        raise ValueError(
+            "Expected wires to be length {}, got length {}".format(len(unitaries), len(wires))
+        )
 
     # Checks if dimensions of parameters are correct
 
@@ -187,15 +188,20 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
         for u in unitaries:
             if type(u).__name__ == "function":
                 s += 1
-            elif (u.num_params > 0):
+            elif u.num_params > 0:
                 s += 1
 
         if shape[0] != depth or shape[1] != s:
-            raise ValueError("Shape of parameters must be {} got {}".format((depth, s), (shape[0], shape[1])))
+            raise ValueError(
+                "Shape of parameters must be {} got {}".format((depth, s), (shape[0], shape[1]))
+            )
 
         # Repackage for consistent unpacking
         if len(shape) == 2:
-            parameters = [[p if isinstance(p, Iterable) else [p] for p in parameters[j]] for j in range(0, len(parameters))]
+            parameters = [
+                [p if isinstance(p, Iterable) else [p] for p in parameters[j]]
+                for j in range(0, len(parameters))
+            ]
 
     ##############
 
@@ -208,7 +214,7 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
                 print(*parameters[d][c])
                 u(*parameters[d][c], wires=wires[i], **kwargs)
                 c += 1
-            elif (u.num_params == 0):
+            elif u.num_params == 0:
                 u(wires=wires[i], **kwargs)
             else:
                 u(*parameters[d][c], wires=wires[i], **kwargs)
