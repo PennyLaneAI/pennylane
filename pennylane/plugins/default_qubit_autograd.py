@@ -102,6 +102,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _asarray = staticmethod(np.tensor)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
+    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
     _gather = staticmethod(lambda array, indices: array[indices])
@@ -117,29 +118,6 @@ class DefaultQubitAutograd(DefaultQubit):
         new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
         new_array[indices] = array
         return new_array
-
-    @staticmethod
-    def _reduce_sum(array, axes):
-        if not axes:
-            return array
-
-        ndim = array.ndim
-
-        for axis in axes:
-            if axis < 0:
-                axis = ndim + tuple(axis)
-
-            res = np.sum(array, axis)
-
-            if res.ndim == ndim:
-                array = res
-            else:
-                res = np.expand_dims(res, axis)
-
-                if res.ndim == ndim:
-                    array = res
-
-        return array
 
     def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
