@@ -25,6 +25,7 @@ from collections import Iterable
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_type, get_shape, check_is_in_options
 from pennylane.wires import Wires
+from pennylane.operation import Operation, Observable
 
 
 ###################
@@ -73,7 +74,8 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
         unitaries (list): A list of quantum gates or templates
         wires (list): The wires on which each gate/template act
         depth (int): The depth to which the tiling is repeated
-        parameters (list): A list of parameters that are passed into parametrized elements of ``unitaries``
+        parameters (list): A list of parameters that are passed into parametrized elements of ``unitaries``.
+            This argument has a shape (depth, N,), where N is the number of parametrized elements in ``unitaries``
         kwargs (dict): A dictionary of auxilliary parameters for ``unitaries``
 
     Raises:
@@ -106,15 +108,46 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
              0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
              1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
 
-        **Tiling Templates**
+        **Tiling Variational Gates and Templates**
 
-        In addition to tiling gates, we can also tile templates
+        The tiling function can accept and pass varaitional parameters
+        to gates, as well as PennyLane templates, with the ``parameters`` argument
+        The first and second dimensions of ``parameters``, respectively,
+        are the depth of the tiling and the number of parametrized templates/operations.
+        After this, each element is a list of parameters based into a
+        parametrized template/operation.
 
-        **Passing Variational Parameters**
+        For example:
 
-        **Parametrized and Non-Parametrized Gates**
+        .. code-block:: python
+
+            import pennylane as qml
+
+            dev = qml.device("default.qubit", wires=3)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.templates.tile(
+                    [qml.templates.AngleEmbedding, qml.RY, qml.Hadamard],
+                    [[0, 1, 2], 0, 1], 2,
+                    parameters=[
+                        [ [[0.5, 0.5, 0.5]], [0.3] ],
+                        [ [[0.5, 0.5, 0.5]], [0.3] ]
+                    ]
+                )
+                return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+            circuit()
+
+        creates the following circuit:
+
+        .. code-block:: none
+
+             0: ──RX(0.5)──RY(0.3)──RX(0.5)──RY(0.3)──┤ ⟨Z⟩
+             1: ──RX(0.5)──H────────RX(0.5)──H────────┤ ⟨Z⟩
+             2: ──RX(0.5)──RX(0.5)────────────────────┤ ⟨Z⟩
+
     """
-
 
     ##############
     # Input checks
@@ -150,15 +183,19 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
         shape = get_shape(parameters)
 
         # Gets the expected dimensions of the parameter list
-        s = sum([1 if u.num_params > 0 else 0 for u in unitaries])
+        s = 0
+        for u in unitaries:
+            if type(u).__name__ == "function":
+                s += 1
+            elif (u.num_params > 0):
+                s += 1
 
         if shape[0] != depth or shape[1] != s:
-            raise ValueError("Shape of parameters must be {} got {}".format((depth, s), shape))
+            raise ValueError("Shape of parameters must be {} got {}".format((depth, s), (shape[0], shape[1])))
 
         # Repackage for consistent unpacking
         if len(shape) == 2:
             parameters = [[p if isinstance(p, Iterable) else [p] for p in parameters[j]] for j in range(0, len(parameters))]
-            print(parameters)
 
     ##############
 
@@ -166,11 +203,16 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
     for d in range(0, depth):
         c = 0
         for i, u in enumerate(unitaries):
-            if (u.num_params > 0):
+            if type(u).__name__ == "function":
+                print(wires[i])
+                print(*parameters[d][c])
                 u(*parameters[d][c], wires=wires[i], **kwargs)
                 c += 1
-            else:
+            elif (u.num_params == 0):
                 u(wires=wires[i], **kwargs)
+            else:
+                u(*parameters[d][c], wires=wires[i], **kwargs)
+                c += 1
 
 
 ###################
