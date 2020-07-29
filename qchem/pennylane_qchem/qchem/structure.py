@@ -157,7 +157,7 @@ def meanfield(
         str: full path to the file containing the mean field electronic structure
 
     **Example**
-    
+
     >>> name = 'h2'
     >>> geometry = [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
     >>> meanfield(name, geometry)
