@@ -131,6 +131,7 @@ def pytest_addoption(parser):
     parser.addoption("--device", action="store", default=None)
     parser.addoption("--shots", action="store", default=None, type=int)
     parser.addoption("--analytic", action="store", default=None)
+    parser.addoption("--skip", action="store", default=None)
 
 
 def pytest_generate_tests(metafunc):
@@ -176,3 +177,19 @@ def pytest_generate_tests(metafunc):
         else:
             # run tests on specified device
             metafunc.parametrize("device_kwargs", [device_kwargs])
+
+def pytest_runtest_makereport(item, call):
+    from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
+
+    # Post-processing test reports such that those tests failing due to
+    # unsupported operations/observables or not implemented features do not
+    # appear as failed cases
+    tr = orig_pytest_runtest_makereport(item, call)
+
+    if "skip_unsupported" in item.keywords:
+        if call.excinfo is not None:
+            if call.excinfo.type == qml.DeviceError and "not supported on device" in str(call.excinfo.value) or call.excinfo.type == NotImplementedError:
+                tr.wasxfail = "reason:" + str(call.excinfo.value)
+                tr.outcome = "skipped"
+
+    return tr
