@@ -5,6 +5,7 @@ on:
       - master
   pull_request:
 
+
 jobs:
   core-tests:
     runs-on: ubuntu-latest
@@ -15,15 +16,11 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8]
-        interfaces: [{tf: false, torch: false}]
-        include:
-          - python-version: 3.6
-            interfaces: {tf: true, torch: false}
-          - python-version: 3.7
-            interfaces: {tf: false, torch: true}
-          - python-version: 3.8
-            interfaces: {tf: true, torch: true}
+        config:
+          - {python-version: 3.6, interfaces: ["tf"]}
+          - {python-version: 3.7, interfaces: ["torch"]}
+          - {python-version: 3.8, interfaces: ["tf", "torch"]}
+          - {python-version: 3.8, interfaces: []}
 
     steps:
       - name: Cancel Previous Runs
@@ -36,7 +33,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.config.python-version }}
 
       - name: Install dependencies
         run: |
@@ -45,11 +42,11 @@ jobs:
           pip install wheel pytest pytest-cov pytest-mock --upgrade
 
       - name: Conditionally install PyTorch
-        if: ${{ matrix.interfaces.torch }}
+        if: contains(matrix.config.interfaces, "torch")
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Conditionally install TensorFlow
-        if: ${{ matrix.interfaces.tf }}
+        if: contains(matrix.config.interfaces, "tf")
         run: pip3 install tensorflow==$TF_VERSION
 
       - name: Install PennyLane
@@ -65,6 +62,7 @@ jobs:
         uses: codecov/codecov-action@v1.0.7
         with:
           file: ./coverage.xml
+
 
   qchem-tests:
     runs-on: ubuntu-latest
