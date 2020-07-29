@@ -17,9 +17,9 @@ jobs:
     strategy:
       matrix:
         config:
-          - {python-version: 3.6, interfaces: ["tf"]}
-          - {python-version: 3.7, interfaces: ["torch"]}
-          - {python-version: 3.8, interfaces: ["tf", "torch"]}
+          - {python-version: 3.6, interfaces: ['tf']}
+          - {python-version: 3.7, interfaces: ['torch']}
+          - {python-version: 3.8, interfaces: ['tf', 'torch']}
           - {python-version: 3.8, interfaces: []}
 
     steps:
@@ -42,11 +42,11 @@ jobs:
           pip install wheel pytest pytest-cov pytest-mock --upgrade
 
       - name: Conditionally install PyTorch
-        if: contains(matrix.config.interfaces, "torch")
+        if: contains(matrix.config.interfaces, 'torch')
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Conditionally install TensorFlow
-        if: contains(matrix.config.interfaces, "tf")
+        if: contains(matrix.config.interfaces, 'tf')
         run: pip3 install tensorflow==$TF_VERSION
 
       - name: Install PennyLane
