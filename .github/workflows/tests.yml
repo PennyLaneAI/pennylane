@@ -72,8 +72,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - {device: "default.qubit", analytic: true, shots: 1000}
-          - {device: "default.qubit", analytic: false, shots: 1000}
+          # - {device: "default.qubit", analytic: true, shots: 1000}
+          # - {device: "default.qubit", analytic: false, shots: 1000}
           - {device: "default.qubit.tf", analytic: true, shots: 1000}
           - {device: "default.qubit.autograd", analytic: true, shots: 1000}
 
