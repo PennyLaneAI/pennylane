@@ -168,6 +168,14 @@ class TestWires:
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
 
+    def test_convert_to_array(self):
+        """Tests that Wires object can be converted to a numpy array."""
+
+        wires = Wires([4, 0, 1])
+        arr = wires.numpy()
+        assert isinstance(arr, np.ndarray)
+        assert arr == np.array([4, 0, 1])
+
     def test_get_label_method(self):
         """Tests the get_label() method."""
 

@@ -119,9 +119,17 @@ class Wires(Sequence):
         """Returns a list representation of the Wires object.
 
         Returns:
-            List: list representing Wires object
+            List: list of wire labels
         """
         return list(self.wire_tuple)
+
+    def numpy(self):
+        """Returns a numpy array representation of the Wires object.
+
+        Returns:
+            ndarray: array of wire labels
+        """
+        return np.array(self.wire_tuple)
 
     def get_label(self, idx):
         """Returns the wire label at the given position in the wires object.

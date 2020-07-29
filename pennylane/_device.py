@@ -19,7 +19,7 @@ import abc
 
 import numpy as np
 
-from collections import Iterable
+from collections import Iterable, OrderedDict
 from pennylane.operation import (
     Operation,
     Observable,
@@ -65,7 +65,7 @@ class Device(abc.ABC):
         else:
             wires = Wires(wires)
 
-        self._wire_map = self.create_wire_map(wires)
+        self._wire_map = self.define_wire_map(wires)
         self.num_wires = len(wires)
         self._op_queue = None
         self._obs_queue = None
@@ -140,7 +140,7 @@ class Device(abc.ABC):
 
     @property
     def wire_map(self):
-        """Dictionary that defines the map from user-provided wire labels to
+        """Ordered dictionary that defines the map from user-provided wire labels to
         the wire labels used on this device"""
         return self._wire_map
 
@@ -162,7 +162,7 @@ class Device(abc.ABC):
 
         self._shots = int(shots)
 
-    def create_wire_map(self, wires):
+    def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
 
         The default wire map maps the user wire labels to consecutive integers. For example, when a device is
@@ -177,10 +177,11 @@ class Device(abc.ABC):
         """
         consecutive_wires = Wires(range(self.num_wires))
 
-        return {label: i for label, i in zip(wires, consecutive_wires)}
+        wire_map = [(label, i) for label, i in zip(wires, consecutive_wires)]
+        return OrderedDict(wire_map)
 
     def map_wires(self, wires):
-        """Map the labels of wires to new labels, using this device's wire mapping.
+        """Map the wire labels of 'wires' using this devices wire map.
 
         Args:
             wires (Wires): wires whose labels we want to map to new wire labels
