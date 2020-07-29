@@ -13,8 +13,11 @@
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
 import os
-import pytest
+
 import numpy as np
+import pytest
+from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
+
 import pennylane as qml
 
 # ==========================================================
@@ -179,15 +182,14 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("device_kwargs", [device_kwargs])
 
 def pytest_runtest_makereport(item, call):
-    from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
-
-    # Post-processing test reports such that those tests failing due to
-    # unsupported operations/observables or not implemented features do not
-    # appear as failed cases
+    """Post-processing test reports to exclude those known to be failing."""
     tr = orig_pytest_runtest_makereport(item, call)
 
     if "skip_unsupported" in item.keywords:
         if call.excinfo is not None:
+
+            # Exclude failing test cases for unsupported operations/observables
+            # and those using not implemented features
             if call.excinfo.type == qml.DeviceError and "not supported on device" in str(call.excinfo.value) or call.excinfo.type == NotImplementedError:
                 tr.wasxfail = "reason:" + str(call.excinfo.value)
                 tr.outcome = "skipped"
