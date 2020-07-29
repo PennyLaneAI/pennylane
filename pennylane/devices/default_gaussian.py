@@ -13,7 +13,8 @@
 # limitations under the License.
 # pylint: disable=inconsistent-return-statements
 """
-The :code:`default.gaussian` plugin is meant to be used as a template for writing PennyLane
+The :code:`default.gaussian` plugin is a simulator for Gaussian continuous-variable
+quantum computations, and can be used as a template for writing PennyLane
 devices for new CV backends.
 
 It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
