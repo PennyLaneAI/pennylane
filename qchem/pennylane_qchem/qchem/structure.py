@@ -130,23 +130,23 @@ def read_structure(filepath, outpath="."):
 def meanfield(
     name, geometry, charge=0, mult=1, basis="sto-3g", package="pyscf", outpath="."
 ):  # pylint: disable=too-many-arguments
-    r"""Generates a file from which the meanfield electronic structure
-    of the system can be retrieved.
+    r"""Generates a file from which the mean field electronic structure
+    of the molecule can be retrieved.
 
-    This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to perform
-    the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
-    chemistry packages ``PySCF`` and ``Psi4``, respectively. The calculated electronic
-    structure is output as an hdf5-formatted file stored in the directory
+    This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to
+    perform the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
+    chemistry packages ``PySCF`` and ``Psi4``, respectively. The mean field electronic
+    structure is saved in an hdf5-formatted output file in the directory
     ``os.path.join(outpath, package, basis)``.
 
     Args:
-        name (str): Name of the molecule
+        name (str): String used to label the molecule
         geometry (list): List containing the symbol and Cartesian coordinates for each atom
-        charge (int): Net charge of the molecule
+        charge (int): Net charge of the system
         mult (int): Multiplicity of the HF state. The values :math:`1, 2, 3, \ldots` of the
             multiplicity is given by the number of unpaired electrons occupying the
-            molecular orbitals, :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`.
-        basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
+            HF orbitals, :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`.
+        basis (str): Atomic basis set used to represent the HF orbitals. Basis set
             availability per element can be found
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
         package (str): Quantum chemistry package used to solve the Hartree-Fock equations.
@@ -154,7 +154,7 @@ def meanfield(
         outpath (str): Path to output directory
 
     Returns:
-        str: full path to the file containing the calculated meanfield electronic structure
+        str: full path to the file containing the mean field electronic structure
 
     **Example**
     
@@ -182,9 +182,9 @@ def meanfield(
     elif not os.path.isdir(basis_dir):
         os.mkdir(basis_dir)
 
-    fullpath = os.path.join(basis_dir, name.strip())
+    path_to_file = os.path.join(basis_dir, name.strip())
 
-    molecule = MolecularData(geometry, basis, mult, charge, filename=fullpath,)
+    molecule = MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "psi4":
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
@@ -192,7 +192,7 @@ def meanfield(
     if package == "pyscf":
         run_pyscf(molecule, run_scf=1, verbose=0)
 
-    return fullpath
+    return path_to_file
 
 
 def active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
