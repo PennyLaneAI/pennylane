@@ -6,13 +6,15 @@ on:
   pull_request:
 
 
+env:
+  TF_VERSION: 2.2
+  TORCH_VERSION: 1.5
+  COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
+
+
 jobs:
   core-tests:
     runs-on: ubuntu-latest
-
-    env:
-      TF_VERSION: 2.2
-      TORCH_VERSION: 1.5
 
     strategy:
       matrix:
@@ -56,19 +58,16 @@ jobs:
           pip install dist/PennyLane*.whl
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane --cov-report=term-missing --cov-report=xml -p no:warnings --tb=native
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.7
         with:
           file: ./coverage.xml
 
+
   device-tests:
     runs-on: ubuntu-latest
-
-    env:
-      TF_VERSION: 2.2
-      TORCH_VERSION: 1.5
 
     strategy:
       matrix:
@@ -76,6 +75,7 @@ jobs:
           - {device: "default.qubit", analytic: true, shots: 1000}
           - {device: "default.qubit", analytic: false, shots: 1000}
           - {device: "default.qubit.tf", analytic: true, shots: 1000}
+          - {device: "default.qubit.autograd", analytic: true, shots: 1000}
 
     steps:
       - name: Cancel Previous Runs
@@ -113,13 +113,16 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest pennylane/plugins/tests \
-            --device=${{ matrix.config.device }} --analytic=${{ matrix.config.analytic }} --shots=${{ matrix.config.shots }}\
-            --cov=pennylane --cov-report=term-missing --cov-report=xml -p no:warnings --tb=native
+            --device=${{ matrix.config.device }} \
+            --analytic=${{ matrix.config.analytic }} \
+            --shots=${{ matrix.config.shots }} \
+            --cov=pennylane $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.7
         with:
           file: ./coverage.xml
+
 
   qchem-tests:
     runs-on: ubuntu-latest
@@ -155,7 +158,7 @@ jobs:
 
       - name: Run tests
         run: |
-          cd qchem && python -m pytest tests --cov=pennylane_qchem --cov-report=term-missing --cov-report=xml -p no:warnings --tb=native
+          cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.7
