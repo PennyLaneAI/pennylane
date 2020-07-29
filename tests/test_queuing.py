@@ -283,3 +283,39 @@ class TestOperationRecorder:
             template(3)
 
         assert str(recorder) == expected_output
+
+
+class AnnotatingTensor(qml.operation.Tensor):
+    """Dummy tensor class that queues itself on initialization
+    to an annotating queue."""
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.queue()
+
+    def queue(self):
+        qml.QueuingContext.append(self)
+
+        for o in self.obs:
+            try:
+                qml.QueuingContext.active_context().update_info(o, owner=self)
+            except AttributeError:
+                pass
+
+        return self
+
+
+class TestAnnotatedQueue:
+    """Tests for the annotated queue class"""
+
+    def test_append_operation(self):
+        """Test appending arbitrary operations to the queue"""
+
+        with qml._queuing.AnnotatedQueue() as q:
+            A = qml.PauliZ(0)
+            B = qml.PauliY(1)
+            tensor_op = AnnotatingTensor(A, B)
+
+        assert q.objects() == [A, B, tensor_op]
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}

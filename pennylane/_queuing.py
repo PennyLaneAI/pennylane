@@ -15,7 +15,7 @@
 This module contains the :class:`QueuingContext` abstract base class.
 """
 import abc
-from collections import OrderedDict
+from collections import OrderedDict, deque
 
 import pennylane as qml
 
@@ -42,8 +42,8 @@ class QueuingContext(abc.ABC):
 
     # TODO: update docstring
 
-    _active_contexts = []
-    """The list of contexts that are currently active."""
+    _active_contexts = deque()
+    """The stack of contexts that are currently active."""
 
     def __enter__(self):
         """Adds this instance to the global list of active contexts.
@@ -61,7 +61,7 @@ class QueuingContext(abc.ABC):
         QueuingContext._active_contexts.remove(self)
 
     @abc.abstractmethod
-    def _append(self, obj):
+    def _append(self, obj, **kwargs):
         """Append an object to this QueuingContext instance.
 
         Args:
@@ -69,14 +69,20 @@ class QueuingContext(abc.ABC):
         """
 
     @classmethod
-    def append(cls, obj):
+    def active_context(cls):
+        """Returns the currently active queuing context."""
+        if cls._active_contexts:
+            return cls._active_contexts[-1]
+
+    @classmethod
+    def append(cls, obj, **kwargs):
         """Append an object to the queue(s).
 
         Args:
             obj: the object to be appended
         """
-        for context in cls._active_contexts:
-            context._append(obj)  # pylint: disable=protected-access
+        if cls.active_context() is not None:
+            cls.active_context()._append(obj, **kwargs)  # pylint: disable=protected-access
 
     @abc.abstractmethod
     def _remove(self, obj):
@@ -93,12 +99,12 @@ class QueuingContext(abc.ABC):
         Args:
             obj: the object to be removed
         """
-        for context in cls._active_contexts:
-            # We use the duck-typing approach to assume that the underlying remove
-            # behaves like list.remove and throws a ValueError if the operator
-            # is not in the list
+        # We use the duck-typing approach to assume that the underlying remove
+        # behaves like list.remove and throws a ValueError if the operator
+        # is not in the list
+        if cls.active_context() is not None:
             try:
-                context._remove(obj)  # pylint: disable=protected-access
+                cls.active_context()._remove(obj)  # pylint: disable=protected-access
             except ValueError:
                 pass
 
@@ -110,11 +116,57 @@ class Queue(QueuingContext):
     def __init__(self):
         self.queue = []
 
-    def _append(self, obj):
+    def _append(self, obj, **kwargs):
         self.queue.append(obj)
 
     def _remove(self, obj):
         self.queue.remove(obj)
+
+
+class AnnotatedQueue(QueuingContext):
+    """Lightweight class that maintains a basic queue of operations, in addition
+    to annotations."""
+
+    def __init__(self):
+        self.queue = OrderedDict()
+
+    def _append(self, obj, **kwargs):
+        self.queue[obj] = kwargs
+
+    def _remove(self, obj):
+        del self.queue[obj]
+
+    def update_info(self, obj, **kwargs):
+        """Updates the annotated information of an object in the queue.
+
+        Args:
+            obj: the object to update
+            kwargs: Keyword arguments and values to add to the annotation.
+                If a particular keyword already exists in the annotation,
+                the value is updated.
+        """
+        if obj not in self.queue:
+            raise ValueError(f"Object {obj} not in the queue.")
+
+        self.queue[obj].update(kwargs)
+
+    def get_info(self, obj):
+        """Returns the annotated information of an object in the queue.
+
+        Args:
+            obj: the object to query
+
+        Returns:
+            dict: the annotated information
+        """
+        if obj not in self.queue:
+            raise ValueError(f"Object {obj} not in the queue.")
+
+        return self.queue[obj]
+
+    def objects(self):
+        """Returns a list of objects in the annotated queue"""
+        return list(self.queue.keys())
 
 
 class OperationRecorder(Queue):
