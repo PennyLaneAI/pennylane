@@ -91,7 +91,7 @@ class TestMetricTensor:
         assert isinstance(res[(2,)]["queue"][1], qml.RY)
         assert isinstance(res[(2,)]["queue"][2], qml.CNOT)
         assert isinstance(res[(2,)]["observable"][0], qml.Hermitian)
-        assert np.all(res[(2,)]["observable"][0].params[0] == qml.PhaseShift.generator[0])
+        assert np.all(res[(2,)]["observable"][0].data[0] == qml.PhaseShift.generator[0])
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed

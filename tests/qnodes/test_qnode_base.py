@@ -271,7 +271,7 @@ class TestQNodeOperationQueue:
         CNOT = qml.CNOT(wires=[0, 1])
 
         def circuit(x):
-            qml.QueuingContext.append_operator(CNOT)
+            qml.QueuingContext.append(CNOT)
             qml.RY(0.4, wires=[0])
             qml.RZ(-0.2, wires=[1])
 
@@ -294,7 +294,7 @@ class TestQNodeOperationQueue:
             qml.RY(0.4, wires=[0])
             qml.RZ(-0.2, wires=[1])
 
-            qml.QueuingContext.remove_operator(RX)
+            qml.QueuingContext.remove(RX)
 
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 

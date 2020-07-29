@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane.utils import _flatten, unflatten
 from pennylane.qnodes import QNode, QuantumFunctionError
 from pennylane._device import DeviceError
-from pennylane.interfaces.torch import unflatten_torch
+from pennylane.interfaces.torch import to_torch, unflatten_torch
 
 from gate_data import CNOT, Rotx, Roty, Rotz, I, Y, Z
 
@@ -1216,3 +1216,55 @@ class TestParameterHandlingIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match="cannot be modified"):
             circuit(x, y, z)
+
+
+class TestConversion:
+    """Integration tests to make sure that to_torch() correctly converts
+    QNodes with/without pre-existing interfaces"""
+
+    @pytest.fixture
+    def qnode(self, interface, tf_support):
+        """Returns a simple QNode corresponding to cos(x),
+        with interface as determined by the interface fixture"""
+        if interface == "tf" and not tf_support:
+            pytest.skip("Skipped, no tf support")
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        return circuit
+
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_torch_conversion(self, qnode, tol):
+        """Tests that the to_torch() function ignores QNodes that already
+        have the torch interface."""
+        converted_qnode = to_torch(qnode)
+        assert converted_qnode is qnode
+
+        x_val = 0.4
+        x = torch.tensor(x_val, requires_grad=True)
+        res = converted_qnode(x)
+        res.backward()
+
+        assert np.allclose(res.detach().numpy(), np.cos(x_val), atol=tol, rtol=0)
+        assert np.allclose(x.grad, -np.sin(x_val), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("interface", [None, "autograd", "tf"])
+    def test_other_conversion(self, qnode, tol):
+        """Tests that the to_torch() function correctly converts both tf and autograd qnodes and
+        QNodes with no interface."""
+        converted_qnode = to_torch(qnode)
+        assert converted_qnode is not qnode
+        assert converted_qnode._qnode is getattr(qnode, "_qnode", qnode)
+
+        x_val = 0.4
+        x = torch.tensor(x_val, requires_grad=True)
+        res = converted_qnode(x)
+        res.backward()
+
+        assert np.allclose(res.detach().numpy(), np.cos(x_val), atol=tol, rtol=0)
+        assert np.allclose(x.grad, -np.sin(x_val), atol=tol, rtol=0)

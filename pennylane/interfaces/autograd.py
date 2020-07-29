@@ -29,6 +29,13 @@ def to_autograd(qnode):
     Returns:
         AutogradQNode: an Autograd-compatible QNode
     """
+    qnode_interface = getattr(qnode, "interface", None)
+
+    if qnode_interface == "autograd":
+        return qnode
+
+    if qnode_interface is not None:
+        qnode = qnode._qnode  # pylint: disable=protected-access
 
     class AutogradQNode(qnode.__class__):
         """QNode that works with Autograd."""
@@ -99,5 +106,6 @@ def to_autograd(qnode):
 
     # define the vector-Jacobian product function for AutogradQNode.evaluate
     autograd.extend.defvjp(AutogradQNode.evaluate, AutogradQNode.QNode_vjp, argnums=[1])
+    qnode._qnode = qnode  # pylint: disable=protected-access
     qnode.__class__ = AutogradQNode
     return qnode
