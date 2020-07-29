@@ -30,6 +30,11 @@
 
 <h3>Improvements</h3>
 
+* The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to 
+  `pennylane.devices` and `pennylane.beta.devices`, to reflect their content better.
+  [(#726)](https://github.com/XanaduAI/pennylane/pull/726)
+
+
 * Returning probabilities is now supported from photonic QNodes.
   As with qubit QNodes, photonic QNodes returning probabilities are
   end-to-end differentiable.
