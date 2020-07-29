@@ -54,8 +54,9 @@ default_config = Configuration("config.toml")
 
 # get list of installed plugin devices
 plugin_devices = {
-    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.devices")
+    entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
 }
+
 
 # get chemistry plugin
 class NestedAttrError:

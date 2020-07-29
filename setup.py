@@ -36,7 +36,7 @@ info = {
     'license': 'Apache License 2.0',
     'packages': find_packages(where="."),
     'entry_points': {
-        'pennylane.devices': [
+        'pennylane.plugins': [
             'default.qubit = pennylane.devices:DefaultQubit',
             'default.gaussian = pennylane.devices:DefaultGaussian',
             'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',

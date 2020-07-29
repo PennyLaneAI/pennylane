@@ -34,7 +34,7 @@ def about():
     """
     Prints the information for pennylane installation.
     """
-    plugin_devices = iter_entry_points("pennylane.devices")
+    plugin_devices = iter_entry_points("pennylane.plugins")
     _internal_main.main(["show", "pennylane"])
     print("Platform info:           {}".format(platform.platform(aliased=True)))
     print("Python version:          {0}.{1}.{2}".format(*sys.version_info[0:3]))
