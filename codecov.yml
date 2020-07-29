@@ -6,7 +6,7 @@ ignore:
 
 codecov:
     notify:
-        after_n_builds: 7
+        after_n_builds: 6
 
 comment:
-    after_n_builds: 7
+    after_n_builds: 6
