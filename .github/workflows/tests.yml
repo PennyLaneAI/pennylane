@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
-        interfaces: {tf: false, torch: false}
+        interfaces: [{tf: false, torch: false}]
         include:
           - python-version: 3.6
             interfaces: {tf: true, torch: false}
