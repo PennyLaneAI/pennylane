@@ -48,7 +48,7 @@
 * The function to generate the mean field electronic structure has been refactored.
   Most common defaults for quantum chemistry calculations are defined via keyword
   arguments, this simplifies the signature of the function. The function returns the
-  full path to the file conatining the mean field electronic structure. The docstring
+  full path to the file containing the mean field electronic structure. The docstring
   has been improved and structured according the guidelines for PennyLane's docstring.
   [(#)]()
 
