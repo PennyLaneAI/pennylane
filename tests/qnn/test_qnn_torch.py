@@ -59,9 +59,6 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
-ordered_weights = ["w{}".format(i) for i in range(1, 8)]  # we do this for Python 3.5
-
-
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
@@ -214,12 +211,11 @@ class TestTorchLayer:
         layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
 
-        layer_out = layer._evaluate_qnode(x).detach().numpy()
+        layer_out = layer._evaluate_qnode(x)
+        weights = layer.qnode_weights.values()
+        circuit_out = c(x, *weights).type(x.dtype)
 
-        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
-
-        circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_shuffled_args(self, get_circuit, output_dim, n_qubits):
@@ -244,12 +240,11 @@ class TestTorchLayer:
         layer = TorchLayer(c_shuffled, w)
         x = torch.Tensor(np.ones(n_qubits))
 
-        layer_out = layer._evaluate_qnode(x).detach().numpy()
+        layer_out = layer._evaluate_qnode(x)
+        weights = layer.qnode_weights.values()
+        circuit_out = c(x, *weights).type(x.dtype)
 
-        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
-
-        circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_evaluate_qnode_default_input(self, get_circuit, output_dim, n_qubits):
@@ -273,12 +268,11 @@ class TestTorchLayer:
         layer = TorchLayer(c_default, w)
         x = torch.Tensor(np.ones(n_qubits))
 
-        layer_out = layer._evaluate_qnode(x).detach().numpy()
+        layer_out = layer._evaluate_qnode(x)
+        weights = layer.qnode_weights.values()
+        circuit_out = c(x, *weights).type(x.dtype)
 
-        weights = [layer.qnode_weights[weight].detach().numpy() for weight in ordered_weights]
-
-        circuit_out = c(x, *weights)
-        assert np.allclose(layer_out, circuit_out)
+        assert torch.allclose(layer_out, circuit_out)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_forward_single_input(self, get_circuit, output_dim, n_qubits):
@@ -319,20 +313,20 @@ class TestTorchLayer:
         layer = TorchLayer(c, w)
         x = torch.ones(n_qubits)
 
-        weights = [layer.qnode_weights[weight] for weight in ordered_weights]
+        weights = layer.qnode_weights.values()
 
         out_layer = layer(x)
         out_layer.backward()
 
-        g_layer = [w.grad.numpy() for w in weights]
+        g_layer = [w.grad for w in weights]
 
-        out_circuit = c(x, *weights)
+        out_circuit = c(x, *weights).type(x.dtype)
         out_circuit.backward()
 
-        g_circuit = [w.grad.numpy() for w in weights]
+        g_circuit = [w.grad for w in weights]
 
         for g1, g2 in zip(g_layer, g_circuit):
-            assert np.allclose(g1, g2)
+            assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
 
@@ -368,7 +362,8 @@ class TestTorchLayerIntegration:
         x = torch.zeros((batch_size, n_qubits)).type(dtype)
         y = torch.zeros((batch_size, output_dim)).type(dtype)
 
-        params_before = [w.detach().numpy().copy() for w in list(module.parameters())]
+
+        params_before = [w.detach().clone() for w in module.parameters()]
 
         module_out = module(x)
         optimizer.zero_grad()
@@ -376,9 +371,11 @@ class TestTorchLayerIntegration:
         loss.backward()
         optimizer.step()
 
-        params_after = [w.detach().numpy().copy() for w in list(module.parameters())]
+        params_after = [w.detach().clone() for w in module.parameters()]
 
-        params_similar = [np.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)]
+        params_similar = [
+            torch.allclose(p1, p2) for p1, p2 in zip(params_before, params_after)
+        ]
         assert not all(params_similar)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
