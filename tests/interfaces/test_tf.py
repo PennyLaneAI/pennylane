@@ -1201,10 +1201,6 @@ class TestParameterHandlingIntegration:
 
         params = tf.Variable([0.6, 0.2])
 
-        # Note: with TF2.3, list inputs are always flattened recurisvely.
-        # To avoid flattening of embedded non-differentiable data, it must
-        # be passed as a NumPy array or a `tf.Tensor`.
-
         with tf.GradientTape() as tape:
             res = circuit(w, params)
 
