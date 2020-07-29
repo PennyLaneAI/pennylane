@@ -41,7 +41,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install wheel pytest pytest-cov pytest-mock --upgrade
+          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install PyTorch
         if: contains(matrix.config.interfaces, 'torch')
@@ -146,7 +146,7 @@ jobs:
         run: |
           sudo apt-get install -y openbabel
           conda install psi4 psi4-rt python=3.7 -c psi4
-          pip install pytest pytest-cov pytest-mock
+          pip install pytest pytest-cov pytest-mock flaky
 
       - name: Install QChem
         run: |
