@@ -206,6 +206,28 @@ class TestWires:
         # for integer
         assert wires.indices(1) == [2]
 
+    @pytest.mark.parametrize("wires, wire_map, expected", [(Wires(['a', 'b']), {'a': 0, 'b': 1}, Wires([0, 1])),
+                                                           (Wires([-1, 1]), {1: 'c', -1: 1, 'd': 'e'}, Wires([1, 'c'])),
+                                                           ])
+    def test_map_method(self, wires, wire_map, expected):
+        """Tests the ``map()`` method."""
+
+        assert wires.map(wire_map) == expected
+
+        # error when labels not in wire_map dictionary
+        with pytest.raises(WireError, match="No mapping for wire label"):
+            wires.map({-1: 4}) == expected
+
+        # error for non-unique wire labels
+        with pytest.raises(WireError, match="Failed to implement wire map"):
+            wires = Wires([0, 1])
+            wires.map({0: 'a', 1: 'a'})
+
+        # error for invalid new wire label types
+        with pytest.raises(WireError, match="Failed to implement wire map"):
+            wires = Wires([0, 1])
+            wires.map({0: 'a', 1: qml.RX})
+
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
 

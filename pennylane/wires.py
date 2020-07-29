@@ -186,6 +186,34 @@ class Wires(Sequence):
 
         return [self.index(w) for w in wires]
 
+    def map(self, wire_map):
+        """Returns a new Wires object with different labels, using the rule defined in mapping.
+
+        Example:
+
+        >>> wires = Wires(['a', 'b', 'c'])
+        >>> wire_map = {'a': 4, 'b':2, 'c': 3}
+        >>> wires.map(wire_map)
+        <Wires = [4, 2, 3]>
+
+        Args:
+            wire_map (dict): Dictionary containing all wire labels used in this object as keys, and unique
+                             new labels as their values
+        """
+        for w in self.wire_tuple:
+            if w not in wire_map:
+                raise WireError("No mapping for wire label {} specified in wire map {}.".format(w, wire_map))
+
+        new_wire_tuple = tuple([wire_map[w] for w in self.wire_tuple])
+
+        try:
+            new_wires = Wires(new_wire_tuple)
+        except WireError:
+            raise WireError("Failed to implement wire map {}. Make sure that the new labels are unique and "
+                            "valid wire labels.".format(w, wire_map))
+
+        return Wires(new_wires)
+
     def subset(self, indices, periodic_boundary=False):
         """
         Returns a new Wires object which is a subset of this Wires object. The wires of the new

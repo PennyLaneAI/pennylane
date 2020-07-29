@@ -61,12 +61,12 @@ class Device(abc.ABC):
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
-            wires = range(wires)
+            wires = Wires(range(wires))
+        else:
+            wires = Wires(wires)
 
-        # The register keeps track of the labels of all wires that can
-        # be addressed by operations, as well as their order
-        self._register = Wires(wires)
-        self.num_wires = len(self._register)
+        self._wire_map = self.create_wire_map(wires)
+        self.num_wires = len(wires)
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
@@ -139,10 +139,10 @@ class Device(abc.ABC):
         return self._shots
 
     @property
-    def register(self):
-        """Representation of the wires on this device.
-        """
-        return self._register
+    def wire_map(self):
+        """Dictionary that defines the map from user-provided wire labels to
+        the wire labels used on this device"""
+        return self._wire_map
 
     @shots.setter
     def shots(self, shots):
@@ -161,6 +161,36 @@ class Device(abc.ABC):
             )
 
         self._shots = int(shots)
+
+    def create_wire_map(self, wires):
+        """Create the map from user-provided wire labels to the wire labels used by the device.
+
+        The default wire map maps the user wire labels to consecutive integers. For example, when a device is
+        created with ``device('my.device', wires=['b', 'a'])``, the default wire map maps 'b' -> 0 and
+        'a' -> 1.
+
+        However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
+        wire labels, like 'b' -> 'q41' and 'a' -> 'q32'.
+
+        Args:
+            wires (Wires): user-provided wires for this device
+        """
+        consecutive_wires = Wires(range(self.num_wires))
+
+        return {label: i for label, i in zip(wires, consecutive_wires)}
+
+    def map_wires(self, wires):
+        """Map the labels of wires to new labels, using this device's wire mapping.
+
+        Args:
+            wires (Wires): wires whose labels we want to map to new wire labels
+
+        Returns:
+            Wires: wires with new labels
+        """
+
+        mapped_wires = wires.map(self.wire_map)
+        return mapped_wires
 
     @classmethod
     def capabilities(cls):

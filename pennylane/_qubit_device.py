@@ -403,8 +403,6 @@ class QubitDevice(Device):
         wires = Wires(wires)
         # get indices of wires on the device's register
         wire_indices = self.register.indices(wires)
-        # consider only the requested wires
-        wire_indices = np.hstack(wire_indices)
 
         samples = self._samples[:, np.array(wire_indices)]
 
