@@ -71,6 +71,9 @@ class QueuingContext(abc.ABC):
     @classmethod
     def active_context(cls):
         """Returns the currently active queuing context."""
+        # TODO: this method should append only to `cls.active_context`, *not*
+        # all active contexts. However this will require a refactor in
+        # the template decorator and the operation recorder.
         if cls._active_contexts:
             return cls._active_contexts[-1]
 
@@ -81,8 +84,8 @@ class QueuingContext(abc.ABC):
         Args:
             obj: the object to be appended
         """
-        if cls.active_context() is not None:
-            cls.active_context()._append(obj, **kwargs)  # pylint: disable=protected-access
+        for context in cls._active_contexts:
+            context._append(obj, **kwargs)  # pylint: disable=protected-access
 
     @abc.abstractmethod
     def _remove(self, obj):
@@ -99,12 +102,15 @@ class QueuingContext(abc.ABC):
         Args:
             obj: the object to be removed
         """
-        # We use the duck-typing approach to assume that the underlying remove
-        # behaves like list.remove and throws a ValueError if the operator
-        # is not in the list
-        if cls.active_context() is not None:
+        # TODO: this method should remove only from `cls.active_context`, *not*
+        # all active contexts. However this will require a refactor in
+        # the template decorator and the operation recorder.
+        for context in cls._active_contexts:
+            # We use the duck-typing approach to assume that the underlying remove
+            # behaves like list.remove and throws a ValueError if the operator
+            # is not in the list
             try:
-                cls.active_context()._remove(obj)  # pylint: disable=protected-access
+                context._remove(obj)  # pylint: disable=protected-access
             except ValueError:
                 pass
 
