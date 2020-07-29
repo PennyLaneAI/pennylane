@@ -49,9 +49,18 @@
 
   See the `default.qubit.autograd` documentation for more details.
 
-* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
+* Added the `qml.utils.decompose_hamiltonian` function. This function can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
+
+  ```pycon
+  >>> A = np.array(
+  ... [[-2, -2+1j, -2, -2],
+  ... [-2-1j,  0,  0, -1],
+  ... [-2,  0, -2, -1],
+  ... [-2, -1, -1,  0]])
+  >>> coeffs, obs_list = decompose_hamiltonian(A)
+  ```
 
 <h3>Improvements</h3>
 
