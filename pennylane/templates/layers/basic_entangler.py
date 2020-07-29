@@ -20,7 +20,6 @@ from pennylane.ops import CNOT, RX
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_number_of_layers,
     get_shape,
 )
@@ -142,8 +141,6 @@ def BasicEntanglerLayers(weights, wires, rotation=None):
         rotation = RX
 
     wires = Wires(wires)
-
-    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 
     repeat = check_number_of_layers([weights])
 
