@@ -94,7 +94,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install wheel pytest pytest-cov pytest-mock --upgrade
+          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install PyTorch
         if: contains(matrix.config.device, 'torch')
