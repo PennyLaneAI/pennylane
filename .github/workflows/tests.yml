@@ -7,8 +7,8 @@ on:
 
 
 env:
-  TF_VERSION: 2.2
-  TORCH_VERSION: 1.5
+  TF_VERSION: 2.3
+  TORCH_VERSION: 1.6
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
