@@ -181,6 +181,7 @@ def pytest_generate_tests(metafunc):
             # run tests on specified device
             metafunc.parametrize("device_kwargs", [device_kwargs])
 
+
 def pytest_runtest_makereport(item, call):
     """Post-processing test reports to exclude those known to be failing."""
     tr = orig_pytest_runtest_makereport(item, call)
@@ -190,7 +191,11 @@ def pytest_runtest_makereport(item, call):
 
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
-            if call.excinfo.type == qml.DeviceError and "not supported on device" in str(call.excinfo.value) or call.excinfo.type == NotImplementedError:
+            if (
+                call.excinfo.type == qml.DeviceError
+                and "not supported on device" in str(call.excinfo.value)
+                or call.excinfo.type == NotImplementedError
+            ):
                 tr.wasxfail = "reason:" + str(call.excinfo.value)
                 tr.outcome = "skipped"
 
