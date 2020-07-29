@@ -36,6 +36,8 @@ info = {
     'license': 'Apache License 2.0',
     'packages': find_packages(where="."),
     'entry_points': {
+        # TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
+        # This requires a rename in the setup file of all devices, and is best done during another refactor
         'pennylane.plugins': [
             'default.qubit = pennylane.devices:DefaultQubit',
             'default.gaussian = pennylane.devices:DefaultGaussian',
