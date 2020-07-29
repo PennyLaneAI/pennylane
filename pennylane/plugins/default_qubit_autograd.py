@@ -15,13 +15,7 @@
 reference plugin.
 """
 from pennylane.operation import DiagonalOperation
-
-try:
-    from pennylane import numpy as np
-
-except ImportError as e:
-    raise ImportError("default.qubit.autograd device requires Autograd")
-
+from pennylane import numpy as np
 
 from . import DefaultQubit
 from . import autograd_ops
