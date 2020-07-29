@@ -127,70 +127,72 @@ def read_structure(filepath, outpath="."):
     return geometry
 
 
-def meanfield_data(
-    mol_name, geometry, charge, multiplicity, basis, qc_package="pyscf", outpath="."
+def meanfield(
+    name, geometry, charge=0, mult=1, basis="sto-3g", package="pyscf", outpath="."
 ):  # pylint: disable=too-many-arguments
-    r"""Launches the meanfield (Hartree-Fock) electronic structure calculation.
+    r"""Generates a file from which the meanfield electronic structure
+    of the system can be retrieved.
 
-    Also builds the path to the directory containing the input data file for quantum simulations.
-    The path to the hdf5-formatted file is ``os.path.join(outpath, qc_package, basis)``.
-
-    **Example usage:**
-
-    >>> geometry = read_structure('h2_ref.xyz')
-    >>> meanfield_data('h2', geometry, 0, 1, 'sto-3g', qc_package='pyscf')
-    ./pyscf/sto-3g
+    This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to perform
+    the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
+    chemistry packages ``PySCF`` and ``Psi4``, respectively. The calculated electronic
+    structure is output as an hdf5-formatted file stored in the directory
+    ``os.path.join(outpath, package, basis)``.
 
     Args:
-        mol_name (str): name of the molecule
-        geometry (list): list containing the symbol and Cartesian coordinates for each atom
-        charge (int): net charge of the molecule
-        multiplicity (int): spin multiplicity based on the number of unpaired electrons
-            in the Hartree-Fock state
-        basis (str): atomic basis set. Basis set availability per element can be found
-            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx
-            -basiselement>`_
-        qc_package (str): quantum chemistry package used to solve Hartree-Fock equations.
-            Either ``'pyscf'`` or ``'psi4'`` can be used
-        outpath (str): path to ouput directory
+        name (str): Name of the molecule
+        geometry (list): List containing the symbol and Cartesian coordinates for each atom
+        charge (int): Net charge of the molecule
+        mult (int): Multiplicity of the HF state. The values :math:`1, 2, 3, \ldots` of the
+            multiplicity is given by the number of unpaired electrons occupying the
+            molecular orbitals, :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`.
+        basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
+            availability per element can be found
+            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+        package (str): Quantum chemistry package used to solve the Hartree-Fock equations.
+            Either ``'pyscf'`` or ``'psi4'`` can be used.
+        outpath (str): Path to output directory
 
     Returns:
-        str: path to the directory containing the file with the Hartree-Fock electronic structure
+        str: full path to the file containing the calculated meanfield electronic structure
+
+    **Example**
+    
+    >>> name = 'h2'
+    >>> geometry = [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
+    >>> meanfield(name, geometry)
+    ./pyscf/sto-3g/h2
     """
 
-    qc_package = qc_package.strip().lower()
+    package = package.strip().lower()
 
-    if qc_package not in ("psi4", "pyscf"):
-        qc_package_error_message = (
+    if package not in ("psi4", "pyscf"):
+        error_message = (
             "Integration with quantum chemistry package '{}' is not available. \n Please set"
-            " 'qc_package' to 'pyscf' or 'psi4'.".format(qc_package)
+            " 'package' to 'pyscf' or 'psi4'.".format(package)
         )
-        raise TypeError(qc_package_error_message)
+        raise TypeError(error_message)
 
-    qcp_dir = os.path.join(outpath.strip(), qc_package)
-    path_to_hf_data = os.path.join(qcp_dir, basis.strip())
+    package_dir = os.path.join(outpath.strip(), package)
+    basis_dir = os.path.join(package_dir, basis.strip())
 
-    if not os.path.isdir(qcp_dir):
-        os.mkdir(qcp_dir)
-        os.mkdir(path_to_hf_data)
-    elif not os.path.isdir(path_to_hf_data):
-        os.mkdir(path_to_hf_data)
+    if not os.path.isdir(package_dir):
+        os.mkdir(package_dir)
+        os.mkdir(basis_dir)
+    elif not os.path.isdir(basis_dir):
+        os.mkdir(basis_dir)
 
-    molecule = MolecularData(
-        geometry,
-        basis,
-        multiplicity,
-        charge,
-        filename=os.path.join(path_to_hf_data, mol_name.strip()),
-    )
+    fullpath = os.path.join(basis_dir, name.strip())
 
-    if qc_package == "psi4":
+    molecule = MolecularData(geometry, basis, mult, charge, filename=fullpath,)
+
+    if package == "psi4":
         run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
-    if qc_package == "pyscf":
+    if package == "pyscf":
         run_pyscf(molecule, run_scf=1, verbose=0)
 
-    return path_to_hf_data
+    return fullpath
 
 
 def active_space(mol_name, hf_data, n_active_electrons=None, n_active_orbitals=None):
@@ -783,7 +785,7 @@ def excitations_to_wires(ph_confs, pphh_confs, wires=None):
 
 __all__ = [
     "read_structure",
-    "meanfield_data",
+    "meanfield",
     "active_space",
     "decompose_hamiltonian",
     "_qubit_operator_to_terms",
