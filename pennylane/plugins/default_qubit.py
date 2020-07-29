@@ -209,7 +209,7 @@ class DefaultQubit(QubitDevice):
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
         state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
-        print('hello')
+        print("hello")
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
