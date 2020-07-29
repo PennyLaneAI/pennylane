@@ -17,7 +17,6 @@ across the PennyLane submodules.
 """
 # pylint: disable=protected-access
 from collections.abc import Iterable
-from collections import OrderedDict
 import copy
 import functools
 import inspect
@@ -230,90 +229,6 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-class OperationRecorder(qml.QueuingContext):
-    """A template and quantum function inspector,
-    allowing easy introspection of operators that have been
-    applied without requiring a QNode.
-
-    **Example**:
-
-    The OperationRecorder is a context manager. Executing templates
-    or quantum functions stores resulting applied operators in the
-    recorder, which can then be printed.
-
-    >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
-    >>>
-    >>> with qml.utils.OperationRecorder() as rec:
-    >>>    qml.templates.layers.StronglyEntanglingLayers(*weights, wires=[0, 1])
-    >>>
-    >>> print(rec)
-    Operations
-    ==========
-    Rot(-0.10832656163640327, 0.14429091013664083, -0.010835826725765343, wires=[0])
-    Rot(-0.11254523669444501, 0.0947222564914006, -0.09139600968423377, wires=[1])
-    CNOT(wires=[0, 1])
-    CNOT(wires=[1, 0])
-
-    Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly accessed the applied :class:`~.Operation` and :class:`~.Observable`
-    objects.
-
-    Attributes:
-        queue (List[~.Operators]): list of operators applied within
-            the OperatorRecorder context, includes operations and observables
-        operations (List[~.Operations]): list of operations applied within
-            the OperatorRecorder context
-        observables (List[~.Observables]): list of observables applied within
-            the OperatorRecorder context
-    """
-
-    def __init__(self):
-        self.queue = []
-        self.operations = None
-        self.observables = None
-
-    def _append_operator(self, operator):
-        self.queue.append(operator)
-
-    def _remove_operator(self, operator):
-        self.queue.remove(operator)
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
-
-        # Remove duplicates that might have arisen from measurements
-        self.queue = list(OrderedDict.fromkeys(self.queue))
-        self.operations = list(
-            filter(
-                lambda op: not (
-                    isinstance(op, qml.operation.Observable) and not op.return_type is None
-                ),
-                self.queue,
-            )
-        )
-        self.observables = list(
-            filter(
-                lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None,
-                self.queue,
-            )
-        )
-
-    def __str__(self):
-        output = ""
-        output += "Operations\n"
-        output += "==========\n"
-        for op in self.operations:
-            output += repr(op) + "\n"
-
-        output += "\n"
-        output += "Observables\n"
-        output += "==========\n"
-        for op in self.observables:
-            output += repr(op) + "\n"
-
-        return output
-
-
 def inv(operation_list):
     """Invert a list of operations or a :doc:`template </introduction/templates>`.
 
@@ -405,10 +320,10 @@ def inv(operation_list):
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
     for op in operation_list:
-        qml.QueuingContext.remove_operator(op)
+        qml.QueuingContext.remove(op)
 
     for inv_op in inv_ops:
-        qml.QueuingContext.append_operator(inv_op)
+        qml.QueuingContext.append(inv_op)
 
     return inv_ops
 
