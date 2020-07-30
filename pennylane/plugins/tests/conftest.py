@@ -32,7 +32,7 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 10000
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf"}
+LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf", "default.qubit.autograd"}
 # TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
 # do not have an "analytic" attribute.
 
@@ -131,10 +131,10 @@ def pytest_addoption(parser):
     """Add command line option to pytest."""
 
     # The options are the three arguments every device takes
-    parser.addoption("--device", action="store", default=None)
-    parser.addoption("--shots", action="store", default=None, type=int)
-    parser.addoption("--analytic", action="store", default=None)
-    parser.addoption("--skip", action="store", default=None)
+    parser.addoption("--device", action="store", default=None, help="The device to test.")
+    parser.addoption("--shots", action="store", default=None, type=int, help="Number of shots to use in stochastic mode.")
+    parser.addoption("--analytic", action="store", default=None, help="Whether to run the tests in stochastic or exact mode.")
+    parser.addoption("--skip-ops", action="store_true", default=False, help="Skip tests that use unsupported device operations.")
 
 
 def pytest_generate_tests(metafunc):
@@ -186,7 +186,7 @@ def pytest_runtest_makereport(item, call):
     """Post-processing test reports to exclude those known to be failing."""
     tr = orig_pytest_runtest_makereport(item, call)
 
-    if "skip_unsupported" in item.keywords:
+    if "skip_unsupported" in item.keywords and item.config.option.skip_ops:
         if call.excinfo is not None:
 
             # Exclude failing test cases for unsupported operations/observables

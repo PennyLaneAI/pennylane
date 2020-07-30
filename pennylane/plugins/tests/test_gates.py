@@ -327,6 +327,7 @@ class TestGatesQubit:
 
 
 @flaky(max_runs=10)
+@pytest.mark.skip_unsupported
 class TestInverseGatesQubit:
     """Test the device's probability vector after application of inverse of gates."""
 
