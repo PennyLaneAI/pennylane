@@ -14,8 +14,12 @@
 """Tests that the different measurement types work correctly on a device."""
 # pylint: disable=no-self-use
 import numpy as np
-import pennylane as qml
+import pytest
 from flaky import flaky
+
+import pennylane as qml
+
+pytestmark = pytest.mark.skip_unsupported
 
 # ==========================================================
 # Some useful global variables
