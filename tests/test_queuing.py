@@ -98,6 +98,10 @@ class TestQueuingContext:
 
         QueuingContext.remove(qml.PauliZ(0))
 
+    def test_no_active_context(self, mock_queuing_context):
+        """Test that if there are no active contexts, active_context() returns None"""
+        assert mock_queuing_context.active_context() is None
+
 
 class TestQueue:
     """Test the Queue class."""
@@ -394,7 +398,7 @@ class TestAnnotatedQueue:
         B = qml.PauliY(1)
 
         with pytest.raises(ValueError, match="not in the queue"):
-            q.get_info(B)
+            q.update_info(B, inv=True)
 
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
