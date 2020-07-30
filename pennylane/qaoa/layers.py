@@ -54,6 +54,45 @@ def cost_layer(hamiltonian):
     Raises:
         ValueError: if the terms of the supplied cost Hamiltonian are not
         exclusively products of diagonal Pauli gates
+
+    .. UsageDetails::
+
+        To define a cost layer, one must define a cost Hamiltonian
+        and pass it into ``cost_layer``:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import qaoa
+
+            cost_h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+            cost_layer = qaoa.cost_layer(cost_h)
+
+        We can then use the cost layer within a quantum circuit:
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit(gamma):
+
+                for i in range(2):
+                    qml.Hadamard(wires=i)
+
+                cost_layer(gamma)
+
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+
+        which gives us a circuit of the form:
+
+        >>> circuit(0.5)
+
+        .. code-block:: None
+
+             0: ──H──RZ(-1.0)──╭RZ(-1.0)──┤ ⟨Z⟩
+             1: ──H────────────╰RZ(-1.0)──┤ ⟨Z⟩
+
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
@@ -71,15 +110,54 @@ def cost_layer(hamiltonian):
 def mixer_layer(hamiltonian):
     r"""Builds a QAOA mixer layer, for a given mixer Hamiltonian.
 
-        The mixer layer for cost Hamiltonian :math:`H_M` is defined as the following unitary:
+    The mixer layer for cost Hamiltonian :math:`H_M` is defined as the following unitary:
 
-        .. math:: U_M \ = \ e^{-i \alpha H_M}
+    .. math:: U_M \ = \ e^{-i \alpha H_M}
 
-        where :math:`\alpha` is a variational parameter.
+    where :math:`\alpha` is a variational parameter.
 
-        Args:
-            hamiltonian (qml.Hamiltonian): The mixer Hamiltonian
-        """
+    Args:
+        hamiltonian (qml.Hamiltonian): The mixer Hamiltonian
+
+    .. UsageDetails::
+
+        To define a mixer layer, one must define a mixer Hamiltonian
+        and pass it into ``mixer_layer``:
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import qaoa
+
+            mixer_h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)])
+            mixer_layer = qaoa.mixer_layer(mixer_h)
+
+        We can then use the cost layer within a quantum circuit:
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit(alpha):
+
+                for i in range(2):
+                    qml.Hadamard(wires=i)
+
+                mixer_layer(alpha)
+
+                return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
+
+        which gives us a circuit of the form:
+
+        >>> circuit(0.5)
+
+        .. code-block:: None
+
+             0: ──H──RZ(-1.0)──H──H──╭RZ(-1.0)──H──┤ ⟨Z⟩
+             1: ──H──────────────────╰RZ(-1.0)──H──┤ ⟨Z⟩
+
+    """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
             "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
