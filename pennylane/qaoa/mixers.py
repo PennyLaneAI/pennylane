@@ -48,7 +48,7 @@ def x_mixer(wires):
             from pennylane import qaoa
 
             wires = range(3)
-            mixer_h = qml.x_mixer(wires)
+            mixer_h = qaoa.x_mixer(wires)
 
         >>> print(mixer_h)
         (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
@@ -92,7 +92,7 @@ def xy_mixer(graph):
             from networkx import Graph
 
             graph = Graph([(0, 1), (1, 2)])
-            mixer_h = qml.xy_mixer(graph)
+            mixer_h = qaoa.xy_mixer(graph)
 
         >>> print(mixer_h)
         (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
