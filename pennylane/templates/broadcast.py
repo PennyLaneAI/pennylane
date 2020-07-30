@@ -496,13 +496,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     wires = Wires(wires)
 
-    check_type(
-        parameters,
-        [Iterable, type(None)],
-        msg="'parameters' must be either of type None or "
-        "Iterable; got {}".format(type(parameters)),
-    )
-
     if kwargs is None:
         kwargs = {}
 

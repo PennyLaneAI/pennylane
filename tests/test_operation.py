@@ -23,7 +23,6 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane._queuing
 from pennylane.operation import Tensor
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
@@ -67,52 +66,51 @@ class TestOperation:
         op = test_class(*par, wires=ww)
 
         if issubclass(test_class, qml.operation.Observable):
-            Q = op.heisenberg_obs(0)
+            Q = op.heisenberg_obs(Wires(ww))
             # ev_order equals the number of dimensions of the H-rep array
             assert Q.ndim == test_class.ev_order
             return
 
         # not an Expectation
 
-        U = op.heisenberg_tr(num_wires=2)
+        U = op.heisenberg_tr(Wires(ww))
         I = np.eye(*U.shape)
         # first row is always (1,0,0...)
         assert np.all(U[0, :] == I[:, 0])
 
         # check the inverse transform
-        V = op.heisenberg_tr(num_wires=2, inverse=True)
+        V = op.heisenberg_tr(Wires(ww), inverse=True)
         assert np.linalg.norm(U @ V -I) == pytest.approx(0, abs=tol)
         assert np.linalg.norm(V @ U -I) == pytest.approx(0, abs=tol)
 
         if op.grad_recipe is not None:
             # compare gradient recipe to numerical gradient
             h = 1e-7
-            U = op.heisenberg_tr(0)
+            U = op.heisenberg_tr(Wires(ww))
             for k in range(test_class.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
                 # using finite difference
-                op.data[k] += h
-                Up = op.heisenberg_tr(0)
-                op.data = par
+                op.params[k] += h
+                Up = op.heisenberg_tr(Wires(ww))
+                op.params = par
                 G = (Up-U) / h
                 assert D == pytest.approx(G, abs=tol)
 
         # make sure that `heisenberg_expand` method receives enough wires to actually expand
-        # when supplied `wires` value is zero, returns unexpanded matrix instead of raising Error
         # so only check multimode ops
         if len(op.wires) > 1:
-            with pytest.raises(ValueError, match='is too small to fit Heisenberg matrix'):
-                op.heisenberg_expand(U, len(op.wires) - 1)
+            with pytest.raises(ValueError, match='of this observable are not on the device'):
+                op.heisenberg_expand(U, Wires([0]))
 
         # validate size of input for `heisenberg_expand` method
         with pytest.raises(ValueError, match='Heisenberg matrix is the wrong size'):
             U_wrong_size = U[1:, 1:]
-            op.heisenberg_expand(U_wrong_size, len(op.wires))
+            op.heisenberg_expand(U_wrong_size, Wires(ww))
 
         # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
         with pytest.raises(ValueError, match='Only order-1 and order-2 arrays supported'):
             U_high_order = np.array([U] * 3)
-            op.heisenberg_expand(U_high_order, len(op.wires))
+            op.heisenberg_expand(U_high_order, Wires(ww))
 
     @pytest.mark.parametrize("test_class", op_classes_param_testable)
     def test_operation_init(self, test_class, monkeypatch):
@@ -132,8 +130,8 @@ class TestOperation:
         # valid call
         op = test_class(*pars, wires=ww)
         assert op.name == test_class.__name__
-        assert op.data == pars
-        assert op._wires == ww #Wires(ww)
+        assert op.params == pars
+        assert op._wires == Wires(ww)
 
         # too many parameters
         with pytest.raises(ValueError, match='wrong number of parameters'):
@@ -198,7 +196,8 @@ class TestOperation:
             qml.RZ(-0.2, wires=[1], do_queue=False)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
-        node = qml.QNode(circuit, mock_device)
+        node = qml.QNode(circuit, mock_d
+        evice)
         node._construct([1.0], {})
 
         return node
@@ -522,7 +521,7 @@ class TestObservableConstruction:
         cv_obs = qml.TensorN(wires=[0, 1])
 
         assert isinstance(cv_obs, qml.TensorN)
-        assert cv_obs.wires == [0, 1]  #Wires([0, 1])
+        assert cv_obs.wires == Wires([0, 1])
         assert cv_obs.ev_order is None
 
     def test_tensor_n_single_mode_wires_explicit(self):
@@ -531,7 +530,7 @@ class TestObservableConstruction:
         cv_obs = qml.TensorN(wires=[0])
 
         assert isinstance(cv_obs, qml.NumberOperator)
-        assert cv_obs.wires == list([0])
+        assert cv_obs.wires == Wires([0])
         assert cv_obs.ev_order == 2
 
     def test_tensor_n_single_mode_wires_implicit(self):
@@ -540,7 +539,7 @@ class TestObservableConstruction:
         cv_obs = qml.TensorN(1)
 
         assert isinstance(cv_obs, qml.NumberOperator)
-        assert cv_obs.wires == list([1])
+        assert cv_obs.wires == Wires([1])
         assert cv_obs.ev_order == 2
 
 
@@ -555,7 +554,7 @@ class TestOperatorIntegration:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
-            num_wires = qml.operation.ActsOn.AllWires
+            num_wires = qml.operation.WiresEnum.AllWires
             num_params = 0
             par_domain = 'R'
 
@@ -639,7 +638,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.wires == list([0, 1, 2])
+        assert t.wires == Wires([0, 1, 2])
 
     def test_params(self):
         """Test that the correct flattened list of parameters is returned"""
@@ -647,7 +646,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.data == [p]
+        assert t.params == [p]
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
@@ -797,20 +796,20 @@ class TestTensor:
 
         # diagonalize the PauliX on wire 0 (H.X.H = Z)
         assert isinstance(res[0], qml.Hadamard)
-        assert res[0].wires == list([0])
+        assert res[0].wires == Wires([0])
 
         # diagonalize the PauliY on wire 1 (U.Y.U^\dagger = Z
         # where U = HSZ).
         assert isinstance(res[1], qml.PauliZ)
-        assert res[1].wires == list([1])
+        assert res[1].wires == Wires([1])
         assert isinstance(res[2], qml.S)
-        assert res[2].wires == list([1])
+        assert res[2].wires == Wires([1])
         assert isinstance(res[3], qml.Hadamard)
-        assert res[3].wires == list([1])
+        assert res[3].wires == Wires([1])
 
         # diagonalize the Hermitian observable on wires 5, 6
         assert isinstance(res[4], qml.QubitUnitary)
-        assert res[4].wires == list([5, 6])
+        assert res[4].wires == Wires([5, 6])
 
         O = O @ qml.Hadamard(4)
         res = O.diagonalizing_gates()
@@ -818,7 +817,7 @@ class TestTensor:
         # diagonalize the Hadamard observable on wire 4
         # (RY(-pi/4).H.RY(pi/4) = Z)
         assert isinstance(res[-1], qml.RY)
-        assert res[-1].wires == list([4])
+        assert res[-1].wires == Wires([4])
         assert np.allclose(res[-1].parameters, -np.pi/4, atol=tol, rtol=0)
 
     def test_diagonalizing_gates_numerically_diagonalizes(self, tol):
@@ -994,7 +993,7 @@ class TestDecomposition:
         theta = 0.654
         omega = -5.43
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.utils.OperationRecorder() as rec:
             qml.Rot.decomposition(phi, theta, omega, wires=0)
 
         assert len(rec.queue) == 3
@@ -1013,34 +1012,34 @@ class TestDecomposition:
         qubit rotation"""
         phi = 0.432
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.utils.OperationRecorder() as rec:
             qml.CRX.decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
 
         assert rec.queue[0].name == "RZ"
         assert rec.queue[0].parameters == [np.pi/2]
-        assert rec.queue[0].wires == list([1])
+        assert rec.queue[0].wires == Wires([1])
 
         assert rec.queue[1].name == "RY"
         assert rec.queue[1].parameters == [phi/2]
-        assert rec.queue[1].wires == list([1])
+        assert rec.queue[1].wires == Wires([1])
 
         assert rec.queue[2].name == "CNOT"
         assert rec.queue[2].parameters == []
-        assert rec.queue[2].wires == list([0, 1])
+        assert rec.queue[2].wires == Wires([0, 1])
 
         assert rec.queue[3].name == "RY"
         assert rec.queue[3].parameters == [-phi/2]
-        assert rec.queue[3].wires == list([1])
+        assert rec.queue[3].wires == Wires([1])
 
         assert rec.queue[4].name == "CNOT"
         assert rec.queue[4].parameters == []
-        assert rec.queue[4].wires == list([0, 1])
+        assert rec.queue[4].wires == Wires([0, 1])
 
         assert rec.queue[5].name == "RZ"
         assert rec.queue[5].parameters == [-np.pi/2]
-        assert rec.queue[5].wires == list([1])
+        assert rec.queue[5].wires == Wires([1])
 
     @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
     def test_crx_decomposition_correctness(self, phi, tol):
@@ -1060,26 +1059,26 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.utils.OperationRecorder() as rec:
             qml.CRY.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
 
         assert rec.queue[0].name == "RY"
         assert rec.queue[0].parameters == [phi/2]
-        assert rec.queue[0].wires == list([1])
+        assert rec.queue[0].wires == Wires([1])
 
         assert rec.queue[1].name == "CNOT"
         assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == list(operation_wires)
+        assert rec.queue[1].wires == Wires(operation_wires)
 
         assert rec.queue[2].name == "RY"
         assert rec.queue[2].parameters == [-phi/2]
-        assert rec.queue[2].wires == list([1])
+        assert rec.queue[2].wires == Wires([1])
 
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == list(operation_wires)
+        assert rec.queue[3].wires == Wires(operation_wires)
 
     @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
     def test_cry_decomposition_correctness(self, phi, tol):
@@ -1098,26 +1097,26 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.utils.OperationRecorder() as rec:
             qml.CRZ.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
 
         assert rec.queue[0].name == "PhaseShift"
         assert rec.queue[0].parameters == [phi/2]
-        assert rec.queue[0].wires == list([1])
+        assert rec.queue[0].wires == Wires([1])
 
         assert rec.queue[1].name == "CNOT"
         assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == list(operation_wires)
+        assert rec.queue[1].wires == Wires(operation_wires)
 
         assert rec.queue[2].name == "PhaseShift"
         assert rec.queue[2].parameters == [-phi/2]
-        assert rec.queue[2].wires == list([1])
+        assert rec.queue[2].wires == Wires([1])
 
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == list(operation_wires)
+        assert rec.queue[3].wires == Wires(operation_wires)
 
     @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
     def test_crz_decomposition_correctness(self, phi, tol):
@@ -1134,7 +1133,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.utils.OperationRecorder() as rec:
             qml.U2.decomposition(phi, lam, wires=0)
 
         assert len(rec.queue) == 3
@@ -1154,7 +1153,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with pennylane._queuing.OperationRecorder() as rec:
+        with qml.utils.OperationRecorder() as rec:
             qml.U3.decomposition(theta, phi, lam, wires=0)
 
         assert len(rec.queue) == 3
