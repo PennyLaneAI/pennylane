@@ -47,7 +47,7 @@ free parameters stored as Variable instances.
 
 .. important::
     If the user defines a keyword argument, then they always have to pass the
-    corresponding variable as a keyword argument, otherwise it won't device_wires.
+    corresponding variable as a keyword argument, otherwise it won't register.
 
 For each successive QNode execution, the user-provided values for the positional and keyword
 arguments are stored in :attr:`Variable.positional_arg_values` and

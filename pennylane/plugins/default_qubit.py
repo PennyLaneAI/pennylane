@@ -200,7 +200,7 @@ class DefaultQubit(QubitDevice):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(wires) == self.num_wires and sorted(wires.labels) == wires.labels:
-            # Initialize the entire device_wires with the state
+            # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
             return
 

@@ -93,7 +93,7 @@ def UCCSD(weights, wires, ph=None, pphh=None, init_state=None):
             orbitals where the particles are created. Wires in-between represent the occupied
             and virtual orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
-            HF state. ``init_state`` is used to initialize the qubit device_wires.
+            HF state. ``init_state`` is used to initialize the qubit wires.
 
     Raises:
         ValueError: if inputs do not have the correct format

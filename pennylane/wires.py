@@ -78,7 +78,7 @@ class Wires(Sequence):
             raise WireError("Wires must be unique; got {}.".format(wires))
 
     def __getitem__(self, idx):
-        """Method to support indexing. Returns a Wires object representing a device_wires with a single wire."""
+        """Method to support indexing. Returns a Wires object representing a single wire."""
         return Wires(self.labels[idx])
 
     def __len__(self):
