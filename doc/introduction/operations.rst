@@ -69,6 +69,7 @@ Qubit gates
     ~pennylane.S
     ~pennylane.SWAP
     ~pennylane.T
+    ~pennylane.Toffoli
 
 :html:`</div>`
 

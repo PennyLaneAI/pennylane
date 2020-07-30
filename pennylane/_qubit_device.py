@@ -71,7 +71,7 @@ class QubitDevice(Device):
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
-    _reduce_sum = staticmethod(lambda array, axes: np.apply_over_axes(np.sum, array, axes))
+    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
     _gather = staticmethod(lambda array, indices: array[indices])
@@ -410,7 +410,7 @@ class QubitDevice(Device):
         # count the basis state occurrences, and construct the probability vector
         basis_states, counts = np.unique(indices, return_counts=True)
         prob = np.zeros([2 ** len(wires)], dtype=np.float64)
-        prob[basis_states] = counts / self.shots
+        prob[basis_states] = counts / len(samples)
         return self._asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None):

@@ -2,31 +2,70 @@
 
 <h3>New features since last release</h3>
 
-* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
-  to run generic tests on core or external devices calling 
-  
-  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False                                                                                                                                                                                                                                                                    
-  
+* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used
+  to run generic tests on core or external devices calling
+
+  ```pycon
+  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
+  ```
+
   The command line arguments are optional.
-   
-  * If `--device` is not given, the tests are run on the core devices that ship with PennyLane. 
-  
-  * If `--shots` is not given, a default of 10000 is used. The shots argument is ignored for devices running in 
+
+  * If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
+
+  * If `--shots` is not given, a default of 10000 is used. The shots argument is ignored for devices running in
     analytic mode.
-  
+
   * If `--analytic` is not given, the device's default is used.
-  
-  Other arguments of the device, such as `qiskit.aer`'s compulsory `backend_options`, 
+
+  Other arguments of the device, such as `qiskit.aer`'s compulsory `backend_options`,
   can be defined in the `config.toml` file containing custom PennyLane configurations.
-                                                                                                                                                        
-  If the tests are run on external devices, the device and its dependencies must be 
-  installed locally. 
-  
-* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
+
+  If the tests are run on external devices, the device and its dependencies must be
+  installed locally.
+
+* Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
+  As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
+  be faster than the parameter-shift rule for computing quantum gradients
+  when the number of parameters to be optimized is large.
+  [(#721)](https://github.com/XanaduAI/pennylane/pull/721)
+
+  `default.qubit.autograd` is designed to be used with end-to-end classical backpropagation
+  (`diff_method="backprop"`) with the Autograd interface. This is the default method
+  of differentiation when creating a QNode with this device.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit.autograd", wires=1)
+  >>> @qml.qnode(dev, diff_method="backprop")
+  ... def circuit(x):
+  ...     qml.RX(x[1], wires=0)
+  ...     qml.Rot(x[0], x[1], x[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> weights = np.array([0.2, 0.5, 0.1])
+  >>> grad_fn = qml.grad(circuit)
+  >>> print(grad_fn(weights))
+  array([-2.25267173e-01, -1.00864546e+00,  6.93889390e-18])
+  ```
+
+  See the `default.qubit.autograd` documentation for more details.
+
+* Added the `qml.utils.decompose_hamiltonian` function. This function can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
 
+  ```pycon
+  >>> A = np.array(
+  ... [[-2, -2+1j, -2, -2],
+  ... [-2-1j,  0,  0, -1],
+  ... [-2,  0, -2, -1],
+  ... [-2, -1, -1,  0]])
+  >>> coeffs, obs_list = decompose_hamiltonian(A)
+  ```
+
 <h3>Improvements</h3>
+
+* Added support for TensorFlow 2.3 and PyTorch 1.6.
+  [(#725)](https://github.com/PennyLaneAI/pennylane/pull/725)
 
 * Returning probabilities is now supported from photonic QNodes.
   As with qubit QNodes, photonic QNodes returning probabilities are
@@ -45,13 +84,19 @@
 
 <h3>Breaking changes</h3>
 
+<h3>Bug fixes</h3>
+
+* The PennyLane interface conversion functions can now convert QNodes with
+  pre-existing interfaces.
+  [(#707)](https://github.com/XanaduAI/pennylane/pull/707)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Antal Száva, Nicola Vitucci
+Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 

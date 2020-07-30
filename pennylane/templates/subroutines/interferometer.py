@@ -19,7 +19,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.templates.utils import (
     check_shapes,
-    check_no_variable,
     check_is_in_options,
 )
 from pennylane.wires import Wires
@@ -110,9 +109,6 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(beamsplitter, msg="'beamsplitter' cannot be differentiable")
-    check_no_variable(mesh, msg="'mesh' cannot be differentiable")
 
     weights_list = [theta, phi, varphi]
     n_wires = len(wires)

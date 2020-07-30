@@ -16,7 +16,7 @@ This module contains the template decorator.
 """
 from functools import wraps
 
-from pennylane.utils import OperationRecorder
+from pennylane._queuing import OperationRecorder
 
 
 def template(func):
