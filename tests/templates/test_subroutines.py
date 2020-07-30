@@ -866,7 +866,7 @@ class TestApproxTimeEvolution:
 
         n_wires = 2
 
-        with qml.utils.OperationRecorder() as rec:
+        with qml._queuing.OperationRecorder() as rec:
             ApproxTimeEvolution(hamiltonian, time, steps)
 
         for i, gate in enumerate(rec.operations):
