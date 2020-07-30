@@ -44,6 +44,7 @@ def x_mixer(wires):
         The mixer Hamiltonian can be called as follows:
 
         .. code-block:: python
+
             from pennylane import qaoa
 
             wires = range(3)
@@ -86,6 +87,7 @@ def xy_mixer(graph):
         The mixer Hamiltonian can be called as follows:
 
         .. code-block:: python
+
             from pennylane import qaoa
             from networkx import Graph
 
