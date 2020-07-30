@@ -21,7 +21,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import QubitStateVector
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_type,
     get_shape,
 )
@@ -173,9 +172,6 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(pad, msg="'pad' cannot be differentiable")
-    check_no_variable(normalize, msg="'normalize' cannot be differentiable")
 
     n_amplitudes = 2 ** len(wires)
     expected_shape = (n_amplitudes,)

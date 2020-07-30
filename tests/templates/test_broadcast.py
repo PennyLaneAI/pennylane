@@ -245,19 +245,6 @@ class TestBuiltinPatterns:
         with pytest.raises(ValueError, match="the ring pattern with 2 wires is an exception"):
             circuit(pars)
 
-    def test_exception_parameters_not_valid(self):
-        """Tests that an exception is raised if 'parameters' argument has invalid format."""
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            broadcast(unitary=RX, wires=[0, 1], pattern="single", parameters=RX)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
-            circuit()
-
     @pytest.mark.parametrize("function, wires, target", [(wires_pyramid, [8, 2, 0, 4, 6, 1],
                                                           [[8, 2], [0, 4], [6, 1], [2, 0], [4, 6], [0, 4]]),
                                                          (wires_pyramid, [5, 10, 1, 0, 3, 4, 6],

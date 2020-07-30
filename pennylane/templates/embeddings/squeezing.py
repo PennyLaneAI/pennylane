@@ -20,7 +20,6 @@ from pennylane.ops import Squeezing
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_is_in_options,
     get_shape,
     check_type,
@@ -61,9 +60,6 @@ def SqueezingEmbedding(features, wires, method="amplitude", c=0.1):
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(method, msg="'method' cannot be differentiable")
-    check_no_variable(c, msg="'c' cannot be differentiable")
 
     check_type(c, [float, int], msg="'c' must be of type float or integer; got {}".format(type(c)))
 
