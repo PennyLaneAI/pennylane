@@ -16,6 +16,7 @@ Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import pytest
 import numpy as np
+import scipy
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
@@ -46,7 +47,7 @@ class TestCostHamiltonians:
             (
                 Graph([(0, 1), (1, 2)]),
                 qml.Hamiltonian(
-                    [0.5, -0.5, 0.5, -0.5],
+                    [-0.5, 0.5, -0.5, 0.5],
                     [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
@@ -58,7 +59,7 @@ class TestCostHamiltonians:
             (
                 Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
                 qml.Hamiltonian(
-                    [0.5, -0.5, 0.5, -0.5, 0.5, -0.5],
+                    [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5],
                     [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),
@@ -72,7 +73,7 @@ class TestCostHamiltonians:
             (
                 graph,
                 qml.Hamiltonian(
-                    [0.5, -0.5, 0.5, -0.5],
+                    [-0.5, 0.5, -0.5, 0.5],
                     [
                         qml.Identity(0) @ qml.Identity(1),
                         qml.PauliZ(0) @ qml.PauliZ(1),

@@ -28,12 +28,12 @@ def MaxCut(graph):
     find the cut of the graph such that the number of edges crossing the cut is maximized
     (see `Cut (graph theory) <https://en.wikipedia.org/wiki/Cut_(graph_theory)>`__).
 
-    Recommended mixer Hamiltonian: pennylane.qaoa.x_mixer
+    Recommended mixer Hamiltonian: ~.qaoa.x_mixer
 
-    Recommended initialization circuit: pennylane.templates.even_superposition
+    Recommended initialization circuit: ~.templates.even_superposition
 
     Args:
-         graph (nx.Graph) A graph defining the pairs of wire indices on which each term of the Hamiltonian acts.
+         graph (nx.Graph) A graph defining the pairs of wires on which each term of the Hamiltonian acts.
 
     Returns:
         ~.Hamiltonian:
@@ -52,9 +52,9 @@ def MaxCut(graph):
     for node1, node2 in edges:
 
         obs.append(qml.Identity(node1) @ qml.Identity(node2))
-        coeffs.append(0.5)
+        coeffs.append(-0.5)
 
         obs.append(qml.PauliZ(node1) @ qml.PauliZ(node2))
-        coeffs.append(-0.5)
+        coeffs.append(0.5)
 
     return qml.Hamiltonian(coeffs, obs)
