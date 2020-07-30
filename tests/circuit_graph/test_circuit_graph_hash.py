@@ -374,7 +374,7 @@ class TestQNodeCircuitHashIntegration:
 
         node2 = BaseQNode(circuit2, dev)
         node2.evaluate([x, y], {})
-        circuit_hash_2 = node2.circuit.hash
+        circuit_hash_2 = node2.circuit_hash
 
         assert circuit_hash_1 == circuit_hash_2
 

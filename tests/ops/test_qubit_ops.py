@@ -1059,3 +1059,10 @@ class TestDiagonalQubitUnitary:
         assert decomp[0].name == "QubitUnitary"
         assert decomp[0].wires == [0, 1, 2]  #Wires([0, 1, 2])
         assert np.allclose(decomp[0].data[0], np.diag(D))
+
+
+def test_identity_eigvals(tol):
+    """Test identity eigenvalues are correct"""
+    res = qml.Identity._eigvals()
+    expected = np.array([1, 1])
+    assert np.allclose(res, expected, atol=tol, rtol=0)

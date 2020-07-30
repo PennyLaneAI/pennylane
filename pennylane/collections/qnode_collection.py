@@ -207,7 +207,7 @@ class QNodeCollection(Sequence):
         if parallel:
             try:
                 import dask
-            except:
+            except:  # pragma: no cover
                 raise ImportError(
                     "Dask must be installed for parallel evaluation. "
                     "\nDask can be installed using pip:"
