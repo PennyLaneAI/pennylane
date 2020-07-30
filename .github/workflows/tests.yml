@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TF_VERSION: 2.2
-      TORCH_VERSION: 1.5
+      TF_VERSION: 2.3
+      TORCH_VERSION: 1.6
 
     strategy:
       matrix:
