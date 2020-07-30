@@ -65,8 +65,7 @@ class Device(abc.ABC):
 
         self._wires = Wires(wires)
         self.num_wires = len(self._wires)
-        wire_map = self.define_wire_map(self._wires)
-        self._wire_map = wire_map
+        self._wire_map = self.define_wire_map(self._wires)
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
