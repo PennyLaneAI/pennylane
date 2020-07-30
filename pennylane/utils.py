@@ -17,16 +17,92 @@ across the PennyLane submodules.
 """
 # pylint: disable=protected-access
 from collections.abc import Iterable
-from collections import OrderedDict
 import copy
-import numbers
 import functools
 import inspect
+import itertools
+import numbers
+from operator import matmul
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.variable import Variable
+
+
+def decompose_hamiltonian(H, hide_identity=False):
+    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+
+    Args:
+        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`
+        hide_identity (bool): does not include the :class:`~.Identity` observable within
+            the tensor products of the decomposition if ``True``
+
+    Returns:
+        tuple[list[float], list[~.Observable]]: a list of coefficients and a list
+        of corresponding tensor products of Pauli observables that decompose the Hamiltonian.
+
+    **Example:**
+
+    We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
+    matrix:
+
+    >>> A = np.array(
+    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
+    >>> coeffs, obs_list = decompose_hamiltonian(A)
+    >>> coeffs
+    [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5]
+
+    We can use the output coefficients and tensor Pauli terms to construct a :class:`~.Hamiltonian`:
+
+    >>> H = qml.Hamiltonian(coeffs, obs_list)
+    >>> print(H)
+    (-1.0) [I0 I1]
+    + (-1.5) [X1]
+    + (-0.5) [Y1]
+    + (-1.0) [Z1]
+    + (-1.5) [X0]
+    + (-1.0) [X0 X1]
+    + (-0.5) [X0 Z1]
+    + (1.0) [Y0 Y1]
+    + (-0.5) [Z0 X1]
+    + (-0.5) [Z0 Y1]
+
+    This Hamiltonian can then be used in defining VQE problems using :class:`~.VQECost`.
+    """
+    n = int(np.log2(len(H)))
+    N = 2 ** n
+
+    if H.shape != (N, N):
+        raise ValueError(
+            "The Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"
+        )
+
+    if not np.allclose(H, H.conj().T):
+        raise ValueError("The Hamiltonian is not Hermitian")
+
+    paulis = [qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ]
+    obs = []
+    coeffs = []
+
+    for term in itertools.product(paulis, repeat=n):
+        matrices = [i._matrix() for i in term]
+        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
+        coeff = np.real_if_close(coeff).item()
+
+        if not np.allclose(coeff, 0):
+            coeffs.append(coeff)
+
+            if not all(t is qml.Identity for t in term) and hide_identity:
+                obs.append(
+                    functools.reduce(
+                        matmul, [t(i) for i, t in enumerate(term) if t is not qml.Identity],
+                    )
+                )
+            else:
+                obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
+
+    return coeffs, obs
 
 
 def _flatten(x):
@@ -153,90 +229,6 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-class OperationRecorder(qml.QueuingContext):
-    """A template and quantum function inspector,
-    allowing easy introspection of operators that have been
-    applied without requiring a QNode.
-
-    **Example**:
-
-    The OperationRecorder is a context manager. Executing templates
-    or quantum functions stores resulting applied operators in the
-    recorder, which can then be printed.
-
-    >>> weights = qml.init.strong_ent_layers_normal(n_layers=1, n_wires=2)
-    >>>
-    >>> with qml.utils.OperationRecorder() as rec:
-    >>>    qml.templates.layers.StronglyEntanglingLayers(*weights, wires=[0, 1])
-    >>>
-    >>> print(rec)
-    Operations
-    ==========
-    Rot(-0.10832656163640327, 0.14429091013664083, -0.010835826725765343, wires=[0])
-    Rot(-0.11254523669444501, 0.0947222564914006, -0.09139600968423377, wires=[1])
-    CNOT(wires=[0, 1])
-    CNOT(wires=[1, 0])
-
-    Alternatively, the :attr:`~.OperationRecorder.queue` attribute can be used
-    to directly accessed the applied :class:`~.Operation` and :class:`~.Observable`
-    objects.
-
-    Attributes:
-        queue (List[~.Operators]): list of operators applied within
-            the OperatorRecorder context, includes operations and observables
-        operations (List[~.Operations]): list of operations applied within
-            the OperatorRecorder context
-        observables (List[~.Observables]): list of observables applied within
-            the OperatorRecorder context
-    """
-
-    def __init__(self):
-        self.queue = []
-        self.operations = None
-        self.observables = None
-
-    def _append_operator(self, operator):
-        self.queue.append(operator)
-
-    def _remove_operator(self, operator):
-        self.queue.remove(operator)
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        super().__exit__(exception_type, exception_value, traceback)
-
-        # Remove duplicates that might have arisen from measurements
-        self.queue = list(OrderedDict.fromkeys(self.queue))
-        self.operations = list(
-            filter(
-                lambda op: not (
-                    isinstance(op, qml.operation.Observable) and not op.return_type is None
-                ),
-                self.queue,
-            )
-        )
-        self.observables = list(
-            filter(
-                lambda op: isinstance(op, qml.operation.Observable) and not op.return_type is None,
-                self.queue,
-            )
-        )
-
-    def __str__(self):
-        output = ""
-        output += "Operations\n"
-        output += "==========\n"
-        for op in self.operations:
-            output += repr(op) + "\n"
-
-        output += "\n"
-        output += "Observables\n"
-        output += "==========\n"
-        for op in self.observables:
-            output += repr(op) + "\n"
-
-        return output
-
-
 def inv(operation_list):
     """Invert a list of operations or a :doc:`template </introduction/templates>`.
 
@@ -328,10 +320,10 @@ def inv(operation_list):
     inv_ops = [op.inv() for op in reversed(copy.deepcopy(operation_list))]
 
     for op in operation_list:
-        qml.QueuingContext.remove_operator(op)
+        qml.QueuingContext.remove(op)
 
     for inv_op in inv_ops:
-        qml.QueuingContext.append_operator(inv_op)
+        qml.QueuingContext.append(inv_op)
 
     return inv_ops
 

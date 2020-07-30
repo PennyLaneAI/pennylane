@@ -20,7 +20,6 @@ from pennylane.ops import CNOT, Rot
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_type,
     check_number_of_layers,
     get_shape,
@@ -86,9 +85,6 @@ def StronglyEntanglingLayers(weights, wires, ranges=None, imprimitive=CNOT):
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(ranges, msg="'ranges' cannot be differentiable")
-    check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
 
     repeat = check_number_of_layers([weights])
 

@@ -196,7 +196,7 @@ class TestObservables:
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
-        assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
+        assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
@@ -221,7 +221,7 @@ class TestObservables:
             qml.Hermitian._eigs[key]["eigvec"], observable_1_eigvecs, atol=tol, rtol=0
         )
 
-        assert np.allclose(qubit_unitary[0].params, observable_1_eigvecs.conj().T, atol=tol, rtol=0)
+        assert np.allclose(qubit_unitary[0].data, observable_1_eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
         observable_2 = obs2[0]
@@ -239,7 +239,7 @@ class TestObservables:
         )
 
         assert np.allclose(
-            qubit_unitary_2[0].params, observable_2_eigvecs.conj().T, atol=tol, rtol=0
+            qubit_unitary_2[0].data, observable_2_eigvecs.conj().T, atol=tol, rtol=0
         )
         assert len(qml.Hermitian._eigs) == 2
 
@@ -254,7 +254,7 @@ class TestObservables:
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
-        assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
+        assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
@@ -263,7 +263,7 @@ class TestObservables:
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
 
-        assert np.allclose(qubit_unitary[0].params, eigvecs.conj().T, atol=tol, rtol=0)
+        assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
@@ -338,15 +338,15 @@ class TestOperations:
 
         assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 2
-        
+        assert res[0].data[0] == np.pi / 2
+
         assert res[1].name == "RX"
         assert res[1].wires == [0]  #qml.wires.Wires([0])
-        assert res[1].params[0] == np.pi
-        
+        assert res[1].data[0] == np.pi
+
         assert res[2].name == "PhaseShift"
         assert res[2].wires == [0]  #qml.wires.Wires([0])
-        assert res[2].params[0] == np.pi / 2
+        assert res[2].data[0] == np.pi / 2
 
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
@@ -360,16 +360,16 @@ class TestOperations:
 
         assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 2
-        
+        assert res[0].data[0] == np.pi / 2
+
         assert res[1].name == "RY"
         assert res[1].wires == [0]  #qml.wires.Wires([0])
-        assert res[1].params[0] == np.pi
-        
+        assert res[1].data[0] == np.pi
+
         assert res[2].name == "PhaseShift"
         assert res[2].wires == [0]  #qml.wires.Wires([0])
-        assert res[2].params[0] == np.pi / 2
-        
+        assert res[2].data[0] == np.pi / 2
+
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
@@ -382,8 +382,8 @@ class TestOperations:
 
         assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi
-        
+        assert res[0].data[0] == np.pi
+
         decomposed_matrix = res[0].matrix
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
@@ -396,8 +396,8 @@ class TestOperations:
 
         assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 2
-        
+        assert res[0].data[0] == np.pi / 2
+
         decomposed_matrix = res[0].matrix
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
@@ -410,8 +410,8 @@ class TestOperations:
 
         assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 4
-        
+        assert res[0].data[0] == np.pi / 4
+
         decomposed_matrix = res[0].matrix
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
@@ -424,16 +424,16 @@ class TestOperations:
 
         assert res[0].name == "PhaseShift"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 2
+        assert res[0].data[0] == np.pi / 2
 
         assert res[1].name == "RX"
         assert res[1].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 2
-        
+        assert res[0].data[0] == np.pi / 2
+
         assert res[2].name == "PhaseShift"
         assert res[2].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == np.pi / 2
-        
+        assert res[0].data[0] == np.pi / 2
+
         decomposed_matrix = np.linalg.multi_dot([i.matrix for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
 
@@ -447,8 +447,8 @@ class TestOperations:
 
         assert res[0].name == "RZ"
         assert res[0].wires == [0]  #qml.wires.Wires([0])
-        assert res[0].params[0] == 0.3
-        
+        assert res[0].data[0] == 0.3
+
         decomposed_matrix = res[0].matrix
         global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
 
@@ -811,7 +811,7 @@ class TestPauliRot:
 
         assert decomp_ops[0].name == "MultiRZ"
         assert decomp_ops[0].wires == [0,1]  #Wires([0, 1])
-        assert decomp_ops[0].params[0] == theta
+        assert decomp_ops[0].data[0] == theta
 
     def test_PauliRot_decomposition_XY(self):
         """Test that the decomposition for a XY rotation is correct."""
@@ -827,18 +827,18 @@ class TestPauliRot:
 
         assert decomp_ops[1].name == "RX"
         assert decomp_ops[1].wires == [1]  #Wires([1])
-        assert decomp_ops[1].params[0] == np.pi / 2
+        assert decomp_ops[1].data[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
         assert decomp_ops[2].wires == [0,1]  #Wires([0, 1])
-        assert decomp_ops[2].params[0] == theta
+        assert decomp_ops[2].data[0] == theta
 
         assert decomp_ops[3].name == "Hadamard"
         assert decomp_ops[3].wires == [0]  #Wires([0])
 
         assert decomp_ops[4].name == "RX"
         assert decomp_ops[4].wires == [1]  #Wires([1])
-        assert decomp_ops[4].params[0] == -np.pi / 2
+        assert decomp_ops[4].data[0] == -np.pi / 2
 
     def test_PauliRot_decomposition_XIYZ(self):
         """Test that the decomposition for a XIYZ rotation is correct."""
@@ -854,18 +854,18 @@ class TestPauliRot:
 
         assert decomp_ops[1].name == "RX"
         assert decomp_ops[1].wires == [2]  #Wires([2])
-        assert decomp_ops[1].params[0] == np.pi / 2
+        assert decomp_ops[1].data[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
         assert decomp_ops[2].wires == [0, 2, 3]  #Wires([0, 2, 3])
-        assert decomp_ops[2].params[0] == theta
+        assert decomp_ops[2].data[0] == theta
 
         assert decomp_ops[3].name == "Hadamard"
         assert decomp_ops[3].wires == [0]  #Wires([0])
 
         assert decomp_ops[4].name == "RX"
         assert decomp_ops[4].wires == [2]  #Wires([2])
-        assert decomp_ops[4].params[0] == -np.pi / 2
+        assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_differentiability(self, angle):
@@ -975,7 +975,7 @@ class TestMultiRZ:
 
         assert decomp_ops[1].name == "RZ"
         assert decomp_ops[1].wires == [0]  #Wires([0])
-        assert decomp_ops[1].params[0] == theta
+        assert decomp_ops[1].data[0] == theta
 
         assert decomp_ops[2].name == "CNOT"
         assert decomp_ops[2].wires == [1, 0]  #Wires([1, 0])
@@ -995,7 +995,7 @@ class TestMultiRZ:
 
         assert decomp_ops[2].name == "RZ"
         assert decomp_ops[2].wires == [0]  #Wires([0])
-        assert decomp_ops[2].params[0] == theta
+        assert decomp_ops[2].data[0] == theta
 
         assert decomp_ops[3].name == "CNOT"
         assert decomp_ops[3].wires == [2, 0]  #Wires([2, 0])
@@ -1058,4 +1058,11 @@ class TestDiagonalQubitUnitary:
 
         assert decomp[0].name == "QubitUnitary"
         assert decomp[0].wires == [0, 1, 2]  #Wires([0, 1, 2])
-        assert np.allclose(decomp[0].params[0], np.diag(D))
+        assert np.allclose(decomp[0].data[0], np.diag(D))
+
+
+def test_identity_eigvals(tol):
+    """Test identity eigenvalues are correct"""
+    res = qml.Identity._eigvals()
+    expected = np.array([1, 1])
+    assert np.allclose(res, expected, atol=tol, rtol=0)

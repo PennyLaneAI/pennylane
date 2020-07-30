@@ -22,6 +22,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import pennylane as qml
+import pennylane._queuing
 from pennylane.templates.state_preparations import (BasisStatePreparation,
                                                     MottonenStatePreparation,
                                                     ArbitraryStatePreparation)
@@ -309,54 +310,54 @@ class TestArbitraryStatePreparation:
         """Test that the correct gates are applied on a single wire."""
         weights = np.array([0, 1], dtype=float)
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             ArbitraryStatePreparation(weights, wires=[0])
 
         assert rec.queue[0].name == "PauliRot"
-        assert rec.queue[0].params[0] == weights[0]
-        assert rec.queue[0].params[1] == "X"
+        assert rec.queue[0].data[0] == weights[0]
+        assert rec.queue[0].data[1] == "X"
         assert rec.queue[0].wires == [0]  #Wires([0])
 
         assert rec.queue[1].name == "PauliRot"
-        assert rec.queue[1].params[0] == weights[1]
-        assert rec.queue[1].params[1] == "Y"
+        assert rec.queue[1].data[0] == weights[1]
+        assert rec.queue[1].data[1] == "Y"
         assert rec.queue[1].wires == [0]  #Wires([0])
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on on two wires."""
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             ArbitraryStatePreparation(weights, wires=[0, 1])
 
         assert rec.queue[0].name == "PauliRot"
-        assert rec.queue[0].params[0] == weights[0]
-        assert rec.queue[0].params[1] == "XI"
+        assert rec.queue[0].data[0] == weights[0]
+        assert rec.queue[0].data[1] == "XI"
         assert rec.queue[0].wires == [0,1]  #Wires([0, 1])
 
         assert rec.queue[1].name == "PauliRot"
-        assert rec.queue[1].params[0] == weights[1]
-        assert rec.queue[1].params[1] == "YI"
+        assert rec.queue[1].data[0] == weights[1]
+        assert rec.queue[1].data[1] == "YI"
         assert rec.queue[1].wires == [0,1]  #Wires([0, 1])
 
         assert rec.queue[2].name == "PauliRot"
-        assert rec.queue[2].params[0] == weights[2]
-        assert rec.queue[2].params[1] == "IX"
+        assert rec.queue[2].data[0] == weights[2]
+        assert rec.queue[2].data[1] == "IX"
         assert rec.queue[2].wires == [0,1]  #Wires([0, 1])
 
         assert rec.queue[3].name == "PauliRot"
-        assert rec.queue[3].params[0] == weights[3]
-        assert rec.queue[3].params[1] == "IY"
+        assert rec.queue[3].data[0] == weights[3]
+        assert rec.queue[3].data[1] == "IY"
         assert rec.queue[3].wires == [0,1]  #Wires([0, 1])
 
         assert rec.queue[4].name == "PauliRot"
-        assert rec.queue[4].params[0] == weights[4]
-        assert rec.queue[4].params[1] == "XX"
+        assert rec.queue[4].data[0] == weights[4]
+        assert rec.queue[4].data[1] == "XX"
         assert rec.queue[4].wires == [0,1]  #Wires([0, 1])
 
         assert rec.queue[5].name == "PauliRot"
-        assert rec.queue[5].params[0] == weights[5]
-        assert rec.queue[5].params[1] == "XY"
+        assert rec.queue[5].data[0] == weights[5]
+        assert rec.queue[5].data[1] == "XY"
         assert rec.queue[5].wires == [0,1]  #Wires([0, 1])
 
     def test_GHZ_generation(self, qubit_device_3_wires, tol):

@@ -20,8 +20,6 @@ To add a new pattern:
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
-
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_type, get_shape, check_is_in_options
 from pennylane.wires import Wires
@@ -525,13 +523,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     # Input checks
 
     wires = Wires(wires)
-
-    check_type(
-        parameters,
-        [Iterable, type(None)],
-        msg="'parameters' must be either of type None or "
-        "Iterable; got {}".format(type(parameters)),
-    )
 
     if kwargs is None:
         kwargs = {}
