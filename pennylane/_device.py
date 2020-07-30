@@ -200,7 +200,11 @@ class Device(abc.ABC):
         try:
             mapped_wires = wires.map(self.wire_map)
         except WireError:
-            raise WireError("Did not find some of the wires {} on device with wires {}.".format(wires, self.wires))
+            raise WireError(
+                "Did not find some of the wires {} on device with wires {}.".format(
+                    wires, self.wires
+                )
+            )
 
         return mapped_wires
 

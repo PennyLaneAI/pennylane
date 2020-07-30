@@ -861,9 +861,7 @@ class BaseQNode(qml.QueuingContext):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
             circuit_graph = CircuitGraph(
-                self.circuit.operations + list(obs),
-                self.circuit.variable_deps,
-                self.device.wires,
+                self.circuit.operations + list(obs), self.circuit.variable_deps, self.device.wires,
             )
             ret = self.device.execute(circuit_graph)
         else:

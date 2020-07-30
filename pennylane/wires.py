@@ -190,15 +190,19 @@ class Wires(Sequence):
         """
         for w in self:
             if w not in wire_map:
-                raise WireError("No mapping for wire label {} specified in wire map {}.".format(w, wire_map))
+                raise WireError(
+                    "No mapping for wire label {} specified in wire map {}.".format(w, wire_map)
+                )
 
         new_wires = [wire_map[w] for w in self]
 
         try:
             new_wires = Wires(new_wires)
         except WireError:
-            raise WireError("Failed to implement wire map {}. Make sure that the new labels are unique and "
-                            "valid wire labels.".format(w, wire_map))
+            raise WireError(
+                "Failed to implement wire map {}. Make sure that the new labels are unique and "
+                "valid wire labels.".format(w, wire_map)
+            )
 
         return new_wires
 

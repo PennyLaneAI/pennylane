@@ -301,7 +301,11 @@ class DefaultTensor(Device):
     def apply(self, operation, wires, par):
 
         if operation in ("QubitStateVector", "BasisState"):
-            if wires is not None and wires != Wires([]) and wires.tolist() != list(range(self.num_wires)):
+            if (
+                wires is not None
+                and wires != Wires([])
+                and wires.tolist() != list(range(self.num_wires))
+            ):
                 raise ValueError(
                     "The default.tensor plugin can apply {} only to all of the {} wires.".format(
                         operation, self.num_wires
@@ -415,9 +419,7 @@ class DefaultTensor(Device):
             offset = len(w)
             tensors.append(self._reshape(A, [2] * offset * 2))
 
-        nodes = self._create_nodes_from_tensors(
-            tensors, wires, observable, key="observables"
-        )
+        nodes = self._create_nodes_from_tensors(tensors, wires, observable, key="observables")
         return self.ev(nodes, wires)
 
     def var(self, observable, obs_wires, par):
@@ -427,9 +429,7 @@ class DefaultTensor(Device):
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        tensors = [
-            self._reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, obs_wires)
-        ]
+        tensors = [self._reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, obs_wires)]
         tensors_of_squared_matrices = [
             self._reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, obs_wires)
         ]
@@ -441,10 +441,7 @@ class DefaultTensor(Device):
             tensors_of_squared_matrices, obs_wires, observable, key="observables"
         )
 
-        return (
-            self.ev(obs_nodes_for_squares, obs_wires)
-            - self.ev(obs_nodes, obs_wires) ** 2
-        )
+        return self.ev(obs_nodes_for_squares, obs_wires) - self.ev(obs_nodes, obs_wires) ** 2
 
     def sample(self, observable, obs_wires, par):
 
