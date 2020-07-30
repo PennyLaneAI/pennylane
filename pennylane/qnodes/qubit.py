@@ -120,13 +120,13 @@ class QubitQNode(JacobianQNode):
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operators depending on the original.
-            orig = op.params[p_idx]
+            orig = op.data[p_idx]
             assert orig.idx == idx
 
             # reference to a new, temporary parameter with index n, otherwise identical with orig
             temp_var = copy.copy(orig)
             temp_var.idx = n
-            op.params[p_idx] = temp_var
+            op.data[p_idx] = temp_var
 
             multiplier, shift = op.get_parameter_shift(p_idx)
 
@@ -140,7 +140,7 @@ class QubitQNode(JacobianQNode):
             pd += (y2 - y1) * multiplier
 
             # restore the original parameter
-            op.params[p_idx] = orig
+            op.data[p_idx] = orig
 
         return pd
 
@@ -174,7 +174,7 @@ class QubitQNode(JacobianQNode):
                 # are not guaranteed to be involutory, need to take them into
                 # account separately to calculate d<A^2>/dp
 
-                A = e.params[0]  # Hermitian matrix
+                A = e.data[0]  # Hermitian matrix
                 # if not np.allclose(A @ A, np.identity(A.shape[0])):
                 new = qml.expval(qml.Hermitian(A @ A, w, do_queue=False))
             else:

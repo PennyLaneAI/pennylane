@@ -388,7 +388,7 @@ class Operator(abc.ABC):
         if self.do_check_domain:
             for p in params:
                 self.check_domain(p)
-        self.params = list(params)  #: list[Any]: parameters of the operator
+        self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
             self.queue()
@@ -399,7 +399,7 @@ class Operator(abc.ABC):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        # FIXME using self.parameters here instead of self.params is dangerous, it assumes the params can be evaluated
+        # FIXME using self.parameters here instead of self.data is dangerous, it assumes the data can be evaluated
         # which is only true if something suitable happens to remain in VariableRef.positional_arg_values etc. after
         # the last evaluation.
         if self.parameters:
@@ -501,11 +501,11 @@ class Operator(abc.ABC):
                 p = self.check_domain(p.val)
             return p
 
-        return [evaluate(p) for p in self.params]
+        return [evaluate(p) for p in self.data]
 
     def queue(self):
         """Append the operator to the Operator queue."""
-        qml.QueuingContext.append_operator(self)
+        qml.QueuingContext.append(self)
 
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
@@ -590,7 +590,7 @@ class Operation(Operator):
         multiplier, shift = (0.5, np.pi / 2) if recipe is None else recipe
 
         # internal multiplier in the Variable
-        var_mult = self.params[idx].mult
+        var_mult = self.data[idx].mult
 
         multiplier *= var_mult
         if var_mult != 0:
@@ -954,7 +954,11 @@ class Tensor(Observable):
     def __str__(self):
         """Print the tensor product and some information."""
         return "Tensor product {}: {} params, wires {}".format(
+<<<<<<< HEAD
             [i.name for i in self.obs], len(self.params), self.wires.tolist()
+=======
+            [i.name for i in self.obs], len(self.data), self.wires
+>>>>>>> master
         )
 
     def __repr__(self):
@@ -989,13 +993,13 @@ class Tensor(Observable):
         return Wires([o.wires for o in self.obs])
 
     @property
-    def params(self):
+    def data(self):
         """Raw parameters of all constituent observables in the tensor product.
 
         Returns:
             list[Any]: flattened list containing all dependent parameters
         """
-        return [p for sublist in [o.params for o in self.obs] for p in sublist]
+        return [p for sublist in [o.data for o in self.obs] for p in sublist]
 
     @property
     def num_params(self):
@@ -1004,7 +1008,7 @@ class Tensor(Observable):
         Returns:
             list[Any]: flattened list containing all dependent parameters
         """
-        return len(self.params)
+        return len(self.data)
 
     @property
     def parameters(self):

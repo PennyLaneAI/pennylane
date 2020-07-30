@@ -23,6 +23,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+import pennylane._queuing
 from pennylane.operation import Tensor
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
@@ -90,9 +91,9 @@ class TestOperation:
             for k in range(test_class.num_params):
                 D = op.heisenberg_pd(k)  # using the recipe
                 # using finite difference
-                op.params[k] += h
+                op.data[k] += h
                 Up = op.heisenberg_tr(Wires(ww))
-                op.params = par
+                op.data = par
                 G = (Up-U) / h
                 assert D == pytest.approx(G, abs=tol)
 
@@ -130,7 +131,8 @@ class TestOperation:
         # valid call
         op = test_class(*pars, wires=ww)
         assert op.name == test_class.__name__
-        assert op.params == pars
+
+        assert op.data == pars
         assert op._wires == Wires(ww)
 
         # too many parameters
@@ -645,7 +647,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
-        assert t.params == [p]
+        assert t.data == [p]
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
@@ -992,7 +994,7 @@ class TestDecomposition:
         theta = 0.654
         omega = -5.43
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Rot.decomposition(phi, theta, omega, wires=0)
 
         assert len(rec.queue) == 3
@@ -1011,7 +1013,7 @@ class TestDecomposition:
         qubit rotation"""
         phi = 0.432
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.CRX.decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
@@ -1058,7 +1060,7 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.CRY.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
@@ -1096,7 +1098,7 @@ class TestDecomposition:
 
         operation_wires = [0, 1]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.CRZ.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
@@ -1132,7 +1134,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.U2.decomposition(phi, lam, wires=0)
 
         assert len(rec.queue) == 3
@@ -1152,7 +1154,7 @@ class TestDecomposition:
         phi = 0.432
         lam = 0.654
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.U3.decomposition(theta, phi, lam, wires=0)
 
         assert len(rec.queue) == 3
