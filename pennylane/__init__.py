@@ -213,7 +213,7 @@ def grad(func, argnum=None):
     return _gradient_function
 
 
-def jacobian(func, argnum):
+def jacobian(func, argnum=None):
     """Returns the Jacobian as a callable function of vector-valued
     (functions of) QNodes.
 
@@ -233,11 +233,39 @@ def jacobian(func, argnum):
         function with respect to the arguments in argnum
     """
     # pylint: disable=no-value-for-parameter
-    if isinstance(argnum, int):
-        return _jacobian(func, argnum)
-    return lambda *args, **kwargs: _np.stack(
-        [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
-    ).T
+
+    if argnum is not None:
+        # for backwards compatibility with existing code
+        # that manually specifies argnum
+        if isinstance(argnum, int):
+            return _jacobian(func, argnum)
+
+        return lambda *args, **kwargs: _np.stack(
+            [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
+        ).T
+
+    def _jacobian_function(*args, **kwargs):
+        """Inspect the arguments for differentiability, and
+        compute the autograd gradient function with required argnums
+        dynamically.
+
+        This wrapper function is returned to the user instead of autograd.jacobian,
+        so that we can take into account cases where the user computes the
+        jacobian function once, but then calls it with arguments that change
+        in differentiability.
+        """
+        argnum = []
+
+        for idx, arg in enumerate(args):
+            if getattr(arg, "requires_grad", True):
+                argnum.append(idx)
+
+        if len(argnum) == 1:
+            return _jacobian(func, argnum[0])(*args, **kwargs)
+
+        return _np.stack([_jacobian(func, arg)(*args, **kwargs) for arg in argnum]).T
+
+    return _jacobian_function
 
 
 def version():

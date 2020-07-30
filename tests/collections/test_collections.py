@@ -410,6 +410,25 @@ class TestDot:
         with pytest.raises(ValueError, match="Unknown interface invalid"):
             qml.dot([1, 2], qc)
 
+    def test_mismatching_interface(self, monkeypatch):
+        """Test exception raised if the interfaces don't match"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface=None)
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit2(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        qc1 = qml.QNodeCollection([circuit1])
+        qc2 = qml.QNodeCollection([circuit2])
+        with pytest.raises(ValueError, match="have non-matching interfaces"):
+            qml.dot(qc1, qc2)
+
     def test_no_qnodes(self):
         """Test exception raised if no qnodes are provided as arguments"""
         with pytest.raises(ValueError, match="At least one argument must be a QNodeCollection"):
