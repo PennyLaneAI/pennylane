@@ -48,6 +48,10 @@
   [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
   ```
 
+* Refactor of the QNode queuing architecture.
+  [(#722)](https://github.com/PennyLaneAI/pennylane/pull/722)
+  [(#728)](https://github.com/PennyLaneAI/pennylane/pull/728)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -62,7 +66,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Antal Száva, Nicola Vitucci
+Josh Izaac, Nathan Killoran, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
