@@ -1178,8 +1178,8 @@ class TestParameterHandlingIntegration:
     a = 0.6
     b = 0.2
     test_data = [
-        ([0, 1], np.cos(2*a) * np.cos(b), [-2 * np.cos(b) * np.sin(2*a), -np.cos(2*a) * np.sin(b)]),
-        ([1, 0], -np.cos(b) * np.sin(b), [0, -np.cos(b) ** 2 + np.sin(b) ** 2]),
+        (np.array([0, 1]), np.cos(2*a) * np.cos(b), [-2 * np.cos(b) * np.sin(2*a), -np.cos(2*a) * np.sin(b)]),
+        (np.array([1, 0]), -np.cos(b) * np.sin(b), [0, -np.cos(b) ** 2 + np.sin(b) ** 2]),
     ]
 
     @pytest.mark.parametrize("w, expected_res, expected_grad", test_data)
@@ -1256,12 +1256,17 @@ class TestParameterHandlingIntegration:
         y = 2.
         z = tf.Variable(3.)
 
-        res = circuit(x, y, z)
+        with tf.GradientTape() as tape:
+            # with TensorFlow 2.3, variables used outside a tape
+            # context now register as non-differentiable by default.
+            res = circuit(x, y, z)
+
         assert circuit.get_trainable_args() == {0, 2}
 
         # change values and compute the gradient again
         with tf.GradientTape() as tape:
             res = circuit(2*x, -y, z)
+
         assert circuit.get_trainable_args() == {0, 2}
 
         # attempting to change differentiability raises an error

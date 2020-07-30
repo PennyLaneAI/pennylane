@@ -34,6 +34,8 @@
   `pennylane.devices` and `pennylane.beta.devices`, to reflect their content better.
   [(#726)](https://github.com/XanaduAI/pennylane/pull/726)
 
+* Added support for TensorFlow 2.3 and PyTorch 1.6.
+  [(#725)](https://github.com/PennyLaneAI/pennylane/pull/725)
 
 * Returning probabilities is now supported from photonic QNodes.
   As with qubit QNodes, photonic QNodes returning probabilities are
