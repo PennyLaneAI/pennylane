@@ -191,10 +191,10 @@ class TestLayers:
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
         mixer = qaoa.mixer_layer(hamiltonian)
 
-        with qml.utils.OperationRecorder() as rec1:
+        with qml._queuing.OperationRecorder() as rec1:
             mixer(alpha)
 
-        with qml.utils.OperationRecorder() as rec2:
+        with qml._queuing.OperationRecorder() as rec2:
             ApproxTimeEvolution(hamiltonian, 1, 1)
 
         for i, j in zip(rec1.operations, rec2.operations):
@@ -211,10 +211,10 @@ class TestLayers:
     hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
     cost = qaoa.cost_layer(hamiltonian)
 
-    with qml.utils.OperationRecorder() as rec1:
+    with qml._queuing.OperationRecorder() as rec1:
         cost(gamma)
 
-    with qml.utils.OperationRecorder() as rec2:
+    with qml._queuing.OperationRecorder() as rec2:
         ApproxTimeEvolution(hamiltonian, 1, 1)
 
     for i, j in zip(rec1.operations, rec2.operations):
