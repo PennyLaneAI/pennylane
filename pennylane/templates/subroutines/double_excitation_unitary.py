@@ -20,9 +20,7 @@ import numpy as np
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import (
-    check_no_variable,
     check_shape,
-    check_type,
     get_shape,
 )
 from pennylane.wires import Wires

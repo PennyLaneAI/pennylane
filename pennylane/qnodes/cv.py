@@ -173,13 +173,13 @@ class CVQNode(JacobianQNode):
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operators depending on the original.
-            orig = op.params[p_idx]
+            orig = op.data[p_idx]
             assert orig.idx == idx
 
             # reference to a new, temporary parameter with index n, otherwise identical with orig
             temp_var = copy.copy(orig)
             temp_var.idx = n
-            op.params[p_idx] = temp_var
+            op.data[p_idx] = temp_var
 
             multiplier, shift = op.get_parameter_shift(p_idx)
 
@@ -235,7 +235,7 @@ class CVQNode(JacobianQNode):
                 pd[inds] += res
 
             # restore the original parameter
-            op.params[p_idx] = orig
+            op.data[p_idx] = orig
 
         return pd
 
