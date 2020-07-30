@@ -456,20 +456,6 @@ class TestIQPEmbedding:
         with pytest.raises(ValueError, match="'n_repeats' must be an integer"):
             circuit(f=[1., 2., 3.])
 
-    def test_exception_features_passed_as_positional_arg(self):
-        """Verifies that an exception is raised if 'features' is passed as a positional argument to the
-         qnode."""
-
-        dev = qml.device('default.qubit', wires=3)
-
-        @qml.qnode(dev)
-        def circuit(features):
-            qml.templates.IQPEmbedding(features=features, wires=range(3))
-            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
-
-        with pytest.raises(ValueError, match="'features' cannot be differentiable"):
-            circuit([1., 2., 3.])
-
 
 class TestQAOAEmbedding:
     """ Tests the QAOAEmbedding method."""

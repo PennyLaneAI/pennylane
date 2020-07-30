@@ -100,7 +100,7 @@ class tensor(_np.ndarray):
 
     def __array_finalize__(self, obj):
         # pylint: disable=attribute-defined-outside-init
-        if obj is None:
+        if obj is None:  # pragma: no cover
             return
 
         self.requires_grad = getattr(obj, "requires_grad", None)
