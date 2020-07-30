@@ -15,7 +15,6 @@
 Methods that define cost and mixer layers for use in QAOA workflows.
 """
 import pennylane as qml
-from pennylane.templates import ApproxTimeEvolution
 from pennylane.operation import Tensor
 
 
@@ -104,7 +103,7 @@ def cost_layer(hamiltonian):
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
 
-    return lambda gamma: ApproxTimeEvolution(hamiltonian, gamma, 1)
+    return lambda gamma: qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
 
 
 def mixer_layer(hamiltonian):
@@ -165,4 +164,4 @@ def mixer_layer(hamiltonian):
             )
         )
 
-    return lambda alpha: ApproxTimeEvolution(hamiltonian, alpha, 1)
+    return lambda alpha: qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)
