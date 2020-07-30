@@ -61,12 +61,12 @@ class Device(abc.ABC):
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
-            wires = Wires(range(wires))
-        else:
-            wires = Wires(wires)
+            wires = range(wires)
 
-        self._wire_map = self.define_wire_map(wires)
-        self.num_wires = len(wires)
+        self._wires = Wires(wires)
+        self.num_wires = len(self._wires)
+        wire_map = self.define_wire_map(self._wires)
+        self._wire_map = wire_map
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
@@ -139,6 +139,11 @@ class Device(abc.ABC):
         return self._shots
 
     @property
+    def wires(self):
+        """All wires that can be addressed on this device"""
+        return self._wires
+
+    @property
     def wire_map(self):
         """Ordered dictionary that defines the map from user-provided wire labels to
         the wire labels used on this device"""
@@ -165,12 +170,15 @@ class Device(abc.ABC):
     def define_wire_map(self, wires):
         """Create the map from user-provided wire labels to the wire labels used by the device.
 
-        The default wire map maps the user wire labels to consecutive integers. For example, when a device is
-        created with ``device('my.device', wires=['b', 'a'])``, the default wire map maps 'b' -> 0 and
-        'a' -> 1.
+        The default wire map maps the user wire labels to wire labels that are consecutive integers.
+
+        For example:
+        >>> dev = device('my.device', wires=['b', 'a'])
+        >>> dev.wire_map()
+        [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)]
 
         However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
-        wire labels, like 'b' -> 'q41' and 'a' -> 'q32'.
+        wire labels.
 
         Args:
             wires (Wires): user-provided wires for this device

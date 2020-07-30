@@ -32,14 +32,14 @@ class TestWires:
         """Tests that a Wires object can be created from standard iterable inputs."""
 
         wires = Wires(iterable)
-        assert wires.wire_tuple == (0, 1, 2)
+        assert wires.labels == (0, 1, 2)
 
     @pytest.mark.parametrize("iterable", [Wires([0, 1, 2])])
     def test_creation_from_wires_object(self, iterable):
         """Tests that a Wires object can be created from another Wires object."""
 
         wires = Wires(iterable)
-        assert wires.wire_tuple == (0, 1, 2)
+        assert wires.labels == (0, 1, 2)
 
     @pytest.mark.parametrize("iterable", [[Wires([0, 1]), Wires([2])],
                                           [Wires([0]), Wires([1]), Wires([2])]])
@@ -47,7 +47,7 @@ class TestWires:
         """Tests that a Wires object can be created from a list of Wires."""
 
         wires = Wires(iterable)
-        assert wires.wire_tuple == (0, 1, 2)
+        assert wires.labels == (0, 1, 2)
 
     @pytest.mark.parametrize("iterable", [[1, 0, 4],
                                           ['a', 'b', 'c'],
@@ -57,7 +57,7 @@ class TestWires:
         objects representing a single wire index."""
 
         wires = Wires(iterable)
-        assert wires.wire_tuple == tuple(iterable)
+        assert wires.labels == tuple(iterable)
 
     @pytest.mark.parametrize("wire", [1, -2, 'a', 'q1', -1.4])
     def test_creation_from_single_object(self, wire):
@@ -65,7 +65,7 @@ class TestWires:
         representing a single wire index."""
 
         wires = Wires(wire)
-        assert wires.wire_tuple == (wire,)
+        assert wires.labels == (wire,)
 
     @pytest.mark.parametrize("iterable", [[0, 1, None],
                                           [qml.RX],
@@ -150,6 +150,16 @@ class TestWires:
         assert set(wires) == {Wires([0]), Wires([1]), Wires([2])}
         assert set(list_of_wires) == {Wires([1]), Wires([1, 2, 3]), Wires([4])}
 
+    def test_label_property(self):
+        """Tests the get_label() method."""
+
+        labels = [0, 'q1', 16]
+        wires = Wires(labels)
+
+        assert wires.labels == tuple(labels)
+        assert wires.labels[1] == 'q1'
+        assert wires.labels[2] == 16
+
     def test_convert_to_numpy_array(self):
         """Tests that Wires object can be converted to a numpy array."""
 
@@ -167,23 +177,6 @@ class TestWires:
         list_ = wires.tolist()
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
-
-    def test_convert_to_array(self):
-        """Tests that Wires object can be converted to a numpy array."""
-
-        wires = Wires([4, 0, 1])
-        arr = wires.numpy()
-        assert isinstance(arr, np.ndarray)
-        assert arr == np.array([4, 0, 1])
-
-    def test_get_label_method(self):
-        """Tests the get_label() method."""
-
-        wires = Wires([0, 'q1', 16])
-
-        assert wires.get_label(0) == 0
-        assert wires.get_label(1) == 'q1'
-        assert wires.get_label(2) == 16
 
     @pytest.mark.parametrize("iterable", [[4, 1, 0, 3],
                                           ['a', 'b', 'c']])
@@ -214,8 +207,12 @@ class TestWires:
         # for integer
         assert wires.indices(1) == [2]
 
-    @pytest.mark.parametrize("wires, wire_map, expected", [(Wires(['a', 'b']), {'a': 0, 'b': 1}, Wires([0, 1])),
-                                                           (Wires([-1, 1]), {1: 'c', -1: 1, 'd': 'e'}, Wires([1, 'c'])),
+    @pytest.mark.parametrize("wires, wire_map, expected", [(Wires(['a', 'b']),
+                                                            {Wires('a'): Wires(0), Wires('b'): Wires(1)},
+                                                            Wires([0, 1])),
+                                                           (Wires([-1, 1]),
+                                                            {Wires(1): Wires('c'), Wires(-1): Wires(1), Wires('d'): Wires('e')},
+                                                            Wires([1, 'c'])),
                                                            ])
     def test_map_method(self, wires, wire_map, expected):
         """Tests the ``map()`` method."""
@@ -224,17 +221,12 @@ class TestWires:
 
         # error when labels not in wire_map dictionary
         with pytest.raises(WireError, match="No mapping for wire label"):
-            wires.map({-1: 4}) == expected
+            wires.map({Wires(-1): Wires(4)}) == expected
 
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
             wires = Wires([0, 1])
-            wires.map({0: 'a', 1: 'a'})
-
-        # error for invalid new wire label types
-        with pytest.raises(WireError, match="Failed to implement wire map"):
-            wires = Wires([0, 1])
-            wires.map({0: 'a', 1: qml.RX})
+            wires.map({Wires(0): Wires('a'), Wires(1): Wires('a')})
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
@@ -268,7 +260,7 @@ class TestWires:
         wires3 = Wires([6, 5])
 
         new_wires = Wires.all_wires([wires1, wires2, wires3])
-        assert new_wires.wire_tuple == (1, 2, 3, 4, 5, 6)
+        assert new_wires.labels == (1, 2, 3, 4, 5, 6)
 
         with pytest.raises(WireError, match="Expected a Wires object"):
             Wires.all_wires([[3, 4], [8, 5]])

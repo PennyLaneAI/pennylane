@@ -408,7 +408,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device
         wires = self.map_wires(wires)
 
-        samples = self._samples[:, wires.numpy()]
+        samples = self._samples[:, wires.toarray()]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(wires)
@@ -479,25 +479,25 @@ class QubitDevice(Device):
             return prob
 
         wires = Wires(wires)
+        # determine which subsystems are to be summed over
+        inactive_wires = Wires.unique_wires([self.wires, wires])
+
         # translate to wire labels used by device
         wires = self.map_wires(wires)
-
-        # determine which subsystems are to be summed over
-        all_wires = Wires(self.wire_map.values())  # TODO: WireMap class that returns keys/values as Wires
-        inactive_wires = Wires.unique_wires([all_wires, wires])
+        inactive_wires = self.map_wires(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
         prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
-        prob = self._flatten(self._reduce_sum(prob, inactive_wires))
+        prob = self._flatten(self._reduce_sum(prob, inactive_wires.labels))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
         basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
         perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(wires.numpy()))].T, [2] * len(wires)
+            basis_states[:, np.argsort(np.argsort(wires.toarray()))].T, [2] * len(wires)
         )
         return self._gather(prob, perm)
 
@@ -531,11 +531,11 @@ class QubitDevice(Device):
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            return 1 - 2 * self._samples[:, wires.label_at(0)]
+            return 1 - 2 * self._samples[:, wires.labels[0]]
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[:, wires.numpy()]
+        samples = self._samples[:, wires.toarray()]
         unraveled_indices = [2] * len(wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]
