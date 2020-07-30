@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Imports all functionality from the QAOA submodule
+This module contains functionality to construct QAOA workflows in PennyLane.
 """
 
+from .mixers import *
 from .cost import *
