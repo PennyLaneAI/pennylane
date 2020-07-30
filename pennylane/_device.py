@@ -188,7 +188,7 @@ class Device(abc.ABC):
         return OrderedDict(wire_map)
 
     def map_wires(self, wires):
-        """Map the wire labels of 'wires' using this devices wire map.
+        """Map the wire labels of wires using this device's wire map.
 
         Args:
             wires (Wires): wires whose labels we want to map to new wire labels

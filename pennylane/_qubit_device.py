@@ -399,10 +399,8 @@ class QubitDevice(Device):
         Returns:
             List[float]: list of the probabilities
         """
-        if wires is None:
-            # get all wires
-            wires = self.wire_map.keys()
 
+        wires = wires or self.wires
         # convert to a wires object
         wires = Wires(wires)
         # translate to wire labels used by device

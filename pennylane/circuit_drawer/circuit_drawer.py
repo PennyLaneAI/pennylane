@@ -62,7 +62,7 @@ class CircuitDrawer:
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires
-        self.wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
+        self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
         self.charset = charset
         self.show_variable_names = show_variable_names
 
@@ -122,7 +122,7 @@ class CircuitDrawer:
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
     def extract_active_wires(self, raw_operation_grid, raw_observable_grid):
-        """Get the subset of wires in the device_wires that are used in the circuit.
+        """Get the subset of wires on the device that are used in the circuit.
 
         Args:
             raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
@@ -153,7 +153,7 @@ class CircuitDrawer:
             representation_layer = [""] * grid.num_wires
 
             for wire_indices, operator in enumerate(grid.layer(i)):
-                wire = self.wires[wire_indices]
+                wire = self.active_wires[wire_indices]
                 representation_layer[
                     wire_indices
                 ] = self.representation_resolver.element_representation(operator, wire)
@@ -206,7 +206,7 @@ class CircuitDrawer:
                     continue
 
                 wires = op.wires
-                wire_indices = self.wires.indices(wires)
+                wire_indices = self.active_wires.indices(wires)
 
                 if len(wire_indices) > 1:
                     min_wire = min(wire_indices)
@@ -282,7 +282,7 @@ class CircuitDrawer:
                     continue
 
                 # translate wires to their indices in the device_wires
-                wire_indices = self.wires.indices(op.wires)
+                wire_indices = self.active_wires.indices(op.wires)
 
                 if len(op.wires) > 1:
 
@@ -298,7 +298,7 @@ class CircuitDrawer:
                             continue
 
                         # translate wires to their indices in the device_wires
-                        other_wire_indices = self.wires.indices(other_op.wires)
+                        other_wire_indices = self.active_wires.indices(other_op.wires)
                         other_sorted_wire_indices = other_wire_indices.copy()
                         other_sorted_wire_indices.sort()
                         other_blocked_wires = list(
