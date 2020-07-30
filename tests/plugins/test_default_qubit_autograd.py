@@ -311,12 +311,6 @@ class TestPassthruIntegration:
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="qml.broadcast currently performs input type validation, only allowing Nones or Iterables. "
-        "The Autograd Arraybox is not an iterable, so an error is raised. This can be avoided by "
-        "simply modifying this type validation.",
-    )
     def test_template_integration(self):
         """Test that a PassthruQNode default.qubit.autograd works with templates."""
         dev = qml.device("default.qubit.autograd", wires=2)
