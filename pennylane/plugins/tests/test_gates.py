@@ -26,6 +26,8 @@ import pennylane as qml
 from scipy.linalg import block_diag
 from flaky import flaky
 
+pytestmark = pytest.mark.skip_unsupported
+
 np.random.seed(42)
 
 # ==========================================================
@@ -141,7 +143,6 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestGatesQubit:
     """Test qubit-based devices' probability vector after application of gates.
     """
@@ -327,7 +328,6 @@ class TestGatesQubit:
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestInverseGatesQubit:
     """Test the device's probability vector after application of inverse of gates."""
 

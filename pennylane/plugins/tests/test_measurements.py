@@ -19,6 +19,8 @@ from flaky import flaky
 
 import pytest
 
+pytestmark = pytest.mark.skip_unsupported
+
 # ==========================================================
 # Some useful global variables
 
@@ -27,7 +29,6 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestExpval:
     """Test expectation values"""
 
@@ -193,7 +194,6 @@ class TestExpval:
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestTensorExpval:
     """Test tensor expectation values"""
 
@@ -288,7 +288,6 @@ class TestTensorExpval:
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestSample:
     """Tests for the sample return type."""
 
@@ -384,7 +383,6 @@ class TestSample:
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestTensorSample:
     """Test tensor sample values."""
 
@@ -546,7 +544,6 @@ class TestTensorSample:
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestVar:
     """Tests for the variance return type"""
 
@@ -606,7 +603,6 @@ class TestVar:
 
 
 @flaky(max_runs=10)
-@pytest.mark.skip_unsupported
 class TestTensorVar:
     """Test tensor variance measurements."""
 
