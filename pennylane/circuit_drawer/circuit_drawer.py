@@ -46,7 +46,7 @@ class CircuitDrawer:
     Args:
         raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
-        wires (Wires): device_wires of all wires in the circuit
+        wires (Wires): all wires on the device for which the circuit is drawn
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
@@ -129,7 +129,7 @@ class CircuitDrawer:
             raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
 
         Return:
-            Wires: device_wires of active wires
+            Wires: active wires on the device
         """
         # pylint: disable=protected-access
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
@@ -138,7 +138,7 @@ class CircuitDrawer:
         all_wires_with_duplicates = [op.wires for op in all_operators if op is not None]
         # make Wires object containing all used wires
         all_wires = Wires.all_wires(all_wires_with_duplicates)
-        # shared wires will observe the ordering of the device_wires
+        # shared wires will observe the ordering of the device's wires
         shared_wires = Wires.shared_wires([self.wires, all_wires])
         return shared_wires
 
@@ -281,7 +281,7 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                # translate wires to their indices in the device_wires
+                # translate wires to their indices in the device
                 wire_indices = self.active_wires.indices(op.wires)
 
                 if len(op.wires) > 1:
@@ -297,7 +297,7 @@ class CircuitDrawer:
                         if other_op is None:
                             continue
 
-                        # translate wires to their indices in the device_wires
+                        # translate wires to their indices on the device
                         other_wire_indices = self.active_wires.indices(other_op.wires)
                         other_sorted_wire_indices = other_wire_indices.copy()
                         other_sorted_wire_indices.sort()
@@ -328,7 +328,7 @@ class CircuitDrawer:
         """
         rendered_string = ""
 
-        # extract the device_wires names as strings and get their maximum length
+        # extract the wire labels as strings and get their maximum length
         wire_names = []
         padding = 0
         for i in range(self.full_representation_grid.num_wires):
