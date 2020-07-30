@@ -93,9 +93,6 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
-    ###############
-    # Input checks
-
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
             "`hamiltonian` must be of type pennylane.Hamiltonian, got {}".format(
@@ -117,7 +114,6 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     for i, term in enumerate(hamiltonian.ops):
 
-        prod = (-2 * time * hamiltonian.coeffs[i]) / n
         word = ""
 
         try:
@@ -140,7 +136,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
         if count != len(word):
 
-            theta.append(prod)
+            theta.append((-2 * time * hamiltonian.coeffs[i]) / n)
             pauli_words.append(word)
             wire_index.append(term.wires)
 
