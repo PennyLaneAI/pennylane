@@ -55,7 +55,11 @@ def xy_mixer(graph):
     .. math:: H_M \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} X_i X_j \ + \ Y_i Y_j,
 
     for some graph :math:`G`. :math:`X_i` and :math:`Y_i` denote the Pauli-X and Pauli-Y operators on the :math:`i`-th
-    wire respectively. This mixer was first presented in `this paper <https://arxiv.org/abs/1709.03489>`__.
+    wire respectively.
+    
+    This mixer was introduced in *From the Quantum Approximate Optimization Algorithm
+    to a Quantum Alternating Operator Ansatz* by Stuart Hadfield, Zhihui Wang, Bryan O'Gorman,
+    Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
         graph (nx.Graph): A graph defining the pairs of wires on which each term of the Hamiltonian acts.
