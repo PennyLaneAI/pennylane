@@ -77,6 +77,8 @@ class QueuingContext(abc.ABC):
         if cls._active_contexts:
             return cls._active_contexts[-1]
 
+        return None
+
     @classmethod
     def append(cls, obj, **kwargs):
         """Append an object to the queue(s).
