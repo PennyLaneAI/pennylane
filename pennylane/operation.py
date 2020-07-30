@@ -506,7 +506,7 @@ class Operator(abc.ABC):
 
     def queue(self):
         """Append the operator to the Operator queue."""
-        qml.QueuingContext.append_operator(self)
+        qml.QueuingContext.append(self)
 
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 

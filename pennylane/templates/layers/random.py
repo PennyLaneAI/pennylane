@@ -20,7 +20,6 @@ from pennylane.templates.decorator import template
 from pennylane.ops import CNOT, RX, RY, RZ
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_type,
     check_number_of_layers,
     get_shape,
@@ -216,11 +215,6 @@ def RandomLayers(weights, wires, ratio_imprim=0.3, imprimitive=CNOT, rotations=N
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(ratio_imprim, msg="'ratio_imprim' cannot be differentiable")
-    check_no_variable(imprimitive, msg="'imprimitive' cannot be differentiable")
-    check_no_variable(rotations, msg="'rotations' cannot be differentiable")
-    check_no_variable(seed, msg="'seed' cannot be differentiable")
 
     repeat = check_number_of_layers([weights])
     n_rots = get_shape(weights)[1]

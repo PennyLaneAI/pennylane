@@ -18,6 +18,7 @@ Integration tests should be placed into ``test_templates.py``.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
+import pennylane._queuing
 from pennylane import numpy as np
 from pennylane.wires import Wires
 
@@ -138,10 +139,10 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec_rect:
+        with pennylane._queuing.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
 
-        with qml.utils.OperationRecorder() as rec_tria:
+        with pennylane._queuing.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
 
         for rec in [rec_rect, rec_tria]:
@@ -163,7 +164,7 @@ class TestInterferometer:
         """Test that a one mode interferometer correctly gives a rotation gate"""
         varphi = [0.42342]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
 
         assert len(rec.queue) == 1
@@ -180,7 +181,7 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
 
         isinstance(rec.queue[0], qml.Beamsplitter)
@@ -202,7 +203,7 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
 
         assert len(rec.queue) == 3
@@ -225,10 +226,10 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234]
         varphi = [0.42342, 0.234, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec_rect:
+        with pennylane._queuing.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, wires=wires)
 
-        with qml.utils.OperationRecorder() as rec_tria:
+        with pennylane._queuing.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, wires=wires)
 
         for rec in [rec_rect, rec_tria]:
@@ -256,7 +257,7 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
 
         assert len(rec.queue) == 10
@@ -282,7 +283,7 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
 
         assert len(rec.queue) == 10
@@ -369,7 +370,7 @@ class TestSingleExcitationUnitary:
         sqg = 10
         cnots = 4 * (len(ph)-1)
         weight = np.pi / 3
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             SingleExcitationUnitary(weight, wires=ph)
 
         assert len(rec.queue) == sqg + cnots
@@ -449,7 +450,7 @@ class TestArbitraryUnitary:
         """Test that the correct gates are applied on a single wire."""
         weights = np.arange(3, dtype=float)
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0])
 
         assert all(op.name == "PauliRot" and op.wires == [0] for op in rec.queue) # Wires([0]) for op in rec.queue)
@@ -464,7 +465,7 @@ class TestArbitraryUnitary:
         """Test that the correct gates are applied on two wires."""
         weights = np.arange(15, dtype=float)
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0, 1])
 
         assert all(op.name == "PauliRot" and op.wires == [0, 1] for op in rec.queue) # Wires([0, 1]) for op in rec.queue)
@@ -555,7 +556,7 @@ class TestDoubleExcitationUnitary:
         sqg = 72
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
 
         assert len(rec.queue) == sqg + cnots
@@ -697,7 +698,7 @@ class TestUCCSDUnitary:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
 
         assert len(rec.queue) == sqg + cnots + 1

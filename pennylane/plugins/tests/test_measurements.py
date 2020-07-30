@@ -319,7 +319,7 @@ class TestSample:
             qml.RX(theta, wires=[0])
             return qml.sample(qml.Hermitian(A_, wires=0))
 
-        res = circuit()
+        res = circuit().flatten()
 
         # res should only contain the eigenvalues of
         # the hermitian matrix
@@ -358,7 +358,7 @@ class TestSample:
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.Hermitian(A_, wires=[0, 1]))
 
-        res = circuit()
+        res = circuit().flatten()
 
         # res should only contain the eigenvalues of
         # the hermitian matrix

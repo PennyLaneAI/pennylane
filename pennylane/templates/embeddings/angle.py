@@ -20,7 +20,6 @@ from pennylane.ops import RX, RY, RZ
 from pennylane.templates import broadcast
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_is_in_options,
     check_type,
     get_shape,
@@ -60,8 +59,6 @@ def AngleEmbedding(features, wires, rotation="X"):
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(rotation, msg="'rotation' cannot be differentiable")
 
     check_shape(
         features,
