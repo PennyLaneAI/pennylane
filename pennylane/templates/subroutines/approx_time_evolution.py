@@ -17,11 +17,10 @@ Contains the ``ApproxTimeEvolution`` template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
 from pennylane.templates.decorator import template
-from pennylane.wires import Wires
 
 
 @template
-def ApproxTimeEvolution(hamiltonian, time, n, wires):
+def ApproxTimeEvolution(hamiltonian, time, n):
     r""" Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates. The general
     time-evolution operator for a time-independent Hamiltonian is given by:
@@ -54,16 +53,13 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
 
     Args:
         hamiltonian (pennylane.Hamiltonian): The Hamiltonian defining the
-           time-evolution operator. The indices of the observables in the Hamiltonian correspond to the index of
-           the ``wires`` element to which each observable is being applied.
+           time-evolution operator.
            The Hamiltonian must be explicitly written
            in terms of products of Pauli gates (X, Y, Z, and I).
 
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
 
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
-
-        wires (Iterable or Wires): The wires on which the template is applied.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -88,7 +84,7 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
 
             @qml.qnode(dev)
             def circuit(time):
-                ApproxTimeEvolution(hamiltonian, time, 1, wires)
+                ApproxTimeEvolution(hamiltonian, time, 1)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in wires]
 
         >>> circuit(1)
@@ -100,8 +96,6 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
     ###############
     # Input checks
 
-    wires = Wires(wires)
-
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
             "`hamiltonian` must be of type pennylane.Hamiltonian, got {}".format(
@@ -110,7 +104,7 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
         )
 
     if not isinstance(n, (int, qml.variable.Variable)):
-        raise ValueError("`N` must be of type int, got {}".format(type(n).__name__))
+        raise ValueError("`n` must be of type int, got {}".format(type(n).__name__))
 
     if not isinstance(time, (int, float, qml.variable.Variable)):
         raise ValueError("`time` must be of type int or float, got {}".format(type(time).__name__))
@@ -153,4 +147,4 @@ def ApproxTimeEvolution(hamiltonian, time, n, wires):
     for i in range(n):
 
         for j, term in enumerate(pauli_words):
-            qml.PauliRot(theta[j], term, wires=[wires[i] for i in wire_index[j]])
+            qml.PauliRot(theta[j], term, wires=wire_index[j])

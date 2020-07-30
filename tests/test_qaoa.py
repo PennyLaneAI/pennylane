@@ -76,10 +76,10 @@ class TestLayers:
         mixer = qaoa.mixer_layer(hamiltonian)
 
         with qml.utils.OperationRecorder() as rec1:
-            mixer(alpha, wires=range(2))
+            mixer(alpha)
 
         with qml.utils.OperationRecorder() as rec2:
-            ApproxTimeEvolution(hamiltonian, 1, 1, range(2))
+            ApproxTimeEvolution(hamiltonian, 1, 1)
 
         for i, j in zip(rec1.operations, rec2.operations):
 
@@ -96,10 +96,10 @@ class TestLayers:
     cost = qaoa.cost_layer(hamiltonian)
 
     with qml.utils.OperationRecorder() as rec1:
-        cost(gamma, wires=range(2))
+        cost(gamma)
 
     with qml.utils.OperationRecorder() as rec2:
-        ApproxTimeEvolution(hamiltonian, 1, 1, range(2))
+        ApproxTimeEvolution(hamiltonian, 1, 1)
 
     for i, j in zip(rec1.operations, rec2.operations):
         prep = [i.name, i.parameters, i.wires]
