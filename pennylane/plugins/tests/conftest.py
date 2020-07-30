@@ -132,9 +132,25 @@ def pytest_addoption(parser):
 
     # The options are the three arguments every device takes
     parser.addoption("--device", action="store", default=None, help="The device to test.")
-    parser.addoption("--shots", action="store", default=None, type=int, help="Number of shots to use in stochastic mode.")
-    parser.addoption("--analytic", action="store", default=None, help="Whether to run the tests in stochastic or exact mode.")
-    parser.addoption("--skip-ops", action="store_true", default=False, help="Skip tests that use unsupported device operations.")
+    parser.addoption(
+        "--shots",
+        action="store",
+        default=None,
+        type=int,
+        help="Number of shots to use in stochastic mode.",
+    )
+    parser.addoption(
+        "--analytic",
+        action="store",
+        default=None,
+        help="Whether to run the tests in stochastic or exact mode.",
+    )
+    parser.addoption(
+        "--skip-ops",
+        action="store_true",
+        default=False,
+        help="Skip tests that use unsupported device operations.",
+    )
 
 
 def pytest_generate_tests(metafunc):
