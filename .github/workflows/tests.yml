@@ -66,62 +66,62 @@ jobs:
           file: ./coverage.xml
 
 
-  # device-tests:
-  #   runs-on: ubuntu-latest
+  device-tests:
+    runs-on: ubuntu-latest
 
-  #   strategy:
-  #     matrix:
-  #       config:
-  #         # - {device: "default.qubit", analytic: true, shots: 1000}
-  #         # - {device: "default.qubit", analytic: false, shots: 1000}
-  #         # - {device: "default.qubit.tf", analytic: true, shots: 1000}
-  #         - {device: "default.qubit.autograd", analytic: true, shots: 1000}
+    strategy:
+      matrix:
+        config:
+          # - {device: "default.qubit", analytic: true, shots: 1000}
+          # - {device: "default.qubit", analytic: false, shots: 1000}
+          # - {device: "default.qubit.tf", analytic: true, shots: 1000}
+          - {device: "default.qubit.autograd", analytic: true, shots: 1000}
 
-  #   steps:
-  #     - name: Cancel Previous Runs
-  #       uses: styfle/cancel-workflow-action@0.4.1
-  #       with:
-  #         access_token: ${{ github.token }}
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
 
-  #     - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: 3.8
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
 
-  #     - name: Install dependencies
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install -r requirements.txt
-  #         pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
-  #     - name: Conditionally install PyTorch
-  #       if: contains(matrix.config.device, 'torch')
-  #       run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+      - name: Conditionally install PyTorch
+        if: contains(matrix.config.device, 'torch')
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
-  #     - name: Conditionally install TensorFlow
-  #       if: contains(matrix.config.device, 'tf')
-  #       run: pip3 install tensorflow==$TF_VERSION
+      - name: Conditionally install TensorFlow
+        if: contains(matrix.config.device, 'tf')
+        run: pip3 install tensorflow==$TF_VERSION
 
-  #     - name: Install PennyLane
-  #       run: |
-  #         pip install -r requirements.txt
-  #         python setup.py bdist_wheel
-  #         pip install dist/PennyLane*.whl
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
 
-  #     - name: Run tests
-  #       run: |
-  #         python -m pytest pennylane/plugins/tests \
-  #           --device=${{ matrix.config.device }} \
-  #           --analytic=${{ matrix.config.analytic }} \
-  #           --shots=${{ matrix.config.shots }} \
-  #           --cov=pennylane $COVERAGE_FLAGS
+      - name: Run tests
+        run: |
+          python -m pytest pennylane/plugins/tests \
+            --device=${{ matrix.config.device }} \
+            --analytic=${{ matrix.config.analytic }} \
+            --shots=${{ matrix.config.shots }} \
+            --cov=pennylane $COVERAGE_FLAGS
 
-  #     - name: Upload coverage to Codecov
-  #       uses: codecov/codecov-action@v1.0.7
-  #       with:
-  #         file: ./coverage.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.7
+        with:
+          file: ./coverage.xml
 
 
   qchem-tests:
