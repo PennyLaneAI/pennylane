@@ -262,7 +262,6 @@ class DefaultTensor(Device):
                 else:
 
                     # translate to wire labels used by device
-                    # TODO: ugly that we need the map here!
                     wire_indices = self.map_wires(wires)
 
                     # break down non-factorized tensors into MPS form
