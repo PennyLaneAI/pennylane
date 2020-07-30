@@ -46,7 +46,7 @@ class CircuitDrawer:
     Args:
         raw_operation_grid (list[list[~.Operation]]): The CircuitGraph's operations
         raw_observable_grid (list[list[qml.operation.Observable]]): The CircuitGraph's observables
-        register (Wires): register of all wires in the circuit
+        wires (Wires): device_wires of all wires in the circuit
         charset (pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_variable_names (bool, optional): Show variable names instead of variable values.
     """
@@ -55,14 +55,14 @@ class CircuitDrawer:
         self,
         raw_operation_grid,
         raw_observable_grid,
-        register,
+        wires,
         charset=UnicodeCharSet,
         show_variable_names=False,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
-        self.register = register
-        self.active_register = self.extract_active_register(raw_operation_grid, raw_observable_grid)
+        self.wires = wires
+        self.wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
         self.charset = charset
         self.show_variable_names = show_variable_names
 
@@ -121,15 +121,15 @@ class CircuitDrawer:
         self.full_representation_grid = self.operation_representation_grid.copy()
         self.full_representation_grid.append_grid_by_layers(self.observable_representation_grid)
 
-    def extract_active_register(self, raw_operation_grid, raw_observable_grid):
-        """Get the subset of wires in the register that are used in the circuit.
+    def extract_active_wires(self, raw_operation_grid, raw_observable_grid):
+        """Get the subset of wires in the device_wires that are used in the circuit.
 
         Args:
             raw_operation_grid (Iterable[~.Operator]): The raw grid of operations
             raw_observable_grid (Iterable[~.Operator]): The raw  grid of observables
 
         Return:
-            Wires: register of active wires
+            Wires: device_wires of active wires
         """
         # pylint: disable=protected-access
         all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
@@ -138,8 +138,8 @@ class CircuitDrawer:
         all_wires_with_duplicates = [op.wires for op in all_operators if op is not None]
         # make Wires object containing all used wires
         all_wires = Wires.all_wires(all_wires_with_duplicates)
-        # shared wires will observe the ordering of the register
-        shared_wires = Wires.shared_wires([self.register, all_wires])
+        # shared wires will observe the ordering of the device_wires
+        shared_wires = Wires.shared_wires([self.wires, all_wires])
         return shared_wires
 
     def resolve_representation(self, grid, representation_grid):
@@ -153,7 +153,7 @@ class CircuitDrawer:
             representation_layer = [""] * grid.num_wires
 
             for wire_indices, operator in enumerate(grid.layer(i)):
-                wire = self.active_register[wire_indices]
+                wire = self.wires[wire_indices]
                 representation_layer[
                     wire_indices
                 ] = self.representation_resolver.element_representation(operator, wire)
@@ -206,7 +206,7 @@ class CircuitDrawer:
                     continue
 
                 wires = op.wires
-                wire_indices = self.active_register.indices(wires)
+                wire_indices = self.wires.indices(wires)
 
                 if len(wire_indices) > 1:
                     min_wire = min(wire_indices)
@@ -281,8 +281,8 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                # translate wires to their indices in the register
-                wire_indices = self.active_register.indices(op.wires)
+                # translate wires to their indices in the device_wires
+                wire_indices = self.wires.indices(op.wires)
 
                 if len(op.wires) > 1:
 
@@ -297,8 +297,8 @@ class CircuitDrawer:
                         if other_op is None:
                             continue
 
-                        # translate wires to their indices in the register
-                        other_wire_indices = self.active_register.indices(other_op.wires)
+                        # translate wires to their indices in the device_wires
+                        other_wire_indices = self.wires.indices(other_op.wires)
                         other_sorted_wire_indices = other_wire_indices.copy()
                         other_sorted_wire_indices.sort()
                         other_blocked_wires = list(
@@ -328,11 +328,11 @@ class CircuitDrawer:
         """
         rendered_string = ""
 
-        # extract the register names as strings and get their maximum length
+        # extract the device_wires names as strings and get their maximum length
         wire_names = []
         padding = 0
         for i in range(self.full_representation_grid.num_wires):
-            wire_name = str(self.active_register.get_label(i))
+            wire_name = str(self.wires.labels[i])
             padding = max(padding, len(wire_name))
             wire_names.append(wire_name)
 

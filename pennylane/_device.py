@@ -30,7 +30,7 @@ from pennylane.operation import (
     Tensor,
 )
 from pennylane.qnodes import QuantumFunctionError
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 
 class DeviceError(Exception):
@@ -197,8 +197,11 @@ class Device(abc.ABC):
         Returns:
             Wires: wires with new labels
         """
+        try:
+            mapped_wires = wires.map(self.wire_map)
+        except WireError:
+            raise WireError("Did not find some of the wires {} on device with wires {}.".format(wires, self.wires))
 
-        mapped_wires = wires.map(self.wire_map)
         return mapped_wires
 
     @classmethod

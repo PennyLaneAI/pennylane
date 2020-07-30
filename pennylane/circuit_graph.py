@@ -140,7 +140,7 @@ class CircuitGraph:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
-        register (Wires): the base register of wires (passed from the device)
+        register (Wires): the base device_wires of wires (passed from the device)
     """
 
     # pylint: disable=too-many-public-methods
@@ -153,14 +153,14 @@ class CircuitGraph:
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
         self.register = register
-        """Wires: register of wires that are addressed in the operations. 
-        Required to translate between wires and indices of the wires in the register."""
+        """Wires: device_wires of wires that are addressed in the operations. 
+        Required to translate between wires and indices of the wires in the device_wires."""
         self.num_wires = len(register)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
             op.queue_idx = k  # store the queue index in the Operator
             for w in op.wires:
-                # get the index of the wire on the register
+                # get the index of the wire on the device_wires
                 wire = register.index(w)
                 # add op to the grid, to the end of wire w
                 self._grid.setdefault(wire, []).append(op)
@@ -319,7 +319,7 @@ class CircuitGraph:
 
             qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wires)
 
-        # apply computational basis measurements to each quantum register
+        # apply computational basis measurements to each quantum device_wires
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so

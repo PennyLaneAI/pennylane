@@ -245,7 +245,7 @@ class QubitQNode(JacobianQNode):
                 gen, s = op.generator
                 w = op.wires
                 # get the wire's indices on the device
-                wire_indices = self.device.register.indices(w)
+                wire_indices = self.device.wires.indices(w)
 
                 if gen is None:
                     raise QuantumFunctionError(
@@ -370,7 +370,7 @@ class QubitQNode(JacobianQNode):
 
                 if isinstance(self.device, qml.QubitDevice):
                     ops = circuit["queue"] + [unitary_op] + [qml.expval(qml.PauliZ(0))]
-                    circuit_graph = qml.CircuitGraph(ops, self.variable_deps, self.device.register)
+                    circuit_graph = qml.CircuitGraph(ops, self.variable_deps, self.device.wires)
                     self.device.execute(circuit_graph)
                 else:
                     self.device.execute(
@@ -420,7 +420,7 @@ class QubitQNode(JacobianQNode):
                     circuit_graph = qml.CircuitGraph(
                         circuit["queue"] + circuit["observable"],
                         self.variable_deps,
-                        self.device.register,
+                        self.device.wires,
                     )
                     variances = self.device.execute(circuit_graph)
                 else:

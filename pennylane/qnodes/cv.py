@@ -118,19 +118,19 @@ class CVQNode(JacobianQNode):
         return "A"
 
     @staticmethod
-    def _transform_observable(obs, w, Z, register):
+    def _transform_observable(obs, w, Z, device_wires):
         """Apply a Gaussian linear transformation to each index of an observable.
 
         Args:
             obs (Observable): observable to transform
             w (int): number of wires in the circuit
             Z (array[float]): Heisenberg picture representation of the linear transformation
-            register (Wires): wires on the device that the observable gets applied to
+            device_wires (Wires): wires on the device that the observable gets applied to
 
         Returns:
             Observable: transformed observable
         """
-        q = obs.heisenberg_obs(register)
+        q = obs.heisenberg_obs(device_wires)
 
         if q.ndim != obs.ev_order:
             raise QuantumFunctionError(
@@ -200,14 +200,14 @@ class CVQNode(JacobianQNode):
                 # evaluate transformed observables at the original parameter point
                 # first build the Heisenberg picture transformation matrix Z
                 self._set_variables(shift_p1, kwargs)
-                Z2 = op.heisenberg_tr(self.device.register)
+                Z2 = op.heisenberg_tr(self.device.wires)
                 self._set_variables(shift_p2, kwargs)
-                Z1 = op.heisenberg_tr(self.device.register)
+                Z1 = op.heisenberg_tr(self.device.wires)
                 Z = (Z2 - Z1) * multiplier  # derivative of the operation
 
                 unshifted_args = np.r_[args, args[idx]]
                 self._set_variables(unshifted_args, kwargs)
-                Z0 = op.heisenberg_tr(self.device.register, inverse=True)
+                Z0 = op.heisenberg_tr(self.device.wires, inverse=True)
                 Z = Z @ Z0
 
                 # conjugate Z with all the descendant operations
@@ -218,13 +218,13 @@ class CVQNode(JacobianQNode):
                         # if the descendant gate is non-Gaussian in parameter-shift differentiation
                         # mode, then there must be no observable following it.
                         continue
-                    B = BB.heisenberg_tr(self.device.register) @ B
-                    B_inv = B_inv @ BB.heisenberg_tr(self.device.register, inverse=True)
+                    B = BB.heisenberg_tr(self.device.wires) @ B
+                    B_inv = B_inv @ BB.heisenberg_tr(self.device.wires, inverse=True)
                 Z = B @ Z @ B_inv  # conjugation
 
                 # transform the descendant observables into their derivatives using Z
                 desc = self._op_descendants(op, "O")
-                obs = [self._transform_observable(x, w, Z, self.device.register) for x in desc]
+                obs = [self._transform_observable(x, w, Z, self.device.wires) for x in desc]
                 # Measure the transformed observables.
                 # The other observables do not depend on this parameter instance,
                 # hence their partial derivatives are zero.
