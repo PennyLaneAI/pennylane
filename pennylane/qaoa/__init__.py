@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module contains functionality to construct QAOA workflows in PennyLane
+This module contains functionality to construct QAOA workflows in PennyLane.
 """
 
 from .mixers import *
