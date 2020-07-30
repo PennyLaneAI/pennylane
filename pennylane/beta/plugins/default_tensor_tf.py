@@ -192,7 +192,7 @@ class DefaultTensorTF(DefaultTensor):
             # Copy the operation parameters to the op_params dictionary.
             # Note that these are the unwrapped parameters, so PennyLane
             # free parameters will be represented as Variable instances.
-            self.op_params[operation] = operation.params[:]
+            self.op_params[operation] = operation.data[:]
 
         # Loop through the free parameter reference dictionary
         for _, par_dep_list in self.parameters.items():
@@ -208,8 +208,8 @@ class DefaultTensorTF(DefaultTensor):
             # For the above parameter dependency, get the corresponding
             # operation parameter variable, and get the numeric value.
             # Convert the resulting value to a TensorFlow tensor.
-            val = first.op.params[first.par_idx].val
-            mult = first.op.params[first.par_idx].mult
+            val = first.op.data[first.par_idx].val
+            mult = first.op.data[first.par_idx].mult
             v = tf.Variable(val / mult, dtype=self.R_DTYPE)
 
             # Mark the variable to be watched by the gradient tape,
@@ -221,7 +221,7 @@ class DefaultTensorTF(DefaultTensor):
                 # with the corresponding tf.Variable parameter.
                 # Note that the free parameter might be scaled by the
                 # variable.mult scaling factor.
-                mult = p.op.params[p.par_idx].mult
+                mult = p.op.data[p.par_idx].mult
                 self.op_params[p.op][p.par_idx] = v * mult
 
         # check that no Variables remain in the op_params dictionary
