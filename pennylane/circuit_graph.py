@@ -319,7 +319,7 @@ class CircuitGraph:
 
             qasm_str += "{name}{params} {wires};\n".format(name=gate, params=params, wires=wires)
 
-        # apply computational basis measurements to each quantum wire
+        # apply computational basis measurements to each quantum register
         # NOTE: This is not strictly necessary, we could inspect self.observables,
         # and then only measure wires which are requested by the user. However,
         # some devices which consume QASM require all registers be measured, so
@@ -631,7 +631,7 @@ class CircuitGraph:
         drawer = CircuitDrawer(
             grid,
             obs,
-            self.register,
+            self.wires,
             charset=CHARSETS[charset],
             show_variable_names=show_variable_names,
         )

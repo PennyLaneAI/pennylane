@@ -395,7 +395,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires.tolist())
+        return "{}: {} params, wires {}".format(self.name, len(self.data), self.wires.tolist())
 
     def __repr__(self):
         """Constructor-call-like representation."""

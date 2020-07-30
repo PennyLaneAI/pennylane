@@ -281,7 +281,7 @@ class CircuitDrawer:
                 if op is None:
                     continue
 
-                # translate wires to their indices in the device
+                # translate wires to their indices on the device
                 wire_indices = self.active_wires.indices(op.wires)
 
                 if len(op.wires) > 1:
