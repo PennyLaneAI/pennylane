@@ -26,10 +26,10 @@ class DefaultQubitAutograd(DefaultQubit):
 
     **Short name:** ``default.qubit.autograd``
 
-    This device provides a pure-state qubit simulator written using Autograd.
-    As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
-    be faster than the parameter-shift rule for analytic quantum gradients
-    when the number of parameters to be optimized is large.
+    This device provides a pure-state qubit simulator written using Autograd. As a result, it
+    supports classical backpropagation as a means to compute the gradient. This can be faster than
+    the parameter-shift rule for analytic quantum gradients when the number of parameters to be
+    optimized is large.
 
     To use this device, you will need to install Autograd:
 
@@ -40,8 +40,8 @@ class DefaultQubitAutograd(DefaultQubit):
     **Example**
 
     The ``default.qubit.autograd`` is designed to be used with end-to-end classical backpropagation
-    (``diff_method="backprop"``) with the Autograd interface. This is the default method
-    of differentiation when creating a QNode with this device.
+    (``diff_method="backprop"``) with the Autograd interface. This is the default method of
+    differentiation when creating a QNode with this device.
 
     Using this method, the created QNode is a 'white-box', and is
     tightly integrated with your Autograd computation:
