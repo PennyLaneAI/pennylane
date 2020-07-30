@@ -111,7 +111,7 @@ class QueuingContext(abc.ABC):
             # is not in the list
             try:
                 context._remove(obj)  # pylint: disable=protected-access
-            except ValueError:
+            except (ValueError, KeyError):
                 pass
 
 
@@ -134,13 +134,13 @@ class AnnotatedQueue(QueuingContext):
     to annotations."""
 
     def __init__(self):
-        self.queue = OrderedDict()
+        self._queue = OrderedDict()
 
     def _append(self, obj, **kwargs):
-        self.queue[obj] = kwargs
+        self._queue[obj] = kwargs
 
     def _remove(self, obj):
-        del self.queue[obj]
+        del self._queue[obj]
 
     def update_info(self, obj, **kwargs):
         """Updates the annotated information of an object in the queue.
@@ -151,10 +151,10 @@ class AnnotatedQueue(QueuingContext):
                 If a particular keyword already exists in the annotation,
                 the value is updated.
         """
-        if obj not in self.queue:
+        if obj not in self._queue:
             raise ValueError(f"Object {obj} not in the queue.")
 
-        self.queue[obj].update(kwargs)
+        self._queue[obj].update(kwargs)
 
     def get_info(self, obj):
         """Returns the annotated information of an object in the queue.
@@ -165,14 +165,15 @@ class AnnotatedQueue(QueuingContext):
         Returns:
             dict: the annotated information
         """
-        if obj not in self.queue:
+        if obj not in self._queue:
             raise ValueError(f"Object {obj} not in the queue.")
 
-        return self.queue[obj]
+        return self._queue[obj]
 
-    def objects(self):
+    @property
+    def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self.queue.keys())
+        return list(self._queue.keys())
 
 
 class OperationRecorder(Queue):
