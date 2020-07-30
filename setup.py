@@ -40,6 +40,7 @@ info = {
             'default.qubit = pennylane.plugins:DefaultQubit',
             'default.gaussian = pennylane.plugins:DefaultGaussian',
             'default.qubit.tf = pennylane.plugins.default_qubit_tf:DefaultQubitTF',
+            'default.qubit.autograd = pennylane.plugins.default_qubit_autograd:DefaultQubitAutograd',
             'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
             'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF',
             ],

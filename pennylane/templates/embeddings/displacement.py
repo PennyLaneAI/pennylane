@@ -21,7 +21,6 @@ from pennylane.templates import broadcast
 from pennylane.wires import Wires
 from pennylane.templates.utils import (
     check_shape,
-    check_no_variable,
     check_is_in_options,
     get_shape,
 )
@@ -59,9 +58,6 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(method, msg="'method' cannot be differentiable")
-    check_no_variable(c, msg="'c' cannot be differentiable")
 
     expected_shape = (len(wires),)
     check_shape(

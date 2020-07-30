@@ -210,7 +210,7 @@ class CircuitGraph:
         for op in self.operations_in_order:
             serialization_string += op.name
 
-            for param in op.params:
+            for param in op.data:
                 if isinstance(param, Variable):
                     serialization_string += delimiter
                     serialization_string += variable_delimiter
@@ -230,7 +230,7 @@ class CircuitGraph:
 
         for obs in self.observables_in_order:
             serialization_string += str(obs.name)
-            for param in obs.params:
+            for param in obs.data:
                 serialization_string += delimiter
                 serialization_string += str(param)
                 serialization_string += delimiter

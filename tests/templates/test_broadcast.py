@@ -20,6 +20,7 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
+import pennylane._queuing
 from pennylane.templates import template, broadcast
 from pennylane.ops import RX, RY, T, S, Rot, CRX, CRot, CNOT
 from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires_ring
@@ -133,7 +134,7 @@ class TestBuiltinPatterns:
     def test_correct_queue_for_gate_unitary(self, unitary, parameters):
         """Tests that correct gate queue is created when 'unitary' is a single gate."""
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             broadcast(unitary=unitary, pattern="single", wires=range(3), parameters=parameters)
 
         for gate in rec.queue:
@@ -146,7 +147,7 @@ class TestBuiltinPatterns:
     def test_correct_queue_for_template_unitary(self, unitary, gates, parameters):
         """Tests that correct gate queue is created when 'unitary' is a template."""
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             broadcast(unitary=unitary, pattern="single", wires=range(3), parameters=parameters)
 
         first_gate = gates[0]
@@ -164,7 +165,7 @@ class TestBuiltinPatterns:
     def test_correct_queue_for_template_unitary_with_keyword(self, template, kwarg, target_queue, parameters):
         """Tests that correct gate queue is created when 'unitary' is a template that uses a keyword."""
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             broadcast(unitary=template, pattern="single", wires=range(2),
                       parameters=parameters, kwargs={'a': kwarg})
 
@@ -177,10 +178,10 @@ class TestBuiltinPatterns:
     def test_correct_queue_same_gate_unitary_different_parameter_formats(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""
 
-        with qml.utils.OperationRecorder() as rec1:
+        with pennylane._queuing.OperationRecorder() as rec1:
             broadcast(unitary=gate, pattern="single", wires=range(3), parameters=pars1)
 
-        with qml.utils.OperationRecorder() as rec2:
+        with pennylane._queuing.OperationRecorder() as rec2:
             broadcast(unitary=gate, pattern="single", wires=range(3), parameters=pars2)
 
         for g1, g2 in zip(rec1.queue, rec2.queue):
@@ -190,7 +191,7 @@ class TestBuiltinPatterns:
     def test_correct_parameters_in_queue(self, pattern, n_wires, gate, parameters):
         """Tests that gate queue has correct parameters."""
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             broadcast(unitary=gate, pattern=pattern, wires=range(n_wires), parameters=parameters)
 
         for target_par, g in zip(parameters, rec.queue):
@@ -243,19 +244,6 @@ class TestBuiltinPatterns:
 
         with pytest.raises(ValueError, match="the ring pattern with 2 wires is an exception"):
             circuit(pars)
-
-    def test_exception_parameters_not_valid(self):
-        """Tests that an exception is raised if 'parameters' argument has invalid format."""
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            broadcast(unitary=RX, wires=[0, 1], pattern="single", parameters=RX)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="'parameters' must be either of type None or "):
-            circuit()
 
     @pytest.mark.parametrize("function, wires, target", [(wires_pyramid, [8, 2, 0, 4, 6, 1],
                                                           [[8, 2], [0, 4], [6, 1], [2, 0], [4, 6], [0, 4]]),
