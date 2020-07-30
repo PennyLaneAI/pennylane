@@ -51,8 +51,7 @@ def cost_layer(hamiltonian):
         hamiltonian (qml.Hamiltonian): The cost Hamiltonian
 
     Raises:
-        ValueError: if the terms of the supplied cost Hamiltonian are not
-        exclusively products of diagonal Pauli gates
+        ValueError: if the terms of the supplied cost Hamiltonian are not exclusively products of diagonal Pauli gates
 
     .. UsageDetails::
 
@@ -61,8 +60,8 @@ def cost_layer(hamiltonian):
 
         .. code-block:: python
 
-            import pennylane as qml
             from pennylane import qaoa
+            import pennylane as qml
 
             cost_h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
             cost_layer = qaoa.cost_layer(cost_h)
@@ -87,7 +86,7 @@ def cost_layer(hamiltonian):
 
         >>> circuit(0.5)
 
-        .. code-block:: None
+        .. code-block:: none
 
              0: ──H──RZ(-1.0)──╭RZ(-1.0)──┤ ⟨Z⟩
              1: ──H────────────╰RZ(-1.0)──┤ ⟨Z⟩
@@ -125,8 +124,8 @@ def mixer_layer(hamiltonian):
 
         .. code-block:: python
 
-            import pennylane as qml
             from pennylane import qaoa
+            import pennylane as qml
 
             mixer_h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)])
             mixer_layer = qaoa.mixer_layer(mixer_h)
@@ -151,7 +150,7 @@ def mixer_layer(hamiltonian):
 
         >>> circuit(0.5)
 
-        .. code-block:: None
+        .. code-block:: none
 
              0: ──H──RZ(-1.0)──H──H──╭RZ(-1.0)──H──┤ ⟨Z⟩
              1: ──H──────────────────╰RZ(-1.0)──H──┤ ⟨Z⟩
