@@ -28,8 +28,9 @@ def x_mixer(wires):
 
     where :math:`i` ranges over all wires, and :math:`X_i`
     denotes the Pauli-X operator on the :math:`i`-th wire.
-    This is the mixer that was used in the `original QAOA
-    paper <https://arxiv.org/abs/1411.4028>`__.
+
+    This is mixer is used in *A Quantum Approximate Optimization Algorithm*
+    by Edward Farhi, Jeffrey Goldstone, Sam Gutmann [`arXiv:1411.4028 <https://arxiv.org/abs/1411.4028>`__].
 
 
     Args:
