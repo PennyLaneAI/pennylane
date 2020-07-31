@@ -3,3 +3,10 @@ fixes:
 
 ignore:
   - "pennylane/plugins/tests/*"
+
+codecov:
+    notify:
+        after_n_builds: 6
+
+comment:
+    after_n_builds: 6

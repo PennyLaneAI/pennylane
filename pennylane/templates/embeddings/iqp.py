@@ -15,7 +15,7 @@ r"""
 Contains the ``IQPEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Sequence, Iterable
+from collections import Iterable
 from itertools import combinations
 from pennylane.templates.decorator import template
 from pennylane.ops import RZ, MultiRZ, Hadamard
@@ -24,7 +24,6 @@ from pennylane.templates.utils import (
     check_shape,
     check_type,
     get_shape,
-    check_no_variable,
 )
 from pennylane.wires import Wires
 
@@ -193,8 +192,6 @@ def IQPEmbedding(features, wires, n_repeats=1, pattern=None):
     # Input checks
 
     wires = Wires(wires)
-
-    check_no_variable(features, msg="'features' cannot be differentiable")
 
     expected_shape = (len(wires),)
     check_shape(
