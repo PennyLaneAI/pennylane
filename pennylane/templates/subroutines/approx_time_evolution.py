@@ -53,8 +53,8 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     Args:
         hamiltonian (.Hamiltonian): The Hamiltonian defining the
-           time-evolution operator. The indices of the observables in the Hamiltonian correspond to the index of
-           the ``wires`` element to which each observable is being applied.
+           time-evolution operator. The indices of the observables in the Hamiltonian
+           correspond to the ``wires`` element to which each observable is being applied.
            The Hamiltonian must be explicitly written
            in terms of products of Pauli gates (X, Y, Z, and I).
 
