@@ -22,7 +22,7 @@ def _diagonal_terms(hamiltonian):
     r"""Checks if all terms in a Hamiltonian are products of diagonal Pauli gates (PauliZ and Identity).
 
     Args:
-        hamiltonian (qml.Hamiltonian): The Hamiltonian being checked
+        hamiltonian (.Hamiltonian): The Hamiltonian being checked
 
     Returns:
         bool: ``True`` if all terms are products of diagonal Pauli gates, ``False`` otherwise
@@ -48,7 +48,7 @@ def cost_layer(hamiltonian):
     where :math:`\gamma` is a variational parameter.
 
     Args:
-        hamiltonian (qml.Hamiltonian): The cost Hamiltonian
+        hamiltonian (.Hamiltonian): The cost Hamiltonian
 
     Raises:
         ValueError: if the terms of the supplied cost Hamiltonian are not exclusively products of diagonal Pauli gates
@@ -115,7 +115,7 @@ def mixer_layer(hamiltonian):
     where :math:`\alpha` is a variational parameter.
 
     Args:
-        hamiltonian (qml.Hamiltonian): The mixer Hamiltonian
+        hamiltonian (.Hamiltonian): The mixer Hamiltonian
 
     .. UsageDetails::
 
