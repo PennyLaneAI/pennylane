@@ -23,6 +23,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+import pennylane._queuing
 import pennylane.utils as pu
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -449,110 +450,6 @@ class TestExpand:
             pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
 
 
-class TestOperationRecorder:
-    """Test the OperationRecorder class."""
-
-    def test_context_adding(self, monkeypatch):
-        """Test that the OperationRecorder is added to the list of contexts."""
-        with pu.OperationRecorder() as recorder:
-            assert recorder in qml.QueuingContext._active_contexts
-
-        assert recorder not in qml.QueuingContext._active_contexts
-
-    def test_circuit_integration(self):
-        """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""
-        expected_output = (
-            "Operations\n"
-            + "==========\n"
-            + "PauliY(wires=[0])\n"
-            + "PauliY(wires=[1])\n"
-            + "RZ(0.4, wires=[0])\n"
-            + "RZ(0.4, wires=[1])\n"
-            + "CNOT(wires=[0, 1])\n"
-            + "\n"
-            + "Observables\n"
-            + "==========\n"
-        )
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=1)
-
-            with pu.OperationRecorder() as recorder:
-                ops = [
-                    qml.PauliY(0),
-                    qml.PauliY(1),
-                    qml.RZ(c, wires=0),
-                    qml.RZ(c, wires=1),
-                    qml.CNOT(wires=[0, 1]),
-                ]
-
-            assert str(recorder) == expected_output
-            assert recorder.queue == ops
-
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        circuit(0.1, 0.2, 0.4)
-
-    def test_template_integration(self):
-        """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""
-        expected_output = (
-            "Operations\n"
-            + "==========\n"
-            + "RZ(0, wires=[0])\n"
-            + "RZ(3, wires=[0])\n"
-            + "RZ(6, wires=[0])\n"
-            + "RZ(9, wires=[0])\n"
-            + "RZ(12, wires=[0])\n"
-            + "\n"
-            + "Observables\n"
-            + "==========\n"
-        )
-
-        def template(x):
-            for i in range(5):
-                qml.RZ(i * x, wires=0)
-
-        with pu.OperationRecorder() as recorder:
-            template(3)
-
-        assert str(recorder) == expected_output
-
-    def test_template_with_return_integration(self):
-        """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""
-        expected_output = (
-            "Operations\n"
-            + "==========\n"
-            + "RZ(0, wires=[0])\n"
-            + "RZ(3, wires=[0])\n"
-            + "RZ(6, wires=[0])\n"
-            + "RZ(9, wires=[0])\n"
-            + "RZ(12, wires=[0])\n"
-            + "\n"
-            + "Observables\n"
-            + "==========\n"
-            + "var(PauliZ(wires=[0]))\n"
-            + "sample(PauliX(wires=[1]))\n"
-        )
-
-        def template(x):
-            for i in range(5):
-                qml.RZ(i * x, wires=0)
-
-            return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
-
-        with pu.OperationRecorder() as recorder:
-            template(3)
-
-        assert str(recorder) == expected_output
-
-
 @qml.template
 def dummy_template(wires):
     """Dummy template for inv tests."""
@@ -585,7 +482,7 @@ class TestInv:
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_template_inversion_without_context(self):
         """Test that a template is properly inverted."""
@@ -596,7 +493,7 @@ class TestInv:
         for inv_op, exp_op in zip(inv_ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_double_inversion(self):
         """Test that inverting twice changes nothing."""
@@ -607,7 +504,7 @@ class TestInv:
         for inv_inv_op, exp_op in zip(inv_inv_ops, op_queue):
             assert inv_inv_op.name == exp_op.name
             assert inv_inv_op.wires == exp_op.wires
-            assert inv_inv_op.params == exp_op.params
+            assert inv_inv_op.data == exp_op.data
 
     def test_template_double_inversion(self):
         """Test that inverting twice changes nothing for a template."""
@@ -616,11 +513,11 @@ class TestInv:
         for inv_inv_op, exp_op in zip(inv_inv_ops, dummy_template([0, 1, 2])):
             assert inv_inv_op.name == exp_op.name
             assert inv_inv_op.wires == exp_op.wires
-            assert inv_inv_op.params == exp_op.params
+            assert inv_inv_op.data == exp_op.data
 
     def test_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present."""
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
@@ -640,14 +537,14 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_non_queued_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present.
         Test that this also works for operations that were not queued."""
         inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
 
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(inv_ops)
@@ -667,7 +564,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_mixed_inversion_with_context(self):
         """Test that a sequence of operations is properly inverted when a context is present.
@@ -675,7 +572,7 @@ class TestInv:
         X0 = qml.PauliX(0)
         Z0 = qml.PauliZ(0)
 
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
@@ -696,7 +593,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_mixed_inversion_with_nested_context(self):
         """Test that a sequence of operations is properly inverted when a nested context is present.
@@ -704,8 +601,8 @@ class TestInv:
         X0 = qml.PauliX(0)
         Z0 = qml.PauliZ(0)
 
-        with pu.OperationRecorder() as rec1:
-            with pu.OperationRecorder() as rec2:
+        with pennylane._queuing.OperationRecorder() as rec1:
+            with pennylane._queuing.OperationRecorder() as rec2:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
@@ -726,16 +623,16 @@ class TestInv:
         for inv_op, exp_op in zip(rec1.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
         for inv_op, exp_op in zip(rec2.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_template_inversion_with_context(self):
         """Test that a template is properly inverted when a context is present."""
-        with pu.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             pu.inv(dummy_template([0, 1, 2]))
@@ -753,7 +650,7 @@ class TestInv:
         for inv_op, exp_op in zip(rec.queue, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_inversion_with_qnode(self):
         """Test that a sequence of operations is properly inverted when inside a QNode."""
@@ -784,7 +681,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_non_queued_inversion_with_qnode(self):
         """Test that a sequence of operations is properly inverted inside a QNode.
@@ -818,7 +715,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_mixed_inversion_with_qnode(self):
         """Test that a sequence of operations is properly inverted inside a QNode.
@@ -853,7 +750,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_template_inversion_with_qnode(self):
         """Test that a template is properly inverted when inside a QNode."""
@@ -882,7 +779,7 @@ class TestInv:
         for inv_op, exp_op in zip(qfunc.ops, inv_queue):
             assert inv_op.name == exp_op.name
             assert inv_op.wires == exp_op.wires
-            assert inv_op.params == exp_op.params
+            assert inv_op.data == exp_op.data
 
     def test_argument_wrapping(self):
         """Test that a single operation can be given to inv and is properly inverted."""
@@ -893,7 +790,7 @@ class TestInv:
 
         assert inv_ops[0].name == exp_op.name
         assert inv_ops[0].wires == exp_op.wires
-        assert inv_ops[0].params == exp_op.params
+        assert inv_ops[0].data == exp_op.data
 
     @pytest.mark.parametrize("arg", [2.3, object()])
     def test_argument_type_error(self, arg):

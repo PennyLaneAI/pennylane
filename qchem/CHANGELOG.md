@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Adds the function `qml.qchem.particle_number`, which computes the particle
+  number operator of a given molecule.
+  [(#698)](https://github.com/XanaduAI/pennylane/pull/698)
+
 * The function ``get_spinZ_matrix_elements`` has been added to the
   ``obs`` module to generate the matrix elements required to build
   the total-spin projection operator by using the generic function
@@ -40,6 +44,14 @@
   [[['a0', 'b1'], ['c2', 'd3']]]
   ```
 <h3>Improvements</h3>
+
+* The total spin observable S^2 can be built straightforwardly using the
+  function `spin2` as implemented in the `obs` module.
+  [(#714)](https://github.com/XanaduAI/pennylane/pull/714)
+
+* The total-spin projection observable S_z can be built straightforwardly using the
+  function `spin_z` as implemented in the `obs` module.
+  [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
 
 <h3>Breaking changes</h3>
 
