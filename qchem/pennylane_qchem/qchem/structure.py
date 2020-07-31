@@ -50,14 +50,14 @@ def _exec_exists(prog):
 
 
 def read_structure(filepath, outpath="."):
-    r"""Reads the molecular structure from a file and creates a list containing the
-    symbol and Cartesian coordinates of the atomic species.
+    r"""Reads the structure of the polyatomic system from a file and creates
+    a list containing the symbol and Cartesian coordinates of the atomic species.
 
     The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
     If `Open Babel <https://openbabel.org/>`_ is installed,
     `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
     is also supported. Additionally, the new file ``structure.xyz``,
-    containing the geometry of the molecule, is created in a directory with path given by
+    containing the inputted geometry, is created in a directory with path given by
     ``outpath``.
 
 
@@ -75,11 +75,6 @@ def read_structure(filepath, outpath="."):
 
     See the Open Babel documentation for more details on installation.
 
-    **Example usage:**
-
-    >>> read_structure('h2_ref.xyz')
-    [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
-
     Args:
         filepath (str): name of the molecular structure file in the working directory
             or the full path to the file if it is located in a different folder
@@ -87,6 +82,11 @@ def read_structure(filepath, outpath="."):
 
     Returns:
         list: for each atomic species, a list containing the symbol and the Cartesian coordinates
+
+    **Example**
+
+    >>> read_structure('h2_ref.xyz')
+    [['H', (0.0, 0.0, -0.35)], ['H', (0.0, 0.0, 0.35)]]
     """
 
     obabel_error_message = (
