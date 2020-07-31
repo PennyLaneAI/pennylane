@@ -53,6 +53,7 @@ def maxcut(graph):
 
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> cost_h = qml.qaoa.maxcut(graph)
+    >>> print(cost_h)
     (-0.5) [I0 I1] + (0.5) [Z0 Z1] + (-0.5) [I1 I2] + (0.5) [Z1 Z2]
     """
 

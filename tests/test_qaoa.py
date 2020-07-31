@@ -53,7 +53,7 @@ class TestMixerHamiltonians:
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object, got list"):
-            output = qaoa.xy_mixer(graph)
+            qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
@@ -119,8 +119,6 @@ class TestMixerHamiltonians:
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
 
-        print(graph.edges)
-
         mixer_hamiltonian = qaoa.xy_mixer(graph)
 
         mixer_coeffs = mixer_hamiltonian.coeffs
@@ -181,7 +179,7 @@ class TestCostHamiltonians:
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
-            output = qaoa.maxcut(graph)
+            qaoa.maxcut(graph)
 
     @pytest.mark.parametrize(("graph", "target_hamiltonian"), MAXCUT)
     def test_maxcut_output(self, graph, target_hamiltonian):
