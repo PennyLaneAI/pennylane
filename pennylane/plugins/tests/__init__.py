@@ -60,6 +60,7 @@ For non-analytic tests, the tolerance of the assert statements
 is set to a high enough value to account for stochastic fluctuations. Flaky is used to automatically
 repeat failed tests.
 """
+# pylint: disable=import-outside-toplevel
 import argparse
 import pathlib
 import sys
@@ -89,24 +90,24 @@ def test_device(device, analytic=None, shots=None, skip_ops=True, pytest_args=No
 
     **Example**
 
-    >>> from pennylane.plugins.tests import test_device
-    >>> test_device("default.qubit")
-    ================================ test session starts =======================================
-    platform linux -- Python 3.7.7, pytest-5.4.2, py-1.8.1, pluggy-0.13.1
-    rootdir: /home/josh/xanadu/pennylane/pennylane/plugins/tests, inifile: pytest.ini
-    plugins: flaky-3.6.1, cov-2.8.1, mock-3.1.0
-    collected 86 items
-    xanadu/pennylane/pennylane/plugins/tests/test_gates.py ..............................
-    ...............................                                                       [ 70%]
-    xanadu/pennylane/pennylane/plugins/tests/test_measurements.py .......sss...sss..sss   [ 95%]
-    xanadu/pennylane/pennylane/plugins/tests/test_properties.py ....                      [100%]
-    ================================= 77 passed, 9 skipped in 0.78s ============================
+  >>> from pennylane.plugins.tests import test_device
+  >>> test_device("default.qubit")
+  ================================ test session starts =======================================
+  platform linux -- Python 3.7.7, pytest-5.4.2, py-1.8.1, pluggy-0.13.1
+  rootdir: /home/josh/xanadu/pennylane/pennylane/plugins/tests, inifile: pytest.ini
+  plugins: flaky-3.6.1, cov-2.8.1, mock-3.1.0
+  collected 86 items
+  xanadu/pennylane/pennylane/plugins/tests/test_gates.py ..............................
+  ...............................                                                       [ 70%]
+  xanadu/pennylane/pennylane/plugins/tests/test_measurements.py .......sss...sss..sss   [ 95%]
+  xanadu/pennylane/pennylane/plugins/tests/test_properties.py ....                      [100%]
+  ================================= 77 passed, 9 skipped in 0.78s ============================
 
     """
     try:
         import pytest
-        import pytest_mock
-        import flaky
+        import pytest_mock  # pylint: disable=unused-import
+        import flaky  # pylint: disable=unused-import
     except ImportError:
         raise ImportError(
             "The device tests requires the following Python packages:"
@@ -168,7 +169,7 @@ def cli():
     parser = argparse.ArgumentParser(
         description="See below for available options and commands for working with the PennyLane device tests."
     )
-    parser._optionals.title = "General Options"
+    parser._optionals.title = "General Options"  # pylint: disable=protected-access
     pytest_addoption(parser)
     args, pytest_args = parser.parse_known_args()
 
