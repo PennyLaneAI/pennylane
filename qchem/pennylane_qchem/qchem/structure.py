@@ -248,15 +248,14 @@ def active_space(n_electrons, n_orbitals, mult=1, nact_els=None, nact_orbs=None)
     [1, 2]
     """
     # pylint: disable=too-many-branches
-    
+
     if nact_els is None:
         ncore_orbs = 0
         core = []
     else:
         if nact_els <= 0:
             raise ValueError(
-                "The number of active electrons ({}) "
-                "has to be greater than 0.".format(nact_els)
+                "The number of active electrons ({}) " "has to be greater than 0.".format(nact_els)
             )
 
         if nact_els > n_electrons:
@@ -270,26 +269,20 @@ def active_space(n_electrons, n_orbitals, mult=1, nact_els=None, nact_orbs=None)
             raise ValueError(
                 "For a reference state with multiplicity {}, "
                 "the number of active electrons ({}) should be "
-                "greater than or equal to {}.".format(
-                    mult, nact_els, mult - 1
-                )
+                "greater than or equal to {}.".format(mult, nact_els, mult - 1)
             )
 
         if mult % 2 == 1:
             if nact_els % 2 != 0:
                 raise ValueError(
                     "For a reference state with multiplicity {}, "
-                    "the number of active electrons ({}) should be even.".format(
-                        mult, nact_els
-                    )
+                    "the number of active electrons ({}) should be even.".format(mult, nact_els)
                 )
         else:
             if nact_els % 2 != 1:
                 raise ValueError(
                     "For a reference state with multiplicity {}, "
-                    "the number of active electrons ({}) should be odd.".format(
-                        mult, nact_els
-                    )
+                    "the number of active electrons ({}) should be odd.".format(mult, nact_els)
                 )
 
         ncore_orbs = (n_electrons - nact_els) // 2
@@ -300,8 +293,7 @@ def active_space(n_electrons, n_orbitals, mult=1, nact_els=None, nact_orbs=None)
     else:
         if nact_orbs <= 0:
             raise ValueError(
-                "The number of active orbitals ({}) "
-                "has to be greater than 0.".format(nact_orbs)
+                "The number of active orbitals ({}) " "has to be greater than 0.".format(nact_orbs)
             )
 
         if ncore_orbs + nact_orbs > n_orbitals:
@@ -324,15 +316,30 @@ def active_space(n_electrons, n_orbitals, mult=1, nact_els=None, nact_orbs=None)
     return core, active
 
 
-def decompose_hamiltonian(
-    mol_name, hf_data, mapping="jordan_wigner", docc_mo_indices=None, active_mo_indices=None
-):
+def decompose_molecular_hamiltonian(hf_file, mapping="jordan_wigner", core=None, active=None):
     r"""Decomposes the electronic Hamiltonian into a linear combination of Pauli operators using
     OpenFermion tools.
 
-    **Example usage:**
+    This function uses OpenFermion functions to build the second-quantized electronic Hamiltonian
+    of the molecule and map it to the Pauli basis using the Jordan-Wigner or Bravyi-Kitaev
+    transformation.
 
-    >>> decompose_hamiltonian('h2', './pyscf/sto-3g/', mapping='bravyi_kitaev')
+    Args:
+        hf_file (str): Full path to the hdf5-formatted file with the
+            Hartree-Fock electronic structure
+        mapping (str): Specifies the transformation to map the fermionic Hamiltonian to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        core (list): Indices of core molecular orbitals, i.e., the orbitals that are
+            not correlated in the many-body wave function
+        active (list): Indices of active molecular orbitals, i.e., the orbitals used to
+            build the correlated many-body wave function
+
+    Returns:
+        QubitOperator: an instance of OpenFermion's ``QubitOperator``
+
+    **Example**
+
+    >>> decompose_molecular_hamiltonian('./pyscf/sto-3g/h2', mapping='bravyi_kitaev')
     (-0.04207897696293986+0j) [] + (0.04475014401986122+0j) [X0 Z1 X2] +
     (0.04475014401986122+0j) [X0 Z1 X2 Z3] +(0.04475014401986122+0j) [Y0 Z1 Y2] +
     (0.04475014401986122+0j) [Y0 Z1 Y2 Z3] +(0.17771287459806262+0j) [Z0] +
@@ -341,29 +348,14 @@ def decompose_hamiltonian(
     (0.12293305054268105+0j) [Z0 Z2 Z3] +(0.1705973832722409+0j) [Z1] +
     (-0.2427428049645989+0j) [Z1 Z2 Z3] +(0.1762764080276107+0j) [Z1 Z3] +
     (-0.2427428049645989+0j) [Z2]
-
-    Args:
-        mol_name (str): name of the molecule
-        hf_data (str): path to the directory containing the file with the Hartree-Fock
-            electronic structure
-        mapping (str): optional argument to specify the fermion-to-qubit mapping
-            Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``
-        docc_mo_indices (list): indices of doubly-occupied molecular orbitals, i.e.,
-            the orbitals that are not correlated in the many-body wave function
-        active_mo_indices (list): indices of active molecular orbitals, i.e., the orbitals used to
-            build the correlated many-body wave function
-
-    Returns:
-        transformed_operator: instance of the QubitOperator class representing the electronic
-        Hamiltonian
     """
 
-    # loading HF data from a hdf5 file
-    molecule = MolecularData(filename=os.path.join(hf_data.strip(), mol_name.strip()))
+    # loading HF data from the hdf5 file
+    molecule = MolecularData(filename=hf_file.strip())
 
     # getting the terms entering the second-quantized Hamiltonian
     terms_molecular_hamiltonian = molecule.get_molecular_hamiltonian(
-        occupied_indices=docc_mo_indices, active_indices=active_mo_indices
+        occupied_indices=core, active_indices=active
     )
 
     # generating the fermionic Hamiltonian
@@ -807,7 +799,7 @@ __all__ = [
     "read_structure",
     "meanfield",
     "active_space",
-    "decompose_hamiltonian",
+    "decompose_molecular_hamiltonian",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
