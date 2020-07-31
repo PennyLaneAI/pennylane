@@ -52,7 +52,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
        Thus, each term in the Hamiltonian must be expressed this way upon input, or else an error will be raised.
 
     Args:
-        hamiltonian (pennylane.Hamiltonian): The Hamiltonian defining the
+        hamiltonian (.Hamiltonian): The Hamiltonian defining the
            time-evolution operator. The indices of the observables in the Hamiltonian correspond to the index of
            the ``wires`` element to which each observable is being applied.
            The Hamiltonian must be explicitly written
@@ -137,7 +137,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
         if count != len(word):
 
-            theta.append((-2 * time * hamiltonian.coeffs[i]) / n)
+            theta.append((2 * time * hamiltonian.coeffs[i]) / n)
             pauli_words.append(word)
             wire_index.append(term.wires)
 

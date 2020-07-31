@@ -875,26 +875,33 @@ class TestApproxTimeEvolution:
         [
             (2, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2,
              [
-                 qml.PauliRot(-2.0, 'X', wires=[0]),
-                 qml.PauliRot(-2.0, 'X', wires=[1]),
-                 qml.PauliRot(-2.0, 'X', wires=[0]),
-                 qml.PauliRot(-2.0, 'X', wires=[1])
+                 qml.PauliRot(2.0, 'X', wires=[0]),
+                 qml.PauliRot(2.0, 'X', wires=[1]),
+                 qml.PauliRot(2.0, 'X', wires=[0]),
+                 qml.PauliRot(2.0, 'X', wires=[1])
              ]
              ),
-            (2, qml.Hamiltonian([2, 0.5], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliX(1)] ), 2,
+            (2, qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")] ), 2,
              [
-                 qml.PauliRot(-4.0, 'X', wires=[0]),
-                 qml.PauliRot(-1.0, 'ZX', wires=[0, 1]),
-                 qml.PauliRot(-4.0, 'X', wires=[0]),
-                 qml.PauliRot(-1.0, 'ZX', wires=[0, 1])
+                 qml.PauliRot(4.0, 'X', wires=["a"]),
+                 qml.PauliRot(1.0, 'ZX', wires=["b", "a"]),
+                 qml.PauliRot(4.0, 'X', wires=["a"]),
+                 qml.PauliRot(1.0, 'ZX', wires=["b", "a"])
              ]
              ),
             (2, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]), 2,
              [
-                 qml.PauliRot(-2.0, 'X', wires=[0]),
-                 qml.PauliRot(-2.0, 'X', wires=[0])
+                 qml.PauliRot(2.0, 'X', wires=[0]),
+                 qml.PauliRot(2.0, 'X', wires=[0])
              ]
-             )
+             ),
+            (2, qml.Hamiltonian([2, 0.5, 0.5], [qml.PauliX("a"), qml.PauliZ(-15) @ qml.PauliX("a"), qml.Identity(0) @ qml.PauliY(-15)]), 1,
+             [
+                 qml.PauliRot(8.0, 'X', wires=["a"]),
+                 qml.PauliRot(2.0, 'ZX', wires=[-15, "a"]),
+                 qml.PauliRot(2.0, "IY", wires=[0, -15])
+             ]
+             ),
         ]
     )
     def test_evolution_operations(self, time, hamiltonian, steps, gates):
