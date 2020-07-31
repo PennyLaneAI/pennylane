@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the ``broadcast`` template constructor.
-To add a new pattern:
+Contains the ``repeat`` and ``broadcast`` template constructors.
+To add a new pattern to ``broadcast``:
 * extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``,
 * update the list in the docstring and add a usage example at the end of the docstring's
   ``UsageDetails`` section,
@@ -66,13 +66,14 @@ def wires_all_to_all(wires):
 ###################
 
 
-def tile(unitaries, wires, depth, parameters=None, kwargs=None):
-    r"""Applies a given set of wires in a tiled pattern, to a given depth.
+@template
+def repeat(unitaries, wires, depth, parameters=None, kwargs=None):
+    r"""Repeatedly applies a series of quantum gates or templates.
 
     Args:
         unitaries (list): A list of quantum gates or templates
         wires (list): The wires on which each gate/template act
-        depth (int): The depth to which the tiling is repeated
+        depth (int): The number of times the unitaries are repeated
         parameters (list): A list of parameters that are passed into parametrized elements of ``unitaries``.
             This argument has a shape (depth, N,), where N is the number of parametrized elements in ``unitaries``
         kwargs (dict): A dictionary of auxilliary parameters for ``unitaries``
@@ -82,9 +83,9 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
 
     .. UsageDetails::
 
-        **Tiling Gates**
+        **Repeating Gates**
 
-        To tile a collection of gates, the type of gate as well as the wire(s) on which
+        To repeat a collection of gates, the type of gate as well as the wire(s) on which
         it acts must be specified. For example:
 
         .. code-block:: python
@@ -95,7 +96,7 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit():
-                qml.tile([qml.Hadamard, qml.CNOT, qml.PauliX], [0, [0, 1], 0], 3)
+                qml.repeat([qml.Hadamard, qml.CNOT, qml.PauliX], [0, [0, 1], 0], 3)
                 return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
             circuit()
@@ -107,14 +108,19 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
              0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
              1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
 
-        **Tiling Variational Gates and Templates**
+        **Parametrized Gates and Templates**
 
-        The tiling function can accept and pass varaitional parameters
-        to gates, as well as PennyLane templates, with the ``parameters`` argument
+        The ``qml.repeat`` function can accept and pass varaitional parameters
+        to gates as well as PennyLane templates, with the ``parameters`` argument.
         The first and second dimensions of ``parameters``, respectively,
-        are the depth of the tiling and the number of parametrized templates/operations.
-        After this, each element is a list of parameters based into a
+        are the number of repetations and the number of parametrized templates/operations.
+        After this, each element is a list of parameters passed into the corresponding
         parametrized template/operation.
+
+        .. note::
+
+            The ``qml.repeat`` function assumes that all any template passed into it takes
+            parameters.
 
         For example:
 
@@ -126,7 +132,7 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
 
             @qml.qnode(dev)
             def circuit():
-                qml.templates.tile(
+                qml.repeat(
                     [qml.templates.AngleEmbedding, qml.RY, qml.Hadamard],
                     [[0, 1, 2], 0, 1], 2,
                     parameters=[
@@ -154,10 +160,10 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
     wires = [Wires(w) for w in wires]
 
     if not isinstance(unitaries, list):
-        raise ValueError("unitaries must be of type list, got {}".format(type(unitaries).__name__))
+        raise ValueError("'unitaries' must be of type list, got {}".format(type(unitaries).__name__))
 
     if not isinstance(depth, int):
-        raise ValueError("depth must be of type int, got {}".format(type(depth).__name__))
+        raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
 
     check_type(
         parameters,
@@ -196,12 +202,14 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
                 "Shape of parameters must be {} got {}".format((depth, s), (shape[0], shape[1]))
             )
 
-        # Repackage for consistent unpacking
-        if len(shape) == 2:
-            parameters = [
-                [p if isinstance(p, Iterable) else [p] for p in parameters[j]]
-                for j in range(0, len(parameters))
-            ]
+        # Checks if elements are lists
+
+        for i in parameters:
+            for j in i:
+                if not isinstance(j, list):
+                    raise ValueError(
+                        "Elements of 'parameters[i]' must be of type list, got {}".format(type(j).__name__)
+                    )
 
     ##############
 
@@ -210,15 +218,13 @@ def tile(unitaries, wires, depth, parameters=None, kwargs=None):
         c = 0
         for i, u in enumerate(unitaries):
             if type(u).__name__ == "function":
-                print(wires[i])
-                print(*parameters[d][c])
                 u(*parameters[d][c], wires=wires[i], **kwargs)
                 c += 1
-            elif u.num_params == 0:
-                u(wires=wires[i], **kwargs)
+            elif u.num_params > 0:
+                u(*parameters[d][c], wires=wires[i], **kwargs)
+                c += 1
             else:
-                u(*parameters[d][c], wires=wires[i], **kwargs)
-                c += 1
+                u(wires=wires[i], **kwargs)
 
 
 ###################
