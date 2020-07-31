@@ -68,6 +68,9 @@ function:
 >>> test_device("default.qubit")
 
 For more details on the available arguments, see the :func:`~.test_device` documentation.
+
+Functions
+---------
 """
 # pylint: disable=import-outside-toplevel
 import argparse
