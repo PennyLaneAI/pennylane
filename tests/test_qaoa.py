@@ -144,10 +144,8 @@ class TestCostHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError) as info:
+        with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
             output = qaoa.MaxCut(graph)
-
-        assert "Input graph must be a nx.Graph object, got list" in str(info.value)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
@@ -205,6 +203,6 @@ class TestCostHamiltonians:
         target_ops = [i.name for i in target_hamiltonian.ops]
         target_wires = [i.wires for i in target_hamiltonian.ops]
 
-        assert (
-            cost_coeffs == target_coeffs and cost_ops == target_ops and cost_wires == target_wires
-        )
+        assert cost_coeffs == target_coeffs
+        assert cost_ops == target_ops
+        assert cost_wires == target_wires
