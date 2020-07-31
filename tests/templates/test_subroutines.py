@@ -853,7 +853,7 @@ class TestApproxTimeEvolution:
         ]
     )
     def test_non_pauli_error(self, hamiltonian, output):
-        """Tests is the correct errors are thrown when the user attempts to input a matrix with non-Pauli terms"""
+        """Tests if the correct errors are thrown when the user attempts to input a matrix with non-Pauli terms"""
 
         n_wires = 2
         dev = qml.device('default.qubit', wires=n_wires)
