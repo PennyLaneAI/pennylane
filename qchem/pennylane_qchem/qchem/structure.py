@@ -496,26 +496,85 @@ def convert_observable(qubit_observable):
     return Hamiltonian(*_qubit_operator_to_terms(qubit_observable))
 
 
-def generate_hamiltonian(
-    mol_name,
-    mol_geo_file,
-    mol_charge,
-    multiplicity,
-    basis_set,
-    qc_package="pyscf",
-    n_active_electrons=None,
-    n_active_orbitals=None,
+def molecular_hamiltonian(
+    name,
+    geo_file,
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    package="pyscf",
+    nact_els=None,
+    nact_orbs=None,
     mapping="jordan_wigner",
     outpath=".",
 ):  # pylint:disable=too-many-arguments
-    r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
+    r"""Generates the qubit Hamiltonian of a molecule.
 
-    An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
-    Hartree-Fock (HF) molecular orbitals.
+    This function drives the construction of the second-quantized electronic Hamiltonian
+    of a molecule and its transformation to the basis of Pauli matrices.
 
-    **Example usage:**
+    #. The starting point is reading the file containing the geometry of the molecule.
 
-    >>> H, n_qubits = generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g')
+    #. OpenFermion-PySCF and OpenFermion-Psi4 plugins can be used to launch
+       the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
+       chemistry package ``PySCF`` and ``Psi4``, respectively.
+
+       - The net charge of the molecule can be given to simulate
+         cationic/anionic systems. Also, the spin multiplicity can be inputted
+         to determine the number of unpaired electrons occupying the HF orbitals
+         as illustrated in the left panel of the figure below.
+
+       - Furthermore, the basis of Gaussian-type *atomic* orbitals
+         used to represent the *molecular* orbitals can be specified to go beyond the
+         minimum basis approximation. Basis set availability per element can be found
+         `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+
+    #. An active space can be defined for a given number of *active electrons*
+       occupying a reduced set of *active orbitals* in the vicinity of the
+       highest-occupied molecular orbital (HOMO). See sketch in the right panel
+       of the figure below.
+
+    #. Finally, the second-quantized Hamiltonian is mapped to the Pauli basis and
+       converted to a PennyLane observable.
+
+    |
+
+    .. figure:: ../../_static/qchem/fig_mult_active_space.png
+        :align: center
+        :width: 50%
+
+    |
+   
+    Args:
+        name (str): Name of the molecule
+        geo_file (str): File containing the geometry of the molecule
+        charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
+        mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
+            for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
+            Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
+            a closed-shell HF state is assumed.
+        basis (str): Atomic Gaussian-type orbitals basis set. Basis set availability per
+                element can be found `here
+                <www.psicode.org/psi4manual/master/basissets_byelement.html>`_
+        package (str): Quantum chemistry package (pyscf or psi4) used to solve the
+                mean field electronic structure problem
+        nact_els (int): Number of active electrons. If not specified, all electrons
+                are considered to be active
+        nact_orbs (int): Number of active orbitals. If not specified, all orbitals
+                are considered to be active
+        mapping (str): Transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
+                map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
+        outpath (str): Path to the directory containing output files
+
+    Returns:
+        tuple[pennylane.Hamiltonian, int]: The fermionic-to-qubit transformed
+        Hamiltonian and the number of qubits
+
+    **Example**
+
+    >>> name = "h2"
+    >>> geo_file = "h2.xyz"
+    >>> H, n_qubits = molecular_hamiltonian(name, geo_file)
     >>> print(n_qubits)
     4
     >>> print(H)
@@ -534,46 +593,23 @@ def generate_hamiltonian(
     + (0.1676831945771896) [Z1 Z2]
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
-
-    Args:
-        mol_name (str): name of the molecule
-        mol_geo_file (str): name of the file containing the geometry of the molecule
-        mol_charge (int): net charge of the molecule
-        multiplicity (int): multiplicity of the Hartree-Fock reference state
-        basis_set (str): atomic Gaussian-type orbitals basis set. Basis set availability per
-                element can be found `here
-                <www.psicode.org/psi4manual/master/basissets_byelement.html>`_
-        qc_package (str): quantum chemistry package (pyscf or psi4) used to solve the
-                mean field electronic structure problem
-        n_active_electrons (int): number of active electrons. If not specified, all electrons
-                are considered to be active
-        n_active_orbitals (int): number of active orbitals. If not specified, all orbitals
-                are considered to be active
-        mapping (str): the transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
-                map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
-        outpath (str): path to the directory containing output files
-    Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed
-        Hamiltonian and the number of qubits
-
      """
 
-    geometry = read_structure(mol_geo_file, outpath)
+    geometry = read_structure(geo_file, outpath)
 
-    hf_data = meanfield_data(
-        mol_name, geometry, mol_charge, multiplicity, basis_set, qc_package, outpath
+    hf_file = meanfield(name, geometry, charge, mult, basis, package, outpath)
+
+    molecule = MolecularData(filename=hf_file)
+
+    core, active = active_space(
+        molecule.n_electrons, molecule.n_orbitals, mult, nact_els, nact_orbs)
+
+    h_of, n_qubits = (
+        decompose_molecular_hamiltonian(hf_file, mapping, core, active),
+        2 * len(active),
     )
 
-    docc_indices, active_indices = active_space(
-        mol_name, hf_data, n_active_electrons, n_active_orbitals
-    )
-
-    h_of, nr_qubits = (
-        decompose_hamiltonian(mol_name, hf_data, mapping, docc_indices, active_indices),
-        2 * len(active_indices),
-    )
-
-    return convert_observable(h_of), nr_qubits
+    return convert_observable(h_of), n_qubits
 
 
 def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
@@ -804,7 +840,7 @@ __all__ = [
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
     "convert_observable",
-    "generate_hamiltonian",
+    "molecular_hamiltonian",
     "sd_excitations",
     "hf_state",
     "excitations_to_wires",
