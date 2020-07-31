@@ -40,6 +40,14 @@ def repeat(unitaries, wires, depth, parameters=None, kwargs=None):
     Raises:
         ValueError: if inputs do not have the correct format
 
+    .. note::
+
+            Any template passed into ``qml.repeat`` must have a signature of the form:
+
+            .. code-block:: none
+
+                    template(params, wires, **kwargs)
+
     .. UsageDetails::
 
         **Repeating Gates**
@@ -75,14 +83,6 @@ def repeat(unitaries, wires, depth, parameters=None, kwargs=None):
         are the number of repetations and the number of parametrized templates/operations.
         After this, each element is a list of parameters passed into the corresponding
         parametrized template/operation.
-
-        .. note::
-
-            Any template passed into ``qml.repeat`` must have a signature of the form:
-
-            .. code-block:: none
-
-                    template(params, wires, **kwargs)
 
         For example:
 
