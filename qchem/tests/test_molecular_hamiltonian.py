@@ -10,14 +10,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 
 
 @pytest.mark.parametrize(
-    (
-        "charge",
-        "mult",
-        "package",
-        "nact_els",
-        "nact_orbs",
-        "mapping",
-    ),
+    ("charge", "mult", "package", "nact_els", "nact_orbs", "mapping",),
     [
         (0, 1, "psi4", 2, 2, "jordan_WIGNER"),
         (1, 2, "psi4", 3, 4, "BRAVYI_kitaev"),
@@ -30,15 +23,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
     ],
 )
 def test_building_hamiltonian(
-    charge,
-    mult,
-    package,
-    nact_els,
-    nact_orbs,
-    mapping,
-    psi4_support,
-    requires_babel,
-    tmpdir,
+    charge, mult, package, nact_els, nact_orbs, mapping, psi4_support, requires_babel, tmpdir,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
     Hamiltonian class and the correctness of the total number of qubits required to run the

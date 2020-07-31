@@ -602,7 +602,8 @@ def molecular_hamiltonian(
     molecule = MolecularData(filename=hf_file)
 
     core, active = active_space(
-        molecule.n_electrons, molecule.n_orbitals, mult, nact_els, nact_orbs)
+        molecule.n_electrons, molecule.n_orbitals, mult, nact_els, nact_orbs
+    )
 
     h_of, n_qubits = (
         decompose_molecular_hamiltonian(hf_file, mapping, core, active),
