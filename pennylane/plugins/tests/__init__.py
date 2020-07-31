@@ -22,33 +22,6 @@ These can be installed using ``pip``:
 
     pip install pytest pytest-mock flaky
 
-To run the tests against a particular device (i.e., for ``'default.qubit'``):
-
-.. code-block:: console
-
-    python3 -m pytest path_to_pennylane_src/plugins/tests --device default.qubit --shots 1234 --analytic False
-
-The location of your PennyLane installation may differ depending on installation method and operating
-system. To find the location, you can use the :func:`~.get_device_tests` function:
-
->>> from pennylane.plugins.tests import get_device_tests
->>> get_device_tests()
-
-Alternatively, PennyLane provides a command line interface for invoking the device tests. This
-simply requires that PennyLane be installed, and does not require the PennyLane source code:
-
-.. code-block:: console
-
-    pl-device-test --device default.qubit --shots 1234 --analytic False
-
-Finally, the tests can be invoked within a Python session via the :func:`~.test_device`
-function:
-
->>> from pennylane.plugins.tests import test_device
->>> test_device("default.qubit")
-
-For more details on the available arguments, see the :func:`~.test_device` documentation.
-
 The tests can also be run on an external device from a PennyLane plugin, such as
 ``'qiskit.aer'``. For this, make sure you have the correct dependencies installed.
 
@@ -59,6 +32,42 @@ probability distribution) are tested.
 For non-analytic tests, the tolerance of the assert statements
 is set to a high enough value to account for stochastic fluctuations. Flaky is used to automatically
 repeat failed tests.
+
+There are several methods for running the tests against a particular device (i.e., for
+``'default.qubit'``), detailed below.
+
+Using pytest
+------------
+
+.. code-block:: console
+
+    pytest path_to_pennylane_src/plugins/tests --device=default.qubit --shots=1234 --analytic=False
+
+The location of your PennyLane installation may differ depending on installation method and
+operating system. To find the location, you can use the :func:`~.get_device_tests` function:
+
+>>> from pennylane.plugins.tests import get_device_tests
+>>> get_device_tests()
+
+The pl-device-test CLI
+----------------------
+
+Alternatively, PennyLane provides a command line interface for invoking the device tests.
+
+.. code-block:: console
+
+    pl-device-test --device default.qubit --shots 1234 --analytic False
+
+Within Python
+-------------
+
+Finally, the tests can be invoked within a Python session via the :func:`~.test_device`
+function:
+
+>>> from pennylane.plugins.tests import test_device
+>>> test_device("default.qubit")
+
+For more details on the available arguments, see the :func:`~.test_device` documentation.
 """
 # pylint: disable=import-outside-toplevel
 import argparse
@@ -90,18 +99,18 @@ def test_device(device, analytic=None, shots=None, skip_ops=True, pytest_args=No
 
     **Example**
 
-  >>> from pennylane.plugins.tests import test_device
-  >>> test_device("default.qubit")
-  ================================ test session starts =======================================
-  platform linux -- Python 3.7.7, pytest-5.4.2, py-1.8.1, pluggy-0.13.1
-  rootdir: /home/josh/xanadu/pennylane/pennylane/plugins/tests, inifile: pytest.ini
-  plugins: flaky-3.6.1, cov-2.8.1, mock-3.1.0
-  collected 86 items
-  xanadu/pennylane/pennylane/plugins/tests/test_gates.py ..............................
-  ...............................                                                       [ 70%]
-  xanadu/pennylane/pennylane/plugins/tests/test_measurements.py .......sss...sss..sss   [ 95%]
-  xanadu/pennylane/pennylane/plugins/tests/test_properties.py ....                      [100%]
-  ================================= 77 passed, 9 skipped in 0.78s ============================
+    >>> from pennylane.plugins.tests import test_device
+    >>> test_device("default.qubit")
+    ================================ test session starts =======================================
+    platform linux -- Python 3.7.7, pytest-5.4.2, py-1.8.1, pluggy-0.13.1
+    rootdir: /home/josh/xanadu/pennylane/pennylane/plugins/tests, inifile: pytest.ini
+    plugins: flaky-3.6.1, cov-2.8.1, mock-3.1.0
+    collected 86 items
+    xanadu/pennylane/pennylane/plugins/tests/test_gates.py ..............................
+    ...............................                                                       [ 70%]
+    xanadu/pennylane/pennylane/plugins/tests/test_measurements.py .......sss...sss..sss   [ 95%]
+    xanadu/pennylane/pennylane/plugins/tests/test_properties.py ....                      [100%]
+    ================================= 77 passed, 9 skipped in 0.78s ============================
 
     """
     try:
