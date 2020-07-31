@@ -15,10 +15,10 @@ r"""
 Contains the ``repeat`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
+from collections.abc import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_type, get_shape, check_is_in_options
+from pennylane.templates.utils import check_type, get_shape
 from pennylane.wires import Wires
 
 
@@ -122,7 +122,9 @@ def repeat(unitaries, wires, depth, parameters=None, kwargs=None):
     wires = [Wires(w) for w in wires]
 
     if not isinstance(unitaries, list):
-        raise ValueError("'unitaries' must be of type list, got {}".format(type(unitaries).__name__))
+        raise ValueError(
+            "'unitaries' must be of type list, got {}".format(type(unitaries).__name__)
+        )
 
     if not isinstance(depth, int):
         raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
@@ -170,7 +172,9 @@ def repeat(unitaries, wires, depth, parameters=None, kwargs=None):
             for j in i:
                 if not isinstance(j, list):
                     raise ValueError(
-                        "Elements of 'parameters[i]' must be of type list, got {}".format(type(j).__name__)
+                        "Elements of 'parameters[i]' must be of type list, got {}".format(
+                            type(j).__name__
+                        )
                     )
 
     ##############
