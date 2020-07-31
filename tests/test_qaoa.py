@@ -203,6 +203,6 @@ class TestCostHamiltonians:
         target_ops = [i.name for i in target_hamiltonian.ops]
         target_wires = [i.wires for i in target_hamiltonian.ops]
 
-        assert (
-            cost_coeffs == target_coeffs and cost_ops == target_ops and cost_wires == target_wires
-        )
+        assert cost_coeffs == target_coeffs
+        assert cost_ops == target_ops
+        assert cost_wires == target_wires
