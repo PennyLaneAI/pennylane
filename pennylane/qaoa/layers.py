@@ -39,9 +39,9 @@ def _diagonal_terms(hamiltonian):
 
 
 def cost_layer(hamiltonian):
-    r"""Builds a QAOA cost layer, for a given cost Hamiltonian.
+    r"""Returns the QAOA cost layer corresponding to a cost Hamiltonian.
 
-    The cost layer for cost Hamiltonian :math:`H_C` is defined as the following unitary:
+    For the cost Hamiltonian :math:`H_C`, this is defined as the following unitary:
 
     .. math:: U_C \ = \ e^{-i \gamma H_C}
 
@@ -106,9 +106,9 @@ def cost_layer(hamiltonian):
 
 
 def mixer_layer(hamiltonian):
-    r"""Builds a QAOA mixer layer, for a given mixer Hamiltonian.
+    r"""Returns the QAOA cost layer corresponding to a mixer Hamiltonian.
 
-    The mixer layer for cost Hamiltonian :math:`H_M` is defined as the following unitary:
+    For a mixer Hamiltonian :math:`H_M`, this is defined as the following unitary:
 
     .. math:: U_M \ = \ e^{-i \alpha H_M}
 
