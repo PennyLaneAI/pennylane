@@ -135,46 +135,42 @@ class TestMixerHamiltonians:
         assert mixer_ops == target_ops
         assert mixer_wires == target_wires
 
-MAXCUT = [
-    (
+
+GRAPHS = [
     Graph([(0, 1), (1, 2)]),
-    qml.Hamiltonian(
-        [-0.5, 0.5, -0.5, 0.5],
-        [
-            qml.Identity(0) @ qml.Identity(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.Identity(1) @ qml.Identity(2),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-        ]
-    )
-    ),
-    (
     Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
-    qml.Hamiltonian(
-        [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5],
-        [
-            qml.Identity(0) @ qml.Identity(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.Identity(0) @ qml.Identity(2),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.Identity(1) @ qml.Identity(2),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-        ]
-    )
-    ),
-    (
     graph,
-    qml.Hamiltonian(
-        [-0.5, 0.5, -0.5, 0.5],
-        [
-            qml.Identity(0) @ qml.Identity(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.Identity(1) @ qml.Identity(2),
-            qml.PauliZ(1) @ qml.PauliZ(2),
-        ]
-    )
-    )
 ]
+
+COEFFS = [[-0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5]]
+
+TERMS = [
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(0) @ qml.Identity(2),
+        qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+    ],
+]
+
+HAMILTONIANS = [qml.Hamiltonian(COEFFS[i], TERMS[i]) for i in range(3)]
+
+MAXCUT = zip(GRAPHS, HAMILTONIANS)
+
 
 class TestCostHamiltonians:
     """Tests that the cost Hamiltonians are being generated correctly"""
