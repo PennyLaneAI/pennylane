@@ -44,6 +44,9 @@ info = {
             'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
             'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF',
             ],
+        'console_scripts': [
+                'pl-device-test=pennylane.plugins.tests:cli'
+            ]
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
     'long_description': open('README.rst').read(),

@@ -130,22 +130,27 @@ def pytest_runtest_setup(item):
 def pytest_addoption(parser):
     """Add command line option to pytest."""
 
+    if hasattr(parser, "add_argument"):
+        addoption = parser.add_argument
+    else:
+        addoption = parser.addoption
+
     # The options are the three arguments every device takes
-    parser.addoption("--device", action="store", default=None, help="The device to test.")
-    parser.addoption(
+    addoption("--device", action="store", default=None, help="The device to test.")
+    addoption(
         "--shots",
         action="store",
         default=None,
         type=int,
         help="Number of shots to use in stochastic mode.",
     )
-    parser.addoption(
+    addoption(
         "--analytic",
         action="store",
         default=None,
         help="Whether to run the tests in stochastic or exact mode.",
     )
-    parser.addoption(
+    addoption(
         "--skip-ops",
         action="store_true",
         default=False,
