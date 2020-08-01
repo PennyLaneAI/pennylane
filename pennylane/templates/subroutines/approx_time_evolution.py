@@ -32,12 +32,12 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     .. math:: H \ = \ \displaystyle\sum_{j} H_j.
 
-    In general, implementing this unitary with a set of quantum gates is difficult, as the terms :math:`H_j` don't
-    necessarily commute with one another. However, we are able to exploit the Trotter-Suzuki decomposition formula:
+    Implementing this unitary with a set of quantum gates is difficult, as the terms :math:`H_j` don't
+    necessarily commute with one another. However, we are able to exploit the Trotter-Suzuki decomposition formula,
 
-    .. math:: e^{A \ + \ B} \ = \ \lim_{n \to \infty} \Big[ e^{A/n} e^{B/n} \Big]^n
+    .. math:: e^{A \ + \ B} \ = \ \lim_{n \to \infty} \Big[ e^{A/n} e^{B/n} \Big]^n,
 
-    to implement an approximation of the time-evolution operator as:
+    to implement an approximation of the time-evolution operator as
 
     .. math:: U \ \approx \ \displaystyle\prod_{k \ = \ 1}^{n} \displaystyle\prod_{j} e^{-i H_j t / n},
 
@@ -47,7 +47,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     .. note::
 
-       This template uses the ``PauliRot`` operation in order to implement
+       This template uses the :class:`~.PauliRot` operation in order to implement
        exponentiated terms of the input Hamiltonian. This operation only takes
        terms that are explicitly written in terms of products of Pauli matrices (``PauliX``, ``PauliY``, ``PauliZ``, and ``Identity``).
        Thus, each term in the Hamiltonian must be expressed this way upon input, or else an error will be raised.
@@ -58,9 +58,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
            correspond to the ``wires`` element to which each observable is being applied.
            The Hamiltonian must be explicitly written
            in terms of products of Pauli gates (X, Y, Z, and I).
-
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
-
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
     Raises:
@@ -97,7 +95,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
-            "`hamiltonian` must be of type pennylane.Hamiltonian, got {}".format(
+            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
                 type(hamiltonian).__name__
             )
         )
@@ -128,7 +126,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
         except KeyError as error:
             raise ValueError(
-                "`hamiltonian` must be written in terms of Pauli matrices, got {}".format(error)
+                "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
             )
 
         count = 0
