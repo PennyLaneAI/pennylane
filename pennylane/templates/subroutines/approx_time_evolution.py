@@ -21,9 +21,10 @@ from pennylane.templates.decorator import template
 
 @template
 def ApproxTimeEvolution(hamiltonian, time, n):
-    r""" Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
-    of Pauli gates. The general
-    time-evolution operator for a time-independent Hamiltonian is given by:
+    r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
+    of Pauli gates.
+    
+    The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
 
