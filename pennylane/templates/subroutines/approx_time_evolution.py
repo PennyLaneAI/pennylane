@@ -101,10 +101,10 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         )
 
     if not isinstance(time, (int, float, qml.variable.Variable)):
-        raise ValueError("`time` must be of type int or float, got {}".format(type(time).__name__))
+        raise ValueError("time must be of type int or float, got {}".format(type(time).__name__))
 
     if not isinstance(n, (int, qml.variable.Variable)):
-        raise ValueError("`n` must be of type int, got {}".format(type(n).__name__))
+        raise ValueError("n must be of type int, got {}".format(type(n).__name__))
 
     ###############
 
