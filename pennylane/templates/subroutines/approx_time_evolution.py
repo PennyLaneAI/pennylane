@@ -23,7 +23,7 @@ from pennylane.templates.decorator import template
 def ApproxTimeEvolution(hamiltonian, time, n):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
-    
+
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
@@ -41,7 +41,14 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     .. math:: U \ \approx \ \displaystyle\prod_{k \ = \ 1}^{n} \displaystyle\prod_{j} e^{-i H_j t / n},
 
-    with the approximation becoming better for larger :math:`n`. It is also important to note that
+    with the approximation becoming better for larger :math:`n`.
+
+    .. figure:: ../../_static/templates/subroutines/approx_time_evolution.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    It is also important to note that
     this decomposition is exact for any value of :math:`n` when each term of the Hamiltonian, :math:`H_n`,
     commutes with every other term.
 
