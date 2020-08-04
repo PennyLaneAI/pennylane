@@ -591,7 +591,7 @@ def molecular_hamiltonian(
     + (0.1676831945771896) [Z1 Z2]
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
-     """
+    """
 
     geometry = read_structure(geo_file, outpath)
 
