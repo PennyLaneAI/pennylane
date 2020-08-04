@@ -26,11 +26,11 @@ from pennylane.wires import Wires
 
 
 @template
-def repeat(unitaries, wires, depth, parameters=None, kwargs=None):
+def repeat(unitary, wires, depth, parameters=None, kwargs=None):
     r"""Repeatedly applies a series of quantum gates or templates.
 
     Args:
-        unitaries (list): A list of quantum gates or templates
+        unitary (function):
         wires (list): The wires on which each gate/template act
         depth (int): The number of times the unitaries are repeated
         parameters (list): A list of parameters that are passed into parametrized elements of ``unitaries``.
