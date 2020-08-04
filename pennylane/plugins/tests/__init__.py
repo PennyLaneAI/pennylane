@@ -41,7 +41,7 @@ Using pytest
 
 .. code-block:: console
 
-    pytest path_to_pennylane_src/plugins/tests --device=default.qubit --shots=1234 --analytic=False
+    pytest path_to_pennylane_src/plugins/tests --device=default.qubit --shots=10000 --analytic=False
 
 The location of your PennyLane installation may differ depending on installation method and
 operating system. To find the location, you can use the :func:`~.get_device_tests` function:
@@ -56,7 +56,7 @@ Alternatively, PennyLane provides a command line interface for invoking the devi
 
 .. code-block:: console
 
-    pl-device-test --device default.qubit --shots 1234 --analytic False
+    pl-device-test --device default.qubit --shots 10000 --analytic False
 
 Within Python
 -------------
@@ -84,7 +84,7 @@ def get_device_tests():
     return str(pathlib.Path(__file__).parent.absolute())
 
 
-def test_device(device, analytic=None, shots=None, skip_ops=True, pytest_args=None):
+def test_device(device, analytic=None, shots=None, skip_ops=True, flaky_report=False, pytest_args=None):
     """Run the device integration tests using an installed PennyLane device.
 
     Args:
@@ -118,7 +118,7 @@ def test_device(device, analytic=None, shots=None, skip_ops=True, pytest_args=No
 
     """
     try:
-        import pytest
+        import pytest  # pylint: disable=unused-import
         import pytest_mock  # pylint: disable=unused-import
         import flaky  # pylint: disable=unused-import
     except ImportError:
@@ -144,7 +144,8 @@ def test_device(device, analytic=None, shots=None, skip_ops=True, pytest_args=No
     if skip_ops:
         cmds.append("--skip-ops")
 
-    cmds.append("--no-flaky-report")
+    if not flaky_report:
+        cmds.append("--no-flaky-report")
 
     subprocess.call(cmds + pytest_args)
 
@@ -170,6 +171,7 @@ def cli():
           --shots SHOTS        Number of shots to use in stochastic mode.
           --analytic ANALYTIC  Whether to run the tests in stochastic or exact mode.
           --skip-ops           Skip tests that use unsupported device operations.
+          --flaky-report       Show the flaky report in the terminal
 
     Note that additional pytest command line arguments and flags can also be passed:
 
@@ -186,10 +188,16 @@ def cli():
     pytest_addoption(parser)
     args, pytest_args = parser.parse_known_args()
 
+    flaky = False
+    if "--flaky-report" in pytest_args:
+        pytest_args.remove("--flaky-report")
+        flaky = True
+
     test_device(
         args.device,
         analytic=args.analytic,
         shots=args.shots,
         skip_ops=args.skip_ops,
+        flaky_report=flaky,
         pytest_args=pytest_args,
     )
