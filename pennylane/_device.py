@@ -184,7 +184,7 @@ class Device(abc.ABC):
 
         >>> dev = device('my.device', wires=['b', 'a'])
         >>> dev.wire_map()
-        [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)]
+        OrderedDict( [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)])
         """
         consecutive_wires = Wires(range(self.num_wires))
 
@@ -195,7 +195,7 @@ class Device(abc.ABC):
         """Map the wire labels of wires using this device's wire map.
 
         Args:
-            wires (Wires): wires whose labels we want to map to new wire labels
+            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
 
         Returns:
             Wires: wires with new labels

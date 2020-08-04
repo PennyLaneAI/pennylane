@@ -553,7 +553,7 @@ def poly_quad_expectations(mu, cov, wires, device_wires, params, hbar=2.0):
         mu (array): vector of means
         cov (array): covariance matrix
         wires (Wires): wires to calculate the expectation for
-        device_wires (Wires): wires on the device
+        device_wires (Wires): corresponding wires on the device
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
             :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
