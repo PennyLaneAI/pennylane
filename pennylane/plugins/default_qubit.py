@@ -178,38 +178,41 @@ class DefaultQubit(QubitDevice):
     def state(self):
         return self._flatten(self._pre_rotated_state)
 
-    def _apply_state_vector(self, state, wires):
+    def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 
         Args:
             state (array[complex]): normalized input state of length
                 ``2**len(wires)``
-            wires (Wires): wires that get initialized in the state
+            device_wires (Wires): wires that get initialized in the state
         """
 
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(device_wires)
 
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
-        if state.ndim != 1 or n_state_vector != 2 ** len(wires):
+        if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
         if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        if len(wires) == self.num_wires and sorted(wires.labels) == wires.labels:
+        if (
+            len(device_wires) == self.num_wires
+            and sorted(device_wires.labels) == device_wires.labels
+        ):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
             return
 
         # generate basis states on subset of qubits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
 
         # get basis states to alter on full set of qubits
-        unravelled_indices = np.zeros((2 ** len(wires), self.num_wires), dtype=int)
-        unravelled_indices[:, wires.toarray()] = basis_states
+        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+        unravelled_indices[:, device_wires] = basis_states
 
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
@@ -227,7 +230,7 @@ class DefaultQubit(QubitDevice):
             wires (Wires): wires that the provided computational state should be initialized on
         """
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
         # length of basis state parameter
         n_basis_state = len(state)
@@ -235,11 +238,11 @@ class DefaultQubit(QubitDevice):
         if not set(state).issubset({0, 1}):
             raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
 
-        if n_basis_state != len(wires):
+        if n_basis_state != len(device_wires):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         # get computational basis state number
-        basis_states = 2 ** (self.num_wires - 1 - wires.toarray())
+        basis_states = 2 ** (self.num_wires - 1 - device_wires.toarray())
         num = int(np.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
@@ -252,18 +255,18 @@ class DefaultQubit(QubitDevice):
             wires (Wires): target wires
         """
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(wires), 2 * len(wires)), wires.labels)
+        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires.labels)
         tdot = self._tensordot(mat, self._state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
         # the correct output state
         # We'll need to invert this permutation to put the indices in the correct place
-        unused_idxs = [idx for idx in range(self.num_wires) if idx not in wires.labels]
-        perm = list(wires.labels) + unused_idxs
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires.labels]
+        perm = list(device_wires.labels) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         self._state = self._transpose(tdot, inv_perm)
 
@@ -278,18 +281,18 @@ class DefaultQubit(QubitDevice):
             wires (Wires): target wires
         """
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(wires) * 2), dtype=self.C_DTYPE)
+        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
 
         # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires : self.num_wires + len(wires)]
+        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
 
         # The new indices of the state are given by the old ones with the affected indices
         # replaced by the new_indices
@@ -319,13 +322,13 @@ class DefaultQubit(QubitDevice):
             wires (Wires): target wires
         """
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
         # reshape vectors
-        phases = self._cast(self._reshape(phases, [2] * len(wires)), dtype=self.C_DTYPE)
+        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[wires.tolist()].tolist())
+        affected_indices = "".join(ABC_ARRAY[device_wires.tolist()].tolist())
 
         einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
             affected_indices=affected_indices, state_indices=state_indices

@@ -518,29 +518,29 @@ class DefaultTensor(Device):
         ket = self._contracted_state_node
         bra = tn.conj(ket, name="Bra")
 
-        all_wires = Wires(range(self.num_wires))
-        meas_wires = []
+        all_device_wires = Wires(range(self.num_wires))
+        meas_device_wires = []
         # For wires which are measured, add edges between
         # the ket node, the observable nodes, and the bra node
         for obs_node, wires in zip(obs_nodes, obs_wires):
 
             # translate to consecutive wire labels used by device
-            wires = self.map_wires(wires)
+            device_wires = self.map_wires(wires)
 
-            meas_wires.append(wires)
-            for idx, l in enumerate(wires.labels):
+            meas_device_wires.append(device_wires)
+            for idx, l in enumerate(device_wires.labels):
                 # Use convention that the indices of a tensor are ordered like
                 # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
                 output_idx = idx
-                input_idx = len(wires) + idx
+                input_idx = len(device_wires) + idx
                 tn.connect(obs_node[input_idx], ket[l])  # A|psi>
                 tn.connect(bra[l], obs_node[output_idx])  # <psi|A
 
-        meas_wires = Wires(meas_wires)
+        meas_device_wires = Wires(meas_device_wires)
 
         # unmeasured wires are contracted directly between bra and ket
-        unmeasured_wires = Wires.unique_wires([all_wires, meas_wires])
-        for w in unmeasured_wires.labels:
+        unmeasured_device_wires = Wires.unique_wires([all_device_wires, meas_device_wires])
+        for w in unmeasured_device_wires.labels:
             tn.connect(bra[w], ket[w])
 
         # At this stage, all nodes are connected, and the contraction yields a
@@ -569,8 +569,8 @@ class DefaultTensor(Device):
             # refactor of `execute` logic from parent class
 
             # translate to consecutive wire labels used by device
-            wires = self.map_wires(obs_wires[0])
-            expval = self.mps.measure_local_operator(obs_nodes, wires.labels)[0]
+            device_wires = self.map_wires(obs_wires[0])
+            expval = self.mps.measure_local_operator(obs_nodes, device_wires.labels)[0]
         else:
             conj_nodes = [tn.conj(node) for node in self.mps.nodes]
             meas_wires = []
@@ -578,10 +578,10 @@ class DefaultTensor(Device):
             for obs_node, wires in zip(obs_nodes, obs_wires):
 
                 # translate to consecutive wire labels used by device
-                wires = self.map_wires(wires)
-                wire_labels = wires.labels
+                device_wires = self.map_wires(wires)
+                wire_labels = device_wires.labels
 
-                if len(wires) == 2 and abs(wire_labels[0] - wire_labels[1]) > 1:
+                if len(device_wires) == 2 and abs(wire_labels[0] - wire_labels[1]) > 1:
                     raise NotImplementedError(
                         "Multi-wire measurement only supported for nearest-neighbour wire pairs."
                     )

@@ -100,7 +100,7 @@ class TestOperation:
         # make sure that `heisenberg_expand` method receives enough wires to actually expand
         # so only check multimode ops
         if len(op.wires) > 1:
-            with pytest.raises(ValueError, match='of this observable are not on the device'):
+            with pytest.raises(ValueError, match='do not exist on this device with wires'):
                 op.heisenberg_expand(U, Wires([0]))
 
         # validate size of input for `heisenberg_expand` method

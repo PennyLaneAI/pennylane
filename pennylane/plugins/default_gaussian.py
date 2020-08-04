@@ -700,16 +700,16 @@ class DefaultGaussian(Device):
     def apply(self, operation, wires, par):
 
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
         if operation == "Displacement":
             self._state = displacement(
-                self._state, wires.labels[0], par[0] * cmath.exp(1j * par[1])
+                self._state, device_wires.labels[0], par[0] * cmath.exp(1j * par[1])
             )
             return  # we are done here
 
         if operation == "GaussianState":
-            if len(wires) != self.num_wires:
+            if len(device_wires) != self.num_wires:
                 raise ValueError(
                     "GaussianState means vector or covariance matrix is "
                     "the incorrect size for the number of subsystems."
@@ -721,14 +721,14 @@ class DefaultGaussian(Device):
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
-            self._state = set_state(self._state, wires[0], mu, cov)
+            self._state = set_state(self._state, device_wires[0], mu, cov)
             return  # we are done here
 
         # get the symplectic matrix
         S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
-        S = self.expand(S, wires)
+        S = self.expand(S, device_wires)
 
         # apply symplectic matrix to the means vector
         means = S @ self._state[0]
@@ -860,10 +860,10 @@ class DefaultGaussian(Device):
             return self._state
 
         # translate to wire labels used by device
-        wires = self.map_wires(wires)
+        device_wires = self.map_wires(wires)
 
         # reduce rho down to specified subsystems
-        ind = np.concatenate([wires.toarray(), wires.toarray() + self.num_wires])
+        ind = np.concatenate([device_wires.toarray(), device_wires.toarray() + self.num_wires])
         rows = ind.reshape(-1, 1)
         cols = ind.reshape(1, -1)
 
