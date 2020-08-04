@@ -653,8 +653,7 @@ class BaseQNode(qml.QueuingContext):
                 # Squeezing ensures that there is only one array of values returned
                 # when only a single-mode sample is requested
                 self.output_conversion = np.squeeze
-            elif res.return_type is ObservableReturnTypes.Probability or res.return_type is \
-                    ObservableReturnTypes.State:
+            elif res.return_type is ObservableReturnTypes.Probability:
                 self.output_conversion = np.squeeze
 
                 if self.model == "qubit":
@@ -663,6 +662,14 @@ class BaseQNode(qml.QueuingContext):
                     num_basis_states = getattr(self.device, "cutoff", 10)
 
                 self.output_dim = num_basis_states ** len(res.wires)
+            elif res.return_type is ObservableReturnTypes.State:
+                if self.model == "cv":
+                    raise NotImplementedError("TODO")
+
+                if getattr(self, "interface", None) is "torch":
+                    raise NotImplementedError("Torch doesn't do complex")
+                self.output_dim = 2 * 2 ** self.num_wires
+                self.output_conversion = np.squeeze
             else:
                 self.output_conversion = float
 
