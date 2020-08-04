@@ -22,9 +22,13 @@ from pennylane.wires import Wires
 @template
 def SWAPTest(register1, register2, ancilla):
 
-    r""" A controlled-SWAP subroutine that can be used to create a
-    `SWAP test <https://en.wikipedia.org/wiki/Swap_test>`__ between
+    r""" Implements a `SWAP test <https://en.wikipedia.org/wiki/Swap_test>`__ between
     two registers.
+
+    .. note::
+
+        This template includes a measurement, so it must be returned at the end of a
+        quantum circuit, rather than simply called. See Usage Details for more information.
 
     Args:
         register1 (Iterable or Wires): The first register of wires passed into the template.
@@ -36,7 +40,9 @@ def SWAPTest(register1, register2, ancilla):
 
     .. UsageDetails::
 
-        The template is used inside a qnode:
+        The template is used inside a qnode. Unlike other templates, the ``SWAPTest`` template
+        includes a measurement at the end of the circuit it creates. Thus, ``SWAPTest`` must be returned,
+        rather than simply called
 
         .. code-block:: python
 
@@ -51,8 +57,7 @@ def SWAPTest(register1, register2, ancilla):
             def circuit(register1=None, register2=None, ancilla=None):
                 for wire in register1:
                     qml.Hadamard(wires=wire)
-                SWAPTest(register1, register2, ancilla)
-                return qml.expval(qml.PauliZ(wires=ancilla))
+                return SWAPTest(register1, register2, ancilla)
 
         >>> circuit(register1=[1, 2], register2=[3, 4], ancilla=0)
         0.25
@@ -91,3 +96,5 @@ def SWAPTest(register1, register2, ancilla):
         qml.CSWAP(wires=[ancilla, reg, register2[i]])
 
     qml.Hadamard(wires=ancilla)
+
+    return qml.expval(qml.PauliZ(ancilla))

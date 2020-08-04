@@ -211,7 +211,12 @@ of other templates.
 .. customgalleryitem::
     :link: ../code/api/pennylane.templates.subroutines.UCCSD.html
     :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png  
+    :figure: ../_static/templates/subroutines/uccsd.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.SWAPTest.html
+    :description: SWAPTest
+    :figure: ../_static/templates/subroutines/swap.png 
 
 .. raw:: html
 
