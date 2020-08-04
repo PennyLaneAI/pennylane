@@ -174,7 +174,7 @@ class Device(abc.ABC):
         For example:
         >>> dev = device('my.device', wires=['b', 'a'])
         >>> dev.wire_map()
-        [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)]
+       OrderedDict( [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)])
 
         However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
         wire labels.
