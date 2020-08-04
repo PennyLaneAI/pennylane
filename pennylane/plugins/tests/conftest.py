@@ -129,6 +129,18 @@ def pytest_runtest_setup(item):
 
 
 class StoreDictKeyPair(argparse.Action):
+    """Argparse action for storing key-value pairs as a dictionary.
+
+    For example, calling a CLI program with ``--mydict v1=k1 v2=5``:
+
+    >>> parser.add_argument("--mydict", dest="my_dict", action=StoreDictKeyPair, nargs="+")
+    >>> args = parser.parse()
+    >>> args.my_dict
+    {"v1": "k1", "v2": "5"}
+    """
+
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
         super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
