@@ -912,7 +912,5 @@ class TestApproxTimeEvolution:
         def circuit():
             ApproxTimeEvolution(hamiltonian, time, steps)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-        print(circuit())
-        print(circuit.draw())
-        print(expectation)
+
         assert np.allclose(circuit(), expectation)
