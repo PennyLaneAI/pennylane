@@ -141,6 +141,16 @@ class TestWires:
         wires_str = str(Wires([1, 2, 3]))
         assert wires_str == "<Wires = [1, 2, 3]>"
 
+    def test_array_representation(self):
+        """Tests that Wires object has an array representation."""
+
+        wires = Wires([4, 0, 1])
+        array = np.array(wires)
+        assert isinstance(array, np.ndarray)
+        assert array.shape == (3,)
+        for w1, w2 in zip(array, np.array([4, 0, 1])):
+            assert w1 == w2
+
     def test_set_of_wires(self):
         """Tests that a set() of wires is formed correctly."""
 

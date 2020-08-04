@@ -107,6 +107,14 @@ class Wires(Sequence):
         """Implements the hash function."""
         return hash(repr(self.labels))
 
+    def __array__(self):
+        """Defines a numpy array representation of the Wires object.
+
+        Returns:
+            ndarray: array representing Wires object
+        """
+        return np.array(self.labels)
+
     @property
     def labels(self):
         """Get a tuple of the labels of this Wires object."""
