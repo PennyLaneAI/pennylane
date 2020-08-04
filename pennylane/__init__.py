@@ -40,7 +40,7 @@ from .configuration import Configuration
 from ._device import Device, DeviceError
 from .collections import apply, map, sum, dot, QNodeCollection
 from ._qubit_device import QubitDevice
-from .measure import expval, var, sample, probs
+from .measure import expval, var, sample, probs, state
 from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError

@@ -23,7 +23,7 @@ import itertools
 
 import numpy as np
 
-from pennylane.operation import Sample, Variance, Expectation, Probability
+from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.qnodes import QuantumFunctionError
 from pennylane import Device
 
@@ -253,7 +253,7 @@ class QubitDevice(Device):
     def statistics(self, observables):
         """Process measurement results from circuit execution and return statistics.
 
-        This includes returning expectation values, variance, samples and probabilities.
+        This includes returning expectation values, variance, samples, probabilities and states.
 
         Args:
             observables (List[:class:`Observable`]): the observables to be measured
@@ -279,6 +279,9 @@ class QubitDevice(Device):
 
             elif obs.return_type is Probability:
                 results.append(self.probability(wires=obs.wires))
+
+            elif obs.return_type is State:
+                results.append(self.state)
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(

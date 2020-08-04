@@ -199,3 +199,17 @@ def probs(wires):
     qml.QueuingContext.append(op)
 
     return op
+
+
+from pennylane.operation import AllWires, State
+
+
+def state():
+    r"""TODO
+    """
+    op = qml.Identity(wires=AllWires, do_queue=False)
+    op.return_type = State
+
+    qml.QueuingContext.append(op)
+
+    return op
