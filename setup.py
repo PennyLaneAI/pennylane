@@ -52,10 +52,8 @@ info = {
     'long_description': open('README.rst').read(),
     'provides': ["pennylane"],
     'install_requires': requirements,
-    'command_options': {
-        'build_sphinx': {
-            'version': ('setup.py', version),
-            'release': ('setup.py', version)}}
+    'package_data': {'pennylane': ['plugins/tests/pytest.ini']},
+    'include_package_data': True
 }
 
 classifiers = [
