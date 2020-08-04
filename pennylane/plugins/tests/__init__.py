@@ -84,7 +84,9 @@ def get_device_tests():
     return str(pathlib.Path(__file__).parent.absolute())
 
 
-def test_device(device, analytic=None, shots=None, skip_ops=True, flaky_report=False, pytest_args=None):
+def test_device(
+    device, analytic=None, shots=None, skip_ops=True, flaky_report=False, pytest_args=None
+):
     """Run the device integration tests using an installed PennyLane device.
 
     Args:
