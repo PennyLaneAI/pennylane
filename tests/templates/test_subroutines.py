@@ -805,23 +805,6 @@ class TestApproxTimeEvolution:
         with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
             circuit()
 
-    def test_time_error(self):
-        """Tests if the correct error is thrown when time is not of type int or float"""
-
-        n_wires = 2
-        dev = qml.device('default.qubit', wires=n_wires)
-
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
-        time = [0.13]
-
-        @qml.qnode(dev)
-        def circuit():
-            ApproxTimeEvolution(hamiltonian, time, 3)
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
-        with pytest.raises(ValueError, match="time must be of type int or float"):
-            circuit()
-
     def test_n_error(self):
         """Tests if the correct error is thrown when n is not an integer"""
 
