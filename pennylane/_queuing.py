@@ -71,9 +71,6 @@ class QueuingContext(abc.ABC):
     @classmethod
     def active_context(cls):
         """Returns the currently active queuing context."""
-        # TODO: this method should append only to `cls.active_context`, *not*
-        # all active contexts. However this will require a refactor in
-        # the template decorator and the operation recorder.
         if cls._active_contexts:
             return cls._active_contexts[-1]
 
@@ -86,6 +83,9 @@ class QueuingContext(abc.ABC):
         Args:
             obj: the object to be appended
         """
+        # TODO: this method should append only to `cls.active_context`, *not*
+        # all active contexts. However this will require a refactor in
+        # the template decorator and the operation recorder.
         for context in cls._active_contexts:
             context._append(obj, **kwargs)  # pylint: disable=protected-access
 
@@ -109,12 +109,22 @@ class QueuingContext(abc.ABC):
         # the template decorator and the operation recorder.
         for context in cls._active_contexts:
             # We use the duck-typing approach to assume that the underlying remove
-            # behaves like list.remove and throws a ValueError if the operator
-            # is not in the list
+            # behaves like `list.remove(obj)` or `del dict[key]` and throws a
+            # ValueError or KeyError if the operator is not present
             try:
                 context._remove(obj)  # pylint: disable=protected-access
             except (ValueError, KeyError):
                 pass
+
+    @classmethod
+    def update_info(cls, obj, **kwargs):
+        """Updates information of an object in the queue."""
+        cls.active_context().update_info(obj, **kwargs)
+
+    @classmethod
+    def get_info(cls, obj):
+        """Returns information of an object in the queue."""
+        return cls.active_context().get_info(obj)
 
 
 class Queue(QueuingContext):

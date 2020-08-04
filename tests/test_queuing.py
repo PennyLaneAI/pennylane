@@ -382,6 +382,7 @@ class TestAnnotatedQueue:
 
         with qml._queuing.AnnotatedQueue() as q:
             q.append(A, inv=True)
+            assert qml.QueuingContext.get_info(A) == {"inv": True}
 
         assert q.get_info(A) == {"inv": True}
 
@@ -416,7 +417,7 @@ class TestAnnotatedQueue:
 
                 for o in self.obs:
                     try:
-                        qml.QueuingContext.active_context().update_info(o, owner=self)
+                        qml.QueuingContext.update_info(o, owner=self)
                     except AttributeError:
                         pass
 
