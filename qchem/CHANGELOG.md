@@ -45,11 +45,16 @@
   ```
 <h3>Improvements</h3>
 
-* The function to generate the mean field electronic structure has been refactored.
-  Most common defaults for quantum chemistry calculations are defined via keyword
-  arguments, this simplifies the signature of the function. The function returns the
-  full path to the file containing the mean field electronic structure. The docstring
-  has been improved and structured according the guidelines for PennyLane's docstring.
+* The functions involved in the construction of the electronic Hamiltonian have been
+  refactored. We have adopted shorter names, whenever possible, and have improved the
+  docstrings by describing better the function and adding complementary information to
+  help the user understanding basic concepts of quantum chemistry. Some positional
+  arguments have been replaced by keywords to simplify the calling statement of the
+  functions driving the construction of the electronic Hamiltonian. Furthermore,
+  the function `active_space` used to construct the active space has been made
+  independent of the OpenFermion `MolecularData` data structure. The Example sections
+  have been moved to the end of the docstring to comply with PennyLane documentation
+  guidelines.
   [(#)]()
 
 * The total spin observable S^2 can be built straightforwardly using the
