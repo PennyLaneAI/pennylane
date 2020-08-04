@@ -102,7 +102,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+            "Hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
                 type(hamiltonian).__name__
             )
         )
