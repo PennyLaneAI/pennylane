@@ -447,10 +447,11 @@ class QubitDevice(Device):
 
         .. note::
 
-            If the provided wires are not strictly increasing, the returned marginal
-            probabilities take this permuation into account.
+            If the provided wires are not in the order as they appear on the device,
+            the returned marginal probabilities take this permutation into account.
 
-            For example, if ``wires=[2, 0]``, then the returned marginal
+            For example, if the addressable wires on this device are ``Wires([0, 1, 2])`` and
+            this function gets passed ``wires=[2, 0]``, then the returned marginal
             probability vector will take this 'reversal' of the two wires
             into account:
 
@@ -495,7 +496,7 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         basis_states = np.array(list(itertools.product([0, 1], repeat=len(wires))))
         perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(wires.toarray()))].T, [2] * len(wires)
+            basis_states[:, np.argsort(np.argsort(wires))].T, [2] * len(wires)
         )
         return self._gather(prob, perm)
 

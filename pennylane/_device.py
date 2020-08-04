@@ -171,16 +171,20 @@ class Device(abc.ABC):
 
         The default wire map maps the user wire labels to wire labels that are consecutive integers.
 
-        For example:
-        >>> dev = device('my.device', wires=['b', 'a'])
-        >>> dev.wire_map()
-        [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)]
-
         However, by overwriting this function, devices can specify their preferred, non-consecutive and/or non-integer
         wire labels.
 
         Args:
             wires (Wires): user-provided wires for this device
+
+        Returns:
+            OrderedDict: dictionary specifying the wire map
+
+        **Example**
+
+        >>> dev = device('my.device', wires=['b', 'a'])
+        >>> dev.wire_map()
+        [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)]
         """
         consecutive_wires = Wires(range(self.num_wires))
 

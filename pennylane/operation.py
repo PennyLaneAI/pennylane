@@ -1241,7 +1241,7 @@ class CV:
 
         if self.wires not in register:
             raise ValueError(
-                "{}: Some wires {} of this observable are not on the device's wires {}".format(
+                "{}: Some observable wires {} do not exist on this device with wires {}".format(
                     self.name, self.wires, register
                 )
             )
