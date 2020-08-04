@@ -11,22 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+r"""
+This module contains functionality to construct QAOA workflows in PennyLane.
 """
-This subpackage provides reference plugin implementations. The reference plugins provide basic built-in qubit
-and CV circuit simulators that can be used with PennyLane without the need for additional
-dependencies. They may also be used in the PennyLane test suite in order
-to verify and test quantum gradient computations.
 
-.. currentmodule:: pennylane.plugins
-.. autosummary::
-    :toctree: api
-
-    default_qubit
-    default_qubit_tf
-    default_qubit_autograd
-    default_gaussian
-    tf_ops
-    autograd_ops
-"""
-from .default_qubit import DefaultQubit
-from .default_gaussian import DefaultGaussian
+from .mixers import *
+from .cost import *
