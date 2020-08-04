@@ -137,6 +137,8 @@ class StoreDictKeyPair(argparse.Action):
     >>> args = parser.parse()
     >>> args.my_dict
     {"v1": "k1", "v2": "5"}
+
+    Note that all keys will be strings.
     """
 
     # pylint: disable=too-few-public-methods
