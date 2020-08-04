@@ -361,3 +361,19 @@ class Wires(Sequence):
                     unique.append(wire)
 
         return Wires(unique)
+
+    @staticmethod
+    def sort_wires():
+        """
+
+        For example:
+
+        Args:
+
+        Returns:
+
+        """
+
+
+
+        return None
