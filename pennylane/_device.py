@@ -191,7 +191,7 @@ class Device(abc.ABC):
         """Map the wire labels of wires using this device's wire map.
 
         Args:
-            wires (Wires): wires whose labels we want to map to new wire labels
+            wires (Wires): wires whose labels we want to map to the device's internal labelling scheme
 
         Returns:
             Wires: wires with new labels
