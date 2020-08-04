@@ -42,6 +42,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
     .. math:: U \ \approx \ \displaystyle\prod_{k \ = \ 1}^{n} \displaystyle\prod_{j} e^{-i H_j t / n},
 
     with the approximation becoming better for larger :math:`n`.
+    The circuit implementing this unitary is of the form:
 
     .. figure:: ../../_static/templates/subroutines/approx_time_evolution.png
         :align: center
@@ -56,7 +57,8 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
        This template uses the :class:`~.PauliRot` operation in order to implement
        exponentiated terms of the input Hamiltonian. This operation only takes
-       terms that are explicitly written in terms of products of Pauli matrices (``PauliX``, ``PauliY``, ``PauliZ``, and ``Identity``).
+       terms that are explicitly written in terms of products of Pauli matrices (:class:`~.PauliX`,
+       :class:`~.PauliY`, :class:`~.PauliZ`, and :class:`~.Identity`).
        Thus, each term in the Hamiltonian must be expressed this way upon input, or else an error will be raised.
 
     Args:
