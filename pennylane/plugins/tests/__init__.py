@@ -138,7 +138,7 @@ def test_device(
     except ImportError:
         raise ImportError(
             "The device tests requires the following Python packages:"
-            "\npytest pytest-cov pytest_mock flaky"
+            "\npytest pytest_mock flaky"
             "\nThese can be installed using pip."
         )
 
@@ -176,7 +176,11 @@ def test_device(
         #   Exit code 4:    pytest command line usage error
         #   Exit code 5:    No tests were collected
         if e.returncode in range(1, 6):
+            # If a known pytest error code is returned, exit gracefully without
+            # an error message to avoid the user seeing duplicated tracebacks
             sys.exit(1)
+
+        # otherwise raise the exception
         raise e
 
 

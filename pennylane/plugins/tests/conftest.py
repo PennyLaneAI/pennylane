@@ -157,8 +157,10 @@ def pytest_addoption(parser):
     """Add command line option to pytest."""
 
     if hasattr(parser, "add_argument"):
+        # parser is a argparse.Parser object
         addoption = parser.add_argument
     else:
+        # parser is a pytest.config.Parser object
         addoption = parser.addoption
 
     # The options are the three arguments every device takes
