@@ -65,7 +65,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         hamiltonian (.Hamiltonian): The Hamiltonian defining the
            time-evolution operator.
            The Hamiltonian must be explicitly written
-           in terms of products of Pauli gates (:class:~.PauliX, :class:`~.PauliY`,
+           in terms of products of Pauli gates (:class:`~.PauliX`, :class:`~.PauliY`,
            :class:`~.PauliZ`, and :class:`~.Identity`).
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
