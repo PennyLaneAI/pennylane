@@ -530,7 +530,7 @@ def molecular_hamiltonian(
 
     #. An active space can be defined for a given number of *active electrons*
        occupying a reduced set of *active orbitals* in the vicinity of frontier
-       orbitals.
+       orbitals as sketched in the right panel of the figure below.
 
     #. Finally, the second-quantized Hamiltonian is mapped to the Pauli basis and
        converted to a PennyLane observable.
