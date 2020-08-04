@@ -26,6 +26,8 @@ import pennylane as qml
 from scipy.linalg import block_diag
 from flaky import flaky
 
+pytestmark = pytest.mark.skip_unsupported
+
 np.random.seed(42)
 
 # ==========================================================

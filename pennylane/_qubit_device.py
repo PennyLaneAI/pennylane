@@ -71,7 +71,7 @@ class QubitDevice(Device):
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
-    _reduce_sum = staticmethod(lambda array, axes: np.apply_over_axes(np.sum, array, axes))
+    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
     _gather = staticmethod(lambda array, indices: array[indices])
