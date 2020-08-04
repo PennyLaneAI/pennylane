@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
+import argparse
 import os
 
 import numpy as np
@@ -127,6 +128,19 @@ def pytest_runtest_setup(item):
 # These functions are required to define the device name to run the tests for
 
 
+class StoreDictKeyPair(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        self._nargs = nargs
+        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        my_dict = {}
+        for kv in values:
+            k, v = kv.split("=")
+            my_dict[k] = v
+        setattr(namespace, self.dest, my_dict)
+
+
 def pytest_addoption(parser):
     """Add command line option to pytest."""
 
@@ -157,6 +171,16 @@ def pytest_addoption(parser):
         help="Skip tests that use unsupported device operations.",
     )
 
+    addoption(
+        "--device-kwargs",
+        dest="device_kwargs",
+        action=StoreDictKeyPair,
+        default={},
+        nargs="+",
+        metavar="KEY=VAL",
+        help="Additional device kwargs.",
+    )
+
 
 def pytest_generate_tests(metafunc):
     """Set up fixtures from command line options. """
@@ -166,6 +190,7 @@ def pytest_generate_tests(metafunc):
         "name": opt.device,
         "shots": opt.shots,
         "analytic": opt.analytic,
+        **opt.device_kwargs,
     }
 
     # ===========================================

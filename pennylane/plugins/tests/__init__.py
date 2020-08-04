@@ -96,7 +96,7 @@ def get_device_tests():
 
 
 def test_device(
-    device, analytic=None, shots=None, skip_ops=True, flaky_report=False, pytest_args=None
+    device, analytic=None, shots=None, skip_ops=True, flaky_report=False, pytest_args=None, **kwargs
 ):
     """Run the device integration tests using an installed PennyLane device.
 
@@ -113,6 +113,7 @@ def test_device(
         skip_ops (bool): whether to skip tests that use operations not supported
             by the device
         pytest_args (list[str]): additional PyTest arguments and flags
+        **kwargs: Additional device keyword args
 
     **Example**
 
@@ -160,6 +161,10 @@ def test_device(
     if not flaky_report:
         cmds.append("--no-flaky-report")
 
+    if kwargs:
+        device_kwargs = " ".join([f"{k}={v}" for k, v in kwargs.items()])
+        cmds += ["--device-kwargs", device_kwargs]
+
     try:
         subprocess.run(cmds + pytest_args, check=not interactive)
     except subprocess.CalledProcessError as e:
@@ -197,6 +202,8 @@ def cli():
           --analytic ANALYTIC  Whether to run the tests in stochastic or exact mode.
           --skip-ops           Skip tests that use unsupported device operations.
           --flaky-report       Show the flaky report in the terminal
+          --device-kwargs KEY=VAL [KEY=VAL ...]
+                               Additional device kwargs.
 
     Note that additional pytest command line arguments and flags can also be passed:
 
@@ -225,4 +232,5 @@ def cli():
         skip_ops=args.skip_ops,
         flaky_report=flaky,
         pytest_args=pytest_args,
+        **args.device_kwargs,
     )
