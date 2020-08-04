@@ -817,9 +817,8 @@ class TestSWAPTest:
 
         @qml.qnode(dev)
         def circuit():
-            SWAPTest(register1, register2, ancilla)
-            return qml.expval(qml.PauliZ(ancilla))
-        
+            return SWAPTest(register1, register2, ancilla)
+
         with pytest.raises(ValueError) as info:
             output = circuit()
         assert (
@@ -842,9 +841,8 @@ class TestSWAPTest:
 
         @qml.qnode(dev)
         def circuit():
-            SWAPTest(reg1, reg2, ancilla)
-            return qml.expval(qml.PauliZ(ancilla))
-        
+            return SWAPTest(reg1, reg2, ancilla)
+
         with pytest.raises(ValueError) as info:
             output = circuit()
         assert (
@@ -873,8 +871,7 @@ class TestSWAPTest:
         def circuit():
             for i in range(len(gates)):
                 gates[i](wires=wire_seq[i])
-            SWAPTest(register1, register2, ancilla)
-            return qml.expval(qml.PauliZ(ancilla))
+            return SWAPTest(register1, register2, ancilla)
 
         res = circuit()
         assert np.allclose(res, result)
