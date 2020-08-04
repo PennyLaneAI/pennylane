@@ -668,7 +668,7 @@ class BaseQNode(qml.QueuingContext):
 
                 if getattr(self, "interface", None) is "torch":
                     raise NotImplementedError("Torch doesn't do complex")
-                self.output_dim = 2 * 2 ** self.num_wires
+                self.output_dim = 2 ** self.num_wires
                 self.output_conversion = np.squeeze
             else:
                 self.output_conversion = float

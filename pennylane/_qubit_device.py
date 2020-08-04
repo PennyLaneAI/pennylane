@@ -281,9 +281,7 @@ class QubitDevice(Device):
                 results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is State:
-                state = self.state
-                real_imag_state = np.hstack([np.real(state), np.imag(state)])
-                results.append(real_imag_state)
+                results.append(self.state)
 
             elif obs.return_type is not None:
                 raise QuantumFunctionError(
