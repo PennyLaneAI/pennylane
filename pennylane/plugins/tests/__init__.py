@@ -160,12 +160,8 @@ def test_device(
     if not flaky_report:
         cmds.append("--no-flaky-report")
 
-    if interactive:
-        subprocess.run(cmds + pytest_args)
-        return
-
     try:
-        subprocess.run(cmds + pytest_args, check=True)
+        subprocess.run(cmds + pytest_args, check=not interactive)
     except subprocess.CalledProcessError as e:
         # pytest return codes:
         #   Exit code 0:    All tests were collected and passed successfully
