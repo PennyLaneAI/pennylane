@@ -79,6 +79,17 @@ import subprocess
 import sys
 
 
+# determine if running in an interactive environment
+import __main__
+
+interactive = False
+
+try:
+    __main__.__file__
+except AttributeError:
+    interactive = True
+
+
 def get_device_tests():
     """Returns the location of the device integration tests."""
     return str(pathlib.Path(__file__).parent.absolute())
@@ -149,6 +160,10 @@ def test_device(
     if not flaky_report:
         cmds.append("--no-flaky-report")
 
+    if interactive:
+        subprocess.run(cmds + pytest_args)
+        return
+
     try:
         subprocess.run(cmds + pytest_args, check=True)
     except subprocess.CalledProcessError as e:
@@ -162,7 +177,6 @@ def test_device(
         if e.returncode in range(1, 6):
             sys.exit(1)
         raise e
-
 
 
 def cli():
