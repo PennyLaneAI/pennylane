@@ -127,20 +127,14 @@ def ApproxTimeEvolution(hamiltonian, time, n):
                 word = pauli[term.name]
 
             if isinstance(term.name, list):
-                for j in term.name:
-                    word += pauli[j]
+                word = "".join(pauli[j] for j in term.name)
 
         except KeyError as error:
             raise ValueError(
                 "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
             )
 
-        count = 0
-        for j in list(word):
-            if j == "I":
-                count += 1
-
-        if count != len(word):
+        if word.count("I") != len(word):
 
             theta.append((2 * time * hamiltonian.coeffs[i]) / n)
             pauli_words.append(word)
@@ -149,4 +143,4 @@ def ApproxTimeEvolution(hamiltonian, time, n):
     for i in range(n):
 
         for j, term in enumerate(pauli_words):
-            qml.PauliRot(theta[j], term, wires=wire_index[j])
+            qml.PauliRot(theta[j], term, wires=wires[j])

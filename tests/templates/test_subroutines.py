@@ -802,7 +802,7 @@ class TestApproxTimeEvolution:
             ApproxTimeEvolution(hamiltonian, 2, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian, got tensor"):
+        with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
             circuit()
 
     def test_time_error(self):
@@ -819,7 +819,7 @@ class TestApproxTimeEvolution:
             ApproxTimeEvolution(hamiltonian, time, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="time must be of type int or float, got list"):
+        with pytest.raises(ValueError, match="time must be of type int or float"):
             circuit()
 
     def test_n_error(self):
@@ -836,7 +836,7 @@ class TestApproxTimeEvolution:
             ApproxTimeEvolution(hamiltonian, 2, n)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="n must be of type int, got float"):
+        with pytest.raises(ValueError, match="n must be of type int"):
             circuit()
 
     @pytest.mark.parametrize(
@@ -857,7 +857,7 @@ class TestApproxTimeEvolution:
             ApproxTimeEvolution(hamiltonian, 2, 3)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        with pytest.raises(ValueError, match="hamiltonian must be written in terms of Pauli matrices, got '{}'".format(output)):
+        with pytest.raises(ValueError, match="hamiltonian must be written in terms of Pauli matrices"):
             circuit()
 
     @pytest.mark.parametrize(
