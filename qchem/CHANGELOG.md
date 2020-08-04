@@ -48,14 +48,11 @@
 * The functions involved in the construction of the electronic Hamiltonian have been
   refactored. We have adopted shorter names, whenever possible, and have improved the
   docstrings by describing better the function and adding complementary information to
-  help the user understanding basic concepts of quantum chemistry. Some positional
+  help the user understanding the basics of quantum chemistry. Positional
   arguments have been replaced by keywords to simplify the calling statement of the
-  functions driving the construction of the electronic Hamiltonian. Furthermore,
-  the function `active_space` used to construct the active space has been made
-  independent of the OpenFermion `MolecularData` data structure. The Example sections
-  have been moved to the end of the docstring to comply with PennyLane documentation
-  guidelines.
-  [(#)]()
+  functions and to provide the user with further flexibility. Furthermore,
+  the function `active_space` is now independent of the OpenFermion `MolecularData` data structure. The Example sections have been moved to the end of the docstring to comply with PennyLane documentation guidelines.
+  [(#735)](https://github.com/PennyLaneAI/pennylane/pull/735)
 
 * The total spin observable S^2 can be built straightforwardly using the
   function `spin2` as implemented in the `obs` module.
