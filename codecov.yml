@@ -1,2 +1,12 @@
 fixes:
   - "pennylane_qchem/::qchem/pennylane_qchem/"
+
+ignore:
+  - "pennylane/plugins/tests/*"
+
+codecov:
+    notify:
+        after_n_builds: 6
+
+comment:
+    after_n_builds: 6

@@ -85,7 +85,7 @@ def SWAPTest(register1, register2, ancilla):
     # No repeats in the registers
 
     unique = (Wires.unique_wires([register1, register2, ancilla])).tolist()
-    if unique != register1.tolist() + register2.tolist() + ancilla.tolist():
+    if len(unique) != len(register1) + len(register2) + 1:
         raise ValueError("Wire indices for both registers and the ancilla must be unique")
 
     #############

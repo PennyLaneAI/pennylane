@@ -97,7 +97,7 @@ def _decompose_queue(ops, device):
         if device.supports_operation(op.name):
             new_ops.append(op)
         else:
-            decomposed_ops = op.decomposition(*op.params, wires=op.wires.tolist())
+            decomposed_ops = op.decomposition(*op.data, wires=op.wires)
             if op.inverse:
                 decomposed_ops = qml.inv(decomposed_ops)
 
@@ -138,7 +138,7 @@ class BaseQNode(qml.QueuingContext):
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance represeting
+    The QNode calls the quantum function to construct a :class:`.CircuitGraph` instance representing
     the quantum circuit. The circuit can be either
 
     * *mutable*, which means the quantum function is called each time the QNode is evaluated, or
@@ -352,39 +352,37 @@ class BaseQNode(qml.QueuingContext):
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
 
-    def _remove_operator(self, operator):
-        if isinstance(operator, Observable) and operator.return_type is not None:
-            self.obs_queue.remove(operator)
+    def _remove(self, obj):
+        if isinstance(obj, Observable) and obj.return_type is not None:
+            self.obs_queue.remove(obj)
         else:
-            self.queue.remove(operator)
+            self.queue.remove(obj)
 
-    def _append_operator(self, operator):
-        if operator.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
-            if set(operator.wires.tolist()) != set(range(self.num_wires)):
-                raise QuantumFunctionError(
-                    "Operator {} must act on all wires".format(operator.name)
-                )
+    def _append(self, obj):
+        if obj.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
+            if set(obj.wires) != set(range(self.num_wires)):
+                raise QuantumFunctionError("Operator {} must act on all wires".format(obj.name))
 
         # Make sure only existing wires are used.
-        for w in operator.wires.tolist():  # TODO: re-assess for for nonconsec wires
+        for w in obj.wires:
             if w < 0 or w >= self.num_wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with {} wires.".format(operator.name, w, self.num_wires)
+                    "on device with {} wires.".format(obj.name, w, self.num_wires)
                 )
 
         # observables go to their own, temporary queue
-        if isinstance(operator, Observable):
-            if operator.return_type is None:
-                self.queue.append(operator)
+        if isinstance(obj, Observable):
+            if obj.return_type is None:
+                self.queue.append(obj)
             else:
-                self.obs_queue.append(operator)
+                self.obs_queue.append(obj)
         else:
             if self.obs_queue:
                 raise QuantumFunctionError(
                     "State preparations and gates must precede measured observables."
                 )
-            self.queue.append(operator)
+            self.queue.append(obj)
 
     def _determine_structured_variable_name(self, parameter_value, prefix):
         """Determine the variable names corresponding to a parameter.
@@ -584,7 +582,7 @@ class BaseQNode(qml.QueuingContext):
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
         for op in self.ops:
-            for j, p in enumerate(_flatten(op.params)):
+            for j, p in enumerate(_flatten(op.data)):
                 if isinstance(p, Variable):
                     if not p.is_kwarg:  # ignore auxiliary arguments
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
@@ -657,7 +655,14 @@ class BaseQNode(qml.QueuingContext):
                 self.output_conversion = np.squeeze
             elif res.return_type is ObservableReturnTypes.Probability:
                 self.output_conversion = np.squeeze
-                self.output_dim = 2 ** len(res.wires)
+
+                if self.model == "qubit":
+                    num_basis_states = 2
+                elif self.model == "cv":
+                    num_basis_states = getattr(self.device, "cutoff", 10)
+
+                self.output_dim = num_basis_states ** len(res.wires)
+
             else:
                 self.output_conversion = float
 

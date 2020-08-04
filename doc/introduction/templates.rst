@@ -181,6 +181,11 @@ State preparation templates transform a given state into a sequence of gates pre
     :description: MottonnenStatePrep
     :figure: ../_static/templates/state_preparations/mottonen.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.state_preparations.ArbitraryStatePreparation.html
+    :description: ArbitraryStatePreparation
+    :figure: ../_static/templates/subroutines/arbitrarystateprep.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -217,6 +222,11 @@ of other templates.
     :link: ../code/api/pennylane.templates.subroutines.SWAPTest.html
     :description: SWAPTest
     :figure: ../_static/templates/subroutines/swap.png 
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.templates.subroutines.ArbitraryUnitary.html
+    :description: ArbitraryUnitary
+    :figure: ../_static/templates/subroutines/arbitraryunitary.png
 
 .. raw:: html
 

@@ -155,9 +155,9 @@ class CircuitGraph:
         self.num_wires = 0
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(op.wires.tolist()) + 1)
+            self.num_wires = max(self.num_wires, max(op.wires) + 1)
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(op.wires.tolist()):
+            for w in set(op.wires):
                 # Add op to the grid, to the end of wire w
                 self._grid.setdefault(w, []).append(op)
 
@@ -210,7 +210,7 @@ class CircuitGraph:
         for op in self.operations_in_order:
             serialization_string += op.name
 
-            for param in op.params:
+            for param in op.data:
                 if isinstance(param, Variable):
                     serialization_string += delimiter
                     serialization_string += variable_delimiter
@@ -222,7 +222,7 @@ class CircuitGraph:
                     serialization_string += str(param)
                     serialization_string += delimiter
 
-            serialization_string += str(op.wires.tolist())
+            serialization_string += str(op.wires)
 
         # Adding a distinct separating string that could not occur by any combination of the
         # name of the operation and wires
@@ -230,12 +230,12 @@ class CircuitGraph:
 
         for obs in self.observables_in_order:
             serialization_string += str(obs.name)
-            for param in obs.params:
+            for param in obs.data:
                 serialization_string += delimiter
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires.tolist())
+            serialization_string += str(obs.wires)
 
         return serialization_string
 
@@ -305,7 +305,7 @@ class CircuitGraph:
         # create the QASM code representing the operations
         for op in decomposed_ops:
             gate = OPENQASM_GATES[op.name]
-            wires = ",".join(["q[{}]".format(w) for w in op.wires.tolist()])
+            wires = ",".join(["q[{}]".format(w) for w in op.wires])
             params = ""
 
             if op.num_params > 0:

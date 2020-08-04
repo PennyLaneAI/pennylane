@@ -20,8 +20,6 @@ To add a new pattern:
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from collections import Iterable
-
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_type, get_shape, check_is_in_options
 from pennylane.wires import Wires
@@ -129,7 +127,7 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
           :width: 20%
           :target: javascript:void(0);
 
-    * A custom pattern can be passed by provding a list of wire lists to ``pattern``. The ``unitary`` is applied
+    * A custom pattern can be passed by providing a list of wire lists to ``pattern``. The ``unitary`` is applied
       to each set of wires specified in the list.
 
       .. figure:: ../../_static/templates/broadcast_custom.png
@@ -496,13 +494,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     wires = Wires(wires)
 
-    check_type(
-        parameters,
-        [Iterable, type(None)],
-        msg="'parameters' must be either of type None or "
-        "Iterable; got {}".format(type(parameters)),
-    )
-
     if kwargs is None:
         kwargs = {}
 
@@ -572,4 +563,5 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     # broadcast the unitary
     for wires, pars in zip(wire_sequence[pattern], parameters):
+        wires = wires.tolist()  # TODO: Delete once operator takes Wires objects
         unitary(*pars, wires=wires, **kwargs)

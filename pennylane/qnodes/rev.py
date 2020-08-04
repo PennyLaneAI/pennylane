@@ -139,7 +139,7 @@ class ReversibleQNode(QubitQNode):
             )
 
             # post-process to get partial derivative contribution from this op
-            multiplier *= op.params[p_idx].mult  # possible scalar multiplier
+            multiplier *= op.data[p_idx].mult  # possible scalar multiplier
             pd += 2 * multiplier * self.device._imag(matrix_elems)
 
         # reset state back to pre-measurement value
@@ -156,7 +156,7 @@ class ReversibleQNode(QubitQNode):
         wires = obs.wires
 
         vec1_indices = ABC[: self.num_wires]
-        obs_in_indices = "".join(ABC_ARRAY[wires.tolist()].tolist())
+        obs_in_indices = "".join(ABC_ARRAY[wires].tolist())
         obs_out_indices = ABC[self.num_wires : self.num_wires + len(wires)]
         obs_indices = "".join([obs_in_indices, obs_out_indices])
         vec2_indices = reduce(
