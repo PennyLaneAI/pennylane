@@ -539,7 +539,7 @@ def molecular_hamiltonian(
 
     .. figure:: ../../_static/qchem/fig_mult_active_space.png
         :align: center
-        :width: 50%
+        :width: 70%
 
     |
 
@@ -552,8 +552,8 @@ def molecular_hamiltonian(
             Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
             a closed-shell HF state is assumed.
         basis (str): Atomic Gaussian-type orbitals basis set. Basis set availability per
-                element can be found `here
-                <www.psicode.org/psi4manual/master/basissets_byelement.html>`_
+            element can be found `here
+            <www.psicode.org/psi4manual/master/basissets_byelement.html>`_
         package (str): Quantum chemistry package (pyscf or psi4) used to solve the
                 mean field electronic structure problem
         nact_els (int): Number of active electrons. If not specified, all electrons
