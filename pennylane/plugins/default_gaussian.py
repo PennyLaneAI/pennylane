@@ -464,7 +464,7 @@ def set_state(state, wire, mu, cov):
     Args:
         state (tuple): contains means vector
             and covariance matrix of existing state
-        wire (int): wire corresponding to the new Gaussian state
+        wire (Wires): wire corresponding to the new Gaussian state
         mu (array): vector of means to insert
         cov (array): covariance matrix to insert
 
@@ -476,10 +476,10 @@ def set_state(state, wire, mu, cov):
     N = len(mu0) // 2
 
     # insert the new state into the means vector
-    mu0[[wire, wire + N]] = mu
+    mu0[[wire.labels[0], wire.labels[0] + N]] = mu
 
     # insert the new state into the covariance matrix
-    ind = np.concatenate([np.array([wire]), np.array([wire]) + N])
+    ind = np.concatenate([wire.toarray(), wire.toarray() + N])
     rows = ind.reshape(-1, 1)
     cols = ind.reshape(1, -1)
     cov0[rows, cols] = cov
@@ -545,7 +545,7 @@ def homodyne(phi=None):
     return _homodyne
 
 
-def poly_quad_expectations(mu, cov, wires, register, params, hbar=2.0):
+def poly_quad_expectations(mu, cov, wires, device_wires, params, hbar=2.0):
     r"""Calculates the expectation and variance for an arbitrary
     polynomial of quadrature operators.
 
@@ -553,7 +553,7 @@ def poly_quad_expectations(mu, cov, wires, register, params, hbar=2.0):
         mu (array): vector of means
         cov (array): covariance matrix
         wires (Wires): wires to calculate the expectation for
-        register (Wires): wires on the device
+        device_wires (Wires): corresponding wires on the device
         params (array): a :math:`(2N+1)\times (2N+1)` array containing the linear
             and quadratic coefficients of the quadrature operators
             :math:`(\I, \x_0, \p_0, \x_1, \p_1,\dots)`
@@ -568,7 +568,7 @@ def poly_quad_expectations(mu, cov, wires, register, params, hbar=2.0):
     # HACK, we need access to the Poly instance in order to expand the matrix!
     # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
     op = qml.ops.PolyXP(Q, wires=wires)
-    Q = op.heisenberg_obs(register)
+    Q = op.heisenberg_obs(device_wires)
 
     if Q.ndim == 1:
         d = np.r_[Q[1::2], Q[2::2]]
@@ -590,7 +590,7 @@ def poly_quad_expectations(mu, cov, wires, register, params, hbar=2.0):
     ex = np.trace(A @ cov) + k2
     var = 2 * np.trace(A @ cov @ A @ cov) + d2.T @ cov @ d2
 
-    modes = np.arange(2 * len(register)).reshape(2, -1).T
+    modes = np.arange(2 * len(device_wires)).reshape(2, -1).T
     groenewald_correction = np.sum([np.linalg.det(hbar * A[:, m][n]) for m in modes for n in modes])
     var -= groenewald_correction
 
@@ -699,16 +699,17 @@ class DefaultGaussian(Device):
 
     def apply(self, operation, wires, par):
 
-        wire_indices = self.register.indices(wires)
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
 
         if operation == "Displacement":
             self._state = displacement(
-                self._state, wire_indices[0], par[0] * cmath.exp(1j * par[1])
+                self._state, device_wires.labels[0], par[0] * cmath.exp(1j * par[1])
             )
             return  # we are done here
 
         if operation == "GaussianState":
-            if len(wire_indices) != self.num_wires:
+            if len(device_wires) != self.num_wires:
                 raise ValueError(
                     "GaussianState means vector or covariance matrix is "
                     "the incorrect size for the number of subsystems."
@@ -720,14 +721,14 @@ class DefaultGaussian(Device):
             # set the new device state
             mu, cov = self._operation_map[operation](*par, hbar=self.hbar)
             # state preparations only act on at most 1 subsystem
-            self._state = set_state(self._state, wire_indices[0], mu, cov)
+            self._state = set_state(self._state, device_wires[0], mu, cov)
             return  # we are done here
 
         # get the symplectic matrix
         S = self._operation_map[operation](*par)
 
         # expand the symplectic to act on the proper subsystem
-        S = self.expand(S, wire_indices)
+        S = self.expand(S, device_wires)
 
         # apply symplectic matrix to the means vector
         means = S @ self._state[0]
@@ -736,12 +737,12 @@ class DefaultGaussian(Device):
 
         self._state = [means, cov]
 
-    def expand(self, S, wire_indices):
+    def expand(self, S, wires):
         r"""Expands a Symplectic matrix S to act on the entire subsystem.
 
         Args:
             S (array): a :math:`2M\times 2M` Symplectic matrix
-            wire_indices (list[int]): indices of the wires of the modes that S acts on
+            wires (Wires): wires of the modes that S acts on
 
         Returns:
             array: the resulting :math:`2N\times 2N` Symplectic matrix
@@ -751,12 +752,12 @@ class DefaultGaussian(Device):
             return S
 
         N = self.num_wires
-        w = np.asarray(wire_indices)
+        w = wires.toarray()
 
         M = len(S) // 2
         S2 = np.identity(2 * N)
 
-        if M != len(wire_indices):
+        if M != len(wires):
             raise ValueError("Incorrect number of subsystems for provided operation.")
 
         S2[w.reshape(-1, 1), w.reshape(1, -1)] = S[:M, :M].copy()  # XX
@@ -768,15 +769,13 @@ class DefaultGaussian(Device):
 
     def expval(self, observable, wires, par):
 
-        wire_indices = self.register.indices(wires)
-
         if observable == "PolyXP":
             mu, cov = self._state
             ev, var = self._observable_map[observable](
-                mu, cov, wire_indices, self.register, par, hbar=self.hbar
+                mu, cov, wires, self.wires, par, hbar=self.hbar
             )
         else:
-            mu, cov = self.reduced_state(wire_indices)
+            mu, cov = self.reduced_state(wires)
             ev, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
 
         if not self.analytic:
@@ -789,13 +788,11 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
 
-        wire_indices = self.register.indices(wires)
-
-        mu, cov = self.reduced_state(wire_indices)
+        mu, cov = self.reduced_state(wires)
 
         if observable == "PolyXP":
             _, var = self._observable_map[observable](
-                mu, cov, wires, self.register, par, hbar=self.hbar
+                mu, cov, wires, self.wires, par, hbar=self.hbar
             )
         else:
             _, var = self._observable_map[observable](mu, cov, par, hbar=self.hbar)
@@ -819,9 +816,7 @@ class DefaultGaussian(Device):
             array[float]: samples in an array of dimension ``(n, num_wires)``
         """
 
-        wire_indices = self.register.indices(wires)
-
-        if len(wire_indices) != 1:
+        if len(wires) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")
 
         if observable == "X":
@@ -835,7 +830,7 @@ class DefaultGaussian(Device):
                 "default.gaussian does not support sampling {}".format(observable)
             )
 
-        mu, cov = self.reduced_state(wire_indices)
+        mu, cov = self.reduced_state(wires)
         rot = rotation(phi)
 
         muphi = rot.T @ mu
@@ -850,30 +845,25 @@ class DefaultGaussian(Device):
         # init the state vector to |00..0>
         self._state = vacuum_state(self.num_wires, self.hbar)
 
-    def reduced_state(self, wire_indices):
+    def reduced_state(self, wires):
         r""" Returns the vector of means and the covariance matrix of the specified wires.
 
         Args:
-            wire_indices (Iterable[int] or int): indices of the requested wires
+            wires (Wires): requested wires
 
         Returns:
             tuple (means, cov): means is an array containing the vector of means,
             and cov is a square array containing the covariance matrix
         """
-        if wire_indices == list(range(self.num_wires)):
+        if len(wires) == self.num_wires:
             # reduced state is full state
             return self._state
 
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
         # reduce rho down to specified subsystems
-        if isinstance(wire_indices, int):
-            wire_indices = [wire_indices]
-
-        if np.any(np.array(wire_indices) > self.num_wires):
-            raise ValueError(
-                "The specified wires cannot " "be larger than the number of subsystems."
-            )
-
-        ind = np.concatenate([np.array(wire_indices), np.array(wire_indices) + self.num_wires])
+        ind = np.concatenate([device_wires.toarray(), device_wires.toarray() + self.num_wires])
         rows = ind.reshape(-1, 1)
         cols = ind.reshape(1, -1)
 

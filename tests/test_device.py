@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import Device, DeviceError
 from pennylane.qnodes import QuantumFunctionError
 from pennylane.wires import Wires
+from collections import OrderedDict
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -409,10 +410,17 @@ class TestInternalFunctions:
     @pytest.mark.parametrize('wires, expected', [(['a1', 'q', -1, 3], Wires(['a1', 'q', -1, 3])),
                                                  (3, Wires([0, 1, 2])),
                                                  ([3], Wires([3]))])
-    def test_register_set_correctly(self, mock_device, wires, expected):
-        """Tests that the register attribute is set correctly."""
+    def test_wires_property(self, mock_device, wires, expected):
+        """Tests that the wires attribute is set correctly."""
         dev = mock_device(wires=wires)
-        assert dev.register == expected
+        assert dev.wires == expected
+
+    def test_wire_map_property(self, mock_device):
+        """Tests that the wire_map is constructed correctly."""
+        dev = mock_device(wires=['a1', 'q', -1, 3])
+        expected = OrderedDict([(Wires('a1'), Wires(0)), (Wires('q'), Wires(1)),
+                                (Wires(-1), Wires(2)), (Wires(3), Wires(3))])
+        assert dev.wire_map == expected
 
 
 class TestClassmethods:

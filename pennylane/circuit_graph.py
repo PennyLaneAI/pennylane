@@ -140,28 +140,28 @@ class CircuitGraph:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
-        register (Wires): the base register of wires (passed from the device)
+        wires (Wires): the addressable wires on the device
     """
 
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, ops, variable_deps, register):
+    def __init__(self, ops, variable_deps, wires):
         self.variable_deps = variable_deps
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
-        self.register = register
-        """Wires: register of wires that are addressed in the operations. 
-        Required to translate between wires and indices of the wires in the register."""
-        self.num_wires = len(register)
+        self.wires = wires
+        """Wires: wires that are addressed in the operations. 
+        Required to translate between wires and indices of the wires on the device."""
+        self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
             op.queue_idx = k  # store the queue index in the Operator
             for w in op.wires:
-                # get the index of the wire on the register
-                wire = register.index(w)
+                # get the index of the wire on the device
+                wire = wires.index(w)
                 # add op to the grid, to the end of wire w
                 self._grid.setdefault(wire, []).append(op)
 
@@ -631,7 +631,7 @@ class CircuitGraph:
         drawer = CircuitDrawer(
             grid,
             obs,
-            self.register,
+            self.wires,
             charset=CHARSETS[charset],
             show_variable_names=show_variable_names,
         )

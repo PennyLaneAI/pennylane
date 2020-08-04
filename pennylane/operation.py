@@ -395,7 +395,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.params), self.wires.tolist())
+        return "{}: {} params, wires {}".format(self.name, len(self.data), self.wires.tolist())
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -1241,7 +1241,7 @@ class CV:
 
         if self.wires not in register:
             raise ValueError(
-                "{}: Some wires {} of this observable are not on the device's register {}".format(
+                "{}: Some observable wires {} do not exist on this device with wires {}".format(
                     self.name, self.wires, register
                 )
             )
