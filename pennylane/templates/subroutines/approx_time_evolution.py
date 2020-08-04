@@ -101,7 +101,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     if not isinstance(hamiltonian, qml.vqe.vqe.Hamiltonian):
         raise ValueError(
-            "Hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
+            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
                 type(hamiltonian).__name__
             )
         )
@@ -116,7 +116,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
 
     theta = []
     pauli_words = []
-    wire_index = []
+    wires = []
 
     for i, term in enumerate(hamiltonian.ops):
 
@@ -134,11 +134,12 @@ def ApproxTimeEvolution(hamiltonian, time, n):
                 "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
             )
 
+        # Skips terms composed solely of identities
         if word.count("I") != len(word):
 
             theta.append((2 * time * hamiltonian.coeffs[i]) / n)
             pauli_words.append(word)
-            wire_index.append(term.wires)
+            wires.append(term.wires)
 
     for i in range(n):
 

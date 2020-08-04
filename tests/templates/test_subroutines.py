@@ -913,7 +913,10 @@ class TestApproxTimeEvolution:
         [
             (np.pi, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2, [1.0, 1.0]),
             (np.pi/2, qml.Hamiltonian([0.5, 1], [qml.PauliY(0), qml.Identity(0) @ qml.PauliX(1)]), 1, [0.0, -1.0]),
-            (np.pi/4, qml.Hamiltonian([1, 1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(1)]), 1, [0.0, 0.0])
+            (np.pi/4, qml.Hamiltonian([1, 1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(1)]), 1, [0.0, 0.0]),
+            (1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2, [-0.41614684, -0.41614684]),
+            (2, qml.Hamiltonian([1, 1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1)]), 2,
+             [-0.87801124, 0.51725747])
         ]
     )
     def test_evolution_output(self, time, hamiltonian, steps, expectation):
@@ -926,5 +929,7 @@ class TestApproxTimeEvolution:
         def circuit():
             ApproxTimeEvolution(hamiltonian, time, steps)
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-
+        print(circuit())
+        print(circuit.draw())
+        print(expectation)
         assert np.allclose(circuit(), expectation)
