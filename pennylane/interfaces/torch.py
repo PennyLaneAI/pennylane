@@ -25,6 +25,8 @@ import numpy as np
 import torch
 from torch.autograd.function import once_differentiable
 
+from pennylane.operation import ObservableReturnTypes
+
 
 def unflatten_torch(flat, model):
     """Restores an arbitrary nested structure to a flattened Torch tensor.
@@ -198,6 +200,12 @@ def to_torch(qnode):
                     if i.is_cuda:  # pragma: no cover
                         cuda_device = i.get_device()
                         return torch.as_tensor(torch.from_numpy(res), device=cuda_device)
+
+            returns_state = [
+                getattr(op, "return_type", None) is ObservableReturnTypes.State for op in qnode.ops
+            ]
+            if any(returns_state):
+                raise NotImplementedError("Torch doesn't support complex")
 
             return torch.from_numpy(res)
 
