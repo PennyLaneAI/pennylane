@@ -22,10 +22,10 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
+        raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
 except ImportError as e:
-    raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
+    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
 
 # With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while

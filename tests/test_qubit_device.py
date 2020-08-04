@@ -610,7 +610,7 @@ class TestMarginalProb:
         ],
     )
     def test_correct_arguments_for_marginals(
-            self, mock_qubit_device_with_original_statistics, monkeypatch, wires, inactive_wires, tol
+        self, mock_qubit_device_with_original_statistics, mocker, wires, inactive_wires, tol
     ):
         """Test that the correct arguments are passed to the marginal_prob method"""
 
@@ -618,18 +618,13 @@ class TestMarginalProb:
         probs = np.array([random() for i in range(2 ** 3)])
         probs /= sum(probs)
 
-        def apply_over_axes_mock(x, y, p):
-            arguments_apply_over_axes.append((y, p))
-            return np.zeros([2 ** len(wires)])
+        spy = mocker.spy(np, "sum")
+        res = mock_qubit_device_with_original_statistics.marginal_prob(probs, wires=wires)
+        array_call = spy.call_args[0][0]
+        axis_call = spy.call_args[1]['axis']
 
-        arguments_apply_over_axes = []
-        with monkeypatch.context() as m:
-            m.setattr("numpy.apply_over_axes", apply_over_axes_mock)
-            dev = mock_qubit_device_with_original_statistics(wires=3)
-            dev.marginal_prob(probs, wires=wires)
-
-        assert np.array_equal(arguments_apply_over_axes[0][0].flatten(), probs)
-        assert np.array_equal(arguments_apply_over_axes[0][1], inactive_wires)
+        assert np.allclose(array_call.flatten(), probs, atol=tol, rtol=0)
+        assert axis_call == tuple(inactive_wires)
 
     marginal_test_data = [
         (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.4, 0.6]), [1]),

@@ -954,11 +954,7 @@ class Tensor(Observable):
     def __str__(self):
         """Print the tensor product and some information."""
         return "Tensor product {}: {} params, wires {}".format(
-<<<<<<< HEAD
-            [i.name for i in self.obs], len(self.params), self.wires.tolist()
-=======
-            [i.name for i in self.obs], len(self.data), self.wires
->>>>>>> master
+            [i.name for i in self.obs], len(self.data), self.wires.tolist()
         )
 
     def __repr__(self):
