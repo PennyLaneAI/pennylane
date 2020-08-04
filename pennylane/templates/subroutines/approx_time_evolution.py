@@ -50,7 +50,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         :target: javascript:void(0);
 
     It is also important to note that
-    this decomposition is exact for any value of :math:`n` when each term of the Hamiltonian, :math:`H_n`,
+    this decomposition is exact for any value of :math:`n` when each term of the Hamiltonian
     commutes with every other term.
 
     .. note::
@@ -65,7 +65,7 @@ def ApproxTimeEvolution(hamiltonian, time, n):
         hamiltonian (.Hamiltonian): The Hamiltonian defining the
            time-evolution operator.
            The Hamiltonian must be explicitly written
-           in terms of products of Pauli gates (X, Y, Z, and I).
+           in terms of products of Pauli gates (.PauliX, .PauliY, .PauliZ, and .Identity).
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
