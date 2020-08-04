@@ -75,6 +75,7 @@ Functions
 # pylint: disable=import-outside-toplevel
 import argparse
 import pathlib
+import subprocess
 import sys
 
 
@@ -130,22 +131,22 @@ def test_device(device, analytic=None, shots=None, skip_ops=True, pytest_args=No
     pytest_args = pytest_args or []
     test_dir = get_device_tests()
 
-    flags = []
-    flags.append(test_dir)
-    flags.append(f"--device={device}")
+    cmds = ["pytest"]
+    cmds.append(test_dir)
+    cmds.append(f"--device={device}")
 
     if shots is not None:
-        flags.append(f"--shots={shots}")
+        cmds.append(f"--shots={shots}")
 
     if analytic is not None:
-        flags.append(f"--analytic={analytic}")
+        cmds.append(f"--analytic={analytic}")
 
     if skip_ops:
-        flags.append("--skip-ops")
+        cmds.append("--skip-ops")
 
-    flags.append("--no-flaky-report")
+    cmds.append("--no-flaky-report")
 
-    pytest.main(flags + pytest_args)
+    subprocess.call(cmds + pytest_args)
 
 
 def cli():
