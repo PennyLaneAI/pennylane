@@ -664,10 +664,9 @@ class BaseQNode(qml.QueuingContext):
                 self.output_dim = num_basis_states ** len(res.wires)
             elif res.return_type is ObservableReturnTypes.State:
                 if self.model == "cv":
-                    raise NotImplementedError("TODO")
+                    raise NotImplementedError("Returning the quantum state with a CV device is "
+                                              "not yet supported")
 
-                if getattr(self, "interface", None) is "torch":
-                    raise NotImplementedError("Torch doesn't do complex")
                 self.output_dim = 2 ** self.num_wires
                 self.output_conversion = np.squeeze
             else:
