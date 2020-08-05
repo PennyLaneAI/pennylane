@@ -36,9 +36,9 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
         unitary (function): A function that applies the quantum gates/templates being repeated.
         This function must have a signature of the form ``(parameters, wires, **kwargs)`` or ``(wires, **kwargs)``.
         wires (list): The wires on which ``unitary`` acts
-        depth (int): The number of times the unitaries are repeatedly applied
-        parameters (list): A list of parameters that are passed into ``unitary``
-        kwargs (dict): A dictionary of auxilliary parameters for ``unitaries``
+        depth (int): The number of times ``unitary`` is repeatedly applied
+        parameters (list): A list of parameters that are passed into each application of ``unitary``
+        kwargs (list[dict]): A list of dictionaries of auxiliary parameters for each layer of ``unitaries``
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -77,7 +77,7 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
 
         **Parameters and Keyword Arguments**
 
-        The ``qml.repeat`` function can accept and pass varaitional parameters and keyword arguments
+        The ``qml.repeat`` function can accept and pass variational parameters and keyword arguments
         to ``unitary``, with the ``parameters`` argument.
         The :math:`i`-th element of ``parameters`` is the list of parameters passed into the template
         at the :math:`i`-th layer.
@@ -101,8 +101,8 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
             def circuit():
                 qml.repeat(
                     unitary, [0, 1, 2], 2,
-                    [[0.5, 0.5, 0.5], 0.3], [[0.5, 0.5, 0.5], 0.3]],
-                    {'var' : True}
+                    [[[0.5, 0.5, 0.5], 0.3], [[0.5, 0.5, 0.5], 0.3]],
+                    [{'var' : True}, {'var': False}]
                 )
                 return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
@@ -113,7 +113,7 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
         .. code-block:: none
 
              0: ──RX(0.5)──RY(0.3)──RX(0.5)──RY(0.3)──┤ ⟨Z⟩
-             1: ──RX(0.5)──H────────RX(0.5)──H────────┤ ⟨Z⟩
+             1: ──RX(0.5)──H────────RX(0.5)──-────────┤ ⟨Z⟩
              2: ──RX(0.5)──RX(0.5)────────────────────┤ ⟨Z⟩
 
     """
@@ -158,7 +158,7 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
         raise ValueError("Expected 'parameters', got None")
 
     if parameters is not None and inspect.signature(unitary) == 2:
-        raise ValueError("Got 'parameters' with no 'parameters' argument in 'unitary'")
+        raise ValueError("Got 'parameters' with non-parametrized 'unitary'")
 
 
     ##############
