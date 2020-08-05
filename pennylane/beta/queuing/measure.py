@@ -18,7 +18,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import pennylane as qml
-from pennylane.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
+from pennylane.beta.queuing.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
 from pennylane.qnodes import QuantumFunctionError
 
 

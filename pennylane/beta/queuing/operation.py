@@ -951,6 +951,8 @@ class Tensor(Observable):
             else:
                 raise ValueError("Can only perform tensor products between observables.")
 
+        self.queue()
+
     def __str__(self):
         """Print the tensor product and some information."""
         return "Tensor product {}: {} params, wires {}".format(
@@ -960,6 +962,17 @@ class Tensor(Observable):
     def __repr__(self):
         """Constructor-call-like representation."""
         return "Tensor(" + ", ".join([repr(o) for o in self.obs]) + ")"
+
+    def queue(self):
+        qml.QueuingContext.append(self, owns=tuple(self.obs))
+
+        for o in self.obs:
+            try:
+                qml.QueuingContext.update_info(o, owner=self)
+            except AttributeError:
+                pass
+
+        return self
 
     @property
     def name(self):
