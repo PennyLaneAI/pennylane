@@ -20,6 +20,7 @@ from pennylane import numpy as np
 
 # ===== Factories for different circuits using arbitrary wire labels and numbers
 
+
 def make_simple_circuit_expval(device, wires):
     """Factory for a qnode returning expvals."""
 
@@ -51,6 +52,7 @@ def make_simple_circuit_var(device, wires):
 
     return circuit
 
+
 # =====
 
 
@@ -65,10 +67,11 @@ class TestWiresIntegration:
             (["a", "c"], [3, 0]),
             ([-1, -2], ["ancilla", 2]),
             (["a"], ["nothing"]),
-        ]
+        ],
     )
-    @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval,
-                                                 make_simple_circuit_var])
+    @pytest.mark.parametrize(
+        "circuit_factory", [make_simple_circuit_expval, make_simple_circuit_var]
+    )
     def test_wires_expval(self, device, circuit_factory, wires1, wires2, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)

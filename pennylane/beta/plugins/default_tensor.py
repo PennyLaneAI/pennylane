@@ -434,9 +434,7 @@ class DefaultTensor(Device):
             self._reshape(A @ A, [2] * len(w) * 2) for A, w in zip(matrices, wires)
         ]
 
-        obs_nodes = self._create_nodes_from_tensors(
-            tensors, wires, observable, key="observables"
-        )
+        obs_nodes = self._create_nodes_from_tensors(tensors, wires, observable, key="observables")
         obs_nodes_for_squares = self._create_nodes_from_tensors(
             tensors_of_squared_matrices, wires, observable, key="observables"
         )
