@@ -18,7 +18,8 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples.
 """
 import pennylane as qml
-from pennylane.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
+from pennylane.operation import (AllWires, Expectation, Observable,
+                                 Probability, Sample, State, Tensor, Variance)
 from pennylane.qnodes import QuantumFunctionError
 
 
@@ -199,9 +200,6 @@ def probs(wires):
     qml.QueuingContext.append(op)
 
     return op
-
-
-from pennylane.operation import AllWires, State
 
 
 def state():
