@@ -324,7 +324,7 @@ class Wires(Sequence):
         return Wires(shared)
 
     @staticmethod
-    def all_wires(list_of_wires):
+    def all_wires(list_of_wires, sort=False):
         """Return the wires that appear in any of the Wires objects in the list.
 
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
@@ -340,6 +340,8 @@ class Wires(Sequence):
 
         Args:
             list_of_wires (List[Wires]): List of Wires objects
+            sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
+                value if all keys are int, else labels' str representations are used.
 
         Returns:
             Wires: combined wires
@@ -353,6 +355,12 @@ class Wires(Sequence):
                 )
 
             combined.extend(wire for wire in wires.labels if wire not in combined)
+
+        if sort:
+            if all([isinstance(w, int) for w in combined]):
+                combined = sorted(combined)
+            else:
+                combined = sorted(combined, key=str)
 
         return Wires(combined)
 

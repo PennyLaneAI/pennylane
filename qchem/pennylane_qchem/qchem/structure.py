@@ -26,6 +26,38 @@ from openfermionpyscf import run_pyscf
 
 import pennylane as qml
 from pennylane import Hamiltonian
+from pennylane.wires import Wires
+
+
+def _proc_wires(wires, n_wires=None):
+
+    if n_wires is None:
+        n_wires = len(wires)
+
+    if wires is None:
+        return Wires(range(n_wires))
+    
+    if isinstance(wires, (Wires, list, tuple)):
+        wires = Wires(wires[:n_wires])
+    elif isinstance(wires, dict):
+        if all([isinstance(w, int) and w < n_wires for w in wires.keys()]):
+        # Assuming keys are coming from consecutive int wires. Allows for partial mapping.
+            labels = list(range(n_wires))
+            for k, v in wires.items():
+                labels[k] = v
+            wires = Wires(labels)
+        elif set(wires.values()) == set(range(n_wires)):
+        # Assuming values are consecutive int wires. Does NOT allow for partial mapping.
+            wires = Wires([wires[i] for i in range(n_wires)])
+        else:
+            raise ValueError('Expected only int-keyed or consecutive int-valued dict for `wires`')
+    else:
+        raise ValueError('Expected type Wires, list, tuple, or dict for `wires`, got {}'.format(type(wires)))
+    
+    if len(Wires) != n_wires:
+        raise ValueError('Length of `wires`{} does not match the derived `n_wires`{}'.format(len(Wires), n_wires))
+
+    return wires
 
 
 def _exec_exists(prog):
@@ -362,7 +394,7 @@ def decompose_hamiltonian(
     return jordan_wigner(fermionic_hamiltonian)
 
 
-def _qubit_operator_to_terms(qubit_operator):
+def _qubit_operator_to_terms(qubit_operator, wires=None):
     r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
@@ -374,8 +406,11 @@ def _qubit_operator_to_terms(qubit_operator):
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
         corresponding PennyLane observables in the Pauli basis
     """
+    n_wires = max([len(t) for t in qubit_operator.terms]) if qubit_operator.terms else 1
+    wires = _proc_wires(wires, n_wires=n_wires)
+
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
-        return np.array([0.0]), [qml.operation.Tensor(qml.Identity(0))]
+        return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
 
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
 
@@ -383,9 +418,9 @@ def _qubit_operator_to_terms(qubit_operator):
         *[
             (
                 coef,
-                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=q[0]) for q in term])  # TODO: nonconsecutive wires
+                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=wires[q[0]]) for q in term])
                 if term
-                else qml.operation.Tensor(qml.Identity(0))
+                else qml.operation.Tensor(qml.Identity(wires[0]))
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
             )
             for term, coef in qubit_operator.terms.items()
@@ -395,7 +430,7 @@ def _qubit_operator_to_terms(qubit_operator):
     return np.real(np.array(coeffs)), list(ops)
 
 
-def _terms_to_qubit_operator(coeffs, ops):
+def _terms_to_qubit_operator(coeffs, ops, wires=None):
     r"""Converts a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
@@ -410,12 +445,17 @@ def _terms_to_qubit_operator(coeffs, ops):
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
     """
+    all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
+    n_all_wires = len(all_wires)
+    if wires is not None:
+        qubit_indexed_wires = _proc_wires(wires, n_all_wires)
+        if set(all_wires) != set(qubit_indexed_wires):
+            raise ValueError('Supplied `wires` does not match wires defined in `ops`.')
+    else:
+        qubit_indexed_wires = all_wires
+
     q_op = QubitOperator()
     for coeff, op in zip(coeffs, ops):
-
-        # wire ids
-        wires = op.wires.tolist()  # Can we use subsystems here? Otherwise the Qchem library relies on users
-                                   # and devices assuming consecutive indices as wires
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]
@@ -427,11 +467,12 @@ def _terms_to_qubit_operator(coeffs, ops):
                 + "but also got {}.".format(extra_obsvbs)
             )
 
-        if op.name == ["Identity"] and wires == [0]:
+        # if op.name == ["Identity"] and wires == [0]:
+        if op.name == ["Identity"] and len(op.wires) == 0:
             term_str = ""
         else:
             term_str = " ".join(
-                ["{}{}".format(pauli, wire) for pauli, wire in zip(pauli_names, wires)]
+                ["{}{}".format(pauli, qubit_indexed_wires.index(wire)) for pauli, wire in zip(pauli_names, op.wires)]
             )
 
         # This is how one makes QubitOperator in OpenFermion
@@ -440,7 +481,7 @@ def _terms_to_qubit_operator(coeffs, ops):
     return q_op
 
 
-def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator):
+def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator, wires=None):
     r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
     ``Hamiltonian`` (Tensor product of Pauli matrices).
 
@@ -456,10 +497,10 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms
-    return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops)
+    return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops, wires=wires)
 
 
-def convert_observable(qubit_observable):
+def convert_observable(qubit_observable, wires=None):
     r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
     **Example usage**
@@ -480,7 +521,7 @@ def convert_observable(qubit_observable):
         :math:`\sum_{k=0}^{N-1} c_k O_k`.
     """
 
-    return Hamiltonian(*_qubit_operator_to_terms(qubit_observable))
+    return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
 
 
 def generate_hamiltonian(
@@ -494,6 +535,7 @@ def generate_hamiltonian(
     n_active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
+    wires=None,
 ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian based on geometry and mean field electronic structure.
 
@@ -560,7 +602,7 @@ def generate_hamiltonian(
         2 * len(active_indices),
     )
 
-    return convert_observable(h_of), nr_qubits
+    return convert_observable(h_of, wires=wires), nr_qubits
 
 
 def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
