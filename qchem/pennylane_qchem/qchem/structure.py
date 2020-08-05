@@ -612,10 +612,10 @@ def excitations(n_electrons, n_spin_orbitals, delta_sz=0):
 
     >>> n_electrons = 2
     >>> n_spin_orbitals = 4
-    >>> ph, pphh = excitations(n_electrons, n_spin_orbitals)
-    >>> print(ph)
+    >>> singles, doubles = excitations(n_electrons, n_spin_orbitals)
+    >>> print(singles)
     [[0, 2], [1, 3]]
-    >>> print(pphh)
+    >>> print(doubles)
     [[0, 1, 2, 3]]
     """
 
