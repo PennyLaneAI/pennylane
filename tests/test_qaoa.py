@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
 from pennylane.templates import ApproxTimeEvolution
+from pennylane.wires import Wires
 
 
 #####################################################
@@ -46,7 +47,7 @@ class TestMixerHamiltonians:
 
         assert mixer_coeffs == [1, 1, 1, 1]
         assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-        assert mixer_wires == [0, 1, 2, 3]
+        assert mixer_wires == [Wires(0), Wires(1), Wires(2), Wires(3)]
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
@@ -54,7 +55,7 @@ class TestMixerHamiltonians:
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object, got list"):
-            output = qaoa.xy_mixer(graph)
+            qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
         ("graph", "target_hamiltonian"),
@@ -120,8 +121,6 @@ class TestMixerHamiltonians:
     def test_xy_mixer_output(self, graph, target_hamiltonian):
         """Tests that the output of the XY mixer is correct"""
 
-        print(graph.edges)
-
         mixer_hamiltonian = qaoa.xy_mixer(graph)
 
         mixer_coeffs = mixer_hamiltonian.coeffs
@@ -135,6 +134,73 @@ class TestMixerHamiltonians:
         assert mixer_coeffs == target_coeffs
         assert mixer_ops == target_ops
         assert mixer_wires == target_wires
+
+
+GRAPHS = [
+    Graph([(0, 1), (1, 2)]),
+    Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
+    graph,
+]
+
+COEFFS = [[-0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5]]
+
+TERMS = [
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(0) @ qml.Identity(2),
+        qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+    ],
+]
+
+HAMILTONIANS = [qml.Hamiltonian(COEFFS[i], TERMS[i]) for i in range(3)]
+
+MAXCUT = zip(GRAPHS, HAMILTONIANS)
+
+
+class TestCostHamiltonians:
+    """Tests that the cost Hamiltonians are being generated correctly"""
+
+    def test_maxcut_error(self):
+        """Tests that the MaxCut Hamiltonian throws the correct error"""
+
+        graph = [(0, 1), (1, 2)]
+
+        with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
+            qaoa.maxcut(graph)
+
+    @pytest.mark.parametrize(("graph", "target_hamiltonian"), MAXCUT)
+    def test_maxcut_output(self, graph, target_hamiltonian):
+        """Tests that the output of the MaxCut method is correct"""
+
+        cost_hamiltonian = qaoa.maxcut(graph)
+
+        cost_coeffs = cost_hamiltonian.coeffs
+        cost_ops = [i.name for i in cost_hamiltonian.ops]
+        cost_wires = [i.wires for i in cost_hamiltonian.ops]
+
+        target_coeffs = target_hamiltonian.coeffs
+        target_ops = [i.name for i in target_hamiltonian.ops]
+        target_wires = [i.wires for i in target_hamiltonian.ops]
+
+        assert cost_coeffs == target_coeffs
+        assert cost_ops == target_ops
+        assert cost_wires == target_wires
+
 
 class TestUtils:
     """Tests that the utility functions are working properly"""

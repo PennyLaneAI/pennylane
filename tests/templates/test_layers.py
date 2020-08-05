@@ -192,7 +192,7 @@ class TestStronglyEntangling:
 
         assert len(rec.queue) == n_layers
         assert all([isinstance(q, qml.Rot) for q in rec.queue])
-        assert all([q._wires[0] == 0 for q in rec.queue]) #Wires(0) for q in rec.queue])
+        assert all([q._wires[0] == Wires(0) for q in rec.queue])
 
     def test_strong_ent_layers_uses_correct_weights(self, n_subsystems):
         """Test that StronglyEntanglingLayers uses the correct weights in the circuit."""
@@ -452,7 +452,7 @@ class TestRandomLayers:
                 seed=42,
             )
 
-        wires = [q._wires for q in rec.queue]
+        wires = [q._wires.tolist() for q in rec.queue]
         wires_flat = [item for w in wires for item in w]
         mean_wire = np.mean(wires_flat)
         assert np.isclose(mean_wire, (n_subsystems - 1) / 2, atol=0.05)

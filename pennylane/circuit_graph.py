@@ -23,7 +23,6 @@ import pennylane as qml
 from pennylane.operation import Sample
 
 from .circuit_drawer import CHARSETS, CircuitDrawer
-from .utils import _flatten
 from .variable import Variable
 
 
@@ -141,25 +140,30 @@ class CircuitGraph:
         ops (Iterable[Operator]): quantum operators constituting the circuit, in temporal order
         variable_deps (dict[int, list[ParameterDependency]]): Free parameters of the quantum circuit.
             The dictionary key is the parameter index.
+        wires (Wires): the addressable wires on the device
     """
 
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, ops, variable_deps):
+    def __init__(self, ops, variable_deps, wires):
         self.variable_deps = variable_deps
 
         self._grid = {}
         """dict[int, list[Operator]]: dictionary representing the quantum circuit as a grid.
         Here, the key is the wire number, and the value is a list containing the operators on that wire.
         """
-        self.num_wires = 0
+        self.wires = wires
+        """Wires: wires that are addressed in the operations. 
+        Required to translate between wires and indices of the wires on the device."""
+        self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(ops):
-            self.num_wires = max(self.num_wires, max(op.wires) + 1)
             op.queue_idx = k  # store the queue index in the Operator
-            for w in set(op.wires):
-                # Add op to the grid, to the end of wire w
-                self._grid.setdefault(w, []).append(op)
+            for w in op.wires:
+                # get the index of the wire on the device
+                wire = wires.index(w)
+                # add op to the grid, to the end of wire w
+                self._grid.setdefault(wire, []).append(op)
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
@@ -222,7 +226,7 @@ class CircuitGraph:
                     serialization_string += str(param)
                     serialization_string += delimiter
 
-            serialization_string += str(op.wires)
+            serialization_string += str(op.wires.tolist())
 
         # Adding a distinct separating string that could not occur by any combination of the
         # name of the operation and wires
@@ -235,7 +239,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires)
+            serialization_string += str(obs.wires.tolist())
 
         return serialization_string
 
@@ -305,7 +309,7 @@ class CircuitGraph:
         # create the QASM code representing the operations
         for op in decomposed_ops:
             gate = OPENQASM_GATES[op.name]
-            wires = ",".join(["q[{}]".format(w) for w in op.wires])
+            wires = ",".join(["q[{}]".format(w) for w in op.wires.tolist()])
             params = ""
 
             if op.num_params > 0:
@@ -625,7 +629,11 @@ class CircuitGraph:
             )
 
         drawer = CircuitDrawer(
-            grid, obs, charset=CHARSETS[charset], show_variable_names=show_variable_names
+            grid,
+            obs,
+            self.wires,
+            charset=CHARSETS[charset],
+            show_variable_names=show_variable_names,
         )
 
         return drawer.draw()

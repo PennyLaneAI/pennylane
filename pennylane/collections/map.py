@@ -122,7 +122,10 @@ def map(
         if not isinstance(obs, Observable):
             raise ValueError("Could not create QNodes. Some or all observables are not valid.")
 
-        wires = list(range(dev.num_wires))
+        # Need to convert wires to a list, because
+        # the torch/tf interface complains about Wires objects being fed to qnodes
+        # TODO: Allow for Wires argument to be passed through here
+        wires = dev.wires.tolist()
 
         # Note: in the following template definition, we pass the observable, measurement,
         # and wires as *default arguments* to named parameters. This is to avoid

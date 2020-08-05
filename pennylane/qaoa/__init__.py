@@ -16,4 +16,5 @@ This module contains functionality to construct QAOA workflows in PennyLane.
 """
 
 from .mixers import *
+from .cost import *
 from .layers import *

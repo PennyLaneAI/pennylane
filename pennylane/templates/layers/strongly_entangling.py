@@ -43,7 +43,6 @@ def strongly_entangling_layer(weights, wires, r, imprimitive):
     if n_wires > 1:
         for i in range(n_wires):
             act_on = wires.subset([i, i + r], periodic_boundary=True)
-            act_on = act_on.tolist()  # Todo: remove when operator takes Wires object
             imprimitive(wires=act_on)
 
 
