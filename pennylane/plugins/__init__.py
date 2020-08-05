@@ -27,6 +27,7 @@ to verify and test quantum gradient computations.
     default_gaussian
     tf_ops
     autograd_ops
+    tests
 """
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian

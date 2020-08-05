@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
+import argparse
 import os
 
 import numpy as np
@@ -127,29 +128,73 @@ def pytest_runtest_setup(item):
 # These functions are required to define the device name to run the tests for
 
 
+class StoreDictKeyPair(argparse.Action):
+    """Argparse action for storing key-value pairs as a dictionary.
+
+    For example, calling a CLI program with ``--mydict v1=k1 v2=5``:
+
+    >>> parser.add_argument("--mydict", dest="my_dict", action=StoreDictKeyPair, nargs="+")
+    >>> args = parser.parse()
+    >>> args.my_dict
+    {"v1": "k1", "v2": "5"}
+
+    Note that all keys will be strings.
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        self._nargs = nargs
+        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        my_dict = {}
+        for kv in values:
+            k, v = kv.split("=")
+            my_dict[k] = v
+        setattr(namespace, self.dest, my_dict)
+
+
 def pytest_addoption(parser):
     """Add command line option to pytest."""
 
+    if hasattr(parser, "add_argument"):
+        # parser is a argparse.Parser object
+        addoption = parser.add_argument
+    else:
+        # parser is a pytest.config.Parser object
+        addoption = parser.addoption
+
     # The options are the three arguments every device takes
-    parser.addoption("--device", action="store", default=None, help="The device to test.")
-    parser.addoption(
+    addoption("--device", action="store", default=None, help="The device to test.")
+    addoption(
         "--shots",
         action="store",
         default=None,
         type=int,
         help="Number of shots to use in stochastic mode.",
     )
-    parser.addoption(
+    addoption(
         "--analytic",
         action="store",
         default=None,
         help="Whether to run the tests in stochastic or exact mode.",
     )
-    parser.addoption(
+    addoption(
         "--skip-ops",
         action="store_true",
         default=False,
         help="Skip tests that use unsupported device operations.",
+    )
+
+    addoption(
+        "--device-kwargs",
+        dest="device_kwargs",
+        action=StoreDictKeyPair,
+        default={},
+        nargs="+",
+        metavar="KEY=VAL",
+        help="Additional device kwargs.",
     )
 
 
@@ -161,6 +206,7 @@ def pytest_generate_tests(metafunc):
         "name": opt.device,
         "shots": opt.shots,
         "analytic": opt.analytic,
+        **opt.device_kwargs,
     }
 
     # ===========================================
@@ -209,7 +255,7 @@ def pytest_runtest_makereport(item, call):
             # and those using not implemented features
             if (
                 call.excinfo.type == qml.DeviceError
-                and "not supported on device" in str(call.excinfo.value)
+                and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):
                 tr.wasxfail = "reason:" + str(call.excinfo.value)

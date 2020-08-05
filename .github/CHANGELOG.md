@@ -84,6 +84,10 @@
   >>> coeffs, obs_list = decompose_hamiltonian(A)
   ```
 
+* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which 
+  can be used to implement Trotterized time-evolution under a Hamiltonian.
+  [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
+
 <h3>Improvements</h3>
 
 * Added support for TensorFlow 2.3 and PyTorch 1.6.
@@ -104,6 +108,10 @@
   [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
   ```
 
+* Refactor of the QNode queuing architecture.
+  [(#722)](https://github.com/PennyLaneAI/pennylane/pull/722)
+  [(#728)](https://github.com/PennyLaneAI/pennylane/pull/728)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -118,7 +126,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
+Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
