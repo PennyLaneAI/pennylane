@@ -49,7 +49,7 @@
   a Hartree-Fock state and mapping them to the wires that the Unitary
   Coupled-Cluster (UCCSD) ansatz act on have been improved, with a more
   consistent naming convention and improved docstrings.
-  [(#)]()  
+  [(#742)](https://github.com/PennyLaneAI/pennylane/pull/742)  
 
   The changes include:
 
