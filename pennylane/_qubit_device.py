@@ -281,6 +281,14 @@ class QubitDevice(Device):
                 results.append(self.probability(wires=obs.wires))
 
             elif obs.return_type is State:
+                try:
+                    state = self.state
+                except NotImplementedError:
+                    state = None
+
+                if state is None:
+                    raise ValueError("The state is not available in the current device")
+
                 results.append(self.state)
 
             elif obs.return_type is not None:
