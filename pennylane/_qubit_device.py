@@ -406,7 +406,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        samples = self._samples[:, device_wires]
+        samples = self._samples[:, np.array(device_wires)]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(device_wires)
