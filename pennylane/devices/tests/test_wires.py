@@ -18,7 +18,7 @@ import pytest
 from pennylane import numpy as np
 
 
-# ===== Factories for different circuits using arbitrary wire labels and numbers
+# ===== Factories for circuits using arbitrary wire labels and numbers
 
 
 def make_simple_circuit_expval(device, wires):
@@ -33,22 +33,6 @@ def make_simple_circuit_expval(device, wires):
         if n_wires > 1:
             qml.CNOT(wires=[wires[0], wires[1]])
         return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
-
-    return circuit
-
-
-def make_simple_circuit_var(device, wires):
-    """Factory for a qnode returning variances."""
-
-    n_wires = len(wires)
-
-    @qml.qnode(device)
-    def circuit():
-        qml.RX(0.5, wires=wires[0 % n_wires])
-        qml.RY(2.0, wires=wires[1 % n_wires])
-        if n_wires > 1:
-            qml.CNOT(wires=[wires[0], wires[1]])
-        return [qml.var(qml.PauliZ(wires=w)) for w in wires]
 
     return circuit
 
@@ -70,7 +54,7 @@ class TestWiresIntegration:
         ],
     )
     @pytest.mark.parametrize(
-        "circuit_factory", [make_simple_circuit_expval, make_simple_circuit_var]
+        "circuit_factory", [make_simple_circuit_expval]
     )
     def test_wires_expval(self, device, circuit_factory, wires1, wires2, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
