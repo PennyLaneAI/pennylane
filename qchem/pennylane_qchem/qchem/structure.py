@@ -383,7 +383,9 @@ def _qubit_operator_to_terms(qubit_operator):
         *[
             (
                 coef,
-                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=q[0]) for q in term])  # TODO: nonconsecutive wires
+                qml.operation.Tensor(
+                    *[xyz2pauli[q[1]](wires=q[0]) for q in term]
+                )  # TODO: nonconsecutive wires
                 if term
                 else qml.operation.Tensor(qml.Identity(0))
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
@@ -414,8 +416,10 @@ def _terms_to_qubit_operator(coeffs, ops):
     for coeff, op in zip(coeffs, ops):
 
         # wire ids
-        wires = op.wires.tolist()  # Can we use subsystems here? Otherwise the Qchem library relies on users
-                                   # and devices assuming consecutive indices as wires
+        wires = (
+            op.wires.tolist()
+        )  # Can we use subsystems here? Otherwise the Qchem library relies on users
+        # and devices assuming consecutive indices as wires
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]
@@ -656,30 +660,33 @@ def excitations(n_electrons, n_spin_orbitals, delta_sz=0):
     return singles, doubles
 
 
-def hf_state(n_electrons, m_spin_orbitals):
-    r"""Generates the occupation-number vector representing the Hartree-Fock (HF)
-    state of :math:`N` electrons in a basis of :math:`M` spin orbitals.
+def hf_state(n_electrons, n_spin_orbitals):
+    r"""Generates the occupation-number vector representing the Hartree-Fock state.
 
-    The many-particle wave function in the HF approximation is a `Slater determinant
+    The many-particle wave function in the Hartree-Fock (HF) approximation is a `Slater determinant
     <https://en.wikipedia.org/wiki/Slater_determinant>`_. In Fock space, a Slater determinant
-    is represented by the occupation-number vector:
+    for :math:`N` electrons is represented by the occupation-number vector:
 
     .. math:
-        \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_M \rangle,
-        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right.
+        \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_\mathrm{orbs} \rangle,
+        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right,
 
-    **Example**
-
-    >>> init_state = hf_state(2, 6)
-    >>> print(init_state)
-    [1 1 0 0 0 0]
+    where :math:`n_i` indicates the occupation of the :math:`ith`-orbital.
 
     Args:
-        n_electrons (int): number of active electrons
-        m_spin_orbitals (int): number of active **spin-orbitals**
+        n_electrons (int): Number of electrons. If an active space is defined, 'n_electrons'
+            is the number of active electrons.
+        n_spin_orbitals (int): Number of spin-orbitals. If an active space is defined,
+            'n_spin_orbitals' is the number of active spin-orbitals. 
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
+
+    **Example**
+
+    >>> state = hf_state(2, 6)
+    >>> print(state)
+    [1 1 0 0 0 0]
     """
 
     if n_electrons <= 0:
@@ -689,15 +696,15 @@ def hf_state(n_electrons, m_spin_orbitals):
             )
         )
 
-    if n_electrons > m_spin_orbitals:
+    if n_electrons > n_spin_orbitals:
         raise ValueError(
             "The number of active orbitals cannot be smaller than the number of active electrons;"
-            " got 'm_spin_orbitals'={} < 'n_electrons'={}".format(m_spin_orbitals, n_electrons)
+            " got 'n_spin_orbitals'={} < 'n_electrons'={}".format(n_spin_orbitals, n_electrons)
         )
 
-    hf_state_on = np.where(np.arange(m_spin_orbitals) < n_electrons, 1, 0)
+    state = np.where(np.arange(n_spin_orbitals) < n_electrons, 1, 0)
 
-    return np.array(hf_state_on)
+    return np.array(state)
 
 
 def excitations_to_wires(ph_confs, pphh_confs, wires=None):
