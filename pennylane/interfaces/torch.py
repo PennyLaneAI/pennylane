@@ -201,11 +201,17 @@ def to_torch(qnode):
                         cuda_device = i.get_device()
                         return torch.as_tensor(torch.from_numpy(res), device=cuda_device)
 
-            returns_state = [
-                getattr(op, "return_type", None) is ObservableReturnTypes.State for op in qnode.ops
-            ]
-            if any(returns_state):
-                raise NotImplementedError("Torch doesn't support complex")
+            returns_state = any(
+                [
+                    getattr(op, "return_type", None) is ObservableReturnTypes.State
+                    for op in qnode.ops
+                ]
+            )
+            if returns_state:
+                raise NotImplementedError(
+                    "Returning the quantum state is not possible when using the PyTorch interface "
+                    "due to complex numbers not being supported in PyTorch"
+                )
 
             return torch.from_numpy(res)
 
