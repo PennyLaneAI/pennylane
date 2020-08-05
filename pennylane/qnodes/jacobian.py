@@ -327,8 +327,7 @@ class JacobianQNode(BaseQNode):
                 if variances_required:
                     grad[:, i] = self._pd_analytic_var(k, flat_args, kwargs, **options)
                 else:
-                    x = self._pd_analytic(k, flat_args, kwargs, **options)
-                    grad[:, i] = x
+                    grad[:, i] = self._pd_analytic(k, flat_args, kwargs, **options)
             elif par_method == "F":
                 grad[:, i] = self._pd_finite_diff(k, flat_args, kwargs, **options)
             else:
