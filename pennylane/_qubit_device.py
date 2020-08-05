@@ -496,7 +496,7 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
         perm = np.ravel_multi_index(
-            basis_states[:, np.argsort(np.argsort(device_wires))].T, [2] * len(device_wires)
+            basis_states[:, np.argsort(np.argsort(device_wires.toarray()))].T, [2] * len(device_wires)
         )
         return self._gather(prob, perm)
 
