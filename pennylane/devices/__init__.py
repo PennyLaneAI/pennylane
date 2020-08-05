@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides reference plugin implementations. The reference plugins provide basic built-in qubit
+This subpackage provides default devices for PennyLane, which do not need external plugins to be installed.
+The default devices provide basic built-in qubit
 and CV circuit simulators that can be used with PennyLane without the need for additional
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
-.. currentmodule:: pennylane.plugins
+.. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 

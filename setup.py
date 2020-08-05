@@ -36,13 +36,15 @@ info = {
     'license': 'Apache License 2.0',
     'packages': find_packages(where="."),
     'entry_points': {
+        # TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
+        # This requires a rename in the setup file of all devices, and is best done during another refactor
         'pennylane.plugins': [
-            'default.qubit = pennylane.plugins:DefaultQubit',
-            'default.gaussian = pennylane.plugins:DefaultGaussian',
-            'default.qubit.tf = pennylane.plugins.default_qubit_tf:DefaultQubitTF',
-            'default.qubit.autograd = pennylane.plugins.default_qubit_autograd:DefaultQubitAutograd',
-            'default.tensor = pennylane.beta.plugins.default_tensor:DefaultTensor',
-            'default.tensor.tf = pennylane.beta.plugins.default_tensor_tf:DefaultTensorTF',
+            'default.qubit = pennylane.devices:DefaultQubit',
+            'default.gaussian = pennylane.devices:DefaultGaussian',
+            'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',
+            'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
+            'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
+            'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
             ],
         'console_scripts': [
                 'pl-device-test=pennylane.plugins.tests:cli'
