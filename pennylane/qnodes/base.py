@@ -362,9 +362,7 @@ class BaseQNode(qml.QueuingContext):
         if obj.num_wires == WiresEnum.AllWires:
             # check here only if enough wires
             if len(obj.wires) != self.num_wires:
-                raise QuantumFunctionError(
-                    "Operator {} must act on all wires".format(obj.name)
-                )
+                raise QuantumFunctionError("Operator {} must act on all wires".format(obj.name))
 
             # Make sure only existing wires are used.
         for w in obj.wires:
