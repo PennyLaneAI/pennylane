@@ -53,9 +53,7 @@ class TestWiresIntegration:
             (["a"], ["nothing"]),
         ],
     )
-    @pytest.mark.parametrize(
-        "circuit_factory", [make_simple_circuit_expval]
-    )
+    @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval])
     def test_wires_expval(self, device, circuit_factory, wires1, wires2, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)
