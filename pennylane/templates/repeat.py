@@ -121,7 +121,7 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
     ##############
     # Input checks
 
-    wires = [Wires(w) for w in wires]
+    wires = Wires(wires)
 
     if not isinstance(depth, int):
         raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
@@ -139,26 +139,13 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
     if not isinstance(kwargs, list):
         raise ValueError("'kwargs' must be a list; got {}".format(type(kwargs)))
 
-    if len(kwargs) != depth:
-        raise ValueError("Expected length of 'kwargs' to be {}, got {}".format(depth, len(kwargs)))
-
     for i in kwargs:
         check_type(
             i, [dict], msg="Elements of 'kwargs' must be dictionaries; got {}".format(type(i)),
         )
 
-    check_type(
-        unitary, [types.FunctionType], msg="'unitary' must be a function; got {}".format(type(unitary)),
-    )
-
-    if len(inspect.signature(unitary).parameters) not in [2, 3]:
-        raise ValueError("Signature of 'unitary' must be of the form (parameters, wires, **kwargs)")
-
-    if parameters is None and inspect.signature(unitary) == 3:
-        raise ValueError("Expected 'parameters', got None")
-
-    if parameters is not None and inspect.signature(unitary) == 2:
-        raise ValueError("Got 'parameters' with non-parametrized 'unitary'")
+    if len(kwargs) != depth:
+        raise ValueError("Expected length of 'kwargs' to be {}, got {}".format(depth, len(kwargs)))
 
 
     ##############
