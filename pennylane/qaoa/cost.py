@@ -37,7 +37,7 @@ def maxcut(graph):
     where :math:`G` is some graph, :math:`\mathbb{I}` is the identity, and :math:`Z_i` and :math:`Z_j` are
     the Pauli-Z operators on the :math:`i`-th and :math:`j`-th wire respectively.
 
-    The reccomended mixer Hamiltonian for MaxCut is the :func:`~qaoa.x_mixer` applied to all wires.
+    The recommended mixer Hamiltonian for MaxCut is the :func:`~qaoa.x_mixer` applied to all wires.
 
     .. note::
 
