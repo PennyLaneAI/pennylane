@@ -422,31 +422,31 @@ class DefaultTensor(Device):
         nodes = self._create_nodes_from_tensors(tensors, wires, observable, key="observables")
         return self.ev(nodes, wires)
 
-    def var(self, observable, obs_wires, par):
+    def var(self, observable, wires, par):
 
         if not isinstance(observable, list):
-            observable, obs_wires, par = [observable], [obs_wires], [par]
+            observable, wires, par = [observable], [wires], [par]
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        tensors = [self._reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, obs_wires)]
+        tensors = [self._reshape(A, [2] * len(w) * 2) for A, w in zip(matrices, wires)]
         tensors_of_squared_matrices = [
-            self._reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, obs_wires)
+            self._reshape(A @ A, [2] * len(w) * 2) for A, w in zip(matrices, wires)
         ]
 
         obs_nodes = self._create_nodes_from_tensors(
-            tensors, obs_wires, observable, key="observables"
+            tensors, wires, observable, key="observables"
         )
         obs_nodes_for_squares = self._create_nodes_from_tensors(
-            tensors_of_squared_matrices, obs_wires, observable, key="observables"
+            tensors_of_squared_matrices, wires, observable, key="observables"
         )
 
-        return self.ev(obs_nodes_for_squares, obs_wires) - self.ev(obs_nodes, obs_wires) ** 2
+        return self.ev(obs_nodes_for_squares, wires) - self.ev(obs_nodes, wires) ** 2
 
-    def sample(self, observable, obs_wires, par):
+    def sample(self, observable, wires, par):
 
         if not isinstance(observable, list):
-            observable, obs_wires, par = [observable], [obs_wires], [par]
+            observable, wires, par = [observable], [wires], [par]
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
@@ -457,7 +457,7 @@ class DefaultTensor(Device):
         # Matching each projector with the wires it acts on
         # while preserving the groupings
         projectors_with_wires = [
-            [(proj, obs_wires[idx]) for proj in proj_group]
+            [(proj, wires[idx]) for proj in proj_group]
             for idx, proj_group in enumerate(projector_groups)
         ]
 
@@ -470,14 +470,14 @@ class DefaultTensor(Device):
 
         for projs in projector_tensor_products:
             obs_nodes = []
-            obs_wires_ = []
+            obs_wires = []
             for proj, proj_wires in projs:
 
                 tensor = proj.reshape([2] * len(proj_wires) * 2)
                 obs_nodes.append(self._add_node(tensor, proj_wires, key="observables"))
-                obs_wires_.append(proj_wires)
+                obs_wires.append(proj_wires)
 
-            joint_probabilities.append(self.ev(obs_nodes, obs_wires_))
+            joint_probabilities.append(self.ev(obs_nodes, obs_wires))
 
         outcomes = np.array([np.prod(p) for p in joint_outcomes])
         return np.random.choice(outcomes, self.shots, p=joint_probabilities)
