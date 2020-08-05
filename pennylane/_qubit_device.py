@@ -406,7 +406,7 @@ class QubitDevice(Device):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        samples = self._samples[:, device_wires.toarray()]
+        samples = self._samples[:, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         unraveled_indices = [2] * len(device_wires)
@@ -534,7 +534,7 @@ class QubitDevice(Device):
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[:, device_wires.toarray()]
+        samples = self._samples[:, device_wires]
         unraveled_indices = [2] * len(device_wires)
         indices = np.ravel_multi_index(samples.T, unraveled_indices)
         return observable.eigvals[indices]

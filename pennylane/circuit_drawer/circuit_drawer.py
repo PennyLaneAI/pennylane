@@ -17,11 +17,10 @@ This module contains the CircuitDrawer class which is used to draw CircuitGraph 
 from collections import OrderedDict
 
 import pennylane as qml
-
+from pennylane.wires import Wires
 from .charsets import UnicodeCharSet
 from .representation_resolver import RepresentationResolver
 from .grid import Grid
-from pennylane.wires import Wires
 
 # pylint: disable=too-many-branches,too-many-arguments,too-many-return-statements,too-many-statements,consider-using-enumerate,too-many-instance-attributes
 

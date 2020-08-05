@@ -188,7 +188,7 @@ class Device(abc.ABC):
         """
         consecutive_wires = Wires(range(self.num_wires))
 
-        wire_map = [(label, i) for label, i in zip(wires, consecutive_wires)]
+        wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
     def map_wires(self, wires):

@@ -212,7 +212,7 @@ class DefaultQubit(QubitDevice):
 
         # get basis states to alter on full set of qubits
         unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires.toarray()] = basis_states
+        unravelled_indices[:, device_wires] = basis_states
 
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
