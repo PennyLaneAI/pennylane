@@ -728,14 +728,14 @@ class TestQASMConformanceTests:
 
         assert gates[1].name == "ry"
         assert gates[1].wires == Wires([0])
-        assert gates[1].params == [params[1]]
+        assert gates[1].data == [params[1]]
 
         assert gates[2].name == "cx"
         assert gates[2].wires == Wires([0, 1])
 
         assert gates[4].name == "rx"
         assert gates[4].wires == Wires([1])
-        assert gates[4].params == [params[0]]
+        assert gates[4].data == [params[0]]
 
         # rotations
         assert gates[3].name == "h"
@@ -743,4 +743,4 @@ class TestQASMConformanceTests:
 
         assert gates[5].name == "ry"
         assert gates[5].wires == Wires([2])
-        assert gates[5].params == [-np.pi / 4]
+        assert gates[5].data == [-np.pi / 4]
