@@ -79,3 +79,11 @@ def maxcut(graph):
         coeffs.append(0.5)
 
     return (qml.Hamiltonian(coeffs, obs), qaoa.x_mixer(graph.nodes))
+
+
+def travelling_salesman(graph):
+    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding the the Travelling
+    Salesman problem.
+
+
+    """
