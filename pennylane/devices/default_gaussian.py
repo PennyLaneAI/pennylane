@@ -13,7 +13,7 @@
 # limitations under the License.
 # pylint: disable=inconsistent-return-statements
 """
-The :code:`default.gaussian` plugin is a simulator for Gaussian continuous-variable
+The :code:`default.gaussian` device is a simulator for Gaussian continuous-variable
 quantum computations, and can be used as a template for writing PennyLane
 devices for new CV backends.
 

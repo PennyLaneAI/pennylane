@@ -25,7 +25,7 @@
   ``` 
   [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
  
-* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
+* Adds a device test suite, located at `pennylane/devices/tests`, which can be used 
   to run generic tests on core or external devices calling 
   
   ```pycon
@@ -90,10 +90,6 @@
 
 <h3>Improvements</h3>
 
-* The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to 
-  `pennylane.devices` and `pennylane.beta.devices`, to reflect their content better.
-  [(#726)](https://github.com/XanaduAI/pennylane/pull/726)
-
 * Added support for TensorFlow 2.3 and PyTorch 1.6.
   [(#725)](https://github.com/PennyLaneAI/pennylane/pull/725)
 
@@ -118,6 +114,10 @@
 
 <h3>Breaking changes</h3>
 
+* The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to 
+  `pennylane.devices` and `pennylane.beta.devices`, to reflect their content better.
+  [(#726)](https://github.com/XanaduAI/pennylane/pull/726)
+  
 <h3>Bug fixes</h3>
 
 * The PennyLane interface conversion functions can now convert QNodes with
