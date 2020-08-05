@@ -406,7 +406,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
         corresponding PennyLane observables in the Pauli basis
     """
-    n_wires = max([len(t) for t in qubit_operator.terms]) if qubit_operator.terms else 1
+    n_wires = 1 + max([max([i for i,_ in t]) if t else 1 for t in qubit_operator.terms]) if qubit_operator.terms else 1
     wires = _proc_wires(wires, n_wires=n_wires)
 
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
@@ -468,7 +468,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
             )
 
         # if op.name == ["Identity"] and wires == [0]:
-        if op.name == ["Identity"] and len(op.wires) == 0:
+        if op.name == ["Identity"] and len(op.wires) == 1:
             term_str = ""
         else:
             term_str = " ".join(
