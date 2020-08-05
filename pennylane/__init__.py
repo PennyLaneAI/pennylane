@@ -109,12 +109,9 @@ def device(name, *args, **kwargs):
       of qubit-based quantum circuit architectures written in TensorFlow, which allows
       automatic differentiation through the simulation.
 
-    * :mod:`'default.tensor' <pennylane.devices.beta.tensor>`: a tensor network
-      simulator of qubit-based quantum circuit architectures.
-
-    * :mod:`'default.tensor.tf' <pennylane.devices.beta.tensor>`: a tensor network
-      simulator of qubit-based quantum circuit architectures written in TensorFlow, which allows
-      automatic differentiation through the simulation.
+    * :mod:`'default.qubit.autograd' <pennylane.devices.default_qubit.autograd>`: a state simulator
+      of qubit-based quantum circuit architectures which allows
+      automatic differentiation through the simulation via python's autograd library.
 
     In addition, additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
