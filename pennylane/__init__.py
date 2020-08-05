@@ -113,27 +113,29 @@ def device(name, *args, **kwargs):
     argument can be an integer, in which case the wires of the device are addressed
     by consecutive integers:
 
-    ```python
-    dev = qml.device('default.qubit', wires=5)
+    .. code-block:: python
 
-    def circuit():
-       qml.Hadamard(wires=1)
-       qml.Hadamard(wires=[0])
-       qml.CNOT(wires=[3, 4])
-       ...
-    ```
+        dev = qml.device('default.qubit', wires=5)
+
+        def circuit():
+           qml.Hadamard(wires=1)
+           qml.Hadamard(wires=[0])
+           qml.CNOT(wires=[3, 4])
+           ...
+
     The *wires* argument can also be a sequence of unique numbers or strings, specifying custom wire labels
     that the user employs to address the wires:
 
-    ```python
-    dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
+    .. code-block:: python
 
-    def circuit():
-       qml.Hadamard(wires='q11')
-       qml.Hadamard(wires=['ancilla'])
-       qml.CNOT(wires=['q12', -1] )
-       ...
-    ```
+        dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
+
+        def circuit():
+           qml.Hadamard(wires='q11')
+           qml.Hadamard(wires=['ancilla'])
+           qml.CNOT(wires=['q12', -1] )
+           ...
+
 
     Some devices may accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set

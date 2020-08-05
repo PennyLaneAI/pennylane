@@ -364,14 +364,12 @@ class BaseQNode(qml.QueuingContext):
             if len(obj.wires) != self.num_wires:
                 raise QuantumFunctionError("Operator {} must act on all wires".format(obj.name))
 
-            # Make sure only existing wires are used.
+        # Make sure only existing wires are used.
         for w in obj.wires:
-            if w not in self.device.register:
+            if w not in self.device.wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with wires {}.".format(
-                        obj.name, w.tolist(), self.device.register.tolist()
-                    )
+                    "on device with wires {}.".format(obj.name, w.labels, self.device.wires.labels)
                 )
 
         # observables go to their own, temporary queue
@@ -592,7 +590,7 @@ class BaseQNode(qml.QueuingContext):
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
-        self.circuit = CircuitGraph(self.ops, self.variable_deps, self.device.register)
+        self.circuit = CircuitGraph(self.ops, self.variable_deps, self.device.wires)
 
         # check for unused positional params
         if self.kwargs.get("par_check", False):
@@ -859,9 +857,7 @@ class BaseQNode(qml.QueuingContext):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
             circuit_graph = CircuitGraph(
-                self.circuit.operations + list(obs),
-                self.circuit.variable_deps,
-                self.device.register,
+                self.circuit.operations + list(obs), self.circuit.variable_deps, self.device.wires,
             )
             ret = self.device.execute(circuit_graph)
         else:

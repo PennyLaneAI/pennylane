@@ -582,7 +582,6 @@ class TestEstimateProb:
         dev = mock_qubit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 0], [1, 1], [1, 1], [0, 0]])
 
-        call_history = []
         with monkeypatch.context() as m:
             m.setattr(dev, "_samples", samples)
             m.setattr(dev, "shots", 4)

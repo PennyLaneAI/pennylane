@@ -1065,11 +1065,12 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals_cache = pauli_eigs(len(self.wires))
 
+        # Sort observables lexicographically by the strings of the wire labels
         # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires.tolist())
+        obs_sorted = sorted(self.obs, key=lambda x: [str(l) for l in x.wires.labels])
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1143,7 +1144,7 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires.tolist()):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1241,7 +1242,7 @@ class CV:
 
         if self.wires not in register:
             raise ValueError(
-                "{}: Some wires {} of this observable are not on the device's register {}".format(
+                "{}: Some observable wires {} do not exist on this device with wires {}".format(
                     self.name, self.wires, register
                 )
             )
