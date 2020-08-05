@@ -18,9 +18,13 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import pennylane as qml
-from pennylane.beta.queuing.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
 from pennylane.qnodes import QuantumFunctionError
 
+# --------------------
+# Beta related imports
+# --------------------
+from pennylane.beta.queuing.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
+from pennylane.beta.queuing.ops import Identity
 
 def expval(op):
     r"""Expectation value of the supplied observable.
@@ -193,7 +197,7 @@ def probs(wires):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # pylint: disable=protected-access
-    op = qml.Identity(wires=wires, do_queue=False)
+    op = Identity(wires=wires, do_queue=False)
     op.return_type = Probability
 
     qml.QueuingContext.append(op)

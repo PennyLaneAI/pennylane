@@ -115,6 +115,11 @@ import pennylane as qml
 from pennylane.utils import pauli_eigs
 from pennylane.variable import Variable
 
+# --------------------
+# Beta related imports
+# --------------------
+import pennylane.beta.queuing.ops as ops
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -1037,7 +1042,7 @@ class Tensor(Observable):
             list[:class:`~.Observable`]: list containing the non-identity observables
             in the tensor product
         """
-        return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+        return [obs for obs in self.obs if not isinstance(obs, ops.Identity)]
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
@@ -1206,7 +1211,7 @@ class Tensor(Observable):
         """
         if len(self.non_identity_obs) == 0:
             # Return a single Identity as the tensor only contains Identities
-            obs = qml.Identity(self.wires[0])
+            obs = ops.Identity(self.wires[0])
         elif len(self.non_identity_obs) == 1:
             obs = self.non_identity_obs[0]
         else:
