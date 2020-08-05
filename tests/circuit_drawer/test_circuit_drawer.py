@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.circuit_drawer import CircuitDrawer
 from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
-
+from pennylane.wires import Wires
 
 class TestFunctions:
     """Test the helper functions."""
@@ -65,7 +65,7 @@ dummy_raw_observable_grid = [
 @pytest.fixture
 def dummy_circuit_drawer():
     """A dummy CircuitDrawer instance."""
-    return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid)
+    return CircuitDrawer(dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)))
 
 
 def assert_nested_lists_equal(list1, list2):
@@ -93,7 +93,8 @@ def to_layer(operation_list, num_wires):
     layer = [None] * num_wires
 
     for op in operation_list:
-        for wire in op.wires:
+        # TODO: Currently this function only works if the device's wires are consecutive integers
+        for wire in op.wires.tolist():
             layer[wire] = op
 
     return layer
@@ -136,7 +137,7 @@ class TestCircuitDrawer:
 
         for idx, wire in enumerate(dummy_raw_operation_grid):
             for op in wire:
-                assert (op, idx) in args_tuples
+                assert (op, Wires(idx)) in args_tuples
 
     interlocking_multiwire_gate_grid = to_grid(
         [[qml.CNOT(wires=[0, 4]), qml.CNOT(wires=[1, 5]), qml.Toffoli(wires=[2, 3, 6])]], 7
@@ -201,11 +202,17 @@ class TestCircuitDrawer:
             (multi_and_single_wire_gate_grid, multi_and_single_wire_gate_representation_grid),
         ],
     )
-    def test_resolve_decorations(self, dummy_circuit_drawer, grid, target_representation_grid):
+    def test_resolve_decorations(self, grid, target_representation_grid):
         """Test that decorations are properly resolved."""
-        dummy_circuit_drawer.make_wire_conversion_dicts(grid.raw_grid, [[]])
         representation_grid = Grid()
-        dummy_circuit_drawer.resolve_decorations(grid, representation_grid)
+
+        raw_operator_grid = grid.raw_grid
+        # make a dummy observable grid
+        raw_observable_grid = [[None] for _ in range(len(raw_operator_grid))]
+
+        drawer = CircuitDrawer(raw_operator_grid, raw_observable_grid, Wires(range(10)))
+
+        drawer.resolve_decorations(grid, representation_grid)
 
         assert_nested_lists_equal(representation_grid.raw_grid, target_representation_grid.raw_grid)
 
@@ -231,11 +238,17 @@ class TestCircuitDrawer:
             (interlocking_SWAP_grid, moved_interlocking_SWAP_grid),
         ],
     )
-    def test_move_multi_wire_gates(self, dummy_circuit_drawer, grid, target_grid):
+    def test_move_multi_wire_gates(self, grid, target_grid):
         """Test that decorations are properly resolved."""
 
         operator_grid = grid.copy()
-        dummy_circuit_drawer.move_multi_wire_gates(operator_grid)
+
+        raw_operator_grid = operator_grid.raw_grid
+        # make a dummy observable grid
+        raw_observable_grid = [[None] for _ in range(len(raw_operator_grid))]
+
+        drawer = CircuitDrawer(raw_operator_grid, raw_observable_grid,  Wires(range(10)))
+        drawer.move_multi_wire_gates(operator_grid)
 
         assert_nested_lists_equal(operator_grid.raw_grid, target_grid.raw_grid)
 
@@ -285,7 +298,6 @@ def parameterized_qubit_qnode():
     qnode.evaluate((0.1, 0.2, 0.3, np.array([0.4, 0.5, 0.6])), {})
 
     return qnode
-
 
 @pytest.fixture
 def drawn_parameterized_qubit_circuit_with_variable_names():
@@ -590,6 +602,38 @@ def drawn_qubit_circuit_with_probs():
     )
 
 
+@pytest.fixture
+def qubit_circuit_with_interesting_wires():
+    """A qubit ciruit with mixed-type wire labels."""
+
+    def qfunc():
+        qml.PauliX(0)
+        qml.PauliX('b')
+        qml.PauliX(-1)
+        qml.Toffoli(wires=['b', 'q2', 0])
+
+        return qml.expval(qml.PauliY(0))
+
+    dev = qml.device("default.qubit", wires=[0, 'q2', -1, 2, 3, 'b'])
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+
+@pytest.fixture
+def drawn_qubit_circuit_with_interesting_wires():
+    """The rendered circuit representation of the above qubit circuit."""
+    return (
+        "  0: ──X──╭X──┤ ⟨Y⟩ \n"
+        + " q2: ─────├C──┤     \n"
+        + " -1: ──X──│───┤     \n"
+        + "  b: ──X──╰C──┤     \n"
+    )
+
+
 class TestCircuitDrawerIntegration:
     """Test that QNodes are properly drawn."""
 
@@ -626,6 +670,14 @@ class TestCircuitDrawerIntegration:
         output = parameterized_wide_qubit_qnode.draw(show_variable_names=False)
 
         assert output == drawn_parameterized_wide_qubit_qnode_with_values
+
+    def test_qubit_circuit_with_interesting_wires(
+        self, qubit_circuit_with_interesting_wires, drawn_qubit_circuit_with_interesting_wires
+    ):
+        """Test that non-consecutive wires show correctly."""
+        output = qubit_circuit_with_interesting_wires.draw(show_variable_names=False)
+
+        assert output == drawn_qubit_circuit_with_interesting_wires
 
     def test_wide_cv_circuit(self, wide_cv_qnode, drawn_wide_cv_qnode):
         """Test that a wide CV circuit renders correctly."""

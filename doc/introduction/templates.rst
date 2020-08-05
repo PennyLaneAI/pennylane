@@ -223,6 +223,11 @@ of other templates.
     :description: ArbitraryUnitary
     :figure: ../_static/templates/subroutines/arbitraryunitary.png
 
+.. customgalleryitem::
+  :link: ../code/api/pennylane.templates.subroutines.ApproxTimeEvolution.html
+  :description: ApproxTimeEvolution
+  :figure: ../_static/templates/subroutines/approx_time_evolution.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
