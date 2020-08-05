@@ -23,12 +23,12 @@ import numpy as np
 import numpy.random
 
 import pennylane as qml
+from pennylane.wires import Wires
 from pennylane.devices.default_gaussian import (
     fock_prob,
     rotation, squeezing, quadratic_phase, beamsplitter, two_mode_squeezing, controlled_addition, controlled_phase,
     vacuum_state, coherent_state, squeezed_state, displaced_squeezed_state, thermal_state,
     DefaultGaussian)
-
 
 
 U = np.array(
@@ -340,8 +340,8 @@ class TestDefaultGaussianDevice:
             r = 0.652
             phi_r = -0.124
 
-            gaussian_dev.apply('DisplacedSqueezedState', wires=[0], par=[a, phi_a, r, phi_r])
-            gaussian_dev.apply('DisplacedSqueezedState', wires=[1], par=[a, phi_a, r, phi_r])
+            gaussian_dev.apply('DisplacedSqueezedState', wires=Wires([0]), par=[a, phi_a, r, phi_r])
+            gaussian_dev.apply('DisplacedSqueezedState', wires=Wires([1]), par=[a, phi_a, r, phi_r])
 
             # get the equivalent pennylane operation class
             op = qml.ops.__getattribute__(gate_name)
@@ -391,7 +391,7 @@ class TestDefaultGaussianDevice:
 
                     expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
 
-            gaussian_dev.apply(gate_name, wires=w, par=p)
+            gaussian_dev.apply(gate_name, wires=Wires(w), par=p)
 
             # verify the device is now in the expected state
             assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
@@ -402,16 +402,16 @@ class TestDefaultGaussianDevice:
 
         with pytest.raises(ValueError, match='incorrect size for the number of subsystems'):
             p = [thermal_state(0.5)]
-            gaussian_dev.apply('GaussianState', wires=[0], par=[p])
+            gaussian_dev.apply('GaussianState', wires=Wires([0]), par=[p])
 
         with pytest.raises(ValueError, match='Incorrect number of subsystems'):
             p = U
-            gaussian_dev.apply('Interferometer', wires=[0], par=[p])
+            gaussian_dev.apply('Interferometer', wires=Wires([0]), par=[p])
 
-        with pytest.raises(ValueError, match="Invalid target subsystems provided in 'wires' argument"):
+        with pytest.raises(qml.wires.WireError, match="Did not find some of the wires"):
             p = U2
             #dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
-            gaussian_dev.apply('Interferometer', wires=[0, 1, 2], par=[p])
+            gaussian_dev.apply('Interferometer', wires=Wires([0, 1, 2]), par=[p])
 
     def test_expectation(self, tol):
         """Test that expectation values are calculated correctly"""
@@ -421,25 +421,25 @@ class TestDefaultGaussianDevice:
         # test correct mean for <n> of a displaced thermal state
         nbar = 0.5431
         alpha = 0.324-0.59j
-        dev.apply('ThermalState', wires=[0], par=[nbar])
-        dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        mean = dev.expval('NumberOperator', [0], [])
+        dev.apply('ThermalState', wires=Wires([0]), par=[nbar])
+        dev.apply('Displacement', wires=Wires([0]), par=[alpha, 0])
+        mean = dev.expval('NumberOperator', Wires([0]), [])
         assert mean == pytest.approx(np.abs(alpha)**2+nbar, abs=tol)
 
         # test correct mean for Homodyne P measurement
         alpha = 0.324-0.59j
-        dev.apply('CoherentState', wires=[0], par=[alpha])
-        mean = dev.expval('P', [0], [])
+        dev.apply('CoherentState', wires=Wires([0]), par=[alpha])
+        mean = dev.expval('P', Wires([0]), [])
         assert mean == pytest.approx(alpha.imag*np.sqrt(2*hbar), abs=tol)
 
         # test correct mean for Homodyne measurement
-        mean = dev.expval('QuadOperator', [0], [np.pi/2])
+        mean = dev.expval('QuadOperator', Wires([0]), [np.pi/2])
         assert mean == pytest.approx(alpha.imag*np.sqrt(2*hbar), abs=tol)
 
         # test correct mean for number state expectation |<n|alpha>|^2
         # on a coherent state
         for n in range(3):
-            mean = dev.expval('FockStateProjector', [0], [np.array([n])])
+            mean = dev.expval('FockStateProjector', Wires([0]), [np.array([n])])
             expected = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             assert mean == pytest.approx(expected, abs=tol)
 
@@ -447,8 +447,8 @@ class TestDefaultGaussianDevice:
         # on a squeezed state
         n = 1
         r = 0.4523
-        dev.apply('SqueezedState', wires=[0], par=[r, 0])
-        mean = dev.expval('FockStateProjector', [0], [np.array([2*n])])
+        dev.apply('SqueezedState', wires=Wires([0]), par=[r, 0])
+        mean = dev.expval('FockStateProjector', Wires([0]), [np.array([2*n])])
         expected = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         assert mean == pytest.approx(expected, abs=tol)
 
@@ -458,9 +458,9 @@ class TestDefaultGaussianDevice:
 
         nbar = 0.5431
         alpha = 0.324-0.59j
-        dev.apply('ThermalState', wires=[0], par=[nbar])
-        dev.apply('Displacement', wires=[0], par=[alpha, 0])
-        var = dev.var('NumberOperator', [0], [])
+        dev.apply('ThermalState', wires=Wires([0]), par=[nbar])
+        dev.apply('Displacement', wires=Wires([0]), par=[alpha, 0])
+        var = dev.var('NumberOperator', Wires([0]), [])
         assert var == pytest.approx(nbar**2+nbar+np.abs(alpha)**2*(1+2*nbar), abs=tol)
 
     def test_variance_coherent_homodyne(self, tol):
@@ -468,12 +468,12 @@ class TestDefaultGaussianDevice:
         dev = qml.device('default.gaussian', wires=1, hbar=hbar)
 
         alpha = 0.324-0.59j
-        dev.apply('CoherentState', wires=[0], par=[alpha])
-        var = dev.var('P', [0], [])
+        dev.apply('CoherentState', wires=Wires([0]), par=[alpha])
+        var = dev.var('P', Wires([0]), [])
         assert var == pytest.approx(hbar/2, abs=tol)
 
         # test correct mean and variance for Homodyne measurement
-        var = dev.var('QuadOperator', [0], [np.pi/2])
+        var = dev.var('QuadOperator', Wires([0]), [np.pi/2])
         assert var == pytest.approx(hbar/2, abs=tol)
 
     def test_variance_coherent_numberstate(self, tol):
@@ -484,10 +484,10 @@ class TestDefaultGaussianDevice:
 
         alpha = 0.324-0.59j
 
-        dev.apply('CoherentState', wires=[0], par=[alpha])
+        dev.apply('CoherentState', wires=Wires([0]), par=[alpha])
 
         for n in range(3):
-            var = dev.var('FockStateProjector', [0], [np.array([n])])
+            var = dev.var('FockStateProjector', Wires([0]), [np.array([n])])
             mean = np.abs(np.exp(-np.abs(alpha)**2/2)*alpha**n/np.sqrt(fac(n)))**2
             assert var == pytest.approx(mean*(1-mean), abs=tol)
 
@@ -499,26 +499,22 @@ class TestDefaultGaussianDevice:
 
         n = 1
         r = 0.4523
-        dev.apply('SqueezedState', wires=[0], par=[r, 0])
-        var = dev.var('FockStateProjector', [0], [np.array([2*n])])
+        dev.apply('SqueezedState', wires=Wires([0]), par=[r, 0])
+        var = dev.var('FockStateProjector', Wires([0]), [np.array([2*n])])
         mean = np.abs(np.sqrt(fac(2*n))/(2**n*fac(n))*(-np.tanh(r))**n/np.sqrt(np.cosh(r)))**2
         assert var == pytest.approx(mean*(1-mean), abs=tol)
 
     def test_reduced_state(self, gaussian_dev, tol):
         """Test reduced state"""
 
-        # Test error is raised if requesting a non-existant subsystem
-        with pytest.raises(ValueError, match="specified wires cannot be larger than the number of subsystems"):
-            gaussian_dev.reduced_state([6, 4])
-
         # Test requesting via an integer
-        res = gaussian_dev.reduced_state(0)
-        expected = gaussian_dev.reduced_state([0])
+        res = gaussian_dev.reduced_state(Wires(0))
+        expected = gaussian_dev.reduced_state(Wires([0]))
         assert res[0] == pytest.approx(expected[0], abs=tol)
         assert res[1] == pytest.approx(expected[1], abs=tol)
 
         # Test requesting all wires returns the full state
-        res = gaussian_dev.reduced_state([0, 1])
+        res = gaussian_dev.reduced_state(Wires([0, 1]))
         expected = gaussian_dev._state
         assert res[0] == pytest.approx(expected[0], abs=tol)
         assert res[1] == pytest.approx(expected[1], abs=tol)
@@ -541,11 +537,11 @@ class TestSample:
 
         mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
         std = gaussian_device_1_wire.hbar/2
-        gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
+        gaussian_device_1_wire.apply('CoherentState', wires=Wires([0]), par=[alpha])
 
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
-            sample = gaussian_device_1_wire.sample('P', [0], [])
+            gaussian_device_1_wire.sample('P', Wires([0]), [])
             assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("alpha", [0.324-0.59j, 2.3+1.2j, 1.3j, -1.2])
@@ -555,11 +551,11 @@ class TestSample:
 
         mean = alpha.imag*np.sqrt(2*gaussian_device_1_wire.hbar)
         std = gaussian_device_1_wire.hbar/2
-        gaussian_device_1_wire.apply('CoherentState', wires=[0], par=[alpha])
+        gaussian_device_1_wire.apply('CoherentState', wires=Wires([0]), par=[alpha])
 
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
-            sample = gaussian_device_1_wire.sample('QuadOperator', [0], [np.pi/2])
+            gaussian_device_1_wire.sample('QuadOperator', Wires([0]), [np.pi/2])
             assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
@@ -569,11 +565,11 @@ class TestSample:
 
         mean = 0.0
         std = np.sqrt(gaussian_device_1_wire.hbar*np.exp(2*r)/2)
-        gaussian_device_1_wire.apply('SqueezedState', wires=[0], par=[r, phi])
+        gaussian_device_1_wire.apply('SqueezedState', wires=Wires([0]), par=[r, phi])
 
         with monkeypatch.context() as m:
             m.setattr(numpy.random, 'normal', input_logger)
-            sample = gaussian_device_1_wire.sample('P', [0], [])
+            gaussian_device_1_wire.sample('P', Wires([0]), [])
             assert np.allclose(input_logger.args, [mean, std, gaussian_device_1_wire.shots], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable,n_sample", [('P', 10), ('P', 25), ('X', 1), ('X', 16)])
@@ -581,7 +577,7 @@ class TestSample:
         """Test that the sample function outputs samples of the right size"""
 
         gaussian_device_2_wires.shots = n_sample
-        sample = gaussian_device_2_wires.sample(observable, [0], [])
+        sample = gaussian_device_2_wires.sample(observable, Wires([0]), [])
 
         assert np.array_equal(sample.shape, (n_sample,))
         assert sample.dtype == np.dtype("float")

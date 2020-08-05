@@ -121,7 +121,33 @@ def device(name, *args, **kwargs):
     details.
 
     All devices must be loaded by specifying their **short-name** as listed above,
-    followed by the number of *wires* (subsystems) you wish to initialize.
+    followed by the **wires** (subsystems) you wish to initialize. The *wires*
+    argument can be an integer, in which case the wires of the device are addressed
+    by consecutive integers:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=5)
+
+        def circuit():
+           qml.Hadamard(wires=1)
+           qml.Hadamard(wires=[0])
+           qml.CNOT(wires=[3, 4])
+           ...
+
+    The *wires* argument can also be a sequence of unique numbers or strings, specifying custom wire labels
+    that the user employs to address the wires:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
+
+        def circuit():
+           qml.Hadamard(wires='q11')
+           qml.Hadamard(wires=['ancilla'])
+           qml.CNOT(wires=['q12', -1] )
+           ...
+
 
     Some devices may accept additional arguments. For instance,
     ``default.gaussian`` accepts the keyword argument ``hbar``, to set

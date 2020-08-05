@@ -2,13 +2,35 @@
 
 <h3>New features since last release</h3>
 
-* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used
-  to run generic tests on core or external devices calling
-
+* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
+  can be strings or numbers. For this, pass a list to the wires argument when creating the device:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
+  ```
+  The quantum operations are now called with the custom wire labels:
+    
+  ``` python
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...    qml.Hadamard(wires='anc2')
+  ...    qml.CNOT(wires=['anc1', 3])
+  ...    ...
+  ```
+  The existing behaviour, in which the number of wires is specified on device initialization,
+  continues to work as usual.   
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=5)
+  ``` 
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
+ 
+* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
+  to run generic tests on core or external devices calling 
+  
   ```pycon
   >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
-  ```
-
+  ``` 
   The command line arguments are optional.
 
   * If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
@@ -62,6 +84,10 @@
   >>> coeffs, obs_list = decompose_hamiltonian(A)
   ```
 
+* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which 
+  can be used to implement Trotterized time-evolution under a Hamiltonian.
+  [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
+
 <h3>Improvements</h3>
 
 * The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to 
@@ -86,6 +112,10 @@
   [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
   ```
 
+* Refactor of the QNode queuing architecture.
+  [(#722)](https://github.com/PennyLaneAI/pennylane/pull/722)
+  [(#728)](https://github.com/PennyLaneAI/pennylane/pull/728)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -100,7 +130,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
+Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
@@ -211,6 +241,9 @@ Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
 <h3>Improvements</h3>
+
+* Improves the wire management by making the ``Operator.wires`` attribute a ``wires`` object.
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
 * A significant improvement with respect to how QNodes and interfaces mark quantum function
   arguments as differentiable when using Autograd, designed to improve performance and make

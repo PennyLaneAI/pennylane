@@ -22,6 +22,8 @@ from pennylane.operation import Tensor
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.qnodes import BaseQNode
 from pennylane.variable import Variable
+from pennylane.wires import Wires
+
 
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""
@@ -46,8 +48,8 @@ class TestCircuitGraphHash:
     @pytest.mark.parametrize("queue, observable_queue, expected_string", numeric_queues)
     def test_serialize_numeric_arguments(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have numeric arguments."""
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1, 2]))
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1, 2]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -67,8 +69,8 @@ class TestCircuitGraphHash:
     @pytest.mark.parametrize("queue, observable_queue, expected_string", symbolic_queue)
     def test_serialize_symbolic_argument(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have symbolic arguments."""
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0]))
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -93,8 +95,8 @@ class TestCircuitGraphHash:
     def test_serialize_numeric_and_symbolic_argument(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have both numeric and symbolic arguments."""
 
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1, 2]))
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1, 2]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -118,8 +120,8 @@ class TestCircuitGraphHash:
     def test_serialize_symbolic_argument_multiple_times(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have the same symbolic argument
         used multiple times."""
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -143,8 +145,8 @@ class TestCircuitGraphHash:
     def test_serialize_multiple_symbolic_arguments(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have multiple symbolic arguments."""
 
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
@@ -181,8 +183,8 @@ class TestCircuitGraphHash:
     def test_serialize_numeric_arguments_observables(self, queue, observable_queue, expected_string):
         """Tests that the same hash is created for two circuitgraphs that have identical queues and empty variable_deps."""
 
-        circuit_graph_1 = CircuitGraph(queue + observable_queue, {})
-        circuit_graph_2 = CircuitGraph(queue + observable_queue, {})
+        circuit_graph_1 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
+        circuit_graph_2 = CircuitGraph(queue + observable_queue, {}, Wires([0, 1]))
 
         assert circuit_graph_1.serialize() == circuit_graph_2.serialize()
         assert expected_string == circuit_graph_1.serialize()
