@@ -311,7 +311,7 @@ class RepresentationResolver:
 
         Args:
             op (pennylane.operation.Operator): The Operator instance whose representation shall be returned
-            wire (int): The Operator's wire for which the string representation shall be returned
+            wire (Wires): The Operator's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Operator
@@ -406,7 +406,7 @@ class RepresentationResolver:
 
         Args:
             obs (pennylane.ops.Observable): The Observable instance whose representation shall be returned
-            wire (int): The Observable's wire for which the string representation shall be returned
+            wire (Wires): The Observable's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Observable
@@ -436,7 +436,7 @@ class RepresentationResolver:
 
         Args:
             element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be returned
-            wire (int): The element's wire for which the string representation shall be returned
+            wire (Wires): The element's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the element

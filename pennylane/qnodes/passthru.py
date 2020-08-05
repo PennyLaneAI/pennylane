@@ -136,7 +136,9 @@ class PassthruQNode(BaseQNode):
 
         # no Variables, self.variable_deps is empty!
         # generate the DAG
-        self.circuit = pennylane.circuit_graph.CircuitGraph(self.ops, self.variable_deps)
+        self.circuit = pennylane.circuit_graph.CircuitGraph(
+            self.ops, self.variable_deps, self.device.wires
+        )
 
         # check for operations that cannot affect the output
         if self.kwargs.get("vis_check", False):

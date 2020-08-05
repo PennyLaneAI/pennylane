@@ -2,13 +2,35 @@
 
 <h3>New features since last release</h3>
 
-* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used
-  to run generic tests on core or external devices calling
-
+* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
+  can be strings or numbers. For this, pass a list to the wires argument when creating the device:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
+  ```
+  The quantum operations are now called with the custom wire labels:
+    
+  ``` python
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...    qml.Hadamard(wires='anc2')
+  ...    qml.CNOT(wires=['anc1', 3])
+  ...    ...
+  ```
+  The existing behaviour, in which the number of wires is specified on device initialization,
+  continues to work as usual.   
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=5)
+  ``` 
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
+ 
+* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used 
+  to run generic tests on core or external devices calling 
+  
   ```pycon
   >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
-  ```
-
+  ``` 
   The command line arguments are optional.
 
   * If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
@@ -215,6 +237,9 @@ Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
 <h3>Improvements</h3>
+
+* Improves the wire management by making the ``Operator.wires`` attribute a ``wires`` object.
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
 * A significant improvement with respect to how QNodes and interfaces mark quantum function
   arguments as differentiable when using Autograd, designed to improve performance and make
