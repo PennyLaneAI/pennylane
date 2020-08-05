@@ -118,6 +118,11 @@ def _flatten(x):
     """
     if isinstance(x, np.ndarray):
         yield from _flatten(x.flat)  # should we allow object arrays? or just "yield from x.flat"?
+    elif isinstance(x, qml.wires.Wires):
+        # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
+        # Since Wires are always flat, just yield.
+        for item in x:
+            yield item
     elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
         for item in x:
             yield from _flatten(item)
