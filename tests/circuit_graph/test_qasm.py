@@ -31,7 +31,7 @@ class TestToQasmUnitTests:
     def test_empty_circuit(self):
         """Test that an empty circuit graph is properly
         serialized into an empty QASM program."""
-        circuit = CircuitGraph([], {})
+        circuit = CircuitGraph([], {}, Wires([]))
         res = circuit.to_openqasm()
         expected = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
         assert res == expected
@@ -49,7 +49,7 @@ class TestToQasmUnitTests:
             qml.PauliX(wires=1),
         ]
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -83,7 +83,7 @@ class TestToQasmUnitTests:
             qml.T(wires=0).inv(),
         ]
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -109,7 +109,7 @@ class TestToQasmUnitTests:
             qml.CNOT(wires=[1, 0]),
         ]
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2, 3, 4]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -134,11 +134,11 @@ class TestToQasmUnitTests:
         """Test that gates not natively supported by QASM, such as the
         rotation gate, are correctly decomposed and serialized."""
         ops1 = [qml.Rot(0.3, 0.1, 0.2, wires=1)]
-        circuit1 = CircuitGraph(ops1, {})
+        circuit1 = CircuitGraph(ops1, {}, Wires([0, 1]))
         qasm1 = circuit1.to_openqasm()
 
         ops2 = qml.Rot.decomposition(0.3, 0.1, 0.2, wires=1)
-        circuit2 = CircuitGraph(ops2, {})
+        circuit2 = CircuitGraph(ops2, {}, Wires([0, 1]))
         qasm2 = circuit2.to_openqasm()
 
         expected = dedent(
@@ -164,11 +164,11 @@ class TestToQasmUnitTests:
         psi = np.array([1, -1, -1, 1]) / np.sqrt(4)
 
         ops1 = [qml.QubitStateVector(psi, wires=[0, 1])]
-        circuit1 = CircuitGraph(ops1, {})
+        circuit1 = CircuitGraph(ops1, {}, Wires([0, 1]))
         qasm1 = circuit1.to_openqasm()
 
         ops2 = qml.QubitStateVector.decomposition(psi, wires=[0, 1])
-        circuit2 = CircuitGraph(ops2, {})
+        circuit2 = CircuitGraph(ops2, {}, Wires([0, 1]))
         qasm2 = circuit2.to_openqasm()
 
         expected = dedent(
@@ -201,11 +201,11 @@ class TestToQasmUnitTests:
         basis_state = np.array([1, 0, 1, 1])
 
         ops1 = [qml.BasisState(basis_state, wires=[0, 1, 2, 3])]
-        circuit1 = CircuitGraph(ops1, {})
+        circuit1 = CircuitGraph(ops1, {}, Wires([0, 1, 2, 3]))
         qasm1 = circuit1.to_openqasm()
 
         ops2 = qml.BasisState.decomposition(basis_state, wires=[0, 1, 2, 3])
-        circuit2 = CircuitGraph(ops2, {})
+        circuit2 = CircuitGraph(ops2, {}, Wires([0, 1, 2, 3]))
         qasm2 = circuit2.to_openqasm()
 
         expected = dedent(
@@ -233,7 +233,7 @@ class TestToQasmUnitTests:
         U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         ops = [qml.S(wires=0), qml.QubitUnitary(U, wires=[0, 1])]
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1]))
 
         with pytest.raises(
             qml.DeviceError, match="Gate QubitUnitary not supported on device QASM serializer"
@@ -250,7 +250,7 @@ class TestToQasmUnitTests:
             qml.expval(qml.Hadamard(2)),
         ]
 
-        circuit = CircuitGraph(ops, {})
+        circuit = CircuitGraph(ops, {}, Wires([0, 1, 2]))
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -272,7 +272,7 @@ class TestToQasmUnitTests:
         assert res == expected
 
         ops2 = circuit.operations + circuit.diagonalizing_gates
-        circuit2 = CircuitGraph(ops2, {})
+        circuit2 = CircuitGraph(ops2, {}, Wires([0, 1, 2]))
         qasm2 = circuit2.to_openqasm()
 
         assert res == qasm2
@@ -724,23 +724,23 @@ class TestQASMConformanceTests:
 
         # operations
         assert gates[0].name == "h"
-        assert gates[0].wires == [0]  #Wires([0])
+        assert gates[0].wires == Wires([0])
 
         assert gates[1].name == "ry"
-        assert gates[1].wires == [0]  #Wires([0])
-        assert gates[1].params == [params[1]]
+        assert gates[1].wires == Wires([0])
+        assert gates[1].data == [params[1]]
 
         assert gates[2].name == "cx"
-        assert gates[2].wires == [0,1]  #Wires([0, 1])
+        assert gates[2].wires == Wires([0, 1])
 
         assert gates[4].name == "rx"
-        assert gates[4].wires == [1]  #Wires([1])
-        assert gates[4].params == [params[0]]
+        assert gates[4].wires == Wires([1])
+        assert gates[4].data == [params[0]]
 
         # rotations
         assert gates[3].name == "h"
-        assert gates[3].wires == [0]  #Wires([0])
+        assert gates[3].wires == Wires([0])
 
         assert gates[5].name == "ry"
-        assert gates[5].wires == [2]  #Wires([2])
-        assert gates[5].params == [-np.pi / 4]
+        assert gates[5].wires == Wires([2])
+        assert gates[5].data == [-np.pi / 4]

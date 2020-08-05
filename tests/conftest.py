@@ -20,11 +20,12 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.plugins import DefaultGaussian
+from pennylane.devices import DefaultGaussian
 
 # defaults
 TOL = 1e-3
 TF_TOL = 2e-2
+
 
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
@@ -37,10 +38,12 @@ def tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TOL", TOL))
 
+
 @pytest.fixture(scope="session")
 def tf_tol():
     """Numerical tolerance for equality tests."""
     return float(os.environ.get("TF_TOL", TF_TOL))
+
 
 @pytest.fixture(scope="session", params=[1, 2])
 def n_layers(request):
@@ -79,10 +82,12 @@ def gaussian_device(n_subsystems):
     """Number of qubits or modes."""
     return DummyDevice(wires=n_subsystems)
 
+
 @pytest.fixture(scope="session")
 def gaussian_dummy():
-    """Number of qubits or modes."""
+    """Gaussian device with dummy Kerr gate."""
     return DummyDevice
+
 
 @pytest.fixture(scope="session")
 def gaussian_device_2_wires():
@@ -151,6 +156,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, 'short_name', 'mock_device')
         m.setattr(dev, 'capabilities', lambda cls: {"model": "qubit"})
         yield qml.Device(wires=2)
+
 
 @pytest.fixture
 def tear_down_hermitian():

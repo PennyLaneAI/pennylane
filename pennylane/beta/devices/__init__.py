@@ -14,7 +14,7 @@
 r"""
 This package contains experimental plugin devices for PennyLane.
 
-.. currentmodule:: pennylane.beta.plugins
+.. currentmodule:: pennylane.beta.devices
 """
 from .default_tensor import DefaultTensor
 from .default_tensor_tf import DefaultTensorTF
