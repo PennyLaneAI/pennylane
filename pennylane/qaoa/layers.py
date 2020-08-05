@@ -55,7 +55,7 @@ def cost_layer(hamiltonian):
 
     .. UsageDetails::
 
-        To define a cost layer, one must define a cost Hamiltonian
+        We define a cost Hamiltonian and pass it into ``cost_layer``:
         and pass it into ``cost_layer``:
 
         .. code-block:: python
@@ -119,8 +119,7 @@ def mixer_layer(hamiltonian):
 
     .. UsageDetails::
 
-        To define a mixer layer, one must define a mixer Hamiltonian
-        and pass it into ``mixer_layer``:
+        We define a mixer Hamiltonian and pass it into ``mixer_layer``:
 
         .. code-block:: python
 

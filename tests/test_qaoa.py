@@ -251,7 +251,7 @@ class TestLayers:
         )
 
     def test_mixer_layer_output(self):
-        """Tests that the gates of the mixer layer is correct"""
+        """Tests that the gates of the mixer layer are correct"""
 
         alpha = 1
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
