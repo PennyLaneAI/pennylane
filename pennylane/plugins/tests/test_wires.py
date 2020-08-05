@@ -18,23 +18,44 @@ import pytest
 from pennylane import numpy as np
 
 
+# ===== Factories for different circuits using arbitrary wire labels and numbers
+
+def make_simple_circuit_expval(device, wires):
+    """Factory for a qnode returning expvals."""
+
+    n_wires = len(wires)
+
+    @qml.qnode(device)
+    def circuit():
+        qml.RX(0.5, wires=wires[0 % n_wires])
+        qml.RY(2.0, wires=wires[1 % n_wires])
+        if n_wires > 1:
+            qml.CNOT(wires=[wires[0], wires[1]])
+        return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
+
+    return circuit
+
+
+def make_simple_circuit_var(device, wires):
+    """Factory for a qnode returning variances."""
+
+    n_wires = len(wires)
+
+    @qml.qnode(device)
+    def circuit():
+        qml.RX(0.5, wires=wires[0 % n_wires])
+        qml.RY(2.0, wires=wires[1 % n_wires])
+        if n_wires > 1:
+            qml.CNOT(wires=[wires[0], wires[1]])
+        return [qml.var(qml.PauliZ(wires=w)) for w in wires]
+
+    return circuit
+
+# =====
+
+
 class TestWiresIntegration:
     """Test that the device integrates with PennyLane's wire management."""
-
-    def make_circuit_expval(self, device, wires):
-        """Factory for a qnode returning expvals using arbitrary wire labels."""
-
-        n_wires = len(wires)
-
-        @qml.qnode(device)
-        def circuit():
-            qml.RX(0.5, wires=wires[0 % n_wires])
-            qml.RY(2.0, wires=wires[1 % n_wires])
-            if n_wires > 1:
-                qml.CNOT(wires=[wires[0], wires[1]])
-            return [qml.expval(qml.PauliZ(wires=w)) for w in wires]
-
-        return circuit
 
     @pytest.mark.parametrize(
         "wires1, wires2",
@@ -44,14 +65,16 @@ class TestWiresIntegration:
             (["a", "c"], [3, 0]),
             ([-1, -2], ["ancilla", 2]),
             (["a"], ["nothing"]),
-        ],
+        ]
     )
-    def test_wires_expval(self, device, wires1, wires2, tol):
+    @pytest.mark.parametrize("circuit_factory", [make_simple_circuit_expval,
+                                                 make_simple_circuit_var])
+    def test_wires_expval(self, device, circuit_factory, wires1, wires2, tol):
         """Test that the expectation of a circuit is independent from the wire labels used."""
         dev1 = device(wires1)
         dev2 = device(wires2)
 
-        circuit1 = self.make_circuit_expval(dev1, wires1)
-        circuit2 = self.make_circuit_expval(dev2, wires2)
+        circuit1 = circuit_factory(dev1, wires1)
+        circuit2 = circuit_factory(dev2, wires2)
 
         assert np.allclose(circuit1(), circuit2(), tol(dev1.analytic))
