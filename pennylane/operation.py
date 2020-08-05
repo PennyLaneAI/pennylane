@@ -1213,12 +1213,12 @@ class CV:
 
     # pylint: disable=no-member
 
-    def heisenberg_expand(self, U, register):
+    def heisenberg_expand(self, U, wires):
         """Expand the given local Heisenberg-picture array into a full-system one.
 
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
-            register (Wires): wires on the device that the observable gets applied to
+            wires (Wires): wires on the device that the observable gets applied to
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
@@ -1236,21 +1236,22 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
-        if len(register) == 0 or len(self.wires) == len(register):
+        if len(wires) == 0 or len(self.wires) == len(wires):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
-        if self.wires not in register:
+        if self.wires not in wires:
             raise ValueError(
                 "{}: Some observable wires {} do not exist on this device with wires {}".format(
-                    self.name, self.wires, register
+                    self.name, self.wires, wires
                 )
             )
 
-        wire_indices = register.indices(self.wires)
+        # get the indices that the operation's wires have on the device
+        wire_indices = wires.indices(self.wires)
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
-        dim = 1 + len(register) * 2
+        dim = 1 + len(wires) * 2
 
         def loc(w):
             "Returns the slice denoting the location of (x_w, p_w) in the basis."
@@ -1361,7 +1362,7 @@ class CVOperation(CV, Operation):
         U1 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return (U2 - U1) * multiplier  # partial derivative of the transformation
 
-    def heisenberg_tr(self, register, inverse=False):
+    def heisenberg_tr(self, wires, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried
         out by the gate at current parameter values.
 
@@ -1379,7 +1380,7 @@ class CVOperation(CV, Operation):
         for non-Gaussian (and non-CV) gates.
 
         Args:
-            register (Wires): wires on the device that the observable gets applied to
+            wires (Wires): wires on the device that the observable gets applied to
             inverse  (bool): if True, return the inverse transformation instead
 
         Raises:
@@ -1405,7 +1406,7 @@ class CVOperation(CV, Operation):
                 )
             )
 
-        return self.heisenberg_expand(U, register)
+        return self.heisenberg_expand(U, wires)
 
 
 class CVObservable(CV, Observable):
@@ -1428,7 +1429,7 @@ class CVObservable(CV, Observable):
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
-    def heisenberg_obs(self, register):
+    def heisenberg_obs(self, wires):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
@@ -1441,10 +1442,10 @@ class CVObservable(CV, Observable):
           such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
 
         Args:
-            register (Wires): wires on the device that the observable gets applied to
+            wires (Wires): wires on the device that the observable gets applied to
         Returns:
             array[float]: :math:`q`
         """
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        return self.heisenberg_expand(U, register)
+        return self.heisenberg_expand(U, wires)
