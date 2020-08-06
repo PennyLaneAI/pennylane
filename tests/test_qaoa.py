@@ -180,7 +180,7 @@ class TestCostHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
             qaoa.maxcut(graph)
 
     @pytest.mark.parametrize(("graph", "target_hamiltonian"), MAXCUT)
@@ -226,39 +226,30 @@ class TestLayers:
 
         hamiltonian = [[1, 1], [1, 1]]
 
-        with pytest.raises(ValueError) as info:
-            output = qaoa.mixer_layer(hamiltonian)
-
-        assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
+        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+            qaoa.mixer_layer(0.1, hamiltonian)
 
     def test_cost_layer_errors(self):
         """Tests that the cost layer is throwing the correct errors"""
 
         hamiltonian = [[1, 1], [1, 1]]
 
-        with pytest.raises(ValueError) as info:
-            output = qaoa.cost_layer(hamiltonian)
-
-        assert "hamiltonian must be of type pennylane.Hamiltonian, got list" in str(info.value)
+        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+            qaoa.cost_layer(0.1, hamiltonian)
 
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
 
-        with pytest.raises(ValueError) as info:
-            output = qaoa.cost_layer(hamiltonian)
-
-        assert "hamiltonian must be written only in terms of PauliZ and Identity gates" in str(
-            info.value
-        )
+        with pytest.raises(ValueError, match=r"hamiltonian must be written only in terms of PauliZ and Identity gates"):
+            qaoa.cost_layer(0.1, hamiltonian)
 
     def test_mixer_layer_output(self):
         """Tests that the gates of the mixer layer are correct"""
 
         alpha = 1
         hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
-        mixer = qaoa.mixer_layer(hamiltonian)
 
         with qml._queuing.OperationRecorder() as rec1:
-            mixer(alpha)
+            qaoa.mixer_layer(alpha, hamiltonian)
 
         with qml._queuing.OperationRecorder() as rec2:
             ApproxTimeEvolution(hamiltonian, 1, 1)
@@ -273,18 +264,17 @@ class TestLayers:
     def test_cost_layer_output(self):
         """Tests that the gates of the cost layer is correct"""
 
-    gamma = 1
-    hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
-    cost = qaoa.cost_layer(hamiltonian)
+        gamma = 1
+        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
 
-    with qml._queuing.OperationRecorder() as rec1:
-        cost(gamma)
+        with qml._queuing.OperationRecorder() as rec1:
+            qaoa.cost_layer(gamma, hamiltonian)
 
-    with qml._queuing.OperationRecorder() as rec2:
-        ApproxTimeEvolution(hamiltonian, 1, 1)
+        with qml._queuing.OperationRecorder() as rec2:
+            ApproxTimeEvolution(hamiltonian, 1, 1)
 
-    for i, j in zip(rec1.operations, rec2.operations):
-        prep = [i.name, i.parameters, i.wires]
-        target = [j.name, j.parameters, j.wires]
+        for i, j in zip(rec1.operations, rec2.operations):
+            prep = [i.name, i.parameters, i.wires]
+            target = [j.name, j.parameters, j.wires]
 
         assert prep == target
