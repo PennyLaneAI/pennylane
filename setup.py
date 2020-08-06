@@ -47,14 +47,14 @@ info = {
             'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
             ],
         'console_scripts': [
-                'pl-device-test=pennylane.plugins.tests:cli'
+                'pl-device-test=pennylane.devices.tests:cli'
             ]
         },
     'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
     'long_description': open('README.rst').read(),
     'provides': ["pennylane"],
     'install_requires': requirements,
-    'package_data': {'pennylane': ['plugins/tests/pytest.ini']},
+    'package_data': {'pennylane': ['devices/tests/pytest.ini']},
     'include_package_data': True
 }
 
