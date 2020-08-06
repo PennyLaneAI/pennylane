@@ -21,24 +21,17 @@ import types
 from collections.abc import Iterable
 
 from pennylane.templates.decorator import template
-from pennylane.templates.utils import check_type, get_shape
-from pennylane.wires import Wires
-
 
 ###################
 
 
 @template
-def repeat(unitary, wires, depth, parameters=None, kwargs=None):
-    r"""Repeatedly applies a series of quantum gates or templates.
+def repeat(circuit, depth, *args, **kwargs):
+    r"""Repeatedly applies a function containing quantum gates or templates
 
     Args:
-        unitary (function): A function that applies the quantum gates/templates being repeated.
-        This function must have a signature of the form ``(parameters, wires, **kwargs)`` or ``(wires, **kwargs)``.
-        wires (list): The wires on which ``unitary`` acts
-        depth (int): The number of times ``unitary`` is repeatedly applied
-        parameters (list): A list of parameters that are passed into each application of ``unitary``
-        kwargs (list[dict]): A list of dictionaries of auxiliary parameters for each layer of ``unitaries``
+        circuit (function): A function that applies the quantum gates/templates being repeated.
+        depth (int): The number of time ``circuit`` is repeatedly applied.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -121,45 +114,11 @@ def repeat(unitary, wires, depth, parameters=None, kwargs=None):
     ##############
     # Input checks
 
-    wires = Wires(wires)
-
     if not isinstance(depth, int):
         raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
 
-    check_type(
-        parameters,
-        [Iterable, type(None)],
-        msg="'parameters' must be either of type None or "
-        "Iterable; got {}".format(type(parameters)),
-    )
-
-    if kwargs is None:
-        kwargs = [{} for i in range(0, depth)]
-
-    if not isinstance(kwargs, list):
-        raise ValueError("'kwargs' must be a list; got {}".format(type(kwargs)))
-
-    for i in kwargs:
-        check_type(
-            i, [dict], msg="Elements of 'kwargs' must be dictionaries; got {}".format(type(i)),
-        )
-
-    if len(kwargs) != depth:
-        raise ValueError("Expected length of 'kwargs' to be {}, got {}".format(depth, len(kwargs)))
-
-
     ##############
 
-
-    if parameters is not None:
-        shape = get_shape(parameters)
-
-        if int(shape[0]) != depth:
-            raise ValueError("Expected first dimension of 'parameters' to be {}; got {}".format(depth, int(shape[0])))
-
-        for i, param in enumerate(parameters):
-            unitary(param, wires, **kwargs[i])
-
-    else:
-        for i in range(0, depth):
-            unitary(wires, **kwargs[i])
+    for i in range(0, depth):
+        arg_params = [k[i] for k in args]
+        circuit(*arg_params, **kwargs)
