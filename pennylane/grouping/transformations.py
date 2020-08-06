@@ -77,7 +77,7 @@ def diagonalize_qwc_grouping(qwc_grouping):
             qubit-wise commutative.
 
     Returns:
-        U (list[Operation]): an instance of the qwc_rotation template which diagonalizes the
+        unitary (list[Operation]): an instance of the qwc_rotation template which diagonalizes the
             qubit-wise commuting grouping.
         diag_terms (list[Observable]): list of Pauli string observables diagonal in the
             computational basis.
