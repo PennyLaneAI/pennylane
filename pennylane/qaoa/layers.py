@@ -41,7 +41,7 @@ def _diagonal_terms(hamiltonian):
 
 
 def cost_layer(gamma, hamiltonian):
-    r"""Returns the QAOA cost layer corresponding to a cost Hamiltonian.
+    r"""Applies the QAOA cost layer corresponding to a cost Hamiltonian.
 
     For the cost Hamiltonian :math:`H_C`, this is defined as the following unitary:
 
