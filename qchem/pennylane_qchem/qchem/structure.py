@@ -142,9 +142,13 @@ def meanfield(
     Also, the spin multiplicity can be input to determine the number of unpaired electrons
     occupying the HF orbitals as illustrated in the figure below.
 
+    |
+
     .. figure:: ../../_static/qchem/hf_references.png
         :align: center
         :width: 50%
+
+    |
 
     Args:
         name (str): molecule label
@@ -220,9 +224,13 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     - Active orbitals can be occupied by zero, one, or two electrons
     - The external orbitals are never occupied
 
+    |
+
     .. figure:: ../../_static/qchem/sketch_active_space.png
         :align: center
         :width: 50%
+
+    |
 
     .. note::
         The number of active *spin*-orbitals ``2*nact_orbs`` determines the number of
