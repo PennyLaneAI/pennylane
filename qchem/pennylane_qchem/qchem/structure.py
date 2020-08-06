@@ -57,7 +57,7 @@ def read_structure(filepath, outpath="."):
     If `Open Babel <https://openbabel.org/>`_ is installed,
     `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
     is also supported. Additionally, the new file ``structure.xyz``,
-    containing the inputted geometry, is created in a directory with path given by
+    containing the input geometry, is created in a directory with path given by
     ``outpath``.
 
     Open Babel can be installed using ``apt`` if on Ubuntu:
@@ -139,7 +139,7 @@ def meanfield(
     ``os.path.join(outpath, package, basis)``.
 
     Args:
-        name (str): String used to label the molecule
+        name (str): molecule label
         geometry (list): List containing the symbol and Cartesian coordinates for each atom
         charge (int): Net charge of the system
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
@@ -154,7 +154,7 @@ def meanfield(
         outpath (str): Path to output directory
 
     Returns:
-        str: full path to the file containing the mean field electronic structure
+        str: absolute path to the file containing the mean field electronic structure
 
     **Example**
 
@@ -512,7 +512,7 @@ def molecular_hamiltonian(
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
 
-    #. The starting point is reading the file containing the geometry of the molecule.
+    #. The process begins by reading the file containing the geometry of the molecule.
 
     #. OpenFermion-PySCF or OpenFermion-Psi4 plugins are used to launch
        the Hartree-Fock (HF) calculation for the polyatomic system using the quantum

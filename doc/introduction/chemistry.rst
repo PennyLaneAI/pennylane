@@ -107,7 +107,7 @@ the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`
         package='pyscf'
     )
 
-The output variable ``hf_file`` stores the full path to the file ``'water.hd5'`` containing
+The output ``hf_file`` is the absolute path to the file ``'water.hd5'`` containing
 the Hartree-Fock electronic structure of the water molecule.
 
 Mapping the Hamiltonian to the Pauli basis
@@ -119,6 +119,7 @@ core, active, and external orbitals. Within this approximation, a certain number
 
 .. code-block:: python
 
+    from openfermion import MolecularData
     water = MolecularData(filename=hf_file)
     core, active = qml.qchem.active_space(
         water.n_electrons,
