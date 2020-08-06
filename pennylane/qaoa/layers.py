@@ -16,6 +16,7 @@ Methods that define cost and mixer layers for use in QAOA workflows.
 """
 import pennylane as qml
 from pennylane.operation import Tensor
+from pennylane.templates import ApproxTimeEvolution
 
 
 def _diagonal_terms(hamiltonian):
@@ -35,11 +36,12 @@ def _diagonal_terms(hamiltonian):
         for j in i.obs:
             if j.name not in ("PauliZ", "Identity"):
                 val = False
+                break
 
     return val
 
 
-def cost_layer(hamiltonian):
+def cost_layer(gamma, hamiltonian):
     r"""Returns the QAOA cost layer corresponding to a cost Hamiltonian.
 
     For the cost Hamiltonian :math:`H_C`, this is defined as the following unitary:
@@ -49,6 +51,7 @@ def cost_layer(hamiltonian):
     where :math:`\gamma` is a variational parameter.
 
     Args:
+        gamma (int or float): The variational parameter passed into the cost layer
         hamiltonian (.Hamiltonian): The cost Hamiltonian
 
     Raises:
@@ -56,8 +59,7 @@ def cost_layer(hamiltonian):
 
     .. UsageDetails::
 
-        We define a cost Hamiltonian and pass it into ``cost_layer``:
-        and pass it into ``cost_layer``:
+        We first define a cost Hamiltonian:
 
         .. code-block:: python3
 
@@ -65,9 +67,8 @@ def cost_layer(hamiltonian):
             import pennylane as qml
 
             cost_h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
-            cost_layer = qaoa.cost_layer(cost_h)
 
-        We can then use the cost layer within a quantum circuit:
+        We can then pass it into ``qaoa.cost_layer``, within a quantum circuit:
 
         .. code-block:: python
 
@@ -79,7 +80,7 @@ def cost_layer(hamiltonian):
                 for i in range(2):
                     qml.Hadamard(wires=i)
 
-                cost_layer(gamma)
+                cost_layer(gamma, cost_h)
 
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
 
@@ -101,10 +102,10 @@ def cost_layer(hamiltonian):
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
 
-    return lambda gamma: qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
+    ApproxTimeEvolution(hamiltonian, gamma, 1)
 
 
-def mixer_layer(hamiltonian):
+def mixer_layer(alpha, hamiltonian):
     r"""Returns the QAOA cost layer corresponding to a mixer Hamiltonian.
 
     For a mixer Hamiltonian :math:`H_M`, this is defined as the following unitary:
@@ -114,11 +115,12 @@ def mixer_layer(hamiltonian):
     where :math:`\alpha` is a variational parameter.
 
     Args:
+        alpha (int or float): The variational parameter passed into the mixer layer
         hamiltonian (.Hamiltonian): The mixer Hamiltonian
 
     .. UsageDetails::
 
-        We define a mixer Hamiltonian and pass it into ``mixer_layer``:
+        We first define a mixer Hamiltonian:
 
         .. code-block:: python3
 
@@ -126,9 +128,8 @@ def mixer_layer(hamiltonian):
             import pennylane as qml
 
             mixer_h = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)])
-            mixer_layer = qaoa.mixer_layer(mixer_h)
 
-        We can then use the cost layer within a quantum circuit:
+        We can then pass it into ``qaoa.mixer_layer``, within a quantum circuit:
 
         .. code-block:: python
 
@@ -140,18 +141,16 @@ def mixer_layer(hamiltonian):
                 for i in range(2):
                     qml.Hadamard(wires=i)
 
-                mixer_layer(alpha)
+                qaoa.mixer_layer(alpha, mixer_h)
 
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(2)]
 
         which gives us a circuit of the form:
 
         >>> circuit(0.5)
-
-        .. code-block:: none
-
-             0: ──H──RZ(-1.0)──H──H──╭RZ(-1.0)──H──┤ ⟨Z⟩
-             1: ──H──────────────────╰RZ(-1.0)──H──┤ ⟨Z⟩
+        >>> print(circuit.draw())
+        0: ──H──RZ(-1.0)──H──H──╭RZ(-1.0)──H──┤ ⟨Z⟩
+        1: ──H──────────────────╰RZ(-1.0)──H──┤ ⟨Z⟩
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
@@ -161,4 +160,4 @@ def mixer_layer(hamiltonian):
             )
         )
 
-    return lambda alpha: qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)
+    ApproxTimeEvolution(hamiltonian, alpha, 1)
