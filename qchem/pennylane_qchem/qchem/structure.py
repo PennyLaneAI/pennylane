@@ -138,6 +138,14 @@ def meanfield(
     structure is saved in an hdf5-formatted file in the directory
     ``os.path.join(outpath, package, basis)``.
 
+    The charge of the molecule can be given to simulate cationic/anionic systems.
+    Also, the spin multiplicity can be input to determine the number of unpaired electrons
+    occupying the HF orbitals as illustrated in the figure below.
+
+    .. figure:: ../../_static/qchem/hf_references.png
+        :align: center
+        :width: 50%
+
     Args:
         name (str): molecule label
         geometry (list): list containing the symbol and Cartesian coordinates for each atom
@@ -402,7 +410,9 @@ def _qubit_operator_to_terms(qubit_operator):
         *[
             (
                 coef,
-                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=q[0]) for q in term])  # TODO: nonconsecutive wires
+                qml.operation.Tensor(
+                    *[xyz2pauli[q[1]](wires=q[0]) for q in term]
+                )  # TODO: nonconsecutive wires
                 if term
                 else qml.operation.Tensor(qml.Identity(0))
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
@@ -433,8 +443,10 @@ def _terms_to_qubit_operator(coeffs, ops):
     for coeff, op in zip(coeffs, ops):
 
         # wire ids
-        wires = op.wires.tolist()  # Can we use subsystems here? Otherwise the Qchem library relies on users
-                                   # and devices assuming consecutive indices as wires
+        wires = (
+            op.wires.tolist()
+        )  # Can we use subsystems here? Otherwise the Qchem library relies on users
+        # and devices assuming consecutive indices as wires
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]
