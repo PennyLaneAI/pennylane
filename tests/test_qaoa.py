@@ -242,38 +242,62 @@ class TestLayers:
         with pytest.raises(ValueError, match=r"hamiltonian must be written only in terms of PauliZ and Identity gates"):
             qaoa.cost_layer(0.1, hamiltonian)
 
-    def test_mixer_layer_output(self):
+    @pytest.mark.parametrize(
+        ("mixer", "gates"),
+        [
+            [
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+                [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])]
+            ],
+            [
+                qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
+                [qml.PauliRot(1, "XX", wires=[0, 1]), qml.PauliRot(1, "YY", wires=[0, 1]),
+                 qml.PauliRot(1, "XX", wires=[0, 2]), qml.PauliRot(1, "YY", wires=[0, 2]),
+                 qml.PauliRot(1, "XX", wires=[1, 2]), qml.PauliRot(1, "YY", wires=[1, 2])]
+            ]
+        ]
+    )
+    def test_mixer_layer_output(self, mixer, gates):
         """Tests that the gates of the mixer layer are correct"""
 
         alpha = 1
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
 
         with qml._queuing.OperationRecorder() as rec1:
-            qaoa.mixer_layer(alpha, hamiltonian)
+            qaoa.mixer_layer(alpha, mixer)
 
-        with qml._queuing.OperationRecorder() as rec2:
-            ApproxTimeEvolution(hamiltonian, 1, 1)
-
-        for i, j in zip(rec1.operations, rec2.operations):
+        for i, j in zip(rec1.operations, gates):
 
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
 
             assert prep == target
 
-    def test_cost_layer_output(self):
+    # This should be modified slightly when PR #741 is merged
+
+    @pytest.mark.parametrize(
+        ("cost", "gates"),
+        [
+            [
+                qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
+                [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])]
+            ],
+            [
+                qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)])),
+                [qml.PauliRot(1, "ZZ", wires=[0, 1]),
+                 qml.PauliRot(1, "ZZ", wires=[0, 2]),
+                 qml.PauliRot(1, "ZZ", wires=[1, 2])]
+            ]
+        ]
+    )
+    def test_cost_layer_output(self, cost, gates):
         """Tests that the gates of the cost layer is correct"""
 
         gamma = 1
-        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
 
         with qml._queuing.OperationRecorder() as rec1:
-            qaoa.cost_layer(gamma, hamiltonian)
+            qaoa.cost_layer(gamma, cost)
 
-        with qml._queuing.OperationRecorder() as rec2:
-            ApproxTimeEvolution(hamiltonian, 1, 1)
-
-        for i, j in zip(rec1.operations, rec2.operations):
+        for i, j in zip(rec1.operations, gates):
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
 
