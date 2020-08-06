@@ -2,7 +2,7 @@
 [run]
 source = pennylane
 omit =
-    pennylane/plugins/tests*
+    pennylane/devices/tests*
 
 [report]
 # Regexes for lines to exclude from consideration

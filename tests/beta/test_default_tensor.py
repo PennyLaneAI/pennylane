@@ -28,7 +28,7 @@ tensorflow = pytest.importorskip("tensorflow", minversion="2.0")
 import pennylane as qml
 from pennylane import numpy as np, QuantumFunctionError
 from pennylane.wires import Wires
-from pennylane.beta.plugins.numpy_ops import (
+from pennylane.beta.devices.numpy_ops import (
     CNOT,
     CSWAP,
     CZ,

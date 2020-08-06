@@ -20,7 +20,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane.qnodes import QuantumFunctionError
-from pennylane.plugins import DefaultQubit
+from pennylane.devices import DefaultQubit
 
 import pytest
 
