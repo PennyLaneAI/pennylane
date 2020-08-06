@@ -39,17 +39,6 @@ from pennylane.variable import Variable
 
 from pennylane.operation import Observable, Tensor
 
-class BetaObservable(Observable):
-
-    def __matmul__(self, other):
-        if isinstance(other, BetaTensor):
-            return other.__rmatmul__(self)
-
-        if isinstance(other, BetaObservable):
-            return BetaTensor(self, other)
-
-        raise ValueError("Can only perform tensor products between observables.")
-
 class BetaTensor(Tensor):
     """Container class representing tensor products of observables.
 
