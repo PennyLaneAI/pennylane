@@ -48,28 +48,12 @@ class BetaTensor(Tensor):
         self.queue()
 
     def queue(self):
+        """Queues the Tensor instance and updates the ownership related info if applicable."""
         qml.QueuingContext.append(self, owns=tuple(self.obs))
 
         if qml.QueuingContext.active_context().__class__.__name__ == "AnnotatedQueue":
+            # If the QueuingContext.update_info is not redefined by the
+            # specific queue type, an infinite recursion arises
+            # Hence updating only for an AnnotatedQueue
             for o in self.obs:
                 qml.QueuingContext.update_info(o, owner=self)
-
-    def __matmul__(self, other):
-        if isinstance(other, Tensor):
-            self.obs.extend(other.obs)
-            return self
-
-        if isinstance(other, Observable):
-            self.obs.append(other)
-            return self
-
-        raise ValueError("Can only perform tensor products between observables.")
-
-    def __rmatmul__(self, other):
-        if isinstance(other, Observable):
-            self.obs[:0] = [other]
-            return self
-
-        raise ValueError("Can only perform tensor products between observables.")
-
-    __imatmul__ = __matmul__
