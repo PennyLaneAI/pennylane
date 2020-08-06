@@ -129,8 +129,14 @@ theta = 0.8364
 phi = -0.1234
 U = np.array(
     [
-        [np.cos(theta/2)*np.exp(np.complex(0, -phi/2)), -np.sin(theta/2)*np.exp(np.complex(0, phi/2))],
-        [np.sin(theta/2)*np.exp(np.complex(0, -phi/2)), np.cos(theta/2)*np.exp(np.complex(0, phi/2))],
+        [
+            np.cos(theta / 2) * np.exp(np.complex(0, -phi / 2)),
+            -np.sin(theta / 2) * np.exp(np.complex(0, phi / 2)),
+        ],
+        [
+            np.sin(theta / 2) * np.exp(np.complex(0, -phi / 2)),
+            np.cos(theta / 2) * np.exp(np.complex(0, phi / 2)),
+        ],
     ]
 )
 
