@@ -18,13 +18,14 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import pennylane as qml
+from pennylane.operation import Sample, Variance, Expectation, Probability
+from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
 
 # --------------------
 # Beta related imports
 # --------------------
-from pennylane.beta.queuing.operation import Observable, Sample, Variance, Expectation, Probability, Tensor
-from pennylane.beta.queuing.ops import Identity
+from pennylane.beta.queuing.operation import BetaObservable, BetaTensor
 
 def expval(op):
     r"""Expectation value of the supplied observable.
@@ -48,12 +49,12 @@ def expval(op):
     -0.4794255386042029
 
     Args:
-        op (Observable): a quantum observable object
+        op (BetaObservable): a quantum observable object
 
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        QuantumFunctionError: `op` is not an instance of :class:`~.BetaObservable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, BetaObservable):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
@@ -93,12 +94,12 @@ def var(op):
     0.7701511529340698
 
     Args:
-        op (Observable): a quantum observable object
+        op (BetaObservable): a quantum observable object
 
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        QuantumFunctionError: `op` is not an instance of :class:`~.BetaObservable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, BetaObservable):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with var".format(op.name)
         )
@@ -139,12 +140,12 @@ def sample(op):
     array([ 1.,  1.,  1., -1.])
 
     Args:
-        op (Observable): a quantum observable object
+        op (BetaObservable): a quantum observable object
 
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        QuantumFunctionError: `op` is not an instance of :class:`~.BetaObservable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, BetaObservable):
         raise QuantumFunctionError(
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
