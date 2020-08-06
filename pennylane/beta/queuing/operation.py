@@ -35,7 +35,6 @@ from pennylane.variable import Variable
 # --------------------
 # Beta related imports
 # --------------------
-#import pennylane.beta.queuing.ops as ops
 
 from pennylane.operation import Observable, Tensor
 

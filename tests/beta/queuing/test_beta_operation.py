@@ -14,26 +14,11 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
-import itertools
-import functools
-from unittest.mock import patch
 
 import pytest
-import numpy as np
-from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane._queuing
-
-from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
-from pennylane.wires import Wires
-
-# --------------------
-# Beta related imports
-# --------------------
-
-# Fixture for importing beta files
-from conftest import import_beta
+import numpy as np
 
 # The BetaTensor class
 from pennylane.beta.queuing.operation import BetaTensor
