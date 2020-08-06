@@ -181,7 +181,7 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
     return observable(table, init_term=3 / 4 * n_electrons, mapping=mapping)
 
 
-def observable(me_table, init_term=0, mapping="jordan_wigner"):
+def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
 
     r"""Builds the many-body observable whose expectation value can be
     measured in PennyLane.
@@ -275,9 +275,9 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
-        return structure.convert_observable(bravyi_kitaev(mb_obs))
+        return structure.convert_observable(bravyi_kitaev(mb_obs), wires=wires)
 
-    return structure.convert_observable(jordan_wigner(mb_obs))
+    return structure.convert_observable(jordan_wigner(mb_obs), wires=wires)
 
 
 def spin_z(n_orbitals, mapping="jordan_wigner"):

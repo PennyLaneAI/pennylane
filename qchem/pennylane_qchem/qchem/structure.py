@@ -30,9 +30,25 @@ from pennylane.wires import Wires
 
 
 def _proc_wires(wires, n_wires=None):
+    r"""Check and process custom user wire labels into a consistent Wires format for
+    converting between OpenFermion qubit numbers and Pennylane wire labels.
+
+    Args:
+        wires (Wires, List, Tuple, Dict): user wire labels. For types ``Wires``,
+            ``List``, and ``Tuple``, it is assumed that each item represents a wire label
+            corresponding to the qubit number equal to its index. For type ``Dict``, only
+            int-keyed dict (qubit to wire) and consecutive-int-valued dict (wire to qubit)
+            are accepted.
+        n_wires (int): number of wires used if known. Defaults to None.
+
+
+    Returns:
+        Wires: Acts as a wire mapping with indices corresponding to qubits and values
+            corresponding to wire labels.
+    """
 
     if n_wires is None:
-        n_wires = len(wires)
+        n_wires = len(wires) if wires is not None else 1
 
     if wires is None:
         return Wires(range(n_wires))
@@ -40,21 +56,23 @@ def _proc_wires(wires, n_wires=None):
     if isinstance(wires, (Wires, list, tuple)):
         wires = Wires(wires[:n_wires])
     elif isinstance(wires, dict):
-        if all([isinstance(w, int) and w < n_wires for w in wires.keys()]):
+        if all([isinstance(w, int) for w in wires.keys()]):
         # Assuming keys are coming from consecutive int wires. Allows for partial mapping.
             labels = list(range(n_wires))
             for k, v in wires.items():
-                labels[k] = v
+                if k < n_wires:
+                    labels[k] = v
             wires = Wires(labels)
-        elif set(wires.values()) == set(range(n_wires)):
+        elif set(range(n_wires)).issubset(set(wires.values())):
         # Assuming values are consecutive int wires. Does NOT allow for partial mapping.
+            wires = {v: k for k, v in wires.items()}
             wires = Wires([wires[i] for i in range(n_wires)])
         else:
             raise ValueError('Expected only int-keyed or consecutive int-valued dict for `wires`')
     else:
         raise ValueError('Expected type Wires, list, tuple, or dict for `wires`, got {}'.format(type(wires)))
     
-    if len(Wires) != n_wires:
+    if len(wires) != n_wires:
         raise ValueError('Length of `wires`{} does not match the derived `n_wires`{}'.format(len(Wires), n_wires))
 
     return wires
@@ -406,7 +424,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
         corresponding PennyLane observables in the Pauli basis
     """
-    n_wires = 1 + max([max([i for i,_ in t]) if t else 1 for t in qubit_operator.terms]) if qubit_operator.terms else 1
+    n_wires = 1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms]) if qubit_operator.terms else 1
     wires = _proc_wires(wires, n_wires=n_wires)
 
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below

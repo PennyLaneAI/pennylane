@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import pytest
+import pennylane as qml
 
 
 def cmd_exists(cmd):
@@ -21,7 +22,9 @@ def psi4_support():
     if not cmd_exists("psi4"):
         return False
 
-    res = subprocess.call(["psi4", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    res = subprocess.call(
+        ["psi4", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
     if res == 1:
         return False
 
@@ -48,3 +51,16 @@ def babel_support():
 def requires_babel(babel_support):
     if not babel_support:
         pytest.skip("Skipped, no Babel support")
+
+
+@pytest.fixture(
+    scope="module",
+    params=[
+        None,
+        qml.wires.Wires(list("abcd") + [7, 42, 0, -3] + ["23", "xyz", "w11"]),
+        list(range(100, 120)),
+        {i: "abcdefghijklmn"[i] for i in range(14)},
+    ],
+)
+def custom_wires(request):
+    return request.param
