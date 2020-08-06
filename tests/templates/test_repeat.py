@@ -90,8 +90,7 @@ class TestRepeat:
         with pytest.raises(ValueError, match=r"'depth' must be of type int"):
             repeat(unitary, depth, wires=[0])
 
-    '''
-    def test_kwargs_length(self):
+    def test_args_length(self):
         """Tests that the correct error is thrown when the length of an argument is incorrect"""
 
         params = [1, 1]
@@ -101,9 +100,6 @@ class TestRepeat:
 
         with pytest.raises(ValueError, match=r"Each argument in args must have length matching 'depth'; expected 3"):
             repeat(unitary, 3, params, wires=[0])
-        
-    '''
-
 
     DEPTH = [2, 1, 2, 1, 2]
 
