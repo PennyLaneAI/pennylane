@@ -390,7 +390,7 @@ def test_integration_mol_file_to_vqe_cost(name, core, active, mapping, expected_
 
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
-    qubit_hamiltonian = qchem.decompose_molecular_hamiltonian(
+    qubit_hamiltonian = qchem.decompose(
         hf_file, mapping=mapping, core=core, active=active,
     )
 

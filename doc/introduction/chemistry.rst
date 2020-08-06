@@ -26,21 +26,23 @@ to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
-    h, n_qubits = qml.qchem.molecular_hamiltonian(
+    from pennylane import qchem
+
+    h, qubits = qchem.molecular_hamiltonian(
         name='h2',
         geo_file='h2.xyz',
         charge=0,
         mult=1,
         basis='sto-3g',
-        nact_els=2,
-        nact_orbs=2
+        active_electrons=2,
+        active_orbitals=2
     )
 
 where:
 
 * ``h`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian, and
 
-* ``n_qubits`` is the number of qubits operators needed to represent it.
+* ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
 Internally, :func:`~.molecular_hamiltonian` calls the following functions in order
 to generate the qubit Hamiltonian:
@@ -52,7 +54,7 @@ to generate the qubit Hamiltonian:
     read_structure
     meanfield
     active_space
-    decompose_molecular_hamiltonian
+    decompose
 
 
 For more fine-grained control, these functions may be
@@ -67,7 +69,7 @@ The atomic structure of a molecule can be imported from an external file using t
 
 .. code-block:: python
 
-    >>> geometry = qml.qchem.read_structure('h2o.SDF')
+    >>> geometry = qchem.read_structure('h2o.SDF')
     >>> print(geometry)
     [['H', (-0.0211, -0.002, 0.0)], ['O', (0.8345, 0.4519, 0.0)], ['H', (1.4769, -0.273, 0.0)]]
 
@@ -97,13 +99,13 @@ the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`
 
 .. code-block:: python
 
-    geometry = qml.qchem.read_structure('h2o.SDF')
-    hf_file = qml.qchem.meanfield(
+    geometry = qchem.read_structure('h2o.SDF')
+    hf_file = qchem.meanfield(
         'water',
         geometry,
-        charge=0,
-        mult=1,
-        basis='sto-3g',
+        charge=-1,
+        mult=2,
+        basis='6-31g',
         package='pyscf'
     )
 
@@ -121,22 +123,23 @@ core, active, and external orbitals. Within this approximation, a certain number
 
     from openfermion import MolecularData
     water = MolecularData(filename=hf_file)
-    core, active = qml.qchem.active_space(
+    core, active = qchem.active_space(
         water.n_electrons,
         water.n_orbitals,
-        nact_els=2,
-        nact_orbs=2
+        mult=2,
+        active_electrons=3,
+        active_orbitals=4
     )
 
-Once we have defined the active space, :func:`~.decompose_molecular_hamiltonian` calls
-OpenFermion to generate the second-quantized fermionic Hamiltonian
+Once we have defined the active space, :func:`~.decompose` uses
+OpenFermion functionalities to generate the second-quantized fermionic Hamiltonian
 and map it to a linear combination of Pauli operators via the `Jordan-Wigner
 <https://en.wikipedia.org/wiki/Jordan%E2%80%93Wigner_transformation>`__ or `Bravyi-Kitaev
 <https://arxiv.org/abs/1208.5986>`__ transformation. For example,
 
 .. code-block:: python
 
-    qubit_hamiltonian = qml.qchem.decompose_molecular_hamiltonian(
+    qubit_hamiltonian = qchem.decompose(
         hf_file,
         mapping='jordan_wigner',
         core=core,
@@ -160,6 +163,8 @@ the cost function:
 
 .. code-block:: python
 
+    import pennylane as qml
+    
     dev = qml.device('default.qubit', wires=4)
 
     def circuit(params, wires):

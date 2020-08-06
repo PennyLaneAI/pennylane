@@ -10,7 +10,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "n_act_electrons", "n_act_orbitals", "core_ref", "active_ref"),
+    ("mol_name", "act_electrons", "act_orbitals", "core_ref", "active_ref"),
     [
         ("lih", None, None, [], list(range(6))),
         ("lih", 4, None, [], list(range(6))),
@@ -21,10 +21,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ("lih_anion", 1, 4, [0, 1], list(range(2, 6))),
     ],
 )
-def test_active_spaces(
-    mol_name, n_act_electrons, n_act_orbitals, core_ref, active_ref
-):
-
+def test_active_spaces(mol_name, act_electrons, act_orbitals, core_ref, active_ref):
     r"""Test the correctness of the generated active spaces"""
 
     molecule = MolecularData(filename=os.path.join(ref_dir, mol_name))
@@ -33,20 +30,16 @@ def test_active_spaces(
         molecule.n_electrons,
         molecule.n_orbitals,
         mult=molecule.multiplicity,
-        nact_els=n_act_electrons,
-        nact_orbs=n_act_orbitals
+        active_electrons=act_electrons,
+        active_orbitals=act_orbitals,
     )
-
-    # docc_indices, active_indices = qchem.active_space(
-    #     mol_name, ref_dir, n_act_electrons, n_act_orbitals
-    # )
 
     assert core == core_ref
     assert active == active_ref
 
 
 @pytest.mark.parametrize(
-    ("mol_name", "n_act_electrons", "n_act_orbitals", "message_match"),
+    ("mol_name", "act_electrons", "act_orbitals", "message_match"),
     [
         ("lih", 6, 5, "greater than the total number of electrons"),
         ("lih", 1, 5, "should be even"),
@@ -60,16 +53,16 @@ def test_active_spaces(
         ("lih_anion_2", 1, 2, "greater than or equal to"),
     ],
 )
-def test_inconsistent_active_spaces(mol_name, n_act_electrons, n_act_orbitals, message_match):
-
+def test_inconsistent_active_spaces(mol_name, act_electrons, act_orbitals, message_match):
     r"""Test that an error is raised if an inconsistent active space is generated"""
 
     molecule = MolecularData(filename=os.path.join(ref_dir, mol_name))
 
-    # with pytest.raises(ValueError, match=message_match):
-    #     qchem.active_space(mol_name, ref_dir, n_act_electrons, n_act_orbitals)
-
     with pytest.raises(ValueError, match=message_match):
-        qchem.active_space(molecule.n_electrons, molecule.n_orbitals, mult=molecule.multiplicity,
-            nact_els=n_act_electrons, nact_orbs=n_act_orbitals
-    )
+        qchem.active_space(
+            molecule.n_electrons,
+            molecule.n_orbitals,
+            mult=molecule.multiplicity,
+            active_electrons=act_electrons,
+            active_orbitals=act_orbitals,
+        )

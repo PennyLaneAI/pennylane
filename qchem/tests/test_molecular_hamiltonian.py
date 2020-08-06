@@ -38,17 +38,17 @@ def test_building_hamiltonian(
 
     geo_file = os.path.join(ref_dir, geo_file)
 
-    built_hamiltonian, n_qubits = qchem.molecular_hamiltonian(
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(
         name,
         geo_file,
         charge=charge,
         mult=mult,
         package=package,
-        nact_els=nact_els,
-        nact_orbs=nact_orbs,
+        active_electrons=nact_els,
+        active_orbitals=nact_orbs,
         mapping=mapping,
         outpath=tmpdir.strpath,
     )
 
     assert isinstance(built_hamiltonian, Hamiltonian)
-    assert n_qubits == 2 * nact_orbs
+    assert qubits == 2 * nact_orbs

@@ -20,7 +20,7 @@ __all__ = [
     "read_structure",
     "meanfield",
     "active_space",
-    "decompose_molecular_hamiltonian",
+    "decompose",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",

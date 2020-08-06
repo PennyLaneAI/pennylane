@@ -57,7 +57,7 @@
   - `meanfield_data` has been renamed to `meanfield`, and modified to return
     the absolute path to the file with the meanfield electronic structure of the molecule.
 
-  - `decompose_hamiltonian` has been renamed to `decompose_molecular_hamiltonian`,
+  - `decompose_hamiltonian` has been renamed to `decompose`,
     due to the new `qml.utils.decompose_hamiltonian` function. This function has also been
     marked for deprecation.
 
