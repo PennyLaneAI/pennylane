@@ -22,10 +22,6 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Obse
 from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
 
-# --------------------
-# Beta related imports
-# --------------------
-from pennylane.beta.queuing.operation import BetaTensor
 
 def expval(op):
     r"""Expectation value of the supplied observable.
