@@ -57,7 +57,7 @@ def requires_babel(babel_support):
     scope="module",
     params=[
         None,
-        qml.wires.Wires(list("abcd") + [7, 42, 0, -3] + ["23", "xyz", "w11"]),
+        qml.wires.Wires(list("ab") + [-3, 42] + ["xyz", "23", "w11"]),
         list(range(100, 120)),
         {13-i: "abcdefghijklmn"[i] for i in range(14)},
     ],
