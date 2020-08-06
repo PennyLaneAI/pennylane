@@ -105,7 +105,7 @@ def cost_layer(gamma, hamiltonian):
 
 
 def mixer_layer(alpha, hamiltonian):
-    r"""Returns the QAOA cost layer corresponding to a mixer Hamiltonian.
+    r"""Applies the QAOA cost layer corresponding to a mixer Hamiltonian.
 
     For a mixer Hamiltonian :math:`H_M`, this is defined as the following unitary:
 
