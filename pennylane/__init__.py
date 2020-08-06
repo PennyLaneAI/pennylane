@@ -57,6 +57,7 @@ plugin_devices = {
     entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
 }
 
+
 # get chemistry plugin
 class NestedAttrError:
     """This class mocks out the qchem module in case
@@ -96,13 +97,21 @@ def device(name, *args, **kwargs):
     This function is used to load a particular quantum device,
     which can then be used to construct QNodes.
 
-    PennyLane comes with support for the following two devices:
+    PennyLane comes with support for the following devices:
 
-    * :mod:`'default.qubit' <pennylane.plugins.default_qubit>`: a simple pure
+    * :mod:`'default.qubit' <pennylane.devices.default_qubit>`: a simple
       state simulator of qubit-based quantum circuit architectures.
 
-    * :mod:`'default.gaussian' <pennylane.plugins.default_gaussian>`: a simple simulator
+    * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
+
+    * :mod:`'default.qubit.tf' <pennylane.devices.default_qubit.tf>`: a state simulator
+      of qubit-based quantum circuit architectures written in TensorFlow, which allows
+      automatic differentiation through the simulation.
+
+    * :mod:`'default.qubit.autograd' <pennylane.devices.default_qubit.autograd>`: a state simulator
+      of qubit-based quantum circuit architectures which allows
+      automatic differentiation through the simulation via python's autograd library.
 
     In addition, additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
