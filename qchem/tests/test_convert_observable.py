@@ -431,3 +431,36 @@ def test_integration_mol_file_to_vqe_cost(
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
+
+
+@pytest.mark.parametrize(
+    'n_wires', [None, 6]
+)
+def test_proc_wires(custom_wires, n_wires):
+    r"""Test if _proc_wires handels different combinations of input types correctly."""
+
+    wires = qchem.structure._proc_wires(custom_wires, n_wires)
+
+    assert isinstance(wires, qml.wires.Wires)
+    assert len(wires) == (n_wires if n_wires is not None else len(custom_wires) if custom_wires is not None else 1)
+
+    if custom_wires is not None and n_wires is not None:
+        if not isinstance(custom_wires, dict):
+            assert wires == qchem.structure._proc_wires(custom_wires[:n_wires], n_wires)
+        else:
+            assert wires == qchem.structure._proc_wires({k:v for k, v in custom_wires.items() if k < n_wires}, n_wires)
+
+
+def test_proc_wires_raises():
+
+    with pytest.raises(
+        ValueError,
+        match="Expected only int-keyed or consecutive int-valued dict"
+    ):
+        qchem.structure._proc_wires({'a':'b'})
+
+    with pytest.raises(
+        ValueError,
+        match="Expected type Wires, list, tuple, or dict"
+    ):
+        qchem.structure._proc_wires(1.2)

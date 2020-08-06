@@ -48,7 +48,7 @@ def _proc_wires(wires, n_wires=None):
     """
 
     if n_wires is None:
-        n_wires = len(wires) if wires is not None else 1
+        n_wires = len(wires) if isinstance(wires, (Wires, list, tuple, dict)) else 1
 
     if wires is None:
         return Wires(range(n_wires))

@@ -59,7 +59,7 @@ def requires_babel(babel_support):
         None,
         qml.wires.Wires(list("abcd") + [7, 42, 0, -3] + ["23", "xyz", "w11"]),
         list(range(100, 120)),
-        {i: "abcdefghijklmn"[i] for i in range(14)},
+        {13-i: "abcdefghijklmn"[i] for i in range(14)},
     ],
 )
 def custom_wires(request):
