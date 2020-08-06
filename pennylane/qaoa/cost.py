@@ -34,7 +34,7 @@ def maxcut(graph):
 
     .. math:: H_C \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_i Z_j \ - \ \mathbb{I} \big),
 
-    where :math:`G` is some graph, :math:`\mathbb{I}` is the identity, and :math:`Z_i` and :math:`Z_j` are
+    where :math:`G` is a graph, :math:`\mathbb{I}` is the identity, and :math:`Z_i` and :math:`Z_j` are
     the Pauli-Z operators on the :math:`i`-th and :math:`j`-th wire respectively.
 
     The mixer Hamiltonian returned from :func:`~qaoa.maxcut` is :func:`~qaoa.x_mixer` applied to all wires.
