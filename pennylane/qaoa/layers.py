@@ -19,7 +19,8 @@ from pennylane.operation import Tensor
 
 
 def _diagonal_terms(hamiltonian):
-    r"""Checks if all terms in a Hamiltonian are products of diagonal Pauli gates (PauliZ and Identity).
+    r"""Checks if all terms in a Hamiltonian are products of diagonal Pauli gates
+    (:class:`~.PauliZ` and :class:`~.Identity`).
 
     Args:
         hamiltonian (.Hamiltonian): The Hamiltonian being checked
@@ -30,9 +31,9 @@ def _diagonal_terms(hamiltonian):
     val = True
 
     for i in hamiltonian.ops:
-        i = Tensor(i) if isinstance(i.name, str) else i
+        i = Tensor(i) if not isinstance(i, Tensor) else i
         for j in i.obs:
-            if j.name != "PauliZ" and j.name != "Identity":
+            if j.name not in ("PauliZ", "Identity"):
                 val = False
 
     return val
@@ -58,7 +59,7 @@ def cost_layer(hamiltonian):
         We define a cost Hamiltonian and pass it into ``cost_layer``:
         and pass it into ``cost_layer``:
 
-        .. code-block:: python
+        .. code-block:: python3
 
             from pennylane import qaoa
             import pennylane as qml
@@ -85,11 +86,9 @@ def cost_layer(hamiltonian):
         which gives us a circuit of the form:
 
         >>> circuit(0.5)
-
-        .. code-block:: none
-
-             0: ──H──RZ(-1.0)──╭RZ(-1.0)──┤ ⟨Z⟩
-             1: ──H────────────╰RZ(-1.0)──┤ ⟨Z⟩
+        >>> print(circuit.draw())
+        0: ──H──RZ(-1.0)──╭RZ(-1.0)──┤ ⟨Z⟩
+        1: ──H────────────╰RZ(-1.0)──┤ ⟨Z⟩
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
@@ -121,7 +120,7 @@ def mixer_layer(hamiltonian):
 
         We define a mixer Hamiltonian and pass it into ``mixer_layer``:
 
-        .. code-block:: python
+        .. code-block:: python3
 
             from pennylane import qaoa
             import pennylane as qml
