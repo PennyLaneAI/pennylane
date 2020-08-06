@@ -634,6 +634,41 @@ class TestQNodeQasmIntegrationTests:
 
         assert res == expected
 
+    def test_wires(self):
+        """Test that the QASM serializer correctly integrates with the new wires class."""
+        dev = qml.device("default.qubit", wires=["a", "b", "c"])
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.Hadamard(wires="a")
+            qml.CNOT(wires=["b", "a"])
+            return [
+                qml.expval(qml.PauliX("c")),
+                qml.expval(qml.PauliZ("a")),
+                qml.expval(qml.Hadamard("b")),
+            ]
+
+        qnode()
+        res = qnode.circuit.to_openqasm()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[3];
+            creg c[3];
+            h q[0];
+            cx q[1],q[0];
+            h q[2];
+            ry(-0.7853981633974483) q[1];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            measure q[2] -> c[2];
+            """
+        )
+
+        assert res == expected
+
 
 class TestQASMConformanceTests:
     """Conformance tests to ensure that the CircuitGraph
@@ -724,23 +759,23 @@ class TestQASMConformanceTests:
 
         # operations
         assert gates[0].name == "h"
-        assert gates[0].wires == Wires([0])
+        assert gates[0].wires == [0]
 
         assert gates[1].name == "ry"
-        assert gates[1].wires == Wires([0])
-        assert gates[1].data == [params[1]]
+        assert gates[1].wires == [0]
+        assert gates[1].params == [params[1]]
 
         assert gates[2].name == "cx"
-        assert gates[2].wires == Wires([0, 1])
+        assert gates[2].wires == [0, 1]
 
         assert gates[4].name == "rx"
-        assert gates[4].wires == Wires([1])
-        assert gates[4].data == [params[0]]
+        assert gates[4].wires == [1]
+        assert gates[4].params == [params[0]]
 
         # rotations
         assert gates[3].name == "h"
-        assert gates[3].wires == Wires([0])
+        assert gates[3].wires == [0]
 
         assert gates[5].name == "ry"
-        assert gates[5].wires == Wires([2])
-        assert gates[5].data == [-np.pi / 4]
+        assert gates[5].wires == [2]
+        assert gates[5].params == [-np.pi / 4]
