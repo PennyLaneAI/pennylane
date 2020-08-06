@@ -112,7 +112,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest pennylane/plugins/tests \
+          python -m pytest pennylane/devices/tests \
             --device=${{ matrix.config.device }} \
             --analytic=${{ matrix.config.analytic }} \
             --shots=${{ matrix.config.shots }} \

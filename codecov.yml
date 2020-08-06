@@ -2,7 +2,7 @@ fixes:
   - "pennylane_qchem/::qchem/pennylane_qchem/"
 
 ignore:
-  - "pennylane/plugins/tests/*"
+  - "pennylane/devices/tests/*"
 
 codecov:
     notify:
