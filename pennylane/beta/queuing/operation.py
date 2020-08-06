@@ -67,24 +67,17 @@ class BetaTensor(Tensor):
     """
 
     # pylint: disable=abstract-method
-    return_type = None
-    tensor = True
-    par_domain = None
 
-    def __init__(self, *args):  # pylint: disable=super-init-not-called
+    def __init__(self, *args):
         super().__init__(*args)
         self.queue()
 
     def queue(self):
         qml.QueuingContext.append(self, owns=tuple(self.obs))
 
-        for o in self.obs:
-            try:
+        if qml.QueuingContext.active_context().__class__.__name__ == "AnnotatedQueue":
+            for o in self.obs:
                 qml.QueuingContext.update_info(o, owner=self)
-            except AttributeError:
-                pass
-
-        return self
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
