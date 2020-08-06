@@ -16,21 +16,8 @@ r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
 """
-import abc
-import itertools
-import functools
-import numbers
-from collections.abc import Sequence
-from enum import Enum, IntEnum
-from pennylane.wires import Wires
-
-import numpy as np
-from numpy.linalg import multi_dot
 
 import pennylane as qml
-
-from pennylane.utils import pauli_eigs
-from pennylane.variable import Variable
 
 # --------------------
 # Beta related imports
