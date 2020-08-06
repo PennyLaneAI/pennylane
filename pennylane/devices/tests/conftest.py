@@ -89,8 +89,8 @@ def device(device_kwargs):
 
     __tracebackhide__ = True
 
-    def _device(n_wires):
-        device_kwargs["wires"] = n_wires
+    def _device(wires):
+        device_kwargs["wires"] = wires
 
         try:
             dev = qml.device(**device_kwargs)

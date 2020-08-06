@@ -17,8 +17,8 @@ reference plugin.
 from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
 
-from . import DefaultQubit
-from . import autograd_ops
+from pennylane.devices import DefaultQubit
+from pennylane.devices import autograd_ops
 
 
 class DefaultQubitAutograd(DefaultQubit):

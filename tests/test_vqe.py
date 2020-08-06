@@ -169,7 +169,11 @@ def mock_device(monkeypatch):
         m.setattr(qml.Device, "var", lambda self, x, y, z: 2)
         m.setattr(qml.Device, "sample", lambda self, x, y, z: 3)
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
-        yield qml.Device()
+
+        def get_device(wires=1):
+            return qml.Device(wires=wires)
+
+        yield get_device
 
 #####################################################
 # Tests
@@ -217,19 +221,20 @@ class TestVQE:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_valid_init(self, ansatz, observables, mock_device):
         """Tests that a collection of circuits is properly created by vqe.circuits"""
-        circuits = qml.map(ansatz, observables, device=mock_device)
+        dev = mock_device()
+        circuits = qml.map(ansatz, observables, device=dev)
 
         assert len(circuits) == len(observables)
         assert all(callable(c) for c in circuits)
-        assert all(c.device == mock_device for c in circuits)
+        assert all(c.device == dev for c in circuits)
         assert all(hasattr(c, "jacobian") for c in circuits)
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_evaluate(self, ansatz, observables, params, mock_device, seed):
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
-        mock_device.num_wires = 3
-        circuits = qml.map(ansatz, observables, device=mock_device)
+        dev = mock_device(wires=3)
+        circuits = qml.map(ansatz, observables, device=dev)
         res = circuits(params)
         assert all(val == 1.0 for val in res)
 
@@ -247,14 +252,14 @@ class TestVQE:
         """Tests that an exception is raised when no observables are supplied to vqe.circuits"""
         with pytest.raises(ValueError, match="observables are not valid"):
             obs = (observables,)
-            circuits = qml.map(ansatz, obs, device=mock_device)
+            qml.map(ansatz, obs, device=mock_device())
 
     @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_circuits_no_ansatz(self, ansatz, observables, mock_device):
         """Tests that an exception is raised when no valid ansatz is supplied to vqe.circuits"""
         with pytest.raises(ValueError, match="not a callable function"):
-            circuits = qml.map(ansatz, observables, device=mock_device)
+            qml.map(ansatz, observables, device=mock_device())
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_aggregate_expval(self, coeffs, observables, expected):
@@ -287,7 +292,7 @@ class TestVQE:
         """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.vqe.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
-            cost = qml.VQECost(4, hamiltonian, mock_device)
+            cost = qml.VQECost(4, hamiltonian, mock_device())
 
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_passing_kwargs(self, coeffs, observables, expected):
@@ -312,8 +317,8 @@ class TestAutogradInterface:
     @pytest.mark.parametrize("interface", ["autograd", "numpy"])
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device, interface):
         """Test that QNodes have the Autograd interface"""
-        mock_device.num_wires = 3
-        circuits = qml.map(ansatz, observables, device=mock_device, interface=interface)
+        dev = mock_device(wires=3)
+        circuits = qml.map(ansatz, observables, device=dev, interface=interface)
 
         assert all(c.interface == "autograd" for c in circuits)
         assert all(c.__class__.__name__ == "AutogradQNode" for c in circuits)
@@ -357,8 +362,8 @@ class TestTorchInterface:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the torch interface"""
-        mock_device.num_wires = 3
-        circuits = qml.map(ansatz, observables, device=mock_device, interface="torch")
+        dev = mock_device(wires=3)
+        circuits = qml.map(ansatz, observables, device=dev, interface="torch")
         assert all(c.interface == "torch" for c in circuits)
 
         res = [c(params) for c in circuits]
@@ -405,8 +410,8 @@ class TestTFInterface:
         if ansatz == amp_embed_and_strong_ent_layer:
             pytest.skip("TF doesn't work with ragged arrays")
 
-        mock_device.num_wires = 3
-        circuits = qml.map(ansatz, observables, device=mock_device, interface="tf")
+        dev = mock_device(wires=3)
+        circuits = qml.map(ansatz, observables, device=dev, interface="tf")
         assert all(c.interface == "tf" for c in circuits)
 
         res = [c(params) for c in circuits]
