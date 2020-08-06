@@ -15,11 +15,11 @@
 Functions for finding the unitary transformations required to diagonalize Pauli partitions in the
 measurement basis, and templates for the circuit implementations.
 """
-import numpy as np
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.templates import template
-from grouping.utils import pauli_to_binary, is_qwc, get_n_qubits
+from pennylane.grouping.utils import pauli_to_binary, is_qwc, get_n_qubits
+import numpy as np
 
 
 @template

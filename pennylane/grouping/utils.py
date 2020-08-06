@@ -16,9 +16,9 @@ Utility functions used in Pauli partitioning and measurement reduction schemes u
 symplectic vector space representation of Pauli words.
 """
 
-import numpy as np
 from pennylane import PauliX, PauliY, PauliZ, Identity
 from pennylane.operation import Observable, Tensor
+import numpy as np
 
 
 def get_n_qubits(observables):

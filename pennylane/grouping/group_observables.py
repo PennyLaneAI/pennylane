@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A module for the high-level Pauli word partitioning functionality.
+This module contains the high-level Pauli word partitioning functionality used in measurement optimization.
 """
 
-import numpy as np
-from grouping.utils import (
+from pennylane.grouping.utils import (
     convert_observables_to_binary,
     binary_to_pauli,
     are_identical_pauli_words,
     get_qwc_compliment_adj_matrix,
 )
-from grouping.graph_colouring import largest_first, recursive_largest_first
+from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
+import numpy as np
 
 GROUPING_TYPES = ["qwc", "commuting", "anticommuting"]
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
