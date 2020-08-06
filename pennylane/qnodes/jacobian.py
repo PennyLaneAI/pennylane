@@ -183,7 +183,7 @@ class JacobianQNode(BaseQNode):
         .. note::
            The finite difference method is sensitive to statistical noise in the circuit output,
            since it compares the output at two points infinitesimally close to each other. Hence the
-           'F' method requires exact expectation values, i.e., ``analytic=True`` in simulation plugins.
+           'F' method requires exact expectation values, i.e., ``analytic=True`` in simulator devices.
 
         Args:
             args (nested Iterable[float] or float): positional arguments to the quantum function (differentiable)

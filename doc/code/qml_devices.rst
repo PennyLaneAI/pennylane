@@ -1,7 +1,7 @@
-qml.plugins
+qml.devices
 ===========
 
-.. currentmodule:: pennylane.plugins
+.. currentmodule:: pennylane.devices
 
 .. warning::
 
@@ -13,4 +13,4 @@ qml.plugins
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.plugins
+.. automodule:: pennylane.devices

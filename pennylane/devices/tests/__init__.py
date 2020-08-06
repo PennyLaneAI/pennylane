@@ -41,12 +41,12 @@ Using pytest
 
 .. code-block:: console
 
-    pytest path_to_pennylane_src/plugins/tests --device=default.qubit --shots=10000 --analytic=False
+    pytest path_to_pennylane_src/devices/tests --device=default.qubit --shots=10000 --analytic=False
 
 The location of your PennyLane installation may differ depending on installation method and
 operating system. To find the location, you can use the :func:`~.get_device_tests` function:
 
->>> from pennylane.plugins.tests import get_device_tests
+>>> from pennylane.devices.tests import get_device_tests
 >>> get_device_tests()
 
 The pl-device-test CLI
@@ -64,7 +64,7 @@ Within Python
 Finally, the tests can be invoked within a Python session via the :func:`~.test_device`
 function:
 
->>> from pennylane.plugins.tests import test_device
+>>> from pennylane.devices.tests import test_device
 >>> test_device("default.qubit")
 
 For more details on the available arguments, see the :func:`~.test_device` documentation.
@@ -117,17 +117,17 @@ def test_device(
 
     **Example**
 
-    >>> from pennylane.plugins.tests import test_device
+    >>> from pennylane.devices.tests import test_device
     >>> test_device("default.qubit")
     ================================ test session starts =======================================
     platform linux -- Python 3.7.7, pytest-5.4.2, py-1.8.1, pluggy-0.13.1
-    rootdir: /home/josh/xanadu/pennylane/pennylane/plugins/tests, inifile: pytest.ini
-    plugins: flaky-3.6.1, cov-2.8.1, mock-3.1.0
+    rootdir: /home/josh/xanadu/pennylane/pennylane/devices/tests, inifile: pytest.ini
+    devices: flaky-3.6.1, cov-2.8.1, mock-3.1.0
     collected 86 items
-    xanadu/pennylane/pennylane/plugins/tests/test_gates.py ..............................
+    xanadu/pennylane/pennylane/devices/tests/test_gates.py ..............................
     ...............................                                                       [ 70%]
-    xanadu/pennylane/pennylane/plugins/tests/test_measurements.py .......sss...sss..sss   [ 95%]
-    xanadu/pennylane/pennylane/plugins/tests/test_properties.py ....                      [100%]
+    xanadu/pennylane/pennylane/devices/tests/test_measurements.py .......sss...sss..sss   [ 95%]
+    xanadu/pennylane/pennylane/devices/tests/test_properties.py ....                      [100%]
     ================================= 77 passed, 9 skipped in 0.78s ============================
 
     """

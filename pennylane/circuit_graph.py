@@ -309,7 +309,7 @@ class CircuitGraph:
         # create the QASM code representing the operations
         for op in decomposed_ops:
             gate = OPENQASM_GATES[op.name]
-            wires = ",".join(["q[{}]".format(w) for w in op.wires.tolist()])
+            wires = ",".join(["q[{}]".format(self.wires.index(w)) for w in op.wires.tolist()])
             params = ""
 
             if op.num_params > 0:

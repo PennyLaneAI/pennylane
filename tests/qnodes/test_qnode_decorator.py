@@ -284,7 +284,7 @@ def test_parameter_shift_diff_method_unsupported():
     """Test exception raised if an the device diff method is specified for a
     device that does not support it"""
 
-    class DummyDevice(qml.plugins.DefaultQubit):
+    class DummyDevice(qml.devices.DefaultQubit):
         @classmethod
         def capabilities(cls):
             return {"model": "NotSupportedModel"}

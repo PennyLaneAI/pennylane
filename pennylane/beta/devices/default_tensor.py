@@ -20,7 +20,7 @@ from itertools import product
 import numpy as np
 
 from pennylane._device import Device
-from pennylane.beta.plugins import numpy_ops as ops
+from pennylane.beta.devices import numpy_ops as ops
 from pennylane.wires import Wires
 
 try:
