@@ -81,9 +81,19 @@ def maxcut(graph):
     return (qml.Hamiltonian(coeffs, obs), qaoa.x_mixer(graph.nodes))
 
 
-def travelling_salesman(graph):
+def travelling_salesman(distance_matrix, wire_matrix):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding the the Travelling
     Salesman problem.
 
+    The cost Hamiltonian for TSP is defined as:
+
+    .. math:: H_C \ = \ \displaystyle\sum_{\{u, \v} \in E} d_{u, v} \displaystyle\sum_{j = 1}^{n}
+              ( Z_{u, j} Z_{v, j+1} \ + \ Z_{v, j} Z_{u, j+1})
+
+    where :math:`d_{u, v}` is the distance between vertices :math:`u` and :math:`v` and :math:`Z_{v, t}` is
+    the Pauli-Z operator acting on the wire representing vertex :math:`v` at time-step :math:`t`.
+    See [`arXiv:1805.03265 <https://arxiv.org/abs/1805.03265>`__] for more information.
+
+    The mixer Hamiltonian returned from :func:`~qaoa.travelling_salesman` is 
 
     """
