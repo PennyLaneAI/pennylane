@@ -143,6 +143,17 @@ class TestTorchQNodeExceptions():
         with pytest.raises(QuantumFunctionError, match='Device default.qubit is a qubit device; CV operations are not allowed.'):
             qf(torch.tensor(0.5))
 
+    def test_qnode_fails_for_return_state_with_bad_version(self, qubit_device_1_wire, monkeypatch):
+
+        @qml.qnode(qubit_device_1_wire, interface='torch')
+        def qf(x):
+            return qml.state()
+
+        with monkeypatch.context() as m:
+            m.setattr("pennylane.interfaces.torch.MIN_VERSION_FOR_STATE", False)
+            with pytest.raises(ImportError, match="Version 1.6.0 or above of PyTorch"):
+                qf(torch.tensor(0.5))
+
 
 class TestTorchQNodeParameterHandling:
     """Test that the TorchQNode properly handles the parameters of qfuncs"""
