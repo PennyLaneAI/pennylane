@@ -681,6 +681,21 @@ class TestQNodeExceptions:
         node(0.1, z=1.3, y=1.2)
         assert circuit.in_args[1:] == (1.2, 1.3)
 
+    def test_cv_state_error(self):
+        """Tests that the QNode raises a NotImplementedError when requested to return the state
+        for a CV device"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        def circuit():
+            return qml.state()
+
+        node = BaseQNode(circuit, dev)
+
+        with pytest.raises(NotImplementedError, match="Returning the quantum state with"):
+            node()
+
+
+
 
 class TestQNodeArgs:
     """Tests the handling of calling arguments in the QNode"""
