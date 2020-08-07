@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
+from pennylane.wires import Wires
 
 
 #####################################################
@@ -45,7 +46,7 @@ class TestMixerHamiltonians:
 
         assert mixer_coeffs == [1, 1, 1, 1]
         assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
-        assert mixer_wires == [0, 1, 2, 3]
+        assert mixer_wires == [Wires(0), Wires(1), Wires(2), Wires(3)]
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
@@ -140,9 +141,9 @@ GRAPHS = [
     graph,
 ]
 
-COEFFS = [[-0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5]]
+COST_COEFFS = [[-0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5]]
 
-TERMS = [
+COST_TERMS = [
     [
         qml.Identity(0) @ qml.Identity(1),
         qml.PauliZ(0) @ qml.PauliZ(1),
@@ -165,9 +166,27 @@ TERMS = [
     ],
 ]
 
-HAMILTONIANS = [qml.Hamiltonian(COEFFS[i], TERMS[i]) for i in range(3)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
 
-MAXCUT = zip(GRAPHS, HAMILTONIANS)
+MIXER_COEFFS = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+
+MIXER_TERMS = [
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]
+]
+
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
+
+MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
+
+def decompose_hamiltonian(hamiltonian):
+
+    coeffs = hamiltonian.coeffs
+    ops = [i.name for i in hamiltonian.ops]
+    wires = [i.wires for i in hamiltonian.ops]
+
+    return [coeffs, ops, wires]
 
 
 class TestCostHamiltonians:
@@ -181,20 +200,11 @@ class TestCostHamiltonians:
         with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
             qaoa.maxcut(graph)
 
-    @pytest.mark.parametrize(("graph", "target_hamiltonian"), MAXCUT)
-    def test_maxcut_output(self, graph, target_hamiltonian):
+    @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)
+    def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
         """Tests that the output of the MaxCut method is correct"""
 
-        cost_hamiltonian = qaoa.maxcut(graph)
+        cost_h, mixer_h = qaoa.maxcut(graph)
 
-        cost_coeffs = cost_hamiltonian.coeffs
-        cost_ops = [i.name for i in cost_hamiltonian.ops]
-        cost_wires = [i.wires for i in cost_hamiltonian.ops]
-
-        target_coeffs = target_hamiltonian.coeffs
-        target_ops = [i.name for i in target_hamiltonian.ops]
-        target_wires = [i.wires for i in target_hamiltonian.ops]
-
-        assert cost_coeffs == target_coeffs
-        assert cost_ops == target_ops
-        assert cost_wires == target_wires
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)

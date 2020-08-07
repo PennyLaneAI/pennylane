@@ -22,7 +22,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable, CV, ActsOn, ObservableReturnTypes
+from pennylane.operation import Observable, CV, WiresEnum, ObservableReturnTypes
 from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
@@ -359,16 +359,17 @@ class BaseQNode(qml.QueuingContext):
             self.queue.remove(obj)
 
     def _append(self, obj):
-        if obj.num_wires == ActsOn.AllWires:  # TODO: re-assess for nonconsec wires
-            if set(obj.wires) != set(range(self.num_wires)):
+        if obj.num_wires == WiresEnum.AllWires:
+            # check here only if enough wires
+            if len(obj.wires) != self.num_wires:
                 raise QuantumFunctionError("Operator {} must act on all wires".format(obj.name))
 
         # Make sure only existing wires are used.
         for w in obj.wires:
-            if w < 0 or w >= self.num_wires:
+            if w not in self.device.wires:
                 raise QuantumFunctionError(
                     "Operation {} applied to invalid wire {} "
-                    "on device with {} wires.".format(obj.name, w, self.num_wires)
+                    "on device with wires {}.".format(obj.name, w.labels, self.device.wires.labels)
                 )
 
         # observables go to their own, temporary queue
@@ -391,7 +392,8 @@ class BaseQNode(qml.QueuingContext):
         or list structure.
 
         Args:
-            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used as a blueprint for the returned variable name(s).
+            parameter_value (Union[Number, Sequence[Any], array[Any]]): The value of the parameter. This will be used
+                as a blueprint for the returned variable name(s).
             prefix (str): Prefix that will be added to the variable name(s), usually the parameter name
 
         Returns:
@@ -588,7 +590,7 @@ class BaseQNode(qml.QueuingContext):
                         self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
-        self.circuit = CircuitGraph(self.ops, self.variable_deps)
+        self.circuit = CircuitGraph(self.ops, self.variable_deps, self.device.wires)
 
         # check for unused positional params
         if self.kwargs.get("par_check", False):
@@ -861,7 +863,7 @@ class BaseQNode(qml.QueuingContext):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
             circuit_graph = CircuitGraph(
-                self.circuit.operations + list(obs), self.circuit.variable_deps
+                self.circuit.operations + list(obs), self.circuit.variable_deps, self.device.wires,
             )
             ret = self.device.execute(circuit_graph)
         else:

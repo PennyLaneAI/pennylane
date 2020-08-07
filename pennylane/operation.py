@@ -120,7 +120,7 @@ from .variable import Variable
 # =============================================================================
 
 
-class ActsOn(IntEnum):
+class WiresEnum(IntEnum):
     """Integer enumeration class
     to represent the number of wires
     an operation acts on"""
@@ -129,11 +129,11 @@ class ActsOn(IntEnum):
     AllWires = 0
 
 
-AllWires = ActsOn.AllWires
+AllWires = WiresEnum.AllWires
 """IntEnum: An enumeration which represents all wires in the
 subsystem. It is equivalent to an integer with value 0."""
 
-AnyWires = ActsOn.AnyWires
+AnyWires = WiresEnum.AnyWires
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
 
@@ -233,8 +233,8 @@ class Operator(abc.ABC):
         params (tuple[float, int, array, Variable]): operator parameters
 
     Keyword Args:
-        wires (Iterable): Iterable containing the wires that the operator acts
-            on. If not given, args[-1] is interpreted as wires.
+        wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
@@ -368,8 +368,7 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
-        wires = Wires(wires)
-        self._wires = wires.tolist()  #: list[int]: wires on which the operator acts
+        self._wires = Wires(wires)  #: Wires: wires on which the operator acts
 
         # check that the number of wires given corresponds to required number
         if (
@@ -399,7 +398,7 @@ class Operator(abc.ABC):
 
     def __str__(self):
         """Operator name and some information."""
-        return "{}: {} params, wires {}".format(self.name, len(self.data), self.wires)
+        return "{}: {} params, wires {}".format(self.name, len(self.data), self.wires.tolist())
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -408,8 +407,8 @@ class Operator(abc.ABC):
         # the last evaluation.
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires)
-        return "{}(wires={})".format(self.name, self.wires)
+            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
+        return "{}(wires={})".format(self.name, self.wires.tolist())
 
     def check_domain(self, p, flattened=False):
         """Check the validity of a parameter.
@@ -477,7 +476,7 @@ class Operator(abc.ABC):
         """Wires of this operator.
 
         Returns:
-            list[int]: wires
+            Wires: wires
         """
         return self._wires
 
@@ -897,7 +896,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires)
+            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -958,7 +957,7 @@ class Tensor(Observable):
     def __str__(self):
         """Print the tensor product and some information."""
         return "Tensor product {}: {} params, wires {}".format(
-            [i.name for i in self.obs], len(self.data), self.wires
+            [i.name for i in self.obs], len(self.data), self.wires.tolist()
         )
 
     def __repr__(self):
@@ -988,9 +987,9 @@ class Tensor(Observable):
         """All wires in the system the tensor product acts on.
 
         Returns:
-            list[int]: wires addressed by the observables in the tensor product
+            Wires: wires addressed by the observables in the tensor product
         """
-        return [w for o in self.obs for w in o.wires]
+        return Wires([o.wires for o in self.obs])
 
     @property
     def data(self):
@@ -1069,11 +1068,12 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals_cache = pauli_eigs(len(self.wires))
 
+        # Sort observables lexicographically by the strings of the wire labels
         # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
         # Hermitian(obs, wires=[1, 3, 4])
         # Sorting the observables based on wires, so that the order of
         # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: x.wires)
+        obs_sorted = sorted(self.obs, key=lambda x: [str(l) for l in x.wires.labels])
 
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
@@ -1147,7 +1147,7 @@ class Tensor(Observable):
         """
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1196,7 +1196,7 @@ class Tensor(Observable):
         """
         if len(self.non_identity_obs) == 0:
             # Return a single Identity as the tensor only contains Identities
-            obs = qml.Identity(0)
+            obs = qml.Identity(self.wires[0])
         elif len(self.non_identity_obs) == 1:
             obs = self.non_identity_obs[0]
         else:
@@ -1216,12 +1216,12 @@ class CV:
 
     # pylint: disable=no-member
 
-    def heisenberg_expand(self, U, num_wires):
+    def heisenberg_expand(self, U, wires):
         """Expand the given local Heisenberg-picture array into a full-system one.
 
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
-            num_wires (int): total number of wires in the quantum circuit. If zero, return ``U`` as is.
+            wires (Wires): wires on the device that the observable gets applied to
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
@@ -1230,7 +1230,6 @@ class CV:
             array[float]: expanded array, dimension ``1+2*num_wires``
         """
 
-        # TODO: re-assess this function for non-consec wires
         U_dim = len(U)
         nw = len(self.wires)
 
@@ -1240,19 +1239,22 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
 
-        if num_wires == 0 or self.wires == list(range(num_wires)):
+        if len(wires) == 0 or len(self.wires) == len(wires):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
-        if num_wires < len(self.wires):
+        if self.wires not in wires:
             raise ValueError(
-                "{}: Number of wires {} is too small to fit Heisenberg matrix".format(
-                    self.name, num_wires
+                "{}: Some observable wires {} do not exist on this device with wires {}".format(
+                    self.name, self.wires, wires
                 )
             )
 
+        # get the indices that the operation's wires have on the device
+        wire_indices = wires.indices(self.wires)
+
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
-        dim = 1 + num_wires * 2
+        dim = 1 + len(wires) * 2
 
         def loc(w):
             "Returns the slice denoting the location of (x_w, p_w) in the basis."
@@ -1262,7 +1264,7 @@ class CV:
         if U.ndim == 1:
             W = np.zeros(dim)
             W[0] = U[0]
-            for k, w in enumerate(self.wires):
+            for k, w in enumerate(wire_indices):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
             if isinstance(self, Observable):
@@ -1272,7 +1274,7 @@ class CV:
 
             W[0, 0] = U[0, 0]
 
-            for k1, w1 in enumerate(self.wires):
+            for k1, w1 in enumerate(wire_indices):
                 s1 = loc(k1)
                 d1 = loc(w1)
 
@@ -1281,7 +1283,7 @@ class CV:
                 # first row (for gates, the first row is always (1, 0, 0, ...), but not for observables!)
                 W[0, d1] = U[0, s1]
 
-                for k2, w2 in enumerate(self.wires):
+                for k2, w2 in enumerate(wire_indices):
                     W[d1, loc(w2)] = U[s1, loc(k2)]  # block k1, k2 in U goes to w1, w2 in W.
         return W
 
@@ -1363,7 +1365,7 @@ class CVOperation(CV, Operation):
         U1 = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return (U2 - U1) * multiplier  # partial derivative of the transformation
 
-    def heisenberg_tr(self, num_wires, inverse=False):
+    def heisenberg_tr(self, wires, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried
         out by the gate at current parameter values.
 
@@ -1381,7 +1383,7 @@ class CVOperation(CV, Operation):
         for non-Gaussian (and non-CV) gates.
 
         Args:
-            num_wires (int): total number of wires in the quantum circuit
+            wires (Wires): wires on the device that the observable gets applied to
             inverse  (bool): if True, return the inverse transformation instead
 
         Raises:
@@ -1407,7 +1409,7 @@ class CVOperation(CV, Operation):
                 )
             )
 
-        return self.heisenberg_expand(U, num_wires)
+        return self.heisenberg_expand(U, wires)
 
 
 class CVObservable(CV, Observable):
@@ -1430,7 +1432,7 @@ class CVObservable(CV, Observable):
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
-    def heisenberg_obs(self, num_wires):
+    def heisenberg_obs(self, wires):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
@@ -1443,10 +1445,10 @@ class CVObservable(CV, Observable):
           such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
 
         Args:
-            num_wires (int): total number of wires in the quantum circuit
+            wires (Wires): wires on the device that the observable gets applied to
         Returns:
             array[float]: :math:`q`
         """
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        return self.heisenberg_expand(U, num_wires)
+        return self.heisenberg_expand(U, wires)

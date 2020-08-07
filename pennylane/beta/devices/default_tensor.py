@@ -20,7 +20,8 @@ from itertools import product
 import numpy as np
 
 from pennylane._device import Device
-from pennylane.beta.plugins import numpy_ops as ops
+from pennylane.beta.devices import numpy_ops as ops
+from pennylane.wires import Wires
 
 try:
     import tensornetwork as tn
@@ -80,7 +81,9 @@ class DefaultTensor(Device):
       >>> mps_tensornet = qml.device("default.tensor", wires=2, representation="mps")
 
     Args:
-        wires (int): number of subsystems in the quantum state represented by the device
+        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples to return when sampling from the device.
             Defaults to 1000 if not specified.
         representation (str): Underlying representation used for the tensor network simulation.
@@ -169,7 +172,7 @@ class DefaultTensor(Device):
         # prepare a factorized all-zeros state
         self._add_initial_state_nodes(
             [self._zero_state] * self.num_wires,
-            [[w] for w in range(self.num_wires)],
+            [Wires(w) for w in range(self.num_wires)],
             ["ZeroState"] * self.num_wires,
         )
 
@@ -188,14 +191,14 @@ class DefaultTensor(Device):
 
         Args:
             A (array): numerical data values for the operator (i.e., matrix form)
-            wires (list[int]): wires that this operator acts on
+            wires (Wires): wires that this operator acts on
             name (str): optional name for the node
             key (str): which list of nodes to add new node to
 
         Returns:
             tn.Node: the newly created node
         """
-        name = "{}{}".format(name, tuple(w for w in wires))
+        name = "{}{}".format(name, wires.labels)
         if isinstance(A, tn.Node):
             A.set_name(name)
             A.backend = self.backend
@@ -209,7 +212,7 @@ class DefaultTensor(Device):
 
         return node
 
-    def _add_initial_state_nodes(self, tensors, wires, names):
+    def _add_initial_state_nodes(self, tensors, tensor_wires, names):
         """Create the nodes representing the initial input state circuit.
 
            Input states can be factorized or entangled. If a state can be factorized
@@ -223,54 +226,58 @@ class DefaultTensor(Device):
 
           Args:
               tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each
-               factorized component of the state (in the computational basis)
-              wires (Sequence(list[int])): the wires for each factorized component of the state
+                factorized component of the state (in the computational basis)
+              tensor_wires (Sequence(Wires)): wires for each factorized component of the state
               names (Sequence[str]): name for each factorized component of the state
         """
         # pylint: disable=too-many-branches
-        if not len(tensors) == len(wires) == len(names):
+        if not len(tensors) == len(tensor_wires) == len(names):
             raise ValueError("tensors, wires, and names must all be the same length.")
 
         if self._rep == "exact":
             self._free_wire_edges = []
-            for tensor, wires_seq, name in zip(tensors, wires, names):
-                if len(tensor.shape) != len(wires_seq):
+            for tensor, wires, name in zip(tensors, tensor_wires, names):
+                if len(tensor.shape) != len(wires):
                     raise ValueError(
                         "Tensor provided has shape={}, which is incompatible "
-                        "with provided sequence of wires {}.".format(tensor.shape, wires_seq)
+                        "with provided wires {}.".format(tensor.shape, wires.tolist())
                     )
-                node = self._add_node(tensor, wires=wires_seq, name=name)
+                node = self._add_node(tensor, wires=wires, name=name)
                 self._free_wire_edges.extend(node.edges)
 
         elif self._rep == "mps":
             nodes = []
-            for tensor, wires_seq, name in zip(tensors, wires, names):
-                if len(tensor.shape) != len(wires_seq):
+            for tensor, wires, name in zip(tensors, tensor_wires, names):
+                if len(tensor.shape) != len(wires):
                     raise ValueError(
                         "Tensor provided has shape={}, which is incompatible "
-                        "with provided sequence of wires {}.".format(tensor.shape, wires_seq)
+                        "with provided wires {}.".format(tensor.shape, wires.tolist())
                     )
                 tensor = self._expand_dims(tensor, 0)
                 tensor = self._expand_dims(tensor, -1)
                 if tensor.shape == (1, 2, 1):
                     # MPS form
-                    node = self._add_node(tensor, wires=wires_seq, name=name)
+                    node = self._add_node(tensor, wires=wires, name=name)
                     nodes.append(node)
                 else:
+
+                    # translate to wire labels used by device
+                    wire_indices = self.map_wires(wires)
+
                     # break down non-factorized tensors into MPS form
-                    if max(wires_seq) - min(wires_seq) != len(wires_seq) - 1:
+                    if max(wire_indices.labels) - min(wire_indices.labels) != len(wire_indices) - 1:
                         raise NotImplementedError(
                             "Multi-wire state initializations only supported for tensors on consecutive wires."
                         )
                     DV = tensor
-                    for idx, wire in enumerate(wires_seq):
-                        if idx < len(wires_seq) - 1:
+                    for idx, wire in enumerate(wires):
+                        if idx < len(wires) - 1:
                             node = tn.Node(DV, name=name, backend=self.backend)
                             U, DV, _error = tn.split_node(node, node[:2], node[2:])
-                            node = self._add_node(U, wires=[wire], name=name)
+                            node = self._add_node(U, wires=wire, name=name)
                         else:
                             # final wire; no need to split further
-                            node = self._add_node(DV, wires=[wire], name=name)
+                            node = self._add_node(DV, wires=wire, name=name)
                         nodes.append(node)
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(
                 [node.tensor for node in nodes], canonicalize=False, backend=self.backend,
@@ -292,8 +299,13 @@ class DefaultTensor(Device):
         return self._asarray(A(*par), dtype=self.C_DTYPE)
 
     def apply(self, operation, wires, par):
+
         if operation in ("QubitStateVector", "BasisState"):
-            if wires is not None and wires != [] and list(wires) != list(range(self.num_wires)):
+            if (
+                wires is not None
+                and wires != Wires([])
+                and wires.tolist() != list(range(self.num_wires))
+            ):
                 raise ValueError(
                     "The default.tensor plugin can apply {} only to all of the {} wires.".format(
                         operation, self.num_wires
@@ -316,7 +328,7 @@ class DefaultTensor(Device):
             state_vector = self._array(par[0], dtype=self.C_DTYPE)
             if state_vector.ndim == 1 and state_vector.shape[0] == 2 ** self.num_wires:
                 tensors = [self._reshape(state_vector, [2] * self.num_wires)]
-                wires_seq = [list(range(self.num_wires))]
+                tensor_wires = [Wires(range(self.num_wires))]
                 name = [operation]
             else:
                 raise ValueError("State vector must be of length 2**wires.")
@@ -332,39 +344,43 @@ class DefaultTensor(Device):
             zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
             one_vec = zero_vec[::-1]
             tensors = [zero_vec if par[0][wire] == 0 else one_vec for wire in range(self.num_wires)]
-            wires_seq = [[w] for w in range(self.num_wires)]
+            tensor_wires = [Wires(w) for w in range(self.num_wires)]
             name = [operation] * self.num_wires
 
-        self._add_initial_state_nodes(tensors, wires_seq, name)
+        self._add_initial_state_nodes(tensors, tensor_wires, name)
 
     def _add_gate_nodes(self, operation, wires, par):
         """Add tensor network nodes and edges related to the quantum gates.
 
         Args:
             operation (str): name of the gate operation
-            wires (Sequence[int]): subsystems the gate is applied on
+            wires (Wires): wires that the gate is applied to
             par (tuple): parameter values for the gate
         """
+
         A = self._get_operator_matrix(operation, par)
         num_wires = len(wires)
         A = self._reshape(A, [2] * num_wires * 2)
         op_node = self._add_node(A, wires=wires, name=operation)
 
+        # translate to wire labels used by device
+        wires = self.map_wires(wires)
+
         if self._rep == "exact":
-            for idx, w in enumerate(wires):
-                tn.connect(op_node[num_wires + idx], self._free_wire_edges[w])
-                self._free_wire_edges[w] = op_node[idx]
+            for idx, l in enumerate(wires.labels):
+                tn.connect(op_node[num_wires + idx], self._free_wire_edges[l])
+                self._free_wire_edges[l] = op_node[idx]
         elif self._rep == "mps":
             if len(wires) == 1:
-                wire = wires[0]
-                self.mps.apply_one_site_gate(op_node, wire)
-                self._free_wire_edges[wire] = self.mps.nodes[wire][1]
+                reg = wires.labels[0]
+                self.mps.apply_one_site_gate(op_node, reg)
+                self._free_wire_edges[reg] = self.mps.nodes[reg][1]
             elif len(wires) == 2:
-                if abs(wires[1] - wires[0]) == 1:
+                if abs(wires.labels[1] - wires.labels[0]) == 1:
                     # TODO: set ``max_singular_values`` or ``max_truncation_error``
-                    self.mps.apply_two_site_gate(op_node, *wires)
-                    for wire in wires:
-                        self._free_wire_edges[wire] = self.mps.nodes[wire][1]
+                    self.mps.apply_two_site_gate(op_node, *wires.labels)
+                    for reg in wires.labels:
+                        self._free_wire_edges[reg] = self.mps.nodes[reg][1]
                 else:
                     raise NotImplementedError(
                         "Multi-wire gates only supported for nearest-neighbour wire pairs."
@@ -374,12 +390,12 @@ class DefaultTensor(Device):
                     "Multi-wire gates only supported for nearest-neighbour wire pairs."
                 )
 
-    def _create_nodes_from_tensors(self, tensors, wires, observable_names, key):
+    def _create_nodes_from_tensors(self, tensors, tensor_wires, observable_names, key):
         """Helper function for creating TensorNetwork nodes based on tensors.
 
         Args:
           tensors (Sequence[np.ndarray, tf.Tensor, torch.Tensor]): tensors of the observables
-          wires (Sequence[Sequence[int]]): measured subsystems for each observable
+          tensor_wires (Sequence[Wires]): measured subsystems for each observable
           observable_names (Sequence[str]): names of the operation/observable
           key (str): which subset of nodes to add the nodes to
 
@@ -387,8 +403,8 @@ class DefaultTensor(Device):
           list[tn.Node]: the observables as TensorNetwork Nodes
         """
         return [
-            self._add_node(A, w, name=o, key=key)
-            for A, w, o in zip(tensors, wires, observable_names)
+            self._add_node(A, wires, name=o, key=key)
+            for A, wires, o in zip(tensors, tensor_wires, observable_names)
         ]
 
     def expval(self, observable, wires, par):
@@ -398,6 +414,7 @@ class DefaultTensor(Device):
 
         tensors = []
         for o, p, w in zip(observable, par, wires):
+
             A = self._get_operator_matrix(o, p)
             offset = len(w)
             tensors.append(self._reshape(A, [2] * offset * 2))
@@ -412,9 +429,9 @@ class DefaultTensor(Device):
 
         matrices = [self._get_operator_matrix(o, p) for o, p in zip(observable, par)]
 
-        tensors = [self._reshape(A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)]
+        tensors = [self._reshape(A, [2] * len(w) * 2) for A, w in zip(matrices, wires)]
         tensors_of_squared_matrices = [
-            self._reshape(A @ A, [2] * len(wires) * 2) for A, wires in zip(matrices, wires)
+            self._reshape(A @ A, [2] * len(w) * 2) for A, w in zip(matrices, wires)
         ]
 
         obs_nodes = self._create_nodes_from_tensors(tensors, wires, observable, key="observables")
@@ -463,20 +480,20 @@ class DefaultTensor(Device):
         outcomes = np.array([np.prod(p) for p in joint_outcomes])
         return np.random.choice(outcomes, self.shots, p=joint_probabilities)
 
-    def ev(self, obs_nodes, wires):
+    def ev(self, obs_nodes, obs_wires):
         r"""Expectation value of observables on specified wires.
 
          Args:
             obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            wires (Sequence[Sequence[int]]): measured subsystems for each observable
+            obs_wires (Sequence[Wires]): measured wires for each observable
 
          Returns:
             float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if self._rep == "exact":
-            expval = self._ev_exact(obs_nodes, wires)
+            expval = self._ev_exact(obs_nodes, obs_wires)
         elif self._rep == "mps":
-            expval = self._ev_mps(obs_nodes, wires)
+            expval = self._ev_mps(obs_nodes, obs_wires)
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
@@ -485,12 +502,12 @@ class DefaultTensor(Device):
             )
         return self._real(expval)
 
-    def _ev_exact(self, obs_nodes, wires):
+    def _ev_exact(self, obs_nodes, obs_wires):
         r"""Expectation value of observables on specified wires using an exact representation.
 
          Args:
             obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            wires (Sequence[Sequence[int]]): measured subsystems for each observable
+            obs_wires (Sequence[Wires]): measured wires for each observable
 
          Returns:
             complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
@@ -499,21 +516,29 @@ class DefaultTensor(Device):
         ket = self._contracted_state_node
         bra = tn.conj(ket, name="Bra")
 
-        all_wires = tuple(range(self.num_wires))
-        meas_wires = []
+        all_device_wires = Wires(range(self.num_wires))
+        meas_device_wires = []
         # For wires which are measured, add edges between
         # the ket node, the observable nodes, and the bra node
-        for obs_node, obs_wires in zip(obs_nodes, wires):
-            meas_wires.extend(obs_wires)
-            for idx, w in enumerate(obs_wires):
+        for obs_node, wires in zip(obs_nodes, obs_wires):
+
+            # translate to consecutive wire labels used by device
+            device_wires = self.map_wires(wires)
+
+            meas_device_wires.append(device_wires)
+            for idx, l in enumerate(device_wires.labels):
                 # Use convention that the indices of a tensor are ordered like
                 # [output_idx1, output_idx2, ..., input_idx1, input_idx2, ...]
                 output_idx = idx
-                input_idx = len(obs_wires) + idx
-                tn.connect(obs_node[input_idx], ket[w])  # A|psi>
-                tn.connect(bra[w], obs_node[output_idx])  # <psi|A
+                input_idx = len(device_wires) + idx
+                tn.connect(obs_node[input_idx], ket[l])  # A|psi>
+                tn.connect(bra[l], obs_node[output_idx])  # <psi|A
+
+        meas_device_wires = Wires(meas_device_wires)
+
         # unmeasured wires are contracted directly between bra and ket
-        for w in set(all_wires) - set(meas_wires):
+        unmeasured_device_wires = Wires.unique_wires([all_device_wires, meas_device_wires])
+        for w in unmeasured_device_wires.labels:
             tn.connect(bra[w], ket[w])
 
         # At this stage, all nodes are connected, and the contraction yields a
@@ -523,46 +548,54 @@ class DefaultTensor(Device):
             ket_and_observable_node = tn.contract_between(obs_node, ket_and_observable_node)
         return tn.contract_between(bra, ket_and_observable_node).tensor
 
-    def _ev_mps(self, obs_nodes, wires):
+    def _ev_mps(self, obs_nodes, obs_wires):
         r"""Expectation value of observables on specified wires using a MPS representation.
 
          Args:
             obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            wires (Sequence[Sequence[int]]): measured subsystems for each observable
+            obs_wires (Sequence[Wires]): measured wires for each observable
          Returns:
             complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
-        if any(len(wires_seq) > 2 for wires_seq in wires):
+        if any(len(wires) > 2 for wires in obs_wires):
             raise NotImplementedError(
                 "Multi-wire measurement only supported for nearest-neighbour wire pairs."
             )
-        if len(obs_nodes) == 1 and len(wires[0]) == 1:
+        if len(obs_nodes) == 1 and len(obs_wires[0]) == 1:
             # TODO: can measure multiple local expectation values at once,
             # but this would require change of `expval` behaviour and
             # refactor of `execute` logic from parent class
-            expval = self.mps.measure_local_operator(obs_nodes, wires[0])[0]
+
+            # translate to consecutive wire labels used by device
+            device_wires = self.map_wires(obs_wires[0])
+            expval = self.mps.measure_local_operator(obs_nodes, device_wires.labels)[0]
         else:
             conj_nodes = [tn.conj(node) for node in self.mps.nodes]
             meas_wires = []
             # connect measured bra and ket nodes with observables
-            for obs_node, wire_seq in zip(obs_nodes, wires):
-                if len(wire_seq) == 2 and abs(wire_seq[0] - wire_seq[1]) > 1:
+            for obs_node, wires in zip(obs_nodes, obs_wires):
+
+                # translate to consecutive wire labels used by device
+                device_wires = self.map_wires(wires)
+                wire_labels = device_wires.labels
+
+                if len(device_wires) == 2 and abs(wire_labels[0] - wire_labels[1]) > 1:
                     raise NotImplementedError(
                         "Multi-wire measurement only supported for nearest-neighbour wire pairs."
                     )
-                offset = len(wire_seq)
-                for idx, wire in enumerate(wire_seq):
-                    tn.connect(conj_nodes[wire][1], obs_node[idx])
-                    tn.connect(obs_node[offset + idx], self.mps.nodes[wire][1])
-                meas_wires.extend(wire_seq)
-            for wire in range(self.num_wires):
+                offset = len(wire_labels)
+                for idx, l in enumerate(wire_labels):
+                    tn.connect(conj_nodes[l][1], obs_node[idx])
+                    tn.connect(obs_node[offset + idx], self.mps.nodes[l][1])
+                meas_wires.extend(wire_labels)
+            for l in range(self.num_wires):
                 # connect unmeasured ket nodes with bra nodes
-                if wire not in meas_wires:
-                    tn.connect(conj_nodes[wire][1], self.mps.nodes[wire][1])
+                if l not in meas_wires:
+                    tn.connect(conj_nodes[l][1], self.mps.nodes[l][1])
                 # connect local nodes of MPS (not connected by default in tn)
-                if wire != self.num_wires - 1:
-                    tn.connect(self.mps.nodes[wire][2], self.mps.nodes[wire + 1][0])
-                    tn.connect(conj_nodes[wire][2], conj_nodes[wire + 1][0])
+                if l != self.num_wires - 1:
+                    tn.connect(self.mps.nodes[l][2], self.mps.nodes[l + 1][0])
+                    tn.connect(conj_nodes[l][2], conj_nodes[l + 1][0])
 
             # contract MPS bonds first
             bra_node = conj_nodes[0]
