@@ -120,6 +120,9 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
+    def __matmul__(self, H):
+
+
 
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
