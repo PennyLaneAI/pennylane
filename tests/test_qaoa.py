@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
+from pennylane.templates import ApproxTimeEvolution
 from pennylane.wires import Wires
 
 
@@ -208,3 +209,103 @@ class TestCostHamiltonians:
 
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+
+class TestUtils:
+    """Tests that the utility functions are working properly"""
+
+    @pytest.mark.parametrize(
+        ("hamiltonian", "value"),
+        (
+            (qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]), True),
+            (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]), False),
+            (qml.Hamiltonian([1, 1], [qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(1)]), True),
+            (qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]), False),
+        ),
+    )
+    def test_diagonal_terms(self, hamiltonian, value):
+        assert qaoa.layers._diagonal_terms(hamiltonian) == value
+
+
+class TestLayers:
+    """Tests that the cost and mixer layers are being constructed properly"""
+
+    def test_mixer_layer_errors(self):
+        """Tests that the mixer layer is throwing the correct errors"""
+
+        hamiltonian = [[1, 1], [1, 1]]
+
+        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+            qaoa.mixer_layer(0.1, hamiltonian)
+
+    def test_cost_layer_errors(self):
+        """Tests that the cost layer is throwing the correct errors"""
+
+        hamiltonian = [[1, 1], [1, 1]]
+
+        with pytest.raises(ValueError, match=r"hamiltonian must be of type pennylane.Hamiltonian"):
+            qaoa.cost_layer(0.1, hamiltonian)
+
+        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
+
+        with pytest.raises(ValueError, match=r"hamiltonian must be written only in terms of PauliZ and Identity gates"):
+            qaoa.cost_layer(0.1, hamiltonian)
+
+    @pytest.mark.parametrize(
+        ("mixer", "gates"),
+        [
+            [
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+                [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])]
+            ],
+            [
+                qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
+                [qml.PauliRot(1, "XX", wires=[0, 1]), qml.PauliRot(1, "YY", wires=[0, 1]),
+                 qml.PauliRot(1, "XX", wires=[0, 2]), qml.PauliRot(1, "YY", wires=[0, 2]),
+                 qml.PauliRot(1, "XX", wires=[1, 2]), qml.PauliRot(1, "YY", wires=[1, 2])]
+            ]
+        ]
+    )
+    def test_mixer_layer_output(self, mixer, gates):
+        """Tests that the gates of the mixer layer are correct"""
+
+        alpha = 1
+
+        with qml._queuing.OperationRecorder() as rec:
+            qaoa.mixer_layer(alpha, mixer)
+
+        for i, j in zip(rec.operations, gates):
+
+            prep = [i.name, i.parameters, i.wires]
+            target = [j.name, j.parameters, j.wires]
+
+            assert prep == target
+
+    @pytest.mark.parametrize(
+        ("cost", "gates"),
+        [
+            [
+                qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
+                [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])]
+            ],
+            [
+                qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
+                [qml.PauliRot(1, "ZZ", wires=[0, 1]),
+                 qml.PauliRot(1, "ZZ", wires=[0, 2]),
+                 qml.PauliRot(1, "ZZ", wires=[1, 2])]
+            ]
+        ]
+    )
+    def test_cost_layer_output(self, cost, gates):
+        """Tests that the gates of the cost layer is correct"""
+
+        gamma = 1
+
+        with qml._queuing.OperationRecorder() as rec:
+            qaoa.cost_layer(gamma, cost)
+
+        for i, j in zip(rec.operations, gates):
+            prep = [i.name, i.parameters, i.wires]
+            target = [j.name, j.parameters, j.wires]
+
+        assert prep == target
