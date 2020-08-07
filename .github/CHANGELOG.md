@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* The quantum state of a QNode can now be returned using the ``state()`` return function.
+  [(#737)](https://github.com/XanaduAI/pennylane/pull/737)
+  
+  Consider the following QNode:
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+  
+  @qml.qnode(dev)
+  def qnode(x, y):
+      qml.RZ(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=1)
+      qml.CNOT(wires=[0, 2])
+      return qml.state()
+  ```
+  
+  Calling the QNode will return its state
+  
+  ```pycon
+  >>> qnode(0.56, 0.1)
+  array([0.95985437-0.27601028j, 0.        +0.j        ,
+       0.04803275-0.01381203j, 0.        +0.j        ,
+       0.        +0.j        , 0.        +0.j        ,
+       0.        +0.j        , 0.        +0.j        ])
+  ```
+
 * It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
   can be strings or numbers. For this, pass a list to the wires argument when creating the device:
   
@@ -130,7 +156,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
+Thomas Bromley, Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
