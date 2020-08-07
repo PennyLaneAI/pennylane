@@ -168,6 +168,20 @@ class TestJacobianQNodeExceptions:
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             node.jacobian(0.5, method="F", options={'order': 3})
 
+    def test_state_derivative_error(self):
+        """Test that a NotImplementedError is raised when the jacobian with respect to the
+        quantum state is requested"""
+        dev = qml.device("default.qubit", wires=1)
+
+        def circuit(x):
+            qml.Rot(0.3, x, -0.2, wires=[0])
+            return qml.state()
+
+        node = JacobianQNode(circuit, dev)
+
+        with pytest.raises(NotImplementedError, match="Differentiating the quantum state is not"):
+            node.jacobian(0.4)
+
 
 class TestBestMethod:
     """Test different flows of _best_method"""
