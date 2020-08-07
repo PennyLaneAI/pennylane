@@ -92,7 +92,7 @@ class TestVar:
 
         x = 0.54
         res = circuit(x)
-        expected = np.sin(x)**2
+        expected = np.sin(x) ** 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -138,7 +138,7 @@ class TestSample:
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,n_sample))
+        assert np.array_equal(sample.shape, (2, n_sample))
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
@@ -279,6 +279,7 @@ class TestState:
         """Test that the correct state is returned when the circuit prepares a GHZ state"""
 
         dev = qml.device("default.qubit", wires=wires)
+
         @qml.qnode(dev)
         def func():
             qml.Hadamard(wires=0)
@@ -364,3 +365,25 @@ class TestState:
         assert isinstance(state, torch.Tensor)
         assert state.dtype == torch.complex128
         assert torch.allclose(state_expected, state)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.parametrize(
+        "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
+    )
+    def test_devices(self, device, skip_if_no_tf_support):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device(device, wires=4)
+
+        @qml.qnode(dev)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state()
+
+        state = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state, state_expected)
+        assert np.allclose(state, dev.state)
