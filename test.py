@@ -2,11 +2,19 @@
 import pennylane as qml
 from pennylane import qaoa
 import numpy as np
+import networkx as nx
+import random
 
-H1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
-H2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
+G = nx.Graph([(0, 1)])
+for (u,v,w) in G.edges(data=True):
+    w['weight'] = random.randint(0,10)
 
-print(H1 + H2)
+wire_matrix = np.array([[0, 1], [2, 3]])
 
-mixer_h = qaoa.creation_annihilation_mixer(["+-+", "+++"], [1, 1], wires=[0, 1, 2])
+node_ordering = {i:i for i in range(4)}
+
+cost_h, mixer_h = qaoa.travelling_salesman(G, node_ordering, wire_matrix)
+
+print(cost_h)
+print("-------")
 print(mixer_h)

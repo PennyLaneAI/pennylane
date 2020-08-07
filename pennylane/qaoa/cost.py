@@ -19,7 +19,7 @@ different optimization problems.
 import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
-
+from pennylane.qaoa.mixers import plus_minus_mixer
 
 def maxcut(graph):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
@@ -81,7 +81,7 @@ def maxcut(graph):
     return (qml.Hamiltonian(coeffs, obs), qaoa.x_mixer(graph.nodes))
 
 
-def travelling_salesman(distance_matrix, wire_matrix):
+def travelling_salesman(graph, node_ordering, wire_matrix):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding the the Travelling
     Salesman problem.
 
@@ -99,4 +99,51 @@ def travelling_salesman(distance_matrix, wire_matrix):
 
     """
 
-    
+    # Constructs the cost Hamiltonian
+
+    coeffs = []
+    obs = []
+
+    for u, v, d in graph.edges(data=True):
+
+        u_val = node_ordering[u]
+        v_val = node_ordering[v]
+
+        for j in range(0, len(graph.nodes)-1):
+
+            term1 = qml.PauliZ(wires=wire_matrix[j][u_val]) @ qml.PauliZ(wires=wire_matrix[j+1][v_val])
+            term2 = qml.PauliZ(wires=wire_matrix[j][v_val]) @ qml.PauliZ(wires=wire_matrix[j+1][u_val])
+
+            coeffs.extend([d['weight'], d['weight']])
+            obs.extend([term1, term2])
+
+    cost_h = qml.Hamiltonian(coeffs, obs)
+
+    # Constructs the mixer Hamiltonian
+
+    mixer_h = None
+
+    for u, v, d in graph.edges(data=True):
+
+        u_val = node_ordering[u]
+        v_val = node_ordering[v]
+
+        for j in range(0, len(graph.nodes) - 1):
+
+            mixer_term = plus_minus_mixer(
+                ["-++-", "+--+"],
+                [1, 1],
+                    wires=[wire_matrix[j][u_val], wire_matrix[j+1][u_val], wire_matrix[j][v_val], wire_matrix[j+1][v_val]]
+                )
+
+            if mixer_h is None:
+                mixer_h = mixer_term
+            else:
+                mixer_h += mixer_term
+
+    # Returns the cost and mixer
+
+    return cost_h, mixer_h
+
+
+

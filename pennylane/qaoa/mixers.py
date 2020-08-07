@@ -165,7 +165,7 @@ def annihilation(wire):
 
     return qml.Hamiltonian([0.5, 0.5j], [qml.PauliX(wire), qml.PauliY(wire)])
 
-def creation_annihilation_mixer(words, coeffs, wires):
+def plus_minus_mixer(words, coeffs, wires):
     r"""Takes a series of "creation-annihilation words", and converts them
     to a mixer Hamiltonian.
 
@@ -199,4 +199,14 @@ def creation_annihilation_mixer(words, coeffs, wires):
     H = H_terms[0]
     for term in H_terms[1:]:
         H += term
+
+    final_coeffs = []
+    final_ops = []
+
+    for i, c in enumerate(H.coeffs):
+        if c != 0:
+            final_coeffs.append(c)
+            final_ops.append(H.ops[i])
+
+    H = qml.Hamiltonian(final_coeffs, final_ops)
     return H
