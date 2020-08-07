@@ -22,7 +22,7 @@ from pennylane.templates.decorator import template
 
 @template
 def repeat(circuit, depth, *args, **kwargs):
-    r"""Repeatedly applies a function containing quantum gates or templates
+    r"""Repeatedly applies a function containing quantum gates or templates.
 
     Args:
         circuit (function): A function that applies the quantum gates/templates being repeated.
@@ -128,6 +128,8 @@ def repeat(circuit, depth, *args, **kwargs):
 
         Since each application of ``circuit`` requires 3 variational parameters, and the circuit is
         repeated 3 times, we supply an array of size (3, 3) as an argument to ``qml.repeat``:
+
+        .. code-block:: python3
 
             params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4], [0.3, 0.3, 0.3]])
 
