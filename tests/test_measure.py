@@ -17,7 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.qnodes import QuantumFunctionError
-from pennylane.operation import Sample, Variance, Expectation
+from pennylane.operation import Sample, Variance, Expectation, State
 
 
 def test_no_measure(tol):
@@ -241,3 +241,69 @@ class TestSample:
             return res
 
         circuit()
+
+
+class TestState:
+    """Tests for the state function"""
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_shape_and_dtype(self, wires):
+        """Test that the state is of correct size and dtype for a trivial circuit"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def func():
+            return qml.state()
+
+        state = func()
+        assert state.shape == (2 ** wires,)
+        assert state.dtype == np.complex128
+
+    def test_return_type_is_state(self):
+        """Test that the return type of the observable is State"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def func():
+            return qml.state()
+
+        func()
+        ob = func.ops[0]
+
+        assert ob.return_type == State
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_correct_ghz(self, wires):
+        """Test that the correct state is returned when the circuit prepares a GHZ state"""
+
+        dev = qml.device("default.qubit", wires=wires)
+        @qml.qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            for i in range(wires - 1):
+                qml.CNOT(wires=[i, i + 1])
+            return qml.state()
+
+        state = func()
+        assert np.allclose(np.sum(np.abs(state) ** 2), 1)
+        assert np.allclose(state[0], 1 / np.sqrt(2))
+        assert np.allclose(state[-1], 1 / np.sqrt(2))
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_equal_to_dev_state(self, wires):
+        """Test that the returned state is equal to the one stored in dev.state for a template
+        circuit"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        weights = qml.init.strong_ent_layers_uniform(3, wires)
+
+        @qml.qnode(dev)
+        def func():
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+            return qml.state()
+
+        state = func()
+        assert np.allclose(state, dev.state)
