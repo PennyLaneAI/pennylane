@@ -20,6 +20,7 @@ from pennylane.qnodes import QuantumFunctionError
 
 
 # Beta imports
+from pennylane.beta.queuing.operation import BetaTensor
 from pennylane.beta.queuing.measure import expval, var, sample, probs, Expectation, Sample, Variance, Probability
 
 
