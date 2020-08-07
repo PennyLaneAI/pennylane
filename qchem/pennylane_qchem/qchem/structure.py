@@ -670,7 +670,7 @@ def hf_state(n_electrons, n_spin_orbitals):
     .. math::
 
         \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_\mathrm{orbs} \rangle,
-        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right,
+        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right.,
 
     where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
 
