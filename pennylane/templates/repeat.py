@@ -39,7 +39,7 @@ def repeat(circuit, depth, *args, **kwargs):
 
         **Repeating Gates**
 
-        To repeatedly apply a collection of gates/teampltes, a function applying each of these
+        To repeatedly apply a collection of gates/templates, a function applying each of these
         operations must first be defined. For example, we can define the following circuit:
 
         .. code-block:: python3
@@ -77,10 +77,12 @@ def repeat(circuit, depth, *args, **kwargs):
         repetition of the circuit*. Static parameters are always passed as keyword arguments into ``qml.repeat``.
         For example, consider the following circuit:
 
-        def circuit(wires):
-            qml.Hadamard(wires=wires[0])
-            qml.CNOT(wires=wires)
-            qml.PauliX(wires=wires[1])
+        ..code-block:: python3
+
+            def circuit(wires):
+                qml.Hadamard(wires=wires[0])
+                qml.CNOT(wires=wires)
+                qml.PauliX(wires=wires[1])
 
         We wish to repeat this circuit 3 times on wires ``1`` and ``2``. Since the wires on which the circuit acts
         *don't change with each repetition of the circuit*, the ``wires`` parameter is passed as a keyword argument.
@@ -167,7 +169,7 @@ def repeat(circuit, depth, *args, **kwargs):
                 return [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))]
 
         We can then run the circuit with a given set of parameters (note that the parameters are
-        of size (2, 1), as the circuit is repeated twice, and for each reptition, both ``param1`` and
+        of size (2, 1), as the circuit is repeated twice, and for each repetition, both ``param1`` and
         ``param2`` are simply real numbers):
 
         .. code-block:: python3
