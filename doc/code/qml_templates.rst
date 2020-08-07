@@ -53,6 +53,17 @@ predefined pattern. You can import this function both via ``qml.broadcast`` and 
 
     pennylane.broadcast
 
+Repetition Function
+-------------------
+
+The repetition function creates a new template by repeatedly applying a quantum circuit (containing quantum
+gates and subroutines) to a set of wires. You can import this function both via
+``qml.repeat`` and ``qml.templates.repeat``.
+
+.. autosummary::
+
+    pennylane.repeat
+
 Utility functions for input checks
 ----------------------------------
 
