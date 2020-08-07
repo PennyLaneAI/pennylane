@@ -158,9 +158,9 @@ State
 -----
 
 Support for returning the quantum state of the QNode is also provided. Similar to the ``probs()``
-measurement function, **observables should not be input** into the the ``state()`` function.
-Moreover, the returned state is over all wires in the QNode, meaning that a ``wires`` argument
-should also not be passed to ``state()``. For example:
+measurement function, **observables should not be input** into the ``state()`` function.
+Moreover, the returned state is pure and over all wires in the QNode, meaning that a ``wires``
+argument should also not be passed to ``state()``. For example:
 
 .. code-block:: python3
 
