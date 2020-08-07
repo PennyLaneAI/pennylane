@@ -27,8 +27,10 @@ def repeat(circuit, depth, *args, **kwargs):
     Args:
         circuit (function): A function that applies the quantum gates/templates being repeated.
         depth (int): The number of time ``circuit`` is repeatedly applied.
-        *args: Dynamic parameters that are passed into ``circuit`` each time it is repeated.
-        **kwargs: Static parameters that are passed into ``circuit`` each time it is repeated.
+        *args: Dynamic parameters that are passed into ``circuit`` each time it is
+               repeated (see UsageDetails for more information).
+        **kwargs: Static parameters that are passed into ``circuit`` each time it is
+                  repeated (see UsageDetails for more information).
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -37,40 +39,43 @@ def repeat(circuit, depth, *args, **kwargs):
 
         **Repeating Gates**
 
-        To repeat a collection of gates, a function applying each of the gates, as well as the wire(s) on which
-        it acts must be specified. For example:
+        To repeatedly apply a collection of gates/teampltes, a function applying each of these
+        operations must first be defined. For example, we can define the following circuit:
 
         .. code-block:: python3
 
             import pennylane as qml
             import numpy as np
 
-            dev = qml.device('default.qubit', wires=3)
-
             def circuit():
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=[1])
+
+        and then pass it into the ``qml.repeat`` function (in this instance, we repeat ``circuit`` 3 times):
+
+        .. code-block:: python3
+
+            dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
             def ansatz():
                 qml.repeat(circuit, 3)
                 return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-            ansatz()
 
-        creates the following circuit:
+        This creates the following circuit:
 
-        .. code-block:: none
-
-             0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
-             1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+        >>> ansatz()
+        >>> print(ansatz.draw())
+        0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
+        1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
 
         **Static Arguments**
 
-        Static arguments are arguments that are passed into ``circuit`` that *don't change with each
-        repetition of the circuit*. This static parameters are passed as keyword arguments into ``qml.repeat``.
-        For example, let's suppose that we define the following circuit:
+        Static arguments are arguments passed into ``circuit`` that *don't change with each
+        repetition of the circuit*. Static parameters are always passed as keyword arguments into ``qml.repeat``.
+        For example, consider the following circuit:
 
         def circuit(wires):
             qml.Hadamard(wires=wires[0])
@@ -78,7 +83,7 @@ def repeat(circuit, depth, *args, **kwargs):
             qml.PauliX(wires=wires[1])
 
         We wish to repeat this circuit 3 times on wires ``1`` and ``2``. Since the wires on which the circuit acts
-        *don't change with each repeatition of the circuit*, the ``wires`` parameter is passed as a keyword argument.
+        *don't change with each repetition of the circuit*, the ``wires`` parameter is passed as a keyword argument.
         We thus repeat the circuit as follows:
 
         .. code-block:: python3
@@ -88,14 +93,12 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.repeat(circuit, 3, wires=[1, 2])
                 return [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))]
 
-            ansatz()
-
         which yields the following circuit:
 
-        .. code-block:: none
-
-             1: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
-             2: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+        >>> ansatz()
+        >>> print(ansatz.draw())
+        1: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
+        2: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
 
         **Dynamic Arguments**
 
@@ -114,9 +117,7 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.MultiRZ(params[1], wires=[0, 1])
                 qml.RY(params[2], wires=[1])
 
-        We wish to repeat this circuit 3 times, with each layer having different ``params``. Since each application of
-        ``circuit`` requires 3 variational parameters, and the circuit is repeated 3 times, we supply an array of size (3, 3)
-        as an argument to ``qml.repeat``:
+        We wish to repeat this circuit 3 times, with each layer having different ``params``:
 
         .. code-block:: python3
 
@@ -125,15 +126,17 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.repeat(circuit, 3, params)
                 return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
+        Since each application of ``circuit`` requires 3 variational parameters, and the circuit is
+        repeated 3 times, we supply an array of size (3, 3) as an argument to ``qml.repeat``:
+
             params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4], [0.3, 0.3, 0.3]])
-            ansatz(params)
 
         which yields the following circuit:
 
-        .. code-block:: none
-
-            0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)──RX(0.3)──╭RZ(0.3)───────────┤ ⟨Z⟩
-            1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──╰RZ(0.3)──RY(0.3)──┤ ⟨Z⟩
+        >>> ansatz(params)
+        >>> print(ansatz.draw())
+        0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)──RX(0.3)──╭RZ(0.3)───────────┤ ⟨Z⟩
+        1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──╰RZ(0.3)──RY(0.3)──┤ ⟨Z⟩
 
         **Passing Multiple Static and Dynamic Arguments**
 
@@ -141,7 +144,7 @@ def repeat(circuit, depth, *args, **kwargs):
         arguments must be ordered in ``qml.repeat`` in the same order in which they are passed into the
         ``circuit``.
 
-        For example, consider the following circuit:
+        Consider the following circuit:
 
         .. code-block:: python3
 
@@ -161,21 +164,21 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.repeat(circuit, 2, param1, param2, wires=[1, 2], var=True)
                 return [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))]
 
-        We can then run the circuit with a given set of parameters:
+        We can then run the circuit with a given set of parameters (note that the parameters are
+        of size (2, 1), as the circuit is repeated twice, and for each reptition, both ``param1`` and
+        ``param2`` are simply real numbers):
 
         .. code-block:: python3
 
             param1 = np.array([0.1, 0.2])
             param2 = np.array([0.3, 0.4])
 
-            ansatz(param1, param2)
+        This gives us the following circuit:
 
-        which gives us:
-
-        .. code-block:: none
-
-             1: ──RX(0.1)──╭RZ(0.3)──RX(0.2)──╭RZ(0.4)─────┤ ⟨Z⟩
-             2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩
+        >>> ansatz(parm1, param2)
+        >>> print(ansatz.draw())
+        1: ──RX(0.1)──╭RZ(0.3)──RX(0.2)──╭RZ(0.4)─────┤ ⟨Z⟩
+        2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩
     """
 
     ##############
