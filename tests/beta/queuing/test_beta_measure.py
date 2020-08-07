@@ -87,6 +87,25 @@ class TestBetaStatistics:
         assert q.get_info(B) == {"owner": tensor_op}
         assert q.get_info(tensor_op) == {"owns": (A, B), "return_type": return_type}
 
+@pytest.mark.parametrize(
+    "stat_func", [expval, var, sample]
+)
+class TestBetaStatisticsError:
+    """Tests for errors arising for the beta statistics functions"""
+
+    def test_not_an_observable(self, stat_func):
+        """Test that a QuantumFunctionError is raised if the provided
+        argument is not an observable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.52, wires=0)
+            return stat_func(qml.CNOT(wires=[0, 1]))
+
+        with pytest.raises(QuantumFunctionError, match="CNOT is not an observable"):
+            res = circuit()
+
 
 class TestBetaProbs:
     """Tests for annotating the return types of the probs function"""

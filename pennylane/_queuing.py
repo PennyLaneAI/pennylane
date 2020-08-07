@@ -118,8 +118,12 @@ class QueuingContext(abc.ABC):
 
     @classmethod
     def update_info(cls, obj, **kwargs):
-        """Updates information of an object in the queue."""
-        cls.active_context().update_info(obj, **kwargs)
+        """Updates information of an object in the active queue."""
+        cls.active_context()._update_info(obj, **kwargs)
+
+    def _update_info(self, obj, **kwargs):
+        """Updates information of an object in the queue instance."""
+        raise NotImplementedError
 
     @classmethod
     def get_info(cls, obj):
@@ -154,7 +158,7 @@ class AnnotatedQueue(QueuingContext):
     def _remove(self, obj):
         del self._queue[obj]
 
-    def update_info(self, obj, **kwargs):
+    def _update_info(self, obj, **kwargs):
         """Updates the annotated information of an object in the queue.
 
         Args:
