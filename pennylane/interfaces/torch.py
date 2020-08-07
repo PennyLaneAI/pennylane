@@ -213,7 +213,7 @@ def to_torch(qnode):
             )
             min_torch_version = TORCH_VERSION[0] >= 1 and TORCH_VERSION[1] >= 6
             if returns_state and not min_torch_version:
-                raise NotImplementedError(
+                raise ImportError(
                     "Version 1.6.0 or above of PyTorch must be installed to return the quantum "
                     "state using the torch interface"
                 )

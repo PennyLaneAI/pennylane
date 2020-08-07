@@ -312,10 +312,11 @@ class JacobianQNode(BaseQNode):
         state_required = any(
             ob.return_type is ObservableReturnTypes.State for ob in self.circuit.observables
         )
-        dtype = np.complex128 if state_required else np.float64
+        if state_required:
+            raise NotImplementedError("Differentiating the quantum state is not yet supported")
 
         # compute the partial derivative wrt. each parameter using the appropriate method
-        grad = np.zeros((self.output_dim, len(wrt)), dtype=dtype)
+        grad = np.zeros((self.output_dim, len(wrt)), dtype=float)
         for i, k in enumerate(wrt):
             par_method = method[k]
 
@@ -327,11 +328,7 @@ class JacobianQNode(BaseQNode):
                 if variances_required:
                     grad[:, i] = self._pd_analytic_var(k, flat_args, kwargs, **options)
                 else:
-                    if state_required:
-                        factor = 2 * np.sin(self.h) / (4 * np.sin(self.h / 2))
-                    else:
-                        factor = 1
-                    grad[:, i] = factor * self._pd_analytic(k, flat_args, kwargs, **options)
+                    grad[:, i] = self._pd_analytic(k, flat_args, kwargs, **options)
             elif par_method == "F":
                 grad[:, i] = self._pd_finite_diff(k, flat_args, kwargs, **options)
             else:
