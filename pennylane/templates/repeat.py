@@ -107,10 +107,12 @@ def repeat(circuit, depth, *args, **kwargs):
 
         For example, let us define the following variational circuit:
 
-        def circuit(params):
-            qml.RX(params[0], wires=[0])
-            qml.MultiRZ(params[1], wires=[0, 1])
-            qml.RY(params[2], wires=[1])
+        .. code-block:: python3
+
+            def circuit(params):
+                qml.RX(params[0], wires=[0])
+                qml.MultiRZ(params[1], wires=[0, 1])
+                qml.RY(params[2], wires=[1])
 
         We wish to repeat this circuit 3 times, with each layer having different ``params``. Since each application of
         ``circuit`` requires 3 variational parameters, and the circuit is repeated 3 times, we supply an array of size (3, 3)
