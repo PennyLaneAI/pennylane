@@ -27,7 +27,7 @@ from torch.autograd.function import once_differentiable
 
 from pennylane.operation import ObservableReturnTypes
 
-TORCH_VERSION = list(map(int, torch.__version__.split(".")))
+TORCH_VERSION = list(map(int, torch.__version__.split(".")[:2]))
 MIN_VERSION_FOR_STATE = TORCH_VERSION[0] >= 1 and TORCH_VERSION[1] >= 6
 
 
