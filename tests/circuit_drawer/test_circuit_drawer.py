@@ -591,6 +591,26 @@ def qubit_circuit_with_probs():
 
 
 @pytest.fixture
+def qubit_circuit_with_state():
+    """A qubit ciruit with a returned state."""
+
+    def qfunc():
+        qml.PauliX(0)
+        qml.PauliX(5)
+        qml.Toffoli(wires=[5, 1, 0])
+
+        return qml.state()
+
+    dev = qml.device("default.qubit", wires=6)
+
+    qnode = qml.QNode(qfunc, dev)
+    qnode._construct((), {})
+    qnode.evaluate((), {})
+
+    return qnode
+
+
+@pytest.fixture
 def drawn_qubit_circuit_with_probs():
     """The rendered circuit representation of the above qubit circuit."""
     return (
@@ -599,6 +619,16 @@ def drawn_qubit_circuit_with_probs():
         + " 2: ─────│───├┤ Probs \n"
         + " 4: ─────│───╰┤ Probs \n"
         + " 5: ──X──╰C───┤       \n"
+    )
+
+
+@pytest.fixture
+def drawn_qubit_circuit_with_state():
+    """The rendered circuit representation of the above qubit circuit."""
+    return (
+        " 0: ──X──╭X──┤ State \n"
+        + " 1: ─────├C──┤       \n"
+        + " 5: ──X──╰C──┤       \n"
     )
 
 
@@ -716,6 +746,14 @@ class TestCircuitDrawerIntegration:
         output = qubit_circuit_with_probs.draw()
 
         assert output == drawn_qubit_circuit_with_probs
+
+    def test_qubit_circuit_with_state(
+        self, qubit_circuit_with_state, drawn_qubit_circuit_with_state
+    ):
+        """Test that a qubit circuit with unused wires renders correctly."""
+        output = qubit_circuit_with_state.draw()
+
+        assert output == drawn_qubit_circuit_with_state
 
     def test_direct_qnode_integration(self):
         """Test that a regular QNode renders correctly."""

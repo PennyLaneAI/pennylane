@@ -428,6 +428,9 @@ class RepresentationResolver:
         if obs.return_type == qml.operation.Probability:
             return "Probs"
 
+        if obs.return_type == qml.operation.State:
+            return "State"
+
         # Unknown return_type
         return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))
 
