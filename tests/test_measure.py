@@ -307,3 +307,60 @@ class TestState:
 
         state = func()
         assert np.allclose(state, dev.state)
+
+    def test_combination(self):
+        """Test that the state can be output in combination with other return types."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state(), qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+
+        state_expected = 0.25 * np.ones(16)
+
+        out = func()
+        assert len(out) == 3
+        assert np.allclose(out[0], state_expected)
+        assert np.allclose(out[1], 0)
+        assert np.allclose(out[2], 0)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    def test_interface_tf(self, skip_if_no_tf_support):
+        """Test that the state correctly outputs in the tensorflow interface"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface="tf")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state()
+
+        state_expected = 0.25 * tf.ones(16)
+        state = func()
+
+        assert isinstance(state, tf.Tensor)
+        assert state.dtype == tf.complex128
+        assert np.allclose(state_expected, state.numpy())
+
+    def test_interface_torch(self):
+        """Test that the state correctly outputs in the torch interface"""
+        torch = pytest.importorskip("torch", minversion="1.6")
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface="torch")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state()
+
+        state_expected = 0.25 * torch.ones(16, dtype=torch.complex128)
+        state = func()
+
+        assert isinstance(state, torch.Tensor)
+        assert state.dtype == torch.complex128
+        assert torch.allclose(state_expected, state)
