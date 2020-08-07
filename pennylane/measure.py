@@ -228,6 +228,10 @@ def state():
     The returned array is in lexicographic order, so corresponds
     to a :math:`1/\sqrt{2}` amplitude in both :math:`|00\rangle`
     and :math:`|01\rangle`.
+
+    .. note::
+
+        The ``state()`` function does not currently support differentiation of the returned state.
     """
     op = qml.Identity(wires=AllWires, do_queue=False)
     op.return_type = State
