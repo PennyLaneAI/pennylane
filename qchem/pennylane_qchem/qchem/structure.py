@@ -677,7 +677,7 @@ def hf_state(n_electrons, n_spin_orbitals):
         n_electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
         n_spin_orbitals (int): Number of spin-orbitals. If an active space is defined,
-            this is the number of active spin-orbitals. 
+            this is the number of active spin-orbitals.
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
@@ -713,13 +713,13 @@ def excitations_to_wires(singles, doubles, wires=None):
     the Unitary Coupled-Cluster (UCCSD) template will act on.
 
     Args:
-        singles (list[list[int]]): List with the indices ``r``, ``p`` of the two qubits
+        singles (list[list[int]]): list with the indices ``r``, ``p`` of the two qubits
             representing the single excitation
-            :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`.
+            :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`
         doubles (list[list[int]]): list with the indices ``s``, ``r``, ``q``, ``p`` of the four
             qubits representing the double excitation
             :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger
-            \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`.
+            \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`
         wires (Iterable[Any]): Wires of the quantum device. If None, will use consecutive wires.
 
     The indices :math:`r, s` and :math:`p, q` in these lists correspond, respectively, to the

@@ -33,7 +33,6 @@ from pennylane.templates.subroutines import UCCSD
 def test_mapping_from_excitations_to_wires(
     singles, doubles, wires, singles_wires_exp, doubles_wires_exp
 ):
-
     r"""Test the correctness of the mapping between indices of the single and double
     excitations and the list of wires to be passed to the quantum circuit"""
 
@@ -62,7 +61,6 @@ def test_mapping_from_excitations_to_wires(
     ],
 )
 def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match):
-
     r"""Test that the function 'excitations_to_wires()' throws an exception if ``singles``,
     ``doubles`` or ``wires`` parameter has illegal shapes or size"""
 

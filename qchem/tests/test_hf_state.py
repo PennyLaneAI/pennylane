@@ -13,7 +13,6 @@ from pennylane import qchem
     ],
 )
 def test_hf_state(n_electrons, n_spin_orbitals, exp_state):
-
     r"""Test the correctness of the generated occupation-number vector"""
 
     res_state = qchem.hf_state(n_electrons, n_spin_orbitals)
@@ -31,7 +30,6 @@ def test_hf_state(n_electrons, n_spin_orbitals, exp_state):
     ],
 )
 def test_inconsistent_input(n_electrons, n_spin_orbitals, msg_match):
-
     r"""Test that an error is raised if a set of inconsistent arguments is input"""
 
     with pytest.raises(ValueError, match=msg_match):
