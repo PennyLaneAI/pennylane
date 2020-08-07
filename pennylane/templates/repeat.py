@@ -77,7 +77,7 @@ def repeat(circuit, depth, *args, **kwargs):
         repetition of the circuit*. Static parameters are always passed as keyword arguments into ``qml.repeat``.
         For example, consider the following circuit:
 
-        ..code-block:: python3
+        .. code-block:: python3
 
             def circuit(wires):
                 qml.Hadamard(wires=wires[0])
