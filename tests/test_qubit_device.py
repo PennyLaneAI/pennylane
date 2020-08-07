@@ -67,7 +67,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
         m.setattr(QubitDevice, "var", lambda self, x: 0)
         m.setattr(QubitDevice, "sample", lambda self, x: 0)
         m.setattr(
-            QubitDevice, "probability", lambda self, wires=None: 0 if wires is None else wires
+            QubitDevice, "probability", lambda self, wires=None: 0
         )
         m.setattr(QubitDevice, "apply", lambda self, x: x)
 
@@ -327,7 +327,7 @@ class TestExtractStatistics:
         assert results == [0]
 
     @pytest.mark.parametrize("returntype", [None])
-    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class SomeObservable(qml.operation.Observable):
