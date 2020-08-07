@@ -23,7 +23,7 @@ import pennylane as qml
 # Beta related imports
 # --------------------
 
-from pennylane.operation import Observable, Tensor
+from pennylane.operation import Tensor
 
 class BetaTensor(Tensor):
     """Container class representing tensor products of observables.
@@ -41,7 +41,7 @@ class BetaTensor(Tensor):
     >>> T = qml.PauliX(0) @ qml.Hadamard(2)
     """
 
-    # pylint: disable=abstract-method
+    # pylint: disable=abstract-method,too-few-public-methods
 
     def __init__(self, *args):
         super().__init__(*args)
