@@ -286,11 +286,11 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 try:
                     state = self.state
-                except NotImplementedError:
+                except AttributeError:
                     state = None
 
                 if state is None:
-                    raise ValueError("The state is not available in the current device")
+                    raise AttributeError("The state is not available in the current device")
 
                 results.append(self.state)
 

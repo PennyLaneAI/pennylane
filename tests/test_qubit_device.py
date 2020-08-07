@@ -21,7 +21,7 @@ from random import random
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError
 from pennylane.qnodes import QuantumFunctionError
-from pennylane.operation import Sample, Variance, Expectation, Probability
+from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.variable import Variable
 from pennylane.wires import Wires
@@ -66,6 +66,7 @@ def mock_qubit_device_extract_stats(monkeypatch):
         m.setattr(QubitDevice, "expval", lambda self, x: 0)
         m.setattr(QubitDevice, "var", lambda self, x: 0)
         m.setattr(QubitDevice, "sample", lambda self, x: 0)
+        m.setattr(QubitDevice, "state", 0)
         m.setattr(
             QubitDevice, "probability", lambda self, wires=None: 0
         )
@@ -308,7 +309,7 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability])
+    @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
@@ -325,6 +326,24 @@ class TestExtractStatistics:
             results = dev.statistics([obs])
 
         assert results == [0]
+
+    def test_results_no_state(self, mock_qubit_device_extract_stats, monkeypatch):
+        """Tests that the statistics method raises an AttributeError when a State return type is
+        requested when QubitDevice does not have a state attribute"""
+
+        class SomeObservable(qml.operation.Observable):
+            num_params = 0
+            num_wires = 1
+            par_domain = "F"
+            return_type = State
+
+        obs = SomeObservable(wires=0)
+
+        with monkeypatch.context() as m:
+            dev = mock_qubit_device_extract_stats()
+            delattr(dev.__class__, "state")
+            with pytest.raises(AttributeError, match="The state is not available in the current"):
+                dev.statistics([obs])
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
@@ -348,7 +367,7 @@ class TestExtractStatistics:
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, None]
+        assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
         class SomeObservable(qml.operation.Observable):
             num_params = 0
