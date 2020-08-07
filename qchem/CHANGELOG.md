@@ -60,7 +60,7 @@
     "single/double excitations" and "particle-hole excitations".
 
   - The arguments of the function `excitations_to_wires` have been renamed.
-    `ph_confs` --> `singles`, `pphh_confs` --> `doubles`
+    `ph_confs` → `singles`, `pphh_confs` → `doubles`
 
 * The total spin observable S^2 can be built straightforwardly using the
   function `spin2` as implemented in the `obs` module.

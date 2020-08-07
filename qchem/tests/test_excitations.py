@@ -43,7 +43,6 @@ from pennylane import qchem
 def test_excitations(
     n_electrons, n_spin_orbitals, delta_sz, n_singles, n_doubles, singles_exp, doubles_exp
 ):
-
     r"""Test the correctness of the generated configurations"""
 
     singles, doubles = qchem.excitations(n_electrons, n_spin_orbitals, delta_sz)
@@ -64,7 +63,6 @@ def test_excitations(
     ],
 )
 def test_inconsistent_excitations(n_electrons, n_spin_orbitals, delta_sz, message_match):
-
     r"""Test that an error is raised if a set of inconsistent arguments is input"""
 
     with pytest.raises(ValueError, match=message_match):
