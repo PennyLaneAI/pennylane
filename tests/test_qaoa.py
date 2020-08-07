@@ -271,10 +271,10 @@ class TestLayers:
 
         alpha = 1
 
-        with qml._queuing.OperationRecorder() as rec1:
+        with qml._queuing.OperationRecorder() as rec:
             qaoa.mixer_layer(alpha, mixer)
 
-        for i, j in zip(rec1.operations, gates):
+        for i, j in zip(rec.operations, gates):
 
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
@@ -301,10 +301,10 @@ class TestLayers:
 
         gamma = 1
 
-        with qml._queuing.OperationRecorder() as rec1:
+        with qml._queuing.OperationRecorder() as rec:
             qaoa.cost_layer(gamma, cost)
 
-        for i, j in zip(rec1.operations, gates):
+        for i, j in zip(rec.operations, gates):
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
 
