@@ -25,6 +25,7 @@ import pennylane as qml
 
 from pennylane.operation import Tensor
 
+
 class BetaTensor(Tensor):
     """Container class representing tensor products of observables.
 
