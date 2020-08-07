@@ -119,7 +119,7 @@ class QueuingContext(abc.ABC):
     @classmethod
     def update_info(cls, obj, **kwargs):
         """Updates information of an object in the active queue."""
-        cls.active_context()._update_info(obj, **kwargs)
+        cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
     def _update_info(self, obj, **kwargs):
         """Updates information of an object in the queue instance."""
