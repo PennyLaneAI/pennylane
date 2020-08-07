@@ -183,8 +183,12 @@ def repeat(circuit, depth, *args, **kwargs):
         raise ValueError("'depth' must be of type int, got {}".format(type(depth).__name__))
 
     for arg in args:
-        if (len(arg) != depth):
-            raise ValueError("Each argument in args must have length matching 'depth'; expected {} got {}".format(depth, len(arg)))
+        if len(arg) != depth:
+            raise ValueError(
+                "Each argument in args must have length matching 'depth'; expected {} got {}".format(
+                    depth, len(arg)
+                )
+            )
 
     ##############
 
