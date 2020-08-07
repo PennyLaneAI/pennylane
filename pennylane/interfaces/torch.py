@@ -27,6 +27,10 @@ from torch.autograd.function import once_differentiable
 
 from pennylane.operation import ObservableReturnTypes
 
+TORCH_VERSION = torch.__version__.split(".")
+
+
+
 
 def unflatten_torch(flat, model):
     """Restores an arbitrary nested structure to a flattened Torch tensor.
@@ -207,10 +211,11 @@ def to_torch(qnode):
                     for op in qnode.ops
                 ]
             )
-            if returns_state:
+            min_torch_version = TORCH_VERSION[0] >= 1 and TORCH_VERSION[1] >= 6
+            if returns_state and not min_torch_version:
                 raise NotImplementedError(
-                    "Returning the quantum state is not possible when using the PyTorch interface "
-                    "due to complex numbers not being supported in PyTorch"
+                    "Version 1.6.0 or above of PyTorch must be installed to return the quantum "
+                    "state using the torch interface"
                 )
 
             return torch.from_numpy(res)
