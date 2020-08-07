@@ -112,3 +112,91 @@ def xy_mixer(graph):
         obs.append(qml.PauliY(node1) @ qml.PauliY(node2))
 
     return qml.Hamiltonian(coeffs, obs)
+
+def creation(wire):
+    r"""Creates the spin-creation operator acting on a single wire.
+
+    This mixer Hamiltonian is defined as:
+
+    .. math:: H_M \ = \ |1\rangle \langle 0 | \ = \ \frac{1}{2} (X \ - \ iY)
+
+    where :math:`X` and :math:`Y` are the Pauli-X and Pauli-Y. Note that this Hamiltonian
+    takes :math:`|0\rangle` to :math:`|1\rangle` and :math:`|1\rangle` to :math:`0`.
+
+    .. UsageDetails::
+
+        The mixer Hamiltonian can be called as follows:
+
+        .. code-block:: python3
+
+            from pennylane import qaoa
+
+            mixer_h = qaoa.creation(0)
+
+        >>> print(mixer_h)
+        (0.5) [X0] + (0.0-0.5j) [Y0]
+    """
+
+    return qml.Hamiltonian([0.5, -0.5j], [qml.PauliX(wire), qml.PauliY(wire)])
+
+def annihilation(wire):
+    r"""Creates the spin-annihilation operator acting on a single wire.
+
+    This mixer Hamiltonian is defined as:
+
+    .. math:: H_M \ = \ |0\rangle \langle 1 | \ = \ \frac{1}{2} (X \ + \ iY)
+
+    where :math:`X` and :math:`Y` are the Pauli-X and Pauli-Y. Note that this Hamiltonian
+    takes :math:`|1\rangle` to :math:`|0\rangle` and :math:`|0\rangle` to :math:`0`.
+
+    .. UsageDetails::
+
+        The mixer Hamiltonian can be called as follows:
+
+        .. code-block:: python3
+
+            from pennylane import qaoa
+
+            mixer_h = qaoa.annihilation(0)
+
+        >>> print(mixer_h)
+        (0.5) [X0] + (0.0+0.5j) [Y0]
+    """
+
+    return qml.Hamiltonian([0.5, 0.5j], [qml.PauliX(wire), qml.PauliY(wire)])
+
+def creation_annihilation_mixer(words, coeffs, wires):
+    r"""Takes a series of "creation-annihilation words", and converts them
+    to a mixer Hamiltonian.
+
+    In general, this Hamiltonian is defined as:
+
+    .. math:: H_M \ = \ \displaystyle\sum_{j \ = \ 1}^{n} c_{j} \displaystyle\prod_{i \ = \ 0}^{w} S_{i}^{b_{ji}}
+
+    """
+
+    H_terms = []
+
+    for i, w in enumerate(words):
+        H_term = 0
+        for j, char in enumerate(w):
+            if char == "-":
+                if H_term == 0:
+                    H_term = annihilation(wires[j])
+                else:
+                    H_term = H_term @ annihilation(wires[j])
+            elif char == "+":
+                if H_term == 0:
+                    H_term = creation(wires[j])
+                else:
+                    H_term = H_term @ annihilation(wires[j])
+            else:
+                raise ValueError("Encountered invalid character, {}, in words[{}]".format(char, i))
+
+        H_term._coeffs = [coeffs[i]*n for n in H_term.coeffs]
+        H_terms.append(H_term)
+
+    H = H_terms[0]
+    for term in H_terms[1:]:
+        H += term
+    return H

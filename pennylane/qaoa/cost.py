@@ -94,6 +94,9 @@ def travelling_salesman(distance_matrix, wire_matrix):
     the Pauli-Z operator acting on the wire representing vertex :math:`v` at time-step :math:`t`.
     See [`arXiv:1805.03265 <https://arxiv.org/abs/1805.03265>`__] for more information.
 
-    The mixer Hamiltonian returned from :func:`~qaoa.travelling_salesman` is 
+    The mixer Hamiltonian returned from :func:`~qaoa.travelling_salesman` is `~qaoa.creation_annihilation_mixer`,
+    applied between nodes of the graph, separated by one temporal step.
 
     """
+
+    
