@@ -21,21 +21,26 @@ from pennylane.qnodes import QuantumFunctionError
 
 # Beta imports
 from pennylane.beta.queuing.operation import BetaTensor
-from pennylane.beta.queuing.measure import expval, var, sample, probs, Expectation, Sample, Variance, Probability
+from pennylane.beta.queuing.measure import (
+    expval,
+    var,
+    sample,
+    probs,
+    Expectation,
+    Sample,
+    Variance,
+    Probability,
+)
 
 
-
-@pytest.mark.parametrize("stat_func,return_type", [(expval,Expectation), (var, Variance), (sample, Sample)])
+@pytest.mark.parametrize(
+    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
+)
 class TestBetaStatistics:
     """Tests for annotating the return types of the statistics functions"""
 
     @pytest.mark.parametrize(
-        "op",
-        [
-            qml.PauliX, qml.PauliY,
-            qml.PauliZ, qml.Hadamard,
-            qml.Identity
-        ],
+        "op", [qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity],
     )
     def test_annotating_obs_return_type(self, stat_func, return_type, op):
         """Test that the return_type related info is updated for an expval call"""
@@ -81,6 +86,7 @@ class TestBetaStatistics:
         assert q.get_info(A) == {"owner": tensor_op}
         assert q.get_info(B) == {"owner": tensor_op}
         assert q.get_info(tensor_op) == {"owns": (A, B), "return_type": return_type}
+
 
 class TestBetaProbs:
     """Tests for annotating the return types of the probs function"""
