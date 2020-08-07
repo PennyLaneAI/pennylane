@@ -666,8 +666,9 @@ class BaseQNode(qml.QueuingContext):
                 self.output_dim = num_basis_states ** len(res.wires)
             elif res.return_type is ObservableReturnTypes.State:
                 if self.model == "cv":
-                    raise NotImplementedError("Returning the quantum state with a CV device is "
-                                              "not yet supported")
+                    raise NotImplementedError(
+                        "Returning the quantum state with a CV device is " "not yet supported"
+                    )
 
                 self.output_dim = 2 ** self.num_wires
                 self.output_conversion = np.squeeze
