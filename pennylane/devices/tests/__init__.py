@@ -96,12 +96,18 @@ def get_device_tests():
 
 
 def test_device(
-    device, analytic=None, shots=None, skip_ops=True, flaky_report=False, pytest_args=None, **kwargs
+    device_name,
+    analytic=None,
+    shots=None,
+    skip_ops=True,
+    flaky_report=False,
+    pytest_args=None,
+    **kwargs,
 ):
     """Run the device integration tests using an installed PennyLane device.
 
     Args:
-        device (str): the name of the device to test
+        device_name (str): the name of the device to test
         analytic (bool): Whether to run the device in analytic mode (where
             expectation values and probabilities are computed exactly from the quantum state)
             or non-analytic/"stochastic" mode (where probabilities and expectation
@@ -147,7 +153,7 @@ def test_device(
 
     cmds = ["pytest"]
     cmds.append(test_dir)
-    cmds.append(f"--device={device}")
+    cmds.append(f"--device={device_name}")
 
     if shots is not None:
         cmds.append(f"--shots={shots}")
@@ -230,7 +236,7 @@ def cli():
         flaky = True
 
     test_device(
-        args.device,
+        device_name=args.device,
         analytic=args.analytic,
         shots=args.shots,
         skip_ops=args.skip_ops,
