@@ -77,7 +77,7 @@ UNITARIES = [
 
 
 class TestRepeat:
-    """Tests the repetation function"""
+    """Tests the repetition function"""
 
     def test_depth_error(self):
         """Tests that the correct error is thrown when depth is not an integer"""

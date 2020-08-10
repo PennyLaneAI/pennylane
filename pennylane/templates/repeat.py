@@ -22,7 +22,7 @@ from pennylane.templates.decorator import template
 
 @template
 def repeat(circuit, depth, *args, **kwargs):
-    r"""Repeatedly applies a function containing quantum gates or templates.
+    r"""Repeatedly applies a circuit containing quantum gates or templates.
 
     Args:
         circuit (function): A function that applies the quantum gates/templates being repeated.
@@ -52,7 +52,7 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=[1])
 
-        and then pass it into the ``qml.repeat`` function (in this instance, we repeat ``circuit`` 3 times):
+        and then pass it into the ``qml.repeat`` function. In this instance, we repeat ``circuit`` 3 times:
 
         .. code-block:: python3
 
@@ -73,8 +73,8 @@ def repeat(circuit, depth, *args, **kwargs):
 
         **Static Arguments**
 
-        Static arguments are arguments passed into ``circuit`` that *don't change with each
-        repetition of the circuit*. Static parameters are always passed as keyword arguments into ``qml.repeat``.
+        Static arguments are arguments passed into ``circuit`` that don't change with each
+        repetition of the circuit. Static parameters are always passed as keyword arguments into ``qml.repeat``.
         For example, consider the following circuit:
 
         .. code-block:: python3
@@ -84,8 +84,8 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.CNOT(wires=wires)
                 qml.PauliX(wires=wires[1])
 
-        We wish to repeat this circuit 3 times on wires ``1`` and ``2``. Since the wires on which the circuit acts
-        *don't change with each repetition of the circuit*, the ``wires`` parameter is passed as a keyword argument.
+        We wish to repeat this circuit three times on wires ``1`` and ``2``. Since the wires on which the circuit acts
+        don't change with each repetition of the circuit, the ``wires`` parameter is passed as a keyword argument.
         We thus repeat the circuit as follows:
 
         .. code-block:: python3
@@ -105,7 +105,7 @@ def repeat(circuit, depth, *args, **kwargs):
         **Dynamic Arguments**
 
         In addition to passing static arguments to ``circuit``, we can also pass *dynamic* arguments.
-        These are arguments that do change with each repetition of the circuit. These parameters are passed
+        These are arguments that change with each repetition of the circuit. They are passed
         as non-keyword arguments to ``qml.repeat``, after ``circuit`` and ``depth``. Each dynamic parameter must
         be a list of length equal to ``depth``, where each entry corresponds to the value of the argument used for the
         corresponding layer.
@@ -119,13 +119,13 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.MultiRZ(params[1], wires=[0, 1])
                 qml.RY(params[2], wires=[1])
 
-        We wish to repeat this circuit 3 times, with each layer having different ``params``:
+        We wish to repeat this circuit two times, with each layer having different ``params``:
 
         .. code-block:: python3
 
             @qml.qnode(dev)
             def ansatz(params):
-                qml.repeat(circuit, 3, params)
+                qml.repeat(circuit, 2, params)
                 return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
         Since each application of ``circuit`` requires 3 variational parameters, and the circuit is
