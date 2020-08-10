@@ -62,4 +62,4 @@ class TestWiresIntegration:
         circuit1 = circuit_factory(dev1, wires1)
         circuit2 = circuit_factory(dev2, wires2)
 
-        assert np.allclose(circuit1(), circuit2(), tol(dev1.analytic))
+        assert np.allclose(circuit1(), circuit2(), atol=tol(dev1.analytic))
