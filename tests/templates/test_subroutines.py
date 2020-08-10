@@ -348,7 +348,8 @@ class TestInterferometer:
 
 
 class TestSingleExcitationUnitary:
-    """Tests for the SingleExcitationUnitary template from the pennylane.templates.subroutine module."""
+    """Tests for the SingleExcitationUnitary template from the
+    pennylane.templates.subroutine module."""
 
     @pytest.mark.parametrize(
         ("single_wires", "ref_gates"),
@@ -539,7 +540,8 @@ class TestArbitraryUnitary:
 
 
 class TestDoubleExcitationUnitary:
-    """Tests for the DoubleExcitationUnitary template from the pennylane.templates.subroutine module."""
+    """Tests for the DoubleExcitationUnitary template from the
+    pennylane.templates.subroutine module."""
 
     @pytest.mark.parametrize(
         ("wires1", "wires2", "ref_gates"),
@@ -787,7 +789,7 @@ class TestUCCSDUnitary:
     """Tests for the UCCSD template from the pennylane.templates.subroutine module."""
 
     @pytest.mark.parametrize(
-        ("ph", "pphh", "weights", "ref_gates"),
+        ("s_wires", "d_wires", "weights", "ref_gates"),
         [
             (
                 [[0, 1, 2]],
@@ -860,26 +862,26 @@ class TestUCCSDUnitary:
             ),
         ],
     )
-    def test_uccsd_operations(self, ph, pphh, weights, ref_gates):
+    def test_uccsd_operations(self, s_wires, d_wires, weights, ref_gates):
         """Test the correctness of the UCCSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
 
-        sqg = 10 * len(ph) + 72 * len(pphh)
+        sqg = 10 * len(s_wires) + 72 * len(d_wires)
 
         cnots = 0
-        for i_ph in ph:
-            cnots += 4 * (len(i_ph) - 1)
+        for s_wires_ in s_wires:
+            cnots += 4 * (len(s_wires_) - 1)
 
-        for i_pphh in pphh:
-            cnots += 16 * (len(i_pphh[0]) - 1 + len(i_pphh[1]) - 1 + 1)
+        for d_wires_ in d_wires:
+            cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
         N = 6
         wires = range(N)
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
         with pennylane._queuing.OperationRecorder() as rec:
-            UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
+            UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
 
         assert len(rec.queue) == sqg + cnots + 1
 
@@ -902,7 +904,7 @@ class TestUCCSDUnitary:
                 assert np.allclose(res_weight, exp_weight)
 
     @pytest.mark.parametrize(
-        ("weights", "ph", "pphh", "init_state", "msg_match"),
+        ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
         [
             (np.array([-2.8]), [[0, 1, 2]], [], [1, 1, 0, 0], "'init_state' must be a Numpy array"),
             (np.array([-2.8]), [[0, 1, 2]], [], (1, 1, 0, 0), "'init_state' must be a Numpy array"),
@@ -918,14 +920,14 @@ class TestUCCSDUnitary:
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
-                "'ph' and 'pphh' lists can not be both empty",
+                "'s_wires' and 'd_wires' lists can not be both empty",
             ),
             (
                 np.array([-2.8]),
                 [],
                 [[[0, 1, 2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "expected entries of pphh to be of size 2",
+                "expected entries of d_wires to be of size 2",
             ),
             (
                 np.array([-2.8]),
@@ -957,24 +959,38 @@ class TestUCCSDUnitary:
             ),
         ],
     )
-    def test_uccsd_xceptions(self, weights, ph, pphh, init_state, msg_match):
+    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, msg_match):
         """Test that UCCSD throws an exception if the parameters have illegal
         shapes, types or values."""
         N = 4
         wires = range(4)
         dev = qml.device("default.qubit", wires=N)
 
-        def circuit(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state):
-            UCCSD(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+        def circuit(
+            weights=weights, wires=wires, s_wires=s_wires, d_wires=d_wires, init_state=init_state
+        ):
+            UCCSD(
+                weights=weights,
+                wires=wires,
+                s_wires=s_wires,
+                d_wires=d_wires,
+                init_state=init_state,
+            )
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
-            qnode(weights=weights, wires=wires, ph=ph, pphh=pphh, init_state=init_state)
+            qnode(
+                weights=weights,
+                wires=wires,
+                s_wires=s_wires,
+                d_wires=d_wires,
+                init_state=init_state,
+            )
 
     @pytest.mark.parametrize(
-        ("weights", "ph", "pphh", "expected"),
+        ("weights", "s_wires", "d_wires", "expected"),
         [
             (
                 np.array([3.90575761, -1.89772083, -1.36689032]),
@@ -984,30 +1000,34 @@ class TestUCCSDUnitary:
             )
         ],
     )
-    def test_integration(self, weights, ph, pphh, expected, tol):
+    def test_integration(self, weights, s_wires, d_wires, expected, tol):
         """Test integration with PennyLane and gradient calculations"""
 
         N = 4
         wires = range(N)
         dev = qml.device("default.qubit", wires=N)
 
-        w_ph_0 = weights[0]
-        w_ph_1 = weights[1]
-        w_pphh = weights[2]
+        w0 = weights[0]
+        w1 = weights[1]
+        w2 = weights[2]
 
         @qml.qnode(dev)
-        def circuit(w_ph_0, w_ph_1, w_pphh):
+        def circuit(w0, w1, w2):
             UCCSD(
-                [w_ph_0, w_ph_1, w_pphh], wires, ph=ph, pphh=pphh, init_state=np.array([1, 1, 0, 0])
+                [w0, w1, w2],
+                wires,
+                s_wires=s_wires,
+                d_wires=d_wires,
+                init_state=np.array([1, 1, 0, 0]),
             )
             return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
-        res = circuit(w_ph_0, w_ph_1, w_pphh)
+        res = circuit(w0, w1, w2)
         assert np.allclose(res, np.array(expected), atol=tol)
 
         # compare the two methods of computing the Jacobian
-        jac_A = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="A")
-        jac_F = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="F")
+        jac_A = circuit.jacobian((w0, w1, w2), method="A")
+        jac_F = circuit.jacobian((w0, w1, w2), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)
 
 
