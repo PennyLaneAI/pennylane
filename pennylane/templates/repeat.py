@@ -26,9 +26,12 @@ def repeat(circuit, depth, *args, **kwargs):
 
     Args:
         circuit (function): A function that applies the quantum gates/templates being repeated.
-        depth (int): The number of times ``circuit`` is repeatedly applied.
+        depth (int): The number of times the circuit is repeatedly applied.
         *args: Dynamic parameters that are passed into ``circuit`` each time it is
-               repeated (see UsageDetails for more information).
+               repeated (see UsageDetails for more information). Each dynamic argument
+               must be a list of first dimension equal to ``depth``, with the :math:`j`-th element of the list
+               corresponding to the value of the argument the :math:`j`-th time the circuit
+               is applied.
         **kwargs: Static parameters that are passed into ``circuit`` each time it is
                   repeated (see UsageDetails for more information).
 
@@ -107,8 +110,8 @@ def repeat(circuit, depth, *args, **kwargs):
         In addition to passing static arguments to ``circuit``, we can also pass *dynamic* arguments.
         These are arguments that change with each repetition of the circuit. They are passed
         as non-keyword arguments to ``qml.repeat``, after ``circuit`` and ``depth``. Each dynamic parameter must
-        be a list of length equal to ``depth``, where each entry corresponds to the value of the argument used for the
-        corresponding layer.
+        be a list of length equal to ``depth``. The :math:`j`-th element of the list represents the value of the
+        argument used for the :math:`j`-th repetition of the circuit.
 
         For example, let us define the following variational circuit:
 
@@ -128,12 +131,14 @@ def repeat(circuit, depth, *args, **kwargs):
                 qml.repeat(circuit, 2, params)
                 return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-        Since each application of ``circuit`` requires 3 variational parameters, and the circuit is
-        repeated 3 times, we supply an array of size (3, 3) as an argument to ``qml.repeat``:
+        Since we only have one dynamic argument, ``params``, we pass an array of first-dimension two,
+        for the two layers of the ansatz. By looking at ``circuit``, we can see that the ``params`` argument
+        supplies three different parameters to three different gates. Thus, we supply an array of size
+        (2, 3) as an argument to ``qml.repeat``:
 
         .. code-block:: python3
 
-            params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4], [0.3, 0.3, 0.3]])
+            params = np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.4]])
 
         which yields the following circuit:
 
