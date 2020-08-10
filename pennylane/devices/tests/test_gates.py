@@ -28,8 +28,6 @@ from flaky import flaky
 
 pytestmark = pytest.mark.skip_unsupported
 
-np.random.seed(42)
-
 # ==========================================================
 # Some useful global variables
 
