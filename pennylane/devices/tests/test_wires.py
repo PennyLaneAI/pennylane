@@ -16,6 +16,7 @@
 import pennylane as qml
 import pytest
 from pennylane import numpy as np
+from flaky import flaky
 
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
@@ -40,6 +41,7 @@ def make_simple_circuit_expval(device, wires):
 # =====
 
 
+@flaky(max_runs=10)
 class TestWiresIntegration:
     """Test that the device integrates with PennyLane's wire management."""
 
