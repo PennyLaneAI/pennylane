@@ -121,41 +121,6 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
-    def __matmul__(self, H):
-
-        coeffs1 = self.coeffs
-        terms1 = self.ops
-
-        coeffs2 = H.coeffs
-        terms2 = H.ops
-
-        # Assumes that the Hamiltonians are acting on disjoint sets of wires
-
-        coeffs = [i[0]*i[1] for i in itertools.product(coeffs1, coeffs2)]
-        term_list = itertools.product(terms1, terms2)
-
-        terms = [qml.operation.Tensor(i[0], i[1]) for i in term_list]
-
-        return qml.Hamiltonian(coeffs, terms)
-
-    def __add__(self, H):
-
-        coeffs = self.coeffs
-        ops = self.ops
-
-        op_attributes = [[i.name, i.wires, i.parameters] for i in ops]
-
-        for coeff, op in zip(H.coeffs, H.ops):
-            attr = [op.name, op.wires, op.parameters]
-            if attr in op_attributes:
-                coeffs[op_attributes.index(attr)] += coeff
-            else:
-                coeffs.append(coeff)
-                ops.append(op)
-                op_attributes.append(attr)
-
-        return qml.Hamiltonian(coeffs, ops)
-
 
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
