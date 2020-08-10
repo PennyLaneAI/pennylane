@@ -597,7 +597,7 @@ def excitations(electrons, orbitals, delta_sz=0):
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
-        orbitals (int): Number of spin-orbitals. If an active space is defined,
+        orbitals (int): Number of spin orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
         delta_sz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz`` and
             ``sz[p] + sz[p] - sz[r] - sz[s] = delta_sz`` for the spin-projection ``sz`` of
@@ -605,7 +605,7 @@ def excitations(electrons, orbitals, delta_sz=0):
             ``delta_sz`` can take the values :math:`0`, :math:`\pm 1` and :math:`\pm 2`.
 
     Returns:
-        tuple(list, list): lists with the indices of the spin-orbitals involved in the
+        tuple(list, list): lists with the indices of the spin orbitals involved in the
         single and double excitations
 
     **Example**
@@ -638,7 +638,7 @@ def excitations(electrons, orbitals, delta_sz=0):
             "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({}).".format(delta_sz)
         )
 
-    # define the single-particle state spin quantum number 'sz'
+    # define the spin projection 'sz' of the single-particle states
     sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(orbitals)])
 
     singles = [
@@ -677,7 +677,7 @@ def hf_state(electrons, orbitals):
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
-        orbitals (int): Number of spin-orbitals. If an active space is defined,
+        orbitals (int): Number of spin orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
 
     Returns:
