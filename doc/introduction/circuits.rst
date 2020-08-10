@@ -105,7 +105,9 @@ Further options can then be passed as keyword arguments; these options can diffe
 on the device. For the in-built ``'default.qubit'`` and ``'default.gaussian'``
 devices, the options are:
 
-* ``wires`` (*int*): The number of wires to initialize the device with.
+* ``wires`` (*int* or *Iterable*): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``).
 
 * ``analytic`` (*bool*): Indicates if the device should calculate expectations
   and variances analytically. Only possible with simulator devices. Defaults to ``True``.
@@ -114,6 +116,40 @@ devices, the options are:
   the expectation values. Defaults to 1000 if not specified.
 
 For a plugin device, refer to the plugin documentation for available device options.
+
+**Defining custom wire labels**
+
+You can define your own wire labels instead of the default consecutive integers ``0, 1, ...``,
+and use them to address wires on the device. This is done by passing an iterable to the ``wires`` argument:
+
+.. code-block:: python
+
+    dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000, analytic=False)
+
+In the quantum function you can now use your own labels:
+
+.. code-block:: python
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires='wire1')
+        qml.CNOT(wires=['wire1' ,'wire2'])
+        qml.RY(y, wires='wire2')
+        return qml.expval(qml.PauliZ('wire2'))
+
+Allowed wire labels can be of the following types:
+
+* *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['ancilla', 'q1', 'q2', ...]``,
+
+* *integers* like ``wires=[0, 4, 7]`` or ``wires=[-1, 0, 4]``
+
+* *floats* and other *numbers* like ``wires=[1., 2., 4.]``
+
+* *mixed types* like ``wires=['ancilla', -1, 0, 'q3']``
+
+.. note::
+
+    Some devices, such as hardware chips, may have a fixed number of wires,
+    which the length of the iterable of labels must match.
 
 .. _intro_vcirc_qnode:
 

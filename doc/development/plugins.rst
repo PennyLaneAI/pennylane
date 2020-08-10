@@ -130,7 +130,9 @@ Defining the ``__init__.py`` method of a custom device is not necessary; by defa
 the :class:`~.QubitDevice` initialization will be called, where the user can pass the
 following arguments:
 
-* ``wires`` (*int*): the number of wires on the device.
+* ``wires`` (*int* or *Iterable[Number, str]*): The number of subsystems represented by the device,
+  or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+  or strings (``['ancilla', 'q1', 'q2']``).
 
 * ``shots=1000`` (*int*): number of circuit evaluations/random samples used to estimate
   expectation values of observables in non-analytic mode.
@@ -141,8 +143,8 @@ following arguments:
   ``analytic=False``.
 
 To add your own device arguments, or to override any of the above defaults, simply
-overwrite the ``__init__.py`` method. For example, consider a device where the number
-of wires is fixed to ``24``, cannot be used in analytic mode, and can accept a dictionary
+overwrite the ``__init__.py`` method. For example, here is a device where the number
+of wires is fixed to ``24``, that cannot be used in analytic mode, and that can accept a dictionary
 of low-level hardware control options:
 
 .. code-block:: python3
@@ -268,6 +270,82 @@ this may have unintended side-effects and is not recommended.
 
 .. _installing_plugin:
 
+
+Wire handling
+-------------
+
+PennyLane uses the :class:`~.wires.Wires` class for the internal representation of wires. :class:`~.wires.Wires`
+inherits from python's ``Sequence``, and represents an ordered set of unique wire labels.
+Indexing a ``Wires`` instance will return another ``Wires`` instance of length one.
+The ``labels`` attribute stores a tuple of the wire labels.
+
+For example:
+
+.. code-block:: python
+
+    from pennylane.wires import Wires
+
+    wires = Wires(['ancilla', 0, 1])
+    print(wires[0]) # <Wires = ['ancilla']>
+    print(wires.labels) # ('ancilla', 0, 1)
+
+As shown in the section on :doc:`/introduction/circuits`, a device can be created with custom wire labels:
+
+.. code-block:: python
+
+    from pennylane import *
+
+    dev = device('my.device', wires=['q11', 'q12', 'q21', 'q22'])
+
+    @qnode(dev)
+    def circuit():
+       MyGate1(wires='q22')
+       MyGate2(wires=['q21','q11'])
+       MyGate1(wires=['q21'])
+       return expval(MyObs(wires='q11')@ MyObs(wires='q12'))
+
+Behind the scenes, when ``my.device`` gets created it turns ``['q11', 'q12', 'q21', 'q22']`` into a
+:class:`~.wires.Wires` object and stores it in the device's ``wires`` attribute. Likewise, when gates and
+observables get created they turn their ``wires`` argument into a :class:`~.wires.Wires`
+object and store it in their ``wires`` attribute.
+
+.. code-block:: python
+
+    print(dev.wires) #  <Wires = ['q11', 'q12', 'q21', 'q22']>
+
+    op = MyGate2(wires=['q21','q11'])
+    print(op.wires) # <Wires = ['q21', 'q11']>
+
+When the device applies operations, it needs to translate
+``op.wires`` into wire labels that the backend "understands". This can be done with the
+:meth:`~._device.Device.map_wires` method.
+
+.. code-block:: python
+
+    # inside the 'my.device' class inheriting from the base device class
+    device_wires = self.map_wires(op.wires)
+    print(device_wires) # <Wires = [2, 0]>
+
+By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
+consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,
+such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`~._device.Device.define_wire_map` method
+has to be overwritten accordingly.
+
+The ``device_wires`` can then be further processed, for example by extracting the actual labels as a tuple,
+list or array, or by getting the number of wires:
+
+.. code-block:: python
+
+    device_wires.labels # (2, 0)
+
+    device_wires.tolist() # [2, 0]
+
+    device_wires.toarray() # ndarray([2, 0])
+
+    len(device_wires) # 2
+
+As a convention, devices should do the translation and unpacking as late as possible in the function tree, and
+where possible pass the original :class:`~.wires.Wires` objects around.
 
 Identifying and installing your device
 --------------------------------------
