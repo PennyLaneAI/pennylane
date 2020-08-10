@@ -26,7 +26,7 @@ def repeat(circuit, depth, *args, **kwargs):
 
     Args:
         circuit (function): A function that applies the quantum gates/templates being repeated.
-        depth (int): The number of time ``circuit`` is repeatedly applied.
+        depth (int): The number of times ``circuit`` is repeatedly applied.
         *args: Dynamic parameters that are passed into ``circuit`` each time it is
                repeated (see UsageDetails for more information).
         **kwargs: Static parameters that are passed into ``circuit`` each time it is
