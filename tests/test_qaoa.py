@@ -134,6 +134,87 @@ class TestMixerHamiltonians:
         assert mixer_ops == target_ops
         assert mixer_wires == target_wires
 
+    def test_creation_output(self):
+        """Tests that the output of the creation operator is correct"""
+
+        coeffs, ops = qaoa.mixers._creation(0)
+        names = [op.name for op in ops]
+        wires = [op.wires for op in ops]
+
+        assert coeffs == [0.5, -0.5j]
+        assert names == ['PauliX', 'PauliY']
+        assert wires == [Wires(0), Wires(0)]
+
+    def test_annihilation_output(self):
+        """Tests that the output of the annihilation operator is correct"""
+
+        coeffs, ops = qaoa.mixers._annihilation(0)
+        names = [op.name for op in ops]
+        wires = [op.wires for op in ops]
+
+        assert coeffs == [0.5, 0.5j]
+        assert names == ['PauliX', 'PauliY']
+        assert wires == [Wires(0), Wires(0)]
+
+
+    def test_creation_annihilation_tensor_error(self):
+        """Tests that the creation-annihilation tensor method throws the correct error"""
+
+        words = ["-+", "+1"]
+        wires = [0, 1]
+
+        with pytest.raises(ValueError, match=r"Encountered invalid character"):
+            qaoa.mixers._creation_annihilation_tensor(words, wires)
+
+    @pytest.mark.parametrize(
+        ("word", "wires", "target_coeffs", "target_names", "target_wires"),
+        [
+            ("+", [0], [0.5, -0.5j], ["PauliX", "PauliY"], [Wires(0), Wires(0)]),
+            ("0-", [6, 2], [0.5, 0.5j], ["PauliX", "PauliY"], [Wires(2), Wires(2)]),
+            ("+0-", [0, 1, 2], [0.25, 0.25j, -0.25j, 0.25],
+             [["PauliX", "PauliX"], ["PauliX", "PauliY"], ["PauliY", "PauliX"], ["PauliY", "PauliY"]],
+             [Wires([0, 2]), Wires([0, 2]), Wires([0, 2]), Wires([0, 2])]
+             )
+        ]
+    )
+    def test_create_annihilation_tensor_output(self, word, wires, target_coeffs, target_names, target_wires):
+        """Tests that the output of the creation-annihilation tensor method is correct"""
+
+        coeffs, ops = qaoa.mixers._creation_annihilation_tensor(word, wires)
+        names = [op.name for op in ops]
+        wires = [op.wires for op in ops]
+
+        assert coeffs == target_coeffs
+        assert names == target_names
+        assert wires == target_wires
+
+    @pytest.mark.parametrize(
+        ("words", "coeffs", "wires", "target_hamiltonian"),
+        [
+            (["+", "-"], [1, 1], [0], qml.Hamiltonian([1.0], [qml.PauliX(0)])),
+            (["0+", "0-"], [1, 1], [0, 1], qml.Hamiltonian([1.0], [qml.PauliX(1)])),
+            (["+-", "-+"], [1, 1], [7, 3], qml.Hamiltonian([0.5, 0.5], [
+                qml.PauliX(7) @ qml.PauliX(3),
+                qml.PauliY(7) @ qml.PauliY(3)
+            ]))
+        ]
+    )
+    def test_permutation_output(self, words, coeffs, wires, target_hamiltonian):
+        """Tests that the output of the permutation mixer is correct"""
+
+        mixer_hamiltonian = qaoa.permutation_mixer(words, coeffs, wires)
+
+        mixer_coeffs = mixer_hamiltonian.coeffs
+        mixer_ops = [i.name for i in mixer_hamiltonian.ops]
+        mixer_wires = [i.wires for i in mixer_hamiltonian.ops]
+
+        target_coeffs = target_hamiltonian.coeffs
+        target_ops = [i.name for i in target_hamiltonian.ops]
+        target_wires = [i.wires for i in target_hamiltonian.ops]
+
+        assert mixer_coeffs == target_coeffs
+        assert mixer_ops == target_ops
+        assert mixer_wires == target_wires
 
 GRAPHS = [
     Graph([(0, 1), (1, 2)]),

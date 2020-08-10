@@ -64,12 +64,10 @@ class Hamiltonian:
                 "number of coefficients and operators does not match."
             )
 
-        '''
         if any(np.imag(coeffs) != 0):
             raise ValueError(
                 "Could not create valid Hamiltonian; " "coefficients are not real-valued."
             )
-        '''
 
         for obs in observables:
             if not isinstance(obs, Observable):

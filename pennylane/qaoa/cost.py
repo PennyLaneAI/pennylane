@@ -19,7 +19,7 @@ different optimization problems.
 import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
-from pennylane.qaoa.mixers import plus_minus_mixer
+from pennylane.qaoa.mixers import permutation_mixer
 
 def maxcut(graph):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
@@ -45,7 +45,8 @@ def maxcut(graph):
             Even superposition over all basis states
 
     Args:
-        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
+        graph (nx.Graph): The graph on which MaxCut is performed. This defines the pairs of wires
+                          on which each term of the Hamiltonian acts.
 
     Returns:
         (.Hamiltonian, .Hamiltonian):
@@ -94,9 +95,42 @@ def travelling_salesman(graph, node_ordering, wire_matrix):
     the Pauli-Z operator acting on the wire representing vertex :math:`v` at time-step :math:`t`.
     See [`arXiv:1805.03265 <https://arxiv.org/abs/1805.03265>`__] for more information.
 
-    The mixer Hamiltonian returned from :func:`~qaoa.travelling_salesman` is `~qaoa.creation_annihilation_mixer`,
+    The mixer Hamiltonian returned from :func:`~qaoa.travelling_salesman` is `~qaoa.plus_minus_mixer`,
     applied between nodes of the graph, separated by one temporal step.
 
+    .. note::
+
+        **Recommended initialization circuit:**
+            Even superposition over all basis states
+
+    Args:
+        graph (nx.Graph): The graph on which TSP is being performed. Note that this graph must be weighted and
+                          complete (as a distance between any two pairs of "cities" must be defined). In addition, the
+                          nodes of the graph's nodes must be labelled as 0, 1, 2, ..., k.
+        wire_matrix (array): A two-dimensional array that encodes the wire labels used for TSP (see Usage Details for
+                             more information).
+
+    Returns:
+        (.Hamiltonian, .Hamiltonian):
+
+    **Example**
+
+    >>> graph = nx.Graph([(0, 1), (1, 2)])
+    >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
+    >>> print(cost_h)
+    >>> print(mixer_h)
+    (-0.5) [I0 I1] + (0.5) [Z0 Z1] + (-0.5) [I1 I2] + (0.5) [Z1 Z2]
+    (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
+
+    .. UsageDetails::
+
+        **Qubit Embedding Scheme**
+
+        In order to
+
+        **The TSP Graph and Cost Hamiltonian**
+
+        **The TSP Mixer**
     """
 
     # Constructs the cost Hamiltonian
@@ -130,7 +164,7 @@ def travelling_salesman(graph, node_ordering, wire_matrix):
 
         for j in range(0, len(graph.nodes) - 1):
 
-            mixer_term = plus_minus_mixer(
+            mixer_term = permutation_mixer(
                 ["-++-", "+--+"],
                 [1, 1],
                     wires=[wire_matrix[j][u_val], wire_matrix[j+1][u_val], wire_matrix[j][v_val], wire_matrix[j+1][v_val]]
