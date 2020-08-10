@@ -77,7 +77,7 @@ def SingleExcitationUnitary(weight, wires=None):
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
-        wires (Iterable[Number, str], Number, str, Wires): Wires that the template acts on.
+        wires (Iterable or Wires): Wires that the template acts on.
             The wires represent the subset of orbitals in the interval ``[r, p]``. Must be of
             minimum length 2. The first wire is interpreted as ``r`` and the last wire as ``p``.
             Wires in between are acted on with CNOT gates to compute the parity of the set
