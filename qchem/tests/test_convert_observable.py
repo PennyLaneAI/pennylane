@@ -442,13 +442,19 @@ def test_proc_wires(custom_wires, n_wires):
     wires = qchem.structure._proc_wires(custom_wires, n_wires)
 
     assert isinstance(wires, qml.wires.Wires)
-    assert len(wires) == (n_wires if n_wires is not None else len(custom_wires) if custom_wires is not None else 1)
+
+    expected_length = (n_wires if n_wires is not None else len(custom_wires) if custom_wires is not None else 1)
+    if len(wires) > expected_length:
+        assert isinstance(custom_wires, dict)
+        assert len(wires) == max(custom_wires) + 1
+    else:
+        assert len(wires) == expected_length
 
     if custom_wires is not None and n_wires is not None:
         if not isinstance(custom_wires, dict):
             assert wires == qchem.structure._proc_wires(custom_wires[:n_wires], n_wires)
         else:
-            assert wires == qchem.structure._proc_wires({k:v for k, v in custom_wires.items() if k < n_wires}, n_wires)
+            assert wires == qchem.structure._proc_wires({k:v for k, v in custom_wires.items() }, n_wires)
 
 
 def test_proc_wires_raises():
