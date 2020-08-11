@@ -465,8 +465,13 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     (array([0.1, 0.2]), [Tensor(PauliX(wires=['w0'])), Tensor(PauliY(wires=['w0']), PauliZ(wires=['w2']))])
 
     Args:
-        qubit_operator (QubitOperator): fermionic-to-qubit transformed operator in terms of
+        qubit_operator (QubitOperator): Fermionic-to-qubit transformed operator in terms of
             Pauli matrices
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
@@ -518,6 +523,11 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
             coefficients for each observable, same length as ops
         ops (Iterable[pennylane.operation.Observable]): List of PennyLane observables as
             Tensor products of Pauli observables
+        wires (Wires, list, tuple, dict): Custom wire mapping for translating from Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
+            accepted. If None, will use identiy map. Defaults to None.
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
@@ -569,6 +579,11 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
             a Pauli summation
         pennylane_qubit_operator (pennylane.Hamiltonian): PennyLane
             Hamiltonian object
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         (bool): True if equivalent
@@ -591,6 +606,11 @@ def convert_observable(qubit_observable, wires=None):
 
     Args:
         qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
@@ -658,6 +678,11 @@ def generate_hamiltonian(
         mapping (str): the transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
                 map the second-quantized electronic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed
         Hamiltonian and the number of qubits
