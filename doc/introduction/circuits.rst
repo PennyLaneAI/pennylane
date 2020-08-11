@@ -154,8 +154,9 @@ Allowed wire labels can be of the following types:
 
 .. note::
 
-    Some devices, such as hardware chips, may have a fixed number of wires,
-    which the length of the iterable of labels must match.
+    Some devices, such as hardware chips, may have a fixed number of wires.
+    The iterable of labels passed to the device's ``wires``
+    argument must match this expected number of wires.
 
 .. _intro_vcirc_qnode:
 

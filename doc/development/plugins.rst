@@ -132,7 +132,7 @@ following arguments:
 
 * ``wires`` (*int* or *Iterable[Number, str]*): The number of subsystems represented by the device,
   or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-  or strings (``['ancilla', 'q1', 'q2']``).
+  and/or strings (``['ancilla', 'q1', 'q2']``).
 
 * ``shots=1000`` (*int*): number of circuit evaluations/random samples used to estimate
   expectation values of observables in non-analytic mode.
@@ -318,7 +318,8 @@ object and store it in their ``wires`` attribute.
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
-:meth:`~._device.Device.map_wires` method.
+:meth:`~._device.Device.map_wires` method which maps ``Wires`` objects to other ``Wires`` objects,
+but changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
 
 .. code-block:: python
 
