@@ -15,13 +15,12 @@ r"""
 This file contains built-in functions for constructing QAOA mixer Hamiltonians.
 """
 import itertools
+from functools import reduce
+from collections.abc import Iterable
 import numpy as np
 import networkx as nx
 import pennylane as qml
 from pennylane.wires import Wires
-from functools import reduce
-
-from collections.abc import Iterable
 
 
 def x_mixer(wires):
