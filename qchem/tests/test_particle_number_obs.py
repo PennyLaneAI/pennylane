@@ -71,7 +71,7 @@ terms_lih_anion_bk = {
         (5, "bravyi_KITAEV", terms_lih_anion_bk),
     ],
 )
-def test_particle_number_observable(n_orbitals, mapping, terms_exp, monkeypatch):
+def test_particle_number_observable(n_orbitals, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the particle number observable :math:`\hat{N}` generated
     by the ``'particle_number'`` function.
 
@@ -80,12 +80,12 @@ def test_particle_number_observable(n_orbitals, mapping, terms_exp, monkeypatch)
     something useful to the users as well.
     """
 
-    N = qchem.particle_number(n_orbitals, mapping=mapping)
+    N = qchem.particle_number(n_orbitals, mapping=mapping, wires=custom_wires)
 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(particle_number_qubit_op, N)
+    assert qchem._qubit_operators_equivalent(particle_number_qubit_op, N, wires=custom_wires)
 
 
 @pytest.mark.parametrize(

@@ -566,7 +566,6 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
                 + "but also got {}.".format(extra_obsvbs)
             )
 
-        # if op.name == ["Identity"] and wires == [0]:
         if op.name == ["Identity"] and len(op.wires) == 1:
             term_str = ""
         else:

@@ -95,7 +95,7 @@ def _spin2_matrix_elements(sz):
     return np.vstack([diag, off_diag])
 
 
-def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
+def spin2(n_electrons, n_orbitals, mapping="jordan_wigner", wires=None):
     r"""Computes the total spin operator :math:`\hat{S}^2`.
 
     The total spin operator :math:`\hat{S}^2` is given by
@@ -133,6 +133,11 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
             is the number of active orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         pennylane.Hamiltonian: the total spin observable :math:`\hat{S}^2`
@@ -178,7 +183,7 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
 
     table = _spin2_matrix_elements(sz)
 
-    return observable(table, init_term=3 / 4 * n_electrons, mapping=mapping)
+    return observable(table, init_term=3 / 4 * n_electrons, mapping=mapping, wires=wires)
 
 
 def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
@@ -230,6 +235,11 @@ def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
             required to initialize the many-body observable.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
@@ -280,7 +290,7 @@ def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
     return structure.convert_observable(jordan_wigner(mb_obs), wires=wires)
 
 
-def spin_z(n_orbitals, mapping="jordan_wigner"):
+def spin_z(n_orbitals, mapping="jordan_wigner", wires=None):
     r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
 
     The total spin projection operator :math:`\hat{S}_z` is given by
@@ -300,6 +310,11 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
             is the number of active orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         pennylane.Hamiltonian: the total spin projection observable :math:`\hat{S}_z`
@@ -325,10 +340,10 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     sz_orb = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    return observable(table, mapping=mapping)
+    return observable(table, mapping=mapping, wires=wires)
 
 
-def particle_number(n_orbitals, mapping="jordan_wigner"):
+def particle_number(n_orbitals, mapping="jordan_wigner", wires=None):
     r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
     in the Pauli basis.
 
@@ -347,6 +362,11 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
             is the number of active orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identiy map. Defaults to None.
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
@@ -372,7 +392,7 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
     r = np.arange(n_spin_orbs)
     table = np.vstack([r, r, np.ones([n_spin_orbs])]).T
 
-    return observable(table, mapping=mapping)
+    return observable(table, mapping=mapping, wires=wires)
 
 
 __all__ = [

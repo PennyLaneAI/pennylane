@@ -22,9 +22,7 @@ def psi4_support():
     if not cmd_exists("psi4"):
         return False
 
-    res = subprocess.call(
-        ["psi4", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
+    res = subprocess.call(["psi4", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if res == 1:
         return False
 
@@ -57,9 +55,11 @@ def requires_babel(babel_support):
     scope="module",
     params=[
         None,
-        qml.wires.Wires(list("ab") + [-3, 42] + ["xyz", "23", "w11"]),
+        qml.wires.Wires(
+            list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + ["w{}".format(i) for i in range(20)]
+        ),
         list(range(100, 120)),
-        {13-i: "abcdefghijklmn"[i] for i in range(14)},
+        {13 - i: "abcdefghijklmn"[i] for i in range(14)},
     ],
 )
 def custom_wires(request):
