@@ -26,7 +26,7 @@ __all__ = [
     "_qubit_operators_equivalent",
     "convert_observable",
     "generate_hamiltonian",
-    "sd_excitations",
+    "excitations",
     "hf_state",
     "excitations_to_wires",
     "obs",
