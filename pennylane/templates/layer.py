@@ -15,22 +15,23 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
 
 ###################
 
 
-@template
-def layer(unitary, depth, *args, **kwargs):
+@pennylane.templates.decorator.template
+def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.
 
     Args:
-        unitary (callable): the function, template, or gate being repeated.
+        template (callable): The sequence of quantum gates that is being repeated.
+                             This could be a single gate, a function of gates, or a "registered"
+                             PennyLane template.
         depth (int): The number of times the unitary is repeatedly applied.
         *args: Dynamic parameters that are passed into the unitary each time it is
                repeated. Each dynamic argument must be a list of first dimension equal to
-                ``depth``, with the :math:`j`-th element of the list corresponding to the
-                value of the argument the :math:`j`-th time the unitary is applied.
+               ``depth``, with the :math:`j`-th element of the list corresponding to the
+               value of the argument the :math:`j`-th time the unitary is applied.
         **kwargs: Static parameters that are passed into the unitary each time it is
                   repeated.
 
@@ -40,9 +41,8 @@ def layer(unitary, depth, *args, **kwargs):
 
         **Layering Gates**
 
-        To repeatedly apply a collection of gates, a function applying each of these
-        operations must first be defined. In addition, ``unitary`` can be specified as a
-        PennyLane template, or even just a single gate.
+        The layering function can be used to repeatedly apply a function containing quantum operations,
+        a template, or a quantum gate.
 
         For example, we can define the following subroutine:
 
@@ -77,7 +77,7 @@ def layer(unitary, depth, *args, **kwargs):
 
         **Static Arguments**
 
-        Static arguments are arguments passed into ``unitary`` that don't change with each
+        Static arguments are arguments passed into ``template`` that don't change with each
         repetition. Static parameters are always passed as keyword arguments into ``qml.layer``.
         For example, consider the following subroutine:
 
@@ -108,9 +108,9 @@ def layer(unitary, depth, *args, **kwargs):
 
         **Dynamic Arguments**
 
-        In addition to passing static arguments to ``unitary``, we can also pass *dynamic* arguments.
+        In addition to passing static arguments to ``template``, we can also pass dynamic arguments.
         These are arguments that change with each repetition of the unitary. They are passed
-        as non-keyword arguments to ``qml.layer``, after ``unitary`` and ``depth``. Each dynamic parameter must
+        as non-keyword arguments to ``qml.layer``, after ``template`` and ``depth``. Each dynamic parameter must
         be a list of length equal to ``depth``. The :math:`j`-th element of the list represents the value of the
         argument used for the :math:`j`-th repetition.
 
@@ -152,7 +152,7 @@ def layer(unitary, depth, *args, **kwargs):
 
         It is also possible to pass multiple static and dynamic arguments into the same unitary. Dynamic
         arguments must be ordered in ``qml.layer`` in the same order in which they are passed into the
-        ``circuit``.
+        ``template``.
 
         Consider the following ansatz:
 
@@ -209,4 +209,4 @@ def layer(unitary, depth, *args, **kwargs):
 
     for i in range(0, depth):
         arg_params = [k[i] for k in args]
-        unitary(*arg_params, **kwargs)
+        template(*arg_params, **kwargs)
