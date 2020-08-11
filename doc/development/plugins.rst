@@ -344,6 +344,9 @@ list or array, or by getting the number of wires:
 
     len(device_wires) # 2
 
+The ``Wires`` class also offers set functionality like identifying the unique or shared wires between several ``Wires``
+object.
+
 As a convention, devices should do the translation and unpacking as late as possible in the function tree, and
 where possible pass the original :class:`~.wires.Wires` objects around.
 
