@@ -31,13 +31,17 @@ from pennylane.wires import Wires
 
 def _proc_wires(wires, n_wires=None):
     r"""
-    Checks and processes custom user wire labels into a consistent Wires format. Used for
-    converting between OpenFermion qubit numbering and Pennylane wire labels.
+    Checks and processes custom user wire mapping into a consistent, direction-free, Wires format.
+    Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
 
     Since OpenFermion's quibit numbering is always consecutive int, simple iterable types such as
     list, tuple, or Wires can be used to specify the qubit<->wire mapping with indices acting as
     qubits. Dict can also be used as a mapping, but does not provide any advantage over lists other
     than the ability to do partial mapping/permutation in the qubit->wire direction.
+
+    It is recommended pass Wires/list/tuple `wires` since it's direction-free, i.e. the same `wires`
+    argument can be used to convert both ways between OpenFermion and Pennylane. Only use dict for
+    partial or unordered mapping.
 
     **Example usage:**
 
@@ -63,12 +67,12 @@ def _proc_wires(wires, n_wires=None):
 
 
     Args:
-        wires (Wires, list, tuple, dict): User wire labels or mapping. For types ``Wires``,
-            list, or tuple, each item in the iterable represents a wire label corresponding
-            to the qubit number equal to its index. For type ``Dict``, only int-keyed dict
-            (for qubit-to-wire conversion) or consecutive-int-valued dict (for wire-to-qubit
-            conversion) is accepted. If none of the accepted types, will be set to consecutive
-            int based on ``n_wires``.
+        wires (Wires, list, tuple, dict): User wire labels or mapping for Pennylane ansatz.
+            For types Wires, list, or tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) or
+            consecutive-int-valued dict (for wire-to-qubit conversion) is accepted.
+            If None, will be set to consecutive int based on ``n_wires``.
         n_wires (int): Number of wires used if known. If None, will infer from ``wires``; if
             ``wires`` is not available, will be set to 1. Defaults to None.
 
@@ -641,25 +645,25 @@ def generate_hamiltonian(
 
     **Example usage:**
 
-    >>> H, n_qubits = generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g')
+    >>> H, n_qubits = generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g', wires=['w0','w1','w2','w3'])
     >>> print(n_qubits)
     4
     >>> print(H)
-    (-0.04207897647782188) [I0]
-    + (0.17771287465139934) [Z0]
-    + (0.1777128746513993) [Z1]
-    + (-0.24274280513140484) [Z2]
-    + (-0.24274280513140484) [Z3]
-    + (0.17059738328801055) [Z0 Z1]
-    + (0.04475014401535161) [Y0 X1 X2 Y3]
-    + (-0.04475014401535161) [Y0 Y1 X2 X3]
-    + (-0.04475014401535161) [X0 X1 Y2 Y3]
-    + (0.04475014401535161) [X0 Y1 Y2 X3]
-    + (0.12293305056183801) [Z0 Z2]
-    + (0.1676831945771896) [Z0 Z3]
-    + (0.1676831945771896) [Z1 Z2]
-    + (0.12293305056183801) [Z1 Z3]
-    + (0.176276408043196) [Z2 Z3]
+    (-0.04207897647782188) [Iw0]
+    + (0.17771287465139934) [Zw0]
+    + (0.1777128746513993) [Zw1]
+    + (-0.24274280513140484) [Zw2]
+    + (-0.24274280513140484) [Zw3]
+    + (0.17059738328801055) [Zw0 Zw1]
+    + (0.04475014401535161) [Yw0 Xw1 Xw2 Yw3]
+    + (-0.04475014401535161) [Yw0 Yw1 Xw2 Xw3]
+    + (-0.04475014401535161) [Xw0 Xw1 Yw2 Yw3]
+    + (0.04475014401535161) [Xw0 Yw1 Yw2 Xw3]
+    + (0.12293305056183801) [Zw0 Zw2]
+    + (0.1676831945771896) [Zw0 Zw3]
+    + (0.1676831945771896) [Zw1 Zw2]
+    + (0.12293305056183801) [Zw1 Zw3]
+    + (0.176276408043196) [Zw2 Zw3]
 
     Args:
         mol_name (str): name of the molecule
@@ -681,7 +685,8 @@ def generate_hamiltonian(
         wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
+            partial mapping.
             If None, will use identiy map. Defaults to None.
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed

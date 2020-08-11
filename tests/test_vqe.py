@@ -67,6 +67,7 @@ valid_hamiltonians = [
     ((-0.8,), (qml.PauliZ(0),)),
     ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
     ((0.5, -1.6), (qml.PauliX(1), qml.PauliY(1))),
+    ((0.5, -1.6), (qml.PauliX('a'), qml.PauliY('b'))),
     ((1.1, -0.4, 0.333), (qml.PauliX(0), qml.Hermitian(H_ONE_QUBIT, 2), qml.PauliZ(2))),
     ((-0.4, 0.15), (qml.Hermitian(H_TWO_QUBITS, [0, 2]), qml.PauliZ(1))),
     ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
@@ -212,6 +213,13 @@ class TestHamiltonian:
 
         with pytest.raises(ValueError, match="observables are not valid"):
             H = qml.vqe.Hamiltonian(coeffs, obs)
+
+    @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
+    def test_hamiltonian_wires(self, coeffs, ops):
+        """Tests that the Hamiltonian object has correct wires.
+        """
+        H = qml.vqe.Hamiltonian(coeffs, ops)
+        assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
 
 class TestVQE:
