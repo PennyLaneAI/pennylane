@@ -20,6 +20,7 @@ import networkx as nx
 import pennylane as qml
 from pennylane import qaoa
 
+
 def maxcut(graph):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
     MaxCut problem, for a given graph.
@@ -33,7 +34,7 @@ def maxcut(graph):
 
     .. math:: H_C \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_i Z_j \ - \ \mathbb{I} \big),
 
-    where :math:`G` is some graph, :math:`\mathbb{I}` is the identity, and :math:`Z_i` and :math:`Z_j` are
+    where :math:`G` is a graph, :math:`\mathbb{I}` is the identity, and :math:`Z_i` and :math:`Z_j` are
     the Pauli-Z operators on the :math:`i`-th and :math:`j`-th wire respectively.
 
     The mixer Hamiltonian returned from :func:`~qaoa.maxcut` is :func:`~qaoa.x_mixer` applied to all wires.
@@ -42,16 +43,13 @@ def maxcut(graph):
 
         **Recommended initialization circuit:**
             Even superposition over all basis states
-
     Args:
-        graph (nx.Graph): The graph on which MaxCut is performed. This defines the pairs of wires
-                          on which each term of the Hamiltonian acts.
+        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
 
     Returns:
         (.Hamiltonian, .Hamiltonian):
 
     **Example**
-
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
