@@ -275,7 +275,7 @@ Wire handling
 -------------
 
 PennyLane uses the :class:`~.wires.Wires` class for the internal representation of wires. :class:`~.wires.Wires`
-inherits from python's ``Sequence``, and represents an ordered set of unique wire labels.
+inherits from Python's ``Sequence``, and represents an ordered set of unique wire labels.
 Indexing a ``Wires`` instance will return another ``Wires`` instance of length one.
 The ``labels`` attribute stores a tuple of the wire labels.
 
@@ -302,7 +302,7 @@ As shown in the section on :doc:`/introduction/circuits`, a device can be create
        Gate1(wires='q22')
        Gate2(wires=['q21','q11'])
        Gate1(wires=['q21'])
-       return expval(Obs(wires='q11')@ Obs(wires='q12'))
+       return expval(Obs(wires='q11') @ Obs(wires='q12'))
 
 Behind the scenes, when ``my.device`` gets created it turns ``['q11', 'q12', 'q21', 'q22']`` into a
 :class:`~.wires.Wires` object and stores it in the device's ``wires`` attribute. Likewise, when gates and
@@ -329,7 +329,7 @@ but changes the labels according to the ``wire_map`` attribute of the device whi
 
 By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
 consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,
-such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`~._device.Device.define_wire_map` method
+such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`~.Device.define_wire_map` method
 has to be overwritten accordingly.
 
 The ``device_wires`` can then be further processed, for example by extracting the actual labels as a tuple,

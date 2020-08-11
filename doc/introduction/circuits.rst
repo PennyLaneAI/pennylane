@@ -106,8 +106,8 @@ on the device. For the in-built ``'default.qubit'`` and ``'default.gaussian'``
 devices, the options are:
 
 * ``wires`` (*int* or *Iterable*): Number of subsystems represented by the device,
-            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``).
+  or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+  and/or strings (``['ancilla', 'q1', 'q2']``).
 
 * ``analytic`` (*bool*): Indicates if the device should calculate expectations
   and variances analytically. Only possible with simulator devices. Defaults to ``True``.
