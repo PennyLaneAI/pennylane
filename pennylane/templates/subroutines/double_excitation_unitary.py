@@ -410,7 +410,7 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
         :target: javascript:void(0);
 
     |
-    
+
     As explained in `Seely et al. (2012) <https://arxiv.org/abs/1208.5986>`_,
     the exponential of a tensor product of Pauli-Z operators can be decomposed in terms of
     :math:`2(n-1)` CNOT gates and a single-qubit Z-rotation referred to as :math:`U_\theta` in
