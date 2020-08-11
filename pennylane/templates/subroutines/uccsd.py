@@ -133,7 +133,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             # Generate single and double excitations
             singles, doubles = qml.qchem.excitations(electrons, qubits)
 
-            # Generate the set of wires the UCCSD circuit will act on
+            # Map excitations to the wires the UCCSD circuit will act on
             s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
 
             # Define the device
