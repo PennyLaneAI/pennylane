@@ -302,7 +302,7 @@ As shown in the section on :doc:`/introduction/circuits`, a device can be create
        MyGate1(wires='q22')
        MyGate2(wires=['q21','q11'])
        MyGate1(wires=['q21'])
-       return expval(MyObs(wires='q11')@ MyObs(wires='q12'))
+       return expval(MyObs(wires='q11') @ MyObs(wires='q12'))
 
 Behind the scenes, when ``my.device`` gets created it turns ``['q11', 'q12', 'q21', 'q22']`` into a
 :class:`~.wires.Wires` object and stores it in the device's ``wires`` attribute. Likewise, when gates and
