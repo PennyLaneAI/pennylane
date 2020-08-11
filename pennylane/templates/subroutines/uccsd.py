@@ -122,7 +122,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             # Build the electronic Hamiltonian
             name = "h2"
             geo_file = "h2.xyz"
-            h, qubits = qchem.molecular_hamiltonian(name, geo_file)
+            h, qubits = qml.qchem.molecular_hamiltonian(name, geo_file)
 
             # Number of electrons
             electrons = 2
@@ -134,7 +134,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             singles, doubles = qml.qchem.excitations(electrons, qubits)
 
             # Generate the set of wires the UCCSD circuit will act on
-            s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
+            s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
 
             # Define the device
             dev = qml.device('default.qubit', wires=qubits)
