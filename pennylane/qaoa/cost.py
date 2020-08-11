@@ -43,6 +43,7 @@ def maxcut(graph):
 
         **Recommended initialization circuit:**
             Even superposition over all basis states
+
     Args:
         graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
 
@@ -50,6 +51,7 @@ def maxcut(graph):
         (.Hamiltonian, .Hamiltonian):
 
     **Example**
+
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
