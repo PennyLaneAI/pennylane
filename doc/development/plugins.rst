@@ -318,7 +318,7 @@ object and store it in their ``wires`` attribute.
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
-:meth:`~._device.Device.map_wires` method which maps ``Wires`` objects to other ``Wires`` objects,
+:meth:`~.Device.map_wires` method which maps ``Wires`` objects to other ``Wires`` objects,
 but changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
 
 .. code-block:: python
