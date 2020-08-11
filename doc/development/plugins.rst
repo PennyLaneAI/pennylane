@@ -275,7 +275,7 @@ Wire handling
 -------------
 
 PennyLane uses the :class:`~.wires.Wires` class for the internal representation of wires. :class:`~.wires.Wires`
-inherits from python's ``Sequence``, and represents an ordered set of unique wire labels.
+inherits from Python's ``Sequence``, and represents an ordered set of unique wire labels.
 Indexing a ``Wires`` instance will return another ``Wires`` instance of length one.
 The ``labels`` attribute stores a tuple of the wire labels.
 
