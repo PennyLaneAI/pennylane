@@ -119,14 +119,20 @@ For a plugin device, refer to the plugin documentation for available device opti
 
 **Defining custom wire labels**
 
-You can define your own wire labels instead of the default consecutive integers ``0, 1, ...``,
-and use them to address wires on the device. This is done by passing an iterable to the ``wires`` argument:
+When you create a device by passing an integer to the ``wires`` argument, the integer defines the *number of wires*
+that you can address by consecutive integer labels ``0, 1, 2, ...``.
+
+But you can define your own wire labels instead, which may be handy if wires have "meanings" like an
+ancilla or garbage register, if they are arranged in a non-linear fashion like a grid, or if there are wires
+that you want to skip because they do not work on a hardware device.
+
+This is done by passing an iterable of wire labels to the ``wires`` argument:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000, analytic=False)
 
-In the quantum function you can now use your own labels:
+In the quantum function you can now use your own labels to address wires:
 
 .. code-block:: python
 
@@ -140,7 +146,7 @@ Allowed wire labels can be of the following types:
 
 * *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['ancilla', 'q1', 'q2', ...]``,
 
-* *integers* like ``wires=[0, 4, 7]`` or ``wires=[-1, 0, 4]``
+* *integers* like ``wires=[0, 4, 7]`` or even ``wires=[-1, 0, 4]``
 
 * *floats* and other *numbers* like ``wires=[1., 2., 4.]``
 

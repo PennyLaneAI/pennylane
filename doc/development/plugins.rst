@@ -299,10 +299,10 @@ As shown in the section on :doc:`/introduction/circuits`, a device can be create
 
     @qnode(dev)
     def circuit():
-       MyGate1(wires='q22')
-       MyGate2(wires=['q21','q11'])
-       MyGate1(wires=['q21'])
-       return expval(MyObs(wires='q11')@ MyObs(wires='q12'))
+       Gate1(wires='q22')
+       Gate2(wires=['q21','q11'])
+       Gate1(wires=['q21'])
+       return expval(Obs(wires='q11')@ Obs(wires='q12'))
 
 Behind the scenes, when ``my.device`` gets created it turns ``['q11', 'q12', 'q21', 'q22']`` into a
 :class:`~.wires.Wires` object and stores it in the device's ``wires`` attribute. Likewise, when gates and
@@ -313,7 +313,7 @@ object and store it in their ``wires`` attribute.
 
     print(dev.wires) #  <Wires = ['q11', 'q12', 'q21', 'q22']>
 
-    op = MyGate2(wires=['q21','q11'])
+    op = Gate2(wires=['q21','q11'])
     print(op.wires) # <Wires = ['q21', 'q11']>
 
 When the device applies operations, it needs to translate
@@ -322,7 +322,7 @@ When the device applies operations, it needs to translate
 
 .. code-block:: python
 
-    # inside the 'my.device' class inheriting from the base device class
+    # inside the class defining 'my.device', which inherits from the base Device class
     device_wires = self.map_wires(op.wires)
     print(device_wires) # <Wires = [2, 0]>
 
