@@ -63,4 +63,5 @@ def requires_babel(babel_support):
     ],
 )
 def custom_wires(request):
+    """Custom wire mapping for Pennylane<->OpenFermion conversion"""
     return request.param

@@ -88,13 +88,13 @@ def _proc_wires(wires, n_wires=None):
     # defaults to no mapping.
     if wires is None:
         return Wires(range(n_wires))
-    
+
     if isinstance(wires, (Wires, list, tuple)):
         # does not care about the tail if more wires are provided than n_wires.
         wires = Wires(wires[:n_wires])
 
     elif isinstance(wires, dict):
-        
+
         if all([isinstance(w, int) for w in wires.keys()]):
             # Assuming keys are taken from consecutive int wires. Allows for partial mapping.
             n_wires = max(wires) + 1
@@ -113,7 +113,7 @@ def _proc_wires(wires, n_wires=None):
 
     else:
         raise ValueError('Expected type Wires, list, tuple, or dict for `wires`, got {}'.format(type(wires)))
-    
+
     if len(wires) != n_wires:
         # check length consistency when all checking and cleaning are done.
         raise ValueError('Length of `wires` ({}) does not match `n_wires` ({})'.format(len(wires), n_wires))

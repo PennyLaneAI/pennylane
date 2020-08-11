@@ -302,7 +302,7 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     vqe_observable = qchem.convert_observable(qOp, custom_wires)
 
     if isinstance(custom_wires, dict):
-        custom_wires = {v:k for k,v in custom_wires.items()}
+        custom_wires = {v:k for k, v in custom_wires.items()}
 
     assert qchem._qubit_operators_equivalent(qOp, vqe_observable, custom_wires)
 
@@ -366,7 +366,7 @@ def test_integration_observable_to_vqe_cost(monkeypatch, mol_name, terms_ref, ex
         wires = qchem.structure._proc_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
-    dev = qml.device("default.qubit", wires = wires)
+    dev = qml.device("default.qubit", wires=wires)
 
     # can replace the ansatz with more suitable ones later.
     def dummy_ansatz(phis, wires):
@@ -418,7 +418,7 @@ def test_integration_mol_file_to_vqe_cost(
         wires = qchem.structure._proc_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
-    dev = qml.device("default.qubit", wires = wires)
+    dev = qml.device("default.qubit", wires=wires)
 
     # can replace the ansatz with more suitable ones later.
     def dummy_ansatz(phis, wires):
@@ -454,10 +454,11 @@ def test_proc_wires(custom_wires, n_wires):
         if not isinstance(custom_wires, dict):
             assert wires == qchem.structure._proc_wires(custom_wires[:n_wires], n_wires)
         else:
-            assert wires == qchem.structure._proc_wires({k:v for k, v in custom_wires.items() }, n_wires)
+            assert wires == qchem.structure._proc_wires({k:v for k, v in custom_wires.items()}, n_wires)
 
 
 def test_proc_wires_raises():
+    """Test if exceptions are raised for _wire_proc()"""
 
     with pytest.raises(
         ValueError,
@@ -470,3 +471,9 @@ def test_proc_wires_raises():
         match="Expected type Wires, list, tuple, or dict"
     ):
         qchem.structure._proc_wires(1.2)
+
+    with pytest.raises(
+        ValueError,
+        match="Length of `wires`"
+    ):
+        qchem.structure._proc_wires([3, 4], 3)
