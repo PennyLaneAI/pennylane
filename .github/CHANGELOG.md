@@ -93,7 +93,7 @@
 * The functions implementing the quantum circuits building the Unitary Coupled-Cluster
   (UCCSD) VQE ansatz have been improved, with a more consistent naming convention and
   improved docstrings.
-  [(#)]()
+  [(#748)](https://github.com/PennyLaneAI/pennylane/pull/748)
 
   The changes include:
 
