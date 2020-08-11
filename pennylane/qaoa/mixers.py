@@ -118,6 +118,7 @@ def xy_mixer(graph):
 
     return qml.Hamiltonian(coeffs, obs)
 
+
 def _creation(wire):
     r"""Creates the spin-creation operator acting on a single wire.
 
@@ -141,6 +142,7 @@ def _creation(wire):
 
     return ([0.5, -0.5j], [qml.PauliX(wire), qml.PauliY(wire)])
 
+
 def _annihilation(wire):
     r"""Creates the spin-annihilation operator acting on a single wire.
 
@@ -163,6 +165,7 @@ def _annihilation(wire):
     """
 
     return ([0.5, 0.5j], [qml.PauliX(wire), qml.PauliY(wire)])
+
 
 def _creation_annihilation_tensor(word, wires):
     r"""Creates an arbitrary tensor product of creation and annihilation operators.
@@ -206,10 +209,17 @@ def _creation_annihilation_tensor(word, wires):
             elif w != "0":
                 raise ValueError("Encountered invalid character {} in word".format(w))
 
-    coeffs = [reduce(lambda x, y: x*y, term) if isinstance(term, Iterable) else term for term in list(coeff_list)]
-    terms = [qml.operation.Tensor(*term) if isinstance(term, Iterable) else term for term in list(term_list)]
+    coeffs = [
+        reduce(lambda x, y: x * y, term) if isinstance(term, Iterable) else term
+        for term in list(coeff_list)
+    ]
+    terms = [
+        qml.operation.Tensor(*term) if isinstance(term, Iterable) else term
+        for term in list(term_list)
+    ]
 
     return (coeffs, terms)
+
 
 def permutation_mixer(words, coeffs, wires):
     r"""Takes a series of "creation-annihilation words", and converts them
@@ -266,13 +276,13 @@ def permutation_mixer(words, coeffs, wires):
     """
 
     H_coeffs, H_terms = _creation_annihilation_tensor(words[0], wires)
-    H_coeffs = [i*coeffs[0] for i in H_coeffs]
+    H_coeffs = [i * coeffs[0] for i in H_coeffs]
 
     identifier = [(t.name, t.parameters, t.wires) for t in H_terms]
 
     for i, w in enumerate(words[1:]):
         co, ops = _creation_annihilation_tensor(w, wires)
-        co = [c*coeffs[i] for c in co]
+        co = [c * coeffs[i] for c in co]
 
         for j, op in enumerate(ops):
             id = (op.name, op.parameters, op.wires)
