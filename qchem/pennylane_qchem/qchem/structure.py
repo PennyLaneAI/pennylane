@@ -109,14 +109,18 @@ def _proc_wires(wires, n_wires=None):
             wires = {v: k for k, v in wires.items()}  # flip for easy indexing
             wires = Wires([wires[i] for i in range(n_wires)])
         else:
-            raise ValueError('Expected only int-keyed or consecutive int-valued dict for `wires`')
+            raise ValueError("Expected only int-keyed or consecutive int-valued dict for `wires`")
 
     else:
-        raise ValueError('Expected type Wires, list, tuple, or dict for `wires`, got {}'.format(type(wires)))
+        raise ValueError(
+            "Expected type Wires, list, tuple, or dict for `wires`, got {}".format(type(wires))
+        )
 
     if len(wires) != n_wires:
         # check length consistency when all checking and cleaning are done.
-        raise ValueError('Length of `wires` ({}) does not match `n_wires` ({})'.format(len(wires), n_wires))
+        raise ValueError(
+            "Length of `wires` ({}) does not match `n_wires` ({})".format(len(wires), n_wires)
+        )
 
     return wires
 
@@ -481,7 +485,11 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
         corresponding PennyLane observables in the Pauli basis
     """
-    n_wires = 1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms]) if qubit_operator.terms else 1
+    n_wires = (
+        1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
+        if qubit_operator.terms
+        else 1
+    )
     wires = _proc_wires(wires, n_wires=n_wires)
 
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
@@ -539,9 +547,9 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
     # n_all_wires = len(all_wires)
     if wires is not None:
-        qubit_indexed_wires = _proc_wires(wires, )
+        qubit_indexed_wires = _proc_wires(wires,)
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
-            raise ValueError('Supplied `wires` does not cover all wires defined in `ops`.')
+            raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
         qubit_indexed_wires = all_wires
 
@@ -563,7 +571,10 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
             term_str = ""
         else:
             term_str = " ".join(
-                ["{}{}".format(pauli, qubit_indexed_wires.index(wire)) for pauli, wire in zip(pauli_names, op.wires)]
+                [
+                    "{}{}".format(pauli, qubit_indexed_wires.index(wire))
+                    for pauli, wire in zip(pauli_names, op.wires)
+                ]
             )
 
         # This is how one makes QubitOperator in OpenFermion
