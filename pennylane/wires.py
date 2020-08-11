@@ -196,6 +196,9 @@ class Wires(Sequence):
             wire_map (dict): Dictionary containing all wire labels used in this object as keys, and unique
                              new labels as their values
         """
+        # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
+        wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
+
         for w in self:
             if w not in wire_map:
                 raise WireError(
@@ -234,7 +237,7 @@ class Wires(Sequence):
         For example:
 
         >>> wires = Wires([4, 0, 1, 5, 6])
-        >>> wires.subset([5, 1, 7])
+        >>> wires.subset([5, 1, 7], periodic_boundary=True)
         <Wires = [4, 0, 1]>
 
         Args:
@@ -374,7 +377,7 @@ class Wires(Sequence):
         >>> wires2 = Wires([0, 2, 3])
         >>> wires3 = Wires([5, 3])
         >>> Wires.unique_wires([wires1, wires2, wires3])
-        <Wires = [4, 2, 5]>
+        <Wires = [4, 1, 2, 5]>
 
         Args:
             list_of_wires (List[Wires]): list of Wires objects
