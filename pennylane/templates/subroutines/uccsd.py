@@ -68,12 +68,12 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (array): Length ``len(singles) + len(doubles)`` vector containing the parameters
+        weights (array): Length ``len(s_wires) + len(d_wires)`` vector containing the parameters
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
             :func:`~.SingleExcitationUnitary`
             and
-            :func:`~.DoubleExcitationUnitary`. These parameters are precisely the coupled-cluster
-            amplitudes that need to be optimized for each single- and double-exciation generated
+            :func:`~.DoubleExcitationUnitary`. These parameters are the coupled-cluster
+            amplitudes that need to be optimized for each single and double exciation generated
             with the :func:`~.excitations` function.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
@@ -101,7 +101,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
 
         Notice that:
 
-        #. The number of wires has to be equal to the number of spin-orbitals included in
+        #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
 
         #. The single and double excitations can be generated be generated with the function
@@ -142,7 +142,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             # Define the UCCSD ansatz
             ansatz = partial(UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
 
-            # Compute the expectation of 'h' for given set of parameters 'params'
+            # Compute the expectation value of 'h' for given set of parameters 'params'
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
             print(qml.VQECost(ansatz, h, dev))
 

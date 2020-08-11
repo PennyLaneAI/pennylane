@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 @template
 def SingleExcitationUnitary(weight, wires=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
-    fermionic single-excitation operator entering the Unitary Coupled-Cluster Singles
+    single-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
     chemistry simulations.
 

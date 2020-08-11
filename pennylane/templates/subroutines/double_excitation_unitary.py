@@ -373,7 +373,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
 @template
 def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
-    fermionic double-excitation operator entering the Unitary Coupled-Cluster Singles
+    double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
     chemistry simulations.
 
