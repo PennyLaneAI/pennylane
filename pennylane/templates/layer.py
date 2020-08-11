@@ -57,7 +57,7 @@ def layer(template, depth, *args, **kwargs):
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=[1])
 
-        and then pass it into the ``qml.layer`` function. In this instance, we repeat ``subroutine`` 3 times:
+        and then pass it into the ``qml.layer`` function. In this instance, we repeat ``subroutine`` three times:
 
         .. code-block:: python3
 
