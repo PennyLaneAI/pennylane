@@ -48,7 +48,7 @@ class TestBetaStatistics:
             A = op(0)
             stat_func(A)
 
-        assert q.queue == [A]
+        assert q.queue == [A, return_type]
         assert q.get_info(A) == {"return_type": return_type}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
@@ -61,7 +61,7 @@ class TestBetaStatistics:
             Herm = qml.Hermitian(mx, wires=[1])
             stat_func(Herm)
 
-        assert q.queue == [Herm]
+        assert q.queue == [Herm, return_type]
         assert q.get_info(Herm) == {"return_type": return_type}
 
     @pytest.mark.parametrize(
@@ -82,7 +82,7 @@ class TestBetaStatistics:
             tensor_op = BetaTensor(A, B)
             stat_func(tensor_op)
 
-        assert q.queue == [A, B, tensor_op]
+        assert q.queue == [A, B, tensor_op, return_type]
         assert q.get_info(A) == {"owner": tensor_op}
         assert q.get_info(B) == {"owner": tensor_op}
         assert q.get_info(tensor_op) == {"owns": (A, B), "return_type": return_type}
@@ -116,6 +116,7 @@ class TestBetaProbs:
         with qml._queuing.AnnotatedQueue() as q:
             probs(wires)
 
-        assert len(q.queue) == 1
+        assert len(q.queue) == 2
         assert isinstance(q.queue[0], qml.Identity)
-        assert q.get_info(q.queue[0]) == {"return_type": Probability}
+        assert q.queue[1] == Probability
+        assert q.get_info(q.queue[0]) == {"return_type": Probability, "owner":Probability}

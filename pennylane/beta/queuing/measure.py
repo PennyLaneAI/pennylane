@@ -56,6 +56,7 @@ def expval(op):
         )
 
     qml.QueuingContext.update_info(op, return_type=Expectation)
+    qml.QueuingContext.append(Expectation, owns=op)
 
     return op
 
@@ -93,6 +94,7 @@ def var(op):
         )
 
     qml.QueuingContext.update_info(op, return_type=Variance)
+    qml.QueuingContext.append(Variance, owns=op)
 
     return op
 
@@ -131,6 +133,7 @@ def sample(op):
         )
 
     qml.QueuingContext.update_info(op, return_type=Sample)
+    qml.QueuingContext.append(Sample, owns=op)
 
     return op
 
@@ -174,5 +177,6 @@ def probs(wires):
 
     qml.QueuingContext.append(op)
     qml.QueuingContext.update_info(op, return_type=Probability)
+    qml.QueuingContext.append(Probability, owns=op)
 
     return op
