@@ -31,7 +31,7 @@ def layer(template, depth, *args, **kwargs):
         depth (int): The number of times the unitary is repeatedly applied.
         *args: Dynamic parameters that are passed into the unitary each time it is
                repeated. Each dynamic argument must be a list of first dimension equal to
-               ``depth``, with the :math:`j`-th element of the list corresponding to the
+               ``depth``. The :math:`j`-th element of the list is the
                value of the argument the :math:`j`-th time the unitary is applied.
         **kwargs: Static parameters that are passed into the unitary each time it is
                   repeated.
