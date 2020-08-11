@@ -113,7 +113,7 @@ class TestLayer:
         def unitary(param, wire):
             qml.RX(param, wires=wire)
 
-        with pytest.raises(ValueError, match=r"Each argument in args must have length matching 'depth'; expected 3"):
+        with pytest.raises(ValueError, match=r"Each positional argument must have length matching 'depth'; expected 3"):
             layer(unitary, 3, params, wires=[0])
 
     @pytest.mark.parametrize(("unitary", "depth", "arguments", "keywords", "gates"), REPEAT)
