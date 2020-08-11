@@ -328,7 +328,7 @@ When the device applies operations, it needs to translate
 
 By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
 consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,
-such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`~._device.Device.define_wire_map` method
+such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`~.Device.define_wire_map` method
 has to be overwritten accordingly.
 
 The ``device_wires`` can then be further processed, for example by extracting the actual labels as a tuple,
