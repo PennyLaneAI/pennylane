@@ -70,6 +70,10 @@
   function `spin_z` as implemented in the `obs` module.
   [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
 
+* The functions involved in observable conversions from/to OpenFermion now accept
+  a new `wires` argument that can be used to specify the qubits-to-wires mapping
+  when custom wires are used in Pennylane ansatz.
+  
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
