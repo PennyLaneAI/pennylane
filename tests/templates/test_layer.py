@@ -73,6 +73,21 @@ UNITARIES = [
     MultiCircuit
 ]
 
+DEPTH = [2, 1, 2, 1, 2]
+
+GATES = [
+    [qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliY(wires=1), qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliY(wires=1)],
+    [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0)],
+    [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0), qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=[0])],
+    [qml.RX(0.5, wires=0), qml.RX(0.5, wires=1), qml.MultiRZ(0.3, wires=[0, 1])],
+    [qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.RX(0.4, wires=0), qml.RX(0.4, wires=1), qml.CNOT(wires=[0, 1]), qml.RY(0.5, wires=0), qml.RY(0.4, wires=1)]
+]
+
+ARGS = [ [], [], [], [ [ [[0.5, 0.5], 0.3] ] ], [ [[0.5, 0.4], [0.5, 0.4]], [[0.4, 0.4], []], [True, False] ] ]
+KWARGS = [{}, {'wires':range(4), 'var':True}, {'wires':range(4), 'var':True}, {}, {'wires':range(2), 'var2':True}]
+
+REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES)
+
 ########################
 
 
@@ -100,22 +115,6 @@ class TestLayer:
 
         with pytest.raises(ValueError, match=r"Each argument in args must have length matching 'depth'; expected 3"):
             layer(unitary, 3, params, wires=[0])
-
-    DEPTH = [2, 1, 2, 1, 2]
-
-    GATES = [
-        [qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliY(wires=1), qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliY(wires=1)],
-        [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0)],
-        [qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=0), qml.CNOT(wires=[3, 1]), qml.Hadamard(wires=1), qml.PauliY(wires=2), qml.Hadamard(wires=[0])],
-        [qml.RX(0.5, wires=0), qml.RX(0.5, wires=1), qml.MultiRZ(0.3, wires=[0, 1])],
-        [qml.RY(0.5, wires=0), qml.RY(0.4, wires=1), qml.RX(0.4, wires=0), qml.RX(0.4, wires=1), qml.CNOT(wires=[0, 1]), qml.RY(0.5, wires=0), qml.RY(0.4, wires=1)]
-
-    ]
-
-    ARGS = [ [], [], [], [ [ [[0.5, 0.5], 0.3] ] ], [ [[0.5, 0.4], [0.5, 0.4]], [[0.4, 0.4], []], [True, False] ] ]
-    KWARGS = [{}, {'wires':range(4), 'var':True}, {'wires':range(4), 'var':True}, {}, {'wires':range(2), 'var2':True}]
-
-    REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES)
 
     @pytest.mark.parametrize(("unitary", "depth", "arguments", "keywords", "gates"), REPEAT)
     def test_layer(self, unitary, depth, arguments, keywords, gates):

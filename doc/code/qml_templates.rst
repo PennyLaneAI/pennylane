@@ -56,8 +56,8 @@ predefined pattern. You can import this function both via ``qml.broadcast`` and 
 Layering Function
 -----------------
 
-The layer function creates a new template by repeatedly applying a quantum circuit (containing quantum
-gates and subroutines) to a set of wires. You can import this function both via
+The layer function creates a new template by repeatedly applying a sequence of quantum
+gates to a set of wires. You can import this function both via
 ``qml.layer`` and ``qml.templates.layer``.
 
 .. autosummary::
