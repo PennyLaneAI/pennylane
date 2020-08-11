@@ -208,16 +208,17 @@ def _creation_annihilation_tensor(word, wires):
             elif w != "0":
                 raise ValueError("Encountered invalid character {} in word".format(w))
 
-    coeffs = [
-        reduce(lambda x, y: x * y, term) if isinstance(term, Iterable) else term
-        for term in list(coeff_list)
-    ]
-    terms = [
-        qml.operation.Tensor(*term) if isinstance(term, Iterable) else term
-        for term in list(term_list)
-    ]
+        if coeff_list is not None and term_list is not None:
+            coeff_list = [
+                reduce(lambda x, y: x * y, term) if isinstance(term, Iterable) else term
+                for term in list(coeff_list)
+            ]
+            term_list = [
+                qml.operation.Tensor(*term) if isinstance(term, Iterable) else term
+                for term in list(term_list)
+            ]
 
-    return (coeffs, terms)
+    return (coeff_list, term_list)
 
 
 def permutation_mixer(words, coeffs, wires):
