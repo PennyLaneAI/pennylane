@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.template.repeat` function.
+Unit tests for the :func:`pennylane.template.layer` function.
 Integration tests should be placed into ``test_templates.py``.
 """
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
-from pennylane import repeat, template
+from pennylane import layer, template
 
 @template
 def ConstantCircuit():
@@ -76,8 +76,8 @@ UNITARIES = [
 ########################
 
 
-class TestRepeat:
-    """Tests the repetition function"""
+class TestLayer:
+    """Tests the layering function"""
 
     def test_depth_error(self):
         """Tests that the correct error is thrown when depth is not an integer"""
@@ -88,7 +88,7 @@ class TestRepeat:
             qml.PauliX(wires=wires)
 
         with pytest.raises(ValueError, match=r"'depth' must be of type int"):
-            repeat(unitary, depth, wires=[0])
+            layer(unitary, depth, wires=[0])
 
     def test_args_length(self):
         """Tests that the correct error is thrown when the length of an argument is incorrect"""
@@ -99,7 +99,7 @@ class TestRepeat:
             qml.RX(param, wires=wire)
 
         with pytest.raises(ValueError, match=r"Each argument in args must have length matching 'depth'; expected 3"):
-            repeat(unitary, 3, params, wires=[0])
+            layer(unitary, 3, params, wires=[0])
 
     DEPTH = [2, 1, 2, 1, 2]
 
@@ -118,11 +118,11 @@ class TestRepeat:
     REPEAT = zip(UNITARIES, DEPTH, ARGS, KWARGS, GATES)
 
     @pytest.mark.parametrize(("unitary", "depth", "arguments", "keywords", "gates"), REPEAT)
-    def test_repeat(self, unitary, depth, arguments, keywords, gates):
-        """Tests that the repetition function is yielding the correct sequence of gates"""
+    def test_layer(self, unitary, depth, arguments, keywords, gates):
+        """Tests that the layering function is yielding the correct sequence of gates"""
 
         with qml._queuing.OperationRecorder() as rec:
-            repeat(unitary, depth, *arguments, **keywords)
+            layer(unitary, depth, *arguments, **keywords)
 
         for i, gate in enumerate(rec.operations):
             prep = [gate.name, gate.parameters, gate.wires]

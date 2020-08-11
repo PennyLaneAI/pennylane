@@ -21,8 +21,8 @@ from pennylane.templates.decorator import template
 
 
 @template
-def repeat(circuit, depth, *args, **kwargs):
-    r"""Repeatedly applies a circuit containing quantum gates or templates.
+def layer(circuit, depth, *args, **kwargs):
+    r"""Repeatedly applies a circuit containing quantum gates or templates a given number of times.
 
     Args:
         circuit (function): A function that applies the quantum gates/templates being repeated.
