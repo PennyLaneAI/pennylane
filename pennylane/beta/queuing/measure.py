@@ -20,13 +20,15 @@ and measurement samples using AnnotatedQueues.
 import collections
 
 import pennylane as qml
-from pennylane.operation import Sample, Variance, Expectation, Probability, Observable
+from pennylane.operation import (Expectation, Observable, Probability, Sample,
+                                 Variance)
 from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
 
-MeasurementProcess = collections.namedtuple('MeasurementProcess', ['return_type'])
+MeasurementProcess = collections.namedtuple("MeasurementProcess", ["return_type"])
 """NamedTuple: A namedtuple that contains the return_type of the circuit and
 whose instance can be queried by id."""
+
 
 def expval(op):
     r"""Expectation value of the supplied observable.
