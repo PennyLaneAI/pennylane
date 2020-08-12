@@ -185,7 +185,7 @@ class VQECost:
 
     Next, we can define the cost function:
 
-    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
     >>> params = torch.rand([4, 3])
     >>> cost(params)
     tensor(0.0245, dtype=torch.float64)
