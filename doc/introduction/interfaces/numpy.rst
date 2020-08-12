@@ -182,7 +182,7 @@ by :func:`~.grad`:
 
     **Keyword arguments**
 
-    The :func:`~.grad` function does not accept keyword arguments. A QNode may be defined
+    The :func:`~.grad` function does not differentiate keyword arguments. A QNode may be defined
     using arguments with default values; for example
 
     .. code-block:: python
@@ -194,8 +194,8 @@ by :func:`~.grad`:
 
     >>> circuit(weights, data=[0.34, 0.1])
 
-    These arguments will always be ignored and treated as non-differentiable
-    by the QNode.
+    These arguments will always be treated as non-differentiable by the QNode and :func:`~.grad`
+    function.
 
 
 Optimization
