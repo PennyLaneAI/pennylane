@@ -53,6 +53,17 @@ predefined pattern. You can import this function both via ``qml.broadcast`` and 
 
     pennylane.broadcast
 
+Layering Function
+-----------------
+
+The layer function creates a new template by repeatedly applying a sequence of quantum
+gates to a set of wires. You can import this function both via
+``qml.layer`` and ``qml.templates.layer``.
+
+.. autosummary::
+
+    pennylane.layer
+
 Utility functions for input checks
 ----------------------------------
 

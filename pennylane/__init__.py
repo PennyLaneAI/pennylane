@@ -31,7 +31,7 @@ import pennylane.init
 import pennylane.templates
 import pennylane.qnn
 import pennylane.qaoa as qaoa
-from pennylane.templates import template, broadcast
+from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, VQECost
 
@@ -200,13 +200,12 @@ def device(name, *args, **kwargs):
 def grad(func, argnum=None):
     """Returns the gradient as a callable function of (functions of) QNodes.
 
-    This is a wrapper around the :mod:`autograd.grad` function.
     Function arguments with the property ``requires_grad`` set to ``False``
     will automatically be excluded from the gradient computation, unless
     the ``argnum`` keyword argument is passed.
 
     Args:
-        func (function): a Python function or QNode that contains
+        func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
 
     Keyword Args:
