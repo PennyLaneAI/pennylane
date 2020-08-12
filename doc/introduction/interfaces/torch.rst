@@ -4,10 +4,11 @@ PyTorch interface
 =================
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
-quantum nodes. A basic :class:`QNode <pennylane.qnode.QNode>` can be translated into a quantum node that interfaces
-with PyTorch, either by using the ``interface='torch'`` flag in the QNode Decorator, or
-by calling the :meth:`QNode.to_torch <pennylane.QNode.to_torch>` method. Internally, the translation is executed by
-the :func:`TorchQNode <pennylane.interfaces.torch.TorchQNode>` function that returns the new quantum node object.
+quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with PyTorch,
+either by using the ``interface='torch'`` flag in the QNode Decorator, or by calling the
+:meth:`QNode.to_torch() <pennylane.qnodes.JacobianQNode.to_torch>` method. Internally, the translation is
+executed by the :func:`~.interfaces.torch.to_torch` function that returns the
+new quantum node object.
 
 .. note::
 
@@ -48,8 +49,8 @@ it can now be used like any other PyTorch function:
 >>> circuit1(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
-Construction from a NumPy QNode
--------------------------------
+Converting an existing QNode
+----------------------------
 
 Sometimes, it is more convenient to instantiate a :class:`~.QNode` object directly, for example,
 if you would like to reuse the same quantum function across multiple devices, or even
@@ -90,8 +91,6 @@ For example:
 
 .. code-block:: python
 
-    from torch.autograd import Variable
-
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='torch')
@@ -102,8 +101,8 @@ For example:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    phi = Variable(torch.tensor([0.5, 0.1]), requires_grad=True)
-    theta = Variable(torch.tensor(0.2), requires_grad=True)
+    phi = torch.tensor([0.5, 0.1], requires_grad=True)
+    theta = torch.tensor(0.2, requires_grad=True)
     result = circuit3(phi, theta)
 
 Now, performing the backpropagation and accumulating the gradients:
@@ -113,6 +112,31 @@ Now, performing the backpropagation and accumulating the gradients:
 tensor([-0.4794,  0.0000])
 >>> theta.grad
 tensor(-5.5511e-17)
+
+To include non-differentiable data arguments, simply set ``requires_grad=False``:
+
+.. code-block:: python
+
+    @qml.qnode(dev, interface='torch')
+    def circuit3(weights, data):
+        qml.templates.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(weights[2], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+Here, ``data`` is non-trainable embedded data, so should be marked as non-differentiable:
+
+>>> weights = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+>>> data = torch.tensor(np.random.random([4]), requires_grad=False)
+>>> result = circuit3(weights, data)
+>>> result.backward()
+>>> data.grad
+None
+>>> weights.grad
+tensor([3.6317e-02, 0.0000e+00, 5.5511e-17])
+
 
 .. _pytorch_optimize:
 
@@ -131,7 +155,6 @@ we can do the following:
 .. code-block:: python
 
     import torch
-    from torch.autograd import Variable
     import pennylane as qml
 
     dev = qml.device('default.qubit', wires=2)
@@ -147,8 +170,8 @@ we can do the following:
     def cost(phi, theta):
         return torch.abs(circuit4(phi, theta) - 0.5)**2
 
-    phi = Variable(torch.tensor([0.011, 0.012]), requires_grad=True)
-    theta = Variable(torch.tensor(0.05), requires_grad=True)
+    phi = torch.tensor([0.011, 0.012], requires_grad=True)
+    theta = torch.tensor(0.05, requires_grad=True)
 
     opt = torch.optim.Adam([phi, theta], lr = 0.1)
 
@@ -178,5 +201,10 @@ tensor(0.5000, device='cuda:0', dtype=torch.float64, grad_fn=<_TorchQNodeBackwar
 
     See https://pytorch.org/docs/stable/notes/extending.html#adding-a-module for more details.
 
+Torch.nn integration
+--------------------
 
-
+Once you have a Torch-compaible QNode, it is easy to convert this into a ``torch.nn`` layer. To help
+automate this process, PennyLane also provides a :class:`~.qnn.TorchLayer` class to easily
+convert a QNode to a ``torch.nn`` layer. Please see the corresponding :class:`~.qnn.TorchLayer`
+documentation for more details and examples.
