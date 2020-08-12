@@ -44,19 +44,22 @@ class TestBetaStatistics:
         "op", [qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity],
     )
     def test_annotating_obs_return_type(self, stat_func, return_type, op):
-        """Test that the return_type related info is updated for an expval call"""
+        """Test that the return_type related info is updated for a
+        measurement"""
         with qml._queuing.AnnotatedQueue() as q:
             A = op(0)
             stat_func(A)
 
         assert q.queue[:-1] == [A]
         meas_proc = q.queue[-1]
+        assert isinstance(meas_proc, MeasurementProcess)
+        assert meas_proc.return_type == return_type
 
         assert q.get_info(A) == {"owner": meas_proc}
         assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
-        """Test that the return_type related info is updated for an expval call
+        """Test that the return_type related info is updated for a measurement
         when called for an Hermitian observable"""
 
         mx = np.array([[1, 0], [0, 1]])
@@ -67,6 +70,8 @@ class TestBetaStatistics:
 
         assert q.queue[:-1] == [Herm]
         meas_proc = q.queue[-1]
+        assert isinstance(meas_proc, MeasurementProcess)
+        assert meas_proc.return_type == return_type
 
         assert q.get_info(Herm) == {"owner": meas_proc}
         assert q.get_info(meas_proc) == {"owns": (Herm)}
@@ -81,7 +86,7 @@ class TestBetaStatistics:
         ],
     )
     def test_annotating_tensor_return_type(self, op1, op2, stat_func, return_type):
-        """Test that the return_type related info is updated for an expval call
+        """Test that the return_type related info is updated for a measurement
         when called for an Tensor observable"""
         with qml._queuing.AnnotatedQueue() as q:
             A = op1(0)
@@ -91,6 +96,9 @@ class TestBetaStatistics:
 
         assert q.queue[:-1] == [A, B, tensor_op]
         meas_proc = q.queue[-1]
+        assert isinstance(meas_proc, MeasurementProcess)
+        assert meas_proc.return_type == return_type
+
         assert q.get_info(A) == {"owner": tensor_op}
         assert q.get_info(B) == {"owner": tensor_op}
         assert q.get_info(tensor_op) == {"owns": (A,B), "owner": meas_proc}
