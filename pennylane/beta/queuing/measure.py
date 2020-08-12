@@ -20,8 +20,7 @@ and measurement samples using AnnotatedQueues.
 import collections
 
 import pennylane as qml
-from pennylane.operation import (Expectation, Observable, Probability, Sample,
-                                 Variance)
+from pennylane.operation import Expectation, Observable, Probability, Sample, Variance
 from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
 
