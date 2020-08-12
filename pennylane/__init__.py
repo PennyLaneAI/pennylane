@@ -31,7 +31,7 @@ import pennylane.init
 import pennylane.templates
 import pennylane.qnn
 import pennylane.qaoa as qaoa
-from pennylane.templates import template, broadcast
+from pennylane.templates import template, broadcast, layer
 from pennylane.about import about
 from pennylane.vqe import Hamiltonian, VQECost
 
