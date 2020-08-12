@@ -178,6 +178,25 @@ by :func:`~.grad`:
 >>> grad_fn(weights, data, wires)
 (array([-1.69923049e-02,  0.00000000e+00, -8.32667268e-17]),)
 
+.. note::
+
+    **Keyword arguments**
+
+    The :func:`~.grad` function does not accept keyword arguments. A QNode may be defined
+    using arguments with default values; for example
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def circuit(weights, data=None):
+
+    These arguments must always be passed using ``keyword=value`` syntax:
+
+    >>> circuit(weights, data=[0.34, 0.1])
+
+    These arguments will always be ignored and treated as non-differentiable
+    by the QNode.
+
 
 Optimization
 ------------

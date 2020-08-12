@@ -3,8 +3,8 @@
 
 .. _intro_interfaces:
 
-Interfaces and gradients
-========================
+Interfaces and training
+=======================
 
 PennyLane offers seamless integration between classical and quantum computations. Code up quantum
 circuits in PennyLane, and connect them easily to the top scientific computing and machine learning
