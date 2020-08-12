@@ -17,11 +17,16 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+import collections
+
 import pennylane as qml
 from pennylane.operation import Sample, Variance, Expectation, Probability, Observable
 from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
 
+MeasurementProcess = collections.namedtuple('MeasurementProcess', ['return_type'])
+"""NamedTuple: A namedtuple that contains the return_type of the circuit and
+whose instance can be queried by id."""
 
 def expval(op):
     r"""Expectation value of the supplied observable.
@@ -55,8 +60,9 @@ def expval(op):
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
-    qml.QueuingContext.update_info(op, return_type=Expectation)
-    qml.QueuingContext.append(Expectation, owns=op)
+    meas_op = MeasurementProcess(Expectation)
+    qml.QueuingContext.update_info(op, owner=meas_op)
+    qml.QueuingContext.append(meas_op, owns=op)
 
     return op
 
@@ -93,8 +99,9 @@ def var(op):
             "{} is not an observable: cannot be used with var".format(op.name)
         )
 
-    qml.QueuingContext.update_info(op, return_type=Variance)
-    qml.QueuingContext.append(Variance, owns=op)
+    meas_op = MeasurementProcess(Variance)
+    qml.QueuingContext.update_info(op, owner=meas_op)
+    qml.QueuingContext.append(meas_op, owns=op)
 
     return op
 
@@ -132,8 +139,9 @@ def sample(op):
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
-    qml.QueuingContext.update_info(op, return_type=Sample)
-    qml.QueuingContext.append(Sample, owns=op)
+    meas_op = MeasurementProcess(Sample)
+    qml.QueuingContext.update_info(op, owner=meas_op)
+    qml.QueuingContext.append(meas_op, owns=op)
 
     return op
 
@@ -175,8 +183,9 @@ def probs(wires):
     # pylint: disable=protected-access
     op = Identity(wires=wires, do_queue=False)
 
+    meas_op = MeasurementProcess(Probability)
     qml.QueuingContext.append(op)
-    qml.QueuingContext.update_info(op, return_type=Probability)
-    qml.QueuingContext.append(Probability, owns=op)
+    qml.QueuingContext.update_info(op, owner=meas_op)
+    qml.QueuingContext.append(meas_op, owns=op)
 
     return op

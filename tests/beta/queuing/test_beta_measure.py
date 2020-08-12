@@ -30,6 +30,7 @@ from pennylane.beta.queuing.measure import (
     Sample,
     Variance,
     Probability,
+    MeasurementProcess
 )
 
 
@@ -48,8 +49,11 @@ class TestBetaStatistics:
             A = op(0)
             stat_func(A)
 
-        assert q.queue == [A, return_type]
-        assert q.get_info(A) == {"return_type": return_type}
+        assert q.queue[:-1] == [A]
+        meas_proc = q.queue[-1]
+
+        assert q.get_info(A) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for an expval call
@@ -61,8 +65,11 @@ class TestBetaStatistics:
             Herm = qml.Hermitian(mx, wires=[1])
             stat_func(Herm)
 
-        assert q.queue == [Herm, return_type]
-        assert q.get_info(Herm) == {"return_type": return_type}
+        assert q.queue[:-1] == [Herm]
+        meas_proc = q.queue[-1]
+
+        assert q.get_info(Herm) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -82,10 +89,11 @@ class TestBetaStatistics:
             tensor_op = BetaTensor(A, B)
             stat_func(tensor_op)
 
-        assert q.queue == [A, B, tensor_op, return_type]
+        assert q.queue[:-1] == [A, B, tensor_op]
+        meas_proc = q.queue[-1]
         assert q.get_info(A) == {"owner": tensor_op}
         assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B), "return_type": return_type}
+        assert q.get_info(tensor_op) == {"owns": (A,B), "owner": meas_proc}
 
 @pytest.mark.parametrize(
     "stat_func", [expval, var, sample]
@@ -117,6 +125,13 @@ class TestBetaProbs:
             probs(wires)
 
         assert len(q.queue) == 2
-        assert isinstance(q.queue[0], qml.Identity)
-        assert q.queue[1] == Probability
-        assert q.get_info(q.queue[0]) == {"return_type": Probability, "owner":Probability}
+
+        obs = q.queue[0]
+        meas_proc = q.queue[1]
+        assert isinstance(obs, qml.Identity)
+        assert isinstance(meas_proc, MeasurementProcess)
+        assert meas_proc.return_type == Probability
+
+        assert len(q.get_info(obs)) == 1
+        assert q.get_info(obs) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns" : obs}
