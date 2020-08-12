@@ -459,8 +459,8 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
                H, R_x(-\frac{\pi}{2}), R_z(-\frac{\theta}{8}) \bigg] \Bigg\}
 
         #. For a given quadruple ``[s, r, q, p]`` with :math:`p>q>r>s`, seventy-two single-qubit
-           and ``16*(len(wires1)-1 + len(wires2)-1 + 1)`` CNOT operations are applied. Consecutive CNOT gates act on 
-           qubits with indices between ``s`` and ``r`` and
+           and ``16*(len(wires1)-1 + len(wires2)-1 + 1)`` CNOT operations are applied.
+           Consecutive CNOT gates act on qubits with indices between ``s`` and ``r`` and
            ``q`` and ``p`` while a single CNOT acts on wires ``r`` and ``q``. The operations
            performed across these qubits are shown in dashed lines in the figure above.
 
