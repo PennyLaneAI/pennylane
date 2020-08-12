@@ -73,7 +73,7 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             :func:`~.SingleExcitationUnitary`
             and
             :func:`~.DoubleExcitationUnitary`. These parameters are the coupled-cluster
-            amplitudes that need to be optimized for each single and double exciation generated
+            amplitudes that need to be optimized for each single and double excitation generated
             with the :func:`~.excitations` function.
         wires (Iterable or Wires): Wires that the template acts on. Accepts an iterable of numbers
             or strings, or a Wires object.
