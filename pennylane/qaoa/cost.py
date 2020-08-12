@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Methods for generating QAOA cost and mixer Hamiltonians corresponding to
+Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
 
