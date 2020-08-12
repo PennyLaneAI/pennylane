@@ -88,7 +88,7 @@
   can be used to implement Trotterized time-evolution under a Hamiltonian.
   [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
   
-* Added a `qml.repeat` template-constructing function, which takes a quantum circuit, and 
+* Added a `qml.layer` template-constructing function, which takes a unitary, and 
   repeatedly applies it on a set of wires to a given depth.
   [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
   
