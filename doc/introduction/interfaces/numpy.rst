@@ -135,8 +135,9 @@ QNode or gradient function, make sure to use a NumPy array that specifies
 >>> np.array([0.1, 0.2], requires_grad=False)
 tensor([0.1, 0.2], requires_grad=False)
 
-The ``requires_grad`` argument can be passed to any NumPy function provided by
-PennyLane.
+.. note::
+
+  The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane.
 
 For example, consider the following QNode that accepts one trainable argument ``weights``,
 and two non-trainable arguments ``data`` and ``wires``:
