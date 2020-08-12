@@ -3,16 +3,16 @@
 TensorFlow interface
 ====================
 
-To use a quantum node in combination with TensorFlow's Eager mode, we have to make it
-compatible with TensorFlow. A TensorFlow-compatible quantum node can be created
-either by using the ``interface='tf'`` flag in the qnode decorator, or
-by calling the :meth:`QNode.to_tf <pennylane.QNode.to_tf>` method. Internally, the translation is executed by
-the :func:`TFQNode <pennylane.interfaces.tf.TFQNode>` function that returns the new quantum node object.
+In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
+quantum nodes. A basic ``QNode`` can be translated into a quantum node that interfaces with PyTorch,
+either by using the ``interface='tf'`` flag in the QNode Decorator, or by calling the
+:meth:`QNode.to_tf() <pennylane.qnodes.JacobianQNode.to_tf>` method. Internally, the translation is
+executed by the :func:`~.interfaces.tf.to_tf` function that returns the
+new quantum node object.
 
 .. note::
-    To use the TensorFlow eager execution interface in PennyLane, you must first install TensorFlow.
-    Note that this interface only supports TensorFlow versions >=1.12 (including version 2.0)
-    in eager execution mode!
+    To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
+    Note that this interface only supports TensorFlow versions >= 2.0!
 
 Tensorflow is imported as follows:
 
@@ -42,16 +42,16 @@ specify the ``interface='tf'`` keyword argument:
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit1()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` objects
-as input, and returning ``tf.Tensor`` objects.
+The QNode ``circuit1()`` is now a TensorFlow-capable QNode, accepting ``tf.Variable`` and
+``tf.Tensor`` objects as input, and returning ``tf.Tensor`` objects.
 
 >>> phi = tf.Variable([0.5, 0.1])
 >>> theta = tf.Variable(0.2)
 >>> circuit1(phi, theta)
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
-Construction from a basic QNode
--------------------------------
+Construction from an existing QNode
+-----------------------------------
 
 Let us first create two basic, NumPy-interfacing QNodes.
 
@@ -106,7 +106,8 @@ For example:
     with tf.GradientTape() as tape:
         # Use the circuit to calculate the loss value
         loss = circuit(phi, theta)
-        phi_grad, theta_grad = tape.gradient(loss, [phi, theta])
+
+    phi_grad, theta_grad = tape.gradient(loss, [phi, theta])
 
 Now, printing the gradients, we get:
 
@@ -114,6 +115,31 @@ Now, printing the gradients, we get:
 array([-0.47942549,  0.        ])
 >>> theta_grad
 -5.5511151231257827e-17
+
+To include non-differentiable data arguments, simply use ``tf.constant``:
+
+.. code-block:: python
+
+    @qml.qnode(dev, interface='tf')
+    def circuit3(weights, data):
+        qml.templates.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(weights[2], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    weights = tf.Variable([0.1, 0.2, 0.3])
+    data = tf.constant(np.random.random([4]))
+
+    with tf.GradientTape() as tape:
+        result = circuit3(weights, data)
+
+Calculating the gradient:
+
+>>> grad = tape.gradient(result, weights)
+>>> grad
+<tf.Tensor: shape=(3,), dtype=float64, numpy=array([-2.26641213e-02,  8.32667268e-17,  5.55111512e-17])>
 
 Optimization using TensorFlow
 -----------------------------
@@ -160,3 +186,11 @@ The final weights and circuit value are:
 <tf.Variable 'Variable:0' shape=() dtype=float64, numpy=0.20000000000000001>
 >>> circuit4(phi, theta)
 <tf.Tensor: id=106269, shape=(), dtype=float64, numpy=0.5000000000000091>
+
+Keras integration
+-----------------
+
+Once you have a TensorFlow-compaible QNode, it is easy to convert this into a Keras layer. To
+help automate this process, PennyLane also provides a :class:`~.qnn.KerasLayer` class to easily
+convert a QNode to a Keras layer. Please see the corresponding :class:`~.qnn.KerasLayer`
+documentation for more details and examples.
