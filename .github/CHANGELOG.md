@@ -87,6 +87,22 @@
 * Added an `ApproxTimeEvolution` template to the PennyLane templates module, which 
   can be used to implement Trotterized time-evolution under a Hamiltonian.
   [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
+  
+* Added a `qml.layer` template-constructing function, which takes a unitary, and 
+  repeatedly applies it on a set of wires to a given depth.
+  [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
+  
+* Added built-in QAOA functionality to PennyLane. This includes the following features:
+    * Added `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` methods for defining Pauli-X and XY 
+      mixer Hamiltonians.
+      [(#712)](https://github.com/PennyLaneAI/pennylane/pull/712)
+    * Added the `qml.qaoa.maxcut` method, which allows the user to get the cost Hamiltonian 
+      and recommended mixer Hamiltonian for QAOA MaxCut, for a supplied graph.
+      [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
+      [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
+    * Added `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer`, which take cost and mixer Hamiltonians, 
+      respectively, and apply the corresponding QAOA cost and mixer layers. 
+      [(#720)](https://github.com/PennyLaneAI/pennylane/pull/720)
 
 <h3>Improvements</h3>
 
