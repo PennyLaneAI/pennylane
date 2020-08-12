@@ -118,10 +118,12 @@ Evaluating this gradient function at specific parameter values:
 (array([ -4.79425539e-01,   1.11022302e-16]), array(0.0))
 
 
-Non-differentiable arguments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Differentiable and non-differentiable arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Note that **all positional arguments provided to the QNode are assumed to be differentiable
+How does PennyLane know which arguments of a quantum function are differentiable and which ones are not? 
+
+As a basic rule, **all positional arguments provided to the QNode are assumed to be differentiable
 by default**:
 
 >>> from pennylane import numpy as np
