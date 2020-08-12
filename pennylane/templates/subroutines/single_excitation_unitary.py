@@ -73,7 +73,7 @@ def SingleExcitationUnitary(weight, wires=None):
     the Hadamard (:math:`H`) or :math:`R_x` gate has to be applied to change to the
     :math:`X` or :math:`Y` basis, respectively. The latter operations are denoted as
     :math:`U_1` and :math:`U_2` in the figure above. See the Usage Details section for more
-    details.
+    information.
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
