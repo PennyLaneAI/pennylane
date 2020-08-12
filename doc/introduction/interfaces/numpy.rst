@@ -126,6 +126,11 @@ How does PennyLane know which arguments of a quantum function are differentiable
 As a basic rule, **all positional arguments provided to the QNode are assumed to be differentiable
 by default**:
 
+
+However, you may want to pass arguments as positional arguments to a QNode but *not* have PennyLane
+consider them when computing gradients. To accomplish this, all arrays created by the PennyLane
+NumPy module have a special flag ``requires_grad`` specifying whether they are trainable or not. 
+
 >>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2])
 tensor([0.1, 0.2], requires_grad=True)
