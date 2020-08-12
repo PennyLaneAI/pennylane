@@ -1,7 +1,7 @@
 .. _numpy_interf:
 
 NumPy interface
-***************
+===============
 
 .. note:: This interface is the default interface supported by PennyLane's :class:`~.QNode`.
 
@@ -21,7 +21,7 @@ provided by PennyLane alongside with the PennyLane library:
     import pennylane as qml
     from pennylane import numpy as np
 
-This is provided via `autograd <https://github.com/HIPS/autograd>`_, and enables
+This is powered via `autograd <https://github.com/HIPS/autograd>`_, and enables
 automatic differentiation and backpropagation of classical computations using familiar
 NumPy functions and modules (such as ``np.sin``, ``np.cos``, ``np.exp``, ``np.linalg``,
 ``np.fft``), as well as standard Python constructs, such as ``if`` statements, and ``for``
@@ -33,13 +33,13 @@ Via the QNode decorator
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating QNodes
 in PennyLane. By default, all QNodes are constructed for the NumPy interface,
-but this can also be specified explicitly by passing the ``interface='numpy'`` keyword argument:
+but this can also be specified explicitly by passing the ``interface='autograd'`` keyword argument:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=2)
 
-    @qml.qnode(dev, interface='numpy')
+    @qml.qnode(dev, interface='autograd')
     def circuit1(phi, theta):
         qml.RX(phi[0], wires=0)
         qml.RY(phi[1], wires=1)
@@ -58,8 +58,8 @@ It can now be used like any other Python/NumPy function:
 >>> circuit1(phi, theta)
 array([ 0.87758256,  0.68803733])
 
-Via the QNode class
-^^^^^^^^^^^^^^^^^^^
+Via the QNode constructor
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the :ref:`introduction <intro_vcirc_qnode>` it was shown how to instantiate a :class:`QNode <pennylane.qnode.QNode>`
 object directly, for example, if you would like to reuse the same quantum function across
@@ -110,13 +110,65 @@ with respect to both QNode parameters ``phi`` and ``theta``:
 
     phi = np.array([0.5, 0.1])
     theta = 0.2
-    dcircuit = qml.grad(circuit3, argnum=[0, 1])
+    dcircuit = qml.grad(circuit3)
 
 Evaluating this gradient function at specific parameter values:
 
 >>> dcircuit(phi, theta)
 (array([ -4.79425539e-01,   1.11022302e-16]), array(0.0))
 
+
+Non-differentiable arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Note that **all positional arguments provided to the QNode are assumed to be differentiable
+by default**:
+
+>>> from pennylane import numpy as np
+>>> np.array([0.1, 0.2])
+tensor([0.1, 0.2], requires_grad=True)
+
+If you would like to provide explicit non-differentiable arguments to the
+QNode or gradient function, make sure to use a NumPy array that specifies
+``requires_grad=False``:
+
+>>> np.array([0.1, 0.2], requires_grad=False)
+tensor([0.1, 0.2], requires_grad=False)
+
+The ``requires_grad`` argument can be passed to any NumPy function provided by
+PennyLane.
+
+For example, consider the following QNode that accepts one trainable argument ``weights``,
+and two non-trainable arguments ``data`` and ``wires``:
+
+.. code-block:: python
+
+    dev = qml.device('default.qubit', wires=5)
+
+    @qml.qnode(dev)
+    def circuit(weights, data, wires):
+        qml.templates.AmplitudeEmbedding(data, wires=wires, normalize=True)
+        qml.RX(weights[0], wires=wires[0])
+        qml.RY(weights[1], wires=wires[1])
+        qml.RZ(weights[2], wires=wires[2])
+        qml.CNOT(wires=[wires[0], wires[1]])
+        qml.CNOT(wires=[wires[0], wires[2]])
+        return qml.expval(qml.PauliZ(wires[0]))
+
+We must specify that ``data`` and ``wires`` are NumPy arrays with ``requires_grad=False``:
+
+>>> weights = np.array([0.1, 0.2, 0.3])
+>>> data = np.random.random([2**3], requires_grad=False)
+>>> wires = np.array([2, 0, 1], requires_grad=False)
+>>> circuit(weights, data, wires)
+0.16935626052294817
+
+When we compute the derivative, arguments with ``requires_grad=False`` are explicitly ignored
+by :func:`~.grad`:
+
+>>> grad_fn = qml.grad(circuit)
+>>> grad_fn(weights, data, wires)
+(array([-1.69923049e-02,  0.00000000e+00, -8.32667268e-17]),)
 
 
 Optimization
@@ -174,17 +226,19 @@ How does automatic differentiation work in the case where the QNode returns mult
     dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev)
-    def circuit5(x):
-        qml.RX(x, wires=0)
-        qml.RX(x, wires=1)
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+    def circuit5(params):
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(1))
 
 If we were to naively try computing the gradient of ``circuit5`` using the :func:`~.grad` function,
 
-.. code::
-
-    g1 = qml.grad(circuit5, argnum=0)
-    g1(np.pi/2)
+>>> g1 = qml.grad(circuit5)
+>>> params = np.array([np.pi/2, 0.2])
+>>> g1(params)
 
 we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is
 only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode
@@ -192,56 +246,36 @@ returns multiple expectation values, the correct differential operator to use is
 the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_.
 This can be accessed in PennyLane as :func:`~.jacobian`:
 
->>> j1 = qml.jacobian(circuit5, argnum=0)
->>> j1(np.pi/2)
-array([-1. -1.])
+>>> j1 = qml.jacobian(circuit5)
+>>> j1(params)
+array([[ 0.        , -0.98006658],
+       [-0.98006658,  0.        ]])
 
 
 The output of :func:`~.jacobian` is a two-dimensional vector, with the first/second element being
 the partial derivative of the first/second expectation value with respect to the input parameter.
-The Jacobian function has the same signature as the gradient function, requiring the user to specify
-which argument should be differentiated.
-
-If you want to compute the Jacobian matrix for a function with multiple input parameters
-and multiple expectation values, the recommended way to do this is to combine the parameters
-into a single list/array and index into this inside your quantum circuit function.
-Consider the following circuit:
-
-.. code-block:: python
-
-    @qml.qnode(dev)
-    def circuit6(params):
-        qml.RX(params[0], wires=0)
-        qml.RZ(params[1], wires=0)
-        qml.RX(params[2], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-It has a full Jacobian with two rows and three columns:
-
->>> j2 = qml.jacobian(circuit6, argnum=0)
->>> params = np.array([np.pi / 3, 0.25, np.pi / 2])
->>> j2(params)
-array([[-8.66025404e-01, -5.55111512e-17,  0.00000000e+00],
-       [-4.71844785e-16, -1.38777878e-17, -5.00000000e-01]])
-
-.. warning::
-
-    Currently, :func:`pennylane.jacobian` supports only the case where
-    ``argnum`` is a single integer. For quantum functions with multiple arguments,
-    use the above method of combining arguments in an array to get the full Jacobian matrix.
 
 
 Advanced Autograd usage
 -----------------------
 
-The PennyLane NumPy interface leverages the Python library `autograd <https://github.com/HIPS/autograd>`_ to enable automatic differentiation of NumPy code, and extends it to provide gradients of quantum circuit functions encapsulated in QNodes. In order to make NumPy code differentiable, Autograd provides a wrapped version of NumPy (exposed in PennyLane as :code:`pennylane.numpy`).
+The PennyLane NumPy interface leverages the Python library `autograd
+<https://github.com/HIPS/autograd>`_ to enable automatic differentiation of NumPy code, and extends
+it to provide gradients of quantum circuit functions encapsulated in QNodes. In order to make NumPy
+code differentiable, Autograd provides a wrapped version of NumPy (exposed in PennyLane as
+:code:`pennylane.numpy`).
 
-As stated in other sections, using this interface, any hybrid computation should be coded using the wrapped version of NumPy provided by PennyLane. **If you accidentally import the vanilla version of NumPy, your code will not be automatically differentiable.**
+As stated in other sections, using this interface, any hybrid computation should be coded using the
+wrapped version of NumPy provided by PennyLane. **If you accidentally import the vanilla version of
+NumPy, your code will not be automatically differentiable.**
 
-Because of the way autograd wraps NumPy, the PennyLane NumPy interface does not require users to learn a new mini-language for declaring classical computations, or invoke awkward language-dependent functions which replicate basic python control-flow statements (``if`` statements, loops, etc.). Users can continue using many of the standard numerical programming practices common in Python and NumPy.
+Because of the way autograd wraps NumPy, the PennyLane NumPy interface allows standard NumPy
+functions and basic Python control statements (``if`` statements, loops, etc.) for declaring
+differentiable classical computations.
 
-That being said, autograd's coverage of NumPy is not complete. It is best to consult the `autograd docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for a more complete overview of supported and unsupported features. We highlight a few of the major 'gotchas' here.
+That being said, autograd's coverage of NumPy is not complete. It is best to consult the `autograd
+docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for a more complete overview
+of supported and unsupported features. We highlight a few of the major 'gotchas' here.
 
 **Do not use:**
 

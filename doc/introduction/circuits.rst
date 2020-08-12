@@ -117,7 +117,8 @@ devices, the options are:
 
 For a plugin device, refer to the plugin documentation for available device options.
 
-**Defining custom wire labels**
+Custom wire labels
+^^^^^^^^^^^^^^^^^^
 
 When you create a device by passing an integer to the ``wires`` argument, the integer defines the *number of wires*
 that you can address by consecutive integer labels ``0, 1, 2, ...``.

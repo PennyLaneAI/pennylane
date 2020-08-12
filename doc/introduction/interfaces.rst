@@ -50,7 +50,7 @@ See the links below for walkthroughs of each specific interface:
                 <a href="interfaces/numpy.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                            <img src="../_static/numpy.jpeg" class="card-img-top" style="width:60%;"></img>
+                            <img src="../_static/numpy.png" class="card-img-top" style="width:80%;"></img>
                         </div>
                     </div>
                 </a>
@@ -76,6 +76,18 @@ See the links below for walkthroughs of each specific interface:
         </div>
     </div>
 
+In addition to the core interfaces discussed above, PennyLane also provides higher-level classes for
+converting QNodes into both Keras and ``torch.nn`` layers:
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+
+    pennylane.qnn.KerasLayer
+    pennylane.qnn.TorchLayer
+
+:html:`</div>`
 
 .. toctree::
     :hidden:
