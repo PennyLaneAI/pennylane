@@ -98,7 +98,8 @@ simulators; additional devices can be installed as plugins (see
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
-**Device options**
+Device options
+^^^^^^^^^^^^^^
 
 When loading a device, the name of the device must always be specified.
 Further options can then be passed as keyword arguments; these options can differ based
