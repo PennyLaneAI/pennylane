@@ -121,15 +121,13 @@ Evaluating this gradient function at specific parameter values:
 Differentiable and non-differentiable arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-How does PennyLane know which arguments of a quantum function are differentiable and which ones are not? 
+How does PennyLane know which arguments of a quantum function to differentiate, and which to ignore?
+For example, you may want to pass arguments as positional arguments to a QNode but *not* have
+PennyLane consider them when computing gradients.
 
 As a basic rule, **all positional arguments provided to the QNode are assumed to be differentiable
-by default**:
-
-
-However, you may want to pass arguments as positional arguments to a QNode but *not* have PennyLane
-consider them when computing gradients. To accomplish this, all arrays created by the PennyLane
-NumPy module have a special flag ``requires_grad`` specifying whether they are trainable or not. 
+by default**. To accomplish this, all arrays created by the PennyLane NumPy module have a special
+flag ``requires_grad`` specifying whether they are trainable or not:
 
 >>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2])
@@ -139,12 +137,14 @@ If you would like to provide explicit non-differentiable arguments to the
 QNode or gradient function, make sure to use a NumPy array that specifies
 ``requires_grad=False``:
 
+>>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2], requires_grad=False)
 tensor([0.1, 0.2], requires_grad=False)
 
 .. note::
 
-  The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane.
+    The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane,
+    including NumPy functions that create arrays like ``np.random.random``, ``np.zeros``, etc.
 
 For example, consider the following QNode that accepts one trainable argument ``weights``,
 and two non-trainable arguments ``data`` and ``wires``:
