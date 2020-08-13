@@ -98,7 +98,8 @@ simulators; additional devices can be installed as plugins (see
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 
-**Device options**
+Device options
+^^^^^^^^^^^^^^
 
 When loading a device, the name of the device must always be specified.
 Further options can then be passed as keyword arguments; these options can differ based
@@ -117,7 +118,8 @@ devices, the options are:
 
 For a plugin device, refer to the plugin documentation for available device options.
 
-**Defining custom wire labels**
+Custom wire labels
+^^^^^^^^^^^^^^^^^^
 
 When you create a device by passing an integer to the ``wires`` argument, the integer defines the *number of wires*
 that you can address by consecutive integer labels ``0, 1, 2, ...``.
