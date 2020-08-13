@@ -219,7 +219,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     else:
         norm = np.sum(np.abs(features) ** 2)
 
-    if not np.isclose(norm, 1.0, atol=TOLERANCE):
+    if not math.isclose(norm, 1.0, abs_tol=TOLERANCE):
         if normalize or pad:
             features = features / math.sqrt(norm)
         else:

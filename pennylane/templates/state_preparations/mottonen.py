@@ -266,7 +266,7 @@ def MottonenStatePreparation(state_vector, wires):
         norm = np.sum(np.abs(state_vector_values) ** 2)
     else:
         norm = np.sum(np.abs(state_vector) ** 2)
-    if not np.isclose(norm, 1.0, atol=1e-3):
+    if not math.isclose(norm, 1.0, abs_tol=1e-3):
         raise ValueError("'state_vector' has to be of length 1.0, got {}".format(norm))
 
     #######################
