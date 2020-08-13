@@ -4,13 +4,13 @@
 
 * It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
   can be strings or numbers. For this, pass a list to the wires argument when creating the device:
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
   ```
   The quantum operations are now called with the custom wire labels:
-    
-  ``` python
+
+  ``` python3
   >>> @qml.qnode(dev)
   >>> def circuit():
   ...    qml.Hadamard(wires='anc2')
@@ -18,19 +18,19 @@
   ...    ...
   ```
   The existing behaviour, in which the number of wires is specified on device initialization,
-  continues to work as usual.   
-  
+  continues to work as usual.
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=5)
-  ``` 
+  ```
   [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
- 
-* Adds a device test suite, located at `pennylane/devices/tests`, which can be used 
-  to run generic tests on core or external devices calling 
-  
+
+* Adds a device test suite, located at `pennylane/devices/tests`, which can be used
+  to run generic tests on core or external devices calling
+
   ```pycon
   >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
-  ``` 
+  ```
   The command line arguments are optional.
 
   * If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
@@ -84,24 +84,24 @@
   >>> coeffs, obs_list = decompose_hamiltonian(A)
   ```
 
-* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which 
+* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
   can be used to implement Trotterized time-evolution under a Hamiltonian.
   [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
-  
-* Added a `qml.layer` template-constructing function, which takes a unitary, and 
+
+* Added a `qml.layer` template-constructing function, which takes a unitary, and
   repeatedly applies it on a set of wires to a given depth.
   [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
-  
+
 * Added built-in QAOA functionality to PennyLane. This includes the following features:
-    * Added `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` methods for defining Pauli-X and XY 
+    * Added `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` methods for defining Pauli-X and XY
       mixer Hamiltonians.
       [(#712)](https://github.com/PennyLaneAI/pennylane/pull/712)
-    * Added the `qml.qaoa.maxcut` method, which allows the user to get the cost Hamiltonian 
+    * Added the `qml.qaoa.maxcut` method, which allows the user to get the cost Hamiltonian
       and recommended mixer Hamiltonian for QAOA MaxCut, for a supplied graph.
       [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
       [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
-    * Added `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer`, which take cost and mixer Hamiltonians, 
-      respectively, and apply the corresponding QAOA cost and mixer layers. 
+    * Added `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer`, which take cost and mixer Hamiltonians,
+      respectively, and apply the corresponding QAOA cost and mixer layers.
       [(#720)](https://github.com/PennyLaneAI/pennylane/pull/720)
 
 <h3>Improvements</h3>
@@ -130,10 +130,10 @@
 
 <h3>Breaking changes</h3>
 
-* The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to 
+* The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to
   `pennylane.devices` and `pennylane.beta.devices`, to reflect their content better.
   [(#726)](https://github.com/XanaduAI/pennylane/pull/726)
-  
+
 <h3>Bug fixes</h3>
 
 * The PennyLane interface conversion functions can now convert QNodes with
