@@ -128,9 +128,8 @@ def min_vertex_cover(graph):
     terms = []
 
     maxcut_h = maxcut(graph)[0]
-    maxcut_h._coeffs = [len(graph.nodes) * c for c in maxcut_h.coeffs]
 
-    coeffs.extend(maxcut_h.coeffs)
+    coeffs.extend([len(graph.nodes) * c for c in maxcut_h.coeffs])
     terms.extend(maxcut_h.ops)
 
     for i in graph.nodes:
