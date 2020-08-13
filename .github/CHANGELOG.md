@@ -2,59 +2,13 @@
 
 <h3>New features since last release</h3>
 
-* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
-  can be strings or numbers. For this, pass a list to the wires argument when creating the device:
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
-  ```
-  The quantum operations are now called with the custom wire labels:
-
-  ``` python3
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...    qml.Hadamard(wires='anc2')
-  ...    qml.CNOT(wires=['anc1', 3])
-  ...    ...
-  ```
-  The existing behaviour, in which the number of wires is specified on device initialization,
-  continues to work as usual.
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=5)
-  ```
-  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
-
-* Adds a device test suite, located at `pennylane/devices/tests`, which can be used
-  to run generic tests on core or external devices calling
-
-  ```pycon
-  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
-  ```
-  The command line arguments are optional.
-
-  * If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
-
-  * If `--shots` is not given, a default of 10000 is used. The shots argument is ignored for devices running in
-    analytic mode.
-
-  * If `--analytic` is not given, the device's default is used.
-
-  Other arguments of the device, such as `qiskit.aer`'s compulsory `backend_options`,
-  can be defined in the `config.toml` file containing custom PennyLane configurations.
-
-  If the tests are run on external devices, the device and its dependencies must be
-  installed locally.
+<h4>New and improved simulators</h4>
 
 * Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
-  As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
+  This device supports classical backpropagation (`diff_method="backprop"`); this can
   be faster than the parameter-shift rule for computing quantum gradients
   when the number of parameters to be optimized is large.
   [(#721)](https://github.com/XanaduAI/pennylane/pull/721)
-
-  `default.qubit.autograd` is designed to be used with end-to-end classical backpropagation
-  (`diff_method="backprop"`) with the Autograd interface. This is the default method
-  of differentiation when creating a QNode with this device.
 
   ```pycon
   >>> dev = qml.device("default.qubit.autograd", wires=1)
@@ -71,6 +25,39 @@
 
   See the `default.qubit.autograd` documentation for more details.
 
+<h4>New algorithms and templates</h4>
+
+* Added built-in QAOA functionality via the new `qml.qaoa` module.
+  [(#712)](https://github.com/PennyLaneAI/pennylane/pull/712)
+  [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
+  [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
+  [(#720)](https://github.com/PennyLaneAI/pennylane/pull/720)
+
+  ```pycon
+  >>> graph = nx.Graph([(0, 1), (1, 2)])
+  >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
+  ```
+
+  This includes the following features:
+
+  * New `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` functions for defining Pauli-X and XY
+    mixer Hamiltonians.
+
+  * MaxCut: The `qml.qaoa.maxcut` function allows easy construction of the cost Hamiltonian
+    and recommended mixer Hamiltonian for solving the MaxCut problem for a supplied graph.
+
+  * Layers: `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` take cost and mixer
+    Hamiltonians, respectively, and apply the corresponding QAOA cost and mixer layers
+    to the quantum circuit
+
+* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
+  can be used to implement Trotterized time-evolution under a Hamiltonian.
+  [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
+
+* Added a `qml.layer` template-constructing function, which takes a unitary, and
+  repeatedly applies it on a set of wires to a given depth.
+  [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
+
 * Added the `qml.utils.decompose_hamiltonian` function. This function can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
@@ -84,25 +71,51 @@
   >>> coeffs, obs_list = decompose_hamiltonian(A)
   ```
 
-* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
-  can be used to implement Trotterized time-evolution under a Hamiltonian.
-  [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
+<h4>New device features</h4>
 
-* Added a `qml.layer` template-constructing function, which takes a unitary, and
-  repeatedly applies it on a set of wires to a given depth.
-  [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
+* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
+  can be strings or numbers.
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
-* Added built-in QAOA functionality to PennyLane. This includes the following features:
-    * Added `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` methods for defining Pauli-X and XY
-      mixer Hamiltonians.
-      [(#712)](https://github.com/PennyLaneAI/pennylane/pull/712)
-    * Added the `qml.qaoa.maxcut` method, which allows the user to get the cost Hamiltonian
-      and recommended mixer Hamiltonian for QAOA MaxCut, for a supplied graph.
-      [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
-      [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
-    * Added `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer`, which take cost and mixer Hamiltonians,
-      respectively, and apply the corresponding QAOA cost and mixer layers.
-      [(#720)](https://github.com/PennyLaneAI/pennylane/pull/720)
+  Custom wire labels are defined by passing a list to the wires argument when creating the device:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
+  ```
+
+  The quantum operations are now called with the custom wire labels:
+
+  ``` pycon
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...    qml.Hadamard(wires='anc2')
+  ...    qml.CNOT(wires=['anc1', 3])
+  ...    ...
+  ```
+
+  The existing behaviour, in which the number of wires is specified on device initialization,
+  continues to work as usual.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=5)
+  ```
+
+* An integrated device test suite has been added, which can be used
+  to run basic integration tests on core or external devices.
+  [(#695)](https://github.com/PennyLaneAI/pennylane/pull/695)
+  [(#724)](https://github.com/PennyLaneAI/pennylane/pull/724)
+  [(#733)](https://github.com/PennyLaneAI/pennylane/pull/733)
+
+  The test can be invoked against a particular device by calling the ``pl-device-test``
+  command line program:
+
+  ```console
+  $ pl-device-test --device=default.qubit --shots=1234 --analytic=False
+  ```
+
+  If the tests are run on external devices, the device and its dependencies must be
+  installed locally. For more details, please see the
+  [plugin test documentation](http://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html).
 
 <h3>Improvements</h3>
 
@@ -146,7 +159,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
+Juan Miguel Arazzola, Jack Ceroni, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
