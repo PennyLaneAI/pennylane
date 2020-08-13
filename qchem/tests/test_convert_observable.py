@@ -364,7 +364,7 @@ def test_integration_observable_to_vqe_cost(
     if custom_wires is None:
         wires = num_qubits
     elif isinstance(custom_wires, dict):
-        wires = qchem.structure._proc_wires(custom_wires)
+        wires = qchem.structure._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
     dev = qml.device("default.qubit", wires=wires)
@@ -416,7 +416,7 @@ def test_integration_mol_file_to_vqe_cost(
     if custom_wires is None:
         wires = num_qubits
     elif isinstance(custom_wires, dict):
-        wires = qchem.structure._proc_wires(custom_wires)
+        wires = qchem.structure._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
     dev = qml.device("default.qubit", wires=wires)
@@ -435,10 +435,10 @@ def test_integration_mol_file_to_vqe_cost(
 
 
 @pytest.mark.parametrize("n_wires", [None, 6])
-def test_proc_wires(custom_wires, n_wires):
-    r"""Test if _proc_wires handels different combinations of input types correctly."""
+def test_process_wires(custom_wires, n_wires):
+    r"""Test if _process_wires handels different combinations of input types correctly."""
 
-    wires = qchem.structure._proc_wires(custom_wires, n_wires)
+    wires = qchem.structure._process_wires(custom_wires, n_wires)
 
     assert isinstance(wires, qml.wires.Wires)
 
@@ -453,21 +453,21 @@ def test_proc_wires(custom_wires, n_wires):
 
     if custom_wires is not None and n_wires is not None:
         if not isinstance(custom_wires, dict):
-            assert wires == qchem.structure._proc_wires(custom_wires[:n_wires], n_wires)
+            assert wires == qchem.structure._process_wires(custom_wires[:n_wires], n_wires)
         else:
-            assert wires == qchem.structure._proc_wires(
+            assert wires == qchem.structure._process_wires(
                 {k: v for k, v in custom_wires.items()}, n_wires
             )
 
 
-def test_proc_wires_raises():
+def test_process_wires_raises():
     """Test if exceptions are raised for _wire_proc()"""
 
     with pytest.raises(ValueError, match="Expected only int-keyed or consecutive int-valued dict"):
-        qchem.structure._proc_wires({"a": "b"})
+        qchem.structure._process_wires({"a": "b"})
 
     with pytest.raises(ValueError, match="Expected type Wires, list, tuple, or dict"):
-        qchem.structure._proc_wires(1.2)
+        qchem.structure._process_wires(1.2)
 
     with pytest.raises(ValueError, match="Length of `wires`"):
-        qchem.structure._proc_wires([3, 4], 3)
+        qchem.structure._process_wires([3, 4], 3)

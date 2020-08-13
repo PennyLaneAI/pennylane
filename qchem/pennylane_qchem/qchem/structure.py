@@ -29,42 +29,20 @@ from pennylane import Hamiltonian
 from pennylane.wires import Wires
 
 
-def _proc_wires(wires, n_wires=None):
+def _process_wires(wires, n_wires=None):
     r"""
-    Checks and processes custom user wire mapping into a consistent, direction-free, Wires format.
-    Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
+    Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
+    format. Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
 
     Since OpenFermion's qubit numbering is always consecutive int, simple iterable types such as
-    list, tuple, or Wires can be used to specify the qubit<->wire mapping with indices acting as
-    qubits. Dict can also be used as a mapping, but does not provide any advantage over lists other
-    than the ability to do partial mapping/permutation in the qubit->wire direction.
+    list, tuple, or Wires can be used to specify the 2-way `qubit index` <-> `wire label` mapping
+    with indices representing qubits. Dict can also be used as a mapping, but does not provide any
+    advantage over lists other than the ability to do partial mapping/permutation in the
+    `qubit index` -> `wire label` direction.
 
-    It is recommended pass Wires/list/tuple `wires` since it's direction-free, i.e. the same `wires`
-    argument can be used to convert both ways between OpenFermion and Pennylane. Only use dict for
-    partial or unordered mapping.
-
-    **Example usage:**
-
-    >>> # consec int wires if no wires mapping provided, ie. identity map: 0<->0, 1<->1, 2<->2
-    >>> _proc_wires(None, 3)
-    <Wires = [0, 1, 2]>
-
-    >>> # List as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
-    >>> _proc_wires(['w0','w1','w2'])
-    <Wires = ['w0', 'w1', 'w2']>
-
-    >>> # Wires as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
-    >>> _proc_wires(Wires(['w0', 'w1', 'w2']))
-    <Wires = ['w0', 'w1', 'w2']>
-
-    >>> # Dict as partial mapping, int qubits keys to wire label values: 0->w0, 1 unchanged, 2->w2
-    >>> _proc_wires({0:'w0',2:'w2'})
-    <Wires = ['w0', 1, 'w2']>
-
-    >>> # Dict as mapping, wires label keys to consec int qubit values: w2->2, w0->0, w1->1
-    >>> _proc_wires({'w2':2, 'w0':0, 'w1':1})
-    <Wires = ['w0', 'w1', 'w2']>
-
+    It is recommended to pass Wires/list/tuple `wires` since it's direction-free, i.e. the same
+    `wires` argument can be used to convert both ways between OpenFermion and Pennylane. Only use
+    dict for partial or unordered mapping.
 
     Args:
         wires (Wires, list, tuple, dict): User wire labels or mapping for Pennylane ansatz.
@@ -79,6 +57,28 @@ def _proc_wires(wires, n_wires=None):
     Returns:
         Wires: Cleaned wire mapping with indices corresponding to qubits and values
             corresponding to wire labels.
+
+    **Example**
+
+    >>> # consec int wires if no wires mapping provided, ie. identity map: 0<->0, 1<->1, 2<->2
+    >>> _process_wires(None, 3)
+    <Wires = [0, 1, 2]>
+
+    >>> # List as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
+    >>> _process_wires(['w0','w1','w2'])
+    <Wires = ['w0', 'w1', 'w2']>
+
+    >>> # Wires as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
+    >>> _process_wires(Wires(['w0', 'w1', 'w2']))
+    <Wires = ['w0', 'w1', 'w2']>
+
+    >>> # Dict as partial mapping, int qubits keys to wire label values: 0->w0, 1 unchanged, 2->w2
+    >>> _process_wires({0:'w0',2:'w2'})
+    <Wires = ['w0', 1, 'w2']>
+
+    >>> # Dict as mapping, wires label keys to consec int qubit values: w2->2, w0->0, w1->1
+    >>> _process_wires({'w2':2, 'w0':0, 'w1':1})
+    <Wires = ['w0', 'w1', 'w2']>
     """
 
     # infer from wires, or assume 1 if wires is not of accepted types.
@@ -463,6 +463,20 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
+    Args:
+        qubit_operator (QubitOperator): Fermionic-to-qubit transformed operator in terms of
+            Pauli matrices
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
+
+    Returns:
+        tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
+        corresponding PennyLane observables in the Pauli basis
+
     **Example**
 
     >>> q_op = 0.1*QubitOperator('X0') + 0.2*QubitOperator('Y0 Z2')
@@ -471,26 +485,13 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     0.2 [Y0 Z2]
     >>> _qubit_operator_to_terms(q_op, wires=['w0','w1','w2','extra_wire'])
     (array([0.1, 0.2]), [Tensor(PauliX(wires=['w0'])), Tensor(PauliY(wires=['w0']), PauliZ(wires=['w2']))])
-
-    Args:
-        qubit_operator (QubitOperator): Fermionic-to-qubit transformed operator in terms of
-            Pauli matrices
-        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
-            For types Wires/list/tuple, each item in the iterable represents a wire label
-            corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
-            If None, will use identity map.
-
-    Returns:
-        tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
-        corresponding PennyLane observables in the Pauli basis
     """
     n_wires = (
         1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
         if qubit_operator.terms
         else 1
     )
-    wires = _proc_wires(wires, n_wires=n_wires)
+    wires = _process_wires(wires, n_wires=n_wires)
 
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
         return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
@@ -519,6 +520,21 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
 
     This function is the inverse of ``_qubit_operator_to_terms``.
 
+    Args:
+        coeffs (array[complex]):
+            coefficients for each observable, same length as ops
+        ops (Iterable[pennylane.operation.Observable]): List of PennyLane observables as
+            Tensor products of Pauli observables
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
+            from an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
+            accepted. If None, will map sorted wires from all `ops` to consecutive int.
+
+    Returns:
+        QubitOperator: an instance of OpenFermion's ``QubitOperator``.
+
     **Example**
 
     >>> coeffs = np.array([0.1, 0.2])
@@ -529,25 +545,11 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     >>> _terms_to_qubit_operator(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
     0.1 [X0] +
     0.2 [Y0 Z2]
-
-    Args:
-        coeffs (array[complex]):
-            coefficients for each observable, same length as ops
-        ops (Iterable[pennylane.operation.Observable]): List of PennyLane observables as
-            Tensor products of Pauli observables
-        wires (Wires, list, tuple, dict): Custom wire mapping for translating from Pennylane ansatz.
-            For types Wires/list/tuple, each item in the iterable represents a wire label
-            corresponding to the qubit number equal to its index.
-            For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
-            accepted. If None, will use identity map.
-
-    Returns:
-        QubitOperator: an instance of OpenFermion's ``QubitOperator``.
     """
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
-    # n_all_wires = len(all_wires)
+
     if wires is not None:
-        qubit_indexed_wires = _proc_wires(wires,)
+        qubit_indexed_wires = _process_wires(wires,)
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
@@ -593,11 +595,12 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
             a Pauli summation
         pennylane_qubit_operator (pennylane.Hamiltonian): PennyLane
             Hamiltonian object
-        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
+            from an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
-            If None, will use identiy map. Defaults to None.
+            If None, will map sorted wires from all Pennylane terms to consecutive int.
 
     Returns:
         (bool): True if equivalent
@@ -609,6 +612,20 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
 def convert_observable(qubit_observable, wires=None):
     r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
+    Args:
+        qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
+
+    Returns:
+        (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
+        represents any operator expressed as linear combinations of observables, e.g.,
+        :math:`\sum_{k=0}^{N-1} c_k O_k`.
+
     **Example**
 
     >>> h_of = decompose_hamiltonian('h2', './pyscf/sto-3g/')
@@ -617,19 +634,6 @@ def convert_observable(qubit_observable, wires=None):
     [-0.04207898+0.j  0.17771287+0.j  0.17771287+0.j -0.2427428 +0.j -0.2427428 +0.j  0.17059738+0.j
     0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.12293305+0.j  0.16768319+0.j
     0.16768319+0.j  0.12293305+0.j  0.17627641+0.j]
-
-    Args:
-        qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
-        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
-            For types Wires/list/tuple, each item in the iterable represents a wire label
-            corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
-            If None, will use identiy map. Defaults to None.
-
-    Returns:
-        (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
-        represents any operator expressed as linear combinations of observables, e.g.,
-        :math:`\sum_{k=0}^{N-1} c_k O_k`.
     """
 
     return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
@@ -653,28 +657,6 @@ def generate_hamiltonian(
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
     Hartree-Fock (HF) molecular orbitals.
 
-    **Example**
-
-    >>> H, n_qubits = generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g', wires=['w0','w1','w2','w3'])
-    >>> print(n_qubits)
-    4
-    >>> print(H)
-    (-0.04207897647782188) [Iw0]
-    + (0.17771287465139934) [Zw0]
-    + (0.1777128746513993) [Zw1]
-    + (-0.24274280513140484) [Zw2]
-    + (-0.24274280513140484) [Zw3]
-    + (0.17059738328801055) [Zw0 Zw1]
-    + (0.04475014401535161) [Yw0 Xw1 Xw2 Yw3]
-    + (-0.04475014401535161) [Yw0 Yw1 Xw2 Xw3]
-    + (-0.04475014401535161) [Xw0 Xw1 Yw2 Yw3]
-    + (0.04475014401535161) [Xw0 Yw1 Yw2 Xw3]
-    + (0.12293305056183801) [Zw0 Zw2]
-    + (0.1676831945771896) [Zw0 Zw3]
-    + (0.1676831945771896) [Zw1 Zw2]
-    + (0.12293305056183801) [Zw1 Zw3]
-    + (0.176276408043196) [Zw2 Zw3]
-
     Args:
         mol_name (str): name of the molecule
         mol_geo_file (str): name of the file containing the geometry of the molecule
@@ -697,11 +679,32 @@ def generate_hamiltonian(
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping.
-            If None, will use identiy map.
+            If None, will use identity map.
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed
         Hamiltonian and the number of qubits
 
+    **Example**
+
+    >>> H, n_qubits = generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g', wires=['w0','w1','w2','w3'])
+    >>> print(n_qubits)
+    4
+    >>> print(H)
+    (-0.04207897647782188) [Iw0]
+    + (0.17771287465139934) [Zw0]
+    + (0.1777128746513993) [Zw1]
+    + (-0.24274280513140484) [Zw2]
+    + (-0.24274280513140484) [Zw3]
+    + (0.17059738328801055) [Zw0 Zw1]
+    + (0.04475014401535161) [Yw0 Xw1 Xw2 Yw3]
+    + (-0.04475014401535161) [Yw0 Yw1 Xw2 Xw3]
+    + (-0.04475014401535161) [Xw0 Xw1 Yw2 Yw3]
+    + (0.04475014401535161) [Xw0 Yw1 Yw2 Xw3]
+    + (0.12293305056183801) [Zw0 Zw2]
+    + (0.1676831945771896) [Zw0 Zw3]
+    + (0.1676831945771896) [Zw1 Zw2]
+    + (0.12293305056183801) [Zw1 Zw3]
+    + (0.176276408043196) [Zw2 Zw3]
      """
 
     geometry = read_structure(mol_geo_file, outpath)
