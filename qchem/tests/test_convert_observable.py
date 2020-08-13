@@ -285,7 +285,6 @@ from pennylane import qchem
     ],
 )
 def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
-
     r"""Test the correctness of the QubitOperator observable conversion from
     OpenFermion to Pennylane.
 

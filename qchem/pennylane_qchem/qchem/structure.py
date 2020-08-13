@@ -34,7 +34,7 @@ def _proc_wires(wires, n_wires=None):
     Checks and processes custom user wire mapping into a consistent, direction-free, Wires format.
     Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
 
-    Since OpenFermion's quibit numbering is always consecutive int, simple iterable types such as
+    Since OpenFermion's qubit numbering is always consecutive int, simple iterable types such as
     list, tuple, or Wires can be used to specify the qubit<->wire mapping with indices acting as
     qubits. Dict can also be used as a mapping, but does not provide any advantage over lists other
     than the ability to do partial mapping/permutation in the qubit->wire direction.
@@ -73,8 +73,8 @@ def _proc_wires(wires, n_wires=None):
             For type dict, only int-keyed dict (for qubit-to-wire conversion) or
             consecutive-int-valued dict (for wire-to-qubit conversion) is accepted.
             If None, will be set to consecutive int based on ``n_wires``.
-        n_wires (int): Number of wires used if known. If None, will infer from ``wires``; if
-            ``wires`` is not available, will be set to 1. Defaults to None.
+        n_wires (int): Number of wires used if known. If None, will be inferred from ``wires``; if
+            ``wires`` is not available, will be set to 1.
 
     Returns:
         Wires: Cleaned wire mapping with indices corresponding to qubits and values
@@ -463,7 +463,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
-    **Example usage:**
+    **Example**
 
     >>> q_op = 0.1*QubitOperator('X0') + 0.2*QubitOperator('Y0 Z2')
     >>> q_op
@@ -479,7 +479,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
-            If None, will use identiy map. Defaults to None.
+            If None, will use identity map.
 
     Returns:
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
@@ -519,7 +519,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
 
     This function is the inverse of ``_qubit_operator_to_terms``.
 
-    **Example usage:**
+    **Example**
 
     >>> coeffs = np.array([0.1, 0.2])
     >>> ops = [
@@ -539,7 +539,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
-            accepted. If None, will use identiy map. Defaults to None.
+            accepted. If None, will use identity map.
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
@@ -609,7 +609,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
 def convert_observable(qubit_observable, wires=None):
     r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
-    **Example usage**
+    **Example**
 
     >>> h_of = decompose_hamiltonian('h2', './pyscf/sto-3g/')
     >>> h_pl = convert_observable(h_of)
@@ -653,7 +653,7 @@ def generate_hamiltonian(
     An active space can be defined, otherwise the Hamiltonian is expanded in the full basis of
     Hartree-Fock (HF) molecular orbitals.
 
-    **Example usage:**
+    **Example**
 
     >>> H, n_qubits = generate_hamiltonian('h2', 'h2.xyz', 0, 1, 'sto-3g', wires=['w0','w1','w2','w3'])
     >>> print(n_qubits)
@@ -697,7 +697,7 @@ def generate_hamiltonian(
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping.
-            If None, will use identiy map. Defaults to None.
+            If None, will use identiy map.
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed
         Hamiltonian and the number of qubits

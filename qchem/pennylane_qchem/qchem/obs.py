@@ -137,7 +137,7 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner", wires=None):
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
-            If None, will use identiy map. Defaults to None.
+            If None, will use identity map.
 
     Returns:
         pennylane.Hamiltonian: the total spin observable :math:`\hat{S}^2`
