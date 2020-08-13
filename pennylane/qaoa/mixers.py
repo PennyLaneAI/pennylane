@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This file contains built-in functions for constructing QAOA mixer Hamiltonians.
+Methods for constructing QAOA mixer Hamiltonians.
 """
 import networkx as nx
 import pennylane as qml
