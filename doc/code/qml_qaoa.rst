@@ -33,24 +33,17 @@ Here is an example of the PennyLane QAOA functionality being used to solve the
     def circuit(params, **kwargs):
 
         for w in wires:
-            qml.Hadamard(wires=i)
+            qml.Hadamard(wires=w)
 
         qml.layer(qaoa_layer, 2, params[0], params[1])
 
-    # Defines the device and the cost function
+    # Defines the device and the QAOA cost function
 
     dev = qml.device('default.qubit', wires=len(wires))
     cost_function = qml.VQECost(circuit, cost_h, dev)
 
-    # Optimizes the cost function
-
-    optimizer = qml.GradientDescentOptimizer()
-    params = [[1, 1], [1, 1]]
-
-    for i in range(30):
-        params = optimizer.step(cost_function, params)
-
-    print("Optimal Parameters: {}".format(params))
+>>> print(cost_function([[1, 1], [1, 1]]))
+-1.8260274380964299
 
 .. currentmodule:: pennylane.qaoa
 
