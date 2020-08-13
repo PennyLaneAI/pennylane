@@ -51,7 +51,14 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods
-    _capabilities = {}  #: dict[str->*]: plugin capabilities
+    _capabilities = {
+        'model': None,
+        'inverse_operations': True,
+        'tensor_observables': True,
+        'passthru_interface': 'undefined',
+        'execution_mode': None,
+        'execution_in_remote': None,
+        }
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
@@ -129,6 +136,15 @@ class Device(abc.ABC):
 
         Returns:
             set[str]: the set of PennyLane observable names the device supports
+        """
+
+    @property
+    @abc.abstractmethod
+    def analytic(self):
+        """Get the mode that the device is running in.
+
+        Returns:
+            bool: if true, device returns estimations from sampling measurement results
         """
 
     @property
