@@ -181,6 +181,43 @@ MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in 
 
 MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
 
+
+COST_COEFFS = [
+    [-1.5, 1.5, -1.5, 1.5, -1, -1, -1],
+    [-1.5, 1.5, -1.5, 1.5, -1.5, 1.5, -1, -1, -1],
+    [-1.5, 1.5, -1.5, 1.5, -1, -1, -1]
+]
+
+COST_TERMS = [
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(0) @ qml.Identity(2),
+        qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)
+    ],
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+
+MVC = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
+
 def decompose_hamiltonian(hamiltonian):
 
     coeffs = hamiltonian.coeffs
@@ -198,7 +235,7 @@ class TestCostHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
             qaoa.maxcut(graph)
 
     @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)
@@ -206,6 +243,23 @@ class TestCostHamiltonians:
         """Tests that the output of the MaxCut method is correct"""
 
         cost_h, mixer_h = qaoa.maxcut(graph)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    def test_min_vertex_cover_error(self):
+        """Tests that the Min Vertex Cover Hamiltonian throws the correct error"""
+
+        graph = [(0, 1), (1, 2)]
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.min_vertex_cover(graph)
+
+    @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
+    def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the Min Vertex Cover method is correct"""
+
+        cost_h, mixer_h = qaoa.min_vertex_cover(graph)
 
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)

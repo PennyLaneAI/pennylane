@@ -30,7 +30,7 @@ def maxcut(graph):
     we wish to find the `cut of the graph <https://en.wikipedia.org/wiki/Cut_(graph_theory)>`__ such
     that the number of edges crossing the cut is maximized.
 
-    The MaxCut Hamiltonian is defined as:
+    The MaxCut cost Hamiltonian is defined as:
 
     .. math:: H_C \ = \ \frac{1}{2} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_i Z_j \ - \ \mathbb{I} \big),
 
@@ -82,20 +82,59 @@ def maxcut(graph):
 
 
 def min_vertex_cover(graph):
+    r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Minimum Vertex Cover problem,
+    for a given graph.
+
+    The goal of the Minimum Vertex Cover problem is to find the smallest
+    `vertex cover <https://en.wikipedia.org/wiki/Vertex_cover>`__ of a graph (a collection of nodes such that
+    every edge in the graph has one of the nodes as an endpoint).
+
+    The Minimum Vertex Cover cost Hamiltonian is defined as:
+
+    .. math:: H_C \ = \ \frac{|V(G)|}{2} \displaystyle\sum_{(i, j) \in E(G)} \big(Z_i Z_j \ - \ \mathbb{I} \big) \ - \ \displaystyle\sum_{j} Z_j
+
+    where :math:`G` is a graph, :math:`\mathbb{I}` is the identity, and :math:`Z_i` and :math:`Z_j` are
+    the Pauli-Z operators on the :math:`i`-th and :math:`j`-th wire respectively.
+
+    The mixer Hamiltonian returned from :func:`~qaoa.maxcut` is :func:`~qaoa.x_mixer` applied to all wires.
+
+    .. note::
+
+        **Recommended initialization circuit:**
+            Even superposition over all basis states
+
+    Args:
+        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
+
+    Returns:
+        (.Hamiltonian, .Hamiltonian):
+
+    **Example**
+
+    >>> graph = nx.Graph([(0, 1), (1, 2)])
+    >>> cost_h, mixer_h = qml.qaoa.min_vertex_cover(graph)
+    >>> print(cost_h)
+    >>> print(mixer_h)
+    (-1.5) [I0 I1] + (1.5) [Z0 Z1] + (-1.5) [I1 I2] + (1.5) [Z1 Z2] + (-1.0) [Z0] + (-1.0) [Z1] + (-1.0)[Z2]
+    (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
+    """
 
     if not isinstance(graph, nx.Graph):
         raise ValueError(
             "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
         )
 
-
     coeffs = []
     terms = []
+
+    maxcut_h = maxcut(graph)[0]
+    maxcut_h._coeffs = [len(graph.nodes)*c for c in maxcut_h.coeffs]
+
+    coeffs.extend(maxcut_h.coeffs)
+    terms.extend(maxcut_h.ops)
+
     for i in graph.nodes:
         coeffs.append(-1)
         terms.append(qml.PauliZ(i))
 
-    one_penalty = qml.Hamiltonian(coeffs, terms)
-    cost_h = one_penalty + maxcut(graph)
-
-    return (cost_h, qaoa.x_mixer(graph.nodes))
+    return (qml.Hamiltonian(coeffs, terms), qaoa.x_mixer(graph.nodes))
