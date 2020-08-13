@@ -79,3 +79,23 @@ def maxcut(graph):
         coeffs.append(0.5)
 
     return (qml.Hamiltonian(coeffs, obs), qaoa.x_mixer(graph.nodes))
+
+
+def min_vertex_cover(graph):
+
+    if not isinstance(graph, nx.Graph):
+        raise ValueError(
+            "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
+        )
+
+
+    coeffs = []
+    terms = []
+    for i in graph.nodes:
+        coeffs.append(-1)
+        terms.append(qml.PauliZ(i))
+
+    one_penalty = qml.Hamiltonian(coeffs, terms)
+    cost_h = one_penalty + maxcut(graph)
+
+    return (cost_h, qaoa.x_mixer(graph.nodes))
