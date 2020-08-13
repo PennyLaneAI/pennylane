@@ -15,11 +15,11 @@ r"""
 Contains the ``MottonenStatePreparation`` template.
 """
 import math
+
 import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-
 from pennylane.templates.decorator import template
 from pennylane.templates.utils import check_shape, get_shape
 from pennylane.variable import Variable

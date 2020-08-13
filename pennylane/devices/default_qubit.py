@@ -18,14 +18,14 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
-import itertools
 import functools
+import itertools
+import math
 from string import ascii_letters as ABC
 
 import numpy as np
-import math
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))

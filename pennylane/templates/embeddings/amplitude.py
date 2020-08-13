@@ -16,14 +16,12 @@ Contains the ``AmplitudeEmbedding`` template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import math
+
 import numpy as np
-from pennylane.templates.decorator import template
+
 from pennylane.ops import QubitStateVector
-from pennylane.templates.utils import (
-    check_shape,
-    check_type,
-    get_shape,
-)
+from pennylane.templates.decorator import template
+from pennylane.templates.utils import check_shape, check_type, get_shape
 from pennylane.variable import Variable
 from pennylane.wires import Wires
 
