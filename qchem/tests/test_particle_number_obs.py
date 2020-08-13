@@ -63,15 +63,15 @@ terms_lih_anion_bk = {
 
 
 @pytest.mark.parametrize(
-    ("n_orbitals", "mapping", "terms_exp"),
+    ("orbitals", "mapping", "terms_exp"),
     [
-        (7, "JORDAN_wigner", terms_h20_jw_full),
-        (3, "JORDAN_wigner", terms_h20_jw_23),
-        (4, "bravyi_KITAEV", terms_h20_bk_44),
-        (5, "bravyi_KITAEV", terms_lih_anion_bk),
+        (14, "JORDAN_wigner", terms_h20_jw_full),
+        (6, "JORDAN_wigner", terms_h20_jw_23),
+        (8, "bravyi_KITAEV", terms_h20_bk_44),
+        (10, "bravyi_KITAEV", terms_lih_anion_bk),
     ],
 )
-def test_particle_number_observable(n_orbitals, mapping, terms_exp, custom_wires, monkeypatch):
+def test_particle_number_observable(orbitals, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the particle number observable :math:`\hat{N}` generated
     by the ``'particle_number'`` function.
 
@@ -80,7 +80,7 @@ def test_particle_number_observable(n_orbitals, mapping, terms_exp, custom_wires
     something useful to the users as well.
     """
 
-    N = qchem.particle_number(n_orbitals, mapping=mapping, wires=custom_wires)
+    N = qchem.particle_number(orbitals, mapping=mapping, wires=custom_wires)
 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
@@ -89,12 +89,12 @@ def test_particle_number_observable(n_orbitals, mapping, terms_exp, custom_wires
 
 
 @pytest.mark.parametrize(
-    ("n_orbitals", "msg_match"),
-    [(-3, "'n_orbitals' must be greater than 0"), (0, "'n_orbitals' must be greater than 0"),],
+    ("orbitals", "msg_match"),
+    [(-3, "'orbitals' must be greater than 0"), (0, "'orbitals' must be greater than 0"),],
 )
-def test_exception_particle_number(n_orbitals, msg_match):
+def test_exception_particle_number(orbitals, msg_match):
     """Test that the function `'particle_number'` throws an exception if the
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qchem.particle_number(n_orbitals)
+        qchem.particle_number(orbitals)
