@@ -129,7 +129,7 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     Args:
         electrons (int): Number of electrons. If an active space is defined, this is
             the number of active electrons.
-        orbitals (int): Number of spin-orbitals. If an active space is defined,  this is
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,  this is
             the number of active spin-orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
@@ -334,7 +334,7 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     are the particle creation and annihilation operators, respectively.
 
     Args:
-        orbitals (str): Number of spin-orbitals. If an active space is defined, this is
+        orbitals (str): Number of *spin* orbitals. If an active space is defined, this is
             the number of active spin-orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
@@ -386,7 +386,7 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     the particle creation and annihilation operators, respectively.
 
     Args:
-        orbitals (int): Number of spin-orbitals. If an active space is defined, this is
+        orbitals (int): Number of *spin* orbitals. If an active space is defined, this is
             the number of active spin-orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
