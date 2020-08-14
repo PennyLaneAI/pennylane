@@ -4,8 +4,11 @@ qml.qaoa
 This module provides a collection of methods that help in the construction of
 QAOA workflows.
 
-Here is an example of the PennyLane QAOA functionality being used to solve the
-`MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem:
+We demonstrate the PennyLane QAOA functionality with a basic example of QAOA:
+the `MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem.
+We begin by defining the set of wires on which QAOA is executed, as well as the graph
+on which we will perform MaxCut (with the node labels corresponding to the index of the wire
+corresponding to each node):
 
 .. code-block:: python3
 
@@ -14,22 +17,31 @@ Here is an example of the PennyLane QAOA functionality being used to solve the
     from networkx import Graph
 
     # Defines the wires and the graph on which MaxCut is being performed
-
     wires = range(3)
     graph = Graph([(0, 1), (1, 2), (2, 0)])
 
-    # Defines the QAOA cost and mixer Hamiltonians
+We now define the cost and mixer Hamiltonians corresponding to MaxCut on the graph we defined:
 
+.. code-block:: python3
+
+    # Defines the QAOA cost and mixer Hamiltonians
     cost_h, mixer_h = qaoa.maxcut(graph)
 
-    # Defines a layer of the QAOA ansatz, from the cost and mixer Hamiltonians
+These cost and mixer Hamiltonians are then used to define layers of the variational QAOA ansatz:
 
+.. code-block:: python3
+
+    # Defines a layer of the QAOA ansatz, from the cost and mixer Hamiltonians
     def qaoa_layer(gamma, alpha):
         qaoa.cost_layer(gamma, cost_h)
         qaoa.mixer_layer(alpha, mixer_h)
 
-    # Repeatedly applies layers of the QAOA ansatz
+Finally, the full QAOA circuit is defined by repeatedly applying the QAOA layers with the
+``qml.layer`` method:
 
+.. code-block:: python3
+
+    # Repeatedly applies layers of the QAOA ansatz
     def circuit(params, **kwargs):
 
         for w in wires:
@@ -37,13 +49,21 @@ Here is an example of the PennyLane QAOA functionality being used to solve the
 
         qml.layer(qaoa_layer, 2, params[0], params[1])
 
-    # Defines the device and the QAOA cost function
+With the circuit defined, we call the device on which QAOA will be executed and define the QAOA cost function,
+which will give us the expected value of the cost Hamiltonian with respect to the parametrized output of the QAOA
+circuit:
 
+.. code-block:: python3
+
+    # Defines the device and the QAOA cost function
     dev = qml.device('default.qubit', wires=len(wires))
     cost_function = qml.VQECost(circuit, cost_h, dev)
 
 >>> print(cost_function([[1, 1], [1, 1]]))
 -1.8260274380964299
+
+The QAOA cost function can then be optimized in the usual way, by calling one of the built-in PennyLane optimizers
+and updating the variational parameters until the expected value of the cost Hamiltonian is minimized.
 
 .. currentmodule:: pennylane.qaoa
 
