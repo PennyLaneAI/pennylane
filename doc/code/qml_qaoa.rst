@@ -4,11 +4,11 @@ qml.qaoa
 This module provides a collection of methods that help in the construction of
 QAOA workflows.
 
-We demonstrate the PennyLane QAOA functionality with a basic example of QAOA:
-the `MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem.
+We can demonstrate the PennyLane QAOA functionality with a basic application of QAOA:
+solving the `MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem.
 We begin by defining the set of wires on which QAOA is executed, as well as the graph
-on which we will perform MaxCut (with the node labels corresponding to the index of the wire
-corresponding to each node):
+on which we will perform MaxCut (with the node labels being the index of the wire to which they
+correspond):
 
 .. code-block:: python3
 
@@ -20,14 +20,15 @@ corresponding to each node):
     wires = range(3)
     graph = Graph([(0, 1), (1, 2), (2, 0)])
 
-We now define the cost and mixer Hamiltonians corresponding to MaxCut on the graph we defined:
+We now define the QAOA cost and mixer Hamiltonians for MaxCut, on the graph that we defined:
 
 .. code-block:: python3
 
     # Defines the QAOA cost and mixer Hamiltonians
     cost_h, mixer_h = qaoa.maxcut(graph)
 
-These cost and mixer Hamiltonians are then used to define layers of the variational QAOA ansatz:
+These cost and mixer Hamiltonians are then used to define layers of the variational QAOA ansatz,
+which we implement as the following function:
 
 .. code-block:: python3
 
@@ -36,7 +37,7 @@ These cost and mixer Hamiltonians are then used to define layers of the variatio
         qaoa.cost_layer(gamma, cost_h)
         qaoa.mixer_layer(alpha, mixer_h)
 
-Finally, the full QAOA circuit is defined by repeatedly applying the QAOA layers with the
+Finally, the full QAOA circuit is built by repeatedly applying the QAOA layers with the
 ``qml.layer`` method:
 
 .. code-block:: python3
@@ -49,9 +50,9 @@ Finally, the full QAOA circuit is defined by repeatedly applying the QAOA layers
 
         qml.layer(qaoa_layer, 2, params[0], params[1])
 
-With the circuit defined, we call the device on which QAOA will be executed and define the QAOA cost function,
-which will give us the expected value of the cost Hamiltonian with respect to the parametrized output of the QAOA
-circuit:
+With the circuit defined, we call the device on which QAOA will be executed, as well as the ``qml.VQECost``, which
+creates the QAOA cost function: the expected value of the cost Hamiltonian with respect to the parametrized output
+of the QAOA circuit.
 
 .. code-block:: python3
 
