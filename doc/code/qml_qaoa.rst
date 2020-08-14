@@ -7,8 +7,8 @@ QAOA workflows.
 We can demonstrate the PennyLane QAOA functionality with a basic application of QAOA:
 solving the `MaxCut <https://en.wikipedia.org/wiki/Maximum_cut>`__ problem.
 We begin by defining the set of wires on which QAOA is executed, as well as the graph
-on which we will perform MaxCut (with the node labels being the index of the wire to which they
-correspond):
+on which we will perform MaxCut. The node labels of the graph are the index of the wire to which they
+correspond:
 
 .. code-block:: python3
 
@@ -20,7 +20,7 @@ correspond):
     wires = range(3)
     graph = Graph([(0, 1), (1, 2), (2, 0)])
 
-We now define the QAOA cost and mixer Hamiltonians for MaxCut, on the graph that we defined:
+We now obtain the QAOA cost and mixer Hamiltonians for MaxCut on the graph that we defined:
 
 .. code-block:: python3
 
@@ -32,7 +32,7 @@ which we implement as the following function:
 
 .. code-block:: python3
 
-    # Defines a layer of the QAOA ansatz, from the cost and mixer Hamiltonians
+    # Defines a layer of the QAOA ansatz from the cost and mixer Hamiltonians
     def qaoa_layer(gamma, alpha):
         qaoa.cost_layer(gamma, cost_h)
         qaoa.mixer_layer(alpha, mixer_h)
