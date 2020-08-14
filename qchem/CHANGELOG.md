@@ -47,7 +47,7 @@
 
 * The naming convention used in the `structure` module has been propagated
   to the `obs` module.
-  [(#)]()
+  [(#759)](https://github.com/PennyLaneAI/pennylane/pull/759)
 
   The changes include:
 
