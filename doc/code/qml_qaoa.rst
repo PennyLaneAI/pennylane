@@ -30,7 +30,7 @@ Here is an example of the PennyLane QAOA functionality being used to solve the
 
     # Repeatedly applies layers of the QAOA ansatz
 
-    def circuit(params, **kwargs):
+    def circuit(params):
 
         for w in wires:
             qml.Hadamard(wires=w)
