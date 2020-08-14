@@ -42,7 +42,7 @@ Finally, the full QAOA circuit is defined by repeatedly applying the QAOA layers
 .. code-block:: python3
 
     # Repeatedly applies layers of the QAOA ansatz
-    def circuit(params, **kwargs):
+    def circuit(params):
 
         for w in wires:
             qml.Hadamard(wires=w)
