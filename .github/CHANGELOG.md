@@ -25,6 +25,25 @@
 
   See the `default.qubit.autograd` documentation for more details.
 
+* A new experimental high-performance C++ statevector device is now available, `lightning.qubit`. It
+  uses the C++ Eigen library to perform fast linear algebra calculations for simulating quantum
+  state-vector evolution.
+
+  `lightning.qubit` is currently in beta; it can be installed via `pip`:
+
+  ```console
+  $ pip install pennylane-lightning
+  ```
+
+  Once installed, it can be used as a PennyLane device:
+
+  ```pycon
+  >>> dev = qml.device("lightning.qubit", wires=2)
+  ```
+
+  For more details, please see the
+  [lightning qubit documentation](https://pennylane-lightning.readthedocs.io).
+
 <h4>New algorithms and templates</h4>
 
 * Added built-in QAOA functionality via the new `qml.qaoa` module.
@@ -32,11 +51,6 @@
   [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
   [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
   [(#720)](https://github.com/PennyLaneAI/pennylane/pull/720)
-
-  ```pycon
-  >>> graph = nx.Graph([(0, 1), (1, 2)])
-  >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
-  ```
 
   This includes the following features:
 
@@ -49,6 +63,29 @@
   * Layers: `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` take cost and mixer
     Hamiltonians, respectively, and apply the corresponding QAOA cost and mixer layers
     to the quantum circuit
+
+  For example, using PennyLane to construct and solve a MaxCut problem with QAOA:
+
+  ```python
+  wires = range(3)
+  graph = Graph([(0, 1), (1, 2), (2, 0)])
+  cost_h, mixer_h = qaoa.maxcut(graph)
+
+  def qaoa_layer(gamma, alpha):
+      qaoa.cost_layer(gamma, cost_h)
+      qaoa.mixer_layer(alpha, mixer_h)
+
+  def antatz(params, **kwargs):
+
+      for w in wires:
+          qml.Hadamard(wires=w)
+
+      # layer the QAOA ansatz 2 times
+      qml.layer(qaoa_layer, 2, params[0], params[1])
+
+  dev = qml.device('default.qubit', wires=len(wires))
+  cost_function = qml.VQECost(antatz, cost_h, dev)
+  ```
 
 * Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
   can be used to implement Trotterized time-evolution under a Hamiltonian.
@@ -156,11 +193,16 @@
 
 <h3>Documentation</h3>
 
+* The interfaces section of the documentation has been renamed to 'Interfaces and training',
+  and updated with the latest variable handling details.
+  [(#753)](https://github.com/PennyLaneAI/pennylane/pull/753)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arazzola, Jack Ceroni, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci
+Thomas Bromley, Juan Miguel Arazzola, Jack Ceroni, Alain Delgado Gran, Theodor Isacsson, Josh Izaac,
+Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 # Release 0.10.0 (current release)
 
