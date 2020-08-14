@@ -77,13 +77,13 @@
   can be strings or numbers.
   [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
-  Custom wire labels are defined by passing a list to the wires argument when creating the device:
+  Custom wire labels are defined by passing a list to the ``wires`` argument when creating the device:
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
   ```
 
-  The quantum operations are now called with the custom wire labels:
+  Quantum operations should then be invoked with these custom wire labels:
 
   ``` pycon
   >>> @qml.qnode(dev)
@@ -94,7 +94,8 @@
   ```
 
   The existing behaviour, in which the number of wires is specified on device initialization,
-  continues to work as usual.
+  continues to work as usual. This gives a default behaviour where wires are labelled 
+  by consecutive integers.
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=5)
