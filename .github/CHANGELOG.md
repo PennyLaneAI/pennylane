@@ -25,7 +25,7 @@
 
   See the `default.qubit.autograd` documentation for more details.
 
-* A new experimental high-performance C++ statevector device is now available, `lightning.qubit`. It
+* A new experimental C++ statevector device is now available, `lightning.qubit`. It
   uses the C++ Eigen library to perform fast linear algebra calculations for simulating quantum
   state-vector evolution.
 
@@ -84,7 +84,7 @@
       qml.layer(qaoa_layer, 2, params[0], params[1])
 
   dev = qml.device('default.qubit', wires=len(wires))
-  cost_function = qml.VQECost(antatz, cost_h, dev)
+  cost_function = qml.VQECost(ansatz, cost_h, dev)
   ```
 
 * Added an `ApproxTimeEvolution` template to the PennyLane templates module, which
