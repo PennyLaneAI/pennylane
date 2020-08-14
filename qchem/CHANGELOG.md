@@ -45,6 +45,11 @@
   ```
 <h3>Improvements</h3>
 
+* The functions involved in observable conversions from/to OpenFermion now accept
+  a new `wires` argument that can be used to specify the qubits-to-wires mapping
+  when custom wires are used in Pennylane ansatz.
+  [(#750)](https://github.com/PennyLaneAI/pennylane/pull/750)
+
 * The functions involved in generating the single and double excitations from a
   a Hartree-Fock state and mapping them to the wires that the Unitary
   Coupled-Cluster (UCCSD) ansatz act on have been improved, with a more
@@ -69,11 +74,6 @@
 * The total-spin projection observable S_z can be built straightforwardly using the
   function `spin_z` as implemented in the `obs` module.
   [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
-
-* The functions involved in observable conversions from/to OpenFermion now accept
-  a new `wires` argument that can be used to specify the qubits-to-wires mapping
-  when custom wires are used in Pennylane ansatz.
-  [(#750)](https://github.com/PennyLaneAI/pennylane/pull/750)
   
 <h3>Breaking changes</h3>
 
