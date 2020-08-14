@@ -799,6 +799,64 @@ class DiagonalOperation(Operation):
     def _matrix(cls, *params):
         return np.diag(cls._eigvals(*params))
 
+class Channel(Operation):
+    r"""Base class for quantum channels supported by a device.
+
+    As with :class:`~.Operation`, the following class attributes must be
+    defined for all operations:
+
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
+
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
+
+    Finally, there are some additional optional class attributes
+    that may be set, and used by certain quantum optimizers:
+
+    * :attr:`~.Operation.generator`
+
+    Args:
+        params (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`BaseQNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a BaseQNode context.
+    """
+    # pylint: disable=abstract-method
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        """Kraus Matrix representation of a channel
+        in the computational basis.
+
+        For an incoherent channel, the list ``_kraus_matrices``
+        will contain multiple Kraus operators.
+
+        Returns:
+            list(array): list of Kraus matrices
+        """
+        raise NotImplementedError
+
+    @property
+    def kraus_matrices(self):
+        r"""Kraus matrices of an instantiated channel
+        in the computational basis.
+
+        Returns:
+            list(array): list of Kraus matrices
+        """
+        return self._kraus_matrices(*self.parameters)
+
 
 # =============================================================================
 # Base Observable class
