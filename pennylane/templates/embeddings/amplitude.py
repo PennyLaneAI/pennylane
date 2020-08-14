@@ -30,7 +30,7 @@ TOLERANCE = 1e-10
 
 
 @template
-def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
+def AmplitudeEmbedding(features, wires, pad=None, normalize=True):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad`` to a real or complex number, ``features`` is automatically padded to dimension
@@ -213,17 +213,17 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
     # normalize
     if isinstance(features[0], Variable):
         feature_values = [s.val for s in features]
-        norm = np.sum(np.abs(feature_values) ** 2)
+        norm = np.linalg.norm(feature_values, ord=2)
     else:
-        norm = np.sum(np.abs(features) ** 2)
+        norm = np.linalg.norm(features, ord=2)
 
     if not math.isclose(norm, 1.0, abs_tol=TOLERANCE):
         if normalize or pad:
-            features = features / math.sqrt(norm)
+            features = features / norm
         else:
             raise ValueError(
                 "'features' must be a vector of length 1.0; got length {}."
-                "Use 'normalization=True' to automatically normalize.".format(norm)
+                "Use 'normalize=True' to automatically normalize.".format(norm)
             )
 
     ###############

@@ -190,7 +190,6 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
@@ -206,6 +205,10 @@ class DefaultQubit(QubitDevice):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * self.num_wires)
             return
+
+        # convert to the complex type used by the device
+        # the normalization inaccuracy might increase, do it after the checks
+        state = self._asarray(state, dtype=self.C_DTYPE)
 
         # generate basis states on subset of qubits via the cartesian product
         basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))

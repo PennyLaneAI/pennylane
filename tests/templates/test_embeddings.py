@@ -59,7 +59,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -76,7 +76,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=pad, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=pad)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -109,7 +109,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'features' must be of shape"):
@@ -126,7 +126,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None, normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=None)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'features' must be of shape"):
@@ -143,7 +143,7 @@ class TestAmplitudeEmbedding:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=0., normalize=False)
+            AmplitudeEmbedding(features=x, wires=range(n_qubits), pad=0.)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="'features' must be of shape"):
