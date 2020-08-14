@@ -39,7 +39,7 @@ which we implement as the following function:
 
 Finally, the full QAOA circuit is built. We begin by initializing the wires in an even superposition over
 computational basis states, and then repeatedly apply QAOA layers with the
-``qml.layer`` method:
+``qml.layer`` method. In this case we repeat the circuit twice:
 
 .. code-block:: python3
 
