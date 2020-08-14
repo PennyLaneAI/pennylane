@@ -37,7 +37,8 @@ which we implement as the following function:
         qaoa.cost_layer(gamma, cost_h)
         qaoa.mixer_layer(alpha, mixer_h)
 
-Finally, the full QAOA circuit is built by repeatedly applying the QAOA layers with the
+Finally, the full QAOA circuit is built. We begin by initializing the wires in an even superposition over
+computational basis states, and then repeatedly apply QAOA layers with the
 ``qml.layer`` method:
 
 .. code-block:: python3
