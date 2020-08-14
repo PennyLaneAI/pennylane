@@ -73,6 +73,7 @@
 * The functions involved in observable conversions from/to OpenFermion now accept
   a new `wires` argument that can be used to specify the qubits-to-wires mapping
   when custom wires are used in Pennylane ansatz.
+  [(#750)](https://github.com/PennyLaneAI/pennylane/pull/750)
   
 <h3>Breaking changes</h3>
 
