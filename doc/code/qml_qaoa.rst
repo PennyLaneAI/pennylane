@@ -44,7 +44,7 @@ computational basis states, and then repeatedly apply QAOA layers with the
 .. code-block:: python3
 
     # Repeatedly applies layers of the QAOA ansatz
-    def circuit(params):
+    def circuit(params, **kwargs):
 
         for w in wires:
             qml.Hadamard(wires=w)
