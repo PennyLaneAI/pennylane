@@ -136,7 +136,10 @@ class QubitDevice(Device):
             dict[str->*]: results
         """
         capabilities = cls._capabilities
-        capabilities.update(model="qubit", tensor_observables=True)
+        capabilities.update(
+            model="qubit",
+            tensor_observables=True,
+        )
         return capabilities
 
     def reset(self):

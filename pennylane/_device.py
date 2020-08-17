@@ -52,12 +52,12 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {
-        'model': None,
-        'inverse_operations': True,
-        'tensor_observables': True,
-        'passthru_interface': 'undefined',
-        'execution_mode': None,
-        'execution_in_remote': None,
+        'model': None,  # the underlying computational model, like 'qubit', 'cv'.
+        'inverse_operations': None,  # whether device supports inverse ops
+        'tensor_observables': None,  # whether device supports tensor observables
+        'passthru_interface': None,  # interface with which device can pass gradients through a simulation
+        'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
+        'execution_in_remote': None,  # whether computation is performed remotely
         }
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
@@ -76,6 +76,7 @@ class Device(abc.ABC):
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
+        #self._analytic = None
 
     def __repr__(self):
         """String representation."""
@@ -138,14 +139,14 @@ class Device(abc.ABC):
             set[str]: the set of PennyLane observable names the device supports
         """
 
-    @property
-    @abc.abstractmethod
-    def analytic(self):
-        """Get the mode that the device is running in.
-
-        Returns:
-            bool: if true, device returns estimations from sampling measurement results
-        """
+    # @property
+    # def analytic(self):
+    #     """Get the mode that the device is running in.
+    #
+    #     Returns:
+    #         bool: if true, device returns estimations from sampling measurement results
+    #     """
+    #     self._analytic
 
     @property
     def shots(self):
@@ -163,6 +164,17 @@ class Device(abc.ABC):
         """Ordered dictionary that defines the map from user-provided wire labels to
         the wire labels used on this device"""
         return self._wire_map
+
+    # @analytic.setter
+    # def analytic(self, analytic):
+    #     """Changes the value of the analytic attribute.
+    #
+    #     Args:
+    #         analytic (bool): if true, device returns estimations from sampling measurement results
+    #
+    #     """
+    #
+    #     self._analytic = analytic
 
     @shots.setter
     def shots(self, shots):
