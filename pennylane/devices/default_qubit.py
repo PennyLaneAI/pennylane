@@ -54,7 +54,6 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = "0.11"
     version = "0.11.0"
     author = "Xanadu Inc."
-    _capabilities = {"inverse_operations": True, "reversible_diff": True}
 
     operations = {
         "BasisState",
@@ -157,6 +156,40 @@ class DefaultQubit(QubitDevice):
             return unitary.eigvals
 
         return unitary.matrix
+
+    @classmethod
+    def capabilities(cls):
+        """Get the capabilities of the plugin.
+
+        Capabilities include:
+
+        * ``"model"`` (*str*): either ``"qubit"`` or ``"CV"``.
+
+        * ``"inverse_operations"`` (*bool*): ``True`` if the device supports
+          applying the inverse of operations. Operations which should be inverted
+          have ``operation.inverse == True``.
+
+        * ``"tensor_observables" (*bool*): ``True`` if the device supports
+          expectation values/variance/samples of :class:`~.Tensor` observables.
+
+        The qubit device class has built-in support for tensor observables. As a
+        result, devices that inherit from this class automatically
+        have the following items in their capabilities
+        dictionary:
+
+        * ``"model": "qubit"``
+        * ``"tensor_observables": True``
+
+        Returns:
+            dict[str->*]: results
+        """
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            defaultqubit=1
+            # model="something",
+            # tensor_observables=True,
+        )
+        return capabilities
 
     def _create_basis_state(self, index):
         """Return a computational basis state over all wires.

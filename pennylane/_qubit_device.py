@@ -135,10 +135,11 @@ class QubitDevice(Device):
         Returns:
             dict[str->*]: results
         """
-        capabilities = cls._capabilities
+        capabilities = super().capabilities().copy()
         capabilities.update(
-            model="qubit",
-            tensor_observables=True,
+            qubitdevice=1,
+            # model="qubit",
+            # tensor_observables=True,
         )
         return capabilities
 

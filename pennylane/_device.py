@@ -52,12 +52,13 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {
-        'model': None,  # the underlying computational model, like 'qubit', 'cv'.
-        'inverse_operations': None,  # whether device supports inverse ops
-        'tensor_observables': None,  # whether device supports tensor observables
-        'passthru_interface': None,  # interface with which device can pass gradients through a simulation
-        'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
-        'execution_in_remote': None,  # whether computation is performed remotely
+        'device': 1
+        # 'model': None,  # the underlying computational model, like 'qubit', 'cv'.
+        # 'inverse_operations': False,  # whether device supports inverse ops
+        # 'tensor_observables': False,  # whether device supports tensor observables
+        # 'passthru_interface': None,  # interface with which device can pass gradients through a simulation
+        # 'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
+        # 'execution_in_remote': False,  # whether computation is performed remotely
         }
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
@@ -248,6 +249,7 @@ class Device(abc.ABC):
         Returns:
             dict[str->*]: results
         """
+
         return cls._capabilities
 
     def execute(self, queue, observables, parameters={}, **kwargs):
