@@ -1,4 +1,4 @@
-# Release 0.11.0 (development release)
+# Release 0.11.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -91,9 +91,33 @@
   can be used to implement Trotterized time-evolution under a Hamiltonian.
   [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
 
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/templates/subroutines/approx_time_evolution.png" width=50%/>
+
 * Added a `qml.layer` template-constructing function, which takes a unitary, and
   repeatedly applies it on a set of wires to a given depth.
   [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
+
+  ```python
+  def subroutine():
+      qml.Hadamard(wires=[0])
+      qml.CNOT(wires=[0, 1])
+      qml.PauliX(wires=[1])
+
+  dev = qml.device('default.qubit', wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.layer(subroutine, 3)
+      return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+  ```
+
+  This creates the following circuit:
+  ```pycon
+  >>> circuit()
+  >>> print(circuit.draw())
+  0: ──H──╭C──X──H──╭C──X──H──╭C──X──┤ ⟨Z⟩
+  1: ─────╰X────────╰X────────╰X─────┤ ⟨Z⟩
+  ```
 
 * Added the `qml.utils.decompose_hamiltonian` function. This function can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
@@ -204,7 +228,7 @@ This release contains contributions from (in alphabetical order):
 Thomas Bromley, Juan Miguel Arazzola, Jack Ceroni, Alain Delgado Gran, Theodor Isacsson, Josh Izaac,
 Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
-# Release 0.10.0 (current release)
+# Release 0.10.0
 
 <h3>New features since last release</h3>
 
