@@ -839,8 +839,17 @@ class Channel(Operation):
         """Kraus Matrix representation of a channel
         in the computational basis.
 
-        For an incoherent channel, the list ``_kraus_matrices``
-        will contain multiple Kraus operators.
+        This is a *class method* that should be defined for all
+        new channels, that returns the Kraus matrices representing
+        the channel in the computational basis.
+
+        This private method allows matrices to be computed
+        directly without instantiating the channel first.
+
+        To return the Kraus matrices of an *instantiated* channel,
+        please use the :attr:`~.Operator.kraus_matrices` property instead.
+
+        For an incoherent channel, this method returns multiple Kraus operators.
 
         Returns:
             list(array): list of Kraus matrices

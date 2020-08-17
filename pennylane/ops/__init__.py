@@ -33,8 +33,6 @@ from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
-from .channel import __all__ as _channel__ops__
-
 
 
 class Identity(CVObservable):
@@ -73,6 +71,6 @@ class Identity(CVObservable):
         return []
 
 
-__all__ = _cv__all__ + _qubit__all__ + _channel__ops__ + ["Identity"]
-__all_ops__ = list(_cv__ops__ | _qubit__ops__ | _channel__ops__)
+__all__ = _cv__all__ + _qubit__all__ + ["Identity"]
+__all_ops__ = list(_cv__ops__ | _qubit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]
