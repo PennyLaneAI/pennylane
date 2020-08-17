@@ -58,8 +58,6 @@ class Device(abc.ABC):
         'passthru_interface': None,  # interface with which device can pass gradients through a simulation
         'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
         'execution_in_remote': False,  # whether computation is performed remotely
-        'provides_jacobian': False,  # supports ``jacobian()`` function call
-        'reversible_diff': True,  # ???
         }
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
