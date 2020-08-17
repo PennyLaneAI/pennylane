@@ -24,7 +24,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 import pennylane._queuing
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, Channel
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.wires import Wires
@@ -1197,3 +1197,107 @@ class TestDecomposition:
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], state)
         assert np.array_equal(call_args[0][1], wires)
+
+class TestChannel:
+    """Unit tests for the Channel class"""
+
+    def test_incorrect_num_wires(self):
+        """Test that an exception is raised if called with wrong number of wires"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            DummyOp(0.5, wires=[0, 1])
+
+    def test_non_unique_wires(self):
+        """Test that an exception is raised if called with identical wires"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 2
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
+            DummyOp(0.5, wires=[1, 1], do_queue=False)
+
+    def test_no_wires_passed(self):
+        """Test exception raised if no wires are passed"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(ValueError, match="Must specify the wires"):
+            DummyOp(0.5)
+
+    def test_wire_passed_positionally(self):
+        """Test exception raised if wire is passed as a positional arg"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(ValueError, match="Must specify the wires"):
+            DummyOp(0.5, 0)
+
+    def test_incorrect_num_params(self):
+        """Test that an exception is raised if called with wrong number of parameters"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(ValueError, match="wrong number of parameters"):
+            DummyOp(0.5, 0.6, wires=0)
+
+    def test_incorrect_param_domain(self):
+        """Test that an exception is raised if an incorrect parameter domain is requested"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'J'
+
+        with pytest.raises(ValueError, match="Unknown parameter domain"):
+            DummyOp(0.5, wires=0)
+
+    def test_grad_method(self):
+        """Test that an exception is raised if a gradient method is set to analytic
+        as only finite difference or ``None`` is allowed at the moment. This can be updated
+        once we can add gradient recipes for channels. """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+            grad_method = 'A'
+
+        with pytest.raises(AssertionError, match="Analytic gradients can not be used for"):
+            DummyOp(0.5, wires=0)
+
+    def test_array_instead_of_real(self):
+        """Test that an exception is raised if a real number is expected but an array is passed"""
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = 'R'
+
+        with pytest.raises(TypeError, match="Real scalar parameter expected, got"):
+            DummyOp(np.array([1.]), wires=[0])
+
+

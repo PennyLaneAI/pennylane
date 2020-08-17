@@ -816,11 +816,6 @@ class Channel(Operation):
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
 
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
-    * :attr:`~.Operation.generator`
-
     Args:
         params (tuple[float, int, array, Variable]): operation parameters
 
