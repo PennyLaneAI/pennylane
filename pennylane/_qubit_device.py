@@ -137,9 +137,9 @@ class QubitDevice(Device):
         """
         capabilities = super().capabilities().copy()
         capabilities.update(
-            qubitdevice=1,
-            # model="qubit",
-            # tensor_observables=True,
+            model="qubit",
+            tensor_observables=True,
+            reversible_diff=True,
         )
         return capabilities
 

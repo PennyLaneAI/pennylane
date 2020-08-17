@@ -52,13 +52,14 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {
-        'device': 1
-        # 'model': None,  # the underlying computational model, like 'qubit', 'cv'.
-        # 'inverse_operations': False,  # whether device supports inverse ops
-        # 'tensor_observables': False,  # whether device supports tensor observables
-        # 'passthru_interface': None,  # interface with which device can pass gradients through a simulation
-        # 'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
-        # 'execution_in_remote': False,  # whether computation is performed remotely
+        'model': None,  # the underlying computational model, like 'qubit', 'cv'.
+        'inverse_operations': False,  # whether device supports inverse ops
+        'tensor_observables': False,  # whether device supports tensor observables
+        'passthru_interface': None,  # interface with which device can pass gradients through a simulation
+        'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
+        'execution_in_remote': False,  # whether computation is performed remotely
+        'provides_jacobian': False,  # supports ``jacobian()`` function call
+        'reversible_diff': True,  # ???
         }
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
@@ -77,7 +78,6 @@ class Device(abc.ABC):
         self._op_queue = None
         self._obs_queue = None
         self._parameters = None
-        #self._analytic = None
 
     def __repr__(self):
         """String representation."""
@@ -140,15 +140,6 @@ class Device(abc.ABC):
             set[str]: the set of PennyLane observable names the device supports
         """
 
-    # @property
-    # def analytic(self):
-    #     """Get the mode that the device is running in.
-    #
-    #     Returns:
-    #         bool: if true, device returns estimations from sampling measurement results
-    #     """
-    #     self._analytic
-
     @property
     def shots(self):
         """Number of circuit evaluations/random samples used to estimate
@@ -165,17 +156,6 @@ class Device(abc.ABC):
         """Ordered dictionary that defines the map from user-provided wire labels to
         the wire labels used on this device"""
         return self._wire_map
-
-    # @analytic.setter
-    # def analytic(self, analytic):
-    #     """Changes the value of the analytic attribute.
-    #
-    #     Args:
-    #         analytic (bool): if true, device returns estimations from sampling measurement results
-    #
-    #     """
-    #
-    #     self._analytic = analytic
 
     @shots.setter
     def shots(self, shots):
@@ -242,14 +222,24 @@ class Device(abc.ABC):
 
     @classmethod
     def capabilities(cls):
-        """Get the other capabilities of the plugin.
+        """Get the capabilities of this device class.
 
-        Measurements, batching etc.
+        Inheriting classes that overwrite or add capabilities should overwrite this method with
+
+        .. code-block::
+
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    inherited_capability=...,
+                    new_capability=...,
+                )
+                return capabilities
 
         Returns:
             dict[str->*]: results
         """
-
         return cls._capabilities
 
     def execute(self, queue, observables, parameters={}, **kwargs):

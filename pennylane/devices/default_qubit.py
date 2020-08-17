@@ -184,11 +184,6 @@ class DefaultQubit(QubitDevice):
             dict[str->*]: results
         """
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            defaultqubit=1
-            # model="something",
-            # tensor_observables=True,
-        )
         return capabilities
 
     def _create_basis_state(self, index):
