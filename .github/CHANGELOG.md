@@ -23,7 +23,7 @@
   array([-2.25267173e-01, -1.00864546e+00,  6.93889390e-18])
   ```
 
-  See the `default.qubit.autograd` documentation for more details.
+  See the `default.qubit.autograd` [documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.devices.default_qubit_autograd.DefaultQubitAutograd.html) for more details.
 
 * A new experimental C++ state-vector simulator device is now available, `lightning.qubit`. It
   uses the C++ Eigen library to perform fast linear algebra calculations for simulating quantum
@@ -41,8 +41,8 @@
   >>> dev = qml.device("lightning.qubit", wires=2)
   ```
 
-  For more details, please see the
-  [lightning qubit documentation](https://pennylane-lightning.readthedocs.io).
+  For more details, please see the `lightning.qubit`
+  [documentation](https://pennylane-lightning.readthedocs.io).
 
 <h4>New algorithms and templates</h4>
 
@@ -198,10 +198,6 @@
   >>> print(circuit(0.5))
   [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
   ```
-
-* Refactor of the QNode queuing architecture.
-  [(#722)](https://github.com/PennyLaneAI/pennylane/pull/722)
-  [(#728)](https://github.com/PennyLaneAI/pennylane/pull/728)
 
 <h3>Breaking changes</h3>
 
