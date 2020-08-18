@@ -861,6 +861,23 @@ class Channel(Operation):
         """
         return self._kraus_matrices(*self.parameters)
 
+    def __init__(self, *params, wires=None, do_queue=True):
+
+        self._inverse = False
+
+        # check the grad_method validity
+        if self.par_domain == "R":
+            assert self.grad_method in (
+                None,
+                "F",
+            ), "Analytic gradients can not be used for quantum channels, presently."
+
+        # check the grad_recipe validity
+        if self.grad_method == "F":
+            assert self.grad_recipe is None, "Gradient recipe are not be defined for quantum channels, presently."
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
 
 # =============================================================================
 # Base Observable class
