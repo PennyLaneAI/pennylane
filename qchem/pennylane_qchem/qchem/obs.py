@@ -381,7 +381,7 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
 
         \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
 
-    where the index :math:`\alpha` runs over the basis of single-particle orbitals
+    where the index :math:`\alpha` runs over the basis of single-particle states
     :math:`\vert \alpha \rangle`, and the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
     the particle creation and annihilation operators, respectively.
 
