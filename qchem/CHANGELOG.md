@@ -62,6 +62,28 @@ This release contains contributions from (in alphabetical order):
 
 <h3>Improvements</h3>
 
+* The functions involved in the construction of the electronic Hamiltonian have been
+  improved, with shorter names and improved docstrings, including adding complementary
+  information to better explain the basics of quantum chemistry.
+  [(#735)](https://github.com/PennyLaneAI/pennylane/pull/735)
+
+  The changes include:
+
+  - `active_space` is now independent of the OpenFermion `MolecularData` data structure.
+
+  - `meanfield_data` has been renamed to `meanfield`, and modified to return
+    the absolute path to the file with the meanfield electronic structure of the molecule.
+
+  - `decompose_hamiltonian` has been renamed to `decompose`,
+    due to the new `qml.utils.decompose_hamiltonian` function. This function has also been
+    marked for deprecation.
+
+  - `generate_hamiltonian` has been renamed to `molecular_hamiltonian`.
+    The modified function contains an extended docstring that outlines the main steps to build the Hamiltonian.
+
+  In addition to the above changes, function arguments have also been modified and improved; please
+  see relevant function docstrings for more details.
+
 * The total spin observable S^2 can be built straightforwardly using the
   function `spin2` as implemented in the `obs` module.
   [(#714)](https://github.com/XanaduAI/pennylane/pull/714)

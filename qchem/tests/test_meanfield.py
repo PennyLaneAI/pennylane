@@ -6,35 +6,32 @@ from openfermion.hamiltonians import MolecularData
 
 from pennylane import qchem
 
-mol_name = "h2"
+name = "h2"
 geometry = [("H", [0.0, 0.0, -0.35]), ("H", [0.0, 0.0, 0.35])]
-charge = 0
-multiplicity = 1
-basis = "sto-3g"
 
 
-@pytest.mark.parametrize("names", ["Psi4", "PySCF"])
-def test_path_to_hf_data(names, tmpdir, psi4_support):
-    r"""Test the construction of the path to the directory containing the output files of
-    HF electronic structure calculations"""
+@pytest.mark.parametrize(
+    ("package", "basis"), [("PySCF", "sto-3g"), ("PySCF", "6-31g"), ("Psi4", "sto-3g")]
+)
+def test_path_to_file(package, basis, tmpdir, psi4_support):
+    r"""Test the correctness of the full path to the file containing the meanfield
+    electronic structure"""
 
-    if names == "Psi4" and not psi4_support:
+    if package == "Psi4" and not psi4_support:
         pytest.skip("Skipped, no Psi4 support")
 
-    path_to_hf_data_ref = os.path.join(tmpdir.strpath, names.lower(), basis.strip())
+    exp_path = os.path.join(tmpdir.strpath, package.lower(), basis.strip(), name)
 
-    path_to_hf_data = qchem.meanfield_data(
-        mol_name, geometry, charge, multiplicity, basis, qc_package=names, outpath=tmpdir.strpath
-    )
+    res_path = qchem.meanfield(name, geometry, basis=basis, package=package, outpath=tmpdir.strpath)
 
-    assert path_to_hf_data == path_to_hf_data_ref
+    assert res_path == exp_path
 
 
-@pytest.mark.parametrize("names", ["Psi4", "PySCF"])
-def test_hf_calculations(names, tmpdir, psi4_support, tol):
+@pytest.mark.parametrize("package", ["Psi4", "PySCF"])
+def test_hf_calculations(package, tmpdir, psi4_support, tol):
     r"""Test the correctness of the HF calculation"""
 
-    if names == "Psi4" and not psi4_support:
+    if package == "Psi4" and not psi4_support:
         pytest.skip("Skipped, no Psi4 support")
 
     n_atoms = 2
@@ -60,11 +57,9 @@ def test_hf_calculations(names, tmpdir, psi4_support, tol):
         ]
     )
 
-    path_to_hf_data = qchem.meanfield_data(
-        mol_name, geometry, charge, multiplicity, basis, qc_package=names, outpath=tmpdir.strpath
-    )
+    fullpath = qchem.meanfield(name, geometry, package=package, outpath=tmpdir.strpath)
 
-    molecule = MolecularData(filename=os.path.join(path_to_hf_data, mol_name))
+    molecule = MolecularData(filename=fullpath)
 
     assert molecule.n_atoms == n_atoms
     assert molecule.n_electrons == n_electrons
@@ -75,17 +70,10 @@ def test_hf_calculations(names, tmpdir, psi4_support, tol):
     assert np.allclose(molecule.two_body_integrals, two_body_integrals, **tol)
 
 
-@pytest.mark.parametrize("names", ["not_available_package"])
-def test_not_available_qc_package(names, tmpdir):
-    r"""Test that an error is raised if the chosen quantum chemistry package is neither Psi4 nor PySCF"""
+@pytest.mark.parametrize("package", ["not_available_package"])
+def test_not_available_qc_package(package, tmpdir):
+    r"""Test that an error is raised if the input quantum chemistry package
+    is neither Psi4 nor PySCF"""
 
     with pytest.raises(TypeError, match="Integration with quantum chemistry package"):
-        qchem.meanfield_data(
-            mol_name,
-            geometry,
-            charge,
-            multiplicity,
-            basis,
-            qc_package=names,
-            outpath=tmpdir.strpath,
-        )
+        qchem.meanfield(name, geometry, package=package, outpath=tmpdir.strpath)
