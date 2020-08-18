@@ -82,17 +82,14 @@ def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match)
 def test_integration_with_uccsd(weights, singles, doubles, expected, tol):
     """Test integration with the UCCSD template"""
 
-    singles_wires, doubles_wires = qchem.excitations_to_wires(singles, doubles)
-
+    s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
     N = 4
     wires = range(N)
     dev = qml.device("default.qubit", wires=N)
 
     @qml.qnode(dev)
     def circuit(weights):
-        UCCSD(
-            weights, wires, ph=singles_wires, pphh=doubles_wires, init_state=np.array([1, 1, 0, 0])
-        )
+        UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=np.array([1, 1, 0, 0]))
         return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
     res = circuit(weights)
