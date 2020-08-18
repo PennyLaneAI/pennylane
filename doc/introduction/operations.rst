@@ -49,27 +49,33 @@ Qubit gates
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.CNOT
-    ~pennylane.CRot
-    ~pennylane.CRX
-    ~pennylane.CRY
-    ~pennylane.CRZ
-    ~pennylane.CSWAP
-    ~pennylane.CZ
     ~pennylane.Hadamard
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
-    ~pennylane.PhaseShift
-    ~pennylane.QubitUnitary
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY
     ~pennylane.RZ
-    ~pennylane.S
+    ~pennylane.MultiRZ
+    ~pennylane.PauliRot
+    ~pennylane.PhaseShift
+    ~pennylane.CNOT
     ~pennylane.SWAP
-    ~pennylane.T
+    ~pennylane.U1
+    ~pennylane.U2
+    ~pennylane.U3
+    ~pennylane.CZ
+    ~pennylane.CRot
+    ~pennylane.CRX
+    ~pennylane.CRY
+    ~pennylane.CRZ
     ~pennylane.Toffoli
+    ~pennylane.CSWAP
+    ~pennylane.S
+    ~pennylane.T
+    ~pennylane.QubitUnitary
+    ~pennylane.DiagonalQubitUnitary
 
 :html:`</div>`
 

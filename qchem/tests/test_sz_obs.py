@@ -26,10 +26,10 @@ terms_2_bk = {
 
 
 @pytest.mark.parametrize(
-    ("n_orbitals", "mapping", "terms_exp"),
-    [(2, "JORDAN_wigner", terms_1_jw), (3, "bravyi_KITAEV", terms_2_bk),],
+    ("orbitals", "mapping", "terms_exp"),
+    [(4, "JORDAN_wigner", terms_1_jw), (6, "bravyi_KITAEV", terms_2_bk),],
 )
-def test_spin_z(n_orbitals, mapping, terms_exp, monkeypatch):
+def test_spin_z(orbitals, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
 
@@ -38,7 +38,7 @@ def test_spin_z(n_orbitals, mapping, terms_exp, monkeypatch):
     useful to the users as well.
     """
 
-    Sz = qchem.spin_z(n_orbitals, mapping=mapping)
+    Sz = qchem.spin_z(orbitals, mapping=mapping)
 
     Sz_qubit_op = QubitOperator()
     monkeypatch.setattr(Sz_qubit_op, "terms", terms_exp)
@@ -47,12 +47,12 @@ def test_spin_z(n_orbitals, mapping, terms_exp, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("n_orbitals", "msg_match"),
-    [(-3, "'n_orbitals' must be greater than 0"), (0, "'n_orbitals' must be greater than 0"),],
+    ("orbitals", "msg_match"),
+    [(-3, "'orbitals' must be greater than 0"), (0, "'orbitals' must be greater than 0"),],
 )
-def test_exception_spin_z(n_orbitals, msg_match):
+def test_exception_spin_z(orbitals, msg_match):
     """Test that the function `'spin_z'` throws an exception if the
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qchem.spin_z(n_orbitals)
+        qchem.spin_z(orbitals)
