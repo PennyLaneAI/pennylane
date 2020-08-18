@@ -800,10 +800,10 @@ class DiagonalOperation(Operation):
         return np.diag(cls._eigvals(*params))
 
 class Channel(Operation):
-    r"""Base class for quantum channels supported by a device.
+    r"""Base class for quantum channels.
 
     As with :class:`~.Operation`, the following class attributes must be
-    defined for all operations:
+    defined for all channels:
 
     * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
@@ -820,7 +820,7 @@ class Channel(Operation):
         params (tuple[float, int, array, Variable]): operation parameters
 
     Keyword Args:
-        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
+        wires (Sequence[int]): Subsystems the channel acts on. If not given, args[-1]
             is interpreted as wires.
         do_queue (bool): Indicates whether the operation should be
             immediately pushed into a :class:`BaseQNode` circuit queue.
@@ -831,20 +831,25 @@ class Channel(Operation):
 
     @classmethod
     def _kraus_matrices(cls, *params):
-        """Kraus Matrix representation of a channel
-        in the computational basis.
+        """Kraus matrices representing a quantum channel, specified in
+        the computational basis.
 
-        This is a *class method* that should be defined for all
-        new channels, that returns the Kraus matrices representing
+        This is a class method that should be defined for all
+        new channels. It returns the Kraus matrices representing
         the channel in the computational basis.
 
         This private method allows matrices to be computed
         directly without instantiating the channel first.
 
+        **Example:**
+
+        >>> qml.AmplitudeDamping._kraus_matrices(0.1)
+        >>> [array([[1.       , 0.       ],
+        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
+        [0.        , 0.        ]])]
+
         To return the Kraus matrices of an *instantiated* channel,
         please use the :attr:`~.Operator.kraus_matrices` property instead.
-
-        For an incoherent channel, this method returns multiple Kraus operators.
 
         Returns:
             list(array): list of Kraus matrices
@@ -855,6 +860,14 @@ class Channel(Operation):
     def kraus_matrices(self):
         r"""Kraus matrices of an instantiated channel
         in the computational basis.
+
+        ** Example: **
+
+        >>> U = qml.AmplitudeDamping(0.1, wires=1)
+        >>> U.kraus_matrices
+        >>> [array([[1.       , 0.       ],
+        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
+        [0.        , 0.        ]])]
 
         Returns:
             list(array): list of Kraus matrices
