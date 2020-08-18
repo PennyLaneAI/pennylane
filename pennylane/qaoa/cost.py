@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This file contains functions that generate QAOA cost Hamiltonians corresponding to
+Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
 
