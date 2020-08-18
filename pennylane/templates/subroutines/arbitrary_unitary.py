@@ -104,7 +104,5 @@ def ArbitraryUnitary(weights, wires):
         msg="'weights' must be of shape {}; got {}." "".format(expected_shape, get_shape(weights)),
     )
 
-    wires = wires.tolist()  # Todo: remove when ops take Wires object
-
     for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
         qml.PauliRot(weights[i], pauli_word, wires=wires)

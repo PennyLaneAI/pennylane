@@ -271,7 +271,7 @@ class TestQNodeOperationQueue:
         CNOT = qml.CNOT(wires=[0, 1])
 
         def circuit(x):
-            qml.QueuingContext.append_operator(CNOT)
+            qml.QueuingContext.append(CNOT)
             qml.RY(0.4, wires=[0])
             qml.RZ(-0.2, wires=[1])
 
@@ -294,7 +294,7 @@ class TestQNodeOperationQueue:
             qml.RY(0.4, wires=[0])
             qml.RZ(-0.2, wires=[1])
 
-            qml.QueuingContext.remove_operator(RX)
+            qml.QueuingContext.remove(RX)
 
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
 
@@ -343,7 +343,7 @@ class TestQNodeOperationQueue:
 
         assert qnode.ops[0].name == "PauliX"
         assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == 0  #Wires(0)
+        assert qnode.ops[0].wires[0] == Wires(0)
 
 
 class TestQNodeExceptions:
@@ -483,7 +483,7 @@ class TestQNodeExceptions:
         class DummyOp(qml.operation.Operation):
             """Dummy operation"""
 
-            num_wires = qml.operation.ActsOn.AllWires
+            num_wires = qml.operation.WiresEnum.AllWires
             num_params = 0
             par_domain = None
 
@@ -775,11 +775,11 @@ class TestQNodeArgs:
 
         node = BaseQNode(circuit, qubit_device_2_wires)
         c = node(np.pi, q=1)
-        assert node.ops[0].wires == [1]  #Wires([1])
+        assert node.ops[0].wires == Wires([1])
         assert c == pytest.approx(-1.0, abs=tol)
 
         c = node(np.pi)
-        assert node.ops[0].wires == [default_q]  #Wires([default_q])
+        assert node.ops[0].wires == Wires([default_q])
         assert c == pytest.approx(-1.0, abs=tol)
 
     def test_keywordargs_used(self, qubit_device_1_wire, tol):

@@ -26,6 +26,8 @@ import pennylane as qml
 from scipy.linalg import block_diag
 from flaky import flaky
 
+pytestmark = pytest.mark.skip_unsupported
+
 np.random.seed(42)
 
 # ==========================================================
@@ -123,10 +125,18 @@ two_qubit_multi_param = [(qml.CRot, crot)]
 three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
 
 # single qubit unitary matrix
+theta = 0.8364
+phi = -0.1234
 U = np.array(
     [
-        [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-        [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+        [
+            np.cos(theta / 2) * np.exp(np.complex(0, -phi / 2)),
+            -np.sin(theta / 2) * np.exp(np.complex(0, phi / 2)),
+        ],
+        [
+            np.sin(theta / 2) * np.exp(np.complex(0, -phi / 2)),
+            np.cos(theta / 2) * np.exp(np.complex(0, phi / 2)),
+        ],
     ]
 )
 

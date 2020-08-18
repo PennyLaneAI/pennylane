@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains shared fixtures for the device tests."""
+import argparse
 import os
-import pytest
+
 import numpy as np
+import pytest
+from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
+
 import pennylane as qml
 
 # ==========================================================
@@ -29,7 +33,7 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 10000
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf"}
+LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf", "default.qubit.autograd"}
 # TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
 # do not have an "analytic" attribute.
 
@@ -85,8 +89,8 @@ def device(device_kwargs):
 
     __tracebackhide__ = True
 
-    def _device(n_wires):
-        device_kwargs["wires"] = n_wires
+    def _device(wires):
+        device_kwargs["wires"] = wires
 
         try:
             dev = qml.device(**device_kwargs)
@@ -124,13 +128,74 @@ def pytest_runtest_setup(item):
 # These functions are required to define the device name to run the tests for
 
 
+class StoreDictKeyPair(argparse.Action):
+    """Argparse action for storing key-value pairs as a dictionary.
+
+    For example, calling a CLI program with ``--mydict v1=k1 v2=5``:
+
+    >>> parser.add_argument("--mydict", dest="my_dict", action=StoreDictKeyPair, nargs="+")
+    >>> args = parser.parse()
+    >>> args.my_dict
+    {"v1": "k1", "v2": "5"}
+
+    Note that all keys will be strings.
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        self._nargs = nargs
+        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        my_dict = {}
+        for kv in values:
+            k, v = kv.split("=")
+            my_dict[k] = v
+        setattr(namespace, self.dest, my_dict)
+
+
 def pytest_addoption(parser):
     """Add command line option to pytest."""
 
+    if hasattr(parser, "add_argument"):
+        # parser is a argparse.Parser object
+        addoption = parser.add_argument
+    else:
+        # parser is a pytest.config.Parser object
+        addoption = parser.addoption
+
     # The options are the three arguments every device takes
-    parser.addoption("--device", action="store", default=None)
-    parser.addoption("--shots", action="store", default=None, type=int)
-    parser.addoption("--analytic", action="store", default=None)
+    addoption("--device", action="store", default=None, help="The device to test.")
+    addoption(
+        "--shots",
+        action="store",
+        default=None,
+        type=int,
+        help="Number of shots to use in stochastic mode.",
+    )
+    addoption(
+        "--analytic",
+        action="store",
+        default=None,
+        help="Whether to run the tests in stochastic or exact mode.",
+    )
+    addoption(
+        "--skip-ops",
+        action="store_true",
+        default=False,
+        help="Skip tests that use unsupported device operations.",
+    )
+
+    addoption(
+        "--device-kwargs",
+        dest="device_kwargs",
+        action=StoreDictKeyPair,
+        default={},
+        nargs="+",
+        metavar="KEY=VAL",
+        help="Additional device kwargs.",
+    )
 
 
 def pytest_generate_tests(metafunc):
@@ -141,6 +206,7 @@ def pytest_generate_tests(metafunc):
         "name": opt.device,
         "shots": opt.shots,
         "analytic": opt.analytic,
+        **opt.device_kwargs,
     }
 
     # ===========================================
@@ -176,3 +242,23 @@ def pytest_generate_tests(metafunc):
         else:
             # run tests on specified device
             metafunc.parametrize("device_kwargs", [device_kwargs])
+
+
+def pytest_runtest_makereport(item, call):
+    """Post-processing test reports to exclude those known to be failing."""
+    tr = orig_pytest_runtest_makereport(item, call)
+
+    if "skip_unsupported" in item.keywords and item.config.option.skip_ops:
+        if call.excinfo is not None:
+
+            # Exclude failing test cases for unsupported operations/observables
+            # and those using not implemented features
+            if (
+                call.excinfo.type == qml.DeviceError
+                and "supported" in str(call.excinfo.value)
+                or call.excinfo.type == NotImplementedError
+            ):
+                tr.wasxfail = "reason:" + str(call.excinfo.value)
+                tr.outcome = "skipped"
+
+    return tr

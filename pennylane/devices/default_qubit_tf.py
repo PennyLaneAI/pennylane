@@ -22,10 +22,10 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
+        raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
 except ImportError as e:
-    raise ImportError("default.tensor.tf device requires TensorFlow>=2.0")
+    raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
 
 # With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while
@@ -109,8 +109,9 @@ class DefaultQubitTF(DefaultQubit):
 
 
     Args:
-        wires (int): the number of wires to initialize the device with
-
+        wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
+            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, then the number of shots is ignored

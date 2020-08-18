@@ -18,6 +18,7 @@ Integration tests should be placed into ``test_templates.py``.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
+import pennylane._queuing
 from pennylane import numpy as np
 from pennylane.wires import Wires
 
@@ -26,7 +27,8 @@ from pennylane.templates.subroutines import (
     ArbitraryUnitary,
     SingleExcitationUnitary,
     DoubleExcitationUnitary,
-    UCCSD
+    UCCSD,
+    ApproxTimeEvolution
 )
 
 from pennylane.templates.subroutines.arbitrary_unitary import (
@@ -138,10 +140,10 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec_rect:
+        with pennylane._queuing.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, mesh='rectangular', beamsplitter='clements', wires=wires)
 
-        with qml.utils.OperationRecorder() as rec_tria:
+        with pennylane._queuing.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, mesh='triangular', beamsplitter='clements', wires=wires)
 
         for rec in [rec_rect, rec_tria]:
@@ -163,7 +165,7 @@ class TestInterferometer:
         """Test that a one mode interferometer correctly gives a rotation gate"""
         varphi = [0.42342]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
 
         assert len(rec.queue) == 1
@@ -180,7 +182,7 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
 
         isinstance(rec.queue[0], qml.Beamsplitter)
@@ -202,7 +204,7 @@ class TestInterferometer:
         phi = [0.234]
         varphi = [0.42342, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
 
         assert len(rec.queue) == 3
@@ -225,10 +227,10 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234]
         varphi = [0.42342, 0.234, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec_rect:
+        with pennylane._queuing.OperationRecorder() as rec_rect:
             Interferometer(theta, phi, varphi, wires=wires)
 
-        with qml.utils.OperationRecorder() as rec_tria:
+        with pennylane._queuing.OperationRecorder() as rec_tria:
             Interferometer(theta, phi, varphi, wires=wires)
 
         for rec in [rec_rect, rec_tria]:
@@ -240,12 +242,12 @@ class TestInterferometer:
             for idx, op in enumerate(rec_rect.queue[:3]):
                 assert isinstance(op, qml.Beamsplitter)
                 assert op.parameters == [theta[idx], phi[idx]]
-                assert op.wires == expected_bs_wires[idx]  #Wires(expected_bs_wires[idx])
+                assert op.wires == Wires(expected_bs_wires[idx])
 
             for idx, op in enumerate(rec.queue[3:]):
                 assert isinstance(op, qml.Rotation)
                 assert op.parameters == [varphi[idx]]
-                assert op.wires == [idx]  #Wires([idx])
+                assert op.wires == Wires([idx])
 
     def test_four_mode_rect(self, tol):
         """Test that a 4 mode interferometer using rectangular mesh gives the correct gates"""
@@ -256,7 +258,7 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, wires=wires)
 
         assert len(rec.queue) == 10
@@ -266,12 +268,12 @@ class TestInterferometer:
         for idx, op in enumerate(rec.queue[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
-            assert op.wires == expected_bs_wires[idx]  #Wires(expected_bs_wires[idx])
+            assert op.wires == Wires(expected_bs_wires[idx])
 
         for idx, op in enumerate(rec.queue[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
-            assert op.wires == [idx]  #Wires([idx])
+            assert op.wires == Wires([idx])
 
     def test_four_mode_triangular(self, tol):
         """Test that a 4 mode interferometer using triangular mesh gives the correct gates"""
@@ -282,7 +284,7 @@ class TestInterferometer:
         phi = [0.234, 0.324, 0.234, 1.453, 1.42341, -0.534]
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             Interferometer(theta, phi, varphi, mesh='triangular', wires=wires)
 
         assert len(rec.queue) == 10
@@ -292,12 +294,12 @@ class TestInterferometer:
         for idx, op in enumerate(rec.queue[:6]):
             assert isinstance(op, qml.Beamsplitter)
             assert op.parameters == [theta[idx], phi[idx]]
-            assert op.wires == expected_bs_wires[idx]  #Wires(expected_bs_wires[idx])
+            assert op.wires == Wires(expected_bs_wires[idx])
 
         for idx, op in enumerate(rec.queue[6:]):
             assert isinstance(op, qml.Rotation)
             assert op.parameters == [varphi[idx]]
-            assert op.wires == [idx]  #Wires([idx])
+            assert op.wires == Wires([idx])
 
     def test_integration(self, tol):
         """test integration with PennyLane and gradient calculations"""
@@ -344,18 +346,15 @@ class TestSingleExcitationUnitary:
                       [16, qml.Hadamard, [0], []], [17, qml.RX, [2], [np.pi / 2]],
                       [4, qml.RZ, [2], [np.pi / 6]], [13, qml.RZ, [2], [-np.pi / 6]]]
              ),
-
             ([10, 11], [[0, qml.RX, [10], [-np.pi / 2]], [1, qml.Hadamard, [11], []],
                         [12, qml.Hadamard, [10], []], [13, qml.RX, [11], [np.pi / 2]],
                         [3, qml.RZ, [11], [np.pi / 6]], [10, qml.RZ, [11], [-np.pi / 6]]]
              ),
-
             ([1, 2, 3, 4], [[2, qml.CNOT, [1, 2], []], [3, qml.CNOT, [2, 3], []], [4, qml.CNOT, [3, 4], []],
                       [6, qml.CNOT, [3, 4], []], [7, qml.CNOT, [2, 3], []], [8, qml.CNOT, [1, 2], []],
                       [13, qml.CNOT, [1, 2], []], [14, qml.CNOT, [2, 3], []], [15, qml.CNOT, [3, 4], []],
                       [17, qml.CNOT, [3, 4], []], [18, qml.CNOT, [2, 3], []], [19, qml.CNOT, [1, 2], []]]
              ),
-
             ([10, 11], [[2, qml.CNOT, [10, 11], []], [4, qml.CNOT, [10, 11], []],
                         [9, qml.CNOT, [10, 11], []], [11, qml.CNOT, [10, 11], []]]
              )
@@ -363,13 +362,13 @@ class TestSingleExcitationUnitary:
     )
     def test_single_ex_unitary_operations(self, ph, ref_gates):
         """Test the correctness of the SingleExcitationUnitary template including the gate count
-        and order, the wires each operation acts on and the correct use of parameters 
+        and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 10
         cnots = 4 * (len(ph)-1)
         weight = np.pi / 3
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             SingleExcitationUnitary(weight, wires=ph)
 
         assert len(rec.queue) == sqg + cnots
@@ -383,7 +382,7 @@ class TestSingleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == exp_wires  #Wires(exp_wires)
+            assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -398,7 +397,7 @@ class TestSingleExcitationUnitary:
         ]
     )
     def test_single_excitation_unitary_exceptions(self, weight, ph, msg_match):
-        """Test that SingleExcitationUnitary throws an exception if ``weight`` or 
+        """Test that SingleExcitationUnitary throws an exception if ``weight`` or
         ``ph`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=5)
 
@@ -449,31 +448,31 @@ class TestArbitraryUnitary:
         """Test that the correct gates are applied on a single wire."""
         weights = np.arange(3, dtype=float)
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0])
 
-        assert all(op.name == "PauliRot" and op.wires == [0] for op in rec.queue) # Wires([0]) for op in rec.queue)
+        assert all(op.name == "PauliRot" and op.wires == Wires([0]) for op in rec.queue)
 
         pauli_words = ["X", "Y", "Z"]
 
         for i, op in enumerate(rec.queue):
-            assert op.params[0] == weights[i]
-            assert op.params[1] == pauli_words[i]
+            assert op.data[0] == weights[i]
+            assert op.data[1] == pauli_words[i]
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on two wires."""
         weights = np.arange(15, dtype=float)
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             ArbitraryUnitary(weights, wires=[0, 1])
 
-        assert all(op.name == "PauliRot" and op.wires == [0, 1] for op in rec.queue) # Wires([0, 1]) for op in rec.queue)
+        assert all(op.name == "PauliRot" and op.wires == Wires([0, 1]) for op in rec.queue)
 
         pauli_words = ["XI", "YI", "ZI", "ZX", "IX", "XX", "YX", "YY", "ZY", "IY", "XY", "XZ", "YZ", "ZZ", "IZ"]
 
         for i, op in enumerate(rec.queue):
-            assert op.params[0] == weights[i]
-            assert op.params[1] == pauli_words[i]
+            assert op.data[0] == weights[i]
+            assert op.data[1] == pauli_words[i]
 
 
 class TestDoubleExcitationUnitary:
@@ -549,13 +548,13 @@ class TestDoubleExcitationUnitary:
     )
     def test_double_ex_unitary_operations(self, wires1, wires2, ref_gates):
         """Test the correctness of the DoubleExcitationUnitary template including the gate count
-        and order, the wires each operation acts on and the correct use of parameters 
+        and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 72
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
 
         assert len(rec.queue) == sqg + cnots
@@ -569,7 +568,7 @@ class TestDoubleExcitationUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == exp_wires #Wires(exp_wires)
+            assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -585,7 +584,7 @@ class TestDoubleExcitationUnitary:
         ]
     )
     def test_double_excitation_unitary_exceptions(self, weight, wires1, wires2, msg_match):
-        """Test that DoubleExcitationUnitary throws an exception if ``weight`` or 
+        """Test that DoubleExcitationUnitary throws an exception if ``weight`` or
         ``pphh`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=10)
 
@@ -639,7 +638,6 @@ class TestUCCSDUnitary:
               [1, qml.RX, [0], [-np.pi / 2]],
               [5, qml.RZ, [2], [1.9075]],
               [6, qml.CNOT, [1, 2], []]]),
-
             ([[0, 1, 2], [1, 2, 3]], [], np.array([3.815, 4.866]),
              [[2, qml.Hadamard, [2], []],
               [8, qml.RX, [0], [np.pi / 2]],
@@ -647,7 +645,6 @@ class TestUCCSDUnitary:
               [23, qml.RZ, [3], [2.433]],
               [24, qml.CNOT, [2, 3], []],
               [26, qml.RX, [1], [np.pi / 2]]]),
-
             ([], [[[0, 1], [2, 3, 4, 5]]], np.array([3.815]),
              [[3, qml.RX, [2], [-np.pi / 2]],
               [29, qml.RZ, [5], [0.476875]],
@@ -655,7 +652,6 @@ class TestUCCSDUnitary:
               [150, qml.RX, [1], [np.pi / 2]],
               [88, qml.CNOT, [3, 4], []],
               [121, qml.CNOT, [2, 3], []]]),
-
             ([], [[[0, 1], [2, 3]], [[0, 1], [4, 5]]], np.array([3.815, 4.866]),
              [[4, qml.Hadamard, [3], []],
               [16, qml.RX, [0], [-np.pi / 2]],
@@ -666,7 +662,6 @@ class TestUCCSDUnitary:
               [218, qml.RZ, [5], [-0.60825]],
               [82, qml.CNOT, [2, 3], []],
               [159, qml.CNOT, [4, 5], []]]),
-
             ([[0, 1, 2, 3, 4], [1, 2, 3]], [[[0, 1], [2, 3]], [[0, 1], [4, 5]]], np.array([3.815, 4.866, 1.019, 0.639]),
              [[16, qml.RX, [0], [-np.pi / 2]],
               [47, qml.Hadamard, [1], []],
@@ -681,7 +676,7 @@ class TestUCCSDUnitary:
     )
     def test_uccsd_operations(self, ph, pphh, weights, ref_gates):
         """Test the correctness of the UCCSD template including the gate count
-        and order, the wires the operation acts on and the correct use of parameters 
+        and order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 10 * len(ph) + 72 * len(pphh)
@@ -697,7 +692,7 @@ class TestUCCSDUnitary:
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        with qml.utils.OperationRecorder() as rec:
+        with pennylane._queuing.OperationRecorder() as rec:
             UCCSD(weights, wires, ph=ph, pphh=pphh, init_state=ref_state)
 
         assert len(rec.queue) == sqg + cnots + 1
@@ -711,7 +706,7 @@ class TestUCCSDUnitary:
 
             exp_wires = gate[2]
             res_wires = rec.queue[idx]._wires
-            assert res_wires == exp_wires #Wires(exp_wires)
+            assert res_wires == Wires(exp_wires)
 
             exp_weight = gate[3]
             res_weight = rec.queue[idx].parameters
@@ -725,31 +720,22 @@ class TestUCCSDUnitary:
         [
             (np.array([-2.8]), [[0, 1, 2]], [], [1, 1, 0, 0],
              "'init_state' must be a Numpy array"),
-
             (np.array([-2.8]), [[0, 1, 2]], [], (1, 1, 0, 0),
              "'init_state' must be a Numpy array"),
-
             (np.array([-2.8]), [[0, 1, 2]], [], np.array([1.2, 1, 0, 0]),
              "Elements of 'init_state' must be integers"),
-
             (np.array([-2.8]), [], [], np.array([1, 1, 0, 0]),
              "'ph' and 'pphh' lists can not be both empty"),
-
             (np.array([-2.8]), [], [[[0,1,2,3]]], np.array([1, 1, 0, 0]),
              "expected entries of pphh to be of size 2"),
-
             (np.array([-2.8]), [[0, 2]], [], np.array([1, 1, 0, 0, 0]),
              "'init_state' must be of shape"),
-
             (np.array([-2.8, 1.6]), [[0, 1, 2]], [], np.array([1, 1, 0, 0]),
              "'weights' must be of shape"),
-
             (np.array([-2.8, 1.6]), [], [[[0, 1], [2, 3]]], np.array([1, 1, 0, 0]),
              "'weights' must be of shape"),
-
             (np.array([-2.8, 1.6]), [[0, 1, 2], [1, 2, 3]], [[[0, 1], [2, 3]]], np.array([1, 1, 0, 0]),
              "'weights' must be of shape")
-
         ]
     )
     def test_uccsd_xceptions(self, weights, ph, pphh, init_state, msg_match):
@@ -799,3 +785,132 @@ class TestUCCSDUnitary:
         jac_A = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="A")
         jac_F = circuit.jacobian((w_ph_0, w_ph_1, w_pphh), method="F")
         assert jac_A == pytest.approx(jac_F, abs=tol)
+
+class TestApproxTimeEvolution:
+    """Tests for the ApproxTimeEvolution template from the pennylane.templates.subroutine module."""
+
+    def test_hamiltonian_error(self):
+        """Tests if the correct error is thrown when hamiltonian is not a pennylane.Hamiltonian object"""
+
+        n_wires = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        hamiltonian = np.array([[1, 1], [1, 1]])
+
+        @qml.qnode(dev)
+        def circuit():
+            ApproxTimeEvolution(hamiltonian, 2, 3)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="hamiltonian must be of type pennylane.Hamiltonian"):
+            circuit()
+
+    def test_n_error(self):
+        """Tests if the correct error is thrown when n is not an integer"""
+
+        n_wires = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
+        n = 1.37
+
+        @qml.qnode(dev)
+        def circuit():
+            ApproxTimeEvolution(hamiltonian, 2, n)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="n must be of type int"):
+            circuit()
+
+    @pytest.mark.parametrize(
+        ("hamiltonian", "output"),
+        [
+            (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hadamard(0)]), "Hadamard"),
+            (qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Hermitian(np.array([[1, 1], [1, 1]]), 1), qml.PauliX(0)]), "Hermitian")
+        ]
+    )
+    def test_non_pauli_error(self, hamiltonian, output):
+        """Tests if the correct errors are thrown when the user attempts to input a matrix with non-Pauli terms"""
+
+        n_wires = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            ApproxTimeEvolution(hamiltonian, 2, 3)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        with pytest.raises(ValueError, match="hamiltonian must be written in terms of Pauli matrices"):
+            circuit()
+
+    @pytest.mark.parametrize(
+        ("time", "hamiltonian", "steps", "gates"),
+        [
+            (2, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2,
+             [
+                 qml.PauliRot(2.0, 'X', wires=[0]),
+                 qml.PauliRot(2.0, 'X', wires=[1]),
+                 qml.PauliRot(2.0, 'X', wires=[0]),
+                 qml.PauliRot(2.0, 'X', wires=[1])
+             ]
+             ),
+            (2, qml.Hamiltonian([2, 0.5], [qml.PauliX("a"), qml.PauliZ("b") @ qml.PauliX("a")] ), 2,
+             [
+                 qml.PauliRot(4.0, 'X', wires=["a"]),
+                 qml.PauliRot(1.0, 'ZX', wires=["b", "a"]),
+                 qml.PauliRot(4.0, 'X', wires=["a"]),
+                 qml.PauliRot(1.0, 'ZX', wires=["b", "a"])
+             ]
+             ),
+            (2, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]), 2,
+             [
+                 qml.PauliRot(2.0, 'X', wires=[0]),
+                 qml.PauliRot(2.0, 'X', wires=[0])
+             ]
+             ),
+            (2, qml.Hamiltonian([2, 0.5, 0.5], [qml.PauliX("a"), qml.PauliZ(-15) @ qml.PauliX("a"), qml.Identity(0) @ qml.PauliY(-15)]), 1,
+             [
+                 qml.PauliRot(8.0, 'X', wires=["a"]),
+                 qml.PauliRot(2.0, 'ZX', wires=[-15, "a"]),
+                 qml.PauliRot(2.0, "IY", wires=[0, -15])
+             ]
+             ),
+        ]
+    )
+    def test_evolution_operations(self, time, hamiltonian, steps, gates):
+        """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
+
+        n_wires = 2
+
+        with qml._queuing.OperationRecorder() as rec:
+            ApproxTimeEvolution(hamiltonian, time, steps)
+
+        for i, gate in enumerate(rec.operations):
+            prep = [gate.parameters, gate.wires]
+            target = [gates[i].parameters, gates[i].wires]
+
+            assert prep == target
+
+    @pytest.mark.parametrize(
+        ("time", "hamiltonian", "steps", "expectation"),
+        [
+            (np.pi, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2, [1.0, 1.0]),
+            (np.pi/2, qml.Hamiltonian([0.5, 1], [qml.PauliY(0), qml.Identity(0) @ qml.PauliX(1)]), 1, [0.0, -1.0]),
+            (np.pi/4, qml.Hamiltonian([1, 1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(1)]), 1, [0.0, 0.0]),
+            (1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]), 2, [-0.41614684, -0.41614684]),
+            (2, qml.Hamiltonian([1, 1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1)]), 2,
+             [-0.87801124, 0.51725747])
+        ]
+    )
+    def test_evolution_output(self, time, hamiltonian, steps, expectation):
+        """Tests that the output from the ApproxTimeEvolution template is correct"""
+
+        n_wires = 2
+        dev = qml.device('default.qubit', wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            ApproxTimeEvolution(hamiltonian, time, steps)
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+
+        assert np.allclose(circuit(), expectation)

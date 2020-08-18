@@ -2,13 +2,35 @@
 
 <h3>New features since last release</h3>
 
-* Adds a device test suite, located at `pennylane/plugins/tests`, which can be used
-  to run generic tests on core or external devices calling
-
+* It is now possible to specify custom wire labels, such as `['anc1', 'anc2', 0, 1, 3]`, where the labels
+  can be strings or numbers. For this, pass a list to the wires argument when creating the device:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
+  ```
+  The quantum operations are now called with the custom wire labels:
+    
+  ``` python
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...    qml.Hadamard(wires='anc2')
+  ...    qml.CNOT(wires=['anc1', 3])
+  ...    ...
+  ```
+  The existing behaviour, in which the number of wires is specified on device initialization,
+  continues to work as usual.   
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=5)
+  ``` 
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
+ 
+* Adds a device test suite, located at `pennylane/devices/tests`, which can be used 
+  to run generic tests on core or external devices calling 
+  
   ```pycon
   >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
-  ```
-
+  ``` 
   The command line arguments are optional.
 
   * If `--device` is not given, the tests are run on the core devices that ship with PennyLane.
@@ -24,11 +46,68 @@
   If the tests are run on external devices, the device and its dependencies must be
   installed locally.
 
-* Added the `decompose_hamiltonian` method to the `utils` module. The method can be used to
+* Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
+  As a result, it supports classical backpropagation as a means to compute the Jacobian. This can
+  be faster than the parameter-shift rule for computing quantum gradients
+  when the number of parameters to be optimized is large.
+  [(#721)](https://github.com/XanaduAI/pennylane/pull/721)
+
+  `default.qubit.autograd` is designed to be used with end-to-end classical backpropagation
+  (`diff_method="backprop"`) with the Autograd interface. This is the default method
+  of differentiation when creating a QNode with this device.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit.autograd", wires=1)
+  >>> @qml.qnode(dev, diff_method="backprop")
+  ... def circuit(x):
+  ...     qml.RX(x[1], wires=0)
+  ...     qml.Rot(x[0], x[1], x[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> weights = np.array([0.2, 0.5, 0.1])
+  >>> grad_fn = qml.grad(circuit)
+  >>> print(grad_fn(weights))
+  array([-2.25267173e-01, -1.00864546e+00,  6.93889390e-18])
+  ```
+
+  See the `default.qubit.autograd` documentation for more details.
+
+* Added the `qml.utils.decompose_hamiltonian` function. This function can be used to
   decompose a Hamiltonian into a linear combination of Pauli operators.
   [(#671)](https://github.com/XanaduAI/pennylane/pull/671)
 
+  ```pycon
+  >>> A = np.array(
+  ... [[-2, -2+1j, -2, -2],
+  ... [-2-1j,  0,  0, -1],
+  ... [-2,  0, -2, -1],
+  ... [-2, -1, -1,  0]])
+  >>> coeffs, obs_list = decompose_hamiltonian(A)
+  ```
+
+* Added an `ApproxTimeEvolution` template to the PennyLane templates module, which 
+  can be used to implement Trotterized time-evolution under a Hamiltonian.
+  [(#710)](https://github.com/XanaduAI/pennylane/pull/710)
+  
+* Added a `qml.layer` template-constructing function, which takes a unitary, and 
+  repeatedly applies it on a set of wires to a given depth.
+  [(#723)](https://github.com/PennyLaneAI/pennylane/pull/723)
+  
+* Added built-in QAOA functionality to PennyLane. This includes the following features:
+    * Added `qml.qaoa.x_mixer` and `qml.qaoa.xy_mixer` methods for defining Pauli-X and XY 
+      mixer Hamiltonians.
+      [(#712)](https://github.com/PennyLaneAI/pennylane/pull/712)
+    * Added the `qml.qaoa.maxcut` method, which allows the user to get the cost Hamiltonian 
+      and recommended mixer Hamiltonian for QAOA MaxCut, for a supplied graph.
+      [(#718)](https://github.com/PennyLaneAI/pennylane/pull/718)
+      [(#741)](https://github.com/PennyLaneAI/pennylane/pull/741)
+    * Added `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer`, which take cost and mixer Hamiltonians, 
+      respectively, and apply the corresponding QAOA cost and mixer layers. 
+      [(#720)](https://github.com/PennyLaneAI/pennylane/pull/720)
+
 <h3>Improvements</h3>
+
+* Added support for TensorFlow 2.3 and PyTorch 1.6.
+  [(#725)](https://github.com/PennyLaneAI/pennylane/pull/725)
 
 * Returning probabilities is now supported from photonic QNodes.
   As with qubit QNodes, photonic QNodes returning probabilities are
@@ -45,8 +124,16 @@
   [7.78800783e-01 1.94700196e-01 2.43375245e-02 2.02812704e-03 1.26757940e-04]
   ```
 
+* Refactor of the QNode queuing architecture.
+  [(#722)](https://github.com/PennyLaneAI/pennylane/pull/722)
+  [(#728)](https://github.com/PennyLaneAI/pennylane/pull/728)
+
 <h3>Breaking changes</h3>
 
+* The `pennylane.plugins` and `pennylane.beta.plugins` folders have been renamed to 
+  `pennylane.devices` and `pennylane.beta.devices`, to reflect their content better.
+  [(#726)](https://github.com/XanaduAI/pennylane/pull/726)
+  
 <h3>Bug fixes</h3>
 
 * The PennyLane interface conversion functions can now convert QNodes with
@@ -59,7 +146,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Antal Száva, Nicola Vitucci
+Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
 
 # Release 0.10.0 (current release)
 
@@ -170,6 +257,9 @@ Josh Izaac, Antal Száva, Nicola Vitucci
   [(#642)](https://github.com/XanaduAI/pennylane/pull/642)
 
 <h3>Improvements</h3>
+
+* Improves the wire management by making the ``Operator.wires`` attribute a ``wires`` object.
+  [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
 * A significant improvement with respect to how QNodes and interfaces mark quantum function
   arguments as differentiable when using Autograd, designed to improve performance and make

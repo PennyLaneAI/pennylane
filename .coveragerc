@@ -1,6 +1,8 @@
 # .coveragerc to control coverage.py
 [run]
 source = pennylane
+omit =
+    pennylane/devices/tests*
 
 [report]
 # Regexes for lines to exclude from consideration

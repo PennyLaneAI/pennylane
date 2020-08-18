@@ -120,13 +120,13 @@ class QubitQNode(JacobianQNode):
 
             # We temporarily edit the Operator such that parameter p_idx is replaced by a new one,
             # which we can modify without affecting other Operators depending on the original.
-            orig = op.params[p_idx]
+            orig = op.data[p_idx]
             assert orig.idx == idx
 
             # reference to a new, temporary parameter with index n, otherwise identical with orig
             temp_var = copy.copy(orig)
             temp_var.idx = n
-            op.params[p_idx] = temp_var
+            op.data[p_idx] = temp_var
 
             multiplier, shift = op.get_parameter_shift(p_idx)
 
@@ -140,7 +140,7 @@ class QubitQNode(JacobianQNode):
             pd += (y2 - y1) * multiplier
 
             # restore the original parameter
-            op.params[p_idx] = orig
+            op.data[p_idx] = orig
 
         return pd
 
@@ -174,7 +174,7 @@ class QubitQNode(JacobianQNode):
                 # are not guaranteed to be involutory, need to take them into
                 # account separately to calculate d<A^2>/dp
 
-                A = e.params[0]  # Hermitian matrix
+                A = e.data[0]  # Hermitian matrix
                 # if not np.allclose(A @ A, np.identity(A.shape[0])):
                 new = qml.expval(qml.Hermitian(A @ A, w, do_queue=False))
             else:
@@ -244,6 +244,8 @@ class QubitQNode(JacobianQNode):
             for n, op in enumerate(curr_ops):
                 gen, s = op.generator
                 w = op.wires
+                # get the wire's indices on the device
+                wire_indices = self.device.wires.indices(w)
 
                 if gen is None:
                     raise QuantumFunctionError(
@@ -257,7 +259,7 @@ class QubitQNode(JacobianQNode):
                     variance = var(qml.Hermitian(gen, w, do_queue=False))
 
                     if not diag_approx:
-                        Ki_matrices.append((n, expand(gen, w, self.num_wires)))
+                        Ki_matrices.append((n, expand(gen, wire_indices, self.num_wires)))
 
                 elif issubclass(gen, Observable):
                     # generator is an existing PennyLane operation
@@ -271,7 +273,7 @@ class QubitQNode(JacobianQNode):
                         elif issubclass(gen, qml.PauliZ):
                             mat = np.array([[1, 0], [0, -1]])
 
-                        Ki_matrices.append((n, expand(mat, w, self.num_wires)))
+                        Ki_matrices.append((n, expand(mat, wire_indices, self.num_wires)))
 
                 else:
                     raise QuantumFunctionError(
@@ -368,7 +370,7 @@ class QubitQNode(JacobianQNode):
 
                 if isinstance(self.device, qml.QubitDevice):
                     ops = circuit["queue"] + [unitary_op] + [qml.expval(qml.PauliZ(0))]
-                    circuit_graph = qml.CircuitGraph(ops, self.variable_deps)
+                    circuit_graph = qml.CircuitGraph(ops, self.variable_deps, self.device.wires)
                     self.device.execute(circuit_graph)
                 else:
                     self.device.execute(
@@ -416,7 +418,9 @@ class QubitQNode(JacobianQNode):
                 # diagonal approximation
                 if isinstance(self.device, qml.QubitDevice):
                     circuit_graph = qml.CircuitGraph(
-                        circuit["queue"] + circuit["observable"], self.variable_deps
+                        circuit["queue"] + circuit["observable"],
+                        self.variable_deps,
+                        self.device.wires,
                     )
                     variances = self.device.execute(circuit_graph)
                 else:

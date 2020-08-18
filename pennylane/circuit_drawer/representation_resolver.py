@@ -133,7 +133,7 @@ class RepresentationResolver:
         Returns:
             str: The formatted operation
         """
-        mat = operation.params[0]
+        mat = operation.data[0]
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
         return "{}{}".format(symbol, idx)
@@ -297,7 +297,7 @@ class RepresentationResolver:
         Returns:
             str: A string representing the polynomial
         """
-        coefficients = operation.params[0]
+        coefficients = operation.data[0]
         order = len(coefficients.shape)
 
         if order == 1:
@@ -311,7 +311,7 @@ class RepresentationResolver:
 
         Args:
             op (pennylane.operation.Operator): The Operator instance whose representation shall be returned
-            wire (int): The Operator's wire for which the string representation shall be returned
+            wire (Wires): The Operator's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Operator
@@ -343,8 +343,7 @@ class RepresentationResolver:
 
         elif base_name == "PauliRot":
             representation = "R{0}({1})".format(
-                op.params[1][op.wires.index(wire)],
-                self.single_parameter_representation(op.params[0]),
+                op.data[1][op.wires.index(wire)], self.single_parameter_representation(op.data[0]),
             )
 
         elif base_name == "QubitUnitary":
@@ -358,12 +357,12 @@ class RepresentationResolver:
             )
 
         elif base_name == "QuadOperator":
-            par_rep = self.single_parameter_representation(op.params[0])
+            par_rep = self.single_parameter_representation(op.data[0])
 
             representation = "cos({0})x+sin({0})p".format(par_rep)
 
         elif base_name == "FockStateProjector":
-            n_str = ",".join([str(n) for n in op.params[0]])
+            n_str = ",".join([str(n) for n in op.data[0]])
 
             representation = (
                 self.charset.PIPE + n_str + self.charset.CROSSED_LINES + n_str + self.charset.PIPE
@@ -373,11 +372,11 @@ class RepresentationResolver:
             representation = self._format_polyxp(op)
 
         elif base_name == "FockState":
-            representation = self.charset.PIPE + str(op.params[0]) + self.charset.RANGLE
+            representation = self.charset.PIPE + str(op.data[0]) + self.charset.RANGLE
 
         elif base_name in {"BasisState", "FockStateVector"}:
             representation = (
-                self.charset.PIPE + str(op.params[0][op.wires.index(wire)]) + self.charset.RANGLE
+                self.charset.PIPE + str(op.data[0][op.wires.index(wire)]) + self.charset.RANGLE
             )
 
         # Operations that only have matrix arguments
@@ -389,12 +388,12 @@ class RepresentationResolver:
             "Interferometer",
         }:
             representation = name + RepresentationResolver._format_matrix_arguments(
-                op.params, "M", self.matrix_cache
+                op.data, "M", self.matrix_cache
             )
 
         else:
             representation = "{}({})".format(
-                name, ", ".join([self.single_parameter_representation(par) for par in op.params])
+                name, ", ".join([self.single_parameter_representation(par) for par in op.data])
             )
 
         if getattr(op, "inverse", False):
@@ -407,7 +406,7 @@ class RepresentationResolver:
 
         Args:
             obs (pennylane.ops.Observable): The Observable instance whose representation shall be returned
-            wire (int): The Observable's wire for which the string representation shall be returned
+            wire (Wires): The Observable's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the Observable
@@ -437,7 +436,7 @@ class RepresentationResolver:
 
         Args:
             element (Union[NoneType,str,qml.operation.Operator]): The circuit element whose representation shall be returned
-            wire (int): The element's wire for which the string representation shall be returned
+            wire (Wires): The element's wire for which the string representation shall be returned
 
         Returns:
             str: String representation of the element
