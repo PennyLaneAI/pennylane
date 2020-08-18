@@ -1,4 +1,4 @@
-# Release 0.11.0 (development release)
+# Release 0.11.0
 
 <h3>New features since last release</h3>
 
@@ -43,6 +43,7 @@
   >>> print(pphh)
   [[['a0', 'b1'], ['c2', 'd3']]]
   ```
+
 <h3>Improvements</h3>
 
 * The total spin observable S^2 can be built straightforwardly using the
@@ -53,19 +54,13 @@
   function `spin_z` as implemented in the `obs` module.
   [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
 
-<h3>Breaking changes</h3>
-
-<h3>Documentation</h3>
-
-<h3>Bug fixes</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Alain Delgado, Josh Izaac, Soran Jahangiri, Maria Schuld
 
-# Release 0.10.0 (current release)
+# Release 0.10.0
 
 <h3>New features since last release</h3>
 
