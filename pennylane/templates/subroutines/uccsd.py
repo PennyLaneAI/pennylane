@@ -116,25 +116,27 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
         .. code-block:: python
 
             import pennylane as qml
+            from pennylane import qchem
             from pennylane.templates import UCCSD
+
             from functools import partial
 
             # Build the electronic Hamiltonian
             name = "h2"
             geo_file = "h2.xyz"
-            h, qubits = qml.qchem.molecular_hamiltonian(name, geo_file)
+            h, qubits = qchem.molecular_hamiltonian(name, geo_file)
 
             # Number of electrons
             electrons = 2
 
             # Define the HF state
-            ref_state = qml.qchem.hf_state(electrons, qubits)
+            ref_state = qchem.hf_state(electrons, qubits)
 
             # Generate single and double excitations
-            singles, doubles = qml.qchem.excitations(electrons, qubits)
+            singles, doubles = qchem.excitations(electrons, qubits)
 
             # Map excitations to the wires the UCCSD circuit will act on
-            s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
+            s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
 
             # Define the device
             dev = qml.device('default.qubit', wires=qubits)
@@ -142,9 +144,12 @@ def UCCSD(weights, wires, s_wires=None, d_wires=None, init_state=None):
             # Define the UCCSD ansatz
             ansatz = partial(UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
 
+            # Define the cost function
+            cost_fn = qml.VQECost(ansatz, h, dev)
+
             # Compute the expectation value of 'h' for given set of parameters 'params'
             params = np.random.normal(0, np.pi, len(singles) + len(doubles))
-            print(qml.VQECost(ansatz, h, dev))
+            print(cost_fn(params))
 
     """
 
