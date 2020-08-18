@@ -225,8 +225,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Juan Miguel Arazzola, Jack Ceroni, Alain Delgado Gran, Theodor Isacsson, Josh Izaac,
-Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
+Thomas Bromley, Juan Miguel Arazzola, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
+Isacsson, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 # Release 0.10.0
 
