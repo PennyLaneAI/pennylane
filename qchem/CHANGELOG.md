@@ -45,6 +45,18 @@
   ```
 <h3>Improvements</h3>
 
+* The naming convention used in the `structure` module has been propagated
+  to the `obs` module.
+  [(#759)](https://github.com/PennyLaneAI/pennylane/pull/759)
+
+  The changes include:
+
+  - `n_electrons` renamed to `electrons`.
+  - `n_orbitals` renamed to `orbitals`.
+
+  In addition, the argument `orbitals` is used now to pass the number of *spin*
+  orbitals.
+
 * The functions involved in observable conversions from/to OpenFermion now accept
   a new `wires` argument that can be used to specify the qubits-to-wires mapping
   when custom wires are used in Pennylane ansatz.
