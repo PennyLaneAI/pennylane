@@ -25,7 +25,7 @@
 
   See the `default.qubit.autograd` documentation for more details.
 
-* A new experimental C++ statevector device is now available, `lightning.qubit`. It
+* A new experimental C++ state-vector simulator device is now available, `lightning.qubit`. It
   uses the C++ Eigen library to perform fast linear algebra calculations for simulating quantum
   state-vector evolution.
 
@@ -80,7 +80,7 @@
       for w in wires:
           qml.Hadamard(wires=w)
 
-      # layer the QAOA ansatz 2 times
+      # repeat the QAOA layer two times
       qml.layer(qaoa_layer, 2, params[0], params[1])
 
   dev = qml.device('default.qubit', wires=len(wires))
