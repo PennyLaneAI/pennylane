@@ -18,14 +18,14 @@ from .obs import *
 
 __all__ = [
     "read_structure",
-    "meanfield_data",
+    "meanfield",
     "active_space",
-    "decompose_hamiltonian",
+    "decompose",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
     "convert_observable",
-    "generate_hamiltonian",
+    "molecular_hamiltonian",
     "excitations",
     "hf_state",
     "excitations_to_wires",

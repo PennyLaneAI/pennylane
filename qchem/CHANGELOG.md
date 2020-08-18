@@ -1,4 +1,20 @@
-# Release 0.11.0 (development release)
+# Release 0.12.0
+
+<h3>New features since last release</h3>
+
+<h3>Improvements</h3>
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+# Release 0.11.0
 
 <h3>New features since last release</h3>
 
@@ -43,6 +59,7 @@
   >>> print(pphh)
   [[['a0', 'b1'], ['c2', 'd3']]]
   ```
+
 <h3>Improvements</h3>
 
 * The naming convention used in the `structure` module has been propagated
@@ -79,6 +96,28 @@
   - The arguments of the function `excitations_to_wires` have been renamed.
     `ph_confs` → `singles`, `pphh_confs` → `doubles`
 
+* The functions involved in the construction of the electronic Hamiltonian have been
+  improved, with shorter names and improved docstrings, including adding complementary
+  information to better explain the basics of quantum chemistry.
+  [(#735)](https://github.com/PennyLaneAI/pennylane/pull/735)
+
+  The changes include:
+
+  - `active_space` is now independent of the OpenFermion `MolecularData` data structure.
+
+  - `meanfield_data` has been renamed to `meanfield`, and modified to return
+    the absolute path to the file with the meanfield electronic structure of the molecule.
+
+  - `decompose_hamiltonian` has been renamed to `decompose`,
+    due to the new `qml.utils.decompose_hamiltonian` function. This function has also been
+    marked for deprecation.
+
+  - `generate_hamiltonian` has been renamed to `molecular_hamiltonian`.
+    The modified function contains an extended docstring that outlines the main steps to build the Hamiltonian.
+
+  In addition to the above changes, function arguments have also been modified and improved; please
+  see relevant function docstrings for more details.
+
 * The total spin observable S^2 can be built straightforwardly using the
   function `spin2` as implemented in the `obs` module.
   [(#714)](https://github.com/XanaduAI/pennylane/pull/714)
@@ -99,7 +138,7 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Alain Delgado, Josh Izaac, Soran Jahangiri, Maria Schuld
 
-# Release 0.10.0 (current release)
+# Release 0.10.0
 
 <h3>New features since last release</h3>
 

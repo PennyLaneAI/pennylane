@@ -383,7 +383,7 @@ def test_integration_observable_to_vqe_cost(
 
 
 @pytest.mark.parametrize(
-    ("hf_filename", "docc_mo", "act_mo", "type_of_transformation", "expected_cost"),
+    ("name", "core", "active", "mapping", "expected_cost"),
     [
         ("lih", [0], [1, 2], "jordan_WIGNER", -7.255500051039507),
         ("lih", [0], [1, 2], "BRAVYI_kitaev", -7.246409364088741),
@@ -394,25 +394,22 @@ def test_integration_observable_to_vqe_cost(
     ],
 )
 def test_integration_mol_file_to_vqe_cost(
-    hf_filename, docc_mo, act_mo, type_of_transformation, expected_cost, custom_wires, tol
+    name, core, active, mapping, expected_cost, custom_wires, tol
 ):
-    r"""Test if the output of `decompose_hamiltonian()` works with `convert_observable()`
+    r"""Test if the output of `decompose()` works with `convert_observable()`
     to generate `VQECost()`"""
-    ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
-    transformed_hamiltonian = qchem.decompose_hamiltonian(
-        hf_filename,
-        ref_dir,
-        mapping=type_of_transformation,
-        docc_mo_indices=docc_mo,
-        active_mo_indices=act_mo,
+    ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
+    hf_file = os.path.join(ref_dir, name)
+    qubit_hamiltonian = qchem.decompose(
+        hf_file, mapping=mapping, core=core, active=active,
     )
 
-    vqe_hamiltonian = qchem.convert_observable(transformed_hamiltonian, custom_wires)
+    vqe_hamiltonian = qchem.convert_observable(qubit_hamiltonian, custom_wires)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
 
     num_qubits = len(vqe_hamiltonian.wires)
-    assert num_qubits == 2 * len(act_mo)
+    assert num_qubits == 2 * len(active)
 
     if custom_wires is None:
         wires = num_qubits
