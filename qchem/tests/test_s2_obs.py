@@ -173,10 +173,10 @@ terms_bk = {
 
 
 @pytest.mark.parametrize(
-    ("n_electrons", "n_orbitals", "mapping", "terms_exp"),
-    [(2, 2, "JORDAN_wigner", terms_jw), (3, 3, "bravyi_KITAEV", terms_bk),],
+    ("electrons", "orbitals", "mapping", "terms_exp"),
+    [(2, 4, "JORDAN_wigner", terms_jw), (3, 6, "bravyi_KITAEV", terms_bk),],
 )
-def test_spin2(n_electrons, n_orbitals, mapping, terms_exp, monkeypatch):
+def test_spin2(electrons, orbitals, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the total spin observable :math:`\hat{S}^2`
     built by the function `'spin2'`.
 
@@ -185,7 +185,7 @@ def test_spin2(n_electrons, n_orbitals, mapping, terms_exp, monkeypatch):
     something useful to the users as well.
     """
 
-    S2 = qchem.spin2(n_electrons, n_orbitals, mapping=mapping)
+    S2 = qchem.spin2(electrons, orbitals, mapping=mapping)
 
     S2_qubit_op = QubitOperator()
     monkeypatch.setattr(S2_qubit_op, "terms", terms_exp)
@@ -194,17 +194,17 @@ def test_spin2(n_electrons, n_orbitals, mapping, terms_exp, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("n_electrons", "n_orbitals", "msg_match"),
+    ("electrons", "orbitals", "msg_match"),
     [
-        (-2, 2, "'n_electrons' must be greater than 0"),
-        (0, 2, "'n_electrons' must be greater than 0"),
-        (3, -3, "'n_orbitals' must be greater than 0"),
-        (3, 0, "'n_orbitals' must be greater than 0"),
+        (-2, 4, "'electrons' must be greater than 0"),
+        (0, 4, "'electrons' must be greater than 0"),
+        (3, -6, "'orbitals' must be greater than 0"),
+        (3, 0, "'orbitals' must be greater than 0"),
     ],
 )
-def test_exception_spin2(n_electrons, n_orbitals, msg_match):
+def test_exception_spin2(electrons, orbitals, msg_match):
     """Test that the function `'spin2'` throws an exception if the
     number of electrons or the number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qchem.spin2(n_electrons, n_orbitals)
+        qchem.spin2(electrons, orbitals)

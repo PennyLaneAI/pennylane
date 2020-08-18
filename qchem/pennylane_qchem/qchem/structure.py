@@ -26,6 +26,103 @@ from openfermionpyscf import run_pyscf
 
 import pennylane as qml
 from pennylane import Hamiltonian
+from pennylane.wires import Wires
+
+
+def _process_wires(wires, n_wires=None):
+    r"""
+    Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
+    format. Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
+
+    Since OpenFermion's qubit numbering is always consecutive int, simple iterable types such as
+    list, tuple, or Wires can be used to specify the 2-way `qubit index` <-> `wire label` mapping
+    with indices representing qubits. Dict can also be used as a mapping, but does not provide any
+    advantage over lists other than the ability to do partial mapping/permutation in the
+    `qubit index` -> `wire label` direction.
+
+    It is recommended to pass Wires/list/tuple `wires` since it's direction-free, i.e. the same
+    `wires` argument can be used to convert both ways between OpenFermion and Pennylane. Only use
+    dict for partial or unordered mapping.
+
+    Args:
+        wires (Wires, list, tuple, dict): User wire labels or mapping for Pennylane ansatz.
+            For types Wires, list, or tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) or
+            consecutive-int-valued dict (for wire-to-qubit conversion) is accepted.
+            If None, will be set to consecutive int based on ``n_wires``.
+        n_wires (int): Number of wires used if known. If None, will be inferred from ``wires``; if
+            ``wires`` is not available, will be set to 1.
+
+    Returns:
+        Wires: Cleaned wire mapping with indices corresponding to qubits and values
+            corresponding to wire labels.
+
+    **Example**
+
+    >>> # consec int wires if no wires mapping provided, ie. identity map: 0<->0, 1<->1, 2<->2
+    >>> _process_wires(None, 3)
+    <Wires = [0, 1, 2]>
+
+    >>> # List as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
+    >>> _process_wires(['w0','w1','w2'])
+    <Wires = ['w0', 'w1', 'w2']>
+
+    >>> # Wires as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
+    >>> _process_wires(Wires(['w0', 'w1', 'w2']))
+    <Wires = ['w0', 'w1', 'w2']>
+
+    >>> # Dict as partial mapping, int qubits keys to wire label values: 0->w0, 1 unchanged, 2->w2
+    >>> _process_wires({0:'w0',2:'w2'})
+    <Wires = ['w0', 1, 'w2']>
+
+    >>> # Dict as mapping, wires label keys to consec int qubit values: w2->2, w0->0, w1->1
+    >>> _process_wires({'w2':2, 'w0':0, 'w1':1})
+    <Wires = ['w0', 'w1', 'w2']>
+    """
+
+    # infer from wires, or assume 1 if wires is not of accepted types.
+    if n_wires is None:
+        n_wires = len(wires) if isinstance(wires, (Wires, list, tuple, dict)) else 1
+
+    # defaults to no mapping.
+    if wires is None:
+        return Wires(range(n_wires))
+
+    if isinstance(wires, (Wires, list, tuple)):
+        # does not care about the tail if more wires are provided than n_wires.
+        wires = Wires(wires[:n_wires])
+
+    elif isinstance(wires, dict):
+
+        if all([isinstance(w, int) for w in wires.keys()]):
+            # Assuming keys are taken from consecutive int wires. Allows for partial mapping.
+            n_wires = max(wires) + 1
+            labels = list(range(n_wires))  # used for completing potential partial mapping.
+            for k, v in wires.items():
+                if k < n_wires:
+                    labels[k] = v
+            wires = Wires(labels)
+        elif set(range(n_wires)).issubset(set(wires.values())):
+            # Assuming values are consecutive int wires (up to n_wires, ignores the rest).
+            # Does NOT allow for partial mapping.
+            wires = {v: k for k, v in wires.items()}  # flip for easy indexing
+            wires = Wires([wires[i] for i in range(n_wires)])
+        else:
+            raise ValueError("Expected only int-keyed or consecutive int-valued dict for `wires`")
+
+    else:
+        raise ValueError(
+            "Expected type Wires, list, tuple, or dict for `wires`, got {}".format(type(wires))
+        )
+
+    if len(wires) != n_wires:
+        # check length consistency when all checking and cleaning are done.
+        raise ValueError(
+            "Length of `wires` ({}) does not match `n_wires` ({})".format(len(wires), n_wires)
+        )
+
+    return wires
 
 
 def _exec_exists(prog):
@@ -233,7 +330,7 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     |
 
     .. note::
-        The number of active *spin*-orbitals ``2*nact_orbs`` determines the number of
+        The number of active *spin*-orbitals ``2*active_orbitals`` determines the number of
         qubits required to perform the quantum simulations of the electronic structure
         of the many-electron system.
 
@@ -397,20 +494,42 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     return jordan_wigner(fermionic_hamiltonian)
 
 
-def _qubit_operator_to_terms(qubit_operator):
+def _qubit_operator_to_terms(qubit_operator, wires=None):
     r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
     Args:
-        qubit_operator (QubitOperator): fermionic-to-qubit transformed operator in terms of
+        qubit_operator (QubitOperator): Fermionic-to-qubit transformed operator in terms of
             Pauli matrices
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
         tuple[array[float], Iterable[pennylane.operation.Observable]]: coefficients and their
         corresponding PennyLane observables in the Pauli basis
+
+    **Example**
+
+    >>> q_op = 0.1*QubitOperator('X0') + 0.2*QubitOperator('Y0 Z2')
+    >>> q_op
+    0.1 [X0] +
+    0.2 [Y0 Z2]
+    >>> _qubit_operator_to_terms(q_op, wires=['w0','w1','w2','extra_wire'])
+    (array([0.1, 0.2]), [Tensor(PauliX(wires=['w0'])), Tensor(PauliY(wires=['w0']), PauliZ(wires=['w2']))])
     """
+    n_wires = (
+        1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
+        if qubit_operator.terms
+        else 1
+    )
+    wires = _process_wires(wires, n_wires=n_wires)
+
     if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
-        return np.array([0.0]), [qml.operation.Tensor(qml.Identity(0))]
+        return np.array([0.0]), [qml.operation.Tensor(qml.Identity(wires[0]))]
 
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
 
@@ -418,11 +537,9 @@ def _qubit_operator_to_terms(qubit_operator):
         *[
             (
                 coef,
-                qml.operation.Tensor(
-                    *[xyz2pauli[q[1]](wires=q[0]) for q in term]
-                )  # TODO: nonconsecutive wires
+                qml.operation.Tensor(*[xyz2pauli[q[1]](wires=wires[q[0]]) for q in term])
                 if term
-                else qml.operation.Tensor(qml.Identity(0))
+                else qml.operation.Tensor(qml.Identity(wires[0]))
                 # example term: ((0,'X'), (2,'Z'), (3,'Y'))
             )
             for term, coef in qubit_operator.terms.items()
@@ -432,7 +549,7 @@ def _qubit_operator_to_terms(qubit_operator):
     return np.real(np.array(coeffs)), list(ops)
 
 
-def _terms_to_qubit_operator(coeffs, ops):
+def _terms_to_qubit_operator(coeffs, ops, wires=None):
     r"""Converts a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
@@ -443,18 +560,38 @@ def _terms_to_qubit_operator(coeffs, ops):
             coefficients for each observable, same length as ops
         ops (Iterable[pennylane.operation.Observable]): List of PennyLane observables as
             Tensor products of Pauli observables
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
+            from an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
+            accepted. If None, will map sorted wires from all `ops` to consecutive int.
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
+
+    **Example**
+
+    >>> coeffs = np.array([0.1, 0.2])
+    >>> ops = [
+    ...     qml.operation.Tensor(qml.PauliX(wires=['w0'])),
+    ...     qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2']))
+    ... ]
+    >>> _terms_to_qubit_operator(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
+    0.1 [X0] +
+    0.2 [Y0 Z2]
     """
+    all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
+
+    if wires is not None:
+        qubit_indexed_wires = _process_wires(wires,)
+        if not set(all_wires).issubset(set(qubit_indexed_wires)):
+            raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
+    else:
+        qubit_indexed_wires = all_wires
+
     q_op = QubitOperator()
     for coeff, op in zip(coeffs, ops):
-
-        # wire ids
-        wires = (
-            op.wires.tolist()
-        )  # Can we use subsystems here? Otherwise the Qchem library relies on users
-        # and devices assuming consecutive indices as wires
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
         pauli_names = [s[-1] for s in op.name]
@@ -466,11 +603,14 @@ def _terms_to_qubit_operator(coeffs, ops):
                 + "but also got {}.".format(extra_obsvbs)
             )
 
-        if op.name == ["Identity"] and wires == [0]:
+        if op.name == ["Identity"] and len(op.wires) == 1:
             term_str = ""
         else:
             term_str = " ".join(
-                ["{}{}".format(pauli, wire) for pauli, wire in zip(pauli_names, wires)]
+                [
+                    "{}{}".format(pauli, qubit_indexed_wires.index(wire))
+                    for pauli, wire in zip(pauli_names, op.wires)
+                ]
             )
 
         # This is how one makes QubitOperator in OpenFermion
@@ -479,7 +619,7 @@ def _terms_to_qubit_operator(coeffs, ops):
     return q_op
 
 
-def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator):
+def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator, wires=None):
     r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
     ``Hamiltonian`` (Tensor product of Pauli matrices).
 
@@ -490,18 +630,38 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
             a Pauli summation
         pennylane_qubit_operator (pennylane.Hamiltonian): PennyLane
             Hamiltonian object
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
+            from an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will map sorted wires from all Pennylane terms to consecutive int.
 
     Returns:
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms
-    return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops)
+    return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops, wires=wires)
 
 
-def convert_observable(qubit_observable):
+def convert_observable(qubit_observable, wires=None):
     r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
-    **Example usage**
+    Args:
+        qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable terms measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
+
+    Returns:
+        (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
+        represents any operator expressed as linear combinations of observables, e.g.,
+        :math:`\sum_{k=0}^{N-1} c_k O_k`.
+
+    **Example**
 
     >>> h_of = decompose('./pyscf/sto-3g/h2')
     >>> h_pl = convert_observable(h_of)
@@ -509,17 +669,9 @@ def convert_observable(qubit_observable):
     [-0.04207898  0.17771287  0.17771287 -0.24274281 -0.24274281  0.17059738
       0.04475014 -0.04475014 -0.04475014  0.04475014  0.12293305  0.16768319
       0.16768319  0.12293305  0.17627641]
-
-    Args:
-        qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
-
-    Returns:
-        (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
-        represents any operator expressed as linear combinations of observables, e.g.,
-        :math:`\sum_{k=0}^{N-1} c_k O_k`.
     """
 
-    return Hamiltonian(*_qubit_operator_to_terms(qubit_observable))
+    return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
 
 
 def molecular_hamiltonian(
@@ -533,6 +685,7 @@ def molecular_hamiltonian(
     active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
+    wires=None,
 ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian of a molecule.
 
@@ -588,12 +741,17 @@ def molecular_hamiltonian(
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
             are considered to be active.
         mapping (str): transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
-                map the fermionic Hamiltonian to the qubit Hamiltonian
+            map the fermionic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
+            partial mapping. If None, will use identity map.
 
     Returns:
-        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed
-        Hamiltonian and the number of qubits
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
+        and the number of qubits
 
     **Example**
 
@@ -632,61 +790,72 @@ def molecular_hamiltonian(
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    return convert_observable(h_of), qubits
+    return convert_observable(h_of, wires=wires), qubits
 
 
-def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
-    r"""Generates single and double excitations from a Hartree-Fock (HF) reference state.
+def excitations(electrons, orbitals, delta_sz=0):
+    r"""Generates single and double excitations from a Hartree-Fock reference state.
 
-    The singly- and doubly-excited configurations are generated by acting with the operators
-    :math:`\hat T_1` and :math:`\hat T_2` on the HF state:
+    Single and double excitations can be generated by acting with the operators
+    :math:`\hat T_1` and :math:`\hat T_2` on the Hartree-Fock reference state:
 
-    .. math:
-        && \vert \Phi_\mathrm{S} \rangle = \hat{T}_1 \vert \mathrm{HF} \rangle = \sum_{r \in
-        \mathrm{occ} \\ p \in \mathrm{virt}} \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}
-        \rangle \\
-        && \vert \Phi_\mathrm{D} \rangle = \hat{T}_2 \vert \mathrm{HF} \rangle = \sum_{r>s \in
-        \mathrm{occ} \\ p>q \in \mathrm{virt}} \hat{c}_p^\dagger \hat{c}_q^\dagger
-        \hat{c}_r \hat{c}_s \vert \mathrm{HF} \rangle
+    .. math::
 
-	where the indices :math:`r, s` and :math:`p, q` run over the occupied (occ) and unoccupied,
-	referred to as virtual (virt), molecular orbitals and :math:`\hat c` and
-	:math:`\hat c^\dagger` are the electron annihilation and creation operators, respectively.
+        && \hat{T}_1 = \sum_{r \in \mathrm{occ} \\ p \in \mathrm{unocc}}
+        \hat{c}_p^\dagger \hat{c}_r \\
+        && \hat{T}_2 = \sum_{r>s \in \mathrm{occ} \\ p>q \in
+        \mathrm{unocc}} \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s.
+
+
+    In the equations above the indices :math:`r, s` and :math:`p, q` run over the
+    occupied (occ) and unoccupied (unocc) *spin* orbitals and :math:`\hat c` and
+    :math:`\hat c^\dagger` are the electron annihilation and creation operators,
+    respectively.
+
+    |
+
+    .. figure:: ../../_static/qchem/sd_excitations.png
+        :align: center
+        :width: 80%
+
+    |
+
+    Args:
+        electrons (int): Number of electrons. If an active space is defined, this
+            is the number of active electrons.
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,
+            this is the number of active spin-orbitals.
+        delta_sz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz`` and
+            ``sz[p] + sz[p] - sz[r] - sz[s] = delta_sz`` for the spin-projection ``sz`` of
+            the orbitals involved in the single and double excitations, respectively.
+            ``delta_sz`` can take the values :math:`0`, :math:`\pm 1` and :math:`\pm 2`.
+
+    Returns:
+        tuple(list, list): lists with the indices of the spin orbitals involved in the
+        single and double excitations
 
     **Example**
 
-    >>> ph, pphh = sd_configs(2, 4, 0)
-    >>> print(ph)
+    >>> electrons = 2
+    >>> orbitals = 4
+    >>> singles, doubles = excitations(electrons, orbitals)
+    >>> print(singles)
     [[0, 2], [1, 3]]
-    >>> print(pphh)
+    >>> print(doubles)
     [[0, 1, 2, 3]]
-
-    Args:
-        n_electrons (int): number of active electrons
-        n_orbitals (int): number of active orbitals
-        delta_sz (int): optional argument to specify the spin-projection selection rule.
-            For single excitations ``sz[p] - sz[r] = delta_sz``.
-            For double excitations ``sz[p] + sz[p] - sz[r] - sz[s] = delta_sz``.
-            ``sz`` is the single-particle state spin quantum number and ``delta_sz``, in the
-            case of singles and doubles, can take the values :math:`0`, :math:`\pm 1`
-            and :math:`\pm 2`.
-
-    Returns:
-        tuple(list, list): lists with the indices of the molecular orbitals
-        involved in the single and double excitations
     """
 
-    if not n_electrons > 0:
+    if not electrons > 0:
         raise ValueError(
             "The number of active electrons has to be greater than 0 \n"
-            "Got n_electrons = {}".format(n_electrons)
+            "Got n_electrons = {}".format(electrons)
         )
 
-    if n_orbitals <= n_electrons:
+    if orbitals <= electrons:
         raise ValueError(
-            "The number of active orbitals ({}) "
+            "The number of active spin-orbitals ({}) "
             "has to be greater than the number of active electrons ({}).".format(
-                n_orbitals, n_electrons
+                orbitals, electrons
             )
         )
 
@@ -695,163 +864,166 @@ def sd_excitations(n_electrons, n_orbitals, delta_sz=0):
             "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({}).".format(delta_sz)
         )
 
-    # define the single-particle state spin quantum number 'sz'
-    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(n_orbitals)])
+    # define the spin projection 'sz' of the single-particle states
+    sz = np.array([0.5 if (i % 2 == 0) else -0.5 for i in range(orbitals)])
 
-    # nested list with the indices 'p, r' for each 1particle-1hole (ph) configuration
-    ph = [
+    singles = [
         [r, p]
-        for r in range(n_electrons)
-        for p in range(n_electrons, n_orbitals)
+        for r in range(electrons)
+        for p in range(electrons, orbitals)
         if sz[p] - sz[r] == delta_sz
     ]
 
-    # nested list with the indices 's, r, q, p' for each 2particle-2hole (pphh) configuration
-    pphh = [
+    doubles = [
         [s, r, q, p]
-        for s in range(n_electrons - 1)
-        for r in range(s + 1, n_electrons)
-        for q in range(n_electrons, n_orbitals - 1)
-        for p in range(q + 1, n_orbitals)
+        for s in range(electrons - 1)
+        for r in range(s + 1, electrons)
+        for q in range(electrons, orbitals - 1)
+        for p in range(q + 1, orbitals)
         if (sz[p] + sz[q] - sz[r] - sz[s]) == delta_sz
     ]
 
-    return ph, pphh
+    return singles, doubles
 
 
-def hf_state(n_electrons, m_spin_orbitals):
-    r"""Generates the occupation-number vector representing the Hartree-Fock (HF)
-    state of :math:`N` electrons in a basis of :math:`M` spin orbitals.
+def hf_state(electrons, orbitals):
+    r"""Generates the occupation-number vector representing the Hartree-Fock state.
 
-    The many-particle wave function in the HF approximation is a `Slater determinant
+    The many-particle wave function in the Hartree-Fock (HF) approximation is a `Slater determinant
     <https://en.wikipedia.org/wiki/Slater_determinant>`_. In Fock space, a Slater determinant
-    is represented by the occupation-number vector:
+    for :math:`N` electrons is represented by the occupation-number vector:
 
-    .. math:
-        \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_M \rangle,
-        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right.
+    .. math::
 
-    **Example**
+        \vert {\bf n} \rangle = \vert n_1, n_2, \dots, n_\mathrm{orbs} \rangle,
+        n_i = \left\lbrace \begin{array}{ll} 1 & i \leq N \\ 0 & i > N \end{array} \right.,
 
-    >>> init_state = hf_state(2, 6)
-    >>> print(init_state)
-    [1 1 0 0 0 0]
+    where :math:`n_i` indicates the occupation of the :math:`i`-th orbital.
 
     Args:
-        n_electrons (int): number of active electrons
-        m_spin_orbitals (int): number of active **spin-orbitals**
+        electrons (int): Number of electrons. If an active space is defined, this
+            is the number of active electrons.
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,
+            this is the number of active spin-orbitals.
 
     Returns:
         array: NumPy array containing the vector :math:`\vert {\bf n} \rangle`
-    """
-
-    if n_electrons <= 0:
-        raise ValueError(
-            "The number of active electrons has to be larger than zero; got 'n_electrons' = {}".format(
-                n_electrons
-            )
-        )
-
-    if n_electrons > m_spin_orbitals:
-        raise ValueError(
-            "The number of active orbitals cannot be smaller than the number of active electrons;"
-            " got 'm_spin_orbitals'={} < 'n_electrons'={}".format(m_spin_orbitals, n_electrons)
-        )
-
-    hf_state_on = np.where(np.arange(m_spin_orbitals) < n_electrons, 1, 0)
-
-    return np.array(hf_state_on)
-
-
-def excitations_to_wires(ph_confs, pphh_confs, wires=None):
-
-    r"""Map the indices representing the particle-hole configurations
-    generated by the Coupled-Cluster excitation operator to the wires that
-    the Unitary Coupled-Cluster Singles and Doubles (UCCSD) template will act on.
 
     **Example**
 
-    >>> ph_confs = [[0, 2], [1, 3]]
-    >>> pphh_confs = [[0, 1, 2, 3]]
-    >>> ph, pphh = excitations_to_wires(ph_confs, pphh_confs)
-    >>> print(ph)
+    >>> state = hf_state(2, 6)
+    >>> print(state)
+    [1 1 0 0 0 0]
+    """
+
+    if electrons <= 0:
+        raise ValueError(
+            "The number of active electrons has to be larger than zero; got 'electrons' = {}".format(
+                electrons
+            )
+        )
+
+    if electrons > orbitals:
+        raise ValueError(
+            "The number of active orbitals cannot be smaller than the number of active electrons;"
+            " got 'orbitals'={} < 'electrons'={}".format(orbitals, electrons)
+        )
+
+    state = np.where(np.arange(orbitals) < electrons, 1, 0)
+
+    return np.array(state)
+
+
+def excitations_to_wires(singles, doubles, wires=None):
+    r"""Map the indices representing the single and double excitations
+    generated with the function :func:`~.excitations` to the wires that
+    the Unitary Coupled-Cluster (UCCSD) template will act on.
+
+    Args:
+        singles (list[list[int]]): list with the indices ``r``, ``p`` of the two qubits
+            representing the single excitation
+            :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`
+        doubles (list[list[int]]): list with the indices ``s``, ``r``, ``q``, ``p`` of the four
+            qubits representing the double excitation
+            :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger
+            \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`
+        wires (Iterable[Any]): Wires of the quantum device. If None, will use consecutive wires.
+
+    The indices :math:`r, s` and :math:`p, q` in these lists correspond, respectively, to the
+    occupied and virtual orbitals involved in the generated single and double excitations.
+
+    Returns:
+        tuple[list[list[Any]], list[list[list[Any]]]]: lists with the sequence of wires,
+        resulting from the single and double excitations, that the Unitary Coupled-Cluster
+        (UCCSD) template will act on.
+
+    **Example**
+
+    >>> singles = [[0, 2], [1, 3]]
+    >>> doubles = [[0, 1, 2, 3]]
+    >>> singles_wires, doubles_wires = excitations_to_wires(singles, doubles)
+    >>> print(single_wires)
     [[0, 1, 2], [1, 2, 3]]
-    >>> print(pphh)
+    >>> print(doubles_wires)
     [[[0, 1], [2, 3]]]
 
     >>> wires=['a0', 'b1', 'c2', 'd3']
-    >>> ph, pphh = excitations_to_wires(ph_confs, pphh_confs, wires=wires)
-    >>> print(ph)
+    >>> singles_wires, doubles_wires = excitations_to_wires(singles, doubles, wires=wires)
+    >>> print(singles_wires)
     [['a0', 'b1', 'c2'], ['b1', 'c2', 'd3']]
-    >>> print(pphh)
+    >>> print(doubles_wires)
     [[['a0', 'b1'], ['c2', 'd3']]]
-
-    Args:
-        ph_confs (list[list[int]]): list of indices of the two qubits representing
-            the 1particle-1hole (ph) configuration
-            :math:`\vert ph \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`.
-        pphh_confs (list[list[int]]): list of indices of the four qubits representing
-            the 2particle-2hole (pphh) configuration
-            :math:`\vert pphh \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger
-            \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`. The indices :math:`r, s`
-            and :math:`p, q` run over the occupied and virtual Hartree-Fock (HF)
-            orbitals, respectively.
-        wires (Iterable[Any]): Wires of the quantum device. If None, will use consecutive wires.
-
-    Returns:
-        tuple(list[list[Any]], list[list[list[Any]]]): lists with the sequence of wires
-        the Unitary Coupled-Cluster Singles and Doubles (UCCSD) template will act on.
     """
 
-    if (not ph_confs) and (not pphh_confs):
+    if (not singles) and (not doubles):
         raise ValueError(
-            "'ph_confs' and 'pphh_confs' lists can not be both empty;\
-            got ph_confs = {}, pphh_confs = {}".format(
-                ph_confs, pphh_confs
+            "'singles' and 'doubles' lists can not be both empty;\
+            got singles = {}, doubles = {}".format(
+                singles, doubles
             )
         )
 
     expected_shape = (2,)
-    for ph_confs_ in ph_confs:
-        if np.array(ph_confs_).shape != expected_shape:
+    for single_ in singles:
+        if np.array(single_).shape != expected_shape:
             raise ValueError(
-                "expected entries of 'ph_confs' to be of shape (2,); got {}".format(
-                    np.array(ph_confs_).shape
+                "Expected entries of 'singles' to be of shape (2,); got {}".format(
+                    np.array(single_).shape
                 )
             )
 
     expected_shape = (4,)
-    for pphh_confs_ in pphh_confs:
-        if np.array(pphh_confs_).shape != expected_shape:
+    for double_ in doubles:
+        if np.array(double_).shape != expected_shape:
             raise ValueError(
-                "expected entries of 'pphh_confs' to be of shape (4,); got {}".format(
-                    np.array(pphh_confs_).shape
+                "Expected entries of 'doubles' to be of shape (4,); got {}".format(
+                    np.array(double_).shape
                 )
             )
 
     max_idx = 0
-    if ph_confs:
-        max_idx = np.max(ph_confs)
-    if pphh_confs:
-        max_idx = max(np.max(pphh_confs), max_idx)
+    if singles:
+        max_idx = np.max(singles)
+    if doubles:
+        max_idx = max(np.max(doubles), max_idx)
 
     if wires is None:
         wires = range(max_idx + 1)
     elif len(wires) != max_idx + 1:
         raise ValueError("Expected number of wires is {}; got {}".format(max_idx + 1, len(wires)))
 
-    ph = []
-    for r, p in ph_confs:
-        ph_wires = [wires[i] for i in range(r, p + 1)]
-        ph.append(ph_wires)
+    singles_wires = []
+    for r, p in singles:
+        s_wires = [wires[i] for i in range(r, p + 1)]
+        singles_wires.append(s_wires)
 
-    pphh = []
-    for s, r, q, p in pphh_confs:
-        pphh1_wires = [wires[i] for i in range(s, r + 1)]
-        pphh2_wires = [wires[i] for i in range(q, p + 1)]
-        pphh.append([pphh1_wires, pphh2_wires])
+    doubles_wires = []
+    for s, r, q, p in doubles:
+        d1_wires = [wires[i] for i in range(s, r + 1)]
+        d2_wires = [wires[i] for i in range(q, p + 1)]
+        doubles_wires.append([d1_wires, d2_wires])
 
-    return ph, pphh
+    return singles_wires, doubles_wires
 
 
 __all__ = [
@@ -859,12 +1031,12 @@ __all__ = [
     "meanfield",
     "active_space",
     "decompose",
+    "convert_observable",
+    "molecular_hamiltonian",
+    "hf_state",
+    "excitations",
+    "excitations_to_wires",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
-    "convert_observable",
-    "molecular_hamiltonian",
-    "sd_excitations",
-    "hf_state",
-    "excitations_to_wires",
 ]

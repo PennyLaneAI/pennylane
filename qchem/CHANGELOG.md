@@ -62,6 +62,40 @@ This release contains contributions from (in alphabetical order):
 
 <h3>Improvements</h3>
 
+* The naming convention used in the `structure` module has been propagated
+  to the `obs` module.
+  [(#759)](https://github.com/PennyLaneAI/pennylane/pull/759)
+
+  The changes include:
+
+  - `n_electrons` renamed to `electrons`.
+  - `n_orbitals` renamed to `orbitals`.
+
+  In addition, the argument `orbitals` is used now to pass the number of *spin*
+  orbitals.
+
+* The functions involved in observable conversions from/to OpenFermion now accept
+  a new `wires` argument that can be used to specify the qubits-to-wires mapping
+  when custom wires are used in Pennylane ansatz.
+  [(#750)](https://github.com/PennyLaneAI/pennylane/pull/750)
+
+* The functions involved in generating the single and double excitations from a
+  a Hartree-Fock state and mapping them to the wires that the Unitary
+  Coupled-Cluster (UCCSD) ansatz act on have been improved, with a more
+  consistent naming convention and improved docstrings.
+  [(#742)](https://github.com/PennyLaneAI/pennylane/pull/742)  
+
+  The changes include:
+
+  - `sd_excitations` has been renamed to `excitations`.
+
+  - The names of internal variables and arguments have been standardized
+    to avoid using different languages mixing the terminologies
+    "single/double excitations" and "particle-hole excitations".
+
+  - The arguments of the function `excitations_to_wires` have been renamed.
+    `ph_confs` → `singles`, `pphh_confs` → `doubles`
+
 * The functions involved in the construction of the electronic Hamiltonian have been
   improved, with shorter names and improved docstrings, including adding complementary
   information to better explain the basics of quantum chemistry.
@@ -91,6 +125,12 @@ This release contains contributions from (in alphabetical order):
 * The total-spin projection observable S_z can be built straightforwardly using the
   function `spin_z` as implemented in the `obs` module.
   [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
+  
+<h3>Breaking changes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
 
