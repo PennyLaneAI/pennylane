@@ -823,7 +823,7 @@ def excitations(electrons, orbitals, delta_sz=0):
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
-        orbitals (int): Number of spin orbitals. If an active space is defined,
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
         delta_sz (int): Specifies the selection rules ``sz[p] - sz[r] = delta_sz`` and
             ``sz[p] + sz[p] - sz[r] - sz[s] = delta_sz`` for the spin-projection ``sz`` of
@@ -903,7 +903,7 @@ def hf_state(electrons, orbitals):
     Args:
         electrons (int): Number of electrons. If an active space is defined, this
             is the number of active electrons.
-        orbitals (int): Number of spin orbitals. If an active space is defined,
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,
             this is the number of active spin-orbitals.
 
     Returns:
@@ -1031,12 +1031,12 @@ __all__ = [
     "meanfield",
     "active_space",
     "decompose",
+    "convert_observable",
+    "molecular_hamiltonian",
+    "hf_state",
+    "excitations",
+    "excitations_to_wires",
     "_qubit_operator_to_terms",
     "_terms_to_qubit_operator",
     "_qubit_operators_equivalent",
-    "convert_observable",
-    "molecular_hamiltonian",
-    "excitations",
-    "hf_state",
-    "excitations_to_wires",
 ]
