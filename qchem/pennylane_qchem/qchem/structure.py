@@ -503,12 +503,12 @@ def convert_observable(qubit_observable):
 
     **Example usage**
 
-    >>> h_of = decompose_hamiltonian('h2', './pyscf/sto-3g/')
+    >>> h_of = decompose('./pyscf/sto-3g/h2')
     >>> h_pl = convert_observable(h_of)
-    >>> h_pl.coeffs
-    [-0.04207898+0.j  0.17771287+0.j  0.17771287+0.j -0.2427428 +0.j -0.2427428 +0.j  0.17059738+0.j
-    0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.04475014+0.j  0.12293305+0.j  0.16768319+0.j
-    0.16768319+0.j  0.12293305+0.j  0.17627641+0.j]
+    >>> print(h_pl.coeffs)
+    [-0.04207898  0.17771287  0.17771287 -0.24274281 -0.24274281  0.17059738
+      0.04475014 -0.04475014 -0.04475014  0.04475014  0.12293305  0.16768319
+      0.16768319  0.12293305  0.17627641]
 
     Args:
         qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
