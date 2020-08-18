@@ -330,7 +330,7 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     |
 
     .. note::
-        The number of active *spin*-orbitals ``2*nact_orbs`` determines the number of
+        The number of active *spin*-orbitals ``2*active_orbitals`` determines the number of
         qubits required to perform the quantum simulations of the electronic structure
         of the many-electron system.
 
@@ -808,7 +808,7 @@ def excitations(electrons, orbitals, delta_sz=0):
 
 
     In the equations above the indices :math:`r, s` and :math:`p, q` run over the
-    occupied (occ) and unoccupied (unocc) *spin-orbitals* and :math:`\hat c` and
+    occupied (occ) and unoccupied (unocc) *spin* orbitals and :math:`\hat c` and
     :math:`\hat c^\dagger` are the electron annihilation and creation operators,
     respectively.
 
