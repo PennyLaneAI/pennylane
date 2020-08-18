@@ -401,9 +401,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
-    qubit_hamiltonian = qchem.decompose(
-        hf_file, mapping=mapping, core=core, active=active,
-    )
+    qubit_hamiltonian = qchem.decompose(hf_file, mapping=mapping, core=core, active=active,)
 
     vqe_hamiltonian = qchem.convert_observable(qubit_hamiltonian, custom_wires)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
