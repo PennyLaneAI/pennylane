@@ -284,8 +284,7 @@ from pennylane import qchem
         ),
     ],
 )
-def test_observable_conversion(mol_name, terms_ref, monkeypatch):
-
+def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     r"""Test the correctness of the QubitOperator observable conversion from
     OpenFermion to Pennylane.
 
@@ -299,9 +298,12 @@ def test_observable_conversion(mol_name, terms_ref, monkeypatch):
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_observable = qchem.convert_observable(qOp)
+    vqe_observable = qchem.convert_observable(qOp, custom_wires)
 
-    assert qchem._qubit_operators_equivalent(qOp, vqe_observable)
+    if isinstance(custom_wires, dict):
+        custom_wires = {v: k for k, v in custom_wires.items()}
+
+    assert qchem._qubit_operators_equivalent(qOp, vqe_observable, custom_wires)
 
 
 def test_not_xyz_terms_to_qubit_operator():
@@ -347,19 +349,26 @@ def test_not_xyz_terms_to_qubit_operator():
         ),
     ],
 )
-def test_integration_observable_to_vqe_cost(monkeypatch, mol_name, terms_ref, expected_cost, tol):
+def test_integration_observable_to_vqe_cost(
+    monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
+):
     r"""Test if `convert_observable()` in qchem integrates with `VQECost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_observable = qchem.convert_observable(qOp)
+    vqe_observable = qchem.convert_observable(qOp, custom_wires)
 
-    # maybe make num_qubits a @property of the Hamiltonian class?
-    num_qubits = max(1, len(set([w for op in vqe_observable.ops for w in op.wires])))
+    num_qubits = len(vqe_observable.wires)
+    assert vqe_observable.terms.__repr__()  # just to satisfy codecov
 
-    dev = qml.device("default.qubit", wires=num_qubits)
-    print(vqe_observable.terms)
+    if custom_wires is None:
+        wires = num_qubits
+    elif isinstance(custom_wires, dict):
+        wires = qchem.structure._process_wires(custom_wires)
+    else:
+        wires = custom_wires[:num_qubits]
+    dev = qml.device("default.qubit", wires=wires)
 
     # can replace the ansatz with more suitable ones later.
     def dummy_ansatz(phis, wires):
@@ -385,7 +394,7 @@ def test_integration_observable_to_vqe_cost(monkeypatch, mol_name, terms_ref, ex
     ],
 )
 def test_integration_mol_file_to_vqe_cost(
-    hf_filename, docc_mo, act_mo, type_of_transformation, expected_cost, tol
+    hf_filename, docc_mo, act_mo, type_of_transformation, expected_cost, custom_wires, tol
 ):
     r"""Test if the output of `decompose_hamiltonian()` works with `convert_observable()`
     to generate `VQECost()`"""
@@ -399,13 +408,19 @@ def test_integration_mol_file_to_vqe_cost(
         active_mo_indices=act_mo,
     )
 
-    vqe_hamiltonian = qchem.convert_observable(transformed_hamiltonian)
+    vqe_hamiltonian = qchem.convert_observable(transformed_hamiltonian, custom_wires)
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
 
-    num_qubits = max(1, len(set([w for op in vqe_hamiltonian.ops for w in op.wires])))
+    num_qubits = len(vqe_hamiltonian.wires)
     assert num_qubits == 2 * len(act_mo)
 
-    dev = qml.device("default.qubit", wires=num_qubits)
+    if custom_wires is None:
+        wires = num_qubits
+    elif isinstance(custom_wires, dict):
+        wires = qchem.structure._process_wires(custom_wires)
+    else:
+        wires = custom_wires[:num_qubits]
+    dev = qml.device("default.qubit", wires=wires)
 
     # can replace the ansatz with more suitable ones later.
     def dummy_ansatz(phis, wires):
@@ -418,3 +433,42 @@ def test_integration_mol_file_to_vqe_cost(
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
+
+
+@pytest.mark.parametrize("n_wires", [None, 6])
+def test_process_wires(custom_wires, n_wires):
+    r"""Test if _process_wires handels different combinations of input types correctly."""
+
+    wires = qchem.structure._process_wires(custom_wires, n_wires)
+
+    assert isinstance(wires, qml.wires.Wires)
+
+    expected_length = (
+        n_wires if n_wires is not None else len(custom_wires) if custom_wires is not None else 1
+    )
+    if len(wires) > expected_length:
+        assert isinstance(custom_wires, dict)
+        assert len(wires) == max(custom_wires) + 1
+    else:
+        assert len(wires) == expected_length
+
+    if custom_wires is not None and n_wires is not None:
+        if not isinstance(custom_wires, dict):
+            assert wires == qchem.structure._process_wires(custom_wires[:n_wires], n_wires)
+        else:
+            assert wires == qchem.structure._process_wires(
+                {k: v for k, v in custom_wires.items()}, n_wires
+            )
+
+
+def test_process_wires_raises():
+    """Test if exceptions are raised for _wire_proc()"""
+
+    with pytest.raises(ValueError, match="Expected only int-keyed or consecutive int-valued dict"):
+        qchem.structure._process_wires({"a": "b"})
+
+    with pytest.raises(ValueError, match="Expected type Wires, list, tuple, or dict"):
+        qchem.structure._process_wires(1.2)
+
+    with pytest.raises(ValueError, match="Length of `wires`"):
+        qchem.structure._process_wires([3, 4], 3)

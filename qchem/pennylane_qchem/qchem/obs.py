@@ -95,7 +95,7 @@ def _spin2_matrix_elements(sz):
     return np.vstack([diag, off_diag])
 
 
-def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
+def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     r"""Computes the total spin operator :math:`\hat{S}^2`.
 
     The total spin operator :math:`\hat{S}^2` is given by
@@ -127,21 +127,27 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
     and annihilation operators, respectively.
 
     Args:
-        n_electrons (int): Number of electrons. If an active space is defined, 'n_electrons'
-            is the number of active electrons.
-        n_orbitals (int): Number of orbitals. If an active space is defined, 'n_orbitals'
-            is the number of active orbitals.
+        electrons (int): Number of electrons. If an active space is defined, this is
+            the number of active electrons.
+        orbitals (int): Number of *spin* orbitals. If an active space is defined,  this is
+            the number of active spin-orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
         pennylane.Hamiltonian: the total spin observable :math:`\hat{S}^2`
 
     **Example**
 
-    >>> n_electrons = 2
-    >>> n_orbitals = 2
-    >>> S2 = spin2(n_electrons, n_orbitals, mapping="jordan_wigner")
+    >>> electrons = 2
+    >>> orbitals = 4
+    >>> S2 = spin2(electrons, orbitals, mapping="jordan_wigner")
     >>> print(S2)
     (0.75) [I0]
     + (0.375) [Z1]
@@ -162,26 +168,48 @@ def spin2(n_electrons, n_orbitals, mapping="jordan_wigner"):
     + (0.125) [X0 X1 X2 X3]
     + (0.125) [X0 X1 Y2 Y3]
     + (0.125) [X0 Y1 X2 Y3]
+
+    >>> S2 = spin2(electrons, orbitals, mapping="jordan_wigner", wires=['w0','w1','w2','w3'])
+    >>> print(S2)
+    (0.75) [Iw0]
+    + (0.375) [Zw1]
+    + (-0.375) [Zw0 Zw1]
+    + (0.125) [Zw0 Zw2]
+    + (0.375) [Zw0]
+    + (-0.125) [Zw0 Zw3]
+    + (-0.125) [Zw1 Zw2]
+    + (0.125) [Zw1 Zw3]
+    + (0.375) [Zw2]
+    + (0.375) [Zw3]
+    + (-0.375) [Zw2 Zw3]
+    + (0.125) [Yw0 Xw1 Yw2 Xw3]
+    + (0.125) [Yw0 Yw1 Xw2 Xw3]
+    + (0.125) [Yw0 Yw1 Yw2 Yw3]
+    + (-0.125) [Yw0 Xw1 Xw2 Yw3]
+    + (-0.125) [Xw0 Yw1 Yw2 Xw3]
+    + (0.125) [Xw0 Xw1 Xw2 Xw3]
+    + (0.125) [Xw0 Xw1 Yw2 Yw3]
+    + (0.125) [Xw0 Yw1 Xw2 Yw3]
     """
 
-    if n_electrons <= 0:
+    if electrons <= 0:
         raise ValueError(
-            "'n_electrons' must be greater than 0; got for 'n_electrons' {}".format(n_electrons)
+            "'electrons' must be greater than 0; got for 'electrons' {}".format(electrons)
         )
 
-    if n_orbitals <= 0:
+    if orbitals <= 0:
         raise ValueError(
-            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+            "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
         )
 
-    sz = np.where(np.arange(2 * n_orbitals) % 2 == 0, 0.5, -0.5)
+    sz = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
 
     table = _spin2_matrix_elements(sz)
 
-    return observable(table, init_term=3 / 4 * n_electrons, mapping=mapping)
+    return observable(table, init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
 
 
-def observable(me_table, init_term=0, mapping="jordan_wigner"):
+def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
 
     r"""Builds the many-body observable whose expectation value can be
     measured in PennyLane.
@@ -230,6 +258,12 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
             required to initialize the many-body observable.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
@@ -241,6 +275,10 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
     (0.2) [I0]
     + (-0.2) [Z0]
     + (0.25) [Z0 Z1]
+    >>> print(observable(table, init_term=1 / 4, mapping="bravyi_kitaev", wires=['w0','w1']))
+    (0.2) [Iw0]
+    + (-0.2) [Zw0]
+    + (0.25) [Zw0 Zw1]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
@@ -275,12 +313,12 @@ def observable(me_table, init_term=0, mapping="jordan_wigner"):
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
-        return structure.convert_observable(bravyi_kitaev(mb_obs))
+        return structure.convert_observable(bravyi_kitaev(mb_obs), wires=wires)
 
-    return structure.convert_observable(jordan_wigner(mb_obs))
+    return structure.convert_observable(jordan_wigner(mb_obs), wires=wires)
 
 
-def spin_z(n_orbitals, mapping="jordan_wigner"):
+def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
 
     The total spin projection operator :math:`\hat{S}_z` is given by
@@ -296,18 +334,24 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     are the particle creation and annihilation operators, respectively.
 
     Args:
-        n_orbitals (str): Number of orbitals. If an active space is defined, 'n_orbitals'
-            is the number of active orbitals.
+        orbitals (str): Number of *spin* orbitals. If an active space is defined, this is
+            the number of active spin-orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
         pennylane.Hamiltonian: the total spin projection observable :math:`\hat{S}_z`
 
     **Example**
 
-    >>> n_orbitals = 2
-    >>> Sz = spin_z(n_orbitals, mapping="jordan_wigner")
+    >>> orbitals = 4
+    >>> Sz = spin_z(orbitals, mapping="jordan_wigner")
     >>> print(Sz)
     (-0.25) [Z0]
     + (0.25) [Z1]
@@ -315,20 +359,19 @@ def spin_z(n_orbitals, mapping="jordan_wigner"):
     + (0.25) [Z3]
     """
 
-    if n_orbitals <= 0:
+    if orbitals <= 0:
         raise ValueError(
-            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+            "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
         )
 
-    n_spin_orbs = 2 * n_orbitals
-    r = np.arange(n_spin_orbs)
-    sz_orb = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
+    r = np.arange(orbitals)
+    sz_orb = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    return observable(table, mapping=mapping)
+    return observable(table, mapping=mapping, wires=wires)
 
 
-def particle_number(n_orbitals, mapping="jordan_wigner"):
+def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     r"""Computes the particle number operator :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
     in the Pauli basis.
 
@@ -338,41 +381,53 @@ def particle_number(n_orbitals, mapping="jordan_wigner"):
 
         \hat{N} = \sum_\alpha \hat{c}_\alpha^\dagger \hat{c}_\alpha,
 
-    where the index :math:`\alpha` runs over the basis of single-particle orbitals
+    where the index :math:`\alpha` runs over the basis of single-particle states
     :math:`\vert \alpha \rangle`, and the operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are
     the particle creation and annihilation operators, respectively.
 
     Args:
-        n_orbitals (int): Number of orbitals. If an active space is defined, 'n_orbitals'
-            is the number of active orbitals.
+        orbitals (int): Number of *spin* orbitals. If an active space is defined, this is
+            the number of active spin-orbitals.
         mapping (str): Specifies the transformation to map the fermionic operator to the
             Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
 
     Returns:
         pennylane.Hamiltonian: the fermionic-to-qubit transformed observable
 
     **Example**
 
-    >>> n_orbitals = 2
-    >>> N = particle_number(n_orbitals, mapping="jordan_wigner")
+    >>> orbitals = 4
+    >>> N = particle_number(orbitals, mapping="jordan_wigner")
     >>> print(N)
     (2.0) [I0]
     + (-0.5) [Z0]
     + (-0.5) [Z1]
     + (-0.5) [Z2]
     + (-0.5) [Z3]
+    >>> N = particle_number(orbitals, mapping="jordan_wigner", wires=['w0','w1','w2','w3'])
+    >>> print(N)
+    (2.0) [Iw0]
+    + (-0.5) [Zw0]
+    + (-0.5) [Zw1]
+    + (-0.5) [Zw2]
+    + (-0.5) [Zw3]
     """
 
-    if n_orbitals <= 0:
+    if orbitals <= 0:
         raise ValueError(
-            "'n_orbitals' must be greater than 0; got for 'n_orbitals' {}".format(n_orbitals)
+            "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
         )
 
-    n_spin_orbs = 2 * n_orbitals
-    r = np.arange(n_spin_orbs)
-    table = np.vstack([r, r, np.ones([n_spin_orbs])]).T
+    r = np.arange(orbitals)
+    table = np.vstack([r, r, np.ones([orbitals])]).T
 
-    return observable(table, mapping=mapping)
+    return observable(table, mapping=mapping, wires=wires)
 
 
 __all__ = [

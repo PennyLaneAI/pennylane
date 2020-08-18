@@ -45,6 +45,23 @@
   ```
 <h3>Improvements</h3>
 
+* The naming convention used in the `structure` module has been propagated
+  to the `obs` module.
+  [(#759)](https://github.com/PennyLaneAI/pennylane/pull/759)
+
+  The changes include:
+
+  - `n_electrons` renamed to `electrons`.
+  - `n_orbitals` renamed to `orbitals`.
+
+  In addition, the argument `orbitals` is used now to pass the number of *spin*
+  orbitals.
+
+* The functions involved in observable conversions from/to OpenFermion now accept
+  a new `wires` argument that can be used to specify the qubits-to-wires mapping
+  when custom wires are used in Pennylane ansatz.
+  [(#750)](https://github.com/PennyLaneAI/pennylane/pull/750)
+
 * The functions involved in generating the single and double excitations from a
   a Hartree-Fock state and mapping them to the wires that the Unitary
   Coupled-Cluster (UCCSD) ansatz act on have been improved, with a more
@@ -69,7 +86,7 @@
 * The total-spin projection observable S_z can be built straightforwardly using the
   function `spin_z` as implemented in the `obs` module.
   [(#711)](https://github.com/XanaduAI/pennylane/pull/711)
-
+  
 <h3>Breaking changes</h3>
 
 <h3>Documentation</h3>
