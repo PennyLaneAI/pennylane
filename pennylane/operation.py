@@ -799,6 +799,7 @@ class DiagonalOperation(Operation):
     def _matrix(cls, *params):
         return np.diag(cls._eigvals(*params))
 
+
 class Channel(Operation):
     r"""Base class for quantum channels.
 
@@ -815,6 +816,11 @@ class Channel(Operation):
 
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
+
+    To define a noisy channel, the following attribute of :class:`~.Channel`
+    can be used to list the corresponding Kraus matrices.
+
+    * :attr:`~.Channel._kraus_matrices`
 
     Args:
         params (tuple[float, int, array, Variable]): operation parameters
@@ -841,7 +847,7 @@ class Channel(Operation):
         This private method allows matrices to be computed
         directly without instantiating the channel first.
 
-        **Example:**
+        **Example**
 
         >>> qml.AmplitudeDamping._kraus_matrices(0.1)
         >>> [array([[1.       , 0.       ],
@@ -861,7 +867,7 @@ class Channel(Operation):
         r"""Kraus matrices of an instantiated channel
         in the computational basis.
 
-        ** Example: **
+        ** Example**
 
         >>> U = qml.AmplitudeDamping(0.1, wires=1)
         >>> U.kraus_matrices
@@ -879,15 +885,8 @@ class Channel(Operation):
         self._inverse = False
 
         # check the grad_method validity
-        if self.par_domain == "R":
-            assert self.grad_method in (
-                None,
-                "F",
-            ), "Analytic gradients can not be used for quantum channels, presently."
-
-        # check the grad_recipe validity
-        if self.grad_method == "F":
-            assert self.grad_recipe is None, "Gradient recipe are not be defined for quantum channels, presently."
+        if self.par_domain == "R" and self.grad_method not in (None, "F"):
+            raise ValueError("Analytic gradients can not be used for quantum channels.")
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
@@ -956,7 +955,8 @@ class Observable(Operator):
 
         The order of the eigenvalues needs to match the order of
         the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`. This is a requirement for using qubit observables in quantum functions.
+        diagonalized using :attr:`diagonalizing_gates`. This is a
+        requirement for using qubit observables in quantum functions.
 
         **Example:**
 
