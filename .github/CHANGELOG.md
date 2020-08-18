@@ -23,7 +23,7 @@
   array([-2.25267173e-01, -1.00864546e+00,  6.93889390e-18])
   ```
 
-  See the `default.qubit.autograd` [documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.devices.default_qubit_autograd.DefaultQubitAutograd.html) for more details.
+  See the [device documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.devices.default_qubit_autograd.DefaultQubitAutograd.html) for more details.
 
 * A new experimental C++ state-vector simulator device is now available, `lightning.qubit`. It
   uses the C++ Eigen library to perform fast linear algebra calculations for simulating quantum
@@ -41,8 +41,7 @@
   >>> dev = qml.device("lightning.qubit", wires=2)
   ```
 
-  For more details, please see the `lightning.qubit`
-  [documentation](https://pennylane-lightning.readthedocs.io).
+  For more details, please see the [lightning qubit documentation](https://pennylane-lightning.readthedocs.io).
 
 <h4>New algorithms and templates</h4>
 
@@ -221,7 +220,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Juan Miguel Arazzola, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
+Juan Miguel Arazzola, Thomas Bromley, Jack Ceroni, Alain Delgado Gran, Shadab Hussain, Theodor
 Isacsson, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
 
 # Release 0.10.0
