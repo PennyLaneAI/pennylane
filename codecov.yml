@@ -1,5 +1,6 @@
 fixes:
   - "pennylane_qchem/::qchem/pennylane_qchem/"
+  - "/usr/share/miniconda/lib/python3.7/site-packages/::"
 
 ignore:
   - "pennylane/devices/tests/*"
