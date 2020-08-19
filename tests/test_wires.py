@@ -265,11 +265,14 @@ class TestWires:
     def test_all_wires_method(self):
         """Tests the ``all_wires()`` method."""
 
-        wires1 = Wires([1, 2, 3])
+        wires1 = Wires([2, 1, 3])
         wires2 = Wires([1, 4, 5, 2])
         wires3 = Wires([6, 5])
 
         new_wires = Wires.all_wires([wires1, wires2, wires3])
+        assert new_wires.labels == (2, 1, 3, 4, 5, 6)
+
+        new_wires = Wires.all_wires([wires1, wires2, wires3], sort=True)
         assert new_wires.labels == (1, 2, 3, 4, 5, 6)
 
         with pytest.raises(WireError, match="Expected a Wires object"):

@@ -1,3 +1,21 @@
+# Release 0.12.0 (development release)
+
+<h3>New features since last release</h3>
+
+<h3>Improvements</h3>
+
+<h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+<h3>Documentation</h3>
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+
+
 # Release 0.11.0 (current release)
 
 <h3>New features since last release</h3>
@@ -179,6 +197,23 @@
   [plugin test documentation](http://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html).
 
 <h3>Improvements</h3>
+
+* The functions implementing the quantum circuits building the Unitary Coupled-Cluster
+  (UCCSD) VQE ansatz have been improved, with a more consistent naming convention and
+  improved docstrings.
+  [(#748)](https://github.com/PennyLaneAI/pennylane/pull/748)
+
+  The changes include:
+
+  - The terms *1particle-1hole (ph)* and *2particle-2hole (pphh)* excitations
+    were replaced with the names *single* and *double* excitations, respectively.
+
+  - The non-differentiable arguments in the `UCCSD` template were renamed accordingly:
+    `ph` → `s_wires`, `pphh` → `d_wires`
+
+  - The term *virtual*, previously used to refer the *unoccupied* orbitals, was discarded.
+
+  - The Usage Details sections were updated and improved.
 
 * Added support for TensorFlow 2.3 and PyTorch 1.6.
   [(#725)](https://github.com/PennyLaneAI/pennylane/pull/725)
