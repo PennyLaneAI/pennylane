@@ -37,7 +37,7 @@
 
 |CI|  |COV| |PEP| |DOC| |VERS| |PY| |FORUM|
 
-`PennyLane <https://pennylane.ai>`_ is a cross-platform Python library for `differentiable programming <https://en.wikipedia.org/wiki/Differentiable_programming>`__ of quantum computers. 
+`PennyLane <https://pennylane.ai>`_ is a cross-platform Python library for `differentiable programming <https://en.wikipedia.org/wiki/Differentiable_programming>`__ of quantum computers.
 
 .. raw:: html
 
