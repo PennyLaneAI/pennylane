@@ -104,6 +104,15 @@ class Hamiltonian:
         """
         return self.coeffs, self.ops
 
+    @property
+    def wires(self):
+        r"""The sorted union of wires from all operators.
+
+        Returns:
+            (Wires): Combined wires present in all terms, sorted.
+        """
+        return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+
     def __str__(self):
         terms = []
 

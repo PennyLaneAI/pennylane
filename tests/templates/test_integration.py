@@ -145,8 +145,8 @@ QUBIT_DIFFABLE_NONDIFFABLE = [(qml.templates.AmplitudeEmbedding,
                                4),
                               (qml.templates.UCCSD,
                                {'weights': [3.90575761, -1.89772083, -1.36689032]},
-                               {'wires': [0, 1, 2, 3], 'ph': [[0, 1, 2], [1, 2, 3]],
-                                'pphh': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0])},
+                               {'wires': [0, 1, 2, 3], 's_wires': [[0, 1, 2], [1, 2, 3]],
+                                'd_wires': [[[0, 1], [2, 3]]], 'init_state':np.array([1, 1, 0, 0])},
                                4),
                               ]
 
@@ -681,8 +681,10 @@ class TestNonConsecutiveWires:
             kwargs2['wires2'] = nonconsecutive_wires[2:]
         # some kwargs in UCSSD need to be manually replaced
         if template.__name__ == 'UCCSD':
-             kwargs2['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
-             kwargs2['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
+             # kwargs2['ph'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
+             # kwargs2['pphh'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
+             kwargs2['s_wires'] = [nonconsecutive_wires[:3], nonconsecutive_wires[1:]]
+             kwargs2['d_wires'] = [[nonconsecutive_wires[:2], nonconsecutive_wires[2:]]]
 
         dev_nonconsec = qml.device('default.qubit', wires=nonconsecutive_wires)
 

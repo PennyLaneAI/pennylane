@@ -10,14 +10,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 
 
 @pytest.mark.parametrize(
-    (
-        "hf_filename",
-        "docc_mo",
-        "act_mo",
-        "type_of_transformation",
-        "coeffs_ref",
-        "pauli_strings_ref",
-    ),
+    ("name", "core", "active", "mapping", "coeffs_ref", "pauli_strings_ref",),
     [
         (
             "lih",
@@ -509,39 +502,29 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ),
     ],
 )
-def test_transformation(
-    hf_filename, docc_mo, act_mo, type_of_transformation, coeffs_ref, pauli_strings_ref, tol
-):
+def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_ref, tol):
+    r"""Test the correctness of the decomposed Hamiltonian for the (:math: `H_2, H_2O, LiH`)
+    molecules using Jordan-Wigner and Bravyi-Kitaev transformations."""
 
-    r"""Test the correctness of the Jordan-Wigner and Bravyi-Kitaev transformations
-    of the electronic Hamiltonian of different molecules (:math: `H_2, H_2O, LiH`) represented
-    in different active spaces."""
+    hf_file = os.path.join(ref_dir, name)
 
-    transformed_hamiltonian = qchem.decompose_hamiltonian(
-        hf_filename,
-        ref_dir,
-        mapping=type_of_transformation,
-        docc_mo_indices=docc_mo,
-        active_mo_indices=act_mo,
-    )
+    qubit_hamiltonian = qchem.decompose(hf_file, mapping=mapping, core=core, active=active)
 
-    coeffs = np.array(list(transformed_hamiltonian.terms.values()))
-    pauli_strings = list(transformed_hamiltonian.terms.keys())
+    coeffs = np.array(list(qubit_hamiltonian.terms.values()))
+    pauli_strings = list(qubit_hamiltonian.terms.keys())
 
     assert np.allclose(coeffs, coeffs_ref, **tol)
     assert pauli_strings == pauli_strings_ref
 
 
 def test_not_available_transformation():
-
     r"""Test that an error is raised if the chosen fermionic-to-qubit transformation
     is neither 'jordan_wigner' nor 'bravyi_kitaev'."""
 
     with pytest.raises(TypeError, match="transformation is not available"):
-        qchem.decompose_hamiltonian(
-            "lih",
-            ref_dir,
+        qchem.decompose(
+            os.path.join(ref_dir, "lih"),
             mapping="not_available_transformation",
-            docc_mo_indices=[0],
-            active_mo_indices=[1, 2],
+            core=[0],
+            active=[1, 2],
         )
