@@ -27,6 +27,7 @@ info = {
     "packages": find_packages(where="."),
     "description": "Package for quantum chemistry applications",
     "long_description": open("README.rst").read(),
+    'long_description_content_type': "text/x-rst",
     "provides": ["pennylane_qchem"],
     "install_requires": requirements,
     "entry_points": {"pennylane.qchem": ["OpenFermion = pennylane_qchem.qchem"]},
