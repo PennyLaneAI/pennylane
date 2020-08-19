@@ -16,6 +16,7 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
+import itertools
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
@@ -128,6 +129,70 @@ class Hamiltonian:
             terms.append(coeff.format(term))
 
         return "\n+ ".join(terms)
+
+    def __matmul__(self, H):
+
+        coeffs1 = self.coeffs.copy()
+        terms1 = self.ops.copy()
+
+        coeffs2 = H.coeffs
+        terms2 = H.ops
+
+        coeffs = [i[0] * i[1] for i in itertools.product(coeffs1, coeffs2)]
+        term_list = itertools.product(terms1, terms2)
+
+        terms = [qml.operation.Tensor(i[0], i[1]) for i in term_list]
+
+        return qml.Hamiltonian(coeffs, terms)
+
+    def __add__(self, H):
+
+        coeffs = self.coeffs.copy()
+        ops = self.ops.copy()
+
+        op_attributes = []
+
+        for op in ops:
+            name = op.name if isinstance(op.name, list) else [op.name]
+
+            if "Hermitian" not in name:
+                op_attributes.append(set(zip(name, op.wires)))
+
+        new_coeffs = []
+        new_ops = []
+
+        for coeff, op in zip(H.coeffs, H.ops):
+            name = op.name if isinstance(op.name, list) else [op.name]
+
+            if "Hermitian" in name:
+                new_coeffs.append(coeff)
+                new_ops.append(op)
+
+            else:
+                attr = set(zip(name, op.wires))
+
+                if attr in op_attributes:
+                    coeffs[op_attributes.index(attr)] += coeff
+                else:
+                    coeffs.append(coeff)
+                    ops.append(op)
+                    op_attributes.append(attr)
+
+        for i, c in enumerate(coeffs):
+            if not np.allclose([c], [0]):
+                new_coeffs.append(c)
+                new_ops.append(ops[i])
+
+        return qml.Hamiltonian(new_coeffs, new_ops)
+
+    def __mul__(self, a):
+        coeffs = [a * c for c in self.coeffs.copy()]
+        return qml.Hamiltonian(coeffs, self.ops.copy())
+
+    __rmul__ = __mul__
+
+    def __sub__(self, H):
+        return self.__add__(H.__mul__(-1))
 
 
 class VQECost:

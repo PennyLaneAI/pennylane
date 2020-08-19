@@ -94,6 +94,72 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
 ]
 
+add_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1.5, 1.2, 1.7, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
+        qml.Hamiltonian([1.6, 0.2, 2.3, 0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2), qml.PauliX(0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([0.5, 1.5, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 0), qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+    )
+]
+
+sub_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 1.2, -1.5, -0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 0.2, -0.9, -0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2), qml.PauliX(0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([-0.5, 0.5, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 0), qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+    )
+]
+
+mul_hamiltonians = [
+    (3, qml.Hamiltonian([1.5, 0.3], [qml.PauliX(0), qml.PauliZ(1)]),
+     qml.Hamiltonian([4.5, 0.9], [qml.PauliX(0), qml.PauliZ(1)])),
+    (-1.3, qml.Hamiltonian([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
+     qml.Hamiltonian([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]))
+]
+
+matmul_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
+        qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
+            qml.PauliX(0) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(3)
+        ])
+    ),
+    (
+        qml.Hamiltonian([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
+        qml.Hamiltonian([0.5, 0.5, 0.25, 0.25], [
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliX(3) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2)
+        ])
+    )
+]
+
 #####################################################
 # Ansatz
 
@@ -221,6 +287,32 @@ class TestHamiltonian:
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
+    @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
+    def test_hamiltonian_add(self, H1, H2, H):
+        """Tests that Hamiltonians are added correctly"""
+        assert np.allclose((H1 + H2).coeffs, H.coeffs)
+        assert [(op.name, op.wires) for op in (H1 + H2).ops] == [(op.name, op.wires) for op in H.ops]
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
+    def test_hamiltonian_sub(self, H1, H2, H):
+        """Tests that Hamiltonians are subtracted correctly"""
+        assert np.allclose((H1 - H2).coeffs, H.coeffs)
+        assert [(op.name, op.wires) for op in (H1 - H2).ops] == [(op.name, op.wires) for op in H.ops]
+
+    @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
+    def test_hamiltonian_mul(self, coeff, H, res):
+        """Tests that scalars and Hamiltonians are multiplied correctly"""
+        assert np.allclose((coeff * H).coeffs, res.coeffs)
+        assert [(op.name, op.wires) for op in (coeff * H).ops] == [(op.name, op.wires) for op in res.ops]
+
+        assert np.allclose((H * coeff).coeffs, res.coeffs)
+        assert [(op.name, op.wires) for op in (H * coeff).ops] == [(op.name, op.wires) for op in res.ops]
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
+    def test_hamiltonian_matmul(self, H1, H2, H):
+        """Tests that Hamiltonians are tensored correctly"""
+        assert (H1 @ H2).coeffs == H.coeffs
+        assert [(op.name, op.wires) for op in (H1 @ H2).ops] == [(op.name, op.wires) for op in H.ops]
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
