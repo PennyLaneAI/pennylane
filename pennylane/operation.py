@@ -913,7 +913,7 @@ class Observable(Operator):
 
     def __eq__(self, other):
 
-        if isinstance(other, type(self)) or isinstance(other, Tensor):
+        if isinstance(other, (Observable, Tensor)):
             val = self._data() == other._data()
         if isinstance(other, qml.Hamiltonian):
             val = other._data() == self._data()
@@ -922,9 +922,9 @@ class Observable(Operator):
 
     def __add__(self, other):
 
-        if isinstance(other, type(self)) or isinstance(other, Tensor):
+        if isinstance(other, (Observable, Tensor)):
             val = qml.Hamiltonian([1, 1], [self, other])
-        else:
+        if isinstance(other, qml.Hamiltonian):
             val = other + self
 
         return val
@@ -1090,7 +1090,7 @@ class Tensor(Observable):
 
     def __eq__(self, other):
 
-        if isinstance(other, type(self)) or isinstance(other, Observable):
+        if isinstance(other, (Tensor, Observable)):
             val = self._data() == other._data()
         if isinstance(other, qml.Hamiltonian):
             val = other._data() == self._data()
@@ -1099,9 +1099,9 @@ class Tensor(Observable):
 
     def __add__(self, other):
 
-        if isinstance(other, type(self)) or isinstance(other, Observable):
+        if isinstance(other, (Tensor, Observable)):
             val = qml.Hamiltonian([1, 1], [self, other])
-        else:
+        if isinstance(other, qml.Hamiltonian):
             val = other + self
 
         return val

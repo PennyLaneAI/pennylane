@@ -174,7 +174,7 @@ class Hamiltonian:
 
         if isinstance(H, type(self)):
             val = self._data() == H._data()
-        if isinstance(H, Tensor) or isinstance(H, Observable):
+        if isinstance(H, (Tensor, Observable)):
             val = self._data() == {(1, frozenset(H._data()))}
 
         return val
@@ -195,7 +195,7 @@ class Hamiltonian:
             term_list = itertools.product(terms1, terms2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
 
-        if isinstance(H, Tensor) or isinstance(H, Observable):
+        if isinstance(H, (Tensor, Observable)):
             coeffs = coeffs1
             terms = [term @ H for term in terms1]
 
@@ -209,7 +209,7 @@ class Hamiltonian:
         if isinstance(H, type(self)):
             coeffs.extend(H.coeffs.copy())
             ops.extend(H.ops.copy())
-        if isinstance(H, Tensor) or isinstance(H, Observable):
+        if isinstance(H, (Tensor, Observable)):
             coeffs.append(1)
             ops.append(H)
 
@@ -228,7 +228,7 @@ class Hamiltonian:
         if isinstance(H, Hamiltonian):
             self._coeffs.extend(H.coeffs.copy())
             self._ops.extend(H.ops.copy())
-        if isinstance(H, Tensor) or isinstance(H, Observable):
+        if isinstance(H, (Tensor, Observable)):
             self._coeffs.append(1)
             self._ops.append(H)
 
