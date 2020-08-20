@@ -77,6 +77,7 @@ class Hamiltonian:
 
         self._coeffs = coeffs
         self._ops = observables
+        self.simplify()
 
     @property
     def coeffs(self):
@@ -114,6 +115,29 @@ class Hamiltonian:
         """
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
+    def simplify(self):
+        r"""Simplifies the Hamiltonian by combining like-terms."""
+
+        # NOTE: Do we want to convert Tensors composed of one element back into observables?
+
+        coeffs = []
+        ops = []
+
+        for c, op in zip(self.coeffs, self.ops):
+            op = op if isinstance(op, Tensor) else Tensor(op)
+            if op in ops:
+                coeffs[ops.index(op)] += c
+                if np.allclose([coeffs[ops.index(op)]], [0]):
+                    del coeffs[ops.index(op)]
+                    del ops[ops.index(op)]
+            else:
+                operator = op.prune()
+                ops.append(operator if isinstance(operator, Tensor) else Tensor(operator))
+                coeffs.append(c)
+
+        self._coeffs = coeffs
+        self._ops = ops
+
     def __str__(self):
         terms = []
 
@@ -129,6 +153,23 @@ class Hamiltonian:
             terms.append(coeff.format(term))
 
         return "\n+ ".join(terms)
+
+    def _data(self):
+
+        data = set()
+
+        for co, op in zip(*self.terms):
+            obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
+            tensor = []
+            for ob in obs:
+                parameters = tuple(param.tostring() for param in ob.parameters) # Converts params into hashable type
+                tensor.append((ob.name, ob.wires, parameters))
+            data.add((co, frozenset(tensor)))
+
+        return data
+
+    def __eq__(self, H):
+        return self._data() == H._data()
 
     def __matmul__(self, H):
 
@@ -150,40 +191,13 @@ class Hamiltonian:
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
 
-        op_attributes = []
+        coeffs.extend(H.coeffs.copy())
+        ops.extend(H.ops.copy())
 
-        for op in ops:
-            name = op.name if isinstance(op.name, list) else [op.name]
+        hamiltonian = qml.Hamiltonian(coeffs, ops)
+        hamiltonian.simplify()
 
-            if "Hermitian" not in name:
-                op_attributes.append(set(zip(name, op.wires)))
-
-        new_coeffs = []
-        new_ops = []
-
-        for coeff, op in zip(H.coeffs, H.ops):
-            name = op.name if isinstance(op.name, list) else [op.name]
-
-            if "Hermitian" in name:
-                new_coeffs.append(coeff)
-                new_ops.append(op)
-
-            else:
-                attr = set(zip(name, op.wires))
-
-                if attr in op_attributes:
-                    coeffs[op_attributes.index(attr)] += coeff
-                else:
-                    coeffs.append(coeff)
-                    ops.append(op)
-                    op_attributes.append(attr)
-
-        for i, c in enumerate(coeffs):
-            if not np.allclose([c], [0]):
-                new_coeffs.append(c)
-                new_ops.append(ops[i])
-
-        return qml.Hamiltonian(new_coeffs, new_ops)
+        return hamiltonian
 
     def __mul__(self, a):
         coeffs = [a * c for c in self.coeffs.copy()]

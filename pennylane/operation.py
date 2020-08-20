@@ -1046,6 +1046,23 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
+    def __eq__(self, other):
+
+        tensor1 = []
+        tensor2 = []
+
+        obs = self.non_identity_obs
+        for ob in obs:
+            parameters = tuple(param.tostring() for param in ob.parameters)
+            tensor1.append((ob.name, ob.wires, parameters))
+
+        obs = other.non_identity_obs
+        for ob in obs:
+            parameters = tuple(param.tostring() for param in ob.parameters)
+            tensor2.append((ob.name, ob.wires, parameters))
+
+        return set(tensor1) == set(tensor2)
+
     @property
     def eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
