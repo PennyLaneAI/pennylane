@@ -128,10 +128,10 @@ class TestQNodeOperationQueue:
 
     def test_operation_appending(self, mock_device, monkeypatch):
         """Tests that operations are correctly appended."""
-        CNOT = qml.CNOT(wires=[0, 1])
-
         with monkeypatch.context() as m:
             m.setattr(qml, 'QueuingContext', QueuingContext)
+
+            CNOT = qml.CNOT(wires=[0, 1])
 
             def circuit(x):
                 qml.QueuingContext.append(CNOT)
@@ -171,42 +171,4 @@ class TestQNodeOperationQueue:
             assert qnode.ops[1].name == "RY"
             assert qnode.ops[2].name == "RZ"
             assert qnode.ops[3].name == "PauliX"
-
-    def test_prune_tensors(self, mock_device):
-        """Test that the _prune_tensors auxiliary method prunes correct for
-        a single Identity in the Tensor."""
-        px = qml.PauliX(1)
-        obs = qml.Identity(0) @ px
-
-        def circuit(x):
-            return qml.expval(obs)
-
-        qnode = BetaBaseQNode(circuit, mock_device)
-
-        assert qnode._prune_tensors(obs) == px
-
-    def test_prune_tensors_no_pruning_took_place(self, mock_device):
-        """Test that the _prune_tensors auxiliary method returns
-        the original tensor if no observables were pruned."""
-        px = qml.PauliX(1)
-        obs = px
-
-        def circuit(x):
-            return qml.expval(obs)
-
-        qnode = BetaBaseQNode(circuit, mock_device)
-
-        assert qnode._prune_tensors(obs) == px
-
-    def test_prune_tensors_construct(self, mock_device):
-        """Test that the tensors are pruned in construct."""
-
-        def circuit(x):
-            return qml.expval(qml.PauliX(0) @ qml.Identity(1))
-
-        qnode = BetaBaseQNode(circuit, mock_device)
-        qnode._construct([1.0], {})
-
-        assert qnode.ops[0].name == "PauliX"
-        assert len(qnode.ops[0].wires) == 1
-        assert qnode.ops[0].wires[0] == Wires(0)
+            assert qnode.ops[4].name == "PauliZ"

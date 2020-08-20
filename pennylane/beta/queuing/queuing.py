@@ -81,7 +81,13 @@ class QueuingContext(abc.ABC):
         Args:
             obj: the object to be appended
         """
-        cls.active_context()._append(obj, **kwargs)  # pylint: disable=protected-access
+
+        # Beta:
+        # For now, only append if there exists an active_context
+        active_context = cls.active_context()
+
+        if active_context:
+            active_context._append(obj, **kwargs)  # pylint: disable=protected-access
 
     @abc.abstractmethod
     def _remove(self, obj):

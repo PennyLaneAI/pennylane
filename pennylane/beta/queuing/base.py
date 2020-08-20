@@ -364,7 +364,7 @@ class BetaBaseQNode(QueuingContext):
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
 
-    # No need for separate queues --- can use AQ's _remove
+    ## Beta
     """
     def _remove(self, obj):
         if isinstance(obj, Observable) and obj.return_type is not None:
@@ -373,13 +373,11 @@ class BetaBaseQNode(QueuingContext):
             self.queue.remove(obj)
     """
 
-    # TODO: would there be advantage to using QueuingContext.remove here? (more
-    # general not specific to AQ?)
-    # Same for _append
+    ## Beta
     def _remove(self, obj):
         self.queue._remove(obj)
 
-    # Simply depend on AQ's _append
+    ## Beta
     def _append(self, obj, **kwargs):
         self.queue._append(obj, **kwargs)
 
@@ -582,6 +580,7 @@ class BetaBaseQNode(QueuingContext):
 
         self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
+        ### Beta
         """
         # temporary queues for operations and observables
         # TODO rename self.queue to self.op_queue
@@ -611,6 +610,7 @@ class BetaBaseQNode(QueuingContext):
                 raise
 
 
+        ### Beta
         """
         # check the validity of the circuit
         self._check_circuit(res)
@@ -629,13 +629,13 @@ class BetaBaseQNode(QueuingContext):
         queue = decompose_queue(queue, self.device)
         """
 
-        # TODO: do we need res?
         self.ops = queue + list(res)
-        ## Beta --- end
 
-        # TODO: remove
+        """
         # Prune all the Tensor objects that have been used in the circuit
         self.ops = self._prune_tensors(self.ops)
+        """
+        ## Beta --- end
 
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
