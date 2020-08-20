@@ -61,8 +61,8 @@ class AmplitudeDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
-        K1 = np.diag([1, np.sqrt(1 - gamma)])
-        K2 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
+        K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
+        K2 = np.diag([1, np.sqrt(1 - gamma)])
         return [K1, K2]
 
 
