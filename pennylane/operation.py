@@ -906,6 +906,37 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
+    def _data(self):
+
+        parameters = tuple(param.tostring() for param in ob.parameters)
+        return {(ob.name, ob.wires, parameters)}
+
+    def __eq__(self, other):
+
+        if isinstance(other, type(self)) or isinstance(other, Tensor):
+            val = self._data() == other._data()
+        if isinstance(other, qml.Hamiltonian):
+            val = other._data() == self._data()
+
+        return val
+
+    def __add__(self, other):
+
+        if isinstance(other, type(self)) or isinstance(other, Tensor):
+            val = qml.Hamiltonian([1, 1], [self, other])
+        else:
+            val = other + self
+
+        return val
+
+    def __mul__(self, a):
+        return qml.Hamiltonian([a], [self])
+
+    __rmul__ = __mul__
+
+    def __sub__(self, other):
+        return self.__add__(other.__mul__(-1))
+
     def diagonalizing_gates(self):
         r"""Returns the list of operations such that they
         diagonalize the observable in the computational basis.
@@ -1046,22 +1077,42 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    def __eq__(self, other):
-
-        tensor1 = []
-        tensor2 = []
+    def _data(self):
 
         obs = self.non_identity_obs
+        tensor = set()
+
         for ob in obs:
             parameters = tuple(param.tostring() for param in ob.parameters)
-            tensor1.append((ob.name, ob.wires, parameters))
+            tensor.add((ob.name, ob.wires, parameters))
 
-        obs = other.non_identity_obs
-        for ob in obs:
-            parameters = tuple(param.tostring() for param in ob.parameters)
-            tensor2.append((ob.name, ob.wires, parameters))
+        return tensor
 
-        return set(tensor1) == set(tensor2)
+    def __eq__(self, other):
+
+        if isinstance(other, type(self)) or isinstance(other, Observable):
+            val = self._data() == other._data()
+        if isinstance(other, qml.Hamiltonian):
+            val = other._data() == self._data()
+
+        return val
+
+    def __add__(self, other):
+
+        if isinstance(other, type(self)) or isinstance(other, Observable):
+            val = qml.Hamiltonian([1, 1], [self, other])
+        else:
+            val = other + self
+
+        return val
+
+    def __mul__(self, a):
+        return qml.Hamiltonian([a], [self])
+
+    __rmul__ = __mul__
+
+    def __sub__(self, other):
+        return self.__add__(other.__mul__(-1))
 
     @property
     def eigvals(self):

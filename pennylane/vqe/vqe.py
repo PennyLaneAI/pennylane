@@ -169,20 +169,33 @@ class Hamiltonian:
         return data
 
     def __eq__(self, H):
-        return self._data() == H._data()
+
+        if isinstance(H, type(self)):
+            val = self._data() == H._data()
+        if isinstance(H, Tensor) or isinstance(H, Observable):
+            val = self._data() == {(1, frozenset(H._data()))}
+
+        return val
 
     def __matmul__(self, H):
 
         coeffs1 = self.coeffs.copy()
         terms1 = self.ops.copy()
 
-        coeffs2 = H.coeffs
-        terms2 = H.ops
+        coeffs = []
+        terms = []
 
-        coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
-        term_list = itertools.product(terms1, terms2)
+        if isinstance(H, type(self)):
+            coeffs2 = H.coeffs
+            terms2 = H.ops
 
-        terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+            coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
+            term_list = itertools.product(terms1, terms2)
+            terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+
+        if isinstance(H, Tensor) or isinstance(H, Observable):
+            coeffs = coeffs1
+            terms = [term @ H for term in terms1]
 
         return qml.Hamiltonian(coeffs, terms)
 
@@ -191,8 +204,12 @@ class Hamiltonian:
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
 
-        coeffs.extend(H.coeffs.copy())
-        ops.extend(H.ops.copy())
+        if isinstance(H, type(self)):
+            coeffs.extend(H.coeffs.copy())
+            ops.extend(H.ops.copy())
+        if isinstance(H, Tensor) or isinstance(H, Observable):
+            coeffs.append(1)
+            ops.append(H)
 
         hamiltonian = qml.Hamiltonian(coeffs, ops)
         hamiltonian.simplify()
