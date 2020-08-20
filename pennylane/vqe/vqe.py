@@ -225,6 +225,19 @@ class Hamiltonian:
     def __sub__(self, H):
         return self.__add__(H.__mul__(-1))
 
+    def __iadd__(self, H):
+        if isinstance(H, Hamiltonian):
+            self._coeffs.extend(H.coeffs.copy())
+            self._ops.extend(H.ops.copy())
+        if isinstance(H, Tensor) or isinstance(H, Observable):
+            self._coeffs.append(1)
+            self._ops.append(H)
+
+    def __imul__(self, a):
+        self._coeffs = [a * c for c in self.coeffs]
+
+    def __isub__(self, H):
+        self.__iadd__(H.__mul__(-1))
 
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the

@@ -908,8 +908,8 @@ class Observable(Operator):
 
     def _data(self):
 
-        parameters = tuple(param.tostring() for param in ob.parameters)
-        return {(ob.name, ob.wires, parameters)}
+        parameters = tuple(param.tostring() for param in self.parameters)
+        return {(self.name, self.wires, parameters)}
 
     def __eq__(self, other):
 
