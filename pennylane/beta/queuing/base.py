@@ -27,6 +27,12 @@ from pennylane.utils import _flatten, unflatten
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 
+########
+# Beta imports
+########
+
+from .queuing import AnnotatedQueue, QueuingContext
+from .measure import MeasurementProcess
 
 ParameterDependency = namedtuple("ParameterDependency", ["op", "par_idx"])
 """Represents the dependence of an Operator on a positional parameter of the quantum function.
@@ -121,6 +127,13 @@ def decompose_queue(ops, device):
     new_ops = []
 
     for op in ops:
+        """
+        # Beta
+        if isinstance(op, qml.Observable):
+            new_ops.append(op)
+            break
+            """
+
         try:
             new_ops.extend(_decompose_queue([op], device))
         except NotImplementedError:
@@ -130,8 +143,7 @@ def decompose_queue(ops, device):
 
     return new_ops
 
-
-class BetaBaseQNode(qml.QueuingContext):
+class BetaBaseQNode(QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
     A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
@@ -352,13 +364,27 @@ class BetaBaseQNode(qml.QueuingContext):
             return list(itertools.filterfalse(_is_observable, succ))
         return succ
 
+    # No need for separate queues --- can use AQ's _remove
+    """
     def _remove(self, obj):
         if isinstance(obj, Observable) and obj.return_type is not None:
             self.obs_queue.remove(obj)
         else:
             self.queue.remove(obj)
+    """
 
-    def _append(self, obj):
+    # TODO: would there be advantage to using QueuingContext.remove here? (more
+    # general not specific to AQ?)
+    # Same for _append
+    def _remove(self, obj):
+        self.queue._remove(obj)
+
+    # Simply depend on AQ's _append
+    def _append(self, obj, **kwargs):
+        self.queue._append(obj, **kwargs)
+
+        # For now moving checks
+        """
         if obj.num_wires == WiresEnum.AllWires:
             # check here only if enough wires
             if len(obj.wires) != self.num_wires:
@@ -384,6 +410,11 @@ class BetaBaseQNode(qml.QueuingContext):
                     "State preparations and gates must precede measured observables."
                 )
             self.queue.append(obj)
+        """
+
+    def _update_info(self, obj, **kwargs):
+        """Updates information of an object in the queue instance."""
+        self.queue._update_info(obj, **kwargs)
 
     def _determine_structured_variable_name(self, parameter_value, prefix):
         """Determine the variable names corresponding to a parameter.
@@ -551,10 +582,16 @@ class BetaBaseQNode(qml.QueuingContext):
 
         self.arg_vars, self.kwarg_vars = self._make_variables(args, kwargs)
 
+        """
         # temporary queues for operations and observables
         # TODO rename self.queue to self.op_queue
         self.queue = []  #: list[Operation]: applied operations
         self.obs_queue = []  #: list[Observable]: applied observables
+        """
+
+        ### Beta
+        # Creating the internal queue
+        self.queue = AnnotatedQueue()
 
         # set up the context for Operator entry
         with self:
@@ -573,21 +610,41 @@ class BetaBaseQNode(qml.QueuingContext):
                 self.kwarg_vars = None
                 raise
 
+
+        """
         # check the validity of the circuit
         self._check_circuit(res)
+
         del self.queue
         del self.obs_queue
+        """
 
+        ## Beta --- begin
+        # Removed checking when populating AQ
+        # Moved the important logic from _check_circuit
+        queue = self.queue.queue
+
+        """
+        # replace operations in the queue with any decompositions if required
+        queue = decompose_queue(queue, self.device)
+        """
+
+        # TODO: do we need res?
+        self.ops = queue + list(res)
+        ## Beta --- end
+
+        # TODO: remove
         # Prune all the Tensor objects that have been used in the circuit
         self.ops = self._prune_tensors(self.ops)
 
         # map each free variable to the operators which depend on it
         self.variable_deps = {k: [] for k in range(self.num_variables)}
         for op in self.ops:
-            for j, p in enumerate(_flatten(op.data)):
-                if isinstance(p, Variable):
-                    if not p.is_kwarg:  # ignore auxiliary arguments
-                        self.variable_deps[p.idx].append(ParameterDependency(op, j))
+            if not isinstance(op, MeasurementProcess):
+                for j, p in enumerate(_flatten(op.data)):
+                    if isinstance(p, Variable):
+                        if not p.is_kwarg:  # ignore auxiliary arguments
+                            self.variable_deps[p.idx].append(ParameterDependency(op, j))
 
         # generate the DAG
         self.circuit = CircuitGraph(self.ops, self.variable_deps, self.device.wires)
@@ -727,13 +784,6 @@ class BetaBaseQNode(qml.QueuingContext):
                     self.device.short_name
                 )
             )
-
-        queue = self.queue
-        if self.device.operations:
-            # replace operations in the queue with any decompositions if required
-            queue = decompose_queue(self.queue, self.device)
-
-        self.ops = queue + list(res)
 
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.

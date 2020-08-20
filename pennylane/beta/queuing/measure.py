@@ -25,9 +25,14 @@ from pennylane.qnodes import QuantumFunctionError
 
 from .queuing import QueuingContext
 
-MeasurementProcess = collections.namedtuple("MeasurementProcess", ["return_type"])
-"""NamedTuple: A namedtuple that contains the return_type of the circuit and
-whose instance can be queried by id."""
+class MeasurementProcess:
+    """A class that contains the return_type of the circuit and whose instance
+    can be queried by id."""
+
+    def __init__(self, return_type, queue_idx=None):
+        self.return_type = return_type
+        self.queue_idx = queue_idx
+        self.wires = []
 
 
 def expval(op):
