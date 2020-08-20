@@ -373,7 +373,7 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
 @template
 def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
     r"""Circuit to exponentiate the tensor product of Pauli matrices representing the
-    fermionic double-excitation operator entering the Unitary Coupled-Cluster Singles
+    double-excitation operator entering the Unitary Coupled-Cluster Singles
     and Doubles (UCCSD) ansatz. UCCSD is a VQE ansatz commonly used to run quantum
     chemistry simulations.
 
@@ -400,22 +400,25 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
         \hat{X}_s \hat{X}_r \hat{X}_q \hat{Y}_p - \mathrm{H.c.}  ) \Big\}
 
     The quantum circuit to exponentiate the tensor product of Pauli matrices entering
-    the latter equation is shown below:
+    the latter equation is shown below (see `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_):
 
     |
 
     .. figure:: ../../_static/templates/subroutines/double_excitation_unitary.png
-
-    |
         :align: center
         :width: 60%
         :target: javascript:void(0);
 
+    |
+
     As explained in `Seely et al. (2012) <https://arxiv.org/abs/1208.5986>`_,
     the exponential of a tensor product of Pauli-Z operators can be decomposed in terms of
-    :math:`2(n-1)` CNOT gates and a single-qubit Z-rotation. If there are :math:`X` or
-    :math:`Y` Pauli matrices in the product, the Hadamard (:math:`H`) or :math:`R_x` gate has
-    to be applied to change to the :math:`X` or :math:`Y` basis, respectively.
+    :math:`2(n-1)` CNOT gates and a single-qubit Z-rotation referred to as :math:`U_\theta` in
+    the figure above. If there are :math:`X` or:math:`Y` Pauli matrices in the product, the
+    Hadamard (:math:`H`) or :math:`R_x` gate has to be applied to change to the :math:`X`
+    or :math:`Y` basis, respectively. The latter operations are denoted as
+    :math:`U_1`, :math:`U_2`, :math:`U_3` and :math:`U_4` in the figure above. See the
+    Usage Details section for more details.
 
     Args:
         weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
@@ -423,11 +426,11 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
             in the interval ``[s, r]``. Accepts an iterable of numbers or strings, or a Wires object,
             with minimum length 2. The first wire is interpreted as ``s`` and the last wire as ``r``.
             Wires in between are acted on with CNOT gates to compute the parity of the set of qubits.
-        wires2 (Iterable or Wires): Wires of the qubits representing the subset of virtual orbitals
-            in the interval ``[q, p]``. Accepts an iterable of numbers or strings, or a Wires object.
-            Must be of minimum length 2. The first wire is interpreted as ``q`` and the last wire is
-            interpreted as ``p``. Wires in between are acted on with CNOT gates to compute the parity
-            of the set of qubits.
+        wires2 (Iterable or Wires): Wires of the qubits representing the subset of unoccupied
+            orbitals in the interval ``[q, p]``. Accepts an iterable of numbers or strings, or a
+            Wires object. Must be of minimum length 2. The first wire is interpreted as ``q`` and
+            the last wire is interpreted as ``p``. Wires in between are acted on with CNOT gates
+            to compute the parity of the set of qubits.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -456,10 +459,10 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
                H, R_x(-\frac{\pi}{2}), R_z(-\frac{\theta}{8}) \bigg] \Bigg\}
 
         #. For a given quadruple ``[s, r, q, p]`` with :math:`p>q>r>s`, seventy-two single-qubit
-           operations are applied. Notice also that consecutive CNOT gates act on qubits with
-           indices between ``s`` and ``r`` and ``q`` and ``p`` while a single CNOT acts on wires
-           ``r`` and ``q``. The operations performed across these qubits are shown in dashed lines
-           in the figure above.
+           and ``16*(len(wires1)-1 + len(wires2)-1 + 1)`` CNOT operations are applied.
+           Consecutive CNOT gates act on qubits with indices between ``s`` and ``r`` and
+           ``q`` and ``p`` while a single CNOT acts on wires ``r`` and ``q``. The operations
+           performed across these qubits are shown in dashed lines in the figure above.
 
         An example of how to use this template is shown below:
 
@@ -471,13 +474,12 @@ def DoubleExcitationUnitary(weight, wires1=None, wires2=None):
             dev = qml.device('default.qubit', wires=5)
 
             @qml.qnode(dev)
-            def circuit(weight, pphh=None):
-                DoubleExcitationUnitary(weight, wires=pphh)
+            def circuit(weight, wires1=None, wires2=None):
+                DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
                 return qml.expval(qml.PauliZ(0))
 
             weight = 1.34817
-            double_excitation = [0, 1, 3, 4]
-            print(circuit(weight, pphh=double_excitation))
+            print(circuit(weight, wires1=[0, 1], wires2=[2, 3, 4]))
 
     """
 

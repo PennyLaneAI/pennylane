@@ -104,6 +104,15 @@ class Hamiltonian:
         """
         return self.coeffs, self.ops
 
+    @property
+    def wires(self):
+        r"""The sorted union of wires from all operators.
+
+        Returns:
+            (Wires): Combined wires present in all terms, sorted.
+        """
+        return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+
     def __str__(self):
         terms = []
 
@@ -185,7 +194,7 @@ class VQECost:
 
     Next, we can define the cost function:
 
-    >>> cost = qml.VQECost(ansatz, hamiltonian, dev, interface="torch")
+    >>> cost = qml.VQECost(ansatz, H, dev, interface="torch")
     >>> params = torch.rand([4, 3])
     >>> cost(params)
     tensor(0.0245, dtype=torch.float64)
