@@ -19,10 +19,11 @@ and measurement samples using AnnotatedQueues.
 """
 import collections
 
-import pennylane as qml
 from pennylane.operation import Expectation, Observable, Probability, Sample, Variance
 from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
+
+from .queuing import QueuingContext
 
 MeasurementProcess = collections.namedtuple("MeasurementProcess", ["return_type"])
 """NamedTuple: A namedtuple that contains the return_type of the circuit and
@@ -62,8 +63,8 @@ def expval(op):
         )
 
     meas_op = MeasurementProcess(Expectation)
-    qml.QueuingContext.update_info(op, owner=meas_op)
-    qml.QueuingContext.append(meas_op, owns=op)
+    QueuingContext.update_info(op, owner=meas_op)
+    QueuingContext.append(meas_op, owns=op)
 
     return op
 
@@ -101,8 +102,8 @@ def var(op):
         )
 
     meas_op = MeasurementProcess(Variance)
-    qml.QueuingContext.update_info(op, owner=meas_op)
-    qml.QueuingContext.append(meas_op, owns=op)
+    QueuingContext.update_info(op, owner=meas_op)
+    QueuingContext.append(meas_op, owns=op)
 
     return op
 
@@ -141,8 +142,8 @@ def sample(op):
         )
 
     meas_op = MeasurementProcess(Sample)
-    qml.QueuingContext.update_info(op, owner=meas_op)
-    qml.QueuingContext.append(meas_op, owns=op)
+    QueuingContext.update_info(op, owner=meas_op)
+    QueuingContext.append(meas_op, owns=op)
 
     return op
 
@@ -185,8 +186,8 @@ def probs(wires):
     op = Identity(wires=wires, do_queue=False)
 
     meas_op = MeasurementProcess(Probability)
-    qml.QueuingContext.append(op)
-    qml.QueuingContext.update_info(op, owner=meas_op)
-    qml.QueuingContext.append(meas_op, owns=op)
+    QueuingContext.append(op)
+    QueuingContext.update_info(op, owner=meas_op)
+    QueuingContext.append(meas_op, owns=op)
 
     return op

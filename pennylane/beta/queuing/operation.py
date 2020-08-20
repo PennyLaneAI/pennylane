@@ -17,7 +17,7 @@ This module contains the abstract base classes for defining PennyLane
 operations and observables.
 """
 
-import pennylane as qml
+from .queuing import QueuingContext
 
 # --------------------
 # Beta related imports
@@ -50,10 +50,10 @@ class BetaTensor(Tensor):
 
     def queue(self):
         """Queues the Tensor instance and updates the ownership related info if applicable."""
-        qml.QueuingContext.append(self, owns=tuple(self.obs))
+        QueuingContext.append(self, owns=tuple(self.obs))
 
         try:
             for o in self.obs:
-                qml.QueuingContext.update_info(o, owner=self)
+                QueuingContext.update_info(o, owner=self)
         except NotImplementedError:
             pass
