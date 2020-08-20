@@ -36,13 +36,6 @@ A quick primer on terminology of PennyLane plugins in this section:
 Creating your device
 --------------------
 
-.. note::
-
-    A handy `plugin template repository <https://github.com/XanaduAI/pennylane-plugin-template>`__
-    is available, providing the boilerplate and file structure required to easily create your
-    own PennyLane plugin, as well as a suite of integration tests to ensure the plugin
-    returns correct expectation values.
-
 The first step in creating your PennyLane plugin is to create your device class.
 This is as simple as importing the abstract base class :class:`~.QubitDevice` from PennyLane,
 and subclassing it:
@@ -393,19 +386,21 @@ then be accessible via PennyLane.
 Testing
 -------
 
-All plugins should come with extensive unit tests, to ensure that the device supports the correct
-gates and observables, and is applying them correctly. For an example of a plugin test suite, see
-``tests/test_default_qubit.py`` and ``tests/test_default_gaussian.py`` in the main
-`PennyLane repository <https://github.com/XanaduAI/pennylane/>`_.
+All plugins should come with extensive unit tests, to ensure that each logical unit of the
+device has correct execution.
 
-Integration tests to check that the expectation values, variance, and samples are correct for
-various circuits and observables are provided in the
-`PennyLane Plugin Template <https://github.com/XanaduAI/pennylane-plugin-template>`__ repository.
+Integration tests to check that the probabilities, expectation values, variance, and samples are
+correct for various circuits and observables are provided as part of the PennyLane device
+test utility:
+
+
+.. code-block:: console
+
+    pl-device-test --device device_shortname --shots 10000 --analytic False
 
 In general, as all supported operations have their gradient formula defined and tested by
-PennyLane, testing that your device calculates the correct gradients is not required — just
-that it *applies* and *measures* quantum operations and observables correctly.
-
+PennyLane, testing that your device calculates the correct gradients is not required.
+For more details on the PennyLane device test utility, see :mod:`pennylane.devices.tests`.
 
 Supporting new operations
 -------------------------

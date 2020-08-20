@@ -198,6 +198,23 @@ This release contains contributions from (in alphabetical order):
 
 <h3>Improvements</h3>
 
+* The functions implementing the quantum circuits building the Unitary Coupled-Cluster
+  (UCCSD) VQE ansatz have been improved, with a more consistent naming convention and
+  improved docstrings.
+  [(#748)](https://github.com/PennyLaneAI/pennylane/pull/748)
+
+  The changes include:
+
+  - The terms *1particle-1hole (ph)* and *2particle-2hole (pphh)* excitations
+    were replaced with the names *single* and *double* excitations, respectively.
+
+  - The non-differentiable arguments in the `UCCSD` template were renamed accordingly:
+    `ph` → `s_wires`, `pphh` → `d_wires`
+
+  - The term *virtual*, previously used to refer the *unoccupied* orbitals, was discarded.
+
+  - The Usage Details sections were updated and improved.
+
 * Added support for TensorFlow 2.3 and PyTorch 1.6.
   [(#725)](https://github.com/PennyLaneAI/pennylane/pull/725)
 

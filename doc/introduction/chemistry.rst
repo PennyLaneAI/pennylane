@@ -21,28 +21,30 @@ Eigensolver (VQE) algorithm.
 Building the electronic Hamiltonian
 -----------------------------------
 
-The ``qchem`` module provides access to a driver function :func:`~.generate_hamiltonian`
+The ``qchem`` module provides access to a driver function :func:`~.molecular_hamiltonian`
 to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
-    h, nr_qubits = qml.qchem.generate_hamiltonian(
+    from pennylane import qchem
+
+    h, qubits = qchem.molecular_hamiltonian(
         name='h2',
         geo_file='h2.xyz',
         charge=0,
-        multiplicity=1,
-        basis_set='sto-3g',
-        n_active_electrons=2,
-        n_active_orbitals=2
+        mult=1,
+        basis='sto-3g',
+        active_electrons=2,
+        active_orbitals=2
     )
 
 where:
 
 * ``h`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian, and
 
-* ``nr_qubits`` is the number of qubits operators needed to represent it.
+* ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
-Internally, :func:`~.generate_hamiltonian` calls the following functions in order
+Internally, :func:`~.molecular_hamiltonian` calls the following functions in order
 to generate the qubit Hamiltonian:
 
 .. currentmodule:: pennylane_qchem.qchem
@@ -50,9 +52,9 @@ to generate the qubit Hamiltonian:
 .. autosummary::
 
     read_structure
-    meanfield_data
+    meanfield
     active_space
-    decompose_hamiltonian
+    decompose
 
 
 For more fine-grained control, these functions may be
@@ -67,7 +69,7 @@ The atomic structure of a molecule can be imported from an external file using t
 
 .. code-block:: python
 
-    >>> geometry = qml.qchem.read_structure('h2o.SDF')
+    >>> geometry = qchem.read_structure('h2o.SDF')
     >>> print(geometry)
     [['H', (-0.0211, -0.002, 0.0)], ['O', (0.8345, 0.4519, 0.0)], ['H', (1.4769, -0.273, 0.0)]]
 
@@ -86,66 +88,65 @@ coordinates of each atomic species.
 Solving the Hartree-Fock equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :func:`~.meanfield_data` function uses the `OpenFermion-PySCF <https://github
+The :func:`~.meanfield` function uses the `OpenFermion-PySCF <https://github
 .com/quantumlib/OpenFermion-PySCF>`_ and `OpenFermion-Psi4 <https://github
 .com/quantumlib/OpenFermion-Psi4>`_ plugins to solve the Hartree-Fock equations for the molecule
 using the electronic structure packages `PySCF <https://github.com/sunqm/pyscf>`_ and `Psi4
 <http://psicode.org/>`_, respectively.
 
-For this, it is required to specify a string to label the molecule, its net charge, the `spin
-multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_ and the  `atomic basis
-functions <https://www.basissetexchange.org/>`_.
+For this, it is required to specify a string to label the molecule. Furthermore, the net charge,
+the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_ and the  `atomic basis functions <https://www.basissetexchange.org/>`_ can also be specified.
 
 .. code-block:: python
 
-    geometry = qml.qchem.read_structure('h2o.SDF')
-    hf_data = qml.qchem.meanfield_data(
+    geometry = qchem.read_structure('h2o.SDF')
+    hf_file = qchem.meanfield(
         'water',
         geometry,
-        charge=0,
-        multiplicity=1,
-        basis_set='sto-3g',
-        qc_package='pyscf'
+        charge=-1,
+        mult=2,
+        basis='6-31g',
+        package='pyscf'
     )
 
-The output variable ``hf_data`` stores the path to the directory containing the file ``'water.hd5'``
-with the Hartree-Fock electronic structure of the water molecule.
+The output ``hf_file`` is the absolute path to the file ``'water.hd5'`` containing
+the Hartree-Fock electronic structure of the water molecule.
 
 Mapping the Hamiltonian to the Pauli basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The function :func:`~.active_space` is used to create an `active space <https://en.wikipedia
-.org/wiki/Complete_active_space>`__  by classifying the Hartree-Fock molecular orbitals as doubly-occupied,
-active, and external orbitals. Within this approximation, a certain number of *active electrons*
-can populate the *active orbitals*.
+.org/wiki/Complete_active_space>`__  by classifying the Hartree-Fock molecular orbitals as
+core, active, and external orbitals. Within this approximation, a certain number of *active electrons* can populate the *active orbitals*.
 
 .. code-block:: python
 
-    d_occ_indices, active_indices = qml.qchem.active_space(
-        'water',
-        hf_data,
-        n_active_electrons=2,
-        n_active_orbitals=2
+    from openfermion import MolecularData
+    water = MolecularData(filename=hf_file)
+    core, active = qchem.active_space(
+        water.n_electrons,
+        water.n_orbitals,
+        mult=2,
+        active_electrons=3,
+        active_orbitals=4
     )
 
-Once we have defined the active space, :func:`~.decompose_hamiltonian` calls
-OpenFermion to generate the second-quantized fermionic Hamiltonian
+Once we have defined the active space, :func:`~.decompose` uses
+OpenFermion functionalities to generate the second-quantized fermionic Hamiltonian
 and map it to a linear combination of Pauli operators via the `Jordan-Wigner
 <https://en.wikipedia.org/wiki/Jordan%E2%80%93Wigner_transformation>`__ or `Bravyi-Kitaev
 <https://arxiv.org/abs/1208.5986>`__ transformation. For example,
 
 .. code-block:: python
 
-    qubit_hamiltonian = qml.qchem.decompose_hamiltonian(
-        'water',
-        hf_data,
+    qubit_hamiltonian = qchem.decompose(
+        hf_file,
         mapping='jordan_wigner',
-        docc_mo_indices=d_occ_indices,
-        active_mo_indices=active_indices
+        core=core,
+        active=active
     )
 
-Here, ``qubit_hamiltonian`` is an instance of the QubitOperator class of `OpenFermion <https://github
-.com/quantumlib/OpenFermion>`_.
+Here, ``qubit_hamiltonian`` is an instance of the QubitOperator class of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_.
 
 .. _pl_qchem_vqe:
 
@@ -162,6 +163,8 @@ the cost function:
 
 .. code-block:: python
 
+    import pennylane as qml
+    
     dev = qml.device('default.qubit', wires=4)
 
     def circuit(params, wires):

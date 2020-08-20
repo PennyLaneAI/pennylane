@@ -196,6 +196,9 @@ class Wires(Sequence):
             wire_map (dict): Dictionary containing all wire labels used in this object as keys, and unique
                              new labels as their values
         """
+        # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
+        wire_map = {Wires(k): Wires(v) for k, v in wire_map.items()}
+
         for w in self:
             if w not in wire_map:
                 raise WireError(
@@ -234,7 +237,7 @@ class Wires(Sequence):
         For example:
 
         >>> wires = Wires([4, 0, 1, 5, 6])
-        >>> wires.subset([5, 1, 7])
+        >>> wires.subset([5, 1, 7], periodic_boundary=True)
         <Wires = [4, 0, 1]>
 
         Args:
@@ -324,7 +327,7 @@ class Wires(Sequence):
         return Wires(shared)
 
     @staticmethod
-    def all_wires(list_of_wires):
+    def all_wires(list_of_wires, sort=False):
         """Return the wires that appear in any of the Wires objects in the list.
 
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
@@ -340,6 +343,8 @@ class Wires(Sequence):
 
         Args:
             list_of_wires (List[Wires]): List of Wires objects
+            sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
+                value if all keys are int, else labels' str representations are used.
 
         Returns:
             Wires: combined wires
@@ -354,6 +359,12 @@ class Wires(Sequence):
 
             combined.extend(wire for wire in wires.labels if wire not in combined)
 
+        if sort:
+            if all([isinstance(w, int) for w in combined]):
+                combined = sorted(combined)
+            else:
+                combined = sorted(combined, key=str)
+
         return Wires(combined)
 
     @staticmethod
@@ -366,7 +377,7 @@ class Wires(Sequence):
         >>> wires2 = Wires([0, 2, 3])
         >>> wires3 = Wires([5, 3])
         >>> Wires.unique_wires([wires1, wires2, wires3])
-        <Wires = [4, 2, 5]>
+        <Wires = [4, 1, 2, 5]>
 
         Args:
             list_of_wires (List[Wires]): list of Wires objects
