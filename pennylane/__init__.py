@@ -52,7 +52,7 @@ from .io import *
 default_config = Configuration("config.toml")
 
 
-# get list of installed plugin devices
+# get list of installed devices
 plugin_devices = {
     entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")
 }
@@ -92,7 +92,7 @@ for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
 
 def device(name, *args, **kwargs):
     r"""device(name, wires=1, *args, **kwargs)
-    Load a plugin :class:`~.Device` and return the instance.
+    Load a :class:`~.Device` and return the instance.
 
     This function is used to load a particular quantum device,
     which can then be used to construct QNodes.
@@ -180,7 +180,7 @@ def device(name, *args, **kwargs):
         kwargs.pop("config", None)
         options.update(kwargs)
 
-        # loads the plugin device class
+        # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
         if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
@@ -191,7 +191,7 @@ def device(name, *args, **kwargs):
                 )
             )
 
-        # load plugin device
+        # load device
         return plugin_device_class(*args, **options)
 
     raise DeviceError("Device does not exist. Make sure the required plugin is installed.")

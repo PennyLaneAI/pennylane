@@ -29,7 +29,7 @@
   to run generic tests on core or external devices calling 
   
   ```pycon
-  >>> pytest pennylane/plugins/tests --device default.qubit --shots 1234 --analytic False
+  >>> pytest pennylane/devices/tests --device default.qubit --shots 1234 --analytic False
   ``` 
   The command line arguments are optional.
 
@@ -183,10 +183,10 @@ Jack Ceroni, Josh Izaac, Maria Schuld, Antal Száva, Nicola Vitucci
   ```
 
   See the `default.qubit.tf`
-  [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.plugins.DefaultQubitTF.html)
+  [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.devices.DefaultQubitTF.html)
   for more details.
 
-* The [default.tensor plugin](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/plugins/default_tensor.py)
+* The [default.tensor device](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/devices/default_tensor.py)
   has been significantly upgraded. It now allows two different
   tensor network representations to be used: `"exact"` and `"mps"`. The former uses a
   exact factorized representation of quantum states, while the latter uses a matrix product state
@@ -958,9 +958,9 @@ Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
   of an operator in the computational basis.
   [(#454)](https://github.com/XanaduAI/pennylane/pull/454)
 
-* Added a `QubitDevice` class which implements common functionalities of plugin devices such that
-  plugin devices can rely on these implementations. The new `QubitDevice` also includes
-  a new `execute` method, which allows for more convenient plugin design. In addition, `QubitDevice`
+* Added a `QubitDevice` class which implements common functionalities of devices such that
+  plugins can rely on these implementations. The new `QubitDevice` also includes
+  a new `execute` method, which allows for more convenient device design. In addition, `QubitDevice`
   also unifies the way samples are generated on qubit-based devices.
   [(#452)](https://github.com/XanaduAI/pennylane/pull/452)
   [(#473)](https://github.com/XanaduAI/pennylane/pull/473)
@@ -1061,7 +1061,7 @@ Zeyue Niu, Maria Schuld, Antal Száva.
   [(#409)](https://github.com/XanaduAI/pennylane/pull/409)
   [(#419)](https://github.com/XanaduAI/pennylane/pull/419)
 
-* State vector preparation operations in the `default.qubit` plugin can now be
+* State vector preparation operations in the `default.qubit` device can now be
   applied to subsets of wires, and are restricted to being the first operation
   in a circuit.
   [(#346)](https://github.com/XanaduAI/pennylane/pull/346)
@@ -1264,7 +1264,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
-  To support this on plugin devices, there is a new `Device.sample` method.
+  To support this on devices, there is a new `Device.sample` method.
 
   Calculating gradients of QNodes that involve sampling is not possible.
   [(#256)](https://github.com/XanaduAI/pennylane/pull/256)
@@ -1272,7 +1272,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 * `default.qubit` has been updated to provide support for sampling.
   [(#256)](https://github.com/XanaduAI/pennylane/pull/256)
 
-* Added controlled rotation gates to PennyLane operations and `default.qubit` plugin.
+* Added controlled rotation gates to PennyLane operations and `default.qubit` device.
   [(#251)](https://github.com/XanaduAI/pennylane/pull/251)
 
 <h3>Breaking changes</h3>
@@ -1299,7 +1299,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
   [(#313)](https://github.com/XanaduAI/pennylane/pull/313)
 
 * Adds a `Device.parameters` property, so that devices can view a dictionary mapping free
-  parameters to operation parameters. This will allow plugin devices to take advantage
+  parameters to operation parameters. This will allow devices to take advantage
   of parametric compilation.
   [(#283)](https://github.com/XanaduAI/pennylane/pull/283)
 
@@ -1321,7 +1321,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
     which will alert the user that an operation with `num_wires = All`
     is being incorrectly.
 
-* The one-qubit rotations in `pennylane.plugins.default_qubit` no longer depend on Scipy's `expm`. Instead
+* The one-qubit rotations in `pennylane.devices.default_qubit` no longer depend on Scipy's `expm`. Instead
   they are calculated with Euler's formula.
   [(#292)](https://github.com/XanaduAI/pennylane/pull/292)
 
@@ -1443,7 +1443,7 @@ Rohit Midha, Nicolás Quesada, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 <h3>Improvements</h3>
 
-* `default.qubit` plugin now uses `np.tensordot` when applying quantum operations
+* `default.qubit` device now uses `np.tensordot` when applying quantum operations
   and evaluating expectations, resulting in significant speedup
   [(#239)](https://github.com/XanaduAI/pennylane/pull/239),
   [(#241)](https://github.com/XanaduAI/pennylane/pull/241)
@@ -1538,8 +1538,8 @@ Josh Izaac and Nathan Killoran.
 
 * Removed use of hardcoded values in the optimizers, made them parameters (see [#131](https://github.com/XanaduAI/pennylane/pull/131) and [#132](https://github.com/XanaduAI/pennylane/pull/132))
 * Created the new `PlaceholderExpectation`, to be used when both CV and qubit expval modules contain expectations with the same name
-* Provide the plugins a way to view the operation queue _before_ applying operations. This allows for on-the-fly modifications of
-  the queue, allowing hardware-based plugins to support the full range of qubit expectation values. [(#143)](https://github.com/XanaduAI/pennylane/pull/143)
+* Provide a way for devices to view the operation queue _before_ applying operations. This allows for on-the-fly modifications of
+  the queue, allowing hardware-based devices to support the full range of qubit expectation values. [(#143)](https://github.com/XanaduAI/pennylane/pull/143)
 * QNode return values now support _any_ form of sequence, such as lists, sets, etc. [(#144)](https://github.com/XanaduAI/pennylane/pull/144)
 * CV analytic gradient calculation is now more robust, allowing for operations which may not themselves be differentiated, but have a
   well defined `_heisenberg_rep` method, and so may succeed operations that are analytically differentiable [(#152)](https://github.com/XanaduAI/pennylane/pull/152)
