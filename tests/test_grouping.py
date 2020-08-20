@@ -18,6 +18,7 @@ import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard
 from pennylane.operation import Tensor
+from pennylane.wires import Wires
 from pennylane.grouping.group_observables import PauliGroupingStrategy, group_observables
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 from pennylane.grouping.optimize_measurements import optimize_measurements
@@ -36,10 +37,9 @@ from pennylane.grouping.utils import (
 class TestGroupingUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
-    def test_pauli_to_binary(self):
-        """Test conversion of Pauli word from operator to binary vector representation."""
-
-        n_qubits = 3
+    def test_pauli_to_binary_no_wire_map(self):
+        """Test conversion of Pauli word from operator to binary vector representation when no
+        `wire_map` is specified."""
 
         p1_op = PauliX(0) @ PauliY(1) @ PauliZ(2)
         p2_op = PauliZ(0) @ PauliY(2)
@@ -47,17 +47,37 @@ class TestGroupingUtils:
         identity = Tensor(Identity(0))
 
         p1_vec = np.array([1, 1, 0, 0, 1, 1])
-        p2_vec = np.array([0, 0, 1, 1, 0, 1])
-        p3_vec = np.array([0, 1, 1, 0, 1, 0])
-        zero_vec = np.zeros(2 * n_qubits)
+        p2_vec = np.array([0, 1, 1, 1])
+        p3_vec = np.array([1, 1, 1, 0])
 
-        assert all(pauli_to_binary(p1_op, n_qubits) == p1_vec)
-        assert all(pauli_to_binary(p2_op, n_qubits) == p2_vec)
-        assert all(pauli_to_binary(p3_op, n_qubits) == p3_vec)
-        assert all(pauli_to_binary(identity, n_qubits) == zero_vec)
+        assert (pauli_to_binary(p1_op) == p1_vec).all()
+        assert (pauli_to_binary(p2_op) == p2_vec).all()
+        assert (pauli_to_binary(p3_op) == p3_vec).all()
+        assert (pauli_to_binary(identity) == np.zeros(2)).all()
 
-    def test_binary_to_pauli(self):
-        """Test conversion of Pauli in binary vector representation to operator form."""
+    def test_pauli_to_binary_with_wire_map(self):
+        """Test conversion of Pauli word from operator to binary vector representation if a
+        `wire_map` is specified."""
+
+        p1_op = PauliX("a") @ PauliZ("b") @ Identity("c")
+        p2_op = PauliY(6) @ PauliZ("a") @ PauliZ("b")
+        p3_op = PauliX("b") @ PauliY("c")
+        identity = Identity("a") @ Identity(6)
+
+        wire_map = {Wires("a"): 0, Wires("b"): 1, Wires("c"): 2, Wires(6): 3}
+
+        p1_vec = np.array([1, 0, 0, 0, 0, 1, 0, 0])
+        p2_vec = np.array([0, 0, 0, 1, 1, 1, 0, 1])
+        p3_vec = np.array([0, 1, 1, 0, 0, 0, 1, 0])
+
+        assert (pauli_to_binary(p1_op, wire_map=wire_map) == p1_vec).all()
+        assert (pauli_to_binary(p2_op, wire_map=wire_map) == p2_vec).all()
+        assert (pauli_to_binary(p3_op, wire_map=wire_map) == p3_vec).all()
+        assert (pauli_to_binary(identity, wire_map=wire_map) == np.zeros(8)).all()
+
+    def test_binary_to_pauli_no_wire_map(self):
+        """Test conversion of Pauli in binary vector representation to operator form when no
+        `wire_map` is specified."""
 
         p1_vec = np.array([1, 0, 1, 0, 0, 1])
         p2_vec = np.array([1, 1, 1, 1, 1, 1])
@@ -74,12 +94,35 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(binary_to_pauli(p3_vec), p3_op)
         assert are_identical_pauli_words(binary_to_pauli(zero_vec), identity)
 
+    def test_binary_to_pauli_with_wire_map(self):
+        """Test conversion of Pauli in binary vector representation to operator form when
+        `wire_map` is specified."""
+
+        p1_vec = np.array([1, 0, 1, 0, 0, 1])
+        p2_vec = np.array([1, 1, 1, 1, 1, 1])
+        p3_vec = np.array([1, 0, 1, 0, 1, 0])
+        zero_vec = np.zeros(6)
+
+        wire_map = {Wires("alice"): 0, Wires("bob"): 1, Wires("ancilla"): 2}
+
+        p1_op = PauliX("alice") @ PauliY("ancilla")
+        p2_op = PauliY("alice") @ PauliY("bob") @ PauliY("ancilla")
+        p3_op = PauliX("alice") @ PauliZ("bob") @ PauliX("ancilla")
+        identity = Identity("alice")
+
+        assert are_identical_pauli_words(binary_to_pauli(p1_vec, wire_map=wire_map), p1_op)
+        assert are_identical_pauli_words(binary_to_pauli(p2_vec, wire_map=wire_map), p2_op)
+        assert are_identical_pauli_words(binary_to_pauli(p3_vec, wire_map=wire_map), p3_op)
+        assert are_identical_pauli_words(binary_to_pauli(zero_vec, wire_map=wire_map), identity)
+
     def test_convert_observables_to_binary(self):
         """Test conversion of list of Pauli word operators to representation as a binary matrix."""
 
         observables = [Identity(1), PauliX(1), PauliZ(0) @ PauliZ(1)]
 
-        binary_observables = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1]])
+        binary_observables = np.array(
+            [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
+        )
 
         assert (convert_observables_to_binary(observables) == binary_observables).all()
 
@@ -112,9 +155,11 @@ class TestGroupingUtils:
 
         observables_1 = [Identity(10)]
         observables_2 = [Identity(0) @ Identity(10), PauliX(2) @ Identity(10)]
+        observables_3 = [PauliX("a") @ PauliZ("0"), PauliX("a") @ PauliY("b")]
 
-        assert get_n_qubits(observables_1) == 1
-        assert get_n_qubits(observables_2) == 3
+        assert get_n_qubits(observables_1) == 0
+        assert get_n_qubits(observables_2) == 1
+        assert get_n_qubits(observables_3) == 3
 
     def test_is_pauli_word(self):
         """Test for determining whether input `Observable` instance is a Pauli word."""
@@ -133,7 +178,7 @@ class TestGroupingUtils:
         """Tests for determining if two Pauli words have the same `wires` and `name` attributes."""
 
         pauli_word_1 = PauliX(0) @ PauliY(1)
-        pauli_word_2 = PauliX(0) @ PauliY(1)
+        pauli_word_2 = PauliY(1) @ PauliX(0)
         pauli_word_3 = Tensor(PauliX(0), PauliY(1))
         pauli_word_4 = PauliX(1) @ PauliZ(2)
 
@@ -141,6 +186,7 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+
 
 class TestPauliGroupingStrategy:
     """Tests for the PauliGroupingStrategy class"""

@@ -77,14 +77,16 @@ class PauliGroupingStrategy:
         self.adj_matrix = None
         self.grouped_paulis = None
 
-    def obtain_binary_repr(self):
+    def obtain_binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
 
         Returns:
             array[bool]: a column matrix of the Pauli words in binary vector representation.
 
         """
-        self.binary_observables = convert_observables_to_binary(self.observables)
+        self.binary_observables = convert_observables_to_binary(
+            self.observables, n_qubits, wire_map
+        )
         return self.binary_observables
 
     def construct_complement_adj_matrix_for_operator(self):
@@ -180,16 +182,17 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             operation instances and Tensor instances thereof).
 
     Keyword args:
-        coefficients (list[scalar]): a list of scalar coefficients.
+        coefficients (list[scalar]): a list of scalar coefficients. If not specified,
+        output `partitioned_coeffs` is not returned.
         grouping_type (str): the type of binary relation between Pauli words, can be 'qwc',
             'commuting', or 'anticommuting'.
         method (str): the graph coloring heuristic to use in solving minimum clique cover, which
             can be 'lf' (Largest First) or 'rlf' (Recursive Largest First).
 
     Returns:
-       obs_groupings (list[list[Observable]]): a list of the obtained groupings. Each grouping is
-           itself a list of Pauli word `Observable` instances.
-       coeffs_groupings (list[list[scalar]]): a list of coefficient groupings. Each coefficient
+       partitioned_paulis (list[list[Observable]]): a list of the obtained groupings. Each grouping
+       is itself a list of Pauli word `Observable` instances.
+       partitioned_coeffs (list[list[scalar]]): a list of coefficient groupings. Each coefficient
            grouping is itself a list of the groupings corresponding coefficients. (This is only
            output if coefficients are specified.)
 
@@ -199,7 +202,6 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     """
 
     if coefficients is not None:
-
         if len(coefficients) != len(observables):
             raise IndexError(
                 "The coefficients list must be the same length as the observables list."
@@ -211,15 +213,13 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     partitioned_paulis = pauli_grouping.colour_pauli_graph()
 
     if coefficients is None:
-
         return partitioned_paulis
 
     partitioned_coeffs = [[0] * len(g) for g in partitioned_paulis]
     m_partitions = len(partitioned_paulis)
 
-    for i in range(m_partitions):
-        m_partition = len(partitioned_paulis[i])
-        for j in range(m_partition):
+    for i, partition in enumerate(partitioned_paulis):
+        for j, pauli_word in enumerate(partition):
             for observable in observables:
                 if are_identical_pauli_words(partitioned_paulis[i][j], observable):
                     partitioned_coeffs[i][j] = coefficients[observables.index(observable)]

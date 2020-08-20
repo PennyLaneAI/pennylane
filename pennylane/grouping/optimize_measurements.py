@@ -84,9 +84,9 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
             post_rotations,
             diagonalized_groupings,
         ) = obtain_qwc_post_rotations_and_diagonalized_groupings(grouped_obs)
-    elif grouping.lower() == "commuting":
+    else:
         raise NotImplementedError(
-            "Measurement reduction by fully commuting partitioning not implemented."
+            "Measurement reduction by '{}' grouping not implemented.".format(grouping.lower())
         )
 
     if coefficients is None:

@@ -17,6 +17,7 @@ measurement basis, and templates for the circuit implementations.
 """
 import pennylane as qml
 from pennylane.operation import Tensor
+from pennylane.wires import Wires
 from pennylane.templates import template
 from pennylane.grouping.utils import pauli_to_binary, is_qwc, get_n_qubits
 import numpy as np
@@ -86,14 +87,15 @@ def diagonalize_qwc_grouping(qwc_grouping):
         ValueError: if any 2 elements in the input QWC grouping are not qubit-wise commutative.
 
     """
-    n_qubits = get_n_qubits(qwc_grouping)
     m_paulis = len(qwc_grouping)
+    all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
+    wire_map = {i: c for c, i in enumerate(all_wires)}
     for i in range(m_paulis):
         for j in range(i + 1, m_paulis):
             if not is_qwc(
-                    pauli_to_binary(qwc_grouping[i], n_qubits),
-                    pauli_to_binary(qwc_grouping[j], n_qubits),
-                ):
+                pauli_to_binary(qwc_grouping[i], wire_map=wire_map),
+                pauli_to_binary(qwc_grouping[j], wire_map=wire_map),
+            ):
                 raise ValueError(
                     "{} and {} are not qubit-wise commuting.".format(
                         qwc_grouping[i], qwc_grouping[j]
