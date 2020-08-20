@@ -50,16 +50,16 @@ automatically to the comment box when you create a new issue.
 
 * Once you have submitted the pull request, three things will automatically occur:
 
-  - The **test suite** will automatically run on `Travis CI <https://travis-ci.org/XanaduAI/pennylane>`_
+  - The **test suite** will automatically run on `Travis CI <https://travis-ci.org/PennyLaneAI/pennylane>`_
     to ensure that all tests continue to pass.
 
   - Once the test suite is finished, a **code coverage report** will be generated on
-    `Codecov <https://codecov.io/gh/XanaduAI/pennylane>`_. This will calculate the percentage
+    `Codecov <https://codecov.io/gh/PennyLaneAI/pennylane>`_. This will calculate the percentage
     of PennyLane covered by the test suite, to ensure that all new code additions
     are adequately tested.
 
   - Finally, the **code quality** is calculated by
-    `Codefactor <https://app.codacy.com/app/XanaduAI/pennylane/dashboard>`_,
+    `Codefactor <https://app.codacy.com/app/PennyLaneAI/pennylane/dashboard>`_,
     to ensure all new code additions adhere to our code quality standards.
 
 Based on these reports, we may ask you to make small changes to your branch before

@@ -96,7 +96,7 @@ using development mode:
 
 .. code-block:: bash
 
-    git clone https://github.com/XanaduAI/pennylane
+    git clone https://github.com/PennyLaneAI/pennylane
     cd pennylane
     pip install -e .
 
