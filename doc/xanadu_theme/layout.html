@@ -294,7 +294,7 @@ if (downloadNote.length >= 1) {
     var tutorialUrlArray = $("#tutorial-type").text().split('/');
         tutorialUrlArray[0] = "examples"
 
-    var githubLink = "https://github.com/XanaduAI/pennylane/blob/master/" + tutorialUrlArray.join("/") + ".py",
+    var githubLink = "https://github.com/PennyLaneAI/pennylane/blob/master/" + tutorialUrlArray.join("/") + ".py",
         pythonLink = $(".reference.download")[0].href,
         notebookLink = $(".reference.download")[1].href,
         notebookDownloadPath = notebookLink.split('_downloads')[1].split('/').pop();
