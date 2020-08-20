@@ -659,31 +659,8 @@ class BetaBaseQNode(QueuingContext):
                     "The operations {} cannot affect the circuit output.".format(invisible)
                 )
 
-    @staticmethod
-    def _prune_tensors(res):
-        """Prune the tensors that have been passed by the quantum function.
-
-        .. seealso:: :meth:`~.Tensor.prune`
-
-        Args:
-            res (Sequence[Observable], Observable): output returned by the quantum function
-
-        Returns:
-            res (Sequence[Observable], Observable): pruned output returned by the quantum function
-        """
-        if isinstance(res, qml.operation.Tensor):
-            return res.prune()
-
-        if isinstance(res, Sequence):
-            ops = []
-            for o in res:
-                if isinstance(o, qml.operation.Tensor):
-                    ops.append(o.prune())
-                else:
-                    ops.append(o)
-            return ops
-
-        return res
+    # Beta
+    # Removed the _prune_tensors method
 
     def _check_circuit(self, res):
         """Check that the generated Operator queue corresponds to a valid quantum circuit.
