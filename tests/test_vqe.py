@@ -29,7 +29,8 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        tf.enable_eager_execution()
+        pass
+        #tf.enable_eager_execution()
 
     from tensorflow import Variable
 except ImportError as e:
@@ -97,8 +98,8 @@ hamiltonians_with_expvals = [
 add_hamiltonians = [
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
-        qml.Hamiltonian([1.5, 1.2, 1.7, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
     ),
     (
         qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
@@ -108,7 +109,17 @@ add_hamiltonians = [
     (
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
         qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([0.5, 1.5, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 0), qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+        qml.Hamiltonian([1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.PauliX(0) @ qml.Identity(1),
+        qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hadamard(1),
+        qml.Hamiltonian([1.3, 1.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
     )
 ]
 
@@ -119,20 +130,20 @@ sub_hamiltonians = [
         qml.Hamiltonian([0.5, 1.2, -1.5, -0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
     ),
     (
-        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
-        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
-        qml.Hamiltonian([1, 0.2, -0.9, -0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2), qml.PauliX(0)])
+        qml.Hamiltonian([1.3, 0.2, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 0.2, -0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(0)])
     ),
     (
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
         qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
-        qml.Hamiltonian([-0.5, 0.5, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 0), qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
     )
 ]
 
 mul_hamiltonians = [
-    (3, qml.Hamiltonian([1.5, 0.3], [qml.PauliX(0), qml.PauliZ(1)]),
-     qml.Hamiltonian([4.5, 0.9], [qml.PauliX(0), qml.PauliZ(1)])),
+    (3, qml.Hamiltonian([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
+     qml.Hamiltonian([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)])),
     (-1.3, qml.Hamiltonian([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
      qml.Hamiltonian([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]))
 ]
@@ -253,6 +264,7 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
+        print(H.terms)
         assert H.terms == (coeffs, ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
@@ -286,33 +298,34 @@ class TestHamiltonian:
         """
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+    '''
+    @pytest.mark.parametrize(("H1", "H2", "H"), equal_hamiltonians)
+    def test_hamiltonian_equal(self, H1, H2, res):
+        """Tests that equality can be checked between Hamiltonians"""
+        assert (H1 == H2) == res
+    '''
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
     def test_hamiltonian_add(self, H1, H2, H):
         """Tests that Hamiltonians are added correctly"""
-        assert np.allclose((H1 + H2).coeffs, H.coeffs)
-        assert [(op.name, op.wires) for op in (H1 + H2).ops] == [(op.name, op.wires) for op in H.ops]
+        assert H1 + H2 == H
 
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
     def test_hamiltonian_sub(self, H1, H2, H):
         """Tests that Hamiltonians are subtracted correctly"""
-        assert np.allclose((H1 - H2).coeffs, H.coeffs)
-        assert [(op.name, op.wires) for op in (H1 - H2).ops] == [(op.name, op.wires) for op in H.ops]
+        assert H1 - H2 == H
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
         """Tests that scalars and Hamiltonians are multiplied correctly"""
-        assert np.allclose((coeff * H).coeffs, res.coeffs)
-        assert [(op.name, op.wires) for op in (coeff * H).ops] == [(op.name, op.wires) for op in res.ops]
-
-        assert np.allclose((H * coeff).coeffs, res.coeffs)
-        assert [(op.name, op.wires) for op in (H * coeff).ops] == [(op.name, op.wires) for op in res.ops]
+        print(coeff * H)
+        assert coeff * H == res
+        assert H * coeff == res
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
         """Tests that Hamiltonians are tensored correctly"""
-        assert (H1 @ H2).coeffs == H.coeffs
-        assert [(op.name, op.wires) for op in (H1 @ H2).ops] == [(op.name, op.wires) for op in H.ops]
+        assert H1 @ H2 == H
 
 class TestVQE:
     """Test the core functionality of the VQE module"""

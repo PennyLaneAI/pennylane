@@ -118,8 +118,6 @@ class Hamiltonian:
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms."""
 
-        # NOTE: Do we want to convert Tensors composed of one element back into observables?
-
         coeffs = []
         ops = []
 
@@ -131,8 +129,7 @@ class Hamiltonian:
                     del coeffs[ops.index(op)]
                     del ops[ops.index(op)]
             else:
-                operator = op.prune()
-                ops.append(operator if isinstance(operator, Tensor) else Tensor(operator))
+                ops.append(op.prune())
                 coeffs.append(c)
 
         self._coeffs = coeffs
