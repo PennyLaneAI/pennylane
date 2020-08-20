@@ -181,8 +181,9 @@ def binary_symplectic_inner_prod(pauli_vec_1, pauli_vec_2):
 
     if len(pauli_vec_1) % 2 != 0:
         raise ValueError(
-            "Symplectic vector space must have even dimension, instead got vectors of shape {}."
-            .format(np.shape(pauli_vec_1))
+            "Symplectic vector space must have even dimension, instead got vectors of shape {}.".format(
+                np.shape(pauli_vec_1)
+            )
         )
 
     if not (
@@ -457,8 +458,9 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     if len(pauli_vec_1) % 2 != 0:
         raise ValueError(
-            "Symplectic vector space must have even dimension, instead got vectors of shape {}."
-            .format(np.shape(pauli_vec_1))
+            "Symplectic vector space must have even dimension, instead got vectors of shape {}.".format(
+                np.shape(pauli_vec_1)
+            )
         )
 
     if not (
