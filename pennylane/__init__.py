@@ -105,11 +105,11 @@ def device(name, *args, **kwargs):
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
-    * :mod:`'default.qubit.tf' <pennylane.devices.default_qubit.tf>`: a state simulator
+    * :mod:`'default.qubit.tf' <pennylane.devices.default_qubit_tf>`: a state simulator
       of qubit-based quantum circuit architectures written in TensorFlow, which allows
       automatic differentiation through the simulation.
 
-    * :mod:`'default.qubit.autograd' <pennylane.devices.default_qubit.autograd>`: a state simulator
+    * :mod:`'default.qubit.autograd' <pennylane.devices.default_qubit_autograd>`: a state simulator
       of qubit-based quantum circuit architectures which allows
       automatic differentiation through the simulation via python's autograd library.
 
