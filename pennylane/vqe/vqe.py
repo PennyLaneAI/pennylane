@@ -162,7 +162,9 @@ class Hamiltonian:
             obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
             tensor = []
             for ob in obs:
-                parameters = tuple(param.tostring() for param in ob.parameters) # Converts params into hashable type
+                parameters = tuple(
+                    param.tostring() for param in ob.parameters
+                )  # Converts params into hashable type
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
 
@@ -211,10 +213,7 @@ class Hamiltonian:
             coeffs.append(1)
             ops.append(H)
 
-        hamiltonian = qml.Hamiltonian(coeffs, ops)
-        hamiltonian.simplify()
-
-        return hamiltonian
+        return qml.Hamiltonian(coeffs, ops)
 
     def __mul__(self, a):
         coeffs = [a * c for c in self.coeffs.copy()]
@@ -238,6 +237,7 @@ class Hamiltonian:
 
     def __isub__(self, H):
         self.__iadd__(H.__mul__(-1))
+
 
 class VQECost:
     """Create a VQE cost function, i.e., a cost function returning the
