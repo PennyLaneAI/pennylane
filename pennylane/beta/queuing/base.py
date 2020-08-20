@@ -127,12 +127,6 @@ def decompose_queue(ops, device):
     new_ops = []
 
     for op in ops:
-        """
-        # Beta
-        if isinstance(op, qml.Observable):
-            new_ops.append(op)
-            break
-            """
 
         try:
             new_ops.extend(_decompose_queue([op], device))
