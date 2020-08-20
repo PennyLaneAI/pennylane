@@ -138,10 +138,10 @@ class Hamiltonian:
         coeffs2 = H.coeffs
         terms2 = H.ops
 
-        coeffs = [i[0] * i[1] for i in itertools.product(coeffs1, coeffs2)]
+        coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
         term_list = itertools.product(terms1, terms2)
 
-        terms = [qml.operation.Tensor(i[0], i[1]) for i in term_list]
+        terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
 
         return qml.Hamiltonian(coeffs, terms)
 
