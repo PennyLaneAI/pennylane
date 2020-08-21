@@ -218,7 +218,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     partitioned_coeffs = [[0] * len(g) for g in partitioned_paulis]
 
     for i, partition in enumerate(partitioned_paulis):
-        for j, pauli_Word in enumerate(partition):
+        for j, pauli_word in enumerate(partition):
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):
                     partitioned_coeffs[i][j] = coefficients[observables.index(observable)]
