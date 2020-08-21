@@ -1068,9 +1068,9 @@ Ville Bergholm, Josh Izaac, Johannes Jakob Meyer, Maria Schuld, Antal Száva.
   of an operator in the computational basis.
   [(#454)](https://github.com/XanaduAI/pennylane/pull/454)
 
-* Added a `QubitDevice` class which implements common functionalities of devices such that
-  plugins can rely on these implementations. The new `QubitDevice` also includes
-  a new `execute` method, which allows for more convenient device design. In addition, `QubitDevice`
+* Added a `QubitDevice` class which implements common functionalities of plugin devices such that
+  plugin devices can rely on these implementations. The new `QubitDevice` also includes
+  a new `execute` method, which allows for more convenient plugin design. In addition, `QubitDevice`
   also unifies the way samples are generated on qubit-based devices.
   [(#452)](https://github.com/XanaduAI/pennylane/pull/452)
   [(#473)](https://github.com/XanaduAI/pennylane/pull/473)
