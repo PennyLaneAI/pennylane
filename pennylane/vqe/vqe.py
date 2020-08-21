@@ -56,7 +56,7 @@ class Hamiltonian:
     Hamiltonian.
     """
 
-    def __init__(self, coeffs, observables):
+    def __init__(self, coeffs, observables, simplify=False):
 
         if len(coeffs) != len(observables):
             raise ValueError(
@@ -77,7 +77,9 @@ class Hamiltonian:
 
         self._coeffs = coeffs
         self._ops = observables
-        self.simplify()
+
+        if simplify:
+            self.simplify()
 
     @property
     def coeffs(self):
@@ -123,11 +125,18 @@ class Hamiltonian:
 
         for c, op in zip(self.coeffs, self.ops):
             op = op if isinstance(op, Tensor) else Tensor(op)
-            if op in ops:
-                coeffs[ops.index(op)] += c
-                if np.allclose([coeffs[ops.index(op)]], [0]):
-                    del coeffs[ops.index(op)]
-                    del ops[ops.index(op)]
+
+            ind = None
+            for i, other in enumerate(ops):
+                if op.compare(other):
+                    ind = i
+                    break
+
+            if ind is not None:
+                coeffs[ind] += c
+                if np.allclose([coeffs[ind]], [0]):
+                    del coeffs[ind]
+                    del ops[ind]
             else:
                 ops.append(op.prune())
                 coeffs.append(c)
@@ -167,9 +176,10 @@ class Hamiltonian:
 
         return data
 
-    def __eq__(self, H):
+    def compare(self, H):
 
-        if isinstance(H, type(self)):
+        val = False
+        if isinstance(H, Hamiltonian):
             val = self._data() == H._data()
         if isinstance(H, (Tensor, Observable)):
             val = self._data() == {(1, frozenset(H._data()))}
@@ -184,7 +194,7 @@ class Hamiltonian:
         coeffs = []
         terms = []
 
-        if isinstance(H, type(self)):
+        if isinstance(H, Hamiltonian):
             coeffs2 = H.coeffs
             terms2 = H.ops
 
@@ -196,21 +206,21 @@ class Hamiltonian:
             coeffs = coeffs1
             terms = [term @ H for term in terms1]
 
-        return qml.Hamiltonian(coeffs, terms)
+        return qml.Hamiltonian(coeffs, terms, simplify=True)
 
     def __add__(self, H):
 
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
 
-        if isinstance(H, type(self)):
+        if isinstance(H, Hamiltonian):
             coeffs.extend(H.coeffs.copy())
             ops.extend(H.ops.copy())
         if isinstance(H, (Tensor, Observable)):
             coeffs.append(1)
             ops.append(H)
 
-        return qml.Hamiltonian(coeffs, ops)
+        return qml.Hamiltonian(coeffs, ops, simplify=True)
 
     def __mul__(self, a):
         coeffs = [a * c for c in self.coeffs.copy()]
@@ -225,9 +235,11 @@ class Hamiltonian:
         if isinstance(H, Hamiltonian):
             self._coeffs.extend(H.coeffs.copy())
             self._ops.extend(H.ops.copy())
+            self.simplify()
         if isinstance(H, (Tensor, Observable)):
             self._coeffs.append(1)
             self._ops.append(H)
+            self.simplify()
 
     def __imul__(self, a):
         self._coeffs = [a * c for c in self.coeffs]

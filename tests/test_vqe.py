@@ -29,8 +29,7 @@ try:
     import tensorflow as tf
 
     if tf.__version__[0] == "1":
-        pass
-        #tf.enable_eager_execution()
+        tf.enable_eager_execution()
 
     from tensorflow import Variable
 except ImportError as e:
@@ -308,24 +307,23 @@ class TestHamiltonian:
     @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
     def test_hamiltonian_add(self, H1, H2, H):
         """Tests that Hamiltonians are added correctly"""
-        assert H1 + H2 == H
+        assert H.compare(H1 + H2)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
     def test_hamiltonian_sub(self, H1, H2, H):
         """Tests that Hamiltonians are subtracted correctly"""
-        assert H1 - H2 == H
+        assert H.compare(H1 - H2)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
         """Tests that scalars and Hamiltonians are multiplied correctly"""
-        print(coeff * H)
-        assert coeff * H == res
-        assert H * coeff == res
+        assert res.compare(coeff * H)
+        assert res.compare(H * coeff)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
         """Tests that Hamiltonians are tensored correctly"""
-        assert H1 @ H2 == H
+        assert H.compare(H1 @ H2)
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
@@ -348,6 +346,7 @@ class TestVQE:
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
         dev = mock_device(wires=3)
         circuits = qml.map(ansatz, observables, device=dev)
+        print(params)
         res = circuits(params)
         assert all(val == 1.0 for val in res)
 
