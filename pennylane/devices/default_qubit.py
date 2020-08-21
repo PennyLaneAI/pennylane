@@ -119,10 +119,10 @@ class DefaultQubit(QubitDevice):
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
             "Hadamard": self._apply_hadamard,
-            "SWAP": self._apply_swap,
             "S": self._apply_s,
             "T": self._apply_t,
             "CNOT": self._apply_cnot,
+            "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
         }
 
@@ -179,6 +179,58 @@ class DefaultQubit(QubitDevice):
         else:
             self._apply_unitary(matrix, wires)
 
+    def _apply_x(self, state, axes, **kwargs):
+        """Applies PauliX gate by rolling 1 unit along the axis specified in ``axes``.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        return self._roll(state, 1, axes[0])
+
+    def _apply_y(self, state, axes, **kwargs):
+        """Applies PauliY gate by adding a negative sign to the 1 index along the axis specified
+        in ``axes``, rolling one unit along the same axis, and multiplying the result by 1j.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        return 1j * self._apply_x(self._apply_z(state, axes), axes)
+
+    def _apply_z(self, state, axes, **kwargs):
+        """Applies PauliZ gate by adding a negative sign to the 1 index along the axis specified
+        in ``axes``.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        return self._apply_phase(state, axes, -1)
+
+    def _apply_hadamard(self, state, axes, **kwargs):
+        """Apply the Hadamard gate by combining the results of applying the PauliX and PauliZ gates.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        state_x = self._apply_x(state, axes)
+        state_z = self._apply_z(state, axes)
+        return SQRT2INV * (state_x + state_z)
+
     def _apply_s(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, 1j, inverse)
 
@@ -206,6 +258,21 @@ class DefaultQubit(QubitDevice):
 
         state_x = self._apply_x(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_x], axis=axes[0])
+
+    def _apply_swap(self, state, axes, **kwargs):
+        """Applies SWAP gate by performing a partial transposition along the specified axes.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        all_axes = list(range(len(state.shape)))
+        all_axes[axes[0]] = axes[1]
+        all_axes[axes[1]] = axes[0]
+        return self._transpose(state, all_axes)
 
     def _apply_cz(self, state, axes, **kwargs):
         """Applies a CZ gate by slicing along the first axis specified in ``axes`` and then
@@ -247,73 +314,6 @@ class DefaultQubit(QubitDevice):
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
-
-    def _apply_y(self, state, axes, **kwargs):
-        """Applies PauliY gate by adding a negative sign to the 1 index along the axis specified
-        in ``axes``, rolling one unit along the same axis, and multiplying the result by 1j.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        return 1j * self._apply_x(self._apply_z(state, axes), axes)
-
-    def _apply_z(self, state, axes, **kwargs):
-        """Applies PauliZ gate by adding a negative sign to the 1 index along the axis specified
-        in ``axes``.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        return self._apply_phase(state, axes, -1)
-
-    def _apply_x(self, state, axes, **kwargs):
-        """Applies PauliX gate by rolling 1 unit along the axis specified in ``axes``.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        return self._roll(state, 1, axes[0])
-
-    def _apply_hadamard(self, state, axes, **kwargs):
-        """Apply the Hadamard gate by combining the results of applying the PauliX and PauliZ gates.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        state_x = self._apply_x(state, axes)
-        state_z = self._apply_z(state, axes)
-        return SQRT2INV * (state_x + state_z)
-
-    def _apply_swap(self, state, axes, **kwargs):
-        """Applies SWAP gate by performing a partial transposition along the specified axes.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        all_axes = list(range(len(state.shape)))
-        all_axes[axes[0]] = axes[1]
-        all_axes[axes[1]] = axes[0]
-        return self._transpose(state, all_axes)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
