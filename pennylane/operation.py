@@ -800,7 +800,7 @@ class DiagonalOperation(Operation):
         return np.diag(cls._eigvals(*params))
 
 
-class Channel(Operation):
+class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
 
     As with :class:`~.Operation`, the following class attributes must be
@@ -835,7 +835,7 @@ class Channel(Operation):
     """
     # pylint: disable=abstract-method
 
-    @classmethod
+    @abc.abstractmethod
     def _kraus_matrices(cls, *params):
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
@@ -881,8 +881,6 @@ class Channel(Operation):
         return self._kraus_matrices(*self.parameters)
 
     def __init__(self, *params, wires=None, do_queue=True):
-
-        self._inverse = False
 
         # check the grad_method validity
         if self.par_domain == "R" and self.grad_method not in (None, "F"):

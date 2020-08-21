@@ -18,6 +18,7 @@ import itertools
 import functools
 from unittest.mock import patch
 
+import abc
 import pytest
 import numpy as np
 from numpy.linalg import multi_dot
@@ -1217,6 +1218,25 @@ class TestDecomposition:
 class TestChannel:
     """Unit tests for the Channel class"""
 
+    def test_instance_made_correctly(self):
+        """Test that instance of channel class is initialized correctly"""
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "F"
+
+            def _kraus_matrices(self, *params):
+                p = params[0]
+                K1 = np.sqrt(p) * X
+                K2 = np.sqrt(1-p) * I
+                return [K1, K2]
+
+        expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
+        op = DummyOp(0.1, wires=0)
+        assert np.all(op.kraus_matrices[0] == expected)
+
     def test_grad_method(self):
         """Test that an exception is raised if a gradient method is set to analytic
         as only finite difference or ``None`` is allowed at the moment. This can be updated
@@ -1229,7 +1249,13 @@ class TestChannel:
             par_domain = "R"
             grad_method = "A"
 
+            def _kraus_matrices(self, *params):
+                p = params[0]
+                K1 = np.sqrt(p) * X
+                K2 = np.sqrt(1-p) * I
+                return [K1, K2]
+
         with pytest.raises(
-            AssertionError, match="Analytic gradients can not be used for quantum channels"
+            ValueError, match="Analytic gradients can not be used for quantum channels"
         ):
             DummyOp(0.5, wires=0)
