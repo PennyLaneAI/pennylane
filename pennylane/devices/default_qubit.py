@@ -24,7 +24,7 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
@@ -132,6 +132,10 @@ class DefaultQubit(QubitDevice):
             self._apply_basis_state(operation.parameters[0], wires)
             return
 
+        if isinstance(operation, SWAP):
+            self._apply_SWAP(wires)
+            return
+
         matrix = self._get_unitary_matrix(operation)
 
         if isinstance(operation, DiagonalOperation):
@@ -141,6 +145,16 @@ class DefaultQubit(QubitDevice):
             self._apply_unitary_einsum(matrix, wires)
         else:
             self._apply_unitary(matrix, wires)
+
+    def _apply_SWAP(self, wires):
+        """Applies swap gate by performing a partial transposition along the axes specified by
+        ``wires``.
+
+        Args:
+            wires (Wires): target wires
+        """
+        axes = [self.wires.index(w) for w in wires]
+        self._state = self._transpose(self._state, axes)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
