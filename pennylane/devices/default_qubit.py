@@ -122,6 +122,8 @@ class DefaultQubit(QubitDevice):
             "SWAP": self._apply_swap,
             "S": self._apply_s,
             "T": self._apply_t,
+            "CNOT": self._apply_cnot,
+            "CZ": self._apply_cz,
         }
 
     def apply(self, operations, rotations=None, **kwargs):
@@ -183,6 +185,50 @@ class DefaultQubit(QubitDevice):
     def _apply_t(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, TPHASE, inverse)
 
+    def _apply_cnot(self, state, axes, **kwargs):
+        """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
+        applying an X transformation along the second axis.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        sl_0 = _get_slice(0, axes[0], self.num_wires)
+        sl_1 = _get_slice(1, axes[0], self.num_wires)
+
+        if axes[1] > axes[0]:
+            target_axes = [axes[1] - 1]
+        else:
+            target_axes = [axes[1]]
+
+        state_x = self._apply_x(state[sl_1], axes=target_axes)
+        return self._stack([state[sl_0], state_x], axis=axes[0])
+
+    def _apply_cz(self, state, axes, **kwargs):
+        """Applies a CZ gate by slicing along the first axis specified in ``axes`` and then
+        applying a Z transformation along the second axis.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        sl_0 = _get_slice(0, axes[0], self.num_wires)
+        sl_1 = _get_slice(1, axes[0], self.num_wires)
+
+        if axes[1] > axes[0]:
+            target_axes = [axes[1] - 1]
+        else:
+            target_axes = [axes[1]]
+
+        state_z = self._apply_z(state[sl_1], axes=target_axes)
+        return self._stack([state[sl_0], state_z], axis=axes[0])
+
     def _apply_phase(self, state, axes, parameters, inverse=False):
         """Applies a phase onto the 1 index along the axis specified in ``axes``.
 
@@ -195,11 +241,11 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
+        num_wires = len(state.shape)
+        sl_0 = _get_slice(0, axes[0], num_wires)
+        sl_1 = _get_slice(1, axes[0], num_wires)
 
         phase = self._conj(parameters) if inverse else parameters
-
         return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
 
     def _apply_y(self, state, axes, **kwargs):
