@@ -25,7 +25,7 @@ from string import ascii_letters as ABC
 import numpy as np
 
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX, \
-    Hadamard, PauliZ
+    Hadamard, PauliZ, S, T, PauliY
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
@@ -33,6 +33,7 @@ ABC_ARRAY = np.array(list(ABC))
 # tolerance for numerical errors
 tolerance = 1e-10
 SQRT2INV = 1 / np.sqrt(2)
+TPHASE = np.exp(1j * np.pi / 4)
 
 
 def get_slice(index, axis, num_axes):
@@ -145,8 +146,20 @@ class DefaultQubit(QubitDevice):
             self._state = self._apply_x(self._state, wires[0])
             return
 
+        if isinstance(operation, PauliY):
+            self._state = self._apply_y(self._state, wires[0])
+            return
+
         if isinstance(operation, PauliZ):
             self._state = self._apply_z(self._state, wires[0])
+            return
+
+        if isinstance(operation, S):
+            self._state = self._apply_phase(self._state, wires[0], 1j, operation.inverse)
+            return
+
+        if isinstance(operation, T):
+            self._state = self._apply_phase(self._state, wires[0], TPHASE, operation.inverse)
             return
 
         if isinstance(operation, Hadamard):
@@ -167,13 +180,14 @@ class DefaultQubit(QubitDevice):
         else:
             self._apply_unitary(matrix, wires)
 
-    def _apply_z(self, state, wire):
-        """Applies PauliZ gate by adding a negative sign to the 1 index along the axis specified
-        by ``wire``
+    def _apply_phase(self, state, wire, phase, inverse=False):
+        """Applies a phase onto the 1 index along the axis specified by ``wire``.
 
         Args:
             state (array[complex]): input state
             wire (Wires): target wire
+            phase (float): phase to apply
+            inverse (bool): whether to apply the inverse phase
 
         Returns:
             array[complex]: output state
@@ -183,7 +197,35 @@ class DefaultQubit(QubitDevice):
         sl_0 = get_slice(0, axis, self.num_wires)
         sl_1 = get_slice(1, axis, self.num_wires)
 
-        return self._stack([state[sl_0], -state[sl_1]], axis=axis)
+        phase = self._conj(phase) if inverse else phase
+
+        return self._stack([state[sl_0], phase * state[sl_1]], axis=axis)
+
+    def _apply_y(self, state, wire):
+        """Applies PauliY gate by adding a negative sign to the 1 index along the axis specified
+        by ``wire``, rolling one unit along the same axis, and multiplying the result by 1j.
+
+        Args:
+            state (array[complex]): input state
+            wire (Wires): target wire
+
+        Returns:
+            array[complex]: output state
+        """
+        return 1j * self._apply_x(self._apply_z(state, wire), wire)
+
+    def _apply_z(self, state, wire):
+        """Applies PauliZ gate by adding a negative sign to the 1 index along the axis specified
+        by ``wire``.
+
+        Args:
+            state (array[complex]): input state
+            wire (Wires): target wire
+
+        Returns:
+            array[complex]: output state
+        """
+        return self._apply_phase(state, wire, -1)
 
     def _apply_x(self, state, wire):
         """Applies PauliX gate by rolling 1 unit along the axis specified by ``wire``.
