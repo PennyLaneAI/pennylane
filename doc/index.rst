@@ -152,8 +152,8 @@ If you are doing research using PennyLane, please cite
 Support and contribution
 ------------------------
 
-- **Source Code:** https://github.com/XanaduAI/PennyLane
-- **Issue Tracker:** https://github.com/XanaduAI/PennyLane/issues
+- **Source Code:** https://github.com/PennyLaneAI/pennylane
+- **Issue Tracker:** https://github.com/PennyLaneAI/pennylane/issues
 
 If you are having issues, please let us know by posting the issue on our GitHub issue tracker.
 

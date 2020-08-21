@@ -31,7 +31,7 @@ On the other hand, the following changes typically require an ADR proposal:
 * Structural changes to the source code, documentation, or tests
 
 If you are unsure if a change requires an ADR proposal or not, please open a
-`GitHub issue <https://github.com/XanaduAI/pennylane/issue>`__ or post in the
+`GitHub issue <https://github.com/PennyLaneAI/pennylane/issues>`__ or post in the
 `discussion forum <https://discuss.pennylane.ai>`__ to discuss it with the PennyLane
 development team.
 
@@ -44,7 +44,6 @@ The ADR is a Markdown or reStructuredText document that outlines:
 * The context behind this design discussion,
 
 * Analysis of potential options, pros/cons of each approach, and any implementation 'gotchas' that
-
   might arise, and
 
 * A summary of the decision and an outline of the required work package.
