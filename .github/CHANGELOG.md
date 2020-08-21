@@ -293,7 +293,7 @@ Isacsson, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucc
   ```
 
   See the `default.qubit.tf`
-  [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.devices.DefaultQubitTF.html)
+  [documentation](https://pennylane.ai/en/stable/code/api/pennylane.beta.plugins.DefaultQubitTF.html)
   for more details.
 
 * The [default.tensor device](https://github.com/XanaduAI/pennylane/blob/master/pennylane/beta/devices/default_tensor.py)
