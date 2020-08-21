@@ -810,17 +810,17 @@ class Channel(Operation, abc.ABC):
     * :attr:`~.Operator.num_wires`
     * :attr:`~.Operator.par_domain`
 
+    To define a noisy channel, the following attribute of :class:`~.Channel`
+    can be used to list the corresponding Kraus matrices.
+
+    * :attr:`~.Channel._kraus_matrices`
+
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
     differentiation.
 
     * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
-
-    To define a noisy channel, the following attribute of :class:`~.Channel`
-    can be used to list the corresponding Kraus matrices.
-
-    * :attr:`~.Channel._kraus_matrices`
 
     Args:
         params (tuple[float, int, array, Variable]): operation parameters
@@ -835,6 +835,7 @@ class Channel(Operation, abc.ABC):
     """
     # pylint: disable=abstract-method
 
+    @classmethod
     @abc.abstractmethod
     def _kraus_matrices(cls, *params):
         """Kraus matrices representing a quantum channel, specified in
