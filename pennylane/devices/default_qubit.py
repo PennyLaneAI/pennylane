@@ -24,7 +24,7 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, Hadamard
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
@@ -132,6 +132,10 @@ class DefaultQubit(QubitDevice):
             self._apply_basis_state(operation.parameters[0], wires)
             return
 
+        if isinstance(operation, PauliX):
+            self._state = self._apply_x(self._state, wires[0])
+            return
+
         if isinstance(operation, SWAP):
             self._state = self._apply_swap(self._state, wires)
             return
@@ -145,6 +149,19 @@ class DefaultQubit(QubitDevice):
             self._apply_unitary_einsum(matrix, wires)
         else:
             self._apply_unitary(matrix, wires)
+
+    def _apply_x(self, state, wire):
+        """Applies PauliX gate by rolling 1 unit along the axis specified by ``wire``.
+
+        Args:
+            state (array[complex]): input state
+            wire (Wires): target wire
+
+        Returns:
+            array[complex]: output state
+        """
+        axis = self.wires.index(wire)
+        return self._roll(state, 1, axis)
 
     def _apply_swap(self, state, wires):
         """Applies SWAP gate by performing a partial transposition along the axes specified by

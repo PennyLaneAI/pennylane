@@ -156,6 +156,7 @@ class DefaultQubitTF(DefaultQubit):
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
     _imag = staticmethod(tf.math.conj)
+    _roll = staticmethod(tf.roll)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

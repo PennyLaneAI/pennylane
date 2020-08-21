@@ -106,6 +106,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _tensordot = staticmethod(np.tensordot)
     _conj = staticmethod(np.conj)
     _imag = staticmethod(np.imag)
+    _roll = staticmethod(np.roll)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
