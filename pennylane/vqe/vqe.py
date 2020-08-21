@@ -118,7 +118,7 @@ class Hamiltonian:
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
     def simplify(self):
-        r"""Simplifies the Hamiltonian by combining like-terms."""
+        r"""Simplifies qml.Hamiltonian objects by combining like-terms."""
 
         coeffs = []
         ops = []
@@ -161,7 +161,8 @@ class Hamiltonian:
         return "\n+ ".join(terms)
 
     def obs_data(self):
-
+        r"""Extracts the data from each Tensor/Observable in a qml.Hamiltonian object.
+        """
         data = set()
 
         for co, op in zip(*self.terms):
@@ -177,7 +178,8 @@ class Hamiltonian:
         return data
 
     def compare(self, H):
-
+        r"""Compares two qml.Hamiltonian objects/Observables/Tensors to determine if they are equivalent.
+        """
         val = False
         if isinstance(H, Hamiltonian):
             val = self.obs_data() == H.obs_data()
@@ -187,7 +189,8 @@ class Hamiltonian:
         return val
 
     def __matmul__(self, H):
-
+        r"""The tensor product operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         coeffs1 = self.coeffs.copy()
         terms1 = self.ops.copy()
 
@@ -209,7 +212,8 @@ class Hamiltonian:
         return qml.Hamiltonian(coeffs, terms, simplify=True)
 
     def __add__(self, H):
-
+        r"""The addition operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
 
@@ -223,15 +227,21 @@ class Hamiltonian:
         return qml.Hamiltonian(coeffs, ops, simplify=True)
 
     def __mul__(self, a):
+        r"""The scalar multiplication operation between a scalar and a qml.Hamiltonian object.
+        """
         coeffs = [a * c for c in self.coeffs.copy()]
         return qml.Hamiltonian(coeffs, self.ops.copy())
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
+        r"""The subtraction operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         return self.__add__(H.__mul__(-1))
 
     def __iadd__(self, H):
+        r"""The inplace addition operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         if isinstance(H, Hamiltonian):
             self._coeffs.extend(H.coeffs.copy())
             self._ops.extend(H.ops.copy())
@@ -244,11 +254,15 @@ class Hamiltonian:
         return self
 
     def __imul__(self, a):
+        r"""The inplace scalar multiplication operation between a scalar and a qml.Hamiltonian object.
+        """
         self._coeffs = [a * c for c in self.coeffs]
 
         return self
 
     def __isub__(self, H):
+        r"""The inplace subtraction operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         self.__iadd__(H.__mul__(-1))
 
         return self

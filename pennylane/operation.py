@@ -907,7 +907,7 @@ class Observable(Operator):
         raise ValueError("Can only perform tensor products between observables.")
 
     def obs_data(self):
-
+        r"""Extracts the data from an Observable/Tensor."""
         obs = Tensor(self).non_identity_obs
         tensor = set()
 
@@ -918,7 +918,8 @@ class Observable(Operator):
         return tensor
 
     def compare(self, other):
-
+        r"""Compares two Observables/Tensors/qml.Hamiltonian objects to determine if they are equivalent.
+        """
         val = False
         if isinstance(other, (Observable, Tensor)):
             val = self.obs_data() == other.obs_data()
@@ -928,7 +929,8 @@ class Observable(Operator):
         return val
 
     def __add__(self, other):
-
+        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects.
+        """
         if isinstance(other, (Observable, Tensor)):
             val = qml.Hamiltonian([1, 1], [self, other], simplify=True)
         if isinstance(other, qml.Hamiltonian):
@@ -937,11 +939,15 @@ class Observable(Operator):
         return val
 
     def __mul__(self, a):
+        r"""The scalar multiplication operation between a scalar and an Observable/Tensor.
+        """
         return qml.Hamiltonian([a], [self], simplify=True)
 
     __rmul__ = __mul__
 
     def __sub__(self, other):
+        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects.
+        """
         return self.__add__(other.__mul__(-1))
 
     def diagonalizing_gates(self):
