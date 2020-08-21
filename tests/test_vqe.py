@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.vqe` submodule.
 import pytest
 import pennylane as qml
 import numpy as np
+from pennylane.wires import Wires
 
 
 try:
@@ -92,6 +93,21 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), [0.5 * 1.0, 0]),
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), [0.5 * 1.0, 1.2 * 1.0]),
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
+]
+
+simplify_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([-1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+        qml.Hamiltonian([1], [qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([1, 0.5], [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Identity(2) @ qml.PauliX(0)]),
+        qml.Hamiltonian([1.5], [qml.PauliX(0) @ qml.PauliY(1)])
+    )
 ]
 
 equal_hamiltonians = [
@@ -335,6 +351,24 @@ class TestHamiltonian:
         """
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+
+    @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
+    def test_simplify(self, old_H, new_H):
+        """Tests the simplify method"""
+        old_H.simplify()
+        assert old_H.compare(new_H)
+
+    def test_data(self):
+        """Tests the obs_data method"""
+
+        H = qml.Hamiltonian([1, 1, 0.5], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(2) @ qml.Identity(1)])
+        data = H.obs_data()
+
+        assert data == {
+            (1, frozenset([('PauliZ', Wires(0), ())])),
+            (1, frozenset([('PauliZ', Wires(0), ()), ('PauliX', Wires(1), ())])),
+            (0.5, frozenset([('PauliX', Wires(2), ())]))
+        }
 
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
