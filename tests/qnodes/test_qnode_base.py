@@ -841,13 +841,15 @@ class TestQNodeArgs:
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
-        def circuit(matrix):
+        def circuit(phi, matrix):
+            qml.RZ(phi, wires=0)
             qml.PauliY(0)
             qml.QubitUnitary(matrix, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         matrix = np.array([[1, 0], [0, 0.70710678 + 0.70710678*1.j]])
-        res = circuit(matrix)
+        arg = 0
+        res = circuit(arg, matrix)
         assert np.isclose(res, -1, atol=tol)
 
 
