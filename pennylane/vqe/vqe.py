@@ -160,7 +160,7 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
-    def _data(self):
+    def data(self):
 
         data = set()
 
@@ -180,9 +180,9 @@ class Hamiltonian:
 
         val = False
         if isinstance(H, Hamiltonian):
-            val = self._data() == H._data()
+            val = self.data() == H.data()
         if isinstance(H, (Tensor, Observable)):
-            val = self._data() == {(1, frozenset(H._data()))}
+            val = self.data() == {(1, frozenset(H.data()))}
 
         return val
 

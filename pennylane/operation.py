@@ -906,18 +906,24 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
-    def _data(self):
+    def obs_data(self):
 
-        parameters = tuple(param.tostring() for param in self.parameters)
-        return {(self.name, self.wires, parameters)}
+        obs = Tensor(self).non_identity_obs
+        tensor = set()
+
+        for ob in obs:
+            parameters = tuple(param.tostring() for param in ob.parameters)
+            tensor.add((ob.name, ob.wires, parameters))
+
+        return tensor
 
     def compare(self, other):
 
         val = False
         if isinstance(other, (Observable, Tensor)):
-            val = self._data() == other._data()
+            val = self.obs_data() == other.obs_data()
         if isinstance(other, qml.Hamiltonian):
-            val = other._data() == self._data()
+            val = other.obs_data() == self.obs_data()
 
         return val
 
@@ -1057,17 +1063,6 @@ class Tensor(Observable):
             in the tensor product
         """
         return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
-
-    def _data(self):
-
-        obs = self.non_identity_obs
-        tensor = set()
-
-        for ob in obs:
-            parameters = tuple(param.tostring() for param in ob.parameters)
-            tensor.add((ob.name, ob.wires, parameters))
-
-        return tensor
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
