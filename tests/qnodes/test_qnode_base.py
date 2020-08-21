@@ -834,6 +834,22 @@ class TestQNodeArgs:
         c = node(1.0, x=np.pi, y=10)
         assert c == pytest.approx(-1.0, abs=tol)
 
+    def test_complex_positional_argument_qubitunitary(self, tol):
+        """Tests that matrices containing complex positional arguments can be
+        passed to the QubitUnitary operation."""
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(matrix):
+            qml.PauliY(0)
+            qml.QubitUnitary(matrix, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        matrix = np.array([[1, 0], [0, 0.70710678 + 0.70710678*1.j]])
+        res = circuit(matrix)
+        assert np.isclose(res, -1, atol=tol)
+
 
 class TestQNodeCaching:
     """Tests for the QNode construction caching"""
