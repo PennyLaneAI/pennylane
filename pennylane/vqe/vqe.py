@@ -160,7 +160,7 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
-    def data(self):
+    def obs_data(self):
 
         data = set()
 
@@ -180,9 +180,9 @@ class Hamiltonian:
 
         val = False
         if isinstance(H, Hamiltonian):
-            val = self.data() == H.data()
+            val = self.obs_data() == H.obs_data()
         if isinstance(H, (Tensor, Observable)):
-            val = self.data() == {(1, frozenset(H.data()))}
+            val = self.obs_data() == {(1, frozenset(H.obs_data()))}
 
         return val
 
@@ -241,11 +241,17 @@ class Hamiltonian:
             self._ops.append(H)
             self.simplify()
 
+        return self
+
     def __imul__(self, a):
         self._coeffs = [a * c for c in self.coeffs]
 
+        return self
+
     def __isub__(self, H):
         self.__iadd__(H.__mul__(-1))
+
+        return self
 
 
 class VQECost:

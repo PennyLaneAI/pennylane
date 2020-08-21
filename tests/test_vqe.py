@@ -94,6 +94,34 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
 ]
 
+equal_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        True
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
+        True
+    ),
+    (
+        qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        False
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        True
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliZ(0)]),
+        qml.PauliZ(0),
+        True
+    )
+]
+
 add_hamiltonians = [
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -137,6 +165,16 @@ sub_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
         qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
         qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.PauliX(0) @ qml.Identity(1),
+        qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hadamard(1),
+        qml.Hamiltonian([1.3, -0.8, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
     )
 ]
 
@@ -297,22 +335,16 @@ class TestHamiltonian:
         """
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
-    '''
-    @pytest.mark.parametrize(("H1", "H2", "H"), equal_hamiltonians)
+
+    @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
-        assert (H1 == H2) == res
-    '''
+        assert H1.compare(H2) == res
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
     def test_hamiltonian_add(self, H1, H2, H):
         """Tests that Hamiltonians are added correctly"""
         assert H.compare(H1 + H2)
-
-    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
-    def test_hamiltonian_sub(self, H1, H2, H):
-        """Tests that Hamiltonians are subtracted correctly"""
-        assert H.compare(H1 - H2)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
@@ -320,10 +352,33 @@ class TestHamiltonian:
         assert res.compare(coeff * H)
         assert res.compare(H * coeff)
 
+    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
+    def test_hamiltonian_sub(self, H1, H2, H):
+        """Tests that Hamiltonians are subtracted correctly"""
+        assert H.compare(H1 - H2)
+
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
         """Tests that Hamiltonians are tensored correctly"""
         assert H.compare(H1 @ H2)
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
+    def test_hamiltonian_iadd(self, H1, H2, H):
+        """Tests that Hamiltonians are added inline correctly"""
+        H1 += H2
+        assert H.compare(H1)
+
+    @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
+    def test_hamiltonian_imul(self, coeff, H, res):
+        """Tests that scalars and Hamiltonians are multiplied inline correctly"""
+        H *= coeff
+        assert res.compare(H)
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
+    def test_hamiltonian_isub(self, H1, H2, H):
+        """Tests that Hamiltonians are subtracted inline correctly"""
+        H1 -= H2
+        assert H.compare(H1)
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
