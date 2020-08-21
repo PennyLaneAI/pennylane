@@ -1374,7 +1374,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
 
 * Sampling support: QNodes can now return a specified number of samples
   from a given observable via the top-level `pennylane.sample()` function.
-  To support this on devices, there is a new `Device.sample` method.
+  To support this on plugin devices, there is a new `Device.sample` method.
 
   Calculating gradients of QNodes that involve sampling is not possible.
   [(#256)](https://github.com/XanaduAI/pennylane/pull/256)
