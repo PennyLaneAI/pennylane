@@ -24,7 +24,7 @@ from pennylane.operation import Channel
 
 class AmplitudeDamping(Channel):
     r"""AmplitudeDamping(gamma, wires)
-    Amplitude damping channel in the Kraus representation.
+    Single-qubit amplitude damping error channel.
 
     Interaction with the environment can lead to changes in the state populations of a qubit.
     This is the phenomenon behind scattering, dissipation, attenuation, and spontaneous emission.
@@ -50,7 +50,7 @@ class AmplitudeDamping(Channel):
     * Number of parameters: 1
 
     Args:
-        gamma (float): amplitude damping probability :math:`\gamma`
+        gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_params = 1
@@ -69,11 +69,10 @@ class AmplitudeDamping(Channel):
 
 class GeneralizedAmplitudeDamping(Channel):
     r"""GeneralizedAmplitudeDamping(gamma, p, wires)
-    Generalized amplitude damping channel in the Kraus representation.
+    Single-qubit generalized amplitude damping error channel.
 
     This channel models the exchange of energy between a qubit and its environment
-    at finite temperatures. :math:`\gamma` is the probability of damping and
-    :math:`p` is the probability of system being excited by the environment.
+    at finite temperatures, with the following Kraus matrices:
 
     .. math::
         K_1 = \sqrt{p} \begin{bmatrix}
@@ -99,14 +98,17 @@ class GeneralizedAmplitudeDamping(Channel):
                 \sqrt{\gamma} & 0
                 \end{bmatrix}
 
+    where :math:`\gamma` is the probability of damping and :math:`p` is the
+    probability of the system being excited by the environment.
+
     **Details:**
 
     * Number of wires: 1
     * Number of parameters: 2
 
     Args:
-        gamma (float): amplitude damping probability :math:`\gamma`
-        p (float): excitation probability :math:`p`
+        gamma (float): amplitude damping probability
+        p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_params = 2
@@ -126,10 +128,10 @@ class GeneralizedAmplitudeDamping(Channel):
 
 class PhaseDamping(Channel):
     r"""PhaseDamping(gamma, wires)
-    Phase damping channel in the Kraus representation.
+    Single-qubit phase damping error channel.
 
     Interaction with the environment can lead to loss of quantum information changes without any
-    loss in energy. This can be modelled by the phase damping channel, with
+    changes in qubit excitations. This can be modelled by the phase damping channel, with
     the following Kraus matrices:
 
     .. math::
@@ -152,7 +154,7 @@ class PhaseDamping(Channel):
     * Number of parameters: 1
 
     Args:
-        gamma (float): phase damping probability :math:`\gamma`
+        gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_params = 1
@@ -170,9 +172,9 @@ class PhaseDamping(Channel):
 
 class DepolarizingChannel(Channel):
     r"""DepolarizingChannel(p, wires)
-    Symmetrically depolarizing channel in the Kraus representation.
+    Single-qubit symmetrically depolarizing error channel.
 
-    With probability :math:`p`, qubit is equally depolarized in all Pauli directions. This can
+    With probability :math:`p`, a qubit is equally depolarized in all Pauli directions. This can
     be modelled by the following Kraus matrices:
 
     .. math::

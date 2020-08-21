@@ -48,7 +48,7 @@ class TestChannels:
     def test_probabilities_valid(self, ops):
         if ops.__name__ == "GeneralizedAmplitudeDamping":
             with pytest.raises(ValueError, match="Probabilities of noisy processes should not exceed 1."):
-                ops(0.1, 1.1, wires=0)
+                ops(1.1, 1.1, wires=0)
 
         with pytest.raises(ValueError, match="Probabilities of noisy processes should not exceed 1."):
             ops(1.1, wires=0)
