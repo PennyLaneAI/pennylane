@@ -24,13 +24,14 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX, Hadamard
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
 
 # tolerance for numerical errors
 tolerance = 1e-10
+SQRT2INV = 1 / np.sqrt(2)
 
 
 class DefaultQubit(QubitDevice):
@@ -136,6 +137,10 @@ class DefaultQubit(QubitDevice):
             self._state = self._apply_x(self._state, wires[0])
             return
 
+        if isinstance(operation, Hadamard):
+            self._state = self._apply_hadamard(self._state, wires[0])
+            return
+
         if isinstance(operation, SWAP):
             self._state = self._apply_swap(self._state, wires)
             return
@@ -162,6 +167,14 @@ class DefaultQubit(QubitDevice):
         """
         axis = self.wires.index(wire)
         return self._roll(state, 1, axis)
+
+    def _apply_hadamard(self, state, wire):
+        state_x = self._apply_x(state, wire)
+
+
+
+        state = self._stack(state)
+        return SQRT2INV * (state + state_x)
 
     def _apply_swap(self, state, wires):
         """Applies SWAP gate by performing a partial transposition along the axes specified by
