@@ -1431,7 +1431,7 @@ Johannes Jakob Meyer, Maria Schuld, Antal Száva, Roeland Wiersema.
     which will alert the user that an operation with `num_wires = All`
     is being incorrectly.
 
-* The one-qubit rotations in `pennylane.devices.default_qubit` no longer depend on Scipy's `expm`. Instead
+* The one-qubit rotations in `pennylane.plugins.default_qubit` no longer depend on Scipy's `expm`. Instead
   they are calculated with Euler's formula.
   [(#292)](https://github.com/XanaduAI/pennylane/pull/292)
 
