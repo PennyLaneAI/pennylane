@@ -36,8 +36,17 @@ SQRT2INV = 1 / np.sqrt(2)
 TPHASE = np.exp(1j * np.pi / 4)
 
 
-def get_slice(index, axis, num_axes):
-    """TODO"""
+def _get_slice(index, axis, num_axes):
+    """Allows slicing into the index of an array or tensor along an arbitrary axis.
+
+    Args:
+        index (int): the index to access
+        axis (int): the axis to slice into
+        num_axes (int): total number of axes
+
+    Returns:
+        tuple[slice or int]: a tuple that can be used to slice into an array or tensor
+    """
     idx = [slice(None)] * num_axes
     idx[axis] = index
     return tuple(idx)
@@ -194,8 +203,8 @@ class DefaultQubit(QubitDevice):
         """
         axis = self.wires.index(wire)
 
-        sl_0 = get_slice(0, axis, self.num_wires)
-        sl_1 = get_slice(1, axis, self.num_wires)
+        sl_0 = _get_slice(0, axis, self.num_wires)
+        sl_1 = _get_slice(1, axis, self.num_wires)
 
         phase = self._conj(phase) if inverse else phase
 
