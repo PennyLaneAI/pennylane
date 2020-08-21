@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
 from pennylane.templates import template
-from pennylane.grouping.utils import pauli_to_binary, is_qwc, get_n_qubits
+from pennylane.grouping.utils import pauli_to_binary, is_qwc
 import numpy as np
 
 
@@ -44,11 +44,9 @@ def qwc_rotation(pauli_dict):
     """
     pauli_ops = (qml.PauliX, qml.PauliY, qml.PauliZ)
     if not all(isinstance(value, pauli_ops) for value in pauli_dict.values()):
-        idx = [[isinstance(value, pauli_ops) for value in pauli_dict.values()].index(False)]
-        value_type = type(list(pauli_dict.values()))
         raise TypeError(
             "All values of input pauli_dict must be either PauliX, PauliY, or PauliZ instances,"
-            " instead got {} instance.".format(value_type)
+            " instead got values: {}.".format(pauli_dict.values())
         )
 
     for wire in pauli_dict:
