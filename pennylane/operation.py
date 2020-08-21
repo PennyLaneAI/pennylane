@@ -803,7 +803,7 @@ class Channel(Operation):
 
     # pylint: disable=abstract-method
 
-    @classmethod
+    @abc.abstractmethod
     def _kraus_matrices(cls, *params):
         raise NotImplementedError
 
@@ -812,7 +812,6 @@ class Channel(Operation):
         return self._kraus_matrices(*self.parameters)
 
     def __init__(self, *params, wires=None, do_queue=True):
-        self._inverse = False
         # check the grad_method validity
         if self.par_domain == "R" and self.grad_method not in (None, "F"):
             raise ValueError("Analytic gradients can not be used for quantum channels.")

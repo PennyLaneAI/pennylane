@@ -44,12 +44,14 @@ class TestChannels:
         kd = [k.conj().T for k in km]
         assert np.allclose(np.sum(np.array([a @ b for a, b in zip(kd, km)]), axis=0), np.eye(2), atol=tol, rtol=0)
 
-    # @pytest.mark.parametrize("ops", ch_list)
-    # def test_correct_probabilities(self, ops):
-    #     if ops.parameters() > 1:
-    #         raise ValueError("Probabilities for noisy processes should not exceed 1")
-    #     op = ops(1.1, wires=0)
+    @pytest.mark.parametrize("ops", ch_list)
+    def test_probabilities_valid(self, ops):
+        if ops.__name__ == "GeneralizedAmplitudeDamping":
+            with pytest.raises(ValueError, match="Probabilities of noisy processes should not exceed 1."):
+                ops(0.1, 1.1, wires=0)
 
+        with pytest.raises(ValueError, match="Probabilities of noisy processes should not exceed 1."):
+            ops(1.1, wires=0)
 
     def test_amplitude_damping(self, tol):
         """Tests for amplitude damping channel"""
