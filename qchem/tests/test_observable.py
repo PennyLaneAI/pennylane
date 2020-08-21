@@ -79,7 +79,7 @@ from openfermion.ops._qubit_operator import QubitOperator
         ),
     ],
 )
-def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
+def test_observable(me_table, init_term, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the 'observable' function used to build many-body observables.
 
     The parametrized inputs `terms_exp` are `.terms` attribute of the corresponding
@@ -87,12 +87,12 @@ def test_observable(me_table, init_term, mapping, terms_exp, monkeypatch):
     as it could be something useful to the users as well.
     """
 
-    res_obs = qchem.observable(me_table, init_term=init_term, mapping=mapping)
+    res_obs = qchem.observable(me_table, init_term=init_term, mapping=mapping, wires=custom_wires)
 
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(qubit_op, res_obs)
+    assert qchem._qubit_operators_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
 @pytest.mark.parametrize(
