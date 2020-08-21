@@ -24,7 +24,8 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX, Hadamard
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX, \
+    Hadamard, PauliZ
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
@@ -144,6 +145,10 @@ class DefaultQubit(QubitDevice):
             self._state = self._apply_x(self._state, wires[0])
             return
 
+        if isinstance(operation, PauliZ):
+            self._state = self._apply_z(self._state, wires[0])
+            return
+
         if isinstance(operation, Hadamard):
             self._state = self._apply_hadamard(self._state, wires[0])
             return
@@ -162,6 +167,24 @@ class DefaultQubit(QubitDevice):
         else:
             self._apply_unitary(matrix, wires)
 
+    def _apply_z(self, state, wire):
+        """Applies PauliZ gate by adding a negative sign to the 1 index along the axis specified
+        by ``wire``
+
+        Args:
+            state (array[complex]): input state
+            wire (Wires): target wire
+
+        Returns:
+            array[complex]: output state
+        """
+        axis = self.wires.index(wire)
+
+        sl_0 = get_slice(0, axis, self.num_wires)
+        sl_1 = get_slice(1, axis, self.num_wires)
+
+        return self._stack([state[sl_0], -state[sl_1]], axis=axis)
+
     def _apply_x(self, state, wire):
         """Applies PauliX gate by rolling 1 unit along the axis specified by ``wire``.
 
@@ -176,14 +199,9 @@ class DefaultQubit(QubitDevice):
         return self._roll(state, 1, axis)
 
     def _apply_hadamard(self, state, wire):
-        axis = self.wires.index(wire)
         state_x = self._apply_x(state, wire)
-
-        sl_0 = get_slice(0, axis, self.num_wires)
-        sl_1 = get_slice(1, axis, self.num_wires)
-
-        state = self._stack([state[sl_0], -state[sl_1]], axis=axis)
-        return SQRT2INV * (state + state_x)
+        state_z = self._apply_z(state, wire)
+        return SQRT2INV * (state_x + state_z)
 
     def _apply_swap(self, state, wires):
         """Applies SWAP gate by performing a partial transposition along the axes specified by
