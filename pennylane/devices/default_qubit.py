@@ -180,7 +180,7 @@ class DefaultQubit(QubitDevice):
             self._apply_unitary(matrix, wires)
 
     def _apply_x(self, state, axes, **kwargs):
-        """Applies PauliX gate by rolling 1 unit along the axis specified in ``axes``.
+        """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
 
         Args:
             state (array[complex]): input state
@@ -192,7 +192,7 @@ class DefaultQubit(QubitDevice):
         return self._roll(state, 1, axes[0])
 
     def _apply_y(self, state, axes, **kwargs):
-        """Applies PauliY gate by adding a negative sign to the 1 index along the axis specified
+        """Applies a PauliY gate by adding a negative sign to the 1 index along the axis specified
         in ``axes``, rolling one unit along the same axis, and multiplying the result by 1j.
 
         Args:
@@ -205,7 +205,7 @@ class DefaultQubit(QubitDevice):
         return 1j * self._apply_x(self._apply_z(state, axes), axes)
 
     def _apply_z(self, state, axes, **kwargs):
-        """Applies PauliZ gate by adding a negative sign to the 1 index along the axis specified
+        """Applies a PauliZ gate by adding a negative sign to the 1 index along the axis specified
         in ``axes``.
 
         Args:
@@ -260,7 +260,7 @@ class DefaultQubit(QubitDevice):
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
     def _apply_swap(self, state, axes, **kwargs):
-        """Applies SWAP gate by performing a partial transposition along the specified axes.
+        """Applies a SWAP gate by performing a partial transposition along the specified axes.
 
         Args:
             state (array[complex]): input state
