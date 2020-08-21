@@ -24,8 +24,7 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, PauliX, \
-    Hadamard, PauliZ, S, T, PauliY
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
@@ -52,6 +51,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
+# pylint: disable=unused-import
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
