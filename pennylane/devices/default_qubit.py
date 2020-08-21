@@ -51,7 +51,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-import
+# pylint: disable=unused-argument
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
