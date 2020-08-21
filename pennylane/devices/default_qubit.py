@@ -36,7 +36,7 @@ TPHASE = np.exp(1j * np.pi / 4)
 
 
 def _get_slice(index, axis, num_axes):
-    """Allows slicing into the index of an array or tensor along an arbitrary axis.
+    """Allows slicing along an arbitrary axis of an array or tensor.
 
     Args:
         index (int): the index to access
