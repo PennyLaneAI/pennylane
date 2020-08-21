@@ -157,6 +157,7 @@ class DefaultQubitTF(DefaultQubit):
     _conj = staticmethod(tf.math.conj)
     _imag = staticmethod(tf.math.conj)
     _roll = staticmethod(tf.roll)
+    _stack = staticmethod(tf.stack)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

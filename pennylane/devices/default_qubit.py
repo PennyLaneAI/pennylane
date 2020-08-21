@@ -34,6 +34,13 @@ tolerance = 1e-10
 SQRT2INV = 1 / np.sqrt(2)
 
 
+def get_slice(index, axis, num_axes):
+    """TODO"""
+    idx = [slice(None)] * num_axes
+    idx[axis] = index
+    return tuple(idx)
+
+
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
@@ -169,11 +176,13 @@ class DefaultQubit(QubitDevice):
         return self._roll(state, 1, axis)
 
     def _apply_hadamard(self, state, wire):
+        axis = self.wires.index(wire)
         state_x = self._apply_x(state, wire)
 
+        sl_0 = get_slice(0, axis, self.num_wires)
+        sl_1 = get_slice(1, axis, self.num_wires)
 
-
-        state = self._stack(state)
+        state = self._stack([state[sl_0], -state[sl_1]], axis=axis)
         return SQRT2INV * (state + state_x)
 
     def _apply_swap(self, state, wires):
