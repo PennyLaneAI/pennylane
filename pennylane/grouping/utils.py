@@ -526,12 +526,12 @@ def convert_observables_to_binary(observables, n_qubits=None, wire_map=None):
         if isinstance(obs, Identity):
             observables[c] = Identity(0)
 
-    if wire_map == None:
+    if wire_map is None:
         all_wires = Wires.all_wires([pauli_word.wires for pauli_word in observables])
         wire_map = {i: c for c, i in enumerate(all_wires)}
 
     n_qubits_min = n_qubits_min = max(wire_map.values()) + 1
-    if n_qubits == None:
+    if n_qubits is None:
         n_qubits = n_qubits_min
     elif n_qubits < n_qubits_min:
         raise ValueError(
