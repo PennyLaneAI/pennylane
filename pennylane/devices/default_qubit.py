@@ -153,7 +153,10 @@ class DefaultQubit(QubitDevice):
         Args:
             wires (Wires): target wires
         """
-        axes = [self.wires.index(w) for w in wires]
+        swap_axes = [self.wires.index(wire) for wire in wires]
+        axes = list(range(self.num_wires))
+        axes[swap_axes[0]] = swap_axes[1]
+        axes[swap_axes[1]] = swap_axes[0]
         self._state = self._transpose(self._state, axes)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
