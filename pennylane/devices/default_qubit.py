@@ -142,6 +142,7 @@ class DefaultQubit(QubitDevice):
             operation (~.Operation): operation to apply on the device
         """
         wires = operation.wires
+        axes = self.wires.indices(wires)
 
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], wires)
@@ -176,7 +177,7 @@ class DefaultQubit(QubitDevice):
             return
 
         if isinstance(operation, SWAP):
-            self._state = self._apply_swap(self._state, wires)
+            self._state = self._apply_swap(self._state, axes)
             return
 
         matrix = self._get_unitary_matrix(operation)
@@ -254,21 +255,19 @@ class DefaultQubit(QubitDevice):
         state_z = self._apply_z(state, wire)
         return SQRT2INV * (state_x + state_z)
 
-    def _apply_swap(self, state, wires):
-        """Applies SWAP gate by performing a partial transposition along the axes specified by
-        ``wires``.
+    def _apply_swap(self, state, target_axes):
+        """Applies SWAP gate by performing a partial transposition along the specified axes.
 
         Args:
             state (array[complex]): input state
-            wires (Wires): target wires
+            target_axes (List[int]): axes to apply transformation
 
         Returns:
             array[complex]: output state
         """
-        swap_axes = [self.wires.index(wire) for wire in wires]
-        axes = list(range(self.num_wires))
-        axes[swap_axes[0]] = swap_axes[1]
-        axes[swap_axes[1]] = swap_axes[0]
+        axes = list(range(len(state.shape)))
+        axes[target_axes[0]] = target_axes[1]
+        axes[target_axes[1]] = target_axes[0]
         return self._transpose(state, axes)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
