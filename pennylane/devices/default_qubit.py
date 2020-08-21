@@ -24,7 +24,7 @@ from string import ascii_letters as ABC
 
 import numpy as np
 
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, SWAP, Hadamard
 from pennylane.operation import DiagonalOperation
 
 ABC_ARRAY = np.array(list(ABC))
@@ -133,7 +133,7 @@ class DefaultQubit(QubitDevice):
             return
 
         if isinstance(operation, SWAP):
-            self._apply_SWAP(wires)
+            self._state = self._apply_swap(self._state, wires)
             return
 
         matrix = self._get_unitary_matrix(operation)
@@ -146,18 +146,22 @@ class DefaultQubit(QubitDevice):
         else:
             self._apply_unitary(matrix, wires)
 
-    def _apply_SWAP(self, wires):
-        """Applies swap gate by performing a partial transposition along the axes specified by
+    def _apply_swap(self, state, wires):
+        """Applies SWAP gate by performing a partial transposition along the axes specified by
         ``wires``.
 
         Args:
+            state (array[complex]): input state
             wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
         """
         swap_axes = [self.wires.index(wire) for wire in wires]
         axes = list(range(self.num_wires))
         axes[swap_axes[0]] = swap_axes[1]
         axes[swap_axes[1]] = swap_axes[0]
-        self._state = self._transpose(self._state, axes)
+        return self._transpose(state, axes)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
