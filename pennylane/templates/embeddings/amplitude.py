@@ -225,7 +225,7 @@ def AmplitudeEmbedding(features, wires, pad=None, normalize=False):
         else:
             raise ValueError(
                 "'features' must be a vector of length 1.0; got length {}."
-                "Use 'normalization=True' to automatically normalize.".format(norm)
+                "Use 'normalize=True' to automatically normalize.".format(norm)
             )
 
     ###############
