@@ -2,6 +2,9 @@
 
 <h3>New features since last release</h3>
 
+* Added a new bit-flip mixer to the `qml.qaoa` module.
+  [(#000)](#)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -14,7 +17,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-
+Jack Ceroni
 
 # Release 0.11.0 (current release)
 

@@ -32,6 +32,15 @@ graph.add_edges_from([(0, 1), (1, 2)])
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 
 
+def decompose_hamiltonian(hamiltonian):
+
+    coeffs = hamiltonian.coeffs
+    ops = [i.name for i in hamiltonian.ops]
+    wires = [i.wires for i in hamiltonian.ops]
+
+    return [coeffs, ops, wires]
+
+
 class TestMixerHamiltonians:
     """Tests that the mixer Hamiltonians are being generated correctly"""
 
@@ -135,6 +144,73 @@ class TestMixerHamiltonians:
         assert mixer_ops == target_ops
         assert mixer_wires == target_wires
 
+    def test_bit_flip_mixer_errors(self):
+        """Tests that the bit-flip mixer throws the correct errors"""
+
+        graph = [(0, 1), (1, 2)]
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object"):
+            qaoa.bit_flip_mixer(graph, 0)
+
+        n = 2
+        with pytest.raises(ValueError, match=r"'n' must be either 0 or 1"):
+            qaoa.bit_flip_mixer(Graph(graph), n)
+
+    @pytest.mark.parametrize(("graph", "n", "target_hamiltonian"), [
+        (
+                Graph([(0, 1)]), 1,
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5],
+                    [
+                        qml.PauliX(0),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(0)
+                    ]
+                )
+        ),
+        (
+                Graph([(0, 1), (1, 2)]), 0,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
+                    [
+                        qml.PauliX(0),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(2),
+                        qml.PauliX(1) @ qml.PauliZ(0),
+                        qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
+                        qml.PauliX(2),
+                        qml.PauliX(2) @ qml.PauliZ(1)
+                    ]
+                )
+        ),
+        (
+                Graph([("b", 1), (1, 0.3), (0.3, "b")]), 1,
+                qml.Hamiltonian(
+                    [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
+                    [
+                        qml.PauliX("b"),
+                        qml.PauliX("b") @ qml.PauliZ(0.3),
+                        qml.PauliX("b") @ qml.PauliZ(1),
+                        qml.PauliX("b") @ qml.PauliZ(1) @ qml.PauliZ(0.3),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(0.3),
+                        qml.PauliX(1) @ qml.PauliZ("b"),
+                        qml.PauliX(1) @ qml.PauliZ("b") @ qml.PauliZ(0.3),
+                        qml.PauliX(0.3),
+                        qml.PauliX(0.3) @ qml.PauliZ("b"),
+                        qml.PauliX(0.3) @ qml.PauliZ(1),
+                        qml.PauliX(0.3) @ qml.PauliZ(1) @ qml.PauliZ("b")
+                    ]
+                )
+        )
+    ])
+    def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
+        """Tests that the output of the bit-flip mixer is correct"""
+
+        mixer_hamiltonian = qaoa.bit_flip_mixer(graph, n)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(target_hamiltonian)
+
 
 GRAPHS = [
     Graph([(0, 1), (1, 2)]),
@@ -180,14 +256,6 @@ MIXER_TERMS = [
 MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(3)]
 
 MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
-
-def decompose_hamiltonian(hamiltonian):
-
-    coeffs = hamiltonian.coeffs
-    ops = [i.name for i in hamiltonian.ops]
-    wires = [i.wires for i in hamiltonian.ops]
-
-    return [coeffs, ops, wires]
 
 
 class TestCostHamiltonians:
