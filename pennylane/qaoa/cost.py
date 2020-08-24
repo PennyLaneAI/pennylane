@@ -33,7 +33,7 @@ def bit_driver(wires, n):
     .. math:: H \ = \ (-1)^{n + 1} \displaystyle\sum_{i} Z_i
 
     where :math:`Z_i` is the Pauli-Z operator acting on the
-    :math:`i`-th wire and :math:n \ \in \ \{0, \ 1\}`. This Hamiltonian is often used as a term when
+    :math:`i`-th wire and :math:`n \ \in \ \{0, \ 1\}`. This Hamiltonian is often used as a term when
     constructing larger QAOA cost Hamiltonians.
 
     Args:
