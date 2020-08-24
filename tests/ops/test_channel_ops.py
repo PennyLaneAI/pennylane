@@ -17,8 +17,6 @@ Unit tests for the available built-in quantum channels.
 import pytest
 import functools
 import numpy as np
-from numpy.linalg import multi_dot
-
 import pennylane as qml
 from pennylane.ops import channel
 
@@ -46,6 +44,17 @@ class TestChannels:
         kraus_sum = np.sum(np.array([a @ b for a, b in zip(kdag, kmat)]), axis=0)
         assert np.allclose(kraus_sum, np.eye(2), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("ops", ch_list)
+    @pytest.mark.parametrize("p", [1.5])
+    def test_valid_input(self, ops, p):
+        """Test input parameters are valid probabilities"""
+        if ops.__name__ == "GeneralizedAmplitudeDamping":
+            with pytest.raises(ValueError, match="Channel probability parameters should be"):
+                ops(0.1, p, wires=0)
+        else:
+            with pytest.raises(ValueError, match="Channel probability parameters should be"):
+                ops(p, wires=0)
+
 class TestAmplitudeDamping:
     """Tests for the quantum channel AmplitudeDamping"""
 
@@ -64,71 +73,52 @@ class TestAmplitudeDamping:
                               [0., 0.9486833]])]
         assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
 
-    def test_gamma_invalid(self):
-        """Test gamma>1 produces value error"""
-        op = channel.AmplitudeDamping
-        with pytest.raises(ValueError, match="Damping probability should be a number between 0 and 1."):
-            op(1.1, wires=0)
+class TestGeneralizedAmplitudeDamping:
+    """Tests for the quantum channel GeneralizedAmplitudeDamping"""
 
-# class TestGeneralizedAmplitudeDamping:
-#     """Tests for the quantum channel GeneralizedAmplitudeDamping"""
-#
-#     def test_gamma_zero(self, tol):
-#         """Test gamma=0 gives correct Kraus matrices"""
-#             op = channel.AmplitudeDamping
-#             assert np.allclose(op(0, wires=0).kraus_matrices[0], np.zeros((2, 2)), atol=tol, rtol=0)
-#             assert np.allclose(op(0, wires=0).kraus_matrices[1], np.eye(2), atol=tol, rtol=0)
-#
-#         def test_gamma_arbitrary(self, tol):
-#             """Test gamma=0.1 gives correct Kraus matrice"""
-#             expected = [np.array([[0., 0.31622777],
-#                                   [0., 0.]]),
-#                         np.array([[1., 0.],
-#                                   [0., 0.9486833]])]
-#             assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
-#
-#         def test_gamma_invalid(self, tol):
-#             """Test gamma>1 produces value error"""
-#             with pytest.raises(ValueError, match="Damping probability should be a number between 0 and 1."):
-#                 op(1.1, wires=0)
-#     #
-    # def test_generalized_amplitude_damping(self, tol):
-    #     """Tests for generalized amplitude damping channel"""
-    #
-    #     # test p=0, gamma=0 gives correct Kraus matrices
-    #     op = channel.GeneralizedAmplitudeDamping
-    #     assert np.allclose(op(0, 0, wires=0).kraus_matrices[0], np.zeros((2, 2)), atol=tol, rtol=0)
-    #     assert np.allclose(op(0, 0, wires=0).kraus_matrices[2], np.eye(2), atol=tol, rtol=0)
-    #
-    #     # test p=0.1, gamma=0.1 gives correct first Kraus matrix
-    #     expected = np.array([[0.31622777, 0.],
-    #                          [0., 0.3]])
-    #     assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices[0], expected, atol=tol, rtol=0)
-    #
-    # def test_phase_damping(self, tol):
-    #     """Tests for phase damping channel"""
-    #
-    #     # test gamma=0 gives correct Kraus matrices
-    #     op = channel.PhaseDamping
-    #     assert np.allclose(op(0, wires=0).kraus_matrices[0], np.zeros((2, 2)), atol=tol, rtol=0)
-    #     assert np.allclose(op(0, wires=0).kraus_matrices[1], np.eye(2), atol=tol, rtol=0)
-    #
-    #     # test gamma=0.1 gives correct Kraus matrices
-    #     expected = [np.array([[0., 0.],
-    #                           [0., 0.31622777]]),
-    #                 np.array([[1., 0.],
-    #                           [0., 0.9486833]])]
-    #     assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
-    #
-    # def test_depolarization(self, tol):
-    #     """Tests for symmetrically depolarizing channel"""
-    #
-    #     # test p=0 gives correct Kraus matrices
-    #     op = channel.DepolarizingChannel
-    #     assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
-    #     assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
-    #
-    #     # test p=0.1 gives correct Kraus matrices
-    #     p = 0.1
-    #     expected = np.sqrt(p/3) * X
-    #     assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
+    def test_gamma_p_zero(self, tol):
+        """Test p=0, gamma=0 gives correct Kraus matrices"""
+        op = channel.GeneralizedAmplitudeDamping
+        assert np.allclose(op(0, 0, wires=0).kraus_matrices[0], np.zeros((2, 2)), atol=tol, rtol=0)
+        assert np.allclose(op(0, 0, wires=0).kraus_matrices[2], np.eye(2), atol=tol, rtol=0)
+
+    def test_gamma_p_arbitrary(self, tol):
+        """Test p=0.1, gamma=0.1 gives correct first Kraus matrix"""
+        op = channel.GeneralizedAmplitudeDamping
+        expected = np.array([[0.31622777, 0.],
+                            [0., 0.3]])
+        assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices[0], expected, atol=tol, rtol=0)
+
+class TestPhaseDamping:
+    """Tests for the quantum channel PhaseDamping"""
+
+    def test_gamma_zero(self, tol):
+        """Test gamma=0 gives correct Kraus matrices"""
+        op = channel.PhaseDamping
+        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.zeros((2, 2)), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.eye(2), atol=tol, rtol=0)
+
+    def test_gamma_arbitrary(self, tol):
+        """Test gamma=0.1 gives correct Kraus matrice"""
+        op = channel.PhaseDamping
+        expected = [np.array([[0., 0.],
+                              [0., 0.31622777]]),
+                    np.array([[1., 0.],
+                              [0., 0.9486833]])]
+        assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+
+class TestDepolarizingChannel:
+    """Tests for the quantum channel DepolarizingChannel"""
+
+    def test_p_zero(self, tol):
+        """Test p=0 gives correct Kraus matrices"""
+        op = channel.DepolarizingChannel
+        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
+
+    def test_p_arbitrary(self, tol):
+        """Test p=0.1 gives correct Kraus matrices"""
+        p = 0.1
+        op = channel.DepolarizingChannel
+        expected = np.sqrt(p/3) * X
+        assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
