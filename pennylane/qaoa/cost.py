@@ -86,18 +86,18 @@ def edge_driver(graph, reward):
     (1.0) [Z0 Z1] + (1.0) [Z0] + (2.0) [Z1] + (1.0) [Z1 Z2] + (1.0) [Z2]
     """
 
-    allowed = ['00', '01', '10', '11']
+    allowed = ["00", "01", "10", "11"]
 
     if not all([e in allowed for e in reward]):
         raise ValueError("Encountered invalid entry in 'reward', expected 2-bit bitstrings.")
 
-    if '01' in reward and '10' not in reward or '10' in reward and '01' not in reward:
-        raise ValueError("'reward' cannot contain either '10' or '01', must contain neither, or both.")
+    if "01" in reward and "10" not in reward or "10" in reward and "01" not in reward:
+        raise ValueError(
+            "'reward' cannot contain either '10' or '01', must contain neither, or both."
+        )
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError(
-            "Input graph must be a nx.Graph, got {}".format(type(graph).__name__)
-        )
+        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
 
     coeffs = []
     ops = []
@@ -108,34 +108,40 @@ def edge_driver(graph, reward):
 
     else:
 
-        reward = list(set(reward) - {'01'})
+        reward = list(set(reward) - {"01"})
         sign = -1
 
         if len(reward) == 2:
-            reward = list({'00', '10', '11'} - set(reward))
+            reward = list({"00", "10", "11"} - set(reward))
             sign = 1
 
         reward = reward[0]
 
-        if reward == '00':
+        if reward == "00":
             for e in graph.edges:
-                coeffs.extend([0.5*sign, 0.5*sign, 0.5*sign])
-                ops.extend([qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])])
+                coeffs.extend([0.5 * sign, 0.5 * sign, 0.5 * sign])
+                ops.extend(
+                    [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
+                )
 
-        if reward == '10':
+        if reward == "10":
             for e in graph.edges:
-                coeffs.append(-1*sign)
+                coeffs.append(-1 * sign)
                 ops.append(qml.PauliZ(e[0]) @ qml.PauliZ(e[1]))
 
-        if reward == '11':
+        if reward == "11":
             for e in graph.edges:
-                coeffs.extend([0.5*sign, -0.5*sign, -0.5*sign])
-                ops.extend([qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])])
+                coeffs.extend([0.5 * sign, -0.5 * sign, -0.5 * sign])
+                ops.extend(
+                    [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
+                )
 
     return qml.Hamiltonian(coeffs, ops)
 
+
 #######################
 # Optimization problems
+
 
 def maxcut(graph):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
@@ -172,14 +178,15 @@ def maxcut(graph):
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
     >>> print(mixer_h)
-    (0.5) [Z0 Z1] + (0.5) [Z1 Z2] + (-0.5) [I0 I1] + (-0.5) [I1 I2]
+    (0.5) [Z0 Z1] + (0.5) [Z1 Z2] + (-1.0) [I0]
     (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
     """
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError(
-            "Input graph must be a nx.Graph, got {}".format(type(graph).__name__)
-        )
+        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
 
-    identity_h = qml.Hamiltonian([-0.5 for e in graph.edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph.edges])
-    return (0.5*edge_driver(graph, ['10', '01']) + identity_h, qaoa.x_mixer(graph.nodes))
+    identity_h = qml.Hamiltonian(
+        [-0.5 for e in graph.edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph.edges]
+    )
+    H = 0.5 * edge_driver(graph, ["10", "01"]) + identity_h
+    return (H, qaoa.x_mixer(graph.nodes))

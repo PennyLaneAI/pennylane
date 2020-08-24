@@ -141,28 +141,24 @@ GRAPHS = [
     graph,
 ]
 
-COST_COEFFS = [[0.5, 0.5, -0.5, -0.5], [0.5, 0.5, 0.5, -0.5, -0.5, -0.5], [0.5, 0.5, -0.5, -0.5]]
+COST_COEFFS = [[0.5, 0.5, -1.0], [0.5, 0.5, 0.5, -1.5], [0.5, 0.5, -1.0]]
 
 COST_TERMS = [
     [
         qml.PauliZ(0) @ qml.PauliZ(1),
         qml.PauliZ(1) @ qml.PauliZ(2),
-        qml.Identity(0) @ qml.Identity(1),
-        qml.Identity(1) @ qml.Identity(2),
+        qml.Identity(0)
     ],
     [
         qml.PauliZ(0) @ qml.PauliZ(1),
         qml.PauliZ(0) @ qml.PauliZ(2),
         qml.PauliZ(1) @ qml.PauliZ(2),
-        qml.Identity(0) @ qml.Identity(1),
-        qml.Identity(0) @ qml.Identity(2),
-        qml.Identity(1) @ qml.Identity(2),
+        qml.Identity(0)
     ],
     [
         qml.PauliZ(0) @ qml.PauliZ(1),
         qml.PauliZ(1) @ qml.PauliZ(2),
-        qml.Identity(0) @ qml.Identity(1),
-        qml.Identity(1) @ qml.Identity(2),
+        qml.Identity(0)
     ],
 ]
 
@@ -181,7 +177,8 @@ MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in 
 MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
 
 GRAPHS.append(graph)
-REWARDS = [['00'], ['00', '11'], ['00', '01', '10'], ['00', '11', '01', '10']]
+GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
+REWARDS = [['00'], ['00', '11'], ['00', '01', '10'], ['00', '11', '01', '10'], ['00', '01', '10']]
 
 HAMILTONIANS = [
     qml.Hamiltonian(
@@ -216,6 +213,15 @@ HAMILTONIANS = [
             qml.Identity(0),
             qml.Identity(1),
             qml.Identity(2)
+        ]
+    ),
+    qml.Hamiltonian(
+        [0.5, -0.5, -0.5, 0.5, -0.5, -0.5],
+        [
+            qml.PauliZ("b") @ qml.PauliZ(1),
+            qml.PauliZ("b"), qml.PauliZ(1),
+            qml.PauliZ(1) @ qml.PauliZ(2.3),
+            qml.PauliZ(1), qml.PauliZ(2.3)
         ]
     )
 ]
@@ -266,7 +272,7 @@ class TestCostHamiltonians:
             qaoa.edge_driver([(0, 1), (1, 2)], ['00', '11'])
 
     @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), EDGE_DRIVER)
-    def test_edge_driver_output(self, graph, reward):
+    def test_edge_driver_output(self, graph, reward, hamiltonian):
         """Tests that the edge driver Hamiltonian throws the correct errors"""
 
         H = qaoa.edge_driver(graph, reward)

@@ -140,7 +140,7 @@ class Hamiltonian:
                 coeffs.append(c)
 
         self._coeffs = coeffs
-        self._ops = op
+        self._ops = ops
 
     def __str__(self):
         terms = []
