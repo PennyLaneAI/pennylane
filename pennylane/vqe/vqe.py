@@ -115,6 +115,33 @@ class Hamiltonian:
         """
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
+    def simplify(self):
+        r"""Simplifies qml.Hamiltonian objects by combining like-terms."""
+
+        coeffs = []
+        ops = []
+
+        for c, op in zip(self.coeffs, self.ops):
+            op = op if isinstance(op, Tensor) else Tensor(op)
+
+            ind = None
+            for i, other in enumerate(ops):
+                if op.compare(other):
+                    ind = i
+                    break
+
+            if ind is not None:
+                coeffs[ind] += c
+                if np.allclose([coeffs[ind]], [0]):
+                    del coeffs[ind]
+                    del ops[ind]
+            else:
+                ops.append(op.prune())
+                coeffs.append(c)
+
+        self._coeffs = coeffs
+        self._ops = op
+
     def __str__(self):
         terms = []
 
