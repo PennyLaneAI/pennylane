@@ -55,7 +55,7 @@ class Hamiltonian:
     Hamiltonian.
     """
 
-    def __init__(self, coeffs, observables):
+    def __init__(self, coeffs, observables, simplify=False):
 
         if len(coeffs) != len(observables):
             raise ValueError(
@@ -76,6 +76,8 @@ class Hamiltonian:
 
         self._coeffs = coeffs
         self._ops = observables
+        if simplify:
+            self.simplify()
 
     @property
     def coeffs(self):
@@ -129,69 +131,118 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
-    def __matmul__(self, H):
+    def obs_data(self):
+        r"""Extracts the data from each Tensor/Observable in a qml.Hamiltonian object.
 
+        Returns:
+            (set): Set of coefficients, paired with sets of the observables tensored to make each term.
+        """
+        data = set()
+
+        for co, op in zip(*self.terms):
+            obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
+            tensor = []
+            for ob in obs:
+                parameters = tuple(
+                    param.tostring() for param in ob.parameters
+                )  # Converts params into hashable type
+                tensor.append((ob.name, ob.wires, parameters))
+            data.add((co, frozenset(tensor)))
+
+        return data
+
+    def compare(self, H):
+        r"""Compares two qml.Hamiltonian objects/Observables/Tensors to determine if they are equivalent.
+
+        Returns:
+            (bool): True if the coefficients and operations of the Hamiltonians are equivalent, False otherwise.
+        """
+        val = False
+        if isinstance(H, Hamiltonian):
+            val = self.obs_data() == H.obs_data()
+        if isinstance(H, (Tensor, Observable)):
+            val = self.obs_data() == {(1, frozenset(H.obs_data()))}
+
+        return val
+
+    def __matmul__(self, H):
+        r"""The tensor product operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         coeffs1 = self.coeffs.copy()
         terms1 = self.ops.copy()
 
-        coeffs2 = H.coeffs
-        terms2 = H.ops
+        coeffs = []
+        terms = []
 
-        coeffs = [i[0] * i[1] for i in itertools.product(coeffs1, coeffs2)]
-        term_list = itertools.product(terms1, terms2)
+        if isinstance(H, Hamiltonian):
+            coeffs2 = H.coeffs
+            terms2 = H.ops
 
-        terms = [qml.operation.Tensor(i[0], i[1]) for i in term_list]
+            coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
+            term_list = itertools.product(terms1, terms2)
+            terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
 
-        return qml.Hamiltonian(coeffs, terms)
+        if isinstance(H, (Tensor, Observable)):
+            coeffs = coeffs1
+            terms = [term @ H for term in terms1]
+
+        return qml.Hamiltonian(coeffs, terms, simplify=True)
 
     def __add__(self, H):
-
+        r"""The addition operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
 
-        op_attributes = []
+        if isinstance(H, Hamiltonian):
+            coeffs.extend(H.coeffs.copy())
+            ops.extend(H.ops.copy())
+        if isinstance(H, (Tensor, Observable)):
+            coeffs.append(1)
+            ops.append(H)
 
-        for op in ops:
-            name = op.name if isinstance(op.name, list) else [op.name]
-
-            if "Hermitian" not in name:
-                op_attributes.append(set(zip(name, op.wires)))
-
-        new_coeffs = []
-        new_ops = []
-
-        for coeff, op in zip(H.coeffs, H.ops):
-            name = op.name if isinstance(op.name, list) else [op.name]
-
-            if "Hermitian" in name:
-                new_coeffs.append(coeff)
-                new_ops.append(op)
-
-            else:
-                attr = set(zip(name, op.wires))
-
-                if attr in op_attributes:
-                    coeffs[op_attributes.index(attr)] += coeff
-                else:
-                    coeffs.append(coeff)
-                    ops.append(op)
-                    op_attributes.append(attr)
-
-        for i, c in enumerate(coeffs):
-            if not np.allclose([c], [0]):
-                new_coeffs.append(c)
-                new_ops.append(ops[i])
-
-        return qml.Hamiltonian(new_coeffs, new_ops)
+        return qml.Hamiltonian(coeffs, ops, simplify=True)
 
     def __mul__(self, a):
+        r"""The scalar multiplication operation between a scalar and a qml.Hamiltonian object.
+        """
         coeffs = [a * c for c in self.coeffs.copy()]
         return qml.Hamiltonian(coeffs, self.ops.copy())
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
+        r"""The subtraction operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
         return self.__add__(H.__mul__(-1))
+
+    def __iadd__(self, H):
+        r"""The inplace addition operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
+        if isinstance(H, Hamiltonian):
+            self._coeffs.extend(H.coeffs.copy())
+            self._ops.extend(H.ops.copy())
+            self.simplify()
+        if isinstance(H, (Tensor, Observable)):
+            self._coeffs.append(1)
+            self._ops.append(H)
+            self.simplify()
+
+        return self
+
+    def __imul__(self, a):
+        r"""The inplace scalar multiplication operation between a scalar and a qml.Hamiltonian object.
+        """
+        self._coeffs = [a * c for c in self.coeffs]
+
+        return self
+
+    def __isub__(self, H):
+        r"""The inplace subtraction operation between qml.Hamiltonian objects/Tensors/Observables.
+        """
+        self.__iadd__(H.__mul__(-1))
+
+        return self
 
 
 class VQECost:
