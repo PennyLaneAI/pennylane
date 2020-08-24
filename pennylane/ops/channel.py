@@ -58,10 +58,11 @@ class AmplitudeDamping(Channel):
     par_domain = "R"
     grad_method = "F"
 
+    @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
-        if gamma > 1:
-            raise ValueError("Probabilities of noisy processes should not exceed 1.")
+        if not (0 <= gamma <= 1):
+            raise ValueError("Damping probability should be a number between 0 and 1.")
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         K2 = np.diag([1, np.sqrt(1 - gamma)])
         return [K1, K2]
@@ -116,15 +117,17 @@ class GeneralizedAmplitudeDamping(Channel):
     par_domain = "R"
     grad_method = "F"
 
+    @classmethod
     def _kraus_matrices(cls, *params):
         gamma, p = params
-        if gamma > 1 or p > 1:
-            raise ValueError("Probabilities of noisy processes should not exceed 1.")
+        if not (0 <= gamma <= 1) or not (0 <= p <= 1):
+            raise ValueError("Damping probability should be a number between 0 and 1.")
         K1 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
         K2 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         K3 = np.sqrt(1 - p) * np.diag([np.sqrt(1 - gamma), 1])
         K4 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
         return [K1, K2, K3, K4]
+
 
 class PhaseDamping(Channel):
     r"""PhaseDamping(gamma, wires)
@@ -162,13 +165,15 @@ class PhaseDamping(Channel):
     par_domain = "R"
     grad_method = "F"
 
+    @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
-        if gamma > 1:
-            raise ValueError("Probabilities of noisy processes should not exceed 1.")
+        if not (0 <= gamma <= 1):
+            raise ValueError("Damping probability should be a number between 0 and 1.")
         K1 = np.diag([0, np.sqrt(gamma)])
-        K2 = np.diag([1, np.sqrt(1-gamma)])
+        K2 = np.diag([1, np.sqrt(1 - gamma)])
         return [K1, K2]
+
 
 class DepolarizingChannel(Channel):
     r"""DepolarizingChannel(p, wires)
@@ -216,17 +221,23 @@ class DepolarizingChannel(Channel):
     par_domain = "R"
     grad_method = "F"
 
+    @classmethod
     def _kraus_matrices(cls, *params):
         p = params[0]
-        if p > 1:
-            raise ValueError("Probabilities of noisy processes should not exceed 1.")
-        K1 = np.sqrt(1-p) * np.eye(2)
-        K2 = np.sqrt(p/3) * np.array([[0, 1], [1, 0]])
-        K3 = np.sqrt(p/3) * np.array([[0, -1j], [1j, 0]])
-        K4 = np.sqrt(p/3) * np.array([[1, 0], [0, -1]])
+        if not (0 <= p <= 1):
+            raise ValueError("Depolarizing probability should be a number between 0 and 1.")
+        K1 = np.sqrt(1 - p) * np.eye(2)
+        K2 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
+        K3 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
+        K4 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
         return [K1, K2, K3, K4]
 
 
-ops = {"AmplitudeDamping", "GeneralizedAmplitudeDamping", "PhaseDamping", "DepolarizingChannel"}
+__qubit_channels__ = {
+    "AmplitudeDamping",
+    "GeneralizedAmplitudeDamping",
+    "PhaseDamping",
+    "DepolarizingChannel",
+}
 
-__all__ = list(ops)
+__all__ = list(__qubit_channels__)

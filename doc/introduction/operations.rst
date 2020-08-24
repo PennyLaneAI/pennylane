@@ -56,6 +56,8 @@ Qubit gates
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
+    ~pennylane.S
+    ~pennylane.T
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY
@@ -65,18 +67,16 @@ Qubit gates
     ~pennylane.PhaseShift
     ~pennylane.CNOT
     ~pennylane.SWAP
+    ~pennylane.CZ
     ~pennylane.U1
     ~pennylane.U2
     ~pennylane.U3
-    ~pennylane.CZ
     ~pennylane.CRot
     ~pennylane.CRX
     ~pennylane.CRY
     ~pennylane.CRZ
     ~pennylane.Toffoli
     ~pennylane.CSWAP
-    ~pennylane.S
-    ~pennylane.T
     ~pennylane.QubitUnitary
     ~pennylane.DiagonalQubitUnitary
 
