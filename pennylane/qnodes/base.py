@@ -190,6 +190,35 @@ def _compare_lists(list1, list2):
     return True
 
 
+def _compare_dicts(dict1, dict2):
+    """Checks if two dictionaries are equal.
+
+    Supports dictionaries with values that can be nested lists that may include NumPy arrays and
+    TensorFlow/PyTorch tensors without requiring an import of PyTorch or TensorFlow.
+
+    Args:
+        dict1 (dict): first dictionary to be compared
+        dict2 (dict): second dictionary to be compared
+
+    Returns:
+        bool: whether the two dictionaries are equal
+    """
+    if len(dict1) != len(dict2):
+        return False
+
+    values_1 = []
+    values_2 = []
+    for key, value in dict1.items():
+        values_1.append(value)
+        v2 = values_2.get(key)
+        if v2:
+            values_2.append(v2)
+        else:
+            return False
+
+    return _compare_lists(values_1, values_2)
+
+
 class BaseQNode(qml.QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
@@ -265,6 +294,7 @@ class BaseQNode(qml.QueuingContext):
 
         self.last_call_args = None  #: list: containing the positional arguments that the QNode was last evaluated on
         self.last_call_kwargs = None  #: dict: containing the keyword arguments that the QNode was last evaluated on
+        self.previous_result = None  # previous result of evaluating QNode
 
     def __repr__(self):
         """String representation."""
@@ -876,14 +906,14 @@ class BaseQNode(qml.QueuingContext):
         Returns:
             float or array[float]: output measured value(s)
         """
-        if args == self.last_call_args:
-            continue
-
         kwargs = self._default_args(kwargs)
         self._set_variables(args, kwargs)
 
-        if self.circuit is None or self.mutable:
+        reconstruct = self.mutable and not _compare_dicts(kwargs, self.last_call_kwargs)
+
+        if self.circuit is None or reconstruct:
             self._construct(args, kwargs)
+            self.last_call_kwargs = kwargs
 
         self.device.reset()
 
@@ -891,8 +921,14 @@ class BaseQNode(qml.QueuingContext):
         if isinstance(self.device, qml.QubitDevice):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
             same_circuit = self.circuit.hash == self.device.circuit_hash
+            same_args = _compare_lists(args, self.last_call_args)
 
-            ret = self.device.execute(self.circuit, return_native_type=temp)
+            if same_circuit and same_args:
+                ret = self.previous_result
+            else:
+                ret = self.device.execute(self.circuit, return_native_type=temp)
+                self.last_call_args = args
+                self.previous_result = ret
         else:
             ret = self.device.execute(
                 self.circuit.operations,
