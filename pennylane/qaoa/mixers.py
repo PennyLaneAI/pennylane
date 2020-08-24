@@ -14,6 +14,8 @@
 r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
+import itertools
+import functools
 import networkx as nx
 import pennylane as qml
 from pennylane.wires import Wires
@@ -169,25 +171,29 @@ def bit_flip_mixer(graph, n):
         )
 
     if n not in [0, 1]:
-        raise ValueError("'n' must be either 0 or 1, got {}".format(sign))
+        raise ValueError("'n' must be either 0 or 1, got {}".format(n))
 
     sign = 1 if n == 0 else -1
 
     coeffs = []
-    terms = []
 
-    for i in graph.nodes:
 
-        neighbours = list(graph.neighbors(i))
-        degree = len(neighbours)
+terms = []
 
-        n_terms = [[qml.PauliX(i)]] + [[qml.Identity(n), qml.PauliZ(n)] for n in neighbours]
-        n_coeffs = [[1, sign] for n in neighbours]
+for i in graph.nodes:
+    neighbours = list(graph.neighbors(i))
+degree = len(neighbours)
 
-        final_terms = [qml.operation.Tensor(*list(m)) for m in itertools.product(*n_terms)]
-        final_coeffs = [(0.5**degree) * reduce(lambda x, y: x * y, list(m), 1) for m in itertools.product(*n_coeffs)]
+n_terms = [[qml.PauliX(i)]] + [[qml.Identity(n), qml.PauliZ(n)] for n in neighbours]
+n_coeffs = [[1, sign] for n in neighbours]
 
-        coeffs.extend(final_coeffs)
-        terms.extend(final_terms)
+final_terms = [qml.operation.Tensor(*list(m)).prune() for m in itertools.product(*n_terms)]
+final_coeffs = [
+    (0.5 ** degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
+    for m in itertools.product(*n_coeffs)
+]
 
-    return qml.Hamiltonian(coeffs, terms)
+coeffs.extend(final_coeffs)
+terms.extend(final_terms)
+
+return qml.Hamiltonian(coeffs, terms)
