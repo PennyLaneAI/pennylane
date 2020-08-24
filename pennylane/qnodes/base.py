@@ -131,6 +131,65 @@ def decompose_queue(ops, device):
     return new_ops
 
 
+def _compare_objects(object1, object2):
+    """Checks if two objects are equal.
+
+    Supports equality checks for NumPy arrays and TensorFlow/PyTorch tensors without requiring an
+    import of PyTorch or TensorFlow.
+
+    The function uses a broad try/except, which returns False on the exception. This allows us to
+    say that two incompatible objects are not equal without throwing an exception.
+
+    Args:
+        object1: first item to be compared
+        object2: second item to be compared
+
+    Returns:
+        bool: whether the two items are equal
+    """
+    try:
+        if type(object1) != type(object2):
+            return False
+
+        comparison = object1 == object2
+
+        if isinstance(comparison, bool):
+            return comparison
+
+        try:
+            return comparison.all()
+        except AttributeError:
+            return comparison.numpy().all()
+    except Exception:
+        return False
+
+
+def _compare_lists(list1, list2):
+    """Checks if two lists are equal.
+
+    Supports nested lists that can include NumPy arrays and TensorFlow/PyTorch tensors without
+    requiring an import of PyTorch or TensorFlow.
+
+    Args:
+        list1 (list): first list to be compared
+        list2 (list): second list to be compared
+
+    Returns:
+        bool: whether the two lists are equal
+    """
+    list1 = _flatten(list1)
+    list2 = _flatten(list2)
+
+    if len(list1) != len(list2):
+        return False
+
+    for a1, a2 in zip(list1, list2):
+        if not _compare_objects(a1, a2):
+            return False
+
+    return True
+
+
 class BaseQNode(qml.QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
@@ -203,6 +262,9 @@ class BaseQNode(qml.QueuingContext):
         self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
+
+        self.last_call_args = None  #: list: containing the positional arguments that the QNode was last evaluated on
+        self.last_call_kwargs = None  #: dict: containing the keyword arguments that the QNode was last evaluated on
 
     def __repr__(self):
         """String representation."""
@@ -814,6 +876,9 @@ class BaseQNode(qml.QueuingContext):
         Returns:
             float or array[float]: output measured value(s)
         """
+        if args == self.last_call_args:
+            continue
+
         kwargs = self._default_args(kwargs)
         self._set_variables(args, kwargs)
 
