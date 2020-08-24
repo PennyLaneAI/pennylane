@@ -979,27 +979,33 @@ class TestTensor:
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
     (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
-    (qml.PauliZ(0), qml.PauliZ(0) @ qml.Identity(1), True),
+    (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
     (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
     (qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
      qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0), True),
-    (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ(0), True)
+    (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True)
 ]
 
 add_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
     (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
      qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.PauliZ(0) @ qml.Identity(1), qml.Hamiltonian([3], [qml.PauliZ(0)]), qml.Hamiltonian([4], [qml.PauliZ(0)])),
+    (qml.PauliZ("b") @ qml.Identity(1),
+     qml.Hamiltonian([3], [qml.PauliZ("b")]), qml.Hamiltonian([4], [qml.PauliZ("b")])),
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
-     qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)]))
+     qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)])),
+    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+     qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
 ]
 
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
-    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)]))
+    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
+    (qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"), 3,
+     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]))
 ]
 
 sub_obs = [
@@ -1008,7 +1014,10 @@ sub_obs = [
      qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
     (qml.PauliZ(0) @ qml.Identity(1), qml.Hamiltonian([3], [qml.PauliZ(0)]), qml.Hamiltonian([-2], [qml.PauliZ(0)])),
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-     qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]))
+     qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)])),
+    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+     qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
 ]
 
 class TestTensorObservableOperations:

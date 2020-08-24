@@ -56,7 +56,7 @@ class Hamiltonian:
     Hamiltonian.
     """
 
-    def __init__(self, coeffs, observables, simplify=False):
+    def __init__(self, coeffs, observables, simplify=True):
 
         if len(coeffs) != len(observables):
             raise ValueError(

@@ -107,6 +107,16 @@ simplify_hamiltonians = [
     (
         qml.Hamiltonian([1, 0.5], [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Identity(2) @ qml.PauliX(0)]),
         qml.Hamiltonian([1.5], [qml.PauliX(0) @ qml.PauliY(1)])
+    ),
+    (
+        qml.Hamiltonian([1, 1, 0.5], [
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
+            qml.PauliX("b") @ qml.PauliY(1.3), qml.PauliY(1.3) @ qml.Identity(-0.9) @ qml.PauliX("b")
+        ]),
+        qml.Hamiltonian([1, 1.5], [
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
+            qml.PauliX("b") @ qml.PauliY(1.3)
+        ])
     )
 ]
 
@@ -135,7 +145,12 @@ equal_hamiltonians = [
         qml.Hamiltonian([1], [qml.PauliZ(0)]),
         qml.PauliZ(0),
         True
-    )
+    ),
+    (
+        qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7), qml.PauliZ(3), qml.Identity(1.2)]),
+        qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)]),
+        True
+    ),
 ]
 
 add_hamiltonians = [
@@ -163,6 +178,11 @@ add_hamiltonians = [
         qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
         qml.Hadamard(1),
         qml.Hamiltonian([1.3, 1.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.PauliX("b") @ qml.Identity(5),
+        qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
     )
 ]
 
@@ -191,6 +211,11 @@ sub_hamiltonians = [
         qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
         qml.Hadamard(1),
         qml.Hamiltonian([1.3, -0.8, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.PauliX("b") @ qml.Identity(1),
+        qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
     )
 ]
 
@@ -198,7 +223,9 @@ mul_hamiltonians = [
     (3, qml.Hamiltonian([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
      qml.Hamiltonian([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)])),
     (-1.3, qml.Hamiltonian([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
-     qml.Hamiltonian([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]))
+     qml.Hamiltonian([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)])),
+    (-1.3, qml.Hamiltonian([1, -0.3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)]),
+     qml.Hamiltonian([-1.3, 0.39], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)])),
 ]
 
 matmul_hamiltonians = [
@@ -220,6 +247,16 @@ matmul_hamiltonians = [
             qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2),
             qml.PauliZ(0) @ qml.PauliX(3) @ qml.PauliZ(2),
             qml.PauliZ(0) @ qml.PauliZ(2)
+        ])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
+        qml.Hamiltonian([2, 2, 2, 2], [
+            qml.PauliX("b") @ qml.PauliZ(1.2),
+            qml.PauliX("b") @ qml.PauliY("c"),
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliZ(1.2),
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliY("c")
         ])
     )
 ]
@@ -317,8 +354,9 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        print(H.terms)
-        assert H.terms == (coeffs, ops)
+        assert H.terms[0] == list(coeffs)
+        for ham, op in zip(H.terms[1], ops):
+            assert op.compare(ham)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
