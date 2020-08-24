@@ -212,7 +212,7 @@ def _compare_dicts(dict1, dict2):
     values_2 = []
     for key, value in dict1.items():
         values_1.append(value)
-        v2 = values_2.get(key)
+        v2 = dict2.get(key)
         if v2:
             values_2.append(v2)
         else:
@@ -294,8 +294,12 @@ class BaseQNode(qml.QueuingContext):
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
-        self._last_call_args = None  #: list: containing the positional arguments that the QNode was last evaluated on
-        self._last_call_kwargs = None  #: dict: containing the keyword arguments that the QNode was last evaluated on
+        self._last_call_args = (
+            None  #: list: containing the positional arguments that the QNode was last evaluated on
+        )
+        self._last_call_kwargs = (
+            None  #: dict: containing the keyword arguments that the QNode was last evaluated on
+        )
         self._previous_result = None  # previous result of evaluating QNode
 
     def __repr__(self):
