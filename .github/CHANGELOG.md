@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * Added a new bit-flip mixer to the `qml.qaoa` module.
-  [(#000)](#)
+  [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
 
 <h3>Improvements</h3>
 
