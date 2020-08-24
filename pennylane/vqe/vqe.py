@@ -16,6 +16,7 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
+import itertools
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
