@@ -21,6 +21,7 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
+from pennylane.devices.default_qubit import _get_slice
 from pennylane.operation import Operation
 
 U = np.array(
@@ -1733,3 +1734,15 @@ class TestWiresIntegration:
         circuit2 = self.make_circuit_expval(wires2)
 
         assert np.allclose(circuit1(), circuit2(), tol)
+
+
+def test_get_slice():
+    """Test that the _get_slice function returns the expected slice and allows us to slice
+    correctly into an array."""
+
+    sl = _get_slice(1, 1, 3)
+    array = np.arange(27).reshape((3, 3, 3))
+    target = array[:, 1, :]
+
+    assert sl == (slice(None, None, None), 1, slice(None, None, None))
+    assert np.allclose(array[sl], target)
