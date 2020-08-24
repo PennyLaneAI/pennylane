@@ -386,7 +386,7 @@ class TestAnnotatedQueue:
 
         assert q.get_info(A) == {"inv": True}
 
-        q.update_info(A, inv=False, owner=None)
+        q._update_info(A, inv=False, owner=None)
         assert q.get_info(A) == {"inv": False, "owner": None}
 
     def test_update_error(self):
@@ -399,7 +399,7 @@ class TestAnnotatedQueue:
         B = qml.PauliY(1)
 
         with pytest.raises(ValueError, match="not in the queue"):
-            q.update_info(B, inv=True)
+            q._update_info(B, inv=True)
 
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
