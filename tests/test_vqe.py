@@ -354,9 +354,7 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.vqe.Hamiltonian(coeffs, ops)
-        assert H.terms[0] == list(coeffs)
-        for ham, op in zip(H.terms[1], ops):
-            assert op.compare(ham)
+        assert H.terms == (coeffs, ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
