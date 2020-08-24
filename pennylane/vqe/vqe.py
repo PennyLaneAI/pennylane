@@ -162,6 +162,9 @@ class Hamiltonian:
 
     def obs_data(self):
         r"""Extracts the data from each Tensor/Observable in a qml.Hamiltonian object.
+
+        Returns:
+            (set): Set of coefficients, paired with sets of the observables tensored to make each term.
         """
         data = set()
 
@@ -179,6 +182,9 @@ class Hamiltonian:
 
     def compare(self, H):
         r"""Compares two qml.Hamiltonian objects/Observables/Tensors to determine if they are equivalent.
+
+        Returns:
+            (bool): True if the coefficients and operations of the Hamiltonians are equivalent, False otherwise.
         """
         val = False
         if isinstance(H, Hamiltonian):
