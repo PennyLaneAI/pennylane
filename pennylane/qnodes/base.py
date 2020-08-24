@@ -825,6 +825,8 @@ class BaseQNode(qml.QueuingContext):
         temp = self.kwargs.get("use_native_type", False)
         if isinstance(self.device, qml.QubitDevice):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
+            same_circuit = self.circuit.hash == self.device.circuit_hash
+
             ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
             ret = self.device.execute(
