@@ -15,10 +15,10 @@ r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
 import itertools
+from functools import reduce
 import networkx as nx
 import pennylane as qml
 from pennylane.wires import Wires
-from functools import reduce
 
 
 def x_mixer(wires):
@@ -187,7 +187,10 @@ def bit_flip_mixer(graph, n):
         n_coeffs = [[1, sign] for n in neighbours]
 
         final_terms = [qml.operation.Tensor(*list(m)).prune() for m in itertools.product(*n_terms)]
-        final_coeffs = [(0.5**degree) * reduce(lambda x, y: x * y, list(m), 1) for m in itertools.product(*n_coeffs)]
+        final_coeffs = [
+            (0.5 ** degree) * reduce(lambda x, y: x * y, list(m), 1)
+            for m in itertools.product(*n_coeffs)
+        ]
 
         coeffs.extend(final_coeffs)
         terms.extend(final_terms)
