@@ -159,31 +159,11 @@ class DefaultQubit(QubitDevice):
 
     @classmethod
     def capabilities(cls):
-        """Get the capabilities of the plugin.
-
-        Capabilities include:
-
-        * ``"model"`` (*str*): either ``"qubit"`` or ``"CV"``.
-
-        * ``"inverse_operations"`` (*bool*): ``True`` if the device supports
-          applying the inverse of operations. Operations which should be inverted
-          have ``operation.inverse == True``.
-
-        * ``"tensor_observables" (*bool*): ``True`` if the device supports
-          expectation values/variance/samples of :class:`~.Tensor` observables.
-
-        The qubit device class has built-in support for tensor observables. As a
-        result, devices that inherit from this class automatically
-        have the following items in their capabilities
-        dictionary:
-
-        * ``"model": "qubit"``
-        * ``"tensor_observables": True``
-
-        Returns:
-            dict[str->*]: results
-        """
         capabilities = super().capabilities().copy()
+        capabilities.update(
+            supports_exact=True,
+            supports_reversible_diff=True,
+        )
         return capabilities
 
     def _create_basis_state(self, index):

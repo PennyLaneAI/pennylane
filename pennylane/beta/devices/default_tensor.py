@@ -101,7 +101,6 @@ class DefaultTensor(Device):
     pennylane_requires = "0.12"
     version = "0.12.0"
     author = "Xanadu Inc."
-    _capabilities = {"model": "qubit", "tensor_observables": True}
 
     _operation_map = {
         "BasisState": None,
@@ -164,6 +163,11 @@ class DefaultTensor(Device):
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        return capabilities
 
     def reset(self):
         """Reset the device."""

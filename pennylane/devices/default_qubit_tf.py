@@ -124,12 +124,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    _capabilities = {
-        "model": "qubit",
-        "provides_jacobian": False,
-        "passthru_interface": "tf",
-    }
-
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
         "RX": tf_ops.RX,
@@ -156,6 +150,15 @@ class DefaultQubitTF(DefaultQubit):
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
     _imag = staticmethod(tf.math.conj)
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            provides_jacobian=False,
+            passthru_interface_tf=True,
+        )
+        return capabilities
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

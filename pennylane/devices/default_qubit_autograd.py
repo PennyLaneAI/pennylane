@@ -74,12 +74,6 @@ class DefaultQubitAutograd(DefaultQubit):
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
 
-    _capabilities = {
-        "model": "qubit",
-        "provides_jacobian": False,
-        "passthru_interface": "autograd",
-    }
-
     parametric_ops = {
         "PhaseShift": autograd_ops.PhaseShift,
         "RX": autograd_ops.RX,
@@ -106,6 +100,15 @@ class DefaultQubitAutograd(DefaultQubit):
     _tensordot = staticmethod(np.tensordot)
     _conj = staticmethod(np.conj)
     _imag = staticmethod(np.imag)
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            provides_jacobian=False,
+            passthru_interface_autograd=True,
+        )
+        return capabilities
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

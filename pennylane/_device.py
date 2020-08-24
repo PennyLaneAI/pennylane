@@ -52,13 +52,23 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {
-        'model': None,  # the underlying computational model, like 'qubit', 'cv'.
-        'inverse_operations': False,  # whether device supports inverse ops
-        'tensor_observables': False,  # whether device supports tensor observables
-        'passthru_interface': None,  # interface with which device can pass gradients through a simulation
-        'execution_mode': None,  # 'sampled_only', 'exact_only', 'sampled_or_exact'
-        'execution_in_remote': False,  # whether computation is performed remotely
+        'supports_cv': False,
+        'supports_qubit': False,
+        'supports_exact': False,
+        'supports_sampling': False,
+        'supports_inverse_operations': False,
+        'supports_tensor_observables': False,
+        'provides_jacobian': True,
+        'allows_reversible_diff': False,
+        'has_passthru_interface_tf': False,
+        'has_passthru_interface_autograd': False,
+        'executes_in_remote': False,
         }
+    """The capabilities dictionary stores the properties of a device. Devices can add their 
+    own custom properties and overwrite existing ones.
+    Properties are boolean values, and devices are checked against their proclaimed true properties 
+    by the shared device tests."""
+
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
@@ -431,7 +441,7 @@ class Device(abc.ABC):
             if operation.endswith(Operation.string_for_inverse):
                 return operation[
                     : -len(Operation.string_for_inverse)
-                ] in self.operations and self.capabilities().get("inverse_operations", False)
+                ] in self.operations and self.capabilities().get("supports_inverse_operations", False)
 
             return operation in self.operations
 
@@ -486,7 +496,7 @@ class Device(abc.ABC):
             operation_name = o.name
 
             if o.inverse:
-                if not self.capabilities().get("inverse_operations", False):
+                if not self.capabilities().get("supports_inverse_operations", False):
                     raise DeviceError(
                         "The inverse of gates are not supported on device {}".format(
                             self.short_name
@@ -502,7 +512,7 @@ class Device(abc.ABC):
         for o in observables:
 
             if isinstance(o, Tensor):
-                if not self.capabilities().get("tensor_observables", False):
+                if not self.capabilities().get("supports_tensor_observables", False):
                     raise DeviceError(
                         "Tensor observables not supported on device {}".format(self.short_name)
                     )
@@ -519,7 +529,7 @@ class Device(abc.ABC):
                 observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:
-                    if not self.capabilities().get("inverse_operations", False):
+                    if not self.capabilities().get("supports_inverse_operations", False):
                         raise DeviceError(
                             "The inverse of gates are not supported on device {}".format(
                                 self.short_name

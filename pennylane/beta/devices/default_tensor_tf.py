@@ -115,12 +115,6 @@ class DefaultTensorTF(DefaultTensor):
     # pylint: disable=too-many-instance-attributes
     name = "PennyLane TensorNetwork (TensorFlow) simulator plugin"
     short_name = "default.tensor.tf"
-    _capabilities = {
-        "model": "qubit",
-        "tensor_observables": True,
-        "provides_jacobian": True,
-        "passthru_interface": "tf",
-    }
 
     _operation_map = copy.copy(DefaultTensor._operation_map)
     _operation_map.update(
@@ -173,6 +167,15 @@ class DefaultTensorTF(DefaultTensor):
             representation=representation,
             contraction_method=contraction_method,
         )
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            provides_jacobian=False,
+            passthru_interface_tf=True,
+        )
+        return capabilities
 
     def reset(self):
         self.res = None

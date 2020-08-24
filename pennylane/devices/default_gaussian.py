@@ -656,8 +656,6 @@ class DefaultGaussian(Device):
     version = "0.12.0"
     author = "Xanadu Inc."
 
-    _capabilities = {"model": "cv"}
-
     _operation_map = {
         "Beamsplitter": beamsplitter,
         "ControlledAddition": controlled_addition,
@@ -694,6 +692,15 @@ class DefaultGaussian(Device):
         self.analytic = analytic
 
         self.reset()
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            supports_cv=True,
+            supports_exact=True,
+        )
+        return capabilities
 
     def pre_apply(self):
         self.reset()
