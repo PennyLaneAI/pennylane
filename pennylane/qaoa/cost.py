@@ -38,8 +38,8 @@ def bit_driver(wires, n):
 
     Args:
         wires (Iterable or Wires): The wires on which the returned Hamiltonian acts
-        n (int): Either :math:`0` or :math:`1`. Determines whether the Hamiltonian assigns
-                 lower energies to bitstrings with more :math:`0`s or :math:`1`s, respectively.
+        n (int): Either 0 or 1. Determines whether the Hamiltonian assigns
+                 lower energies to bitstrings with more 0s or 1s, respectively.
 
     Returns:
         .Hamiltonian

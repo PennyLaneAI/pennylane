@@ -280,13 +280,22 @@ class TestCostHamiltonians:
 
     """Tests the cost Hamiltonians"""
 
-    def test_maxcut_error(self):
-        """Tests that the MaxCut Hamiltonian throws the correct error"""
+    def test_graph_error(self):
+        """Tests that the cost Hamiltonians throws the correct error"""
 
         graph = [(0, 1), (1, 2)]
 
         with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
             qaoa.maxcut(graph)
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.max_independent_set(graph)
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.min_vertex_cover(graph)
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
+            qaoa.maxclique(graph)
 
     @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)
     def test_maxcut_output(self, graph, cost_hamiltonian, mixer_hamiltonian):
@@ -297,6 +306,32 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
+    def test_max_independent_set_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the MaxIndependentSet method is correct"""
+
+        cost_h, mixer_h = qaoa.max_independent_set(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
+    def test_min_vertex_cover_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the MinVertexCover method is correct"""
+
+        cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
+
+    @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE)
+    def test_maxclique_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
+        """Tests that the output of the MaxClique method is correct"""
+
+        cost_h, mixer_h = qaoa.maxclique(graph, constrained=constrained)
+
+        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
 class TestUtils:
     """Tests that the utility functions are working properly"""
