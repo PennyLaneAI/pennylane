@@ -24,6 +24,7 @@ from pennylane import qaoa
 ########################
 # Hamiltonian components
 
+
 def bit_driver(wires, n):
     r"""Returns the bit-driver cost Hamiltonian component.
 
@@ -59,6 +60,7 @@ def bit_driver(wires, n):
 
     ops = [qml.PauliZ(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
+
 
 def edge_driver(graph, reward):
     r"""Returns the edge-driver cost Hamiltonian component.
