@@ -20,13 +20,15 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import channel
 
-ch_list = [channel.AmplitudeDamping,
-           channel.GeneralizedAmplitudeDamping,
-           channel.PhaseDamping,
-           channel.DepolarizingChannel,
-           ]
+ch_list = [
+    channel.AmplitudeDamping,
+    channel.GeneralizedAmplitudeDamping,
+    channel.PhaseDamping,
+    channel.DepolarizingChannel,
+]
 
 X = np.array([[0, 1], [1, 0]])
+
 
 class TestChannels:
     """Tests for the quantum channels"""
@@ -55,6 +57,7 @@ class TestChannels:
             with pytest.raises(ValueError, match="Channel probability parameters should be"):
                 ops(p, wires=0)
 
+
 class TestAmplitudeDamping:
     """Tests for the quantum channel AmplitudeDamping"""
 
@@ -67,11 +70,12 @@ class TestAmplitudeDamping:
     def test_gamma_arbitrary(self, tol):
         """Test gamma=0.1 gives correct Kraus matrice"""
         op = channel.AmplitudeDamping
-        expected = [np.array([[0., 0.31622777],
-                              [0., 0.]]),
-                    np.array([[1., 0.],
-                              [0., 0.9486833]])]
+        expected = [
+            np.array([[0.0, 0.31622777], [0.0, 0.0]]),
+            np.array([[1.0, 0.0], [0.0, 0.9486833]]),
+        ]
         assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+
 
 class TestGeneralizedAmplitudeDamping:
     """Tests for the quantum channel GeneralizedAmplitudeDamping"""
@@ -85,9 +89,9 @@ class TestGeneralizedAmplitudeDamping:
     def test_gamma_p_arbitrary(self, tol):
         """Test p=0.1, gamma=0.1 gives correct first Kraus matrix"""
         op = channel.GeneralizedAmplitudeDamping
-        expected = np.array([[0.31622777, 0.],
-                            [0., 0.3]])
+        expected = np.array([[0.31622777, 0.0], [0.0, 0.3]])
         assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices[0], expected, atol=tol, rtol=0)
+
 
 class TestPhaseDamping:
     """Tests for the quantum channel PhaseDamping"""
@@ -101,11 +105,12 @@ class TestPhaseDamping:
     def test_gamma_arbitrary(self, tol):
         """Test gamma=0.1 gives correct Kraus matrice"""
         op = channel.PhaseDamping
-        expected = [np.array([[0., 0.],
-                              [0., 0.31622777]]),
-                    np.array([[1., 0.],
-                              [0., 0.9486833]])]
+        expected = [
+            np.array([[0.0, 0.0], [0.0, 0.31622777]]),
+            np.array([[1.0, 0.0], [0.0, 0.9486833]]),
+        ]
         assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+
 
 class TestDepolarizingChannel:
     """Tests for the quantum channel DepolarizingChannel"""
@@ -120,5 +125,5 @@ class TestDepolarizingChannel:
         """Test p=0.1 gives correct Kraus matrices"""
         p = 0.1
         op = channel.DepolarizingChannel
-        expected = np.sqrt(p/3) * X
+        expected = np.sqrt(p / 3) * X
         assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
