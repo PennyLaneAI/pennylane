@@ -41,7 +41,7 @@ class AmplitudeDamping(Channel):
                 0 & \sqrt{1-\gamma}
                 \end{bmatrix}
 
-    where :math:`\gamma` is the amplitude damping probability.
+    where :math:`\gamma \in [0, 1]` is the amplitude damping probability.
 
     **Details:**
 
