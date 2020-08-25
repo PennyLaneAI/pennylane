@@ -11,17 +11,25 @@
 
 <h3>Bug fixes</h3>
 
+* Changed to use lists for storing variable values inside ``BaseQNode``
+  allowing complex matrices to be passed to ``QubitUnitary``.
+  [(#773)](https://github.com/PennyLaneAI/pennylane/pull/773)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Jack Ceroni
+Thomas Bromley, Jack Ceroni, Josh Izaac, Antal Száva.
 
 # Release 0.11.0 (current release)
 
 <h3>New features since last release</h3>
+
+* Adding quantum noisy channels 
+
+  [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
 
 <h4>New and improved simulators</h4>
 
