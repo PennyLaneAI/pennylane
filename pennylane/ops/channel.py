@@ -30,15 +30,14 @@ class AmplitudeDamping(Channel):
     It can be modelled by the amplitude damping channel, with the following Kraus matrices:
 
     .. math::
+        K_0 = \begin{bmatrix}
+                1 & 0 \\
+                0 & \sqrt{1-\gamma}
+                \end{bmatrix}
+    .. math::
         K_1 = \begin{bmatrix}
                 0 & \sqrt{\gamma}  \\
                 0 & 0
-                \end{bmatrix}
-
-    .. math::
-        K_2 = \begin{bmatrix}
-                1 & 0 \\
-                0 & \sqrt{1-\gamma}
                 \end{bmatrix}
 
     where :math:`\gamma \in [0, 1]` is the amplitude damping probability.
@@ -60,9 +59,9 @@ class AmplitudeDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
+        K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
-        K2 = np.diag([1, np.sqrt(1 - gamma)])
-        return [K1, K2]
+        return [K0, K1]
 
 
 class GeneralizedAmplitudeDamping(Channel):
@@ -73,31 +72,31 @@ class GeneralizedAmplitudeDamping(Channel):
     at finite temperatures, with the following Kraus matrices:
 
     .. math::
-        K_1 = \sqrt{p} \begin{bmatrix}
+        K_0 = \sqrt{p} \begin{bmatrix}
                 1 & 0 \\
                 0 & \sqrt{1-\gamma}
                 \end{bmatrix}
 
     .. math::
-        K_2 = \sqrt{p}\begin{bmatrix}
+        K_1 = \sqrt{p}\begin{bmatrix}
                 0 & \sqrt{\gamma}  \\
                 0 & 0
                 \end{bmatrix}
 
     .. math::
-        K_3 = \sqrt{1-p}\begin{bmatrix}
+        K_2 = \sqrt{1-p}\begin{bmatrix}
                 \sqrt{1-\gamma} & 0 \\
                 0 & 1
                 \end{bmatrix}
 
     .. math::
-        K_4 = \sqrt{1-p}\begin{bmatrix}
+        K_3 = \sqrt{1-p}\begin{bmatrix}
                 0 & 0 \\
                 \sqrt{\gamma} & 0
                 \end{bmatrix}
 
-    where :math:`\gamma` is the probability of damping and :math:`p` is the
-    probability of the system being excited by the environment.
+    where :math:`\gamma \in [0, 1]` is the probability of damping and :math:`p \in [0, 1]`
+    is the probability of the system being excited by the environment.
 
     **Details:**
 
@@ -117,11 +116,11 @@ class GeneralizedAmplitudeDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma, p = params
-        K1 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
-        K2 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
-        K3 = np.sqrt(1 - p) * np.diag([np.sqrt(1 - gamma), 1])
-        K4 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
-        return [K1, K2, K3, K4]
+        K0 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
+        K1 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
+        K2 = np.sqrt(1 - p) * np.diag([np.sqrt(1 - gamma), 1])
+        K3 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
+        return [K0, K1, K2, K3]
 
 
 class PhaseDamping(Channel):
@@ -133,18 +132,18 @@ class PhaseDamping(Channel):
     the following Kraus matrices:
 
     .. math::
+        K_0 = \begin{bmatrix}
+                1 & 0 \\
+                0 & \sqrt{1-\gamma}
+                \end{bmatrix}
+    .. math::
+
         K_1 = \begin{bmatrix}
                 0 & 0  \\
                 0 & \sqrt{\gamma}
                 \end{bmatrix}
 
-    .. math::
-        K_2 = \begin{bmatrix}
-                1 & 0 \\
-                0 & \sqrt{1-\gamma}
-                \end{bmatrix}
-
-    where :math:`\gamma` is the phase damping probability.
+    where :math:`\gamma \in [0, 1]` is the phase damping probability.
 
     **Details:**
 
@@ -163,42 +162,43 @@ class PhaseDamping(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         gamma = params[0]
+        K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.diag([0, np.sqrt(gamma)])
-        K2 = np.diag([1, np.sqrt(1 - gamma)])
-        return [K1, K2]
+        return [K0, K1]
 
 
 class DepolarizingChannel(Channel):
     r"""DepolarizingChannel(p, wires)
     Single-qubit symmetrically depolarizing error channel.
 
-    With probability :math:`p`, a qubit is equally depolarized in all Pauli directions. This can
-    be modelled by the following Kraus matrices:
+    This channel is modelled by the following Kraus matrices:
 
     .. math::
-        K_1 = \sqrt{1-p} \begin{bmatrix}
+        K_0 = \sqrt{1-p} \begin{bmatrix}
                 1 & 0 \\
                 0 & 1
                 \end{bmatrix}
 
     .. math::
-        K_2 = \sqrt{p/3}\begin{bmatrix}
+        K_1 = \sqrt{p/3}\begin{bmatrix}
                 0 & 1  \\
                 1 & 0
                 \end{bmatrix}
 
     .. math::
-        K_3 = \sqrt{p/3}\begin{bmatrix}
+        K_2 = \sqrt{p/3}\begin{bmatrix}
                 0 & -i \\
                 i & 0
                 \end{bmatrix}
 
     .. math::
-        K_4 = \sqrt{p/3}\begin{bmatrix}
+        K_3 = \sqrt{p/3}\begin{bmatrix}
                 1 & 0 \\
                 0 & -1
                 \end{bmatrix}
 
+    where :math:`p \in [0, 1]` is the depolarization probability and is equally
+    divided in the application of all Pauli operations.
 
     **Details:**
 
@@ -217,11 +217,11 @@ class DepolarizingChannel(Channel):
     @classmethod
     def _kraus_matrices(cls, *params):
         p = params[0]
-        K1 = np.sqrt(1 - p) * np.eye(2)
-        K2 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
-        K3 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
-        K4 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
-        return [K1, K2, K3, K4]
+        K0 = np.sqrt(1 - p) * np.eye(2)
+        K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
+        K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
+        K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
+        return [K0, K1, K2, K3]
 
 
 __qubit_channels__ = {

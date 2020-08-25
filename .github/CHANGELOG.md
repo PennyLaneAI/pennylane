@@ -2,6 +2,17 @@
 
 <h3>New features since last release</h3>
 
+* Adding quantum noisy channels: quantum channels provide a general
+  formalism for discussing state evolution, including the evolution
+  of pure states into mixed states due to noise and decoherence. It
+  allows the user to simulate noise, benchmark algorithms running on
+  real hardware, and to test error-correction techniques. Moreover,
+  differentiable quantum channels could be a unique feature for 
+  PennyLane not present in other libraries.
+
+  [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
+  [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -14,19 +25,13 @@
 
 This release contains contributions from (in alphabetical order):
 
-
+Aroosa Ijaz, Juan Miguel Arrazola
 
 # Release 0.11.0 (current release)
 
 <h3>New features since last release</h3>
 
-* Adding quantum noisy channels 
-
-  [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
-  [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
-
 <h4>New and improved simulators</h4>
-
 * Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
   This device supports classical backpropagation (`diff_method="backprop"`); this can
   be faster than the parameter-shift rule for computing quantum gradients
