@@ -151,6 +151,11 @@ equal_hamiltonians = [
         qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)]),
         True
     ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
+        qml.Hamiltonian([2], [qml.PauliZ(3)]),
+        True
+    )
 ]
 
 add_hamiltonians = [
@@ -471,7 +476,6 @@ class TestVQE:
         """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
         dev = mock_device(wires=3)
         circuits = qml.map(ansatz, observables, device=dev)
-        print(params)
         res = circuits(params)
         assert all(val == 1.0 for val in res)
 

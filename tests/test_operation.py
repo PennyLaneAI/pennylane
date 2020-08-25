@@ -989,7 +989,8 @@ equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
     (qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
      qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0), True),
-    (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True)
+    (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
+    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True)
 ]
 
 add_obs = [

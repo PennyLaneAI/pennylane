@@ -37,6 +37,8 @@ class Hamiltonian:
     Args:
         coeffs (Iterable[float]): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression
+        simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
+                         (like-terms are combined). The default value is `False`.
 
     .. seealso:: :class:`~.VQECost`, :func:`~.generate_hamiltonian`
 
@@ -118,7 +120,18 @@ class Hamiltonian:
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
     def simplify(self):
-        r"""Simplifies qml.Hamiltonian objects by combining like-terms."""
+        r"""Simplifies the Hamiltonian by combining like-terms.
+
+        Returns:
+            .Hamiltonian
+
+        **Example**
+
+        >>> H = qml.Hamiltonian([1, 1, -2], [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)])
+        >>> H.simplify()
+        >>> print(H)
+        (1.0) [Y2] + (-1.0) [X0]
+        """
 
         coeffs = []
         ops = []
@@ -176,27 +189,59 @@ class Hamiltonian:
         return data
 
     def compare(self, H):
-        r"""Compares two qml.Hamiltonian objects/Observables/Tensors to determine if they are equivalent.
+        r"""Compares a `~.Hamiltonian` with another Hamiltonian, :class:`~.Observable`, or :class:`~.Tensor`,
+        to determine if they are equivalent.
+
+        A Hamiltonian and a Hamiltonian/Observable/Tensor are equivalent if they represent the same operator
+        (their matrix representations are equal), and they are defined on the same wires.
+
+        .. Warning::
+
+            The `compare()` method **cannot** check for equivalence between a `qml.Hermitian` Observable and an
+            equivalent Hamiltonian/Tensor/Observable written in terms of Pauli observables, or as a linear combination
+            of other `qml.Hermitian` observables. If this were the case, the matrix form of Hamiltonians/Tensors
+            would need to be calculated, drastically increasing runtime.
 
         Returns:
-            (bool): True if the coefficients and operations of the Hamiltonians are equivalent, False otherwise.
-        """
-        val = False
-        if isinstance(H, Hamiltonian):
-            val = self._obs_data() == H._obs_data()
-        if isinstance(H, (Tensor, Observable)):
-            val = self._obs_data() == {(1, frozenset(H._obs_data()))}
+            (bool): True if Hamiltonian and the other Hamiltonian/Observable/Tensor are equivalent, False otherwise.
 
-        return val
+        **Examples**
+
+        >>> A = np.array([[1, 0], [0, -1]])
+        >>> H = qml.Hamiltonian(
+        >>>     [0.5, 0.5],
+        >>>     [qml.Hermitian(A, 0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Hermitian(A, 0) @ qml.Identity("a")]
+        >>> )
+        >>> obs = qml.Hermitian(A, 0) @ qml.PauliY(1)
+        >>> print(H.compare(obs))
+        True
+
+        >>> H1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
+        >>> H2 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
+        >>> H1.compare(H2)
+        False
+
+        >>> ob1 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
+        >>> ob1.compare(ob2)
+        False
+        """
+        if isinstance(H, Hamiltonian):
+            self.simplify()
+            H.simplify()
+            return self._obs_data() == H._obs_data()
+
+        if isinstance(H, (Tensor, Observable)):
+            self.simplify()
+            return self._obs_data() == {(1, frozenset(H._obs_data()))}
+
+        raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
     def __matmul__(self, H):
-        r"""The tensor product operation between qml.Hamiltonian objects/Tensors/Observables.
+        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
         coeffs1 = self.coeffs.copy()
         terms1 = self.ops.copy()
-
-        coeffs = []
-        terms = []
 
         if isinstance(H, Hamiltonian):
             coeffs2 = H.coeffs
@@ -206,14 +251,18 @@ class Hamiltonian:
             term_list = itertools.product(terms1, terms2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
 
+            return qml.Hamiltonian(coeffs, terms, simplify=True)
+
         if isinstance(H, (Tensor, Observable)):
             coeffs = coeffs1
             terms = [term @ H for term in terms1]
 
-        return qml.Hamiltonian(coeffs, terms, simplify=True)
+            return qml.Hamiltonian(coeffs, terms, simplify=True)
+
+        return NotImplemented
 
     def __add__(self, H):
-        r"""The addition operation between qml.Hamiltonian objects/Tensors/Observables.
+        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
@@ -221,51 +270,61 @@ class Hamiltonian:
         if isinstance(H, Hamiltonian):
             coeffs.extend(H.coeffs.copy())
             ops.extend(H.ops.copy())
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
+
         if isinstance(H, (Tensor, Observable)):
             coeffs.append(1)
             ops.append(H)
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-        return qml.Hamiltonian(coeffs, ops, simplify=True)
+        return NotImplemented
 
     def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and a qml.Hamiltonian object.
+        r"""The scalar multiplication operation between a scalar and a Hamiltonian.
         """
-        coeffs = [a * c for c in self.coeffs.copy()]
-        return qml.Hamiltonian(coeffs, self.ops.copy())
+        if isinstance(a, (int, float)):
+            coeffs = [a * c for c in self.coeffs.copy()]
+            return qml.Hamiltonian(coeffs, self.ops.copy())
+
+        return NotImplemented
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
-        r"""The subtraction operation between qml.Hamiltonian objects/Tensors/Observables.
+        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
         return self.__add__(H.__mul__(-1))
 
     def __iadd__(self, H):
-        r"""The inplace addition operation between qml.Hamiltonian objects/Tensors/Observables.
+        r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
         if isinstance(H, Hamiltonian):
             self._coeffs.extend(H.coeffs.copy())
             self._ops.extend(H.ops.copy())
             self.simplify()
+            return self
+
         if isinstance(H, (Tensor, Observable)):
             self._coeffs.append(1)
             self._ops.append(H)
             self.simplify()
+            return self
 
-        return self
+        return NotImplemented
 
     def __imul__(self, a):
-        r"""The inplace scalar multiplication operation between a scalar and a qml.Hamiltonian object.
+        r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian.
         """
-        self._coeffs = [a * c for c in self.coeffs]
+        if isinstance(a, (int, float)):
+            self._coeffs = [a * c for c in self.coeffs]
+            return self
 
-        return self
+        return NotImplemented
 
     def __isub__(self, H):
-        r"""The inplace subtraction operation between qml.Hamiltonian objects/Tensors/Observables.
+        r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
         self.__iadd__(H.__mul__(-1))
-
         return self
 
 

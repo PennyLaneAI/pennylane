@@ -1013,24 +1013,60 @@ class Observable(Operator):
         return tensor
 
     def compare(self, other):
-        r"""Compares two Observables/Tensors/qml.Hamiltonian objects to determine if they are equivalent.
+        r"""Compares an `~.Observable` or a `~.Tensor` with another :class:`~.Hamiltonian`, Tensor, or Observable,
+        to determine if they are equivalent.
+
+        An Observable/Tensor and a Hamiltonian/Observable/Tensor are equivalent if they represent the same operator
+        (their matrix representations are equal), and they are defined on the same wires.
+
+        .. Warning::
+
+            The `compare()` method **cannot** check for equivalence between a `qml.Hermitian` Observable and an
+            equivalent Hamiltonian/Tensor/Observable written in terms of Pauli observables.
+            If this were the case, the matrix form of Hamiltonians/Tensors would need
+            to be calculated, which would drastically increase runtime.
+
+        Returns:
+            (bool): True if the Observable/Tensor and the other Hamiltonian/Observable/Tensor are equivalent,
+                    False otherwise.
+
+        **Examples**
+
+        >>> ob1 = qml.PauliX(0) @ qml.Identity(1)
+        >>> ob2 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob1.compare(ob2)
+        True
+
+        >>> ob1 = qml.PauliX(0)
+        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
+        >>> ob1.compare(ob2)
+        False
         """
-        return other._obs_data() == self._obs_data()
+        if isinstance(other, (Tensor, Observable)):
+            return other._obs_data() == self._obs_data()
+        if isinstance(other, qml.Hamiltonian):
+            return other.compare(self)
+
+        raise ValueError("Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.")
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects.
         """
         if isinstance(other, (Observable, Tensor)):
-            val = qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        if isinstance(other, qml.Hamiltonian):
-            val = other + self
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
 
-        return val
+        if isinstance(other, qml.Hamiltonian):
+            return other + self
+
+        return NotImplemented
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor.
         """
-        return qml.Hamiltonian([a], [self], simplify=True)
+        if isinstance(a, (int, float)):
+            return qml.Hamiltonian([a], [self], simplify=True)
+
+        return NotImplemented
 
     __rmul__ = __mul__
 
