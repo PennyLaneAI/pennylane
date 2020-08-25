@@ -1047,7 +1047,9 @@ class Observable(Operator):
         if isinstance(other, qml.Hamiltonian):
             return other.compare(self)
 
-        raise ValueError("Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.")
+        raise ValueError(
+            "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
+        )
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects.
