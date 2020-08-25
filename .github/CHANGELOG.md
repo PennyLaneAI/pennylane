@@ -20,6 +20,10 @@ This release contains contributions from (in alphabetical order):
 
 <h3>New features since last release</h3>
 
+* Adding quantum noisy channels 
+
+  [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
+
 <h4>New and improved simulators</h4>
 
 * Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
