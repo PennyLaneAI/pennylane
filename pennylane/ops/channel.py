@@ -15,7 +15,6 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
 
 import numpy as np
 
