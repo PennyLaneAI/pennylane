@@ -176,6 +176,39 @@ MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in 
 
 MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
 
+COST_COEFFS = [
+    [1.5, 1.5, -1, -1, -1],
+    [1.5, 1.5, -1.5, 1.5, -1, -1, -1],
+    [-1.5, 1.5, -1.5, 1.5, -1, -1, -1]
+]
+
+COST_TERMS = [
+    [
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)
+    ],
+    [
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(0) @ qml.Identity(2),
+        qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)
+    ],
+    [
+        qml.Identity(0) @ qml.Identity(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.Identity(1) @ qml.Identity(2),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)
+    ],
+]
+
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(3)]
+
+MVC = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
+
 GRAPHS.append(graph)
 GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
 REWARDS = [['00'], ['00', '11'], ['00', '01', '10'], ['00', '11', '01', '10'], ['00', '01', '10']]
