@@ -38,7 +38,6 @@ from .qubit import obs as _qubit__obs__
 from .channel import __all__ as _channel__ops__
 
 
-
 class Identity(CVObservable):
     r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.
