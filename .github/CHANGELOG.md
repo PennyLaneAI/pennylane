@@ -8,12 +8,17 @@
 
 <h3>Bug fixes</h3>
 
+* Changed to use lists for storing variable values inside ``BaseQNode``
+  allowing complex matrices to be passed to ``QubitUnitary``.
+  [(#773)](https://github.com/PennyLaneAI/pennylane/pull/773)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Thomas Bromley, Josh Izaac, Antal Száva.
 
 
 # Release 0.11.0 (current release)
