@@ -160,12 +160,7 @@ class Hamiltonian:
 
         return "\n+ ".join(terms)
 
-    def obs_data(self):
-        r"""Extracts the data from each Tensor/Observable in a qml.Hamiltonian object.
-
-        Returns:
-            (set): Set of coefficients, paired with sets of the observables tensored to make each term.
-        """
+    def _obs_data(self):
         data = set()
 
         for co, op in zip(*self.terms):
@@ -188,9 +183,9 @@ class Hamiltonian:
         """
         val = False
         if isinstance(H, Hamiltonian):
-            val = self.obs_data() == H.obs_data()
+            val = self._obs_data() == H._obs_data()
         if isinstance(H, (Tensor, Observable)):
-            val = self.obs_data() == {(1, frozenset(H.obs_data()))}
+            val = self._obs_data() == {(1, frozenset(H._obs_data()))}
 
         return val
 

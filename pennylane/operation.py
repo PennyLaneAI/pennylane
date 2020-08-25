@@ -906,7 +906,7 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
-    def obs_data(self):
+    def _obs_data(self):
         r"""Extracts the data from an Observable/Tensor."""
         obs = Tensor(self).non_identity_obs
         tensor = set()
@@ -920,13 +920,7 @@ class Observable(Operator):
     def compare(self, other):
         r"""Compares two Observables/Tensors/qml.Hamiltonian objects to determine if they are equivalent.
         """
-        val = False
-        if isinstance(other, (Observable, Tensor)):
-            val = self.obs_data() == other.obs_data()
-        if isinstance(other, qml.Hamiltonian):
-            val = other.obs_data() == self.obs_data()
-
-        return val
+        return other._obs_data() == self._obs_data()
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects.

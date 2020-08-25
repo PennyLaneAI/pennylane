@@ -1027,12 +1027,12 @@ class TestTensorObservableOperations:
         """Tests the data() method for Tensors and Observables"""
 
         obs = qml.PauliZ(0)
-        data = obs.obs_data()
+        data = obs._obs_data()
 
         assert data == {("PauliZ", Wires(0), ())}
 
         obs = qml.PauliZ(0) @ qml.PauliX(1)
-        data = obs.obs_data()
+        data = obs._obs_data()
 
         assert data == {("PauliZ", Wires(0), ()), ("PauliX", Wires(1), ())}
 

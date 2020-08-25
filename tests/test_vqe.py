@@ -398,7 +398,7 @@ class TestHamiltonian:
         """Tests the obs_data method"""
 
         H = qml.Hamiltonian([1, 1, 0.5], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(2) @ qml.Identity(1)])
-        data = H.obs_data()
+        data = H._obs_data()
 
         assert data == {
             (1, frozenset([('PauliZ', Wires(0), ())])),
