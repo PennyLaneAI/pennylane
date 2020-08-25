@@ -54,18 +54,17 @@ class Device(abc.ABC):
     _capabilities = {
         'model': None,
         'passthru_interface': None,
+        'supports_reversible_diff': False,
         'supports_exact': False,
         'supports_sampling': False,
         'supports_inverse_operations': False,
         'supports_tensor_observables': False,
         'provides_jacobian': False,
-        'supports_reversible_diff': False,
         'executes_in_remote': False,
+        'takes_fixed_num_of_wires': False,
         }
     """The capabilities dictionary stores the properties of a device. Devices can add their 
-    own custom properties and overwrite existing ones.
-    Properties are boolean values, and devices are checked against their proclaimed true properties 
-    by the shared device tests."""
+    own custom properties and overwrite existing ones by overwriting the ``capabilities`` class method."""
 
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
@@ -238,7 +237,6 @@ class Device(abc.ABC):
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    inherited_capability=...,
                     new_capability=...,
                 )
                 return capabilities

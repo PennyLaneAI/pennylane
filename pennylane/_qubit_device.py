@@ -113,7 +113,7 @@ class QubitDevice(Device):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            supports_qubit=True,
+            model="qubit",
             supports_sampling=True,
             supports_exact=True,
             supports_tensor_observables=True,

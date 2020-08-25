@@ -202,7 +202,7 @@ class BaseQNode(qml.QueuingContext):
 
         self.output_conversion = None  #: callable: for transforming the output of :meth:`.Device.execute` to QNode output
         self.output_dim = None  #: int: dimension of the QNode output vector
-        self.capabilities = self.device.capabilities()
+        self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
     def __repr__(self):
         """String representation."""
@@ -658,9 +658,9 @@ class BaseQNode(qml.QueuingContext):
             elif res.return_type is ObservableReturnTypes.Probability:
                 self.output_conversion = np.squeeze
 
-                if self.capabilities["qubit"]:
+                if self.model == "qubit":
                     num_basis_states = 2
-                elif self.capabilities["cv"]:  # could both be true? what about gaussian?
+                elif self.model == "cv":
                     num_basis_states = getattr(self.device, "cutoff", 10)
 
                 self.output_dim = num_basis_states ** len(res.wires)
@@ -714,16 +714,16 @@ class BaseQNode(qml.QueuingContext):
                 "Continuous and discrete operations are not allowed in the same quantum circuit."
             )
 
-        if any(are_cvs) and not self.capabilities["cv"]:
+        if any(are_cvs) and self.model == "qubit":
             raise QuantumFunctionError(
-                "Device {} does not support CV operations.".format(
+                "Device {} is a qubit device; CV operations are not allowed.".format(
                     self.device.short_name
                 )
             )
 
-        if not all(are_cvs) and not self.capabilities["qubit"]:
+        if not all(are_cvs) and self.model == "cv":
             raise QuantumFunctionError(
-                "Device {} does not support qubit operations.".format(
+                "Device {} is a CV device; qubit operations are not allowed.".format(
                     self.device.short_name
                 )
             )

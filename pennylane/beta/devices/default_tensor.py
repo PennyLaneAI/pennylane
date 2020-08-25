@@ -168,8 +168,8 @@ class DefaultTensor(Device):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            supports_qubit=True,
-            tensor_observables=True,
+            model='qubit',
+            supports_tensor_observables=True,
         )
         return capabilities
 
