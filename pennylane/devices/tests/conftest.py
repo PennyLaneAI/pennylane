@@ -104,7 +104,7 @@ def device(device_kwargs):
             )
 
         capabilities = dev.capabilities()
-        if "model" not in capabilities or not capabilities["model"] == "qubit":
+        if not capabilities.get("supports_qubit", False):
             # exit the tests if device based on cv model (currently not supported)
             pytest.exit("The device test suite currently only runs on qubit-based devices.")
 

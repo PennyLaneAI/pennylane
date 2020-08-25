@@ -56,7 +56,8 @@ def test_fallback_Jacobian_qnode(monkeypatch):
 
     # use monkeypatch to avoid setting class attributes
     with monkeypatch.context() as m:
-        m.setitem(dev._capabilities, "model", "None")
+        m.setitem(dev._capabilities, "supports_cv", None)  # Note: this is strictly not necessary, because these are set to False by default
+        m.setitem(dev._capabilities, "supports_qubit", None)
 
         @qnode(dev)
         def circuit(a):
@@ -287,7 +288,7 @@ def test_parameter_shift_diff_method_unsupported():
     class DummyDevice(qml.devices.DefaultQubit):
         @classmethod
         def capabilities(cls):
-            return {"model": "NotSupportedModel"}
+            return {"supports_no_model": True}
 
     dev = DummyDevice(wires=2)
 

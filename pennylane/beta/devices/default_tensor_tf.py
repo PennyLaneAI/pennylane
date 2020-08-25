@@ -173,7 +173,7 @@ class DefaultTensorTF(DefaultTensor):
         capabilities = super().capabilities().copy()
         capabilities.update(
             provides_jacobian=False,
-            passthru_interface_tf=True,
+            supports_passthru_tf=True,
         )
         return capabilities
 

@@ -51,7 +51,7 @@ def operable_mock_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, "__abstractmethods__", frozenset())
-        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
+        m.setattr(dev, "capabilities", lambda cls: {"supports_qubit": True})
         m.setattr(dev, "operations", ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, "reset", lambda self: None)
@@ -67,7 +67,7 @@ def operable_mock_device_2_wires_with_inverses(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, "__abstractmethods__", frozenset())
-        m.setattr(dev, "capabilities", lambda cls: {"model": "qubit", "inverse_operations": True})
+        m.setattr(dev, "capabilities", lambda cls: {"supports_qubit": True, "supports_inverse_operations": True})
         m.setattr(dev, "operations", ["BasisState", "RX", "RY", "RZ", "CNOT", "PhaseShift"])
         m.setattr(dev, "observables", ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, "reset", lambda self: None)
@@ -439,7 +439,7 @@ class TestQNodeExceptions:
 
     def test_qubit_operations_on_CV_device(self, operable_mock_device_2_wires, monkeypatch):
         """Error: cannot use qubit operations on a CV device."""
-        monkeypatch.setattr(operable_mock_device_2_wires, "capabilities", lambda: {"model": "cv"})
+        monkeypatch.setattr(operable_mock_device_2_wires, "capabilities", lambda: {"supports_cv": True})
 
         def circuit(x):
             qml.RX(0.5, wires=[0])

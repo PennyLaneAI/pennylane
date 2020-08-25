@@ -52,16 +52,14 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {
-        'supports_cv': False,
-        'supports_qubit': False,
+        'model': None,
+        'passthru_interface': None,
         'supports_exact': False,
         'supports_sampling': False,
         'supports_inverse_operations': False,
         'supports_tensor_observables': False,
-        'provides_jacobian': True,
-        'allows_reversible_diff': False,
-        'has_passthru_interface_tf': False,
-        'has_passthru_interface_autograd': False,
+        'provides_jacobian': False,
+        'supports_reversible_diff': False,
         'executes_in_remote': False,
         }
     """The capabilities dictionary stores the properties of a device. Devices can add their 

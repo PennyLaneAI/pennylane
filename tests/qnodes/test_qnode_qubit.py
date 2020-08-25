@@ -34,7 +34,7 @@ def operable_mock_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, '_capabilities', {"model": "qubit"})
+        m.setattr(dev, '_capabilities', {"supports_qubit": True})
         m.setattr(dev, 'operations', ["BasisState", "RX", "RY", "CNOT", "Rot", "PhaseShift"])
         m.setattr(dev, 'observables', ["PauliX", "PauliY", "PauliZ"])
         m.setattr(dev, 'reset', lambda self: None)

@@ -25,7 +25,7 @@ from .passthru import PassthruQNode
 from .rev import ReversibleQNode
 
 
-PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}
+PARAMETER_SHIFT_QNODES = {"qubit": QubitQNode, "cv": CVQNode}  # Later models overrule earlier ones
 ALLOWED_DIFF_METHODS = (
     "best",
     "backprop",
@@ -53,11 +53,8 @@ def _get_qnode_class(device, interface, diff_method):
         differentiation method
     """
     # pylint: disable=too-many-return-statements,too-many-branches
-    model = device.capabilities().get("model", "qubit")
-    passthru_interface = device.capabilities().get("passthru_interface", None)
-    device_provides_jacobian = device.capabilities().get("provides_jacobian", False)
-
-    allows_passthru = passthru_interface is not None
+    capabilites = device.capabilities()
+    device_provides_jacobian = device.capabilities()
 
     if diff_method is None:
         # QNode is not differentiable
@@ -65,26 +62,26 @@ def _get_qnode_class(device, interface, diff_method):
 
     if diff_method == "best":
 
-        if allows_passthru and interface == passthru_interface:
+        if capabilites.get("supports_passthru_" + interface, False):
             # hand off differentiation to the device without type conversion
             return PassthruQNode
 
-        if device_provides_jacobian:
+        if capabilites.get("provides_jacobian", False):
             # hand off differentiation to the device
             return DeviceJacobianQNode
 
-        if model in PARAMETER_SHIFT_QNODES:
-            # parameter-shift analytic differentiation
-            return PARAMETER_SHIFT_QNODES[model]
+        for model in PARAMETER_SHIFT_QNODES.keys():
+            if capabilites.get("supports_" + model, False):
+                # parameter-shift analytic differentiation
+                return PARAMETER_SHIFT_QNODES[model]
 
     if diff_method == "backprop":
-        if allows_passthru:
-            if interface != passthru_interface:
-                raise ValueError(
-                    "Device {} only supports diff_method='backprop' when using the "
-                    "{} interface.".format(device.short_name, passthru_interface)
-                )
-            return PassthruQNode
+        if capabilites.get("supports_passthru_" + interface, False):
+            raise ValueError(
+                "Device {} only supports diff_method='backprop' when using the "
+                "{} interface.".format(device.short_name, interface)
+            )
+        return PassthruQNode
 
         raise ValueError(
             "The {} device does not support native computations with "
@@ -101,9 +98,10 @@ def _get_qnode_class(device, interface, diff_method):
         )
 
     if diff_method == "parameter-shift":
-        if model in PARAMETER_SHIFT_QNODES:
-            # parameter-shift analytic differentiation
-            return PARAMETER_SHIFT_QNODES[model]
+        for model in PARAMETER_SHIFT_QNODES.keys():
+            if capabilites.get("supports_" + model, False):
+                # parameter-shift analytic differentiation
+                return PARAMETER_SHIFT_QNODES[model]
 
         raise ValueError(
             "The parameter shift rule is not available for devices with model {}.".format(model)

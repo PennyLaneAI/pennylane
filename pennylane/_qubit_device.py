@@ -115,7 +115,7 @@ class QubitDevice(Device):
         capabilities.update(
             supports_qubit=True,
             supports_sampling=True,
-            supports_inverse_operations=True,  # check!
+            supports_exact=True,
             supports_tensor_observables=True,
         )
         return capabilities

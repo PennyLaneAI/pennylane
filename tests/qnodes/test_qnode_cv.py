@@ -45,7 +45,7 @@ def operable_mock_CV_device_2_wires(monkeypatch):
     dev = Device
     with monkeypatch.context() as m:
         m.setattr(dev, '__abstractmethods__', frozenset())
-        m.setattr(dev, '_capabilities', {"model": "cv"})
+        m.setattr(dev, '_capabilities', {"supports_cv": True})
         m.setattr(dev, 'operations', ["FockState", "Displacement", "CubicPhase", "Squeezing", "Rotation", "Kerr", "Beamsplitter"])
         m.setattr(dev, 'observables', ["X", "NumberOperator", "PolyXP"])
         m.setattr(dev, 'reset', lambda self: None)

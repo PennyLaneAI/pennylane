@@ -161,7 +161,6 @@ class DefaultQubit(QubitDevice):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            supports_exact=True,
             supports_reversible_diff=True,
         )
         return capabilities

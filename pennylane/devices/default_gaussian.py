@@ -699,6 +699,7 @@ class DefaultGaussian(Device):
         capabilities.update(
             supports_cv=True,
             supports_exact=True,
+            supports_sampling=True,
         )
         return capabilities
 
