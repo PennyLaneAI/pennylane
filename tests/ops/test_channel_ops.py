@@ -103,7 +103,7 @@ class TestPhaseDamping:
         assert np.allclose(op(0, wires=0).kraus_matrices[1], np.eye(2), atol=tol, rtol=0)
 
     def test_gamma_arbitrary(self, tol):
-        """Test gamma=0.1 gives correct Kraus matrice"""
+        """Test gamma=0.1 gives correct Kraus matrices"""
         op = channel.PhaseDamping
         expected = [
             np.array([[0.0, 0.0], [0.0, 0.31622777]]),
