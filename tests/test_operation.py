@@ -18,13 +18,14 @@ import itertools
 import functools
 from unittest.mock import patch
 
+import abc
 import pytest
 import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
 import pennylane._queuing
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, Channel
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.wires import Wires
@@ -40,6 +41,7 @@ op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
 op_classes_param_testable = op_classes.copy()
 op_classes_param_testable.remove(qml.ops.PauliRot)
 
+
 def U3(theta, phi, lam):
     return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
 
@@ -54,15 +56,21 @@ class TestOperation:
         ww = list(range(test_class.num_wires))
 
         # fixed parameter values
-        if test_class.par_domain == 'A':
+        if test_class.par_domain == "A":
             if test_class.__name__ == "Interferometer":
                 ww = list(range(2))
-                par = [np.array([[0.83645892-0.40533293j, -0.20215326+0.30850569j],
-                                 [-0.23889780-0.28101519j, -0.88031770-0.29832709j]])]
+                par = [
+                    np.array(
+                        [
+                            [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+                            [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+                        ]
+                    )
+                ]
             else:
                 par = [np.array([[-1.82624687]])] * test_class.num_params
         else:
-            par = [-0.069125, 0.51778, 0.91133, 0.95904][:test_class.num_params]
+            par = [-0.069125, 0.51778, 0.91133, 0.95904][: test_class.num_params]
 
         op = test_class(*par, wires=ww)
 
@@ -81,8 +89,8 @@ class TestOperation:
 
         # check the inverse transform
         V = op.heisenberg_tr(Wires(ww), inverse=True)
-        assert np.linalg.norm(U @ V -I) == pytest.approx(0, abs=tol)
-        assert np.linalg.norm(V @ U -I) == pytest.approx(0, abs=tol)
+        assert np.linalg.norm(U @ V - I) == pytest.approx(0, abs=tol)
+        assert np.linalg.norm(V @ U - I) == pytest.approx(0, abs=tol)
 
         if op.grad_recipe is not None:
             # compare gradient recipe to numerical gradient
@@ -94,22 +102,22 @@ class TestOperation:
                 op.data[k] += h
                 Up = op.heisenberg_tr(Wires(ww))
                 op.data = par
-                G = (Up-U) / h
+                G = (Up - U) / h
                 assert D == pytest.approx(G, abs=tol)
 
         # make sure that `heisenberg_expand` method receives enough wires to actually expand
         # so only check multimode ops
         if len(op.wires) > 1:
-            with pytest.raises(ValueError, match='do not exist on this device with wires'):
+            with pytest.raises(ValueError, match="do not exist on this device with wires"):
                 op.heisenberg_expand(U, Wires([0]))
 
         # validate size of input for `heisenberg_expand` method
-        with pytest.raises(ValueError, match='Heisenberg matrix is the wrong size'):
+        with pytest.raises(ValueError, match="Heisenberg matrix is the wrong size"):
             U_wrong_size = U[1:, 1:]
             op.heisenberg_expand(U_wrong_size, Wires(ww))
 
         # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
-        with pytest.raises(ValueError, match='Only order-1 and order-2 arrays supported'):
+        with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
             U_high_order = np.array([U] * 3)
             op.heisenberg_expand(U_high_order, Wires(ww))
 
@@ -121,9 +129,9 @@ class TestOperation:
         w = test_class.num_wires
         ww = list(range(w))
         # valid pars
-        if test_class.par_domain == 'A':
+        if test_class.par_domain == "A":
             pars = [np.eye(2)] * n
-        elif test_class.par_domain == 'N':
+        elif test_class.par_domain == "N":
             pars = [0] * n
         else:
             pars = [0.0] * n
@@ -136,55 +144,55 @@ class TestOperation:
         assert op._wires == Wires(ww)
 
         # too many parameters
-        with pytest.raises(ValueError, match='wrong number of parameters'):
-            test_class(*(n+1)*[0], wires=ww)
+        with pytest.raises(ValueError, match="wrong number of parameters"):
+            test_class(*(n + 1) * [0], wires=ww)
 
         # too few parameters
         if n > 0:
-            with pytest.raises(ValueError, match='wrong number of parameters'):
-                test_class(*(n-1)*[0], wires=ww)
+            with pytest.raises(ValueError, match="wrong number of parameters"):
+                test_class(*(n - 1) * [0], wires=ww)
 
         if w > 0:
             # too many or too few wires
-            with pytest.raises(ValueError, match='wrong number of wires'):
-                test_class(*pars, wires=list(range(w+1)))
-            with pytest.raises(ValueError, match='wrong number of wires'):
-                test_class(*pars, wires=list(range(w-1)))
+            with pytest.raises(ValueError, match="wrong number of wires"):
+                test_class(*pars, wires=list(range(w + 1)))
+            with pytest.raises(ValueError, match="wrong number of wires"):
+                test_class(*pars, wires=list(range(w - 1)))
             # repeated wires
             if w > 1:
-                with pytest.raises(qml.wires.WireError, match='Wires must be unique'):
-                    test_class(*pars, wires=w*[0])
+                with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
+                    test_class(*pars, wires=w * [0])
 
         if n == 0:
             return
 
         # wrong parameter types
         if test_class.do_check_domain:
-            if test_class.par_domain == 'A':
+            if test_class.par_domain == "A":
                 # params must be arrays
-                with pytest.raises(TypeError, match='Array parameter expected'):
-                    test_class(*n*[0.0], wires=ww)
+                with pytest.raises(TypeError, match="Array parameter expected"):
+                    test_class(*n * [0.0], wires=ww)
                 # params must not be Variables
-                with pytest.raises(TypeError, match='Array parameter expected'):
-                    test_class(*n*[qml.variable.Variable(0)], wires=ww)
-            elif test_class.par_domain == 'N':
+                with pytest.raises(TypeError, match="Array parameter expected"):
+                    test_class(*n * [qml.variable.Variable(0)], wires=ww)
+            elif test_class.par_domain == "N":
                 # params must be natural numbers
-                with pytest.raises(TypeError, match='Natural number'):
-                    test_class(*n*[0.7], wires=ww)
-                with pytest.raises(TypeError, match='Natural number'):
-                    test_class(*n*[-1], wires=ww)
-            elif test_class.par_domain == 'R':
+                with pytest.raises(TypeError, match="Natural number"):
+                    test_class(*n * [0.7], wires=ww)
+                with pytest.raises(TypeError, match="Natural number"):
+                    test_class(*n * [-1], wires=ww)
+            elif test_class.par_domain == "R":
                 # params must be real numbers
-                with pytest.raises(TypeError, match='Real scalar parameter expected'):
-                    test_class(*n*[1j], wires=ww)
+                with pytest.raises(TypeError, match="Real scalar parameter expected"):
+                    test_class(*n * [1j], wires=ww)
 
             # if par_domain ever gets overridden to an unsupported value, should raise exception
-            monkeypatch.setattr(test_class, 'par_domain', 'junk')
-            with pytest.raises(ValueError, match='Unknown parameter domain'):
+            monkeypatch.setattr(test_class, "par_domain", "junk")
+            with pytest.raises(ValueError, match="Unknown parameter domain"):
                 test_class(*pars, wires=ww)
 
-            monkeypatch.setattr(test_class, 'par_domain', 7)
-            with pytest.raises(ValueError, match='Unknown parameter domain'):
+            monkeypatch.setattr(test_class, "par_domain", 7)
+            with pytest.raises(ValueError, match="Unknown parameter domain"):
                 test_class(*pars, wires=ww)
 
     @pytest.fixture(scope="function")
@@ -243,7 +251,7 @@ class TestOperation:
             r"""Dummy custom Operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'R'
+            par_domain = "R"
 
         # Check that the name of the Operation is initialized fine
         dummy_op = DummyOp(some_param, wires=[1])
@@ -282,7 +290,7 @@ class TestOperatorConstruction:
             r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
-            par_domain = 'R'
+            par_domain = "R"
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             DummyOp(0.5, wires=[0, 1])
@@ -294,7 +302,7 @@ class TestOperatorConstruction:
             r"""Dummy custom operator"""
             num_wires = 2
             num_params = 1
-            par_domain = 'R'
+            par_domain = "R"
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
@@ -306,8 +314,8 @@ class TestOperatorConstruction:
             r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
-            par_domain = 'R'
-            grad_method = 'A'
+            par_domain = "R"
+            grad_method = "A"
 
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
@@ -319,8 +327,8 @@ class TestOperatorConstruction:
             r"""Dummy custom operator"""
             num_wires = 1
             num_params = 1
-            par_domain = 'J'
-            grad_method = 'A'
+            par_domain = "J"
+            grad_method = "A"
 
         with pytest.raises(ValueError, match="Unknown parameter domain"):
             DummyOp(0.5, wires=0)
@@ -336,11 +344,13 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'R'
-            grad_method = 'A'
+            par_domain = "R"
+            grad_method = "A"
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
-        with pytest.raises(AssertionError, match="Gradient recipe must have one entry for each parameter"):
+        with pytest.raises(
+            AssertionError, match="Gradient recipe must have one entry for each parameter"
+        ):
             DummyOp(0.5, wires=[0, 1])
 
     def test_grad_method_with_integer_params(self):
@@ -350,10 +360,13 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'N'
-            grad_method = 'A'
+            par_domain = "N"
+            grad_method = "A"
 
-        with pytest.raises(AssertionError, match="An operation may only be differentiated with respect to real scalar parameters"):
+        with pytest.raises(
+            AssertionError,
+            match="An operation may only be differentiated with respect to real scalar parameters",
+        ):
             DummyOp(5, wires=[0, 1])
 
     def test_analytic_grad_with_array_param(self):
@@ -363,11 +376,14 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'A'
-            grad_method = 'A'
+            par_domain = "A"
+            grad_method = "A"
 
-        with pytest.raises(AssertionError, match="Operations that depend on arrays containing free variables may only be differentiated using the F method"):
-            DummyOp(np.array([1.]), wires=[0, 1])
+        with pytest.raises(
+            AssertionError,
+            match="Operations that depend on arrays containing free variables may only be differentiated using the F method",
+        ):
+            DummyOp(np.array([1.0]), wires=[0, 1])
 
     def test_numerical_grad_with_grad_recipe(self):
         """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
@@ -376,8 +392,8 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'R'
-            grad_method = 'F'
+            par_domain = "R"
+            grad_method = "F"
             grad_recipe = [(0.5, 0.1)]
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
@@ -390,8 +406,8 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'A'
-            grad_method = 'F'
+            par_domain = "A"
+            grad_method = "F"
 
         with pytest.raises(TypeError, match="Array parameter expected, got a Variable"):
             DummyOp(qml.variable.Variable(0), wires=[0])
@@ -405,8 +421,8 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'A'
-            grad_method = 'F'
+            par_domain = "A"
+            grad_method = "F"
 
         with pytest.raises(TypeError, match="Flattened array parameter expected"):
             op = DummyOp(np.array([1]), wires=[0])
@@ -419,8 +435,8 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'A'
-            grad_method = 'F'
+            par_domain = "A"
+            grad_method = "F"
 
         with pytest.raises(TypeError, match="Array parameter expected, got"):
             DummyOp(0.5, wires=[0])
@@ -432,11 +448,11 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'R'
-            grad_method = 'F'
+            par_domain = "R"
+            grad_method = "F"
 
         with pytest.raises(TypeError, match="Real scalar parameter expected, got"):
-            DummyOp(np.array([1.]), wires=[0])
+            DummyOp(np.array([1.0]), wires=[0])
 
     def test_not_natural_param(self):
         """Test that an exception is raised if a natural number is expected but not passed"""
@@ -445,7 +461,7 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'N'
+            par_domain = "N"
             grad_method = None
 
         with pytest.raises(TypeError, match="Natural number parameter expected, got"):
@@ -461,7 +477,7 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'N'
+            par_domain = "N"
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
@@ -474,7 +490,7 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             num_params = 1
-            par_domain = 'N'
+            par_domain = "N"
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
@@ -491,7 +507,7 @@ class TestObservableConstruction:
             r"""Dummy custom observable"""
             num_wires = 1
             num_params = 1
-            par_domain = 'N'
+            par_domain = "N"
             grad_method = None
 
         assert DummyObserv(0, wires=[1]).return_type is None
@@ -509,7 +525,7 @@ class TestObservableConstruction:
             r"""Dummy custom observable"""
             num_wires = 1
             num_params = 1
-            par_domain = 'N'
+            par_domain = "N"
             grad_method = None
 
         assert issubclass(DummyObserv, qml.operation.Operator)
@@ -557,14 +573,17 @@ class TestOperatorIntegration:
             r"""Dummy custom operator"""
             num_wires = qml.operation.WiresEnum.AllWires
             num_params = 0
-            par_domain = 'R'
+            par_domain = "R"
 
         @qml.qnode(dev1)
         def circuit():
             DummyOp(wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="Operator {} must act on all wires".format(DummyOp.__name__)):
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Operator {} must act on all wires".format(DummyOp.__name__),
+        ):
             circuit()
 
 
@@ -596,8 +615,10 @@ class TestOperationIntegration:
             qml.Rotation(phi, wires=0).inv()
             return qml.expval(qml.NumberOperator(0))
 
-        with pytest.raises(qml.DeviceError, match="Gate Rotation.inv not supported on device {}"
-                .format(dev1.short_name)):
+        with pytest.raises(
+            qml.DeviceError,
+            match="Gate Rotation.inv not supported on device {}".format(dev1.short_name),
+        ):
             mean_photon_gaussian(0.015, 0.02, 0.005)
 
 
@@ -614,7 +635,9 @@ class TestTensor:
         T = Tensor(T, Y)
         assert T.obs == [X, Y, Y]
 
-        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables"
+        ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
 
     def test_name(self):
@@ -738,14 +761,20 @@ class TestTensor:
         Y = qml.CNOT(wires=[0, 1])
         Z = qml.PauliZ(0)
 
-        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables"
+        ):
             X @ Y
 
-        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables"
+        ):
             T = X @ Z
             T @ Y
 
-        with pytest.raises(ValueError, match="Can only perform tensor products between observables"):
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables"
+        ):
             T = X @ Z
             Y @ T
 
@@ -763,10 +792,10 @@ class TestTensor:
     def test_eigvals_hermitian(self, tol):
         """Test that the correct eigenvalues are returned for the Tensor containing an Hermitian observable"""
         X = qml.PauliX(0)
-        hamiltonian = np.array([[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]])
+        hamiltonian = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
         t = Tensor(X, Herm)
-        d = np.kron(np.array([1., -1.]), np.array([-1.,  1.,  1.,  1.]))
+        d = np.kron(np.array([1.0, -1.0]), np.array([-1.0, 1.0, 1.0, 1.0]))
         t = t.eigvals
         assert np.allclose(t, d, atol=tol, rtol=0)
 
@@ -775,7 +804,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
-        d = np.kron(np.array([1., -1.]), np.array([1.,  1.]))
+        d = np.kron(np.array([1.0, -1.0]), np.array([1.0, 1.0]))
         t = t.eigvals
         assert np.allclose(t, d, atol=tol, rtol=0)
 
@@ -783,15 +812,15 @@ class TestTensor:
         """Test that the correct eigenvalues are returned for the Tensor containing
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4,5])
+        O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4, 5])
         res = O.eigvals
-        expected = np.kron(np.array([1., -1.]), np.kron(np.array([1.,  1.]), np.arange(1, 5)))
+        expected = np.kron(np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_diagonalizing_gates(self, tol):
         """Test that the correct diagonalizing gate set is returned for a Tensor of observables"""
         H = np.diag([1, 2, 3, 4])
-        O = qml.PauliX(0) @ qml.Identity(2)  @ qml.PauliY(1) @ qml.Hermitian(H, [5, 6])
+        O = qml.PauliX(0) @ qml.Identity(2) @ qml.PauliY(1) @ qml.Hermitian(H, [5, 6])
 
         res = O.diagonalizing_gates()
 
@@ -819,7 +848,7 @@ class TestTensor:
         # (RY(-pi/4).H.RY(pi/4) = Z)
         assert isinstance(res[-1], qml.RY)
         assert res[-1].wires == Wires([4])
-        assert np.allclose(res[-1].parameters, -np.pi/4, atol=tol, rtol=0)
+        assert np.allclose(res[-1].parameters, -np.pi / 4, atol=tol, rtol=0)
 
     def test_diagonalizing_gates_numerically_diagonalizes(self, tol):
         """Test that the diagonalizing gate set numerically
@@ -856,7 +885,6 @@ class TestTensor:
         # the entire list.
         U = functools.reduce(np.kron, U_list)
 
-
         res = U @ O_mat @ U.conj().T
         expected = np.diag(O.eigvals)
 
@@ -886,41 +914,28 @@ class TestTensor:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    herm_matrix = np.array([
-                            [1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 0],
-                            [0, 0, 0, 1]
-                            ])
+    herm_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
     tensor_obs = [
-                    (
-                    qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
-                    [qml.PauliZ(0), qml.PauliZ(2)]
-                    ),
-                    (
-                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
-                    [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)]
-                    ),
-
-                    # List containing single observable is returned
-                    (
-                    qml.PauliZ(0) @ qml.Identity(1),
-                    [qml.PauliZ(0)]
-                    ),
-                    (
-                    qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
-                    [qml.PauliX(1)]
-                    ),
-                    (
-                    qml.Identity(0) @ qml.Identity(1),
-                    [qml.Identity(0)]
-                    ),
-                    (
-                    qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2,3]),
-                    [qml.Hermitian(herm_matrix, wires=[2,3])]
-                    )
-                ]
+        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
+        (
+            qml.Identity(0)
+            @ qml.PauliX(1)
+            @ qml.Identity(2)
+            @ qml.PauliZ(3)
+            @ qml.PauliZ(4)
+            @ qml.Identity(5),
+            [qml.PauliX(1), qml.PauliZ(3), qml.PauliZ(4)],
+        ),
+        # List containing single observable is returned
+        (qml.PauliZ(0) @ qml.Identity(1), [qml.PauliZ(0)]),
+        (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), [qml.PauliX(1)]),
+        (qml.Identity(0) @ qml.Identity(1), [qml.Identity(0)]),
+        (
+            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
+            [qml.Hermitian(herm_matrix, wires=[2, 3])],
+        ),
+    ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs)
     def test_non_identity_obs(self, tensor_observable, expected):
@@ -932,36 +947,26 @@ class TestTensor:
             assert obs.wires == expected[idx].wires
 
     tensor_obs_pruning = [
-                            (
-                            qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2),
-                            qml.PauliZ(0) @ qml.PauliZ(2)
-                            ),
-                            (
-                            qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2) @ qml.PauliZ(3) @  qml.PauliZ(4) @ qml.Identity(5),
-                            qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4)
-                            ),
-                            # Single observable is returned
-                            (
-                            qml.PauliZ(0) @ qml.Identity(1),
-                            qml.PauliZ(0)
-                            ),
-                            (
-                            qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2),
-                            qml.PauliX(1)
-                            ),
-                            (
-                            qml.Identity(0) @ qml.Identity(1),
-                            qml.Identity(0)
-                            ),
-                            (
-                            qml.Identity(0) @ qml.Identity(1),
-                            qml.Identity(0)
-                            ),
-                            (
-                            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2,3]),
-                            qml.Hermitian(herm_matrix, wires=[2,3])
-                            )
-                         ]
+        (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
+        (
+            qml.Identity(0)
+            @ qml.PauliX(1)
+            @ qml.Identity(2)
+            @ qml.PauliZ(3)
+            @ qml.PauliZ(4)
+            @ qml.Identity(5),
+            qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4),
+        ),
+        # Single observable is returned
+        (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0)),
+        (qml.Identity(0) @ qml.PauliX(1) @ qml.Identity(2), qml.PauliX(1)),
+        (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
+        (qml.Identity(0) @ qml.Identity(1), qml.Identity(0)),
+        (
+            qml.Identity(0) @ qml.Identity(1) @ qml.Hermitian(herm_matrix, wires=[2, 3]),
+            qml.Hermitian(herm_matrix, wires=[2, 3]),
+        ),
+    ]
 
     @pytest.mark.parametrize("tensor_observable, expected", tensor_obs_pruning)
     @pytest.mark.parametrize("statistics", [qml.expval, qml.var, qml.sample])
@@ -1057,6 +1062,7 @@ class TestTensorObservableOperations:
         """Tests subtraction between Tensors and Observables"""
         assert obs.compare(obs1 - obs2)
 
+
 class TestDecomposition:
     """Test for operation decomposition"""
 
@@ -1101,11 +1107,11 @@ class TestDecomposition:
         assert len(rec.queue) == 6
 
         assert rec.queue[0].name == "RZ"
-        assert rec.queue[0].parameters == [np.pi/2]
+        assert rec.queue[0].parameters == [np.pi / 2]
         assert rec.queue[0].wires == Wires([1])
 
         assert rec.queue[1].name == "RY"
-        assert rec.queue[1].parameters == [phi/2]
+        assert rec.queue[1].parameters == [phi / 2]
         assert rec.queue[1].wires == Wires([1])
 
         assert rec.queue[2].name == "CNOT"
@@ -1113,7 +1119,7 @@ class TestDecomposition:
         assert rec.queue[2].wires == Wires([0, 1])
 
         assert rec.queue[3].name == "RY"
-        assert rec.queue[3].parameters == [-phi/2]
+        assert rec.queue[3].parameters == [-phi / 2]
         assert rec.queue[3].wires == Wires([1])
 
         assert rec.queue[4].name == "CNOT"
@@ -1121,19 +1127,25 @@ class TestDecomposition:
         assert rec.queue[4].wires == Wires([0, 1])
 
         assert rec.queue[5].name == "RZ"
-        assert rec.queue[5].parameters == [-np.pi/2]
+        assert rec.queue[5].parameters == [-np.pi / 2]
         assert rec.queue[5].wires == Wires([1])
 
-    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
     def test_crx_decomposition_correctness(self, phi, tol):
         """Test that the decomposition of the controlled X
         qubit rotation is correct"""
 
         expected = CRotx(phi)
 
-        obtained = np.kron(I, Rotz(-np.pi/2)) @ CNOT @ np.kron(I, Roty(-phi/2)) @ CNOT @ np.kron(I, Roty(phi/2)) @ np.kron(I, Rotz(np.pi/2))
+        obtained = (
+            np.kron(I, Rotz(-np.pi / 2))
+            @ CNOT
+            @ np.kron(I, Roty(-phi / 2))
+            @ CNOT
+            @ np.kron(I, Roty(phi / 2))
+            @ np.kron(I, Rotz(np.pi / 2))
+        )
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
 
     def test_cry_decomposition(self):
         """Test the decomposition of the controlled Y
@@ -1148,7 +1160,7 @@ class TestDecomposition:
         assert len(rec.queue) == 4
 
         assert rec.queue[0].name == "RY"
-        assert rec.queue[0].parameters == [phi/2]
+        assert rec.queue[0].parameters == [phi / 2]
         assert rec.queue[0].wires == Wires([1])
 
         assert rec.queue[1].name == "CNOT"
@@ -1156,14 +1168,14 @@ class TestDecomposition:
         assert rec.queue[1].wires == Wires(operation_wires)
 
         assert rec.queue[2].name == "RY"
-        assert rec.queue[2].parameters == [-phi/2]
+        assert rec.queue[2].parameters == [-phi / 2]
         assert rec.queue[2].wires == Wires([1])
 
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
         assert rec.queue[3].wires == Wires(operation_wires)
 
-    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
     def test_cry_decomposition_correctness(self, phi, tol):
         """Test that the decomposition of the controlled Y
         qubit rotation is correct"""
@@ -1186,7 +1198,7 @@ class TestDecomposition:
         assert len(rec.queue) == 4
 
         assert rec.queue[0].name == "PhaseShift"
-        assert rec.queue[0].parameters == [phi/2]
+        assert rec.queue[0].parameters == [phi / 2]
         assert rec.queue[0].wires == Wires([1])
 
         assert rec.queue[1].name == "CNOT"
@@ -1194,14 +1206,14 @@ class TestDecomposition:
         assert rec.queue[1].wires == Wires(operation_wires)
 
         assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [-phi/2]
+        assert rec.queue[2].parameters == [-phi / 2]
         assert rec.queue[2].wires == Wires([1])
 
         assert rec.queue[3].name == "CNOT"
         assert rec.queue[3].parameters == []
         assert rec.queue[3].wires == Wires(operation_wires)
 
-    @pytest.mark.parametrize("phi", [0.03236*i for i in range(5)])
+    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
     def test_crz_decomposition_correctness(self, phi, tol):
         """Test that the decomposition of the controlled Z
         qubit rotation is correct"""
@@ -1222,7 +1234,7 @@ class TestDecomposition:
         assert len(rec.queue) == 3
 
         assert rec.queue[0].name == "Rot"
-        assert rec.queue[0].parameters == [lam, np.pi/2, -lam]
+        assert rec.queue[0].parameters == [lam, np.pi / 2, -lam]
 
         assert rec.queue[1].name == "PhaseShift"
         assert rec.queue[1].parameters == [lam]
@@ -1254,11 +1266,13 @@ class TestDecomposition:
         """Test the decomposition of BasisState calls the
         BasisStatePreparation template"""
         n = np.array([1, 0, 1, 1])
-        wires=[0, 1, 2, 3]
+        wires = [0, 1, 2, 3]
         call_args = []
 
         # We have to patch BasisStatePreparation where it is loaded
-        monkeypatch.setattr(qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args))
+        monkeypatch.setattr(
+            qml.ops.qubit, "BasisStatePreparation", lambda *args: call_args.append(args)
+        )
         qml.BasisState.decomposition(n, wires=wires)
 
         assert len(call_args) == 1
@@ -1268,14 +1282,62 @@ class TestDecomposition:
     def test_qubit_state_vector_decomposition(self, monkeypatch):
         """Test the decomposition of QubitStateVector calls the
         MottonenStatePreparation template"""
-        state = np.array([1/2, 1j/np.sqrt(2), 0, -1/2])
+        state = np.array([1 / 2, 1j / np.sqrt(2), 0, -1 / 2])
         wires = [0, 1]
         call_args = []
 
         # We have to patch MottonenStatePreparation where it is loaded
-        monkeypatch.setattr(qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args))
+        monkeypatch.setattr(
+            qml.ops.qubit, "MottonenStatePreparation", lambda *args: call_args.append(args)
+        )
         qml.QubitStateVector.decomposition(state, wires=wires)
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], state)
         assert np.array_equal(call_args[0][1], wires)
+
+
+class TestChannel:
+    """Unit tests for the Channel class"""
+
+    def test_instance_made_correctly(self):
+        """Test that instance of channel class is initialized correctly"""
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "F"
+
+            def _kraus_matrices(self, *params):
+                p = params[0]
+                K1 = np.sqrt(p) * X
+                K2 = np.sqrt(1-p) * I
+                return [K1, K2]
+
+        expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
+        op = DummyOp(0.1, wires=0)
+        assert np.all(op.kraus_matrices[0] == expected)
+
+    def test_grad_method(self):
+        """Test that an exception is raised if a gradient method is set to analytic
+        as only finite difference or ``None`` is allowed at the moment. This can be updated
+        once we add gradient recipes for channels. """
+
+        class DummyOp(qml.operation.Channel):
+            r"""Dummy custom channel"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "R"
+            grad_method = "A"
+
+            def _kraus_matrices(self, *params):
+                p = params[0]
+                K1 = np.sqrt(p) * X
+                K2 = np.sqrt(1-p) * I
+                return [K1, K2]
+
+        with pytest.raises(
+            ValueError, match="Analytic gradients can not be used for quantum channels"
+        ):
+            DummyOp(0.5, wires=0)
