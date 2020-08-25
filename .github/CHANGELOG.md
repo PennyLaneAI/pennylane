@@ -23,6 +23,7 @@ This release contains contributions from (in alphabetical order):
 * Adding quantum noisy channels 
 
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
+  [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
 
 <h4>New and improved simulators</h4>
 

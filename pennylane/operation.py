@@ -799,28 +799,6 @@ class DiagonalOperation(Operation):
     def _matrix(cls, *params):
         return np.diag(cls._eigvals(*params))
 
-class Channel(Operation):
-
-    # pylint: disable=abstract-method
-
-    @abc.abstractmethod
-    def _kraus_matrices(cls, *params):
-        raise NotImplementedError
-
-    @property
-    def kraus_matrices(self):
-        return self._kraus_matrices(*self.parameters)
-
-    def __init__(self, *params, wires=None, do_queue=True):
-
-        #check parameters are valid
-        if any(p>1 for p in params):
-            raise ValueError("Channel probability parameters should be numbers between 0 and 1.")
-
-        # check the grad_method validity
-        if self.par_domain == "R" and self.grad_method not in (None, "F"):
-            raise ValueError("Analytic gradients can not be used for quantum channels.")
-        super().__init__(*params, wires=wires, do_queue=do_queue)
 
 class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
