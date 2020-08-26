@@ -23,14 +23,13 @@ from pennylane.grouping.group_observables import PauliGroupingStrategy, group_ob
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 from pennylane.grouping.optimize_measurements import optimize_measurements
 from pennylane.grouping.utils import (
-    get_n_qubits,
     is_pauli_word,
     are_identical_pauli_words,
     binary_symplectic_inner_prod,
     pauli_to_binary,
     binary_to_pauli,
     is_qwc,
-    convert_observables_to_binary,
+    convert_observables_to_binary_matrix,
 )
 
 
@@ -44,7 +43,7 @@ class TestGroupingUtils:
         p1_op = PauliX(0) @ PauliY(1) @ PauliZ(2)
         p2_op = PauliZ(0) @ PauliY(2)
         p3_op = PauliY(1) @ PauliX(2)
-        identity = Tensor(Identity(0))
+        identity = Identity(0)
 
         p1_vec = np.array([1, 1, 0, 0, 1, 1])
         p2_vec = np.array([0, 1, 1, 1])
@@ -87,7 +86,7 @@ class TestGroupingUtils:
         p1_op = PauliX(0) @ PauliY(2)
         p2_op = PauliY(0) @ PauliY(1) @ PauliY(2)
         p3_op = PauliX(0) @ PauliZ(1) @ PauliY(2)
-        identity = Tensor(Identity(0))
+        identity = Identity(0)
 
         assert are_identical_pauli_words(binary_to_pauli(p1_vec), p1_op)
         assert are_identical_pauli_words(binary_to_pauli(p2_vec), p2_op)
@@ -115,7 +114,7 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(binary_to_pauli(p3_vec, wire_map=wire_map), p3_op)
         assert are_identical_pauli_words(binary_to_pauli(zero_vec, wire_map=wire_map), identity)
 
-    def test_convert_observables_to_binary(self):
+    def test_convert_observables_to_binary_matrix(self):
         """Test conversion of list of Pauli word operators to representation as a binary matrix."""
 
         observables = [Identity(1), PauliX(1), PauliZ(0) @ PauliZ(1)]
@@ -124,7 +123,7 @@ class TestGroupingUtils:
             [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
         )
 
-        assert (convert_observables_to_binary(observables) == binary_observables).all()
+        assert (convert_observables_to_binary_matrix(observables) == binary_observables).all()
 
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
@@ -149,17 +148,6 @@ class TestGroupingUtils:
         assert binary_symplectic_inner_prod(p1_vec, p2_vec) == 0
         assert binary_symplectic_inner_prod(p1_vec, p3_vec) == 1
         assert binary_symplectic_inner_prod(p2_vec, p3_vec) == 0
-
-    def test_get_n_qubits(self):
-        """Test for obtaining minimum number of qubits required for a set of observables."""
-
-        observables_1 = [Identity(10)]
-        observables_2 = [Identity(0) @ Identity(10), PauliX(2) @ Identity(10)]
-        observables_3 = [PauliX("a") @ PauliZ("0"), PauliX("a") @ PauliY("b")]
-
-        assert get_n_qubits(observables_1) == 0
-        assert get_n_qubits(observables_2) == 1
-        assert get_n_qubits(observables_3) == 3
 
     def test_is_pauli_word(self):
         """Test for determining whether input `Observable` instance is a Pauli word."""
@@ -321,6 +309,9 @@ class TestOptimizeMeasurements:
         )[1]
 
         assert len(diagonalized_groupings) == len(diagonalized_groupings_sol)
+
+        print("diagonalized groupings:")
+        print(diagonalized_groupings)
 
         for i in range(len(diagonalized_groupings_sol)):
             assert len(diagonalized_groupings[i]) == len(diagonalized_groupings_sol[i])

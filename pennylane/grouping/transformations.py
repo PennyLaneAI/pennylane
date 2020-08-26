@@ -42,10 +42,10 @@ def qwc_rotation(pauli_dict):
             qml.PauliZ.
 
     """
-    pauli_ops = (qml.PauliX, qml.PauliY, qml.PauliZ)
-    if not all(isinstance(value, pauli_ops) for value in pauli_dict.values()):
+    paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
+    if not all(isinstance(value, paulis_with_identity) for value in pauli_dict.values()):
         raise TypeError(
-            "All values of input pauli_dict must be either PauliX, PauliY, or PauliZ instances,"
+            "All values of input pauli_dict must be either Identity, PauliX, PauliY, or PauliZ instances,"
             " instead got values: {}.".format(pauli_dict.values())
         )
 
@@ -144,7 +144,7 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
        PauliZ(wires=[3]))]])
 
     Args:
-        qwc_groupings (list[list[Observable]]): a list of mutualy qubit-wise commutative groupings
+        qwc_groupings (list[list[Observable]]): a list of mutually qubit-wise commutative groupings
             of Pauli string observables.
 
     Returns:

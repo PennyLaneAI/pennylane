@@ -15,8 +15,9 @@
 This module contains the high-level Pauli word partitioning functionality used in measurement optimization.
 """
 
+from pennylane.wires import Wires
 from pennylane.grouping.utils import (
-    convert_observables_to_binary,
+    convert_observables_to_binary_matrix,
     binary_to_pauli,
     are_identical_pauli_words,
     get_qwc_compliment_adj_matrix,
@@ -80,13 +81,33 @@ class PauliGroupingStrategy:
     def obtain_binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
 
+        Keyword args:
+            n_qubits (int): number of qubits to specify dimension of binary vector representation.
+            wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys,
+                and unique integer labels as their values
+
         Returns:
             array[bool]: a column matrix of the Pauli words in binary vector representation.
 
         """
-        self.binary_observables = convert_observables_to_binary(
-            self.observables, n_qubits, wire_map
+
+        if wire_map is None:
+            self.__wire_map = {
+                wire: c
+                for c, wire in enumerate(
+                    Wires.all_wires([obs.wires for obs in self.observables]).tolist()
+                )
+            }
+
+        else:
+            self.__wire_map = wire_map
+
+        self.binary_observables = convert_observables_to_binary_matrix(
+            self.observables, n_qubits, self.__wire_map
         )
+
+        self.__n_qubits = n_qubits
+
         return self.binary_observables
 
     def construct_complement_adj_matrix_for_operator(self):
@@ -145,10 +166,13 @@ class PauliGroupingStrategy:
             self.construct_complement_adj_matrix_for_operator()
 
         coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
+
         self.grouped_paulis = [
-            [binary_to_pauli(binary_vec) for binary_vec in grouping]
+            [binary_to_pauli(pauli_word, wire_map=self.__wire_map) for pauli_word in grouping]
             for grouping in coloured_binary_paulis.values()
         ]
+        print("self.grouped_paulis:")
+        print(self.grouped_paulis)
         return self.grouped_paulis
 
 
