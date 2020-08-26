@@ -303,7 +303,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     return binary_pauli
 
 
-def binary_to_pauli(binary_vector, wire_map=None):
+def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-branches
     """Converts a binary vector of even dimension to an Observable instance.
 
     This functions follows convention that the first half of binary vector components specify

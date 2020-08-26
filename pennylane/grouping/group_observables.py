@@ -29,7 +29,7 @@ GROUPING_TYPES = ["qwc", "commuting", "anticommuting"]
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
 
 
-class PauliGroupingStrategy:
+class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     """
     Class for partitioning a list of Pauli words according to some binary symmetric relation.
 
