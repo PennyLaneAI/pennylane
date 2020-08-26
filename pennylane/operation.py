@@ -884,7 +884,7 @@ class Channel(Operation, abc.ABC):
     def __init__(self, *params, wires=None, do_queue=True):
 
         # check parameters are valid
-        if any(p > 1.0 for p in params):
+        if any(not 0<= np.real(p) <=1 for p in params):
             raise ValueError("Channel probability parameters should be numbers between 0 and 1.")
 
         # check the grad_method validity
