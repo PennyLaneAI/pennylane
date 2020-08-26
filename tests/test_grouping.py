@@ -310,9 +310,6 @@ class TestOptimizeMeasurements:
 
         assert len(diagonalized_groupings) == len(diagonalized_groupings_sol)
 
-        print("diagonalized groupings:")
-        print(diagonalized_groupings)
-
         for i in range(len(diagonalized_groupings_sol)):
             assert len(diagonalized_groupings[i]) == len(diagonalized_groupings_sol[i])
             for j in range(len(diagonalized_groupings_sol[i])):

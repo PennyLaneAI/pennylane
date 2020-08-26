@@ -74,6 +74,8 @@ class PauliGroupingStrategy:
 
         self.graph_colourer = GRAPH_COLOURING_METHODS[graph_colourer.lower()]
         self.observables = observables
+        self.__wire_map = None
+        self.__n_qubits = None
         self.binary_observables = None
         self.adj_matrix = None
         self.grouped_paulis = None
@@ -171,8 +173,7 @@ class PauliGroupingStrategy:
             [binary_to_pauli(pauli_word, wire_map=self.__wire_map) for pauli_word in grouping]
             for grouping in coloured_binary_paulis.values()
         ]
-        print("self.grouped_paulis:")
-        print(self.grouped_paulis)
+
         return self.grouped_paulis
 
 

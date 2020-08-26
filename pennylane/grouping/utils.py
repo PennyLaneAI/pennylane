@@ -101,13 +101,13 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, paulis_with_identity):
         return (pauli_1.wires, pauli_1.name) == (pauli_2.wires, pauli_2.name)
 
-    elif isinstance(pauli_1, Tensor) and isinstance(pauli_2, Tensor):
+    if isinstance(pauli_1, Tensor) and isinstance(pauli_2, Tensor):
         return set(zip(pauli_1.wires, pauli_1.name)) == set(zip(pauli_2.wires, pauli_2.name))
 
-    elif isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, Tensor):
+    if isinstance(pauli_1, paulis_with_identity) and isinstance(pauli_2, Tensor):
         return {(pauli_1.wires, pauli_1.name)} == set(zip(pauli_2.wires, pauli_2.name))
 
-    elif isinstance(pauli_1, Tensor) and isinstance(pauli_2, paulis_with_identity):
+    if isinstance(pauli_1, Tensor) and isinstance(pauli_2, paulis_with_identity):
         return set(zip(pauli_1.wires, pauli_1.name)) == {(pauli_2.wires, pauli_2.name)}
 
     return False
@@ -531,17 +531,6 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
         binary_mat[:, i] = pauli_to_binary(observables[i], n_qubits=n_qubits, wire_map=wire_map)
 
     return binary_mat
-
-
-def convert_binary_matrix_to_observables(binary_matrix, wire_map=None):
-
-    binary_vecs = [binary_matrix[i, :] for i in np.shape(binary_matrix)[1]]
-
-    if wire_map is None:
-        n_qubits = np.shape(binary_matrix)[0] // 2
-        wire_map = {Wires(i): i for i in range(n_qubits)}
-
-    return [binary_to_pauli(binary_vec, wire_map=wire_map) for binary_vec in binary_vecs]
 
 
 def get_qwc_compliment_adj_matrix(binary_observables):
