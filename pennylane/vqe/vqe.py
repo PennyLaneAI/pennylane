@@ -195,10 +195,10 @@ class Hamiltonian:
 
         .. Warning::
 
-            The `compare()` method **cannot** check for equivalence between a `qml.Hermitian` Observable and an
+            The ``compare()`` method does **not** check for equivalence between a :class:`~.Hermitian` Observable and an
             equivalent Hamiltonian/Tensor/Observable written in terms of Pauli observables, or as a linear combination
-            of other `qml.Hermitian` observables. If this were the case, the matrix form of Hamiltonians/Tensors
-            would need to be calculated, drastically increasing runtime.
+            of other `qml.Hermitian` observables. To do so would require the matrix form of Hamiltonians/Tensors
+            be calculated, which would drastically increase runtime.
 
         Returns:
             (bool): True if Hamiltonian and the other Hamiltonian/Observable/Tensor are equivalent, False otherwise.
