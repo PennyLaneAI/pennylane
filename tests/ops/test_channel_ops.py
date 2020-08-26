@@ -21,27 +21,47 @@ import pennylane as qml
 from pennylane.ops import channel
 from pennylane.wires import Wires
 
+
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""
 
-    def test_input(self, tol):
-        """Test that a list of Kraus matrices is correctly produced as an output"""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        out = qml.QubitUnitary(U, wires=0).matrix
+    def test_input_correctly_handled(self, tol):
+        """Test that Kraus matrices are correctly processed"""
+        K_list = np.array([[[1., 0.],
+                            [0., 0.9486833]],
+                           [[0., 0.31622777],
+                            [0., 0.]]])
+        out = channel.QubitChannel(K_list, wires=0).kraus_matrices
 
         # verify equivalent to input state
-        assert np.allclose(out, U, atol=tol, rtol=0)
+        assert np.allclose(out, K_list, atol=tol, rtol=0)
 
-    def test_qubit_unitary_exceptions(self):
-        """Tests that the unitary operator raises the proper errors."""
-        U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    def test_kraus_matrices_valid(self):
+        """Tests that the given Kraus matrices are valid"""
 
-        # test non-square matrix
-        with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.QubitUnitary(U[1:], wires=0).matrix
+        # check all Kraus matrices are square matrices
+        K_list1 = np.empty(2, dtype=object)
+        K_list1[0] = np.zeros((2, 2))
+        K_list1[1] = np.zeros((2, 3))
 
-        # test non-unitary matrix
-        U3 = U.copy()
-        U3[0, 0] += 0.5
-        with pytest.raises(ValueError, match="must be unitary"):
-            qml.QubitUnitary(U3, wires=0).matrix
+        with pytest.raises(ValueError, match="Only channels with similar input and output Hilbert space"):
+            channel.QubitChannel(K_list1, wires=0).kraus_matrices
+
+        # check all Kraus matrices have the same shape
+        K_list2 = np.empty(2, dtype=object)
+        K_list2[0] = np.eye(2)
+        K_list2[1] = np.eye(4)
+
+        with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
+            channel.QubitChannel(K_list2, wires=0).kraus_matrices
+
+    def test_channel_trace_preserving(self):
+        """Tests that the channel represents a trace-preserving map"""
+        K_list = np.array([[[1., 0.],
+                            [0., 0.9486833]],
+                           [[0., 0.31622777],
+                            [0., 0.]]])
+
+        with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
+            channel.QubitChannel(K_list*2, wires=0).kraus_matrices
+

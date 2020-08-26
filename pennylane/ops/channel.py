@@ -27,7 +27,7 @@ class QubitChannel(Channel):
     Apply an arbitrary fixed quantum channel.
 
     Kraus matrices that represent the fixed channel are provided
-    as a list of numpy arrays.
+    as a numpy array.
 
     **Details:**
 
@@ -36,28 +36,31 @@ class QubitChannel(Channel):
     * Gradient recipe: None
 
     Args:
-        K_list (list(array[complex])): list of Kraus matrices
+        K_list (array(array[complex])): Array of Kraus matrices
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_params = 1
     num_wires = AnyWires
-    par_domain = "R"
+    par_domain = "A"
     grad_method = None
 
     @classmethod
     def _kraus_matrices(cls, *params):
         K_list = params[0]
-        K_dag = [K.conj().T for K in K_list]
-        Kraus_sum = np.sum(np.array([a @ b for a, b in zip(K_dag, K_list)]), axis=0)
 
-        if Kraus_sum != np.eye(2** num_wires):
-            raise ValueError("Only trace preserving channels can be applied.")
+        # check all Kraus matrices are square matrices
+        if not all(K.shape[0] == K.shape[1] for K in K_list):
+            raise ValueError("Only channels with similar input and output Hilbert space dimensions can be applied.")
 
+        # check all Kraus matrices have the same shape
         if not all(K.shape == K_list[0].shape for K in K_list):
             raise ValueError("All Kraus matrices must have the same shape.")
 
-        if not all(K.shape[0] == K.shape[1] for K in K_list):
-            raise ValueError("Only channels with equal input and output Hilbert space dimensions can be applied.")
+        # check that the channel represents a trace-preserving map
+        K_dag = np.array([K.conj().T for K in K_list])
+        Kraus_sum = np.sum(np.array([a @ b for a, b in zip(K_dag, K_list)]), axis=0)
+        if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
+            raise ValueError("Only trace preserving channels can be applied.")
 
         return K_list
 
