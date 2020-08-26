@@ -1021,10 +1021,10 @@ class Observable(Operator):
 
         .. Warning::
 
-            The `compare()` method **cannot** check for equivalence between a `qml.Hermitian` Observable and an
+            The ``compare()`` method does **not** check for equivalence between a :class:`~.Hermitian` Observable and an
             equivalent Hamiltonian/Tensor/Observable written in terms of Pauli observables.
-            If this were the case, the matrix form of Hamiltonians/Tensors would need
-            to be calculated, which would drastically increase runtime.
+            To do so would require the matrix form of Hamiltonians/Tensors
+            be calculated, which would drastically increase runtime.
 
         Returns:
             (bool): True if the Observable/Tensor and the other Hamiltonian/Observable/Tensor are equivalent,
@@ -1036,7 +1036,6 @@ class Observable(Operator):
         >>> ob2 = qml.Hamiltonian([1], [qml.PauliX(0)])
         >>> ob1.compare(ob2)
         True
-
         >>> ob1 = qml.PauliX(0)
         >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
         >>> ob1.compare(ob2)

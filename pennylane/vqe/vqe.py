@@ -122,8 +122,6 @@ class Hamiltonian:
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
-        Returns:
-            .Hamiltonian
 
         **Example**
 
@@ -209,9 +207,9 @@ class Hamiltonian:
 
         >>> A = np.array([[1, 0], [0, -1]])
         >>> H = qml.Hamiltonian(
-        >>>     [0.5, 0.5],
-        >>>     [qml.Hermitian(A, 0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Hermitian(A, 0) @ qml.Identity("a")]
-        >>> )
+        ...     [0.5, 0.5],
+        ...     [qml.Hermitian(A, 0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Hermitian(A, 0) @ qml.Identity("a")]
+        ... )
         >>> obs = qml.Hermitian(A, 0) @ qml.PauliY(1)
         >>> print(H.compare(obs))
         True
@@ -229,11 +227,11 @@ class Hamiltonian:
         if isinstance(H, Hamiltonian):
             self.simplify()
             H.simplify()
-            return self._obs_data() == H._obs_data()
+            return self._obs_data() == H._obs_data()  # pylint: disable=protected-access
 
         if isinstance(H, (Tensor, Observable)):
             self.simplify()
-            return self._obs_data() == {(1, frozenset(H._obs_data()))}
+            return self._obs_data() == {(1, frozenset(H._obs_data()))}  # pylint: disable=protected-access
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
