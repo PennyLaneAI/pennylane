@@ -13,8 +13,8 @@
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use
-import pennylane as qml
 import pytest
+import pennylane as qml
 from pennylane._device import DeviceError
 
 
@@ -32,13 +32,6 @@ class TestDeviceProperties:
         assert dev.short_name == device_kwargs["name"]
         assert hasattr(dev, "analytic")
 
-    def test_has_capabilities(self, device_kwargs):
-        """Test that the device class has a capabilities() method returning a dictionary."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.__class__.capabilities()
-        assert isinstance(cap, dict)
-
     def test_no_wires_given(self, device_kwargs):
         """Test that the device requires correct arguments."""
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
@@ -52,3 +45,86 @@ class TestDeviceProperties:
 
         with pytest.raises(DeviceError, match="The specified number of shots needs to be"):
             qml.device(**device_kwargs)
+
+
+class TestCapabilities:
+    """Test that the device has a valid capabilities dictionary."""
+
+    def test_has_capabilities_dictionary(self, device_kwargs):
+        """Test that the device class has a capabilities() method returning a dictionary."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        assert isinstance(cap, dict)
+
+    def test_model_is_defined_and_valid(self, device_kwargs):
+        """Test that the capabilities dictionary defines a valid model."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        assert "model" in cap  # model needs to be defined
+        assert cap["model"] in ["qubit", "cv"]
+
+        if cap["model"] == "qubit":
+
+            @qml.qnode(dev)
+            def qubit_circuit():
+                return qml.expval(qml.PauliZ())
+
+        assert "model" in cap  # model needs to be defined
+        assert cap["model"] in ["qubit", "cv"]
+
+    def test_passthru_is_valid(self, device_kwargs):
+        """Test that the capabilities dictionary defines a valid passthru interface, if not None."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        passthru_interf = cap.get("passthru_interface")
+        assert passthru_interf in [None, "tf", "autograd", "numpy", "torch"]
+
+    def test_supports_sampled_mode(self, device_kwargs):
+        """Test that the device's "analytic" attribute can be set to false."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        supports_sampled = cap.get("supports_sampled", False)
+
+        if not supports_sampled:
+            pytest.skip("Device does not support sampled mode.")
+
+        else:
+            device_kwargs["analytic"] = False
+            dev_sampled = qml.device(**device_kwargs)
+            assert not dev_sampled.analytic
+
+    def test_supports_exact_mode(self, device_kwargs):
+        """Test that the device's "analytic" attribute can be set to true."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        supports_exact = cap.get("supports_exact", False)
+
+        if not supports_exact:
+            pytest.skip("Device does not support exact mode.")
+
+        else:
+            device_kwargs["analytic"] = True
+            dev_exact = qml.device(**device_kwargs)
+            assert dev_exact.analytic
+
+    def test_provides_jacobian(self, device_kwargs):
+        """Test that the device computes the jacobian."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        provides_jacobian = cap.get("provides_jacobian", False)
+
+        if not provides_jacobian:
+            pytest.skip("Device does not provide jacobian.")
+
+        else:
+            @qml.qnode(dev)
+            def circuit():
+                return qml.expval(qml.Identity(wires=0))
+
+            assert hasattr(circuit, "jacobian")

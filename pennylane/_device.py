@@ -61,7 +61,7 @@ class Device(abc.ABC):
         'supports_tensor_observables': False,
         'provides_jacobian': False,
         'executes_in_remote': False,
-        'takes_fixed_num_of_wires': False,
+        'takes_fixed_number_of_wires': False,
         }
     """The capabilities dictionary stores the properties of a device. Devices can add their 
     own custom properties and overwrite existing ones by overwriting the ``capabilities`` class method."""
@@ -245,6 +245,18 @@ class Device(abc.ABC):
             dict[str->*]: results
         """
         return cls._capabilities
+
+    # @classmethod
+    # def update_capabilities(cls, new_capabilities):
+    #     """Update the capabilities dictionary of this device class.
+    #
+    #     Args:
+    #         new_capabilities (dict): dictionary of the key-value pairs to update
+    #     """
+    #     updated_capabilities = super().capabilities().copy()
+    #
+    #     updated_capabilities.update(new_capabilities)
+    #     return updated_capabilities
 
     def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.

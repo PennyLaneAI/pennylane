@@ -23,6 +23,8 @@ from math import cos, sin, sqrt
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane.numpy.tensor import tensor
+
 from scipy.linalg import block_diag
 from flaky import flaky
 
@@ -32,6 +34,58 @@ np.random.seed(42)
 
 # ==========================================================
 # Some useful global variables
+
+# gates for which device support is tested
+ops = {
+    'BasisState': qml.BasisState(np.array([0]), wires=[0]),
+    'CNOT': qml.CNOT(wires=[0, 1]),
+    'CRX': qml.CRX(0, wires=[0, 1]),
+    'CRY': qml.CRY(0, wires=[0, 1]),
+    'CRZ': qml.CRZ(0, wires=[0, 1]),
+    'CRot': qml.CRot(0, 0, 0, wires=[0, 1]),
+    'CSWAP': qml.CSWAP(wires=[0, 1, 2]),
+    'CZ': qml.CZ(wires=[0, 1]),
+    'DiagonalQubitUnitary': qml.DiagonalQubitUnitary(np.eye(2), wires=[0]),
+    'Hadamard': qml.Hadamard(wires=[0]),
+    'MultiRZ': qml.MultiRZ(0, wires=[0]),
+    'PauliX': qml.PauliX(wires=[0]),
+    'PauliY': qml.PauliY(wires=[0]),
+    'PauliZ': qml.PauliZ(wires=[0]),
+    'PhaseShift': qml.PhaseShift(0, wires=[0]),
+    'QubitStateVector': qml.QubitStateVector(np.array([1., 0.]), wires=[0]),
+    'QubitUnitary': qml.QubitUnitary(np.eye(2), wires=[0]),
+    'RX': qml.RX(0, wires=[0]),
+    'RY': qml.RY(0, wires=[0]),
+    'RZ': qml.RZ(0, wires=[0]),
+    'Rot': qml.Rot(0, 0, 0, wires=[0]),
+    'S': qml.S(wires=[0]),
+    'SWAP': qml.SWAP(wires=[0, 1]),
+    'T': qml.T(wires=[0]),
+    'Toffoli': qml.Toffoli(wires=[0, 1, 2]),
+    'Beamsplitter': qml.Beamsplitter(0, 0, wires=[0, 1]),
+    'CatState': qml.CatState(0, 0, 0, wires=[0]),
+    'CoherentState': qml.CoherentState(0, 0, wires=[0]),
+    'ControlledAddition': qml.ControlledAddition(0, wires=[0, 1]),
+    'ControlledPhase': qml.ControlledPhase(0, wires=[0, 1]),
+    'CrossKerr': qml.CrossKerr(0, wires=[0, 1]),
+    'CubicPhase': qml.CubicPhase(0, wires=[0]),
+    'DisplacedSqueezedState': qml.DisplacedSqueezedState(0, 0, 0, 0, wires=[0]),
+    'Displacement': qml.Displacement(0, 0, wires=[0]),
+    'FockDensityMatrix': qml.FockDensityMatrix(np.array([0]), wires=[0]),
+    'FockState': qml.FockState(1, wires=[0]),
+    'FockStateVector': qml.FockStateVector(np.array([0]), wires=[0]),
+    'GaussianState': qml.GaussianState(np.array([0., 0.]), np.eye(2), wires=[0]),
+    'Interferometer': qml.Interferometer(np.eye(2), wires=[0, 1]),
+    'Kerr': qml.Kerr(0, wires=[0]),
+    'QuadraticPhase': qml.QuadraticPhase(0, wires=[0]),
+    'Rotation': qml.Rotation(0, wires=[0]),
+    'SqueezedState': qml.SqueezedState(0, 0, wires=[0]),
+    'Squeezing': qml.Squeezing(0, 0, wires=[0]),
+    'ThermalState': qml.ThermalState(0, wires=[0]),
+    'TwoModeSqueezing': qml.TwoModeSqueezing(0, 0, wires=[0, 1]),
+}
+
+all_ops = ops.keys()
 
 # non-parametrized qubit gates
 I = np.identity(2)
@@ -148,6 +202,44 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 
 
 # ===============================================================
+
+class TestSupportedGates:
+    """Test that the device can implement all gates that it supports."""
+
+    @pytest.mark.parametrize("operation", all_ops)
+    def test_supported_gates_can_be_implemented(self, device_kwargs, operation):
+        """Test that the device can implement all its supported gates."""
+        device_kwargs["wires"] = 3  # maximum size of PL gates
+        dev = qml.device(**device_kwargs)
+
+        assert hasattr(dev, "operations")
+        if operation in dev.operations:
+
+            @qml.qnode(dev)
+            def circuit():
+                ops[operation]
+                return qml.expval(qml.Identity(wires=0))
+
+            assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
+
+    @pytest.mark.parametrize("operation", all_ops)
+    def test_inverse_gates_can_be_implemented(self, device_kwargs, operation):
+        """Test that the device can implement the inverse of all its supported gates.
+        This test is skipped for devices that do not support inverse operations."""
+        device_kwargs["wires"] = 3
+        dev = qml.device(**device_kwargs)
+        if not dev.capabilities()["supports_inverse_operations"]:
+            pytest.skip("Device does not support inverse operations.")
+
+        assert hasattr(dev, "operations")
+        if operation in dev.operations:
+
+            @qml.qnode(dev)
+            def circuit():
+                ops[operation].inv()
+                return qml.expval(qml.Identity(wires=0))
+
+            assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
 
 
 @flaky(max_runs=10)

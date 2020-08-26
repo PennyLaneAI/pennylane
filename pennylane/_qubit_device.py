@@ -111,11 +111,12 @@ class QubitDevice(Device):
 
     @classmethod
     def capabilities(cls):
+
         capabilities = super().capabilities().copy()
         capabilities.update(
-            model="qubit",
-            supports_sampling=True,
+            model='qubit',
             supports_exact=True,
+            supports_sampling=True,
             supports_tensor_observables=True,
         )
         return capabilities
