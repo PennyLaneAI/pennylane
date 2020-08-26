@@ -31,7 +31,7 @@ class Benchmark(bu.BaseBenchmark):
     and evaluates its Jacobian.
     """
 
-    name = "Jacobian evaluation uniform"
+    name = "Jacobian evaluation front weighted"
     min_wires = 2
     n_vals = range(3, 27, 3)
 
