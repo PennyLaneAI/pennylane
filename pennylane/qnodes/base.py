@@ -326,7 +326,7 @@ class BaseQNode(qml.QueuingContext):
             args (tuple[Any]): positional (differentiable) arguments
             kwargs (dict[str, Any]): auxiliary arguments
         """
-        Variable.positional_arg_values = np.array(list(_flatten(args)))
+        Variable.positional_arg_values = list(_flatten(args))
         if not self.mutable:
             # only immutable circuits access auxiliary arguments through Variables
             Variable.kwarg_values = {k: np.array(list(_flatten(v))) for k, v in kwargs.items()}
