@@ -114,7 +114,7 @@ class DefaultQubit(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
-        self._ops_map = {
+        self._apply_ops = {
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
@@ -164,9 +164,8 @@ class DefaultQubit(QubitDevice):
             self._apply_basis_state(operation.parameters[0], wires)
             return
 
-        apply_func = self._ops_map.get(operation.name, None)
-        if apply_func:
-            self._state = apply_func(self._state, axes, inverse=operation.inverse)
+        if operation.name in self._apply_ops:
+            self._state = self._apply_ops[operation.name](self._state, axes, inverse=operation.inverse)
             return
 
         matrix = self._get_unitary_matrix(operation)
