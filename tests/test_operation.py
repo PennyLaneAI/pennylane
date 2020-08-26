@@ -1042,6 +1042,16 @@ class TestTensorObservableOperations:
 
         assert data == {("PauliZ", Wires(0), ()), ("PauliX", Wires(1), ())}
 
+    def test_equality_error(self):
+        """Tests that the correct error is raised when compare() is called on invalid type"""
+
+        obs = qml.PauliZ(0)
+        tensor = qml.PauliZ(0) @ qml.PauliX(1)
+        A = [[1, 0], [0, -1]]
+        with pytest.raises(ValueError, match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."):
+            obs.compare(A)
+            tensor.compare(A)
+
     @pytest.mark.parametrize(("obs1", "obs2", "res"), equal_obs)
     def test_equality(self, obs1, obs2, res):
         """Tests the compare() method for Tensors and Observables"""
@@ -1062,6 +1072,21 @@ class TestTensorObservableOperations:
     def test_subtraction(self, obs1, obs2, obs):
         """Tests subtraction between Tensors and Observables"""
         assert obs.compare(obs1 - obs2)
+
+    def test_arithmetic_errors(self):
+        """Tests that the arithmetic operations throw the correct errors"""
+        obs = qml.PauliZ(0)
+        tensor = qml.PauliZ(0) @ qml.PauliX(1)
+        A = [[1, 0], [0, -1]]
+        with pytest.raises(ValueError, match="Cannot add Observable"):
+            obs + A
+            tensor + A
+        with pytest.raises(ValueError, match="Cannot multiply Observable"):
+            obs * A
+            A * tensor
+        with pytest.raises(ValueError, match="Cannot subtract"):
+            obs - A
+            tensor - A
 
 
 class TestDecomposition:

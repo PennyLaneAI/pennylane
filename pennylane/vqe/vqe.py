@@ -257,7 +257,7 @@ class Hamiltonian:
 
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
-        return NotImplemented
+        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
@@ -275,7 +275,7 @@ class Hamiltonian:
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-        return NotImplemented
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian.
@@ -284,14 +284,16 @@ class Hamiltonian:
             coeffs = [a * c for c in self.coeffs.copy()]
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
-        return NotImplemented
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
-        return self.__add__(H.__mul__(-1))
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            return self.__add__(H.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
@@ -308,7 +310,7 @@ class Hamiltonian:
             self.simplify()
             return self
 
-        return NotImplemented
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian.
@@ -317,13 +319,15 @@ class Hamiltonian:
             self._coeffs = [a * c for c in self.coeffs]
             return self
 
-        return NotImplemented
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
 
     def __isub__(self, H):
         r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
         """
-        self.__iadd__(H.__mul__(-1))
-        return self
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            self.__iadd__(H.__mul__(-1))
+            return self
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
 
 class VQECost:

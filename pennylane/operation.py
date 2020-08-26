@@ -1059,7 +1059,7 @@ class Observable(Operator):
         if isinstance(other, qml.Hamiltonian):
             return other + self
 
-        return NotImplemented
+        raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor.
@@ -1067,14 +1067,16 @@ class Observable(Operator):
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
 
-        return NotImplemented
+        raise ValueError(f"Cannot multiply Observable by {type(a)}")
 
     __rmul__ = __mul__
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects.
         """
-        return self.__add__(other.__mul__(-1))
+        if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
+            return self.__add__(other.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(other)} from Observable")
 
     def diagonalizing_gates(self):
         r"""Returns the list of operations such that they

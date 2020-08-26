@@ -263,6 +263,11 @@ matmul_hamiltonians = [
             qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliZ(1.2),
             qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliY("c")
         ])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(2),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)])
     )
 ]
 
@@ -411,6 +416,13 @@ class TestHamiltonian:
             (0.5, frozenset([('PauliX', Wires(2), ())]))
         }
 
+    def test_hamiltonian_equal_error(self):
+        """Tests that the correct error is raised when compare() is called on invalid type"""
+
+        H = qml.Hamiltonian([1], [qml.PauliZ(0)])
+        with pytest.raises(ValueError, match=r"Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor."):
+            H.compare([[1, 0], [0, -1]])
+
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
@@ -454,6 +466,26 @@ class TestHamiltonian:
         """Tests that Hamiltonians are subtracted inline correctly"""
         H1 -= H2
         assert H.compare(H1)
+
+    def test_arithmetic_errors(self):
+        """Tests that the arithmetic operations thrown the correct errors"""
+        H = qml.Hamiltonian([1], [qml.PauliZ(0)])
+        A = [[1, 0], [0, -1]]
+        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
+            H @ A
+        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+            H + A
+        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+            H * A
+        with pytest.raises(ValueError, match="Cannot subtract"):
+            H - A
+        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+            H += A
+        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+            H *= A
+        with pytest.raises(ValueError, match="Cannot subtract"):
+            H -= A
+
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
