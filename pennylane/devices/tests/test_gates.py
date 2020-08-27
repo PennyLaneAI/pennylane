@@ -152,8 +152,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 
 @flaky(max_runs=10)
 class TestGatesQubit:
-    """Test qubit-based devices' probability vector after application of gates.
-    """
+    """Test qubit-based devices' probability vector after application of gates."""
 
     @pytest.mark.parametrize(
         "basis_state",
