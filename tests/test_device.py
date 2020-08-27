@@ -80,7 +80,7 @@ def mock_device_supporting_paulis_and_inverse(monkeypatch):
         m.setattr(Device, 'operations', mock_device_paulis)
         m.setattr(Device, 'observables', mock_device_paulis)
         m.setattr(Device, 'short_name', 'MockDevice')
-        m.setattr(Device, '_capabilities', {"inverse_operations": True})
+        m.setattr(Device, '_capabilities', {"supports_inverse_operations": True})
 
         def get_device(wires=1):
             return Device(wires=wires)
@@ -96,7 +96,7 @@ def mock_device_supporting_observables_and_inverse(monkeypatch):
         m.setattr(Device, 'operations', mock_device_paulis)
         m.setattr(Device, 'observables', mock_device_paulis + ['Hermitian'])
         m.setattr(Device, 'short_name', 'MockDevice')
-        m.setattr(Device, '_capabilities', {"inverse_operations": True})
+        m.setattr(Device, '_capabilities', {"supports_inverse_operations": True})
 
         def get_device(wires=1):
             return Device(wires=wires)

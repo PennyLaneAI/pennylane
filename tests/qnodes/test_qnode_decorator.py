@@ -56,8 +56,7 @@ def test_fallback_Jacobian_qnode(monkeypatch):
 
     # use monkeypatch to avoid setting class attributes
     with monkeypatch.context() as m:
-        m.setitem(dev._capabilities, "supports_cv", None)  # Note: this is strictly not necessary, because these are set to False by default
-        m.setitem(dev._capabilities, "supports_qubit", None)
+        m.setitem(dev._capabilities, "model", None)
 
         @qnode(dev)
         def circuit(a):

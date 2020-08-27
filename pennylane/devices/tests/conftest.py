@@ -29,13 +29,13 @@ np.random.seed(42)
 # Tolerance for analytic tests
 TOL = 1e-6
 # Tolerance for non-analytic tests
-TOL_STOCHASTIC = 0.1
+TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 10000
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf", "default.qubit.autograd"}
 # TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
-# do not have an "analytic" attribute.
+# do not return probabilities.
 
 
 @pytest.fixture(scope="function")

@@ -16,7 +16,6 @@ Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
 import functools
-from unittest.mock import patch
 
 import pytest
 import numpy as np
