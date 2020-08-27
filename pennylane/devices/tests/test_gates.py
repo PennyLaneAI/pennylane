@@ -24,7 +24,6 @@ from math import cos, sin, sqrt
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.numpy.tensor import tensor
 
 from scipy.linalg import block_diag
 from flaky import flaky
@@ -222,7 +221,7 @@ class TestSupportedGates:
                 ops[operation]
                 return qml.expval(qml.Identity(wires=0))
 
-            assert isinstance(circuit(), (float, tensor))
+            assert isinstance(circuit(), (float, np.ndarray))
 
     @pytest.mark.parametrize("operation", all_ops)
     def test_inverse_gates_can_be_implemented(self, device_kwargs, operation):
@@ -230,7 +229,9 @@ class TestSupportedGates:
         This test is skipped for devices that do not support inverse operations."""
         device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
-        if not dev.capabilities()["supports_inverse_operations"]:
+        supports_inv = "supports_inverse_operations" in dev.capabilities() and \
+                       dev.capabilities()["supports_inverse_operations"]
+        if supports_inv:
             pytest.skip("Device does not support inverse operations.")
 
         assert hasattr(dev, "operations")
@@ -241,7 +242,7 @@ class TestSupportedGates:
                 ops[operation].inv()
                 return qml.expval(qml.Identity(wires=0))
 
-            assert isinstance(circuit(), (float, tensor))
+            assert isinstance(circuit(), (float, np.ndarray))
 
 
 @flaky(max_runs=10)

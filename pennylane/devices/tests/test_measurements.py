@@ -19,7 +19,6 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
-from pennylane.numpy.tensor import tensor
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -65,7 +64,7 @@ class TestSupportedObservables:
             def circuit():
                 return qml.expval(obs[observable])
 
-            assert isinstance(circuit(), (float, tensor))
+            assert isinstance(circuit(), (float, np.ndarray))
 
     def test_tensor_observables_can_be_implemented(self, device_kwargs):
         """Test that the device can implement a simple tensor observable.
@@ -79,7 +78,7 @@ class TestSupportedObservables:
         def circuit():
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
-        assert isinstance(circuit(), (float, tensor))
+        assert isinstance(circuit(), (float, np.ndarray))
 
 
 @flaky(max_runs=10)
@@ -734,7 +733,7 @@ class TestTensorVar:
         phi = 0.123
         varphi = -0.543
 
-        A_ = np.array(
+        A_ = 0.1 * np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -754,7 +753,7 @@ class TestTensorVar:
 
         res = circuit()
 
-        expected = (
+        expected = 0.01 * (
             1057
             - np.cos(2 * phi)
             + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)

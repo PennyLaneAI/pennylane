@@ -120,3 +120,21 @@ class TestCapabilities:
                 return qml.expval(qml.Identity(wires=0))
 
             assert hasattr(circuit, "jacobian")
+
+    def test_reversible_diff(self, device_kwargs):
+        """Test that the device computes the jacobian."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+        provides_jacobian = cap.get("provides_jacobian", False)
+
+        if not provides_jacobian:
+            pytest.skip("Device does not provide jacobian.")
+
+        else:
+
+            @qml.qnode(dev)
+            def circuit():
+                return qml.expval(qml.Identity(wires=0))
+
+            assert hasattr(circuit, "jacobian")

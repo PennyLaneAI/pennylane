@@ -428,7 +428,7 @@ class TestInternalFunctions:
 class TestClassmethods:
     """Test the classmethods of Device"""
 
-    def test_capabilities(self):
+    def test_capabilities(self, mock_device_with_capabilities):
         """check that device can give a dict of further capabilities"""
         dev = mock_device_with_capabilities()
 
