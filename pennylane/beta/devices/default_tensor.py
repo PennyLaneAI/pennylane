@@ -172,7 +172,7 @@ class DefaultTensor(Device):
             model='qubit',
             supports_exact=True,
             supports_tensor_observables=True,
-            supports_inverse_ops=True,
+            supports_inverse_operations=True,
         )
         return capabilities
 

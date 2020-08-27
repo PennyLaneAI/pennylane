@@ -18,6 +18,7 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
+from pennylane.numpy.tensor import tensor
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -62,7 +63,7 @@ class TestSupportedObservables:
             def circuit():
                 return qml.expval(obs[observable])
 
-            assert isinstance(circuit(), float)
+            assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
 
     @pytest.mark.parametrize("observable", all_obs)
     def test_tensor_observables_can_be_implemented(self, device_kwargs, observable):
@@ -77,7 +78,7 @@ class TestSupportedObservables:
         def circuit():
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
-        assert isinstance(circuit(), float)
+        assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
 
 
 @flaky(max_runs=10)
@@ -456,11 +457,11 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(dev.analytic))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(mean, expected, atol=tol(dev.analytic))
+        assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
         expected = (
@@ -497,11 +498,11 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(dev.analytic))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(mean, expected, atol=tol(dev.analytic))
+        assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
         expected = (
@@ -522,7 +523,7 @@ class TestTensorSample:
         phi = 0.123
         varphi = -0.543
 
-        A_ = np.array(
+        A_ = 0.1 * np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -546,10 +547,10 @@ class TestTensorSample:
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A_))
-        assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
+        assert np.allclose(sorted(np.unique(res)), sorted(eigvals), atol=tol(False))
 
         mean = np.mean(res)
-        expected = 0.5 * (
+        expected = 0.1 * 0.5 * (
             -6 * np.cos(theta) * (np.cos(varphi) + 1)
             - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
             + 3 * np.cos(varphi) * np.sin(phi)
@@ -558,7 +559,7 @@ class TestTensorSample:
         assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
-        expected = (
+        expected = 0.01 * (
             1057
             - np.cos(2 * phi)
             + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
