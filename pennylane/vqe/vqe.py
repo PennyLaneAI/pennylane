@@ -122,7 +122,6 @@ class Hamiltonian:
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
-
         **Example**
 
         >>> H = qml.Hamiltonian([1, 1, -2], [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)])
