@@ -56,7 +56,7 @@ class Device(abc.ABC):
         'passthru_interface': None,
         'supports_reversible_diff': False,
         'supports_exact': False,
-        'supports_sampling': False,
+        'supports_sampled': False,
         'supports_inverse_operations': False,
         'supports_tensor_observables': False,
         'provides_jacobian': False,
@@ -245,18 +245,6 @@ class Device(abc.ABC):
             dict[str->*]: results
         """
         return cls._capabilities
-
-    # @classmethod
-    # def update_capabilities(cls, new_capabilities):
-    #     """Update the capabilities dictionary of this device class.
-    #
-    #     Args:
-    #         new_capabilities (dict): dictionary of the key-value pairs to update
-    #     """
-    #     updated_capabilities = super().capabilities().copy()
-    #
-    #     updated_capabilities.update(new_capabilities)
-    #     return updated_capabilities
 
     def execute(self, queue, observables, parameters={}, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.

@@ -62,27 +62,27 @@ ops = {
     'SWAP': qml.SWAP(wires=[0, 1]),
     'T': qml.T(wires=[0]),
     'Toffoli': qml.Toffoli(wires=[0, 1, 2]),
-    'Beamsplitter': qml.Beamsplitter(0, 0, wires=[0, 1]),
-    'CatState': qml.CatState(0, 0, 0, wires=[0]),
-    'CoherentState': qml.CoherentState(0, 0, wires=[0]),
-    'ControlledAddition': qml.ControlledAddition(0, wires=[0, 1]),
-    'ControlledPhase': qml.ControlledPhase(0, wires=[0, 1]),
-    'CrossKerr': qml.CrossKerr(0, wires=[0, 1]),
-    'CubicPhase': qml.CubicPhase(0, wires=[0]),
-    'DisplacedSqueezedState': qml.DisplacedSqueezedState(0, 0, 0, 0, wires=[0]),
-    'Displacement': qml.Displacement(0, 0, wires=[0]),
-    'FockDensityMatrix': qml.FockDensityMatrix(np.array([0]), wires=[0]),
-    'FockState': qml.FockState(1, wires=[0]),
-    'FockStateVector': qml.FockStateVector(np.array([0]), wires=[0]),
-    'GaussianState': qml.GaussianState(np.array([0., 0.]), np.eye(2), wires=[0]),
-    'Interferometer': qml.Interferometer(np.eye(2), wires=[0, 1]),
-    'Kerr': qml.Kerr(0, wires=[0]),
-    'QuadraticPhase': qml.QuadraticPhase(0, wires=[0]),
-    'Rotation': qml.Rotation(0, wires=[0]),
-    'SqueezedState': qml.SqueezedState(0, 0, wires=[0]),
-    'Squeezing': qml.Squeezing(0, 0, wires=[0]),
-    'ThermalState': qml.ThermalState(0, wires=[0]),
-    'TwoModeSqueezing': qml.TwoModeSqueezing(0, 0, wires=[0, 1]),
+    # 'Beamsplitter': qml.Beamsplitter(0, 0, wires=[0, 1]),
+    # 'CatState': qml.CatState(0, 0, 0, wires=[0]),
+    # 'CoherentState': qml.CoherentState(0, 0, wires=[0]),
+    # 'ControlledAddition': qml.ControlledAddition(0, wires=[0, 1]),
+    # 'ControlledPhase': qml.ControlledPhase(0, wires=[0, 1]),
+    # 'CrossKerr': qml.CrossKerr(0, wires=[0, 1]),
+    # 'CubicPhase': qml.CubicPhase(0, wires=[0]),
+    # 'DisplacedSqueezedState': qml.DisplacedSqueezedState(0, 0, 0, 0, wires=[0]),
+    # 'Displacement': qml.Displacement(0, 0, wires=[0]),
+    # 'FockDensityMatrix': qml.FockDensityMatrix(np.array([0]), wires=[0]),
+    # 'FockState': qml.FockState(1, wires=[0]),
+    # 'FockStateVector': qml.FockStateVector(np.array([0]), wires=[0]),
+    # 'GaussianState': qml.GaussianState(np.array([0., 0.]), np.eye(2), wires=[0]),
+    # 'Interferometer': qml.Interferometer(np.eye(2), wires=[0, 1]),
+    # 'Kerr': qml.Kerr(0, wires=[0]),
+    # 'QuadraticPhase': qml.QuadraticPhase(0, wires=[0]),
+    # 'Rotation': qml.Rotation(0, wires=[0]),
+    # 'SqueezedState': qml.SqueezedState(0, 0, wires=[0]),
+    # 'Squeezing': qml.Squeezing(0, 0, wires=[0]),
+    # 'ThermalState': qml.ThermalState(0, wires=[0]),
+    # 'TwoModeSqueezing': qml.TwoModeSqueezing(0, 0, wires=[0, 1]),
 }
 
 all_ops = ops.keys()
@@ -436,7 +436,7 @@ class TestInverseGatesQubit:
         """Test inverse single qubit gate application."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(1)
 
@@ -458,7 +458,7 @@ class TestInverseGatesQubit:
         """Test inverse single qubit gates taking one scalar parameter."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(n_wires)
 
@@ -479,7 +479,7 @@ class TestInverseGatesQubit:
         """Test inverse three axis rotation gate."""
         n_wires = 1
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(1)
         a = 0.542
@@ -504,7 +504,7 @@ class TestInverseGatesQubit:
         """Test inverse two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(n_wires)
 
@@ -526,7 +526,7 @@ class TestInverseGatesQubit:
         """Test inverse of two qubit gates taking one parameter."""
         n_wires = 2
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(2)
 
@@ -548,7 +548,7 @@ class TestInverseGatesQubit:
         """Test inverse QubitUnitary gate."""
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(n_wires)
 
@@ -569,7 +569,7 @@ class TestInverseGatesQubit:
         """Test inverse three qubit gates without parameters."""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"inverse_operations": False})
+        skip_if(dev, {"supports_inverse_operations": False})
 
         rnd_state = init_state(3)
 

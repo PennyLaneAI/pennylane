@@ -29,7 +29,7 @@ np.random.seed(42)
 # Tolerance for analytic tests
 TOL = 1e-6
 # Tolerance for non-analytic tests
-TOL_STOCHASTIC = 0.05
+TOL_STOCHASTIC = 0.1
 # Number of shots to call the devices with
 N_SHOTS = 10000
 # List of all devices that are included in PennyLane
@@ -104,7 +104,7 @@ def device(device_kwargs):
             )
 
         capabilities = dev.capabilities()
-        if not capabilities.get("supports_qubit", False):
+        if capabilities.get("model", None) != "qubit":
             # exit the tests if device based on cv model (currently not supported)
             pytest.exit("The device test suite currently only runs on qubit-based devices.")
 

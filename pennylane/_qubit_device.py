@@ -116,7 +116,7 @@ class QubitDevice(Device):
         capabilities.update(
             model='qubit',
             supports_exact=True,
-            supports_sampling=True,
+            supports_sampled=True,
             supports_tensor_observables=True,
         )
         return capabilities

@@ -169,6 +169,8 @@ class DefaultTensor(Device):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model='qubit',
+            supports_exact=True,
+            supports_sampled=True,
             supports_tensor_observables=True,
         )
         return capabilities

@@ -32,11 +32,11 @@ obs = {
     'PauliX': qml.PauliX(wires=[0]),
     'PauliY': qml.PauliY(wires=[0]),
     'PauliZ': qml.PauliZ(wires=[0]),
-    'FockStateProjector': qml.FockStateProjector(wires=[0]),
+    'FockStateProjector': qml.FockStateProjector(np.array([0]), wires=[0]),
     'NumberOperator': qml.NumberOperator(wires=[0]),
     'P': qml.P(wires=[0]),
-    'PolyXP': qml.PolyXP(wires=[0]),
-    'QuadOperator': qml.QuadOperator(wires=[0]),
+    'PolyXP': qml.PolyXP(np.array([0]), wires=[0]),
+    'QuadOperator': qml.QuadOperator(0, wires=[0]),
     'TensorN': qml.TensorN(wires=[0]),
     'X': qml.X(wires=[0]),
 }
@@ -253,7 +253,7 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -263,10 +263,10 @@ class TestTensorExpval:
         def circuit():
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
-            qml.RX(phi, wires=[2])
+            qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(wires=0)), qml.expval(qml.PauliX(wires=2))
+            return qml.expval(qml.PauliX(wires=0) @ qml.PauliY(wires=2))
 
         res = circuit()
 
@@ -277,7 +277,7 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -287,14 +287,10 @@ class TestTensorExpval:
         def circuit():
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
-            qml.RX(phi, wires=[2])
+            qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return (
-                qml.expval(qml.PauliZ(wires=0)),
-                qml.expval(qml.Hadamard(wires=1)),
-                qml.expval(qml.PauliY(wires=2)),
-            )
+            return qml.expval(qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2))
 
         res = circuit()
 
@@ -305,7 +301,7 @@ class TestTensorExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -323,10 +319,10 @@ class TestTensorExpval:
         def circuit():
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
-            qml.RX(phi, wires=[2])
+            qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.Hermitian(A_, wires=[1, 2]))
+            return qml.expval(qml.PauliZ(wires=0) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -442,7 +438,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -481,7 +477,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -520,7 +516,7 @@ class TestTensorSample:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -662,7 +658,7 @@ class TestTensorVar:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -693,7 +689,7 @@ class TestTensorVar:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -706,7 +702,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(
+            return qml.var(
                 qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2])
             )
 
@@ -724,7 +720,7 @@ class TestTensorVar:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -746,7 +742,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
+            return qml.var(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 

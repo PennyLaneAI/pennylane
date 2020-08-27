@@ -101,14 +101,26 @@ as well as potential further capabilities, by providing the following class attr
       conversion between the two conventions takes place automatically
       by the plugin device.
 
-* :attr:`.Device._capabilities`: a dictionary containing information about the capabilities of
-  the device. Keys currently supported include:
+* :attr:`.Device.capabilities()`: a function overriding the corresponding base class method,
+  which updates the ``_capabilities`` dictionary containing information about the properties of
+  the device. These properties are queried by PennyLane core and/or external apps. Examples are:
 
   * ``'model'`` (*str*): either ``'qubit'`` or ``'CV'``.
 
-  * ``'inverse_operations'`` (*bool*): ``True`` if the device supports
+  * ``'supports_inverse_operations'`` (*bool*): ``True`` if the device supports
     applying the inverse of operations. Operations which should be inverted
     have the property ``operation.inverse == True``.
+
+  * ``'supports_exact'`` (*bool*): ``True`` if the device is a simulator that returns analytic results.
+
+  *  ``'supports_sampled'`` (*bool*): ``True`` if outputs are estimates computed from samples of measurement outcomes.
+
+  *  ``'supports_tensor_observables'`` (*bool*): ``True`` if the device supports observables composed from tensor
+     products such as ``PauliZ(wires=0) @ PauliZ(wires=1)``.
+
+  *  ``'executes_in_remote'`` (*bool*): ``True`` if the device runs in remote.
+
+  *  ``'takes_fixed_number_of_wires'`` (*bool*): ``True`` if the device's number of wires are fixed.
 
 Adding arguments to your device
 --------------------------------
