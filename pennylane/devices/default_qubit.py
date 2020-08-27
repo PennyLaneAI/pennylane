@@ -165,7 +165,9 @@ class DefaultQubit(QubitDevice):
             return
 
         if operation.name in self._apply_ops:
-            self._state = self._apply_ops[operation.name](self._state, axes, inverse=operation.inverse)
+            self._state = self._apply_ops[operation.name](
+                self._state, axes, inverse=operation.inverse
+            )
             return
 
         matrix = self._get_unitary_matrix(operation)
@@ -480,13 +482,11 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = (
-            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-                affected_indices=affected_indices,
-                state_indices=state_indices,
-                new_indices=new_indices,
-                new_state_indices=new_state_indices,
-            )
+        einsum_indices = "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
+            affected_indices=affected_indices,
+            state_indices=state_indices,
+            new_indices=new_indices,
+            new_state_indices=new_state_indices,
         )
 
         self._state = self._einsum(einsum_indices, mat, self._state)
