@@ -205,7 +205,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 
 
 class TestSupportedGates:
-    """Test that the device can implement all gates that it supports."""
+    """Test that the device can implement all gates that it claims to support."""
 
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, device_kwargs, operation):

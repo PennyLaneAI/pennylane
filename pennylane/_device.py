@@ -231,13 +231,14 @@ class Device(abc.ABC):
 
         Inheriting classes that change or add capabilities must override this method, for example via
 
-        .. code-block::
+        .. code-block:: python
 
             @classmethod
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    new_capability=...,
+                    supports_inverse_operations=False,
+                    supports_a_new_capability=True,
                 )
                 return capabilities
 
