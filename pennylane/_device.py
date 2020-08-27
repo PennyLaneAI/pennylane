@@ -52,18 +52,18 @@ class Device(abc.ABC):
 
     # pylint: disable=too-many-public-methods
     _capabilities = {
-        'model': None,
-        'passthru_interface': None,
-        'supports_reversible_diff': False,
-        'supports_exact': False,
-        'supports_sampled': False,
-        'supports_inverse_operations': False,
-        'supports_tensor_observables': False,
-        'provides_jacobian': False,
-        'executes_in_remote': False,
-        'takes_fixed_number_of_wires': False,
-        'performs_noisy_computation': False,
-        }
+        "model": None,
+        "passthru_interface": None,
+        "supports_reversible_diff": False,
+        "supports_exact": False,
+        "supports_sampled": False,
+        "supports_inverse_operations": False,
+        "supports_tensor_observables": False,
+        "provides_jacobian": False,
+        "executes_in_remote": False,
+        "takes_fixed_number_of_wires": False,
+        "performs_noisy_computation": False,
+    }
     """The capabilities dictionary stores the properties of a device. Devices can add their 
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
@@ -438,7 +438,9 @@ class Device(abc.ABC):
             if operation.endswith(Operation.string_for_inverse):
                 return operation[
                     : -len(Operation.string_for_inverse)
-                ] in self.operations and self.capabilities().get("supports_inverse_operations", False)
+                ] in self.operations and self.capabilities().get(
+                    "supports_inverse_operations", False
+                )
 
             return operation in self.operations
 

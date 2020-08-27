@@ -169,7 +169,7 @@ class DefaultTensor(Device):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            model='qubit',
+            model="qubit",
             supports_exact=True,
             supports_tensor_observables=True,
             supports_inverse_operations=True,

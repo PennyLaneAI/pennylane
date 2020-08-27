@@ -114,6 +114,7 @@ class TestCapabilities:
             pytest.skip("Device does not provide jacobian.")
 
         else:
+
             @qml.qnode(dev)
             def circuit():
                 return qml.expval(qml.Identity(wires=0))

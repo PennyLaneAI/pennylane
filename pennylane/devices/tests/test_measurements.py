@@ -28,12 +28,12 @@ pytestmark = pytest.mark.skip_unsupported
 
 # observables for which device support is tested
 obs = {
-    'Identity': qml.Identity(wires=[0]),
-    'Hadamard': qml.Hadamard(wires=[0]),
-    'Hermitian': qml.Hermitian(np.eye(2), wires=[0]),
-    'PauliX': qml.PauliX(wires=[0]),
-    'PauliY': qml.PauliY(wires=[0]),
-    'PauliZ': qml.PauliZ(wires=[0]),
+    "Identity": qml.Identity(wires=[0]),
+    "Hadamard": qml.Hadamard(wires=[0]),
+    "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
+    "PauliX": qml.PauliX(wires=[0]),
+    "PauliY": qml.PauliY(wires=[0]),
+    "PauliZ": qml.PauliZ(wires=[0]),
     # 'FockStateProjector': qml.FockStateProjector(np.array([0]), wires=[0]),
     # 'NumberOperator': qml.NumberOperator(wires=[0]),
     # 'P': qml.P(wires=[0]),
@@ -60,6 +60,7 @@ class TestSupportedObservables:
 
         assert hasattr(dev, "observables")
         if observable in dev.observables:
+
             @qml.qnode(dev)
             def circuit():
                 return qml.expval(obs[observable])
@@ -550,45 +551,53 @@ class TestTensorSample:
         assert np.allclose(sorted(np.unique(res)), sorted(eigvals), atol=tol(False))
 
         mean = np.mean(res)
-        expected = 0.1 * 0.5 * (
-            -6 * np.cos(theta) * (np.cos(varphi) + 1)
-            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
-            + 3 * np.cos(varphi) * np.sin(phi)
-            + np.sin(phi)
+        expected = (
+            0.1
+            * 0.5
+            * (
+                -6 * np.cos(theta) * (np.cos(varphi) + 1)
+                - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
+                + 3 * np.cos(varphi) * np.sin(phi)
+                + np.sin(phi)
+            )
         )
         assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
-        expected = 0.01 * (
-            1057
-            - np.cos(2 * phi)
-            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
-            + 16 * np.sin(2 * phi)
-            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
-            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
-            - 8
-            * np.cos(theta)
+        expected = (
+            0.01
             * (
-                4
-                * np.cos(phi)
+                1057
+                - np.cos(2 * phi)
+                + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+                - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+                + 16 * np.sin(2 * phi)
+                - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+                - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+                - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+                - 8
+                * np.cos(theta)
                 * (
                     4
-                    + 8 * np.cos(varphi)
-                    + np.cos(2 * varphi)
-                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
-                )
-                + np.sin(phi)
-                * (
-                    15
-                    + 8 * np.cos(varphi)
-                    - 11 * np.cos(2 * varphi)
-                    + 42 * np.sin(varphi)
-                    + 3 * np.sin(2 * varphi)
+                    * np.cos(phi)
+                    * (
+                        4
+                        + 8 * np.cos(varphi)
+                        + np.cos(2 * varphi)
+                        - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                    )
+                    + np.sin(phi)
+                    * (
+                        15
+                        + 8 * np.cos(varphi)
+                        - 11 * np.cos(2 * varphi)
+                        + 42 * np.sin(varphi)
+                        + 3 * np.sin(2 * varphi)
+                    )
                 )
             )
-        ) / 16
+            / 16
+        )
         assert np.allclose(var, expected, atol=tol(False))
 
 
@@ -703,9 +712,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.var(
-                qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2])
-            )
+            return qml.var(qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2]))
 
         res = circuit()
 

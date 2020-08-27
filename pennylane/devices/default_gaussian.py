@@ -697,9 +697,7 @@ class DefaultGaussian(Device):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            model='cv',
-            supports_exact=True,
-            supports_sampling=True,
+            model="cv", supports_exact=True, supports_sampling=True,
         )
         return capabilities
 
