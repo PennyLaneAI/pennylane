@@ -87,6 +87,7 @@ def mock_device_supporting_paulis_and_inverse(monkeypatch):
 
         yield get_device
 
+
 @pytest.fixture(scope="function")
 def mock_device_supporting_observables_and_inverse(monkeypatch):
     """A function to create a mock device with non-empty operations
@@ -102,6 +103,7 @@ def mock_device_supporting_observables_and_inverse(monkeypatch):
             return Device(wires=wires)
 
         yield get_device
+
 
 mock_device_capabilities = {
     "measurements": "everything",
@@ -426,7 +428,7 @@ class TestInternalFunctions:
 class TestClassmethods:
     """Test the classmethods of Device"""
 
-    def test_capabilities(self, mock_device_with_capabilities):
+    def test_capabilities(self):
         """check that device can give a dict of further capabilities"""
         dev = mock_device_with_capabilities()
 

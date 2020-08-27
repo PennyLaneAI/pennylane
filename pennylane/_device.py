@@ -61,8 +61,7 @@ class Device(abc.ABC):
         "supports_tensor_observables": False,
         "provides_jacobian": False,
         "executes_in_remote": False,
-        "takes_fixed_number_of_wires": False,
-        "performs_noisy_computation": False,
+        "has_max_number_of_wires": False,
     }
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""

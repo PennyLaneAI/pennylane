@@ -563,6 +563,25 @@ class TestInterfaceDeviceIntegration:
 
         return circuit_fn
 
+    @pytest.mark.parametrize("cap, value", [("model", "qubit"),
+                                            ("passthru_interface", 'tf'),
+                                            ("supports_reversible_diff", False),
+                                            ("supports_exact", True),
+                                            ("supports_sampled", False),
+                                            ("supports_inverse_operations", True),
+                                            ("supports_tensor_observables", True),
+                                            ("provides_jacobian", True),
+                                            ("executes_in_remote", False),
+                                            ("has_max_number_of_wires", False),
+                                            ])
+    def test_defines_correct_capabilities(self, cap, value, rep):
+        """Test that the device defines the right capabilities"""
+
+        dev = qml.device("default.tensor.tf", wires=1, representation=rep)
+        capabilities = dev.capabilities()
+        assert cap in capabilities
+        assert capabilities[cap] == value
+
     @pytest.mark.parametrize("interface", ["autograd"])
     def test_autograd_interface(self, circuit, interface, tol):
         """Tests that the gradient of the circuit fixture above is correct
