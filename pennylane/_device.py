@@ -62,6 +62,7 @@ class Device(abc.ABC):
         'provides_jacobian': False,
         'executes_in_remote': False,
         'takes_fixed_number_of_wires': False,
+        'performs_noisy_computation': False,
         }
     """The capabilities dictionary stores the properties of a device. Devices can add their 
     own custom properties and overwrite existing ones by overwriting the ``capabilities`` class method."""
