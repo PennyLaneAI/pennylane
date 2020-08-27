@@ -53,6 +53,11 @@ class TestQubitChannel:
         with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
             channel.QubitChannel(K_list2, wires=0).kraus_matrices
 
+        # check the dimension of all Kraus matrices are valid
+        K_list3 = [np.array([np.eye(2), np.eye(2)]), np.array([np.eye(2), np.eye(2)])]
+        with pytest.raises(ValueError, match="Dimension of all Kraus matrices must be "):
+            channel.QubitChannel(K_list3, wires=0).kraus_matrices
+
     def test_channel_trace_preserving(self):
         """Tests that the channel represents a trace-preserving map"""
 

@@ -503,6 +503,18 @@ class Operator(abc.ABC):
                     temp = np.array([x.val if isinstance(x, Variable) else x for x in p.flat])
                     return temp.reshape(p.shape)
                 return p
+
+            if isinstance(p, list):
+                # p is assumed to be a list of numpy arrays
+                # object arrays may have Variables inside them
+                evaled_list = []
+                for arr in p:
+                    if arr.dtype == object:
+                        temp = np.array([x.val if isinstance(x, Variable) else x for x in arr.flat])
+                        evaled_list.append(temp.reshape(arr.shape))
+                        return evaled_list
+                return p
+
             if isinstance(p, Variable):
                 p = self.check_domain(p.val)
             return p
