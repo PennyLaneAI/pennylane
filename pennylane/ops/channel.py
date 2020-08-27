@@ -37,7 +37,7 @@ class QubitChannel(Channel):
 
     Args:
         K_list (list[array[complex]]): List of Kraus matrices
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
     """
     num_params = 1
     num_wires = AnyWires
