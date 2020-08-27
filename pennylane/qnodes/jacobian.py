@@ -28,8 +28,7 @@ DEFAULT_STEP_SIZE_ANALYTIC = 1e-7
 
 
 class JacobianQNode(BaseQNode):
-    """Quantum node that can be differentiated with respect to its positional parameters.
-    """
+    """Quantum node that can be differentiated with respect to its positional parameters."""
 
     def __init__(self, func, device, mutable=True, **kwargs):
         super().__init__(func, device, mutable=mutable, **kwargs)

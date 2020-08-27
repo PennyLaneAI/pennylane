@@ -350,8 +350,7 @@ class Operator(abc.ABC):
 
     @property
     def name(self):
-        """String for the name of the operator.
-        """
+        """String for the name of the operator."""
         return self._name
 
     @name.setter
@@ -631,8 +630,7 @@ class Operation(Operator):
 
     @property
     def inverse(self):
-        """Boolean determining if the inverse of the operation was requested.
-        """
+        """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
     @inverse.setter
@@ -681,14 +679,12 @@ class Operation(Operator):
 
     @property
     def base_name(self):
-        """Get base name of the operator.
-        """
+        """Get base name of the operator."""
         return self.__class__.__name__
 
     @property
     def name(self):
-        """Get and set the name of the operator.
-        """
+        """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
     def __init__(self, *params, wires=None, do_queue=True):

@@ -343,7 +343,8 @@ class RepresentationResolver:
 
         elif base_name == "PauliRot":
             representation = "R{0}({1})".format(
-                op.data[1][op.wires.index(wire)], self.single_parameter_representation(op.data[0]),
+                op.data[1][op.wires.index(wire)],
+                self.single_parameter_representation(op.data[0]),
             )
 
         elif base_name == "QubitUnitary":

@@ -210,8 +210,7 @@ class BaseQNode(qml.QueuingContext):
         return detail.format(self.device.short_name, self.func.__name__, self.num_wires)
 
     def print_applied(self):
-        """Prints the most recently applied operations from the QNode.
-        """
+        """Prints the most recently applied operations from the QNode."""
         if self.circuit is None:
             print("QNode has not yet been executed.")
             return
@@ -796,8 +795,7 @@ class BaseQNode(qml.QueuingContext):
         return kwargs
 
     def __call__(self, *args, **kwargs):
-        """Wrapper for :meth:`BaseQNode.evaluate`.
-        """
+        """Wrapper for :meth:`BaseQNode.evaluate`."""
         return self.evaluate(args, kwargs)
 
     def evaluate(self, args, kwargs):
@@ -857,7 +855,9 @@ class BaseQNode(qml.QueuingContext):
             # create a circuit graph containing the existing operations, and the
             # observables to be evaluated.
             circuit_graph = CircuitGraph(
-                self.circuit.operations + list(obs), self.circuit.variable_deps, self.device.wires,
+                self.circuit.operations + list(obs),
+                self.circuit.variable_deps,
+                self.device.wires,
             )
             ret = self.device.execute(circuit_graph)
         else:
