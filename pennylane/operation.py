@@ -344,6 +344,7 @@ class Operator(abc.ABC):
         * ``'N'``: natural numbers (including zero).
         * ``'R'``: floats.
         * ``'A'``: arrays of real or complex values.
+        * ``'L'``: list of arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
 
@@ -462,6 +463,13 @@ class Operator(abc.ABC):
                     raise TypeError(
                         "{}: Natural number parameter expected, got {}.".format(self.name, p)
                     )
+        elif self.par_domain == "L":
+            if not isinstance(p, list):
+                raise TypeError(
+                    "{}: List parameter expected, got {}.".format(self.name, type(p))
+                )
+            if not all(isinstance(elem, np.ndarray) for elem in p):
+                raise TypeError("List elements must be Numpy arrays.")
         else:
             raise ValueError(
                 "{}: Unknown parameter domain '{}'.".format(self.name, self.par_domain)
@@ -879,7 +887,7 @@ class Channel(Operation, abc.ABC):
         Returns:
             list(array): list of Kraus matrices
         """
-        return self._kraus_matrices(*self.parameters)
+        return self._kraus_matrices(*self.data)
 
     def __init__(self, *params, wires=None, do_queue=True):
 

@@ -133,6 +133,8 @@ class TestOperation:
             pars = [np.eye(2)] * n
         elif test_class.par_domain == "N":
             pars = [0] * n
+        elif test_class.par_domain == "L":
+            pars = [[np.eye(2), np.eye(2)]] * n
         else:
             pars = [0.0] * n
 
@@ -185,6 +187,10 @@ class TestOperation:
                 # params must be real numbers
                 with pytest.raises(TypeError, match="Real scalar parameter expected"):
                     test_class(*n * [1j], wires=ww)
+            elif test_class.par_domain == "L":
+                # params must be list of numpy arrays
+                with pytest.raises(TypeError, match="List parameter"):
+                    test_class(*n * [np.eye(2)], wires=ww)
 
             # if par_domain ever gets overridden to an unsupported value, should raise exception
             monkeypatch.setattr(test_class, "par_domain", "junk")
@@ -398,6 +404,19 @@ class TestOperationConstruction:
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
+
+    def test_list_of_arrays(self):
+        """Test that an exception is raised if a list of arrays is expected
+         but a list of mixed types is passed"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "L"
+
+        with pytest.raises(TypeError, match="List elements must be Numpy arrays."):
+            DummyOp([[np.eye(2), "a"]], wires=[0])
 
     def test_variable_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a variable is passed"""
@@ -1220,6 +1239,7 @@ class TestChannel:
 
     def test_instance_made_correctly(self):
         """Test that instance of channel class is initialized correctly"""
+
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
             num_wires = 1
@@ -1230,7 +1250,7 @@ class TestChannel:
             def _kraus_matrices(self, *params):
                 p = params[0]
                 K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1-p) * I
+                K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
@@ -1252,7 +1272,7 @@ class TestChannel:
             def _kraus_matrices(self, *params):
                 p = params[0]
                 K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1-p) * I
+                K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         with pytest.raises(
