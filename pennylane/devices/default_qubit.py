@@ -155,7 +155,6 @@ class DefaultQubit(QubitDevice):
         """
         wires = operation.wires
 
-
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], wires)
             return
