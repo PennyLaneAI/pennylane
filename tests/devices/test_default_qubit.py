@@ -1782,3 +1782,55 @@ class TestGetSlice:
 
         assert sl == (2,)
         assert np.allclose(array[sl], target)
+
+
+@pytest.mark.parametrize("inverse", [True, False])
+class TestApplyOps:
+    """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
+    gates in DefaultQubit."""
+
+    state = np.arange(2 ** 3).reshape((2, 2, 2))
+    dev = qml.device("default.qubit", wires=3)
+    single_qubit_ops = [
+        (qml.PauliX, dev._apply_x),
+        (qml.PauliY, dev._apply_y),
+        (qml.PauliZ, dev._apply_z),
+        (qml.Hadamard, dev._apply_hadamard),
+        (qml.S, dev._apply_s),
+        (qml.T, dev._apply_t),
+    ]
+    two_qubit_ops = [
+        (qml.CNOT, dev._apply_cnot),
+        (qml.SWAP, dev._apply_swap),
+        (qml.CZ, dev._apply_cz),
+    ]
+
+    @pytest.mark.parametrize("op, method", single_qubit_ops)
+    def test_apply_single_qubit_op(self, op, method, inverse):
+        """Test if the application of single qubit operations is correct."""
+        state_out = method(self.state, axes=[1], inverse=inverse)
+        op = op(wires=[1])
+        matrix = op.inv().matrix if inverse else op.matrix
+        state_out_einsum = np.einsum("ab,ibk->iak", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op(self, op, method, inverse):
+        """Test if the application of two qubit operations is correct."""
+        state_out = method(self.state, axes=[0, 1])
+        op = op(wires=[0, 1])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,cdk->abk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op_reverse(self, op, method, inverse):
+        """Test if the application of two qubit operations is correct when the applied wires are
+        reversed."""
+        state_out = method(self.state, axes=[2, 1])
+        op = op(wires=[2, 1])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,idc->iba", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
