@@ -52,7 +52,7 @@ def DisplacementEmbedding(features, wires, method="amplitude", c=0.1):
 
     Raises:
         ValueError: if inputs do not have the correct format
-   """
+    """
 
     #############
     # Input checks

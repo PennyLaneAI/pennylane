@@ -498,14 +498,18 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
         kwargs = {}
 
     check_type(
-        kwargs, [dict], msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
+        kwargs,
+        [dict],
+        msg="'kwargs' must be a dictionary; got {}".format(type(kwargs)),
     )
 
     custom_pattern = None
 
     if isinstance(pattern, str):
         check_is_in_options(
-            pattern, OPTIONS, msg="did not recognize option {} for 'pattern'".format(pattern),
+            pattern,
+            OPTIONS,
+            msg="did not recognize option {} for 'pattern'".format(pattern),
         )
     else:
         # turn custom pattern into list of Wires objects
