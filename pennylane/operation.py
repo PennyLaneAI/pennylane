@@ -465,9 +465,7 @@ class Operator(abc.ABC):
                     )
         elif self.par_domain == "L":
             if not isinstance(p, list):
-                raise TypeError(
-                    "{}: List parameter expected, got {}.".format(self.name, type(p))
-                )
+                raise TypeError("{}: List parameter expected, got {}.".format(self.name, type(p)))
             if not all(isinstance(elem, np.ndarray) for elem in p):
                 raise TypeError("List elements must be Numpy arrays.")
         else:
