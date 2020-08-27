@@ -109,6 +109,12 @@ class DefaultQubitAutograd(DefaultQubit):
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
 
+    def __init__(self, wires, *, shots=1000, analytic=True):
+        super().__init__(wires, shots=shots, analytic=analytic)
+        del self._apply_ops["PauliY"]
+        del self._apply_ops["Hadamard"]
+        del self._apply_ops["CZ"]
+
     @staticmethod
     def _scatter(indices, array, new_dimensions):
         new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
