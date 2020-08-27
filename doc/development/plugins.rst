@@ -101,10 +101,11 @@ as well as potential further capabilities, by providing the following class attr
       conversion between the two conventions takes place automatically
       by the plugin device.
 
-* :func:`.Device.capabilities`: A class method overriding the corresponding base class method,
-  which updates the ``_capabilities`` dictionary. The dictionary contains information about the properties of
-  the device, which are queried by PennyLane core to make decisions on how to best run computations,
-  and by external apps build on top of the device ecosystem. Examples of keys are:
+* :func:`.Device.capabilities`: A class method which returns the dictionary of capabilities of a device. A
+  new device should override this method to retrieve the parent classes' capabilities dictionary, make a copy
+  and update and/or add capabilities before returning the copy.
+
+  Examples of capabilities are:
 
   * ``'model'`` (*str*): either ``'qubit'`` or ``'CV'``.
 
@@ -125,6 +126,9 @@ as well as potential further capabilities, by providing the following class attr
 
   *  ``'runs_noisy_computations'`` (*bool*): ``True`` if the device's results are stochastic due to
      physical or simulated noise.
+
+  Capabilities are queried by PennyLane core to make decisions on how to best run computations,
+  and by external apps build on top of the device ecosystem.
 
 Adding arguments to your device
 --------------------------------
