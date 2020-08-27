@@ -226,12 +226,8 @@ or even the quantum circuit that is evaluated. While these QNodes can be defined
 "by hand", PennyLane offers **QNode collections** as a convenient way to define and run
 families of QNodes.
 
-QNode collections are a sequence of QNodes that:
-
-1. Have the same function signature, and
-
-2. Can be evaluated independently (that is, the input of any QNode in the collection
-   does not depend on the output of another).
+QNode collections are sequences of QNodes that can be evaluated independently
+(that is, the input of any QNode in the collection does not depend on the output of another).
 
 Consider the following two quantum nodes:
 

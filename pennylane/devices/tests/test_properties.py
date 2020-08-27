@@ -138,4 +138,4 @@ class TestCapabilities:
             def circuit():
                 return qml.expval(qml.Identity(wires=0))
 
-            assert isinstance(circuit(), (float, np.array))
+            assert isinstance(circuit(), (float, np.ndarray))
