@@ -885,7 +885,7 @@ class Channel(Operation, abc.ABC):
         Returns:
             list(array): list of Kraus matrices
         """
-        return self._kraus_matrices(*self.data)
+        return self._kraus_matrices(*self.parameters)
 
     def __init__(self, *params, wires=None, do_queue=True):
 
