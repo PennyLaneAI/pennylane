@@ -753,35 +753,39 @@ class TestTensorVar:
 
         res = circuit()
 
-        expected = 0.01 * (
-            1057
-            - np.cos(2 * phi)
-            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
-            + 16 * np.sin(2 * phi)
-            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
-            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
-            - 8
-            * np.cos(theta)
+        expected = (
+            0.01
             * (
-                4
-                * np.cos(phi)
+                1057
+                - np.cos(2 * phi)
+                + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+                - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+                + 16 * np.sin(2 * phi)
+                - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+                - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+                - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+                - 8
+                * np.cos(theta)
                 * (
                     4
-                    + 8 * np.cos(varphi)
-                    + np.cos(2 * varphi)
-                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
-                )
-                + np.sin(phi)
-                * (
-                    15
-                    + 8 * np.cos(varphi)
-                    - 11 * np.cos(2 * varphi)
-                    + 42 * np.sin(varphi)
-                    + 3 * np.sin(2 * varphi)
+                    * np.cos(phi)
+                    * (
+                        4
+                        + 8 * np.cos(varphi)
+                        + np.cos(2 * varphi)
+                        - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                    )
+                    + np.sin(phi)
+                    * (
+                        15
+                        + 8 * np.cos(varphi)
+                        - 11 * np.cos(2 * varphi)
+                        + 42 * np.sin(varphi)
+                        + 3 * np.sin(2 * varphi)
+                    )
                 )
             )
-        ) / 16
+            / 16
+        )
 
         assert np.allclose(res, expected, atol=tol(dev.analytic))

@@ -229,8 +229,10 @@ class TestSupportedGates:
         This test is skipped for devices that do not support inverse operations."""
         device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
-        supports_inv = "supports_inverse_operations" in dev.capabilities() and \
-                       dev.capabilities()["supports_inverse_operations"]
+        supports_inv = (
+            "supports_inverse_operations" in dev.capabilities()
+            and dev.capabilities()["supports_inverse_operations"]
+        )
         if supports_inv:
             pytest.skip("Device does not support inverse operations.")
 
