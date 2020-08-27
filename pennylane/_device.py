@@ -237,7 +237,8 @@ class Device(abc.ABC):
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    new_capability=...,
+                    supports_inverse_operations=False,
+                    supports_a_new_capability=True,
                 )
                 return capabilities
 
