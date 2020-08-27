@@ -17,6 +17,7 @@ works correctly an a device.
 """
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
+# pylint: disable=pointless-statement
 from cmath import exp
 from math import cos, sin, sqrt
 
@@ -209,7 +210,7 @@ class TestSupportedGates:
     @pytest.mark.parametrize("operation", all_ops)
     def test_supported_gates_can_be_implemented(self, device_kwargs, operation):
         """Test that the device can implement all its supported gates."""
-        device_kwargs["wires"] = 3  # maximum size of PL gates
+        device_kwargs["wires"] = 3  # maximum size of current gates
         dev = qml.device(**device_kwargs)
 
         assert hasattr(dev, "operations")
@@ -220,7 +221,7 @@ class TestSupportedGates:
                 ops[operation]
                 return qml.expval(qml.Identity(wires=0))
 
-            assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
+            assert isinstance(circuit(), (float, tensor))
 
     @pytest.mark.parametrize("operation", all_ops)
     def test_inverse_gates_can_be_implemented(self, device_kwargs, operation):
@@ -239,7 +240,7 @@ class TestSupportedGates:
                 ops[operation].inv()
                 return qml.expval(qml.Identity(wires=0))
 
-            assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
+            assert isinstance(circuit(), (float, tensor))
 
 
 @flaky(max_runs=10)

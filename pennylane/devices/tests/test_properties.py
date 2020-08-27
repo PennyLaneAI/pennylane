@@ -62,16 +62,7 @@ class TestCapabilities:
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
-        assert "model" in cap  # model needs to be defined
-        assert cap["model"] in ["qubit", "cv"]
-
-        if cap["model"] == "qubit":
-
-            @qml.qnode(dev)
-            def qubit_circuit():
-                return qml.expval(qml.PauliZ())
-
-        assert "model" in cap  # model needs to be defined
+        assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
     def test_passthru_is_valid(self, device_kwargs):
@@ -79,11 +70,11 @@ class TestCapabilities:
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
-        passthru_interf = cap.get("passthru_interface")
+        passthru_interf = cap.get("passthru_interface", None)
         assert passthru_interf in [None, "tf", "autograd", "numpy", "torch"]
 
     def test_supports_sampled_mode(self, device_kwargs):
-        """Test that the device's "analytic" attribute can be set to false."""
+        """Test that the device's "analytic" attribute can be set to false if it claims to support sampled mode."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
@@ -98,7 +89,7 @@ class TestCapabilities:
             assert not dev_sampled.analytic
 
     def test_supports_exact_mode(self, device_kwargs):
-        """Test that the device's "analytic" attribute can be set to true."""
+        """Test that the device's "analytic" attribute can be set to true if it claims to support exact mode."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()

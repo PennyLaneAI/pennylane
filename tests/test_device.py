@@ -329,7 +329,7 @@ class TestInternalFunctions:
             m.setattr(D, '__abstractmethods__', frozenset())
             m.setattr(D, 'operations', ["PauliX", "PauliY", "PauliZ"])
             m.setattr(D, 'observables', ["PauliX", "PauliY", "PauliZ"])
-            m.setattr(D, 'capabilities', lambda self: {"tensor_observables": True})
+            m.setattr(D, 'capabilities', lambda self: {"supports_tensor_observables": True})
             m.setattr(D, 'short_name', "Dummy")
 
             dev = D()

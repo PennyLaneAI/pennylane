@@ -32,5 +32,3 @@ to verify and test quantum gradient computations.
 """
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
-from .default_qubit_tf import DefaultQubitTF
-from .default_qubit_autograd import DefaultQubitAutograd

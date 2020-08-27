@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
 # pylint: disable=no-self-use
+# pylint: disable=pointless-statement
 import numpy as np
 import pytest
 from flaky import flaky
@@ -33,13 +34,13 @@ obs = {
     'PauliX': qml.PauliX(wires=[0]),
     'PauliY': qml.PauliY(wires=[0]),
     'PauliZ': qml.PauliZ(wires=[0]),
-    'FockStateProjector': qml.FockStateProjector(np.array([0]), wires=[0]),
-    'NumberOperator': qml.NumberOperator(wires=[0]),
-    'P': qml.P(wires=[0]),
-    'PolyXP': qml.PolyXP(np.array([0]), wires=[0]),
-    'QuadOperator': qml.QuadOperator(0, wires=[0]),
-    'TensorN': qml.TensorN(wires=[0]),
-    'X': qml.X(wires=[0]),
+    # 'FockStateProjector': qml.FockStateProjector(np.array([0]), wires=[0]),
+    # 'NumberOperator': qml.NumberOperator(wires=[0]),
+    # 'P': qml.P(wires=[0]),
+    # 'PolyXP': qml.PolyXP(np.array([0]), wires=[0]),
+    # 'QuadOperator': qml.QuadOperator(0, wires=[0]),
+    # 'TensorN': qml.TensorN(wires=[0]),
+    # 'X': qml.X(wires=[0]),
 }
 
 all_obs = obs.keys()
@@ -54,7 +55,7 @@ class TestSupportedObservables:
     @pytest.mark.parametrize("observable", all_obs)
     def test_supported_observables_can_be_implemented(self, device_kwargs, observable):
         """Test that the device can implement all its supported observables."""
-        device_kwargs["wires"] = 3  # need better strategy!
+        device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
 
         assert hasattr(dev, "observables")
@@ -63,13 +64,12 @@ class TestSupportedObservables:
             def circuit():
                 return qml.expval(obs[observable])
 
-            assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
+            assert isinstance(circuit(), (float, tensor))
 
-    @pytest.mark.parametrize("observable", all_obs)
-    def test_tensor_observables_can_be_implemented(self, device_kwargs, observable):
-        """Test that the device can implement tensor observables.
+    def test_tensor_observables_can_be_implemented(self, device_kwargs):
+        """Test that the device can implement a simple tensor observable.
         This test is skipped for devices that do not support tensor observables."""
-        device_kwargs["wires"] = 3  # need better strategy!
+        device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
         if not dev.capabilities()["supports_tensor_observables"]:
             pytest.skip("Device does not support tensor observables.")
@@ -78,7 +78,7 @@ class TestSupportedObservables:
         def circuit():
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
-        assert isinstance(circuit(), float) or isinstance(circuit(), tensor)
+        assert isinstance(circuit(), (float, tensor))
 
 
 @flaky(max_runs=10)

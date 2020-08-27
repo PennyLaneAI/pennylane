@@ -439,7 +439,7 @@ class TestQNodeExceptions:
 
     def test_qubit_operations_on_CV_device(self, operable_mock_device_2_wires, monkeypatch):
         """Error: cannot use qubit operations on a CV device."""
-        monkeypatch.setattr(operable_mock_device_2_wires, "capabilities", lambda: {"supports_cv": True})
+        monkeypatch.setattr(operable_mock_device_2_wires, "capabilities", lambda: {"model": "cv"})
 
         def circuit(x):
             qml.RX(0.5, wires=[0])
