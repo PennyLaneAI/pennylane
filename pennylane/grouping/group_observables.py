@@ -20,12 +20,12 @@ from pennylane.grouping.utils import (
     convert_observables_to_binary_matrix,
     binary_to_pauli,
     are_identical_pauli_words,
-    get_qwc_compliment_adj_matrix,
+    get_qwc_complement_adj_matrix,
 )
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 import numpy as np
 
-GROUPING_TYPES = ["qwc", "commuting", "anticommuting"]
+GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
 
 
@@ -34,11 +34,17 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     Class for partitioning a list of Pauli words according to some binary symmetric relation.
 
     Partitions are defined by the binary symmetric relation of interest, e.g. all Pauli words in a
-    partition being mutually commuting. The partition is accomplished by formulating the list of
-    observables as a graph where nodes represent individual Pauli words and connections between
-    nodes corresponds to the two Pauli words satisfying the symmetric binary relation. Obtaining
-    the fewest number of partitions to cover the list of Pauli words can then be accomplished by
-    graph coloring on the complimentary graph.
+    partition being mutually commuting. The partitioning is accomplished by formulating the list of
+    Pauli words as a graph where nodes represent Pauli words and edges between nodes denotes that
+    the two corresponding Pauli words satisfy the symmetric binary relation.
+
+    Obtaining the fewest number of partitions such that all Pauli terms within a partition mutually
+    satisfy the binary relation can then be accomplished by finding a partition of the graph nodes
+    such that each partition is a fully connected subgraph (a "clique"). The problem of finding the
+    optimal partitioning, i.e. the fewest number of cliques, is the minimum clique cover (MCC)
+    problem. The solution of MCC may be found by graph colouring on the complementary graph. Both
+    MCC and graph colouring are NP-Hard, so heuristic graph colouring algorithms are employed to
+    find approximate solutions in polynomial time.
 
     Args:
         observables (list[Observable]): A list of Pauli words to be partitioned according to a
@@ -113,9 +119,9 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return self.binary_observables
 
     def construct_complement_adj_matrix_for_operator(self):
-        """Constructs the adjacency matrix for compliment of Pauli graph.
+        """Constructs the adjacency matrix for complement of Pauli graph.
 
-        The adjacency matrix for an undirected graph of N vertices is a N by N symmetric binary
+        The adjacency matrix for an undirected graph of N vertices is an N by N symmetric binary
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
 
         Returns:
@@ -129,17 +135,17 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         n_qubits = int(np.shape(self.binary_observables)[0] / 2)
 
         if self.grouping_type == "qwc":
-            adj = get_qwc_compliment_adj_matrix(self.binary_observables)
+            adj = get_qwc_complement_adj_matrix(self.binary_observables)
 
-        else:
-            symplectic_metric = np.block(
+        elif self.grouping_type in ["commuting", "anticommuting"]:
+            symplectic_form = np.block(
                 [
                     [np.zeros((n_qubits, n_qubits)), np.eye(n_qubits)],
                     [np.eye(n_qubits), np.zeros((n_qubits, n_qubits))],
                 ]
             )
             mat_prod = (
-                np.transpose(self.binary_observables) @ symplectic_metric @ self.binary_observables
+                np.transpose(self.binary_observables) @ symplectic_form @ self.binary_observables
             )
 
             if self.grouping_type == "commuting":
@@ -208,7 +214,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
     Keyword args:
         coefficients (list[scalar]): a list of scalar coefficients. If not specified,
-        output `partitioned_coeffs` is not returned.
+            output `partitioned_coeffs` is not returned.
         grouping_type (str): the type of binary relation between Pauli words, can be 'qwc',
             'commuting', or 'anticommuting'.
         method (str): the graph coloring heuristic to use in solving minimum clique cover, which
@@ -216,7 +222,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
     Returns:
        partitioned_paulis (list[list[Observable]]): a list of the obtained groupings. Each grouping
-       is itself a list of Pauli word `Observable` instances.
+            is itself a list of Pauli word `Observable` instances.
        partitioned_coeffs (list[list[scalar]]): a list of coefficient groupings. Each coefficient
            grouping is itself a list of the groupings corresponding coefficients. (This is only
            output if coefficients are specified.)

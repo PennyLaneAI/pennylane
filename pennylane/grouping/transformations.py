@@ -24,41 +24,41 @@ import numpy as np
 
 
 @template
-def qwc_rotation(pauli_dict):
-    """Performs circuit implementation of diagonalizing unitary for a Pauli string.
+def qwc_rotation(pauli_operators):
+    """Performs circuit implementation of diagonalizing unitary for a Pauli word.
+
 
     **Usage example:**
 
-    >>> pauli_dict = {0: qml.PauliX(0), 2: qml.PauliY(2), 3: qml.PauliZ(3)}
+    >>> pauli_operators = [qml.PauliX('a'), 2: qml.PauliY('b'), 3: qml.PauliZ('c')}
     >>> qwc_rotation(pauli_dict)
-    [RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[2])]
+    [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
 
     Args:
-        pauli_dict (dict[int, Observable]): key is the wire (int), and value is a qml.PauliX,
-            qml.PauliY, or qml.PauliZ instance.
-
+        pauli_operators (list[Union[PauliX, PauliY, PauliZ, Identity]]): single-qubit Pauli
+            operations. No Pauli operations in this list may be acting on the same wire.
     Raises:
-        TypeError: if any values of pauli_dict are not instances of qml.PauliX, qml.PauliY, or
-            qml.PauliZ.
+        TypeError: if any elements of `pauli_operators` are not instances of qml.PauliX, qml.PauliY,
+            qml.PauliZ, or qml.Identity.
 
     """
     paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
-    if not all(isinstance(value, paulis_with_identity) for value in pauli_dict.values()):
+    if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
         raise TypeError(
-            "All values of input pauli_dict must be either Identity, PauliX, PauliY, or PauliZ instances,"
+            "All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
             " instead got values: {}.".format(pauli_dict.values())
         )
 
-    for wire in pauli_dict:
-        if isinstance(pauli_dict[wire], qml.PauliX):
-            qml.RY(-np.pi / 2, wires=wire)
+    for pauli in pauli_operators:
+        if isinstance(pauli, qml.PauliX):
+            qml.RY(-np.pi / 2, wires=pauli.wires)
 
-        elif isinstance(pauli_dict[wire], qml.PauliY):
-            qml.RX(np.pi / 2, wires=wire)
+        elif isinstance(pauli, qml.PauliY):
+            qml.RX(np.pi / 2, wires=pauli.wires)
 
 
 def diagonalize_qwc_grouping(qwc_grouping):
-    """Diagonalizes a list of mutually qubit-wise commutative Pauli strings.
+    """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     **Usage example:**
 
@@ -72,8 +72,8 @@ def diagonalize_qwc_grouping(qwc_grouping):
      Tensor(PauliZ(wires=[1]), PauliZ(wires=[3]))])
 
     Args:
-        qwc_grouping (list[Observable]): a list of Pauli string observables that is mutually
-            qubit-wise commutative.
+        qwc_grouping (list[Observable]): a list of observables containing mutually
+            qubit-wise commutative Pauli words.
 
     Returns:
         unitary (list[Operation]): an instance of the qwc_rotation template which diagonalizes the
@@ -87,7 +87,7 @@ def diagonalize_qwc_grouping(qwc_grouping):
     """
     m_paulis = len(qwc_grouping)
     all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
-    wire_map = {i: c for c, i in enumerate(all_wires)}
+    wire_map = {label: ind for ind, label in enumerate(all_wires)}
     for i in range(m_paulis):
         for j in range(i + 1, m_paulis):
             if not is_qwc(
@@ -100,25 +100,31 @@ def diagonalize_qwc_grouping(qwc_grouping):
                     )
                 )
 
-    pauli_dict = {}
+    pauli_operators = []
     diag_terms = []
 
+    paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
     for term in qwc_grouping:
-        if term.name != ["Identity"]:
-            diag_term = Tensor(qml.Identity(wires=0))
-            if not isinstance(term, Tensor):
-                term = Tensor(term)
+        diag_term = None
+        if isinstance(term, Tensor):
             for sigma in term.obs:
-                pauli_dict[sigma.wires[0]] = sigma
-                diag_term @= qml.PauliZ(wires=sigma.wires)
-            diag_term = diag_term.prune()
-            if not isinstance(diag_term, Tensor):
-                diag_term = Tensor(diag_term)
-            diag_terms.append(diag_term)
-        else:
-            diag_terms.append(term)
+                if sigma.name != "Identity":
+                    pauli_operators.append(sigma)
+                    if diag_term is None:
+                        diag_term = qml.PauliZ(wires=sigma.wires)
+                    else:
+                        diag_term @= qml.PauliZ(wires=sigma.wires)
+        elif isinstance(term, paulis_with_identity):
+            sigma = term
+            if sigma.name != "Identity":
+                pauli_operators.append(sigma)
+                diag_term = qml.PauliZ(wires=sigma.wires)
 
-    unitary = qwc_rotation(pauli_dict)
+        if diag_term is None:
+            diag_term = qml.Identity(list(wire_map.values())[0])
+        diag_terms.append(diag_term)
+
+    unitary = qwc_rotation(pauli_operators)
 
     return unitary, diag_terms
 

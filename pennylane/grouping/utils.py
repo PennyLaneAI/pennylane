@@ -113,67 +113,6 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     return False
 
 
-def binary_symplectic_inner_prod(pauli_vec_1, pauli_vec_2):
-    """Computes the symplectic inner product of two vectors a and b over the binary field.
-
-    **Usage example:**
-
-    >>> binary_symplectic_inner_prod([0,1,0,1,1,0],[1,0,0,1,0,0])
-    1
-    >>> binary_symplectic_inner_prod([1,1,0,1,1,0],[1,1,0,1,1,0])
-    0
-
-    Args:
-        pauli_vec_1 (Union[list, tuple, array]): first binary vector argument in symplectic inner
-            product.
-        pauli_vec_2 (Union[list, tuple, array]): second binary vector argument in symplectic inner
-            product.
-
-    Returns:
-        bool: binary symplectic inner product between `pauli_vec_1` and `pauli_vec_2`.
-
-    Raises:
-        ValueError: if the input vectors are of different dimension, if the vectors are not of even
-        dimension, or if the vector components are not strictly binary.
-
-    """
-
-    if isinstance(pauli_vec_1, (list, tuple)):
-        pauli_vec_1 = np.asarray(pauli_vec_1)
-    if isinstance(pauli_vec_2, (list, tuple)):
-        pauli_vec_2 = np.asarray(pauli_vec_2)
-
-    if len(pauli_vec_1) != len(pauli_vec_2):
-        raise ValueError(
-            "Both input vectors must be the same dimension, instead got shapes {} and {}.".format(
-                np.shape(pauli_vec_1), np.shape(pauli_vec_2)
-            )
-        )
-
-    if len(pauli_vec_1) % 2 != 0:
-        raise ValueError(
-            "Symplectic vector space must have even dimension, instead got vectors of shape {}.".format(
-                np.shape(pauli_vec_1)
-            )
-        )
-
-    if not (
-        np.array_equal(pauli_vec_1, pauli_vec_1.astype(bool))
-        and np.array_equal(pauli_vec_2, pauli_vec_2.astype(bool))
-    ):
-        raise ValueError(
-            "Both vectors must have strictly binary components, instead got {} and {}".format(
-                pauli_vec_1, pauli_vec_2
-            )
-        )
-
-    dim = len(pauli_vec_1) // 2
-
-    inner_prod = pauli_vec_1[:dim] @ pauli_vec_2[dim:] + pauli_vec_2[:dim] @ pauli_vec_1[dim:]
-
-    return inner_prod % 2
-
-
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     """Converts a Pauli word to the binary vector representation.
 
@@ -332,7 +271,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     Keyword args:
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
-                         unique integer labels as their values
+            unique integer labels as their values
 
     Returns:
         Tensor(Union[Identity, PauliX, PauliY, PauliZ]): the Pauli word corresponding to the input
@@ -365,7 +304,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     n_qubits = len(binary_vector) // 2
 
     if wire_map is not None:
-        if list(wire_map.values()) != list(range(n_qubits)):
+        if set(wire_map.values()) != set(range(n_qubits)):
             raise ValueError(
                 "The values of wire_map must be integers 0 to N, for 2N-dimensional binary vector."
                 " Instead got wire_map values: {}".format(wire_map.values())
@@ -457,14 +396,23 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     for i in range(n_qubits):
 
-        a_x_i = pauli_vec_1[i]
-        a_z_i = pauli_vec_1[n_qubits + i]
-        b_x_i = pauli_vec_2[i]
-        b_z_i = pauli_vec_2[n_qubits + i]
+        first_vec_ith_qubit_paulix = pauli_vec_1[i]
+        first_vec_ith_qubit_pauliz = pauli_vec_1[n_qubits + i]
+        second_vec_ith_qubit_paulix = pauli_vec_2[i]
+        second_vec_ith_qubit_pauliz = pauli_vec_2[n_qubits + i]
+
+        first_vec_qubit_i_is_identity = (
+            first_vec_ith_qubit_paulix == first_vec_ith_qubit_pauliz == 0
+        )
+        second_vec_qubit_i_is_identity = (
+            second_vec_ith_qubit_paulix == second_vec_ith_qubit_pauliz == 0
+        )
+        both_vecs_qubit_i_have_same_x = first_vec_ith_qubit_paulix == second_vec_ith_qubit_paulix
+        both_vecs_qubit_i_have_same_z = first_vec_ith_qubit_pauliz == second_vec_ith_qubit_pauliz
 
         if not (
-            ((a_x_i == a_z_i == 0) or (b_x_i == b_z_i == 0))
-            or ((a_x_i == b_x_i) and (a_z_i == b_z_i))
+            ((first_vec_qubit_i_is_identity) or (second_vec_qubit_i_is_identity))
+            or ((both_vecs_qubit_i_have_same_x) and (both_vecs_qubit_i_have_same_z))
         ):
             return False
 
@@ -496,7 +444,7 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
     Keyword args:
         n_qubits (int): number of qubits to specify dimension of binary vector representation.
         wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
-                         unique integer labels as their values.
+            unique integer labels as their values.
 
 
     Returns:
@@ -505,12 +453,6 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
     """
 
     m_cols = len(observables)
-
-    for c, obs in enumerate(observables):
-        if isinstance(obs, Tensor):
-            observables[c] = obs.prune()
-        if isinstance(obs, Identity):
-            observables[c] = Identity(0)
 
     if wire_map is None:
         all_wires = Wires.all_wires([pauli_word.wires for pauli_word in observables])
@@ -533,7 +475,7 @@ def convert_observables_to_binary_matrix(observables, n_qubits=None, wire_map=No
     return binary_mat
 
 
-def get_qwc_compliment_adj_matrix(binary_observables):
+def get_qwc_complement_adj_matrix(binary_observables):
     """Obtains the adjacency matrix for the complementary graph of the qubit-wise commutativity
     graph for a given set of observables in the binary representation.
 
@@ -550,7 +492,7 @@ def get_qwc_compliment_adj_matrix(binary_observables):
            [0., 1., 1.],
            [0., 0., 0.],
            [1., 1., 0.]])
-    >>> get_qwc_compliment_adj_matrix(binary_observables)
+    >>> get_qwc_complement_adj_matrix(binary_observables)
     array([[0., 1., 1.],
            [1., 0., 0.],
            [1., 0., 0.]])

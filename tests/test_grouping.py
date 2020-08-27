@@ -25,7 +25,6 @@ from pennylane.grouping.optimize_measurements import optimize_measurements
 from pennylane.grouping.utils import (
     is_pauli_word,
     are_identical_pauli_words,
-    binary_symplectic_inner_prod,
     pauli_to_binary,
     binary_to_pauli,
     is_qwc,
@@ -36,83 +35,65 @@ from pennylane.grouping.utils import (
 class TestGroupingUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
-    def test_pauli_to_binary_no_wire_map(self):
+    ops_to_vecs_explicit_wires = [
+        (PauliX(0) @ PauliY(1) @ PauliZ(2), np.array([1, 1, 0, 0, 1, 1])),
+        (PauliZ(0) @ PauliY(2), np.array([0, 1, 1, 1])),
+        (PauliY(1) @ PauliX(2), np.array([1, 1, 1, 0])),
+        (Identity(0), np.zeros(2)),
+    ]
+
+    @pytest.mark.parametrize("op,vec", ops_to_vecs_explicit_wires)
+    def test_pauli_to_binary_no_wire_map(self, op, vec):
         """Test conversion of Pauli word from operator to binary vector representation when no
         `wire_map` is specified."""
 
-        p1_op = PauliX(0) @ PauliY(1) @ PauliZ(2)
-        p2_op = PauliZ(0) @ PauliY(2)
-        p3_op = PauliY(1) @ PauliX(2)
-        identity = Identity(0)
+        assert (pauli_to_binary(op) == vec).all()
 
-        p1_vec = np.array([1, 1, 0, 0, 1, 1])
-        p2_vec = np.array([0, 1, 1, 1])
-        p3_vec = np.array([1, 1, 1, 0])
+    ops_to_vecs_abstract_wires = [
+        (PauliX("a") @ PauliZ("b") @ Identity("c"), np.array([1, 0, 0, 0, 0, 1, 0, 0])),
+        (PauliY(6) @ PauliZ("a") @ PauliZ("b"), np.array([0, 0, 0, 1, 1, 1, 0, 1])),
+        (PauliX("b") @ PauliY("c"), np.array([0, 1, 1, 0, 0, 0, 1, 0])),
+        (Identity("a") @ Identity(6), np.zeros(8)),
+    ]
 
-        assert (pauli_to_binary(p1_op) == p1_vec).all()
-        assert (pauli_to_binary(p2_op) == p2_vec).all()
-        assert (pauli_to_binary(p3_op) == p3_vec).all()
-        assert (pauli_to_binary(identity) == np.zeros(2)).all()
-
-    def test_pauli_to_binary_with_wire_map(self):
+    @pytest.mark.parametrize("op,vec", ops_to_vecs_abstract_wires)
+    def test_pauli_to_binary_with_wire_map(self, op, vec):
         """Test conversion of Pauli word from operator to binary vector representation if a
         `wire_map` is specified."""
 
-        p1_op = PauliX("a") @ PauliZ("b") @ Identity("c")
-        p2_op = PauliY(6) @ PauliZ("a") @ PauliZ("b")
-        p3_op = PauliX("b") @ PauliY("c")
-        identity = Identity("a") @ Identity(6)
-
         wire_map = {Wires("a"): 0, Wires("b"): 1, Wires("c"): 2, Wires(6): 3}
 
-        p1_vec = np.array([1, 0, 0, 0, 0, 1, 0, 0])
-        p2_vec = np.array([0, 0, 0, 1, 1, 1, 0, 1])
-        p3_vec = np.array([0, 1, 1, 0, 0, 0, 1, 0])
+        assert (pauli_to_binary(op, wire_map=wire_map) == vec).all()
 
-        assert (pauli_to_binary(p1_op, wire_map=wire_map) == p1_vec).all()
-        assert (pauli_to_binary(p2_op, wire_map=wire_map) == p2_vec).all()
-        assert (pauli_to_binary(p3_op, wire_map=wire_map) == p3_vec).all()
-        assert (pauli_to_binary(identity, wire_map=wire_map) == np.zeros(8)).all()
+    vecs_to_ops_explicit_wires = [
+        (np.array([1, 0, 1, 0, 0, 1]), PauliX(0) @ PauliY(2)),
+        (np.array([1, 1, 1, 1, 1, 1]), PauliY(0) @ PauliY(1) @ PauliY(2)),
+        (np.array([1, 0, 1, 0, 1, 1]), PauliX(0) @ PauliZ(1) @ PauliY(2)),
+        (np.zeros(6), Identity(0)),
+    ]
 
-    def test_binary_to_pauli_no_wire_map(self):
+    @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
+    def test_binary_to_pauli_no_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when no
         `wire_map` is specified."""
 
-        p1_vec = np.array([1, 0, 1, 0, 0, 1])
-        p2_vec = np.array([1, 1, 1, 1, 1, 1])
-        p3_vec = np.array([1, 0, 1, 0, 1, 1])
-        zero_vec = np.zeros(6)
+        assert are_identical_pauli_words(binary_to_pauli(vec), op)
 
-        p1_op = PauliX(0) @ PauliY(2)
-        p2_op = PauliY(0) @ PauliY(1) @ PauliY(2)
-        p3_op = PauliX(0) @ PauliZ(1) @ PauliY(2)
-        identity = Identity(0)
+    vecs_to_ops_abstract_wires = [
+        (np.array([1, 0, 1, 0, 0, 1]), PauliX("alice") @ PauliY("ancilla")),
+        (np.array([1, 1, 1, 1, 1, 1]), PauliY("alice") @ PauliY("bob") @ PauliY("ancilla")),
+        (np.array([1, 0, 1, 0, 1, 0]), PauliX("alice") @ PauliZ("bob") @ PauliX("ancilla")),
+        (np.zeros(6), Identity("alice")),
+    ]
 
-        assert are_identical_pauli_words(binary_to_pauli(p1_vec), p1_op)
-        assert are_identical_pauli_words(binary_to_pauli(p2_vec), p2_op)
-        assert are_identical_pauli_words(binary_to_pauli(p3_vec), p3_op)
-        assert are_identical_pauli_words(binary_to_pauli(zero_vec), identity)
-
-    def test_binary_to_pauli_with_wire_map(self):
+    @pytest.mark.parametrize("vec,op", vecs_to_ops_abstract_wires)
+    def test_binary_to_pauli_with_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when
         `wire_map` is specified."""
 
-        p1_vec = np.array([1, 0, 1, 0, 0, 1])
-        p2_vec = np.array([1, 1, 1, 1, 1, 1])
-        p3_vec = np.array([1, 0, 1, 0, 1, 0])
-        zero_vec = np.zeros(6)
-
         wire_map = {Wires("alice"): 0, Wires("bob"): 1, Wires("ancilla"): 2}
 
-        p1_op = PauliX("alice") @ PauliY("ancilla")
-        p2_op = PauliY("alice") @ PauliY("bob") @ PauliY("ancilla")
-        p3_op = PauliX("alice") @ PauliZ("bob") @ PauliX("ancilla")
-        identity = Identity("alice")
-
-        assert are_identical_pauli_words(binary_to_pauli(p1_vec, wire_map=wire_map), p1_op)
-        assert are_identical_pauli_words(binary_to_pauli(p2_vec, wire_map=wire_map), p2_op)
-        assert are_identical_pauli_words(binary_to_pauli(p3_vec, wire_map=wire_map), p3_op)
-        assert are_identical_pauli_words(binary_to_pauli(zero_vec, wire_map=wire_map), identity)
+        assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
     def test_convert_observables_to_binary_matrix(self):
         """Test conversion of list of Pauli word operators to representation as a binary matrix."""
@@ -120,7 +101,7 @@ class TestGroupingUtils:
         observables = [Identity(1), PauliX(1), PauliZ(0) @ PauliZ(1)]
 
         binary_observables = np.array(
-            [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
+            [[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]]
         )
 
         assert (convert_observables_to_binary_matrix(observables) == binary_observables).all()
@@ -128,26 +109,23 @@ class TestGroupingUtils:
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
-        n_qubits = 2
-        p1_vec = pauli_to_binary(PauliX(0) @ PauliY(1), n_qubits)
-        p2_vec = pauli_to_binary(PauliX(0), n_qubits)
-        p3_vec = pauli_to_binary(PauliX(0) @ PauliZ(1), n_qubits)
+        n_qubits = 3
+        wire_map = {Wires(0): 0, Wires("a"): 1, Wires("b"): 2}
+        p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
+        p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
+        p3_vec = pauli_to_binary(PauliX(0) @ PauliZ("a") @ Identity("b"), wire_map=wire_map)
+        identity = pauli_to_binary(Identity("a") @ Identity(0), wire_map=wire_map)
 
         assert is_qwc(p1_vec, p2_vec)
         assert not is_qwc(p1_vec, p3_vec)
         assert is_qwc(p2_vec, p3_vec)
-
-    def test_binary_symplectic_inner_prod(self):
-        """Test taking the binary symplectic inner product between two elements of binary
-        symplectic vector space."""
-
-        p1_vec = np.array([1, 0, 1, 0, 1, 1, 0, 0])
-        p2_vec = np.array([0, 0, 1, 1, 1, 0, 1, 0])
-        p3_vec = np.array([1, 1, 0, 1, 1, 1, 0, 1])
-
-        assert binary_symplectic_inner_prod(p1_vec, p2_vec) == 0
-        assert binary_symplectic_inner_prod(p1_vec, p3_vec) == 1
-        assert binary_symplectic_inner_prod(p2_vec, p3_vec) == 0
+        assert (
+            is_qwc(p1_vec, identity)
+            == is_qwc(p2_vec, identity)
+            == is_qwc(p3_vec, identity)
+            == is_qwc(identity, identity)
+            == True
+        )
 
     def test_is_pauli_word(self):
         """Test for determining whether input `Observable` instance is a Pauli word."""
