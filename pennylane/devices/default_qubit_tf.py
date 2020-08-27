@@ -155,7 +155,7 @@ class DefaultQubitTF(DefaultQubit):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            passthru_interface='tf',
+            passthru_interface="tf",
         )
         return capabilities
 

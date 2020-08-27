@@ -105,7 +105,7 @@ class DefaultQubitAutograd(DefaultQubit):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            passthru_interface='autograd',
+            passthru_interface="autograd",
         )
         return capabilities
 

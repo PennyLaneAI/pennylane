@@ -18,9 +18,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import Device
-from pennylane.operation import CVObservable
-from pennylane.qnodes.base import QuantumFunctionError
 from pennylane.qnodes.rev import ReversibleQNode
 
 
@@ -652,9 +649,11 @@ class TestIntegration:
         """Test that an exception is raised if the reversible diff_method
         is specified for a device which does not have reversible capability."""
         dev = qml.device("default.qubit", wires=1)
-        capabilities = {**dev._capabilities}
+
+        # overwrite capabilities
+        capabilities = dev.capabilities().copy()
         capabilities["supports_reversible_diff"] = False
-        monkeypatch.setattr(dev.__class__, "_capabilities", capabilities)
+        monkeypatch.setattr(dev, 'capabilities', lambda: capabilities)
 
         def circuit(a):
             qml.RX(a, wires=0)

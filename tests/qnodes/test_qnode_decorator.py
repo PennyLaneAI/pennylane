@@ -50,13 +50,13 @@ def test_create_CV_qnode():
 
 
 def test_fallback_Jacobian_qnode(monkeypatch):
-    """Test the decorator fallsback to Jacobian QNode if it
+    """Test the decorator falls back to Jacobian QNode if it
     can't determine the device model"""
     dev = qml.device("default.gaussian", wires=1)
 
     # use monkeypatch to avoid setting class attributes
     with monkeypatch.context() as m:
-        m.setitem(dev._capabilities, "model", None)
+        m.setattr(dev, 'capabilities', lambda: {"model": None})
 
         @qnode(dev)
         def circuit(a):
@@ -159,9 +159,11 @@ def test_reversible_diff_method_exception(monkeypatch):
     """Test that an exception is raised if the reversible diff_method
     is specified for a device which does not have reversible capability."""
     dev = qml.device("default.qubit", wires=1)
-    capabilities = {**dev._capabilities}
+
+    # overwrite capabilities
+    capabilities = dev.capabilities().copy()
     capabilities["supports_reversible_diff"] = False
-    monkeypatch.setattr(dev.__class__, "_capabilities", capabilities)
+    monkeypatch.setattr(dev, 'capabilities', lambda: capabilities)
 
     with pytest.raises(ValueError, match="Reversible differentiation method not supported"):
 
@@ -287,7 +289,7 @@ def test_parameter_shift_diff_method_unsupported():
     class DummyDevice(qml.devices.DefaultQubit):
         @classmethod
         def capabilities(cls):
-            return {"supports_no_model": True}
+            return {"model": None}
 
     dev = DummyDevice(wires=2)
 
