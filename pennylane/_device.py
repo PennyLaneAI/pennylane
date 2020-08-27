@@ -231,7 +231,7 @@ class Device(abc.ABC):
 
         Inheriting classes that change or add capabilities must override this method, for example via
 
-        .. code-block::
+        .. code-block:: python
 
             @classmethod
             def capabilities(cls):
