@@ -154,7 +154,7 @@ class DefaultQubit(QubitDevice):
             operation (~.Operation): operation to apply on the device
         """
         wires = operation.wires
-        axes = self.wires.indices(wires)
+
 
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], wires)
@@ -165,6 +165,7 @@ class DefaultQubit(QubitDevice):
             return
 
         if operation.name in self._apply_ops:
+            axes = self.wires.indices(wires)
             self._state = self._apply_ops[operation.name](
                 self._state, axes, inverse=operation.inverse
             )
