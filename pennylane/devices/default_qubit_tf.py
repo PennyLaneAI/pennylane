@@ -159,6 +159,10 @@ class DefaultQubitTF(DefaultQubit):
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
 
+    def __init__(self, wires, *, shots=1000, analytic=True):
+        super().__init__(wires, shots=shots, analytic=analytic)
+        del self._apply_ops["CZ"]
+
     @staticmethod
     def _scatter(indices, array, new_dimensions):
         indices = np.expand_dims(indices, 1)
