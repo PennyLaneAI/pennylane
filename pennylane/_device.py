@@ -65,7 +65,7 @@ class Device(abc.ABC):
         'performs_noisy_computation': False,
         }
     """The capabilities dictionary stores the properties of a device. Devices can add their 
-    own custom properties and overwrite existing ones by overwriting the ``capabilities`` class method."""
+    own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
@@ -230,7 +230,7 @@ class Device(abc.ABC):
     def capabilities(cls):
         """Get the capabilities of this device class.
 
-        Inheriting classes that overwrite or add capabilities should overwrite this method with
+        Inheriting classes that change or add capabilities must override this method, for example via
 
         .. code-block::
 

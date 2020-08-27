@@ -163,6 +163,7 @@ class DefaultTensor(Device):
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
+        self.analytic = False
 
     @classmethod
     def capabilities(cls):
@@ -170,8 +171,8 @@ class DefaultTensor(Device):
         capabilities.update(
             model='qubit',
             supports_exact=True,
-            supports_sampled=True,
             supports_tensor_observables=True,
+            supports_inverse_ops=True,
         )
         return capabilities
 
