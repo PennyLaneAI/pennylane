@@ -1736,13 +1736,49 @@ class TestWiresIntegration:
         assert np.allclose(circuit1(), circuit2(), tol)
 
 
-def test_get_slice():
-    """Test that the _get_slice function returns the expected slice and allows us to slice
-    correctly into an array."""
+class TestGetSlice:
+    """Tests for the _get_slice function."""
 
-    sl = _get_slice(1, 1, 3)
-    array = np.arange(27).reshape((3, 3, 3))
-    target = array[:, 1, :]
+    def test_get_slice(self):
+        """Test that the _get_slice function returns the expected slice and allows us to slice
+        correctly into an array."""
 
-    assert sl == (slice(None, None, None), 1, slice(None, None, None))
-    assert np.allclose(array[sl], target)
+        sl = _get_slice(1, 1, 3)
+        array = np.arange(27).reshape((3, 3, 3))
+        target = array[:, 1, :]
+
+        assert sl == (slice(None, None, None), 1, slice(None, None, None))
+        assert np.allclose(array[sl], target)
+
+    def test_get_slice_first(self):
+        """Test that the _get_slice function returns the expected slice when accessing the first
+        axis of an array."""
+
+        sl = _get_slice(2, 0, 3)
+        array = np.arange(27).reshape((3, 3, 3))
+        target = array[2]
+
+        assert sl == (2, slice(None, None, None), slice(None, None, None))
+        assert np.allclose(array[sl], target)
+
+    def test_get_slice_last(self):
+        """Test that the _get_slice function returns the expected slice when accessing the last
+        axis of an array."""
+
+        sl = _get_slice(0, 2, 3)
+        array = np.arange(27).reshape((3, 3, 3))
+        target = array[:, :, 0]
+
+        assert sl == (slice(None, None, None), slice(None, None, None), 0)
+        assert np.allclose(array[sl], target)
+
+    def test_get_slice_1d(self):
+        """Test that the _get_slice function returns the expected slice when accessing a
+        1-dimensional array."""
+
+        sl = _get_slice(2, 0, 1)
+        array = np.arange(27)
+        target = array[2]
+
+        assert sl == (2,)
+        assert np.allclose(array[sl], target)
