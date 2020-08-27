@@ -64,7 +64,7 @@ class Device(abc.ABC):
         "takes_fixed_number_of_wires": False,
         "performs_noisy_computation": False,
     }
-    """The capabilities dictionary stores the properties of a device. Devices can add their 
+    """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class

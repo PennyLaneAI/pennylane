@@ -14,6 +14,7 @@
 r"""
 Experimental simulator plugin based on tensor network contractions
 """
+#pylint: disable=too-many-instance-attributes
 import warnings
 from itertools import product
 
