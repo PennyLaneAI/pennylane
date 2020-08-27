@@ -134,34 +134,28 @@ def decompose_queue(ops, device):
 def _compare_objects(object1, object2):
     """Checks if two objects are equal.
 
-    Supports equality checks for NumPy arrays and TensorFlow/PyTorch tensors without requiring an
-    import of PyTorch or TensorFlow.
-
-    The function uses a broad try/except, which returns False on the exception. This allows us to
-    say that two incompatible objects are not equal without throwing an exception.
+    Performs standard equality check for builtin data types. Also supports comparisons between
+    NumPy arrays and TensorFlow/PyTorch tensors. For TensorFlow/PyTorch tensors, we require
+    that ``object1 is object2``, i.e., that they both refer to the same underlying object.
 
     Args:
-        object1: first item to be compared
-        object2: second item to be compared
+        object1: first object to be compared
+        object2: second object to be compared
 
     Returns:
-        bool: whether the two items are equal
+        bool: whether the two objects are equal
     """
-    try:
-        if type(object1) != type(object2):
-            return False
+    comparison = object1 == object2
 
-        comparison = object1 == object2
-
-        if isinstance(comparison, bool):
-            return comparison
-
-        try:
+    if isinstance(comparison, bool):
+        return comparison
+    if all(isinstance(obj, np.ndarray) for obj in [comparison, object1, object2]):
+        if object1.shape == object2.shape:
             return comparison.all()
-        except AttributeError:
-            return comparison.numpy().all()
-    except Exception:
         return False
+
+    # this case is to support TensorFlow/PyTorch tensors
+    return object1 is object2
 
 
 def _compare_lists(list1, list2):
