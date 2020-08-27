@@ -697,7 +697,9 @@ class DefaultGaussian(Device):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            model="cv", supports_exact=True, supports_sampling=True,
+            model="cv",
+            supports_exact=True,
+            supports_sampling=True,
         )
         return capabilities
 
@@ -853,7 +855,7 @@ class DefaultGaussian(Device):
         self._state = vacuum_state(self.num_wires, self.hbar)
 
     def reduced_state(self, wires):
-        r""" Returns the vector of means and the covariance matrix of the specified wires.
+        r"""Returns the vector of means and the covariance matrix of the specified wires.
 
         Args:
             wires (Wires): requested wires

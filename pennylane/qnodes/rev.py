@@ -166,6 +166,8 @@ class ReversibleQNode(QubitQNode):
         )
 
         einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
-            vec1_indices=vec1_indices, obs_indices=obs_indices, vec2_indices=vec2_indices,
+            vec1_indices=vec1_indices,
+            obs_indices=obs_indices,
+            vec2_indices=vec2_indices,
         )
         return self.device._einsum(einsum_str, self.device._conj(vec1), mat, vec2)

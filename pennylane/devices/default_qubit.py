@@ -161,7 +161,8 @@ class DefaultQubit(QubitDevice):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            supports_reversible_diff=True, supports_inverse_operations=True,
+            supports_reversible_diff=True,
+            supports_inverse_operations=True,
         )
         return capabilities
 
@@ -309,11 +310,13 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-            affected_indices=affected_indices,
-            state_indices=state_indices,
-            new_indices=new_indices,
-            new_state_indices=new_state_indices,
+        einsum_indices = (
+            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
+                affected_indices=affected_indices,
+                state_indices=state_indices,
+                new_indices=new_indices,
+                new_state_indices=new_state_indices,
+            )
         )
 
         self._state = self._einsum(einsum_indices, mat, self._state)

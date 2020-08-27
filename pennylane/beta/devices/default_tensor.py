@@ -227,20 +227,20 @@ class DefaultTensor(Device):
     def _add_initial_state_nodes(self, tensors, tensor_wires, names):
         """Create the nodes representing the initial input state circuit.
 
-           Input states can be factorized or entangled. If a state can be factorized
-           into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be
-           sequences of length :math:`k`.
+         Input states can be factorized or entangled. If a state can be factorized
+         into :math:`k` subsystems, then ``tensors``, ``wires``, and ``names`` should be
+         sequences of length :math:`k`.
 
-           ``self._free_wire_edges`` is updated with the dangling edges from the prepared state nodes.
+         ``self._free_wire_edges`` is updated with the dangling edges from the prepared state nodes.
 
-           If ``self._rep == "mps"``, then the ``self.mps`` attribute is replaced with a new
-           matrix product state object representing the prepared initial states.
+         If ``self._rep == "mps"``, then the ``self.mps`` attribute is replaced with a new
+         matrix product state object representing the prepared initial states.
 
-          Args:
-              tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each
-                factorized component of the state (in the computational basis)
-              tensor_wires (Sequence(Wires)): wires for each factorized component of the state
-              names (Sequence[str]): name for each factorized component of the state
+        Args:
+            tensors (Sequence[np.array, tf.Tensor, torch.Tensor]): the numerical tensors for each
+              factorized component of the state (in the computational basis)
+            tensor_wires (Sequence(Wires)): wires for each factorized component of the state
+            names (Sequence[str]): name for each factorized component of the state
         """
         # pylint: disable=too-many-branches
         if not len(tensors) == len(tensor_wires) == len(names):
@@ -292,7 +292,9 @@ class DefaultTensor(Device):
                             node = self._add_node(DV, wires=wire, name=name)
                         nodes.append(node)
             self.mps = tn.matrixproductstates.finite_mps.FiniteMPS(
-                [node.tensor for node in nodes], canonicalize=False, backend=self.backend,
+                [node.tensor for node in nodes],
+                canonicalize=False,
+                backend=self.backend,
             )
             self._free_wire_edges = [node[1] for node in self.mps.nodes]
 
@@ -495,12 +497,12 @@ class DefaultTensor(Device):
     def ev(self, obs_nodes, obs_wires):
         r"""Expectation value of observables on specified wires.
 
-         Args:
-            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            obs_wires (Sequence[Wires]): measured wires for each observable
+        Args:
+           obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
+           obs_wires (Sequence[Wires]): measured wires for each observable
 
-         Returns:
-            float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        Returns:
+           float: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if self._rep == "exact":
             expval = self._ev_exact(obs_nodes, obs_wires)
@@ -517,12 +519,12 @@ class DefaultTensor(Device):
     def _ev_exact(self, obs_nodes, obs_wires):
         r"""Expectation value of observables on specified wires using an exact representation.
 
-         Args:
-            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            obs_wires (Sequence[Wires]): measured wires for each observable
+        Args:
+           obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
+           obs_wires (Sequence[Wires]): measured wires for each observable
 
-         Returns:
-            complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        Returns:
+           complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         self._contract_premeasurement_network()
         ket = self._contracted_state_node
@@ -563,11 +565,11 @@ class DefaultTensor(Device):
     def _ev_mps(self, obs_nodes, obs_wires):
         r"""Expectation value of observables on specified wires using a MPS representation.
 
-         Args:
-            obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
-            obs_wires (Sequence[Wires]): measured wires for each observable
-         Returns:
-            complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
+        Args:
+           obs_nodes (Sequence[tn.Node]): the observables as TensorNetwork Nodes
+           obs_wires (Sequence[Wires]): measured wires for each observable
+        Returns:
+           complex: expectation value :math:`\expect{A} = \bra{\psi}A\ket{\psi}`
         """
         if any(len(wires) > 2 for wires in obs_wires):
             raise NotImplementedError(
@@ -665,8 +667,8 @@ class DefaultTensor(Device):
     @property
     def contraction_method(self):
         """The contraction method used by the tensor network.
-           Available options are "auto", "greedy", "branch", or "optimal".
-           See TensorNetwork library documentation for more details.
+        Available options are "auto", "greedy", "branch", or "optimal".
+        See TensorNetwork library documentation for more details.
         """
         return self._contraction_method
 

@@ -246,8 +246,7 @@ class TestSupportedGates:
 
 @flaky(max_runs=10)
 class TestGatesQubit:
-    """Test qubit-based devices' probability vector after application of gates.
-    """
+    """Test qubit-based devices' probability vector after application of gates."""
 
     @pytest.mark.parametrize(
         "basis_state",

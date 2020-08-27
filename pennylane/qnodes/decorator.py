@@ -317,7 +317,7 @@ def qnode(device, *, interface="autograd", mutable=True, diff_method="best", **k
         h (float): Step size for the finite difference method. Default is ``1e-7`` for analytic devices, or
             ``0.3`` for non-analytic devices (those that estimate expectation values with a finite number of shots).
         order (int): order for the finite-difference method, must be 1 (default) or 2
-   """
+    """
 
     @lru_cache()
     def qfunc_decorator(func):
