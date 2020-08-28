@@ -864,7 +864,8 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron, [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
+            np.kron,
+            [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
@@ -1094,7 +1095,14 @@ class CRZ(DiagonalOperation):
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        return np.array([1, 1, cmath.exp(-0.5j * theta), cmath.exp(0.5j * theta),])
+        return np.array(
+            [
+                1,
+                1,
+                cmath.exp(-0.5j * theta),
+                cmath.exp(0.5j * theta),
+            ]
+        )
 
     @staticmethod
     def decomposition(lam, wires):

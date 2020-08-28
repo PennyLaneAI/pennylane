@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import pytest
+import numpy as np
 
 import pennylane as qml
 from pennylane.beta.tapes import QuantumTape
@@ -186,3 +187,22 @@ class TestParameters:
         with pytest.raises(ValueError, match="Number of provided parameters invalid"):
             tape.trainable_params = {2, 3}
             tape.set_parameters([0.54, 0.54, 0.123])
+
+    def test_array_parameter(self):
+        """Test that array parameters integrate properly"""
+        a = np.array([1, 1, 0, 0]) / np.sqrt(2)
+        params = [a, 0.32, 0.76, 1.0]
+
+        with QuantumTape() as tape:
+            op = qml.QubitStateVector(params[0], wires=0)
+            qml.Rot(params[1], params[2], params[3], wires=0)
+
+        assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
+
+        b = np.array([0, 1, 0, 0])
+        new_params = [b, 0.543, 0.654, 0.123]
+        tape.set_parameters(new_params)
+        assert tape.get_parameters() == new_params
+
+        assert np.all(op.data[0] == b)
