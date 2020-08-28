@@ -77,8 +77,7 @@ def expval(op):
     meas_op = MeasurementProcess(Expectation)
     QueuingContext.update_info(op, owner=meas_op)
     QueuingContext.append(meas_op, owns=op)
-
-    return op
+    return meas_op
 
 
 def var(op):

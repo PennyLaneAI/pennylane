@@ -85,6 +85,19 @@ class TestConstruction:
             assert isinstance(o1, o2.__class__)
             assert o1.wires == o2.wires
 
+    def test_tensor_construction(self):
+        """Test that tensors are correctly queued"""
+        with QuantumTape() as tape:
+            A = qml.PauliX(wires=0)
+            B = qml.PauliZ(wires=1)
+            C = BetaTensor(A, B)
+            D = expval(C)
+
+        assert len(tape.queue) == 4
+        assert not tape.operations
+        assert tape._obs == [(D, C)]
+        assert tape.observables == [C]
+
 
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""

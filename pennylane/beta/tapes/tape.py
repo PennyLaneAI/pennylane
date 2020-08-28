@@ -30,11 +30,94 @@ ORIGINAL_QUEUE = qml.operation.Operation.queue
 
 
 def mock_queue(self):
+    """Mock queuing method. When within the QuantumTape
+    context, PennyLane operations are monkeypatched to
+    use this queuing method rather than their built-in queuing
+    method."""
     QueuingContext.append(self)
     return self
 
 
 class QuantumTape(AnnotatedQueue):
+    """A quantum tape recorder, that records, validates, executes,
+    and differentiates variational quantum programs.
+
+    .. note::
+
+        As the quantum tape is a *beta* feature, the standard PennyLane
+        measurement functions cannot be used. You will need to instead
+        import modified measurement functions within the quantum tape:
+
+        >>> from pennylane.beta.queuing import expval, var, sample, probs
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.beta.tapes import QuantumTape
+        from pennylane.beta.queuing import expval, var, sample, probs
+
+        with QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=0)
+            qml.CNOT(wires=[0, 'a'])
+            qml.RX(0.133, wires='a')
+            expval(qml.PauliZ(wires=[0]))
+
+    Once constructed, information about the quantum circuit can be queried:
+
+    >>> tape.operations
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+    >>> tape.observables
+    [expval(PauliZ(wires=[0]))]
+    >>> tape.get_parameters()
+    [0.432, 0.543, 0.133]
+    >>> tape.wires
+    <Wires = [0, 'a']>
+    >>> tape.num_params
+    3
+
+    The :class:`~.beta.tapes.CircuitGraph` can also be accessed:
+
+    >>> tape.graph
+    <pennylane.beta.tapes.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
+
+    Once constructed, the quantum tape can be executed directly on a supported
+    device:
+
+    >>> dev = qml.device("default.qubit", wires=[0, 'a'])
+
+    Execution can take place either using the in-place constructed parameters,
+    >>> tape.execute(dev)
+    [0.77750694]
+
+    or by providing parameters at run time:
+
+    >>> tape.execute(dev, params=[0.1, 0.1, 0.1])
+    [0.99003329]
+
+    The Jacobian can also be computed using finite difference:
+
+    >>> tape.jacobian(dev)
+    [[-0.35846484 -0.46923704  0.        ]]
+    >>> tape.jacobian(dev, params=[0.1, 0.1, 0.1])
+    [[-0.09933471 -0.09933471  0.        ]]
+
+    Finally, the trainable parameters can be explicitly set, and the values of
+    the parameters modified in-place:
+
+    >>> tape.trainable_params = {0} # set only the first parameter as free
+    >>> tape.set_parameters(0.56)
+    >>> tape.get_parameters()
+    [0.56]
+    >>> tape.get_parameters(free_only=False)
+    [0.56, 0.543, 0.133]
+
+    Trainable parameters are taken into account when calculating the Jacobian,
+    avoiding unnecessary calculations:
+    >>> tape.jacobian(dev)
+    [[-0.45478169]]
+    """
     cast = staticmethod(np.array)
 
     def __init__(self):
@@ -61,12 +144,27 @@ class QuantumTape(AnnotatedQueue):
 
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
+        # remove the monkeypatching
         qml.operation.Operation.queue = ORIGINAL_QUEUE
         self._construct()
 
+    # ========================================================
+    # construction methods
+    # ========================================================
+
     def _construct(self):
         """Process the annotated queue, creating a list of quantum
-        operations and measurement processes."""
+        operations and measurement processes.
+
+        This method sets the following attributes:
+
+        * ``_ops``
+        * ``_obs``
+        * ``_par_info``
+        * ``_output_dim``
+        * ``_trainable_params``
+        * ``is_sampled``
+        """
         param_count = 0
         op_count = 0
 
@@ -104,10 +202,46 @@ class QuantumTape(AnnotatedQueue):
         )
         self._trainable_params = set(range(param_count))
 
+    # ========================================================
+    # properties, setters, and getters
+    # ========================================================
+
     @property
     def trainable_params(self):
-        """Store or return the indices of parameters that support differentiability.
-        Avalue of ``None`` means that all argument indices are differentiable.
+        """Store or return a set containing the indices of parameters that support
+        differentiability. The indices provided match the order of appearence in the
+        quantum circuit.
+
+        Setting this property can help reduce the number of quantum evaluations needed
+        to compute the Jacobian; parameters not marked as trainable will be
+        automatically excluded from the Jacobian computation.
+
+        The number of trainable parameters determines the number of parameters passed to
+        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.jacobian`, and changes the default
+        output size of methods :meth:`~.jacobian` and :meth:`~.get_parameters()`.
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        >>> tape.trainable_params
+        {0, 1, 2}
+        >>> tape.trainable_params = {0} # set only the first parameter as free
+        >>> tape.get_parameters()
+        [0.432]
+
+        Args:
+            param_indices (set[int]): parameter indices
         """
         return self._trainable_params
 
@@ -116,7 +250,7 @@ class QuantumTape(AnnotatedQueue):
         """Store the indices of parameters that support differentiability.
 
         Args:
-            param_indices (Set[int]): Parameter indices.
+            param_indices (set[int]): parameter indices
         """
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be positive integers.")
@@ -128,14 +262,59 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def operations(self):
+        """Returns the operations on the quantum tape.
+
+        Returns:
+            list[.Operation]: list of recorded quantum operations
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        >>> tape.operations
+        [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+        """
         return self._ops
 
     @property
     def observables(self):
+        """Returns the observables on the quantum tape.
+
+        Returns:
+            list[.Observable]: list of recorded quantum operations
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        >>> tape.operations
+        [expval(PauliZ(wires=[0]))]
+        """
         return [m[1] for m in self._obs]
 
     @property
     def num_params(self):
+        """Returns the number of trainable parameters on the quantum tape."""
         return len(self.trainable_params)
 
     @property
@@ -201,12 +380,20 @@ class QuantumTape(AnnotatedQueue):
         """Execute the tape on `device` with gate input `params`"""
         device.reset()
 
+        # backup the current parameters
+        current_parameters = self.get_parameters()
+
+        # temporarily mutate the in-place parameters
         self.set_parameters(params)
 
         if isinstance(device, qml.QubitDevice):
-            return device.execute(self)
+            res = device.execute(self)
+        else:
+            res = device.execute(self.operations, self.observables, {})
 
-        return device.execute(self.operations, self.observables, {})
+        # restore original parameters
+        self.set_parameters(current_parameters)
+        return res
 
     _execute = execute_device
 
