@@ -122,10 +122,10 @@ class Hamiltonian:
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
-
         **Example**
 
-        >>> H = qml.Hamiltonian([1, 1, -2], [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)])
+        >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
+        >>> H = qml.Hamiltonian([1, 1, -2], ops)
         >>> H.simplify()
         >>> print(H)
         (1.0) [Y2] + (-1.0) [X0]
@@ -172,6 +172,25 @@ class Hamiltonian:
         return "\n+ ".join(terms)
 
     def _obs_data(self):
+        r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
+
+        This allows for comparison between Hamiltonians that are equivalent, but are defined with terms and tensors
+        expressed in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
+        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+
+        .. Note::
+
+            In order to store the data from each term of the Hamiltonian in an order-independent serialization,
+            we make use of sets. Note that all data contained within each term must be immutable, hence the use of
+            strings and frozensets.
+
+        **Example**
+
+        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Paulix(1), qml.PauliZ(0)])
+        >>> print(H._obs_data())
+        {(1, frozenset({('PauliZ', <Wires = [1]>, ())})),
+        (1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())}))}
+        """
         data = set()
 
         for co, op in zip(*self.terms):
@@ -180,28 +199,30 @@ class Hamiltonian:
             for ob in obs:
                 parameters = tuple(
                     param.tostring() for param in ob.parameters
-                )  # Converts params into hashable type
+                )  # Converts params into immutable type
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
 
         return data
 
     def compare(self, H):
-        r"""Compares a `~.Hamiltonian` with another Hamiltonian, :class:`~.Observable`, or :class:`~.Tensor`,
+        r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
         to determine if they are equivalent.
 
-        A Hamiltonian and a Hamiltonian/Observable/Tensor are equivalent if they represent the same operator
+        Hamiltonians/observables are equivalent if they represent the same operator
         (their matrix representations are equal), and they are defined on the same wires.
 
         .. Warning::
 
-            The ``compare()`` method does **not** check for equivalence between a :class:`~.Hermitian` Observable and an
-            equivalent Hamiltonian/Tensor/Observable written in terms of Pauli observables, or as a linear combination
-            of other `qml.Hermitian` observables. To do so would require the matrix form of Hamiltonians/Tensors
+            The compare method does **not** check if the matrix representation
+            of a :class:`~.Hermitian` observable is equal to an equivalent
+            observable expressed in terms of Pauli matrices, or as a
+            linear combination of Hermitians.
+            To do so would require the matrix form of Hamiltonians and Tensors
             be calculated, which would drastically increase runtime.
 
         Returns:
-            (bool): True if Hamiltonian and the other Hamiltonian/Observable/Tensor are equivalent, False otherwise.
+            (bool): True if equivalent.
 
         **Examples**
 

@@ -1042,6 +1042,13 @@ class TestTensorObservableOperations:
 
         assert data == {("PauliZ", Wires(0), ()), ("PauliX", Wires(1), ())}
 
+        obs = qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)
+        data = obs._obs_data()
+
+        assert data == {
+            ("Hermitian", Wires(0), (b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff',))
+        }
+
     def test_equality_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 

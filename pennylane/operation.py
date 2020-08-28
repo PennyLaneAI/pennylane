@@ -1002,7 +1002,18 @@ class Observable(Operator):
         raise ValueError("Can only perform tensor products between observables.")
 
     def _obs_data(self):
-        r"""Extracts the data from an Observable/Tensor."""
+        r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
+
+            This allows for comparison between observables that are equivalent, but are expressed
+            in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
+            `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+
+            **Example**
+
+            >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
+            >>> print(tensor._obs_data())
+            {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        """
         obs = Tensor(self).non_identity_obs
         tensor = set()
 
@@ -1013,22 +1024,22 @@ class Observable(Operator):
         return tensor
 
     def compare(self, other):
-        r"""Compares an `~.Observable` or a `~.Tensor` with another :class:`~.Hamiltonian`, Tensor, or Observable,
+        r"""Compares with another :class:`~.Hamiltonian`, :class:`~Tensor`, or :class:`~Observable`,
         to determine if they are equivalent.
 
-        An Observable/Tensor and a Hamiltonian/Observable/Tensor are equivalent if they represent the same operator
+        Observables/Hamiltonians are equivalent if they represent the same operator
         (their matrix representations are equal), and they are defined on the same wires.
 
         .. Warning::
 
-            The ``compare()`` method does **not** check for equivalence between a :class:`~.Hermitian` Observable and an
-            equivalent Hamiltonian/Tensor/Observable written in terms of Pauli observables.
-            To do so would require the matrix form of Hamiltonians/Tensors
+            The compare method does **not** check if the matrix representation
+            of a :class:`~.Hermitian` observable is equal to an equivalent
+            observable expressed in terms of Pauli matrices.
+            To do so would require the matrix form of Hamiltonians and Tensors
             be calculated, which would drastically increase runtime.
 
         Returns:
-            (bool): True if the Observable/Tensor and the other Hamiltonian/Observable/Tensor are equivalent,
-                    False otherwise.
+            (bool): True if equivalent.
 
         **Examples**
 
