@@ -41,10 +41,10 @@ class TestChannels:
             op = ops(p, p, wires=0)
         else:
             op = ops(p, wires=0)
-        kmat = op.kraus_matrices
-        kdag = [k.conj().T for k in kmat]
-        kraus_sum = np.sum(np.array([a @ b for a, b in zip(kdag, kmat)]), axis=0)
-        assert np.allclose(kraus_sum, np.eye(2), atol=tol, rtol=0)
+        K_list = op.kraus_matrices
+        K_arr = np.array(K_list)
+        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+        assert np.allclose(Kraus_sum, np.eye(2), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("ops", ch_list)
     @pytest.mark.parametrize("p", [1.5])
