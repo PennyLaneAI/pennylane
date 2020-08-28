@@ -39,7 +39,7 @@
 * Adds ``simplify()`` method to the ``Hamiltonian`` class.
   [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
 
-  ```pycon
+  ```pycon3
   >>> H = qml.Hamiltonian([1, 2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.Identity(1)])
   >>> H.simplify()
   >>> print(H)
