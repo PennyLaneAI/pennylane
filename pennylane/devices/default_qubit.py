@@ -196,6 +196,11 @@ class DefaultQubit(QubitDevice):
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
 
+        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
+        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
+        the last index loops back to the first, :math:`|1 \rangle` is transformed to
+        :math:`|0\rangle`.
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
