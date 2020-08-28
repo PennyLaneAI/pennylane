@@ -204,7 +204,7 @@ class QueuingContext(abc.ABC):
     def get_info(cls, obj):
         """Returns information of an object in the queue."""
         if cls.recording():
-            return cls.active_context().get_info(obj)
+            return cls.active_context()._get_info(obj)
 
 
 class Queue(QueuingContext):

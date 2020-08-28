@@ -99,7 +99,9 @@ class QuantumTape(AnnotatedQueue):
                     if obj.return_type is qml.operation.Sample:
                         self.is_sampled = True
 
-        self.wires = qml.wires.Wires.all_wires([op.wires for op in self.operations + self.observables])
+        self.wires = qml.wires.Wires.all_wires(
+            [op.wires for op in self.operations + self.observables]
+        )
         self._trainable_params = set(range(param_count))
 
     @property
@@ -249,7 +251,7 @@ class QuantumTape(AnnotatedQueue):
                 best.append("0" if not S else "F")
 
             if all(k == "0" for k in best):
-               return "0"
+                return "0"
 
         return "F"
 

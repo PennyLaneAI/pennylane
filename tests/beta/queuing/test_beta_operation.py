@@ -21,9 +21,21 @@ import pennylane as qml
 import numpy as np
 
 # The BetaTensor class
-from pennylane.beta.queuing.operation import BetaTensor
+from pennylane.beta.queuing import BetaTensor, Queue, AnnotatedQueue, QueuingContext
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
+
+
+def mock_queue(self):
+    QueuingContext.append(self)
+    return self
+
+
+@pytest.fixture(autouse=True)
+def patch_operator(monkeypatch):
+    with monkeypatch.context() as m:
+        m.setattr(qml.operation.Operator, "queue", mock_queue)
+        yield
 
 
 class TestBetaTensor:
@@ -31,7 +43,7 @@ class TestBetaTensor:
 
     def test_simple_queue(self):
         """Test that the BetaTensor class works fine using the Queue class."""
-        with qml._queuing.Queue() as q:
+        with Queue() as q:
             A = qml.PauliZ(0)
             B = qml.PauliZ(1)
             tensor_op = BetaTensor(A, B)
@@ -51,15 +63,15 @@ class TestBetaTensor:
         """Test that the ownership related info are updated whenever a BetaTensor
         object is queued."""
 
-        with qml._queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = op1(0)
             B = op2(1)
             tensor_op = BetaTensor(A, B)
 
         assert q.queue == [A, B, tensor_op]
-        assert q.get_info(A) == {"owner": tensor_op}
-        assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B)}
+        assert q._get_info(A) == {"owner": tensor_op}
+        assert q._get_info(B) == {"owner": tensor_op}
+        assert q._get_info(tensor_op) == {"owns": (A, B)}
 
     def test_annotating_tensor_obs_hermitian(self):
         """Test that the ownership related info are updated whenever a BetaTensor
@@ -67,15 +79,15 @@ class TestBetaTensor:
 
         mx = np.array([[1, 0], [0, 1]])
 
-        with qml._queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
             B = qml.Hermitian(mx, wires=[1])
             tensor_op = BetaTensor(A, B)
 
         assert q.queue == [A, B, tensor_op]
-        assert q.get_info(A) == {"owner": tensor_op}
-        assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B)}
+        assert q._get_info(A) == {"owner": tensor_op}
+        assert q._get_info(B) == {"owner": tensor_op}
+        assert q._get_info(tensor_op) == {"owns": (A, B)}
 
     def test_obs_not_in_queue_error_annotated(self):
         """Test that creating a BetaTensor instance with an observable that was not
@@ -83,6 +95,6 @@ class TestBetaTensor:
 
         A = qml.PauliZ(0)
         with pytest.raises(ValueError, match="not in the queue"):
-            with qml._queuing.AnnotatedQueue() as q:
+            with AnnotatedQueue() as q:
                 B = qml.PauliY(0)
                 tensor_op = BetaTensor(A, B)
