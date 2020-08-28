@@ -27,7 +27,7 @@ class QubitChannel(Channel):
     Apply an arbitrary fixed quantum channel.
 
     Kraus matrices that represent the fixed channel are provided
-    as a list of numpy array.
+    as a list of NumPy arrays.
 
     **Details:**
 
