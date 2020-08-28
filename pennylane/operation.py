@@ -999,6 +999,91 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
+    def _obs_data(self):
+        r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
+
+        This allows for comparison between observables that are equivalent, but are expressed
+        in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
+        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+
+        **Example**
+
+        >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
+        >>> print(tensor._obs_data())
+        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        """
+        obs = Tensor(self).non_identity_obs
+        tensor = set()
+
+        for ob in obs:
+            parameters = tuple(param.tostring() for param in ob.parameters)
+            tensor.add((ob.name, ob.wires, parameters))
+
+        return tensor
+
+    def compare(self, other):
+        r"""Compares with another :class:`~.Hamiltonian`, :class:`~Tensor`, or :class:`~Observable`,
+        to determine if they are equivalent.
+
+        Observables/Hamiltonians are equivalent if they represent the same operator
+        (their matrix representations are equal), and they are defined on the same wires.
+
+        .. Warning::
+
+            The compare method does **not** check if the matrix representation
+            of a :class:`~.Hermitian` observable is equal to an equivalent
+            observable expressed in terms of Pauli matrices.
+            To do so would require the matrix form of Hamiltonians and Tensors
+            be calculated, which would drastically increase runtime.
+
+        Returns:
+            (bool): True if equivalent.
+
+        **Examples**
+
+        >>> ob1 = qml.PauliX(0) @ qml.Identity(1)
+        >>> ob2 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob1.compare(ob2)
+        True
+        >>> ob1 = qml.PauliX(0)
+        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
+        >>> ob1.compare(ob2)
+        False
+        """
+        if isinstance(other, (Tensor, Observable)):
+            return other._obs_data() == self._obs_data()
+        if isinstance(other, qml.Hamiltonian):
+            return other.compare(self)
+
+        raise ValueError(
+            "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
+        )
+
+    def __add__(self, other):
+        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, (Observable, Tensor)):
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
+
+        if isinstance(other, qml.Hamiltonian):
+            return other + self
+
+        raise ValueError(f"Cannot add Observable and {type(other)}")
+
+    def __mul__(self, a):
+        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        if isinstance(a, (int, float)):
+            return qml.Hamiltonian([a], [self], simplify=True)
+
+        raise ValueError(f"Cannot multiply Observable by {type(a)}")
+
+    __rmul__ = __mul__
+
+    def __sub__(self, other):
+        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
+            return self.__add__(other.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(other)} from Observable")
+
     def diagonalizing_gates(self):
         r"""Returns the list of operations such that they
         diagonalize the observable in the computational basis.
