@@ -4,6 +4,11 @@
 
 <h3>Improvements</h3>
 
+* Sped up the application of certain gates in ``default.qubit`` by using array/tensor
+  manipulation tricks. The following gates are affected: ``PauliX``, ``PauliY``, ``PauliZ``,
+  ``Hadamard``, ``SWAP``, ``S``, ``T``, ``CNOT``, ``CZ``.
+  [(#772)](https://github.com/PennyLaneAI/pennylane/pull/772)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
