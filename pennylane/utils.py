@@ -435,12 +435,56 @@ def expand_vector(vector, original_wires, expanded_wires):
     return expanded_tensor.reshape(2 ** M)
 
 
+def _flatten_except_numpy(x):
+    """Iterate recursively through an arbitrarily nested structure in depth-first order. Unlike
+    :func:`_flatten`, this function does not flatten NumPy arrays.
+
+    Args:
+        x (Iterable): the iterable to flatten
+
+    Yields:
+        Any: elements of x in depth-first order
+    """
+    for i in x:
+        if isinstance(x, qml.wires.Wires):
+            for item in x:
+                yield item
+        elif isinstance(i, Iterable) and not isinstance(i, (str, bytes, np.ndarray)):
+            yield from _flatten_except_numpy(i)
+        else:
+            yield i
+
+
+def _hash_object(obj):
+    """Returns the hash of an input object.
+
+    Supports hashing of NumPy objects using their ``tobytes()`` method. If the input object is a
+    PyTorch or TensorFlow tensor, then a hash is not generated and ``None`` is returned.
+
+    Args:
+        obj (Any): the object to generate a hash for
+
+    Returns:
+        int or None: the resulting hash, or None if the object is a PyTorch/TensorFlow tensor or any
+        other unhashable type.
+    """
+    try:
+        hashed = hash(obj)
+    except TypeError:
+        if isinstance(obj, np.ndarray):
+            hashed = hash(obj.tobytes())
+        else:
+            hashed = None
+
+    return hashed
+
+
 def _hash_iterable(iterable):
     """Returns a single hash of an input iterable.
 
-    The iterable is flattened using :func:`~._flatten` to support both nested lists and NumPy
-    arrays. A try/except statement is used to capture the case where the input iterable contains a
-    PyTorch/TensorFlow tensor. In that case, no hash is generated and None is returned.
+    The iterable is flattened using :func:`~._flatten_except_numpy` to support nested lists. A
+    try/except statement is used to capture the case where the input iterable contains a
+    PyTorch/TensorFlow tensor. In that case, no hash is generated and ``None`` is returned.
 
     Args:
         iterable (Iterable): the iterable to generate a hash for
@@ -452,7 +496,7 @@ def _hash_iterable(iterable):
     if isinstance(iterable, dict):
         return _hash_dict(iterable)
     try:
-        hash_tuple = tuple(hash(obj) for obj in _flatten(iterable))
+        hash_tuple = tuple(_hash_object(obj) for obj in _flatten_except_numpy(iterable))
         return hash(hash_tuple)
     except TypeError:
         return None
@@ -464,7 +508,7 @@ def _hash_dict(dictionary):
     Loops over the key-value pairs in the dictionary and creates a hash for each,
     finally combining all the resulting hash into a single one. The values may be iterables and
     are passed to :func:`~._hash_iterable`. If any of the dictionary values contain a
-    PyTorch/TensorFlow tensor, then no hash is generated and None is returned.
+    PyTorch/TensorFlow tensor, then no hash is generated and ``None`` is returned.
 
     Args:
         dictionary (dict): the dictionary to be hashed
