@@ -15,5 +15,4 @@
 This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
-from .queuing import QueuingContext, AnnotatedQueue
 from .tape import QuantumTape

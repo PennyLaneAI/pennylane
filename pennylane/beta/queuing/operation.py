@@ -24,7 +24,7 @@ import pennylane as qml
 # --------------------
 
 from pennylane.operation import Tensor
-from pennylane.tapes import QueuingContext
+from .queuing import QueuingContext
 
 
 class BetaTensor(Tensor):

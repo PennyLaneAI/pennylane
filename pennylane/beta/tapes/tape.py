@@ -19,10 +19,19 @@ from collections import deque, Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.queuing.measure import MeasurementProcess
-from .queuing import AnnotatedQueue, QueuingContext
+
+from pennylane.beta.queuing import MeasurementProcess
+from pennylane.beta.queuing import AnnotatedQueue, Queue, QueuingContext
+
 from .circuit_graph import CircuitGraph
 
+
+ORIGINAL_QUEUE = qml.operation.Operation.queue
+
+
+def mock_queue(self):
+    QueuingContext.append(self)
+    return self
 
 
 class QuantumTape(AnnotatedQueue):
@@ -43,11 +52,16 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = False
 
     def __enter__(self):
+        # monkeypatch operations to use the qml.beta.queuing.queuing.QueuingContext instead
+        qml.operation.Operation.queue = mock_queue
+
         QueuingContext.append(self)
+
         return super().__enter__()
 
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
+        qml.operation.Operation.queue = ORIGINAL_QUEUE
         self._construct()
 
     def _construct(self):
@@ -65,6 +79,9 @@ class QuantumTape(AnnotatedQueue):
                     param_count += 1
 
                 op_count += 1
+
+            if isinstance(obj, QuantumTape):
+                self._ops.append(obj)
 
             if isinstance(obj, MeasurementProcess):
                 if obj.return_type is qml.operation.Probability:
