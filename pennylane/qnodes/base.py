@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Observable, CV, WiresEnum, ObservableReturnTypes
-from pennylane.utils import _flatten, unflatten
+from pennylane.utils import _flatten, unflatten, _hash_iterable, _hash_dict
 from pennylane.circuit_graph import CircuitGraph, _is_observable
 from pennylane.variable import Variable
 
@@ -204,7 +204,11 @@ class BaseQNode(qml.QueuingContext):
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
-        self._hash_evaluate = {}  #: dict: TODO
+        self._caching = kwargs.get("caching", 0)
+        """float: number of circuit evaluations to store in a cache to speed up subsequent 
+        evaluations. If set to zero, no caching occurs."""
+
+        self._hash_evaluate = OrderedDict()  #: OrderedDict[tuple[int, int, int]: Any]: TOODO
 
     def __repr__(self):
         """String representation."""
@@ -817,10 +821,7 @@ class BaseQNode(qml.QueuingContext):
         kwargs = self._default_args(kwargs)
         self._set_variables(args, kwargs)
 
-        # reconstruct = self.mutable and not _compare_dicts(kwargs, self._last_call_kwargs)
-        reconstruct = self.mutable
-
-        if self.circuit is None or reconstruct:
+        if self.circuit is None or self.mutable:
             self._construct(args, kwargs)
 
         self.device.reset()
@@ -828,9 +829,23 @@ class BaseQNode(qml.QueuingContext):
         temp = self.kwargs.get("use_native_type", False)
         if isinstance(self.device, qml.QubitDevice):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
-            same_circuit = self.circuit.hash == self.device.circuit_hash
-            # same_args = _compare_lists(args, self._last_call_args)
-            ret = self.device.execute(self.circuit, return_native_type=temp)
+
+            if self.caching:
+                hashed_args = _hash_iterable(args)
+                hashed_kwargs = _hash_dict(kwargs)
+                hashed_circuit = self.circuit.hash
+                hash_tuple = (hashed_args, hashed_kwargs, hashed_circuit)
+
+                if hash_tuple in self._hash_evaluate:
+                    ret = self._hash_evaluate[hash_tuple]
+                else:
+                    ret = self.device.execute(self.circuit, return_native_type=temp)
+                    self._hash_evaluate[(hashed_args, hashed_kwargs, hashed_circuit)] = ret
+
+                    if len(self._hash_evaluate) > self.caching:
+                        self._hash_evaluate.popitem(last=False)
+            else:
+                ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
             ret = self.device.execute(
                 self.circuit.operations,
@@ -839,6 +854,16 @@ class BaseQNode(qml.QueuingContext):
                 return_native_type=temp,
             )
         return self.output_conversion(ret)
+
+    @property
+    def caching(self):
+        """float: number of circuit evaluations to store in a cache to speed up subsequent
+        evaluations. If set to zero, no caching occurs."""
+        return self._caching
+
+    @caching.setter
+    def caching(self, value):
+        self._caching = value
 
     def evaluate_obs(self, obs, args, kwargs):
         """Evaluate the value of the given observables.
