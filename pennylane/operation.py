@@ -349,8 +349,7 @@ class Operator(abc.ABC):
 
     @property
     def name(self):
-        """String for the name of the operator.
-        """
+        """String for the name of the operator."""
         return self._name
 
     @name.setter
@@ -625,8 +624,7 @@ class Operation(Operator):
 
     @property
     def inverse(self):
-        """Boolean determining if the inverse of the operation was requested.
-        """
+        """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
     @inverse.setter
@@ -675,14 +673,12 @@ class Operation(Operator):
 
     @property
     def base_name(self):
-        """Get base name of the operator.
-        """
+        """Get base name of the operator."""
         return self.__class__.__name__
 
     @property
     def name(self):
-        """Get and set the name of the operator.
-        """
+        """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
     def __init__(self, *params, wires=None, do_queue=True):
@@ -800,6 +796,100 @@ class DiagonalOperation(Operation):
         return np.diag(cls._eigvals(*params))
 
 
+class Channel(Operation, abc.ABC):
+    r"""Base class for quantum channels.
+
+    As with :class:`~.Operation`, the following class attributes must be
+    defined for all channels:
+
+    * :attr:`~.Operator.num_params`
+    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.par_domain`
+
+    To define a noisy channel, the following attribute of :class:`~.Channel`
+    can be used to list the corresponding Kraus matrices.
+
+    * :attr:`~.Channel._kraus_matrices`
+
+    The following two class attributes are optional, but in most cases
+    should be clearly defined to avoid unexpected behavior during
+    differentiation.
+
+    * :attr:`~.Operation.grad_method`
+    * :attr:`~.Operation.grad_recipe`
+
+    Args:
+        params (tuple[float, int, array, Variable]): operation parameters
+
+    Keyword Args:
+        wires (Sequence[int]): Subsystems the channel acts on. If not given, args[-1]
+            is interpreted as wires.
+        do_queue (bool): Indicates whether the operation should be
+            immediately pushed into a :class:`BaseQNode` circuit queue.
+            This flag is useful if there is some reason to run an Operation
+            outside of a BaseQNode context.
+    """
+    # pylint: disable=abstract-method
+
+    @classmethod
+    @abc.abstractmethod
+    def _kraus_matrices(cls, *params):
+        """Kraus matrices representing a quantum channel, specified in
+        the computational basis.
+
+        This is a class method that should be defined for all
+        new channels. It returns the Kraus matrices representing
+        the channel in the computational basis.
+
+        This private method allows matrices to be computed
+        directly without instantiating the channel first.
+
+        **Example**
+
+        >>> qml.AmplitudeDamping._kraus_matrices(0.1)
+        >>> [array([[1.       , 0.       ],
+        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
+        [0.        , 0.        ]])]
+
+        To return the Kraus matrices of an *instantiated* channel,
+        please use the :attr:`~.Operator.kraus_matrices` property instead.
+
+        Returns:
+            list(array): list of Kraus matrices
+        """
+        raise NotImplementedError
+
+    @property
+    def kraus_matrices(self):
+        r"""Kraus matrices of an instantiated channel
+        in the computational basis.
+
+        ** Example**
+
+        >>> U = qml.AmplitudeDamping(0.1, wires=1)
+        >>> U.kraus_matrices
+        >>> [array([[1.       , 0.       ],
+        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
+        [0.        , 0.        ]])]
+
+        Returns:
+            list(array): list of Kraus matrices
+        """
+        return self._kraus_matrices(*self.parameters)
+
+    def __init__(self, *params, wires=None, do_queue=True):
+
+        # check parameters are valid
+        if any(p > 1 for p in params):
+            raise ValueError("Channel probability parameters should be numbers between 0 and 1.")
+
+        # check the grad_method validity
+        if self.par_domain == "R" and self.grad_method not in (None, "F"):
+            raise ValueError("Analytic gradients can not be used for quantum channels.")
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+
+
 # =============================================================================
 # Base Observable class
 # =============================================================================
@@ -864,7 +954,8 @@ class Observable(Operator):
 
         The order of the eigenvalues needs to match the order of
         the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`. This is a requirement for using qubit observables in quantum functions.
+        diagonalized using :attr:`diagonalizing_gates`. This is a
+        requirement for using qubit observables in quantum functions.
 
         **Example:**
 
@@ -906,8 +997,19 @@ class Observable(Operator):
 
         raise ValueError("Can only perform tensor products between observables.")
 
-    def obs_data(self):
-        r"""Extracts the data from an Observable/Tensor."""
+    def _obs_data(self):
+        r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
+
+        This allows for comparison between observables that are equivalent, but are expressed
+        in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
+        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+
+        **Example**
+
+        >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
+        >>> print(tensor._obs_data())
+        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        """
         obs = Tensor(self).non_identity_obs
         tensor = set()
 
@@ -918,37 +1020,67 @@ class Observable(Operator):
         return tensor
 
     def compare(self, other):
-        r"""Compares two Observables/Tensors/qml.Hamiltonian objects to determine if they are equivalent.
-        """
-        val = False
-        if isinstance(other, (Observable, Tensor)):
-            val = self.obs_data() == other.obs_data()
-        if isinstance(other, qml.Hamiltonian):
-            val = other.obs_data() == self.obs_data()
+        r"""Compares with another :class:`~.Hamiltonian`, :class:`~Tensor`, or :class:`~Observable`,
+        to determine if they are equivalent.
 
-        return val
+        Observables/Hamiltonians are equivalent if they represent the same operator
+        (their matrix representations are equal), and they are defined on the same wires.
+
+        .. Warning::
+
+            The compare method does **not** check if the matrix representation
+            of a :class:`~.Hermitian` observable is equal to an equivalent
+            observable expressed in terms of Pauli matrices.
+            To do so would require the matrix form of Hamiltonians and Tensors
+            be calculated, which would drastically increase runtime.
+
+        Returns:
+            (bool): True if equivalent.
+
+        **Examples**
+
+        >>> ob1 = qml.PauliX(0) @ qml.Identity(1)
+        >>> ob2 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob1.compare(ob2)
+        True
+        >>> ob1 = qml.PauliX(0)
+        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
+        >>> ob1.compare(ob2)
+        False
+        """
+        if isinstance(other, (Tensor, Observable)):
+            return other._obs_data() == self._obs_data()
+        if isinstance(other, qml.Hamiltonian):
+            return other.compare(self)
+
+        raise ValueError(
+            "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
+        )
 
     def __add__(self, other):
-        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects.
-        """
+        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor)):
-            val = qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        if isinstance(other, qml.Hamiltonian):
-            val = other + self
+            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
 
-        return val
+        if isinstance(other, qml.Hamiltonian):
+            return other + self
+
+        raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor.
-        """
-        return qml.Hamiltonian([a], [self], simplify=True)
+        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        if isinstance(a, (int, float)):
+            return qml.Hamiltonian([a], [self], simplify=True)
+
+        raise ValueError(f"Cannot multiply Observable by {type(a)}")
 
     __rmul__ = __mul__
 
     def __sub__(self, other):
-        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects.
-        """
-        return self.__add__(other.__mul__(-1))
+        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
+            return self.__add__(other.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(other)} from Observable")
 
     def diagonalizing_gates(self):
         r"""Returns the list of operations such that they
