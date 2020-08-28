@@ -131,90 +131,6 @@ def decompose_queue(ops, device):
     return new_ops
 
 
-def _compare_objects(object1, object2):
-    """Checks if two objects are equal.
-
-    Performs standard equality check for builtin data types. Also supports comparisons between
-    NumPy arrays and TensorFlow/PyTorch tensors. For TensorFlow/PyTorch tensors, we require
-    that ``object1 is object2``, i.e., that they both refer to the same underlying object.
-
-    Args:
-        object1: first object to be compared
-        object2: second object to be compared
-
-    Returns:
-        bool: whether the two objects are equal
-    """
-    comparison = object1 == object2
-
-    if isinstance(comparison, bool):
-        return comparison
-    if all(isinstance(obj, np.ndarray) for obj in [comparison, object1, object2]):
-        if object1.shape == object2.shape:
-            return comparison.all()
-        return False
-
-    # this case is to support TensorFlow/PyTorch tensors
-    return object1 is object2
-
-
-def _compare_lists(list1, list2):
-    """Checks if two lists are equal.
-
-    Supports nested lists that can include NumPy arrays and TensorFlow/PyTorch tensors without
-    requiring an import of PyTorch or TensorFlow.
-
-    Args:
-        list1 (list): first list to be compared
-        list2 (list): second list to be compared
-
-    Returns:
-        bool: whether the two lists are equal
-    """
-    list1 = _flatten(list1)
-    list2 = _flatten(list2)
-
-    for a1, a2 in zip(list1, list2):
-        if not _compare_objects(a1, a2):
-            return False
-
-    return True
-
-
-def _compare_dicts(dict1, dict2):
-    """Checks if two dictionaries are equal.
-
-    Supports dictionaries with values that can be nested lists that may include NumPy arrays and
-    TensorFlow/PyTorch tensors without requiring an import of PyTorch or TensorFlow.
-
-    Args:
-        dict1 (dict): first dictionary to be compared
-        dict2 (dict): second dictionary to be compared
-
-    Returns:
-        bool: whether the two dictionaries are equal
-    """
-    if dict1 is None:
-        dict1 = {}
-    if dict2 is None:
-        dict2 = {}
-
-    if len(dict1) != len(dict2):
-        return False
-
-    values_1 = []
-    values_2 = []
-    for key, value in dict1.items():
-        values_1.append(value)
-        v2 = dict2.get(key)
-        if v2:
-            values_2.append(v2)
-        else:
-            return False
-
-    return _compare_lists(values_1, values_2)
-
-
 class BaseQNode(qml.QueuingContext):
     """Base class for quantum nodes in the hybrid computational graph.
 
@@ -288,13 +204,7 @@ class BaseQNode(qml.QueuingContext):
         self.output_dim = None  #: int: dimension of the QNode output vector
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
-        self._last_call_args = (
-            None  #: list: containing the positional arguments that the QNode was last evaluated on
-        )
-        self._last_call_kwargs = (
-            None  #: dict: containing the keyword arguments that the QNode was last evaluated on
-        )
-        self._previous_result = None  # previous result of evaluating QNode
+        self._hash_evaluate = {}  #: dict: TODO
 
     def __repr__(self):
         """String representation."""
@@ -907,11 +817,11 @@ class BaseQNode(qml.QueuingContext):
         kwargs = self._default_args(kwargs)
         self._set_variables(args, kwargs)
 
-        reconstruct = self.mutable and not _compare_dicts(kwargs, self._last_call_kwargs)
+        # reconstruct = self.mutable and not _compare_dicts(kwargs, self._last_call_kwargs)
+        reconstruct = self.mutable
 
         if self.circuit is None or reconstruct:
             self._construct(args, kwargs)
-            self._last_call_kwargs = kwargs
 
         self.device.reset()
 
@@ -919,14 +829,8 @@ class BaseQNode(qml.QueuingContext):
         if isinstance(self.device, qml.QubitDevice):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
             same_circuit = self.circuit.hash == self.device.circuit_hash
-            same_args = _compare_lists(args, self._last_call_args)
-
-            if same_circuit and same_args:
-                ret = self._previous_result
-            else:
-                ret = self.device.execute(self.circuit, return_native_type=temp)
-                self._last_call_args = args
-                self._previous_result = ret
+            # same_args = _compare_lists(args, self._last_call_args)
+            ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
             ret = self.device.execute(
                 self.circuit.operations,

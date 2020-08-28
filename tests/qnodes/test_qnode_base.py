@@ -23,8 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import Device
-from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue, \
-    _compare_objects, _compare_lists, _compare_dicts
+from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
 from pennylane.wires import Wires, WireError
 
@@ -1501,40 +1500,3 @@ class TestTrainableArgs:
         # the user will evaluate the QNode with.
         node.set_trainable_args({0, 1, 6})
         assert node.get_trainable_args() == {0, 1, 6}
-
-
-class TestComparisonFunctions:
-    """Tests for the _compare_objects, _compare_lists, and _compare_dicts functions."""
-
-    tf = pytest.importorskip("tensorflow")
-    torch = pytest.importorskip("torch")
-
-    np_array = np.ones(2)
-    tf_tensor = tf.ones(2)
-    torch_tensor = torch.ones(2)
-    objects = (
-        (1, 1, True),
-        (1, 2, False),
-        (1.0, 1, True),
-        (1.2, 1.2, True),
-        (np_array, np_array, True),
-        (np_array, 2 * np_array, False),
-        (np_array, 1, False),
-        (np_array, [1, 1], False),
-        (np_array, np.ones((2, 2)), False),
-        (np_array, tf_tensor, False),
-        (tf_tensor, tf_tensor, True),
-        (tf_tensor, 2 * tf_tensor, False),
-        (tf_tensor, 1, False),
-        (tf_tensor, [1, 1], False),
-        (tf_tensor, torch_tensor, False),
-        (torch_tensor, torch_tensor, True),
-        (torch_tensor, 2 * torch_tensor, False),
-        (torch_tensor, 1, False),
-        (torch_tensor, [1, 1], False),
-        (np_array, torch_tensor, False),
-    )
-
-    @pytest.mark.parametrize("obj1, obj2, truth", objects)
-    def test_compare_objects(self, obj1, obj2, truth):
-        assert _compare_objects(obj1, obj2) == truth
