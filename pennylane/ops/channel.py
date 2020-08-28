@@ -60,7 +60,9 @@ class QubitChannel(Channel):
 
         # check the dimension of all Kraus matrices are valid
         if not all(len(K.shape) == 2 for K in K_list):
-            raise ValueError("Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires).")
+            raise ValueError(
+                "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
+            )
 
         # check that the channel represents a trace-preserving map
         K_dag = [K.conj().T for K in K_list]
