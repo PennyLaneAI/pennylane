@@ -433,3 +433,54 @@ def expand_vector(vector, original_wires, expanded_wires):
     expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
 
     return expanded_tensor.reshape(2 ** M)
+
+
+def _hash_iterable(iterable):
+    """Returns a single hash of an input iterable.
+
+    The iterable is flattened using :func:`~._flatten` to support both nested lists and NumPy
+    arrays. A try/except statement is used to capture the case where the input iterable contains a
+    PyTorch/TensorFlow tensor. In that case, no hash is generated and None is returned.
+
+    Args:
+        iterable (Iterable): the iterable to generate a hash for
+
+    Returns:
+        int or None: the resulting hash, or None if the iterable contains a PyTorch/TensorFlow
+        tensor.
+    """
+    if isinstance(iterable, dict):
+        return _hash_dict(iterable)
+    try:
+        hash_tuple = tuple(hash(obj) for obj in _flatten(iterable))
+        return hash(hash_tuple)
+    except TypeError:
+        return None
+
+
+def _hash_dict(dictionary):
+    """Returns a single hash for an input dictionary.
+
+    Loops over the key-value pairs in the dictionary and creates a hash for each,
+    finally combining all the resulting hash into a single one. The values may be iterables and
+    are passed to :func:`~._hash_iterable`. If any of the dictionary values contain a
+    PyTorch/TensorFlow tensor, then no hash is generated and None is returned.
+
+    Args:
+        dictionary (dict): the dictionary to be hashed
+
+    Returns:
+        int or None: the resulting hash, or None if the dictionary contains a PyTorch/TensorFlow
+        tensor.
+    """
+    hash_list = []
+    for key, value in dictionary.items():
+        key_hash = hash(key)
+        value_hash = _hash_iterable(value)
+
+        if value_hash is None:
+            return None
+
+        hash_list.append((key_hash, value_hash))
+
+    return hash(tuple(hash_list))
