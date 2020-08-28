@@ -57,7 +57,7 @@ class QuantumTape(AnnotatedQueue):
         op_count = 0
 
         for obj, info in self._queue.items():
-            if not info:
+            if not info and isinstance(obj, qml.operation.Operation):
                 self._ops.append(obj)
 
                 for p in range(len(obj.data)):
@@ -67,15 +67,20 @@ class QuantumTape(AnnotatedQueue):
                 op_count += 1
 
             if isinstance(obj, MeasurementProcess):
-                # TODO: remove the following line once devices
-                # have been refactored to no longer use obs.return_type
-                info["owns"].return_type = obj.return_type
+                if obj.return_type is qml.operation.Probability:
+                    self._obs.append((obj, obj))
+                    self._output_dim += 2 ** len(obj.wires)
 
-                self._obs.append((obj, info["owns"]))
-                self._output_dim += 1
+                elif "owns" in info:
+                    # TODO: remove the following line once devices
+                    # have been refactored to no longer use obs.return_type
+                    info["owns"].return_type = obj.return_type
 
-                if obj.return_type is qml.operation.Sample:
-                    self.is_sampled = True
+                    self._obs.append((obj, info["owns"]))
+                    self._output_dim += 1
+
+                    if obj.return_type is qml.operation.Sample:
+                        self.is_sampled = True
 
         self.wires = qml.wires.Wires.all_wires([op.wires for op in self.operations + self.observables])
         self._trainable_params = set(range(param_count))
@@ -141,7 +146,7 @@ class QuantumTape(AnnotatedQueue):
 
     def get_parameters(self, free_only=True):
         """Return the parameters incident on the tape operations"""
-        params = [o.data for o in self._ops]
+        params = [o.data for o in self.operations]
         params = [item for sublist in params for item in sublist]
 
         if not free_only:
@@ -151,10 +156,15 @@ class QuantumTape(AnnotatedQueue):
 
     def set_parameters(self, parameters, free_only=True):
         """Set the parameters incident on the tape operations"""
-        for idx, p in enumerate(parameters):
-            if free_only and idx not in self.trainable_params:
-                continue
+        if len(parameters) != self.num_params:
+            raise ValueError("Number of provided parameters invalid.")
 
+        if free_only:
+            iterator = zip(self.trainable_params, parameters)
+        else:
+            iterator = enumerate(parameters)
+
+        for idx, p in iterator:
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
 

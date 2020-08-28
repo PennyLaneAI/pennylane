@@ -30,8 +30,14 @@ class MeasurementProcess:
     """NamedTuple: A namedtuple that contains the return_type of the circuit and
     whose instance can be queried by id."""
 
-    def __init__(self, return_type):
+    def __init__(self, return_type, wires=None):
         self.return_type = return_type
+        self.wires = wires
+
+        # TODO: remove the following line once devices
+        # have been refactored to no longer require dummy observable
+        self.name = "Identity"
+        self.diagonalizing_gates = lambda: []
 
 
 def expval(op):
@@ -108,8 +114,7 @@ def var(op):
     meas_op = MeasurementProcess(Variance)
     QueuingContext.update_info(op, owner=meas_op)
     QueuingContext.append(meas_op, owns=op)
-
-    return op
+    return meas_op
 
 
 def sample(op):
@@ -148,8 +153,7 @@ def sample(op):
     meas_op = MeasurementProcess(Sample)
     QueuingContext.update_info(op, owner=meas_op)
     QueuingContext.append(meas_op, owns=op)
-
-    return op
+    return meas_op
 
 
 def probs(wires):
@@ -187,7 +191,6 @@ def probs(wires):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     # pylint: disable=protected-access
-    meas_op = MeasurementProcess(Probability)
+    meas_op = MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
     QueuingContext.append(meas_op)
-
-    return op
+    return meas_op
