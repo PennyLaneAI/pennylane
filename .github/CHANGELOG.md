@@ -28,6 +28,8 @@ Thomas Bromley, Josh Izaac, Antal Száva.
 * Adding quantum noisy channels 
 
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
+  [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
+
 
 <h4>New and improved simulators</h4>
 
