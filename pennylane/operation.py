@@ -1000,15 +1000,15 @@ class Observable(Operator):
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
 
-            This allows for comparison between observables that are equivalent, but are expressed
-            in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
-            `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+        This allows for comparison between observables that are equivalent, but are expressed
+        in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
+        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
 
-            **Example**
+        **Example**
 
-            >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
-            >>> print(tensor._obs_data())
-            {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        >>> tensor = qml.PauliX(0) @ qml.PauliZ(1)
+        >>> print(tensor._obs_data())
+        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
         """
         obs = Tensor(self).non_identity_obs
         tensor = set()
@@ -1058,8 +1058,7 @@ class Observable(Operator):
         )
 
     def __add__(self, other):
-        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects.
-        """
+        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
 
@@ -1069,8 +1068,7 @@ class Observable(Operator):
         raise ValueError(f"Cannot add Observable and {type(other)}")
 
     def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor.
-        """
+        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
 
@@ -1079,8 +1077,7 @@ class Observable(Operator):
     __rmul__ = __mul__
 
     def __sub__(self, other):
-        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects.
-        """
+        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
         raise ValueError(f"Cannot subtract {type(other)} from Observable")

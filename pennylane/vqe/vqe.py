@@ -259,8 +259,7 @@ class Hamiltonian:
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
     def __matmul__(self, H):
-        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
-        """
+        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         coeffs1 = self.coeffs.copy()
         terms1 = self.ops.copy()
 
@@ -283,8 +282,7 @@ class Hamiltonian:
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
     def __add__(self, H):
-        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
-        """
+        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         coeffs = self.coeffs.copy()
         ops = self.ops.copy()
 
@@ -301,8 +299,7 @@ class Hamiltonian:
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and a Hamiltonian.
-        """
+        r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             coeffs = [a * c for c in self.coeffs.copy()]
             return qml.Hamiltonian(coeffs, self.ops.copy())
@@ -312,15 +309,13 @@ class Hamiltonian:
     __rmul__ = __mul__
 
     def __sub__(self, H):
-        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
-        """
+        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             return self.__add__(H.__mul__(-1))
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
     def __iadd__(self, H):
-        r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
-        """
+        r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, Hamiltonian):
             self._coeffs.extend(H.coeffs.copy())
             self._ops.extend(H.ops.copy())
@@ -336,8 +331,7 @@ class Hamiltonian:
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     def __imul__(self, a):
-        r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian.
-        """
+        r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self._coeffs = [a * c for c in self.coeffs]
             return self
@@ -345,8 +339,7 @@ class Hamiltonian:
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
 
     def __isub__(self, H):
-        r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable.
-        """
+        r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             self.__iadd__(H.__mul__(-1))
             return self
