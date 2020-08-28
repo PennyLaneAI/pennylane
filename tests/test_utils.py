@@ -25,6 +25,7 @@ import numpy as np
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
+from pennylane.wires import Wires
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
@@ -825,3 +826,41 @@ class TestInv:
             ValueError, match="The given operation_list does not only contain Operations"
         ):
             pu.inv(arg)
+
+
+iterable_flat_pairs = (
+    ([1, [2, [3, [4, [5]]]]], [1, 2, 3, 4, 5]),
+    (["a", ["b"], ["c", ["d"], "e"]], ["a", "b", "c", "d", "e"]),
+    ([1.2, [b"b"]], [1.2, b"b"]),
+    ([[1], [2], [np.ones(4)]], [1, 2, np.ones(4)]),
+    ([Wires(["a", 1, "c"]), ["wires"]], [Wires(["a", 1, "c"]), "wires"])
+)
+
+
+@pytest.mark.parametrize("nonflat, flat", iterable_flat_pairs)
+def test_flatten_iterable(nonflat, flat):
+    """Test that the _flatten_iterable function operates correctly."""
+    flattened = list(pu._flatten_iterable(nonflat))
+
+    comparison = []
+    for f1, f2 in zip(flat, flattened):
+        if isinstance(f1, np.ndarray) and isinstance(f2, np.ndarray):
+            comparison.append((f1 == f2).all())
+        else:
+            comparison.append(f1 == f2)
+
+    assert all(comparison)
+
+
+# class TestHashing:
+#     """Tests for the _hash_iterable and _hash_dict functions."""
+#
+#     iterables = [
+#         [1, 1.4, "f", None],
+#         [1, 1.4, [5, 6, "seven"]],
+#         [np.ones(2), [np.zeros(3)]],
+#         [np.ones(2), [1j * np.zeros(3)]],
+#         [1, [2, [3, [4, [5]]]]],
+#         [np.zeros(3), np.zeros(3)],
+#         [np.zeros(4), np.zeros(2)]
+#     ]

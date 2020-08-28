@@ -435,9 +435,9 @@ def expand_vector(vector, original_wires, expanded_wires):
     return expanded_tensor.reshape(2 ** M)
 
 
-def _flatten_except_numpy(x):
+def _flatten_iterable(x):
     """Iterate recursively through an arbitrarily nested structure in depth-first order. Unlike
-    :func:`_flatten`, this function does not flatten NumPy arrays.
+    :func:`_flatten`, this function does not flatten NumPy arrays and PennyLane Wires.
 
     Args:
         x (Iterable): the iterable to flatten
@@ -446,11 +446,8 @@ def _flatten_except_numpy(x):
         Any: elements of x in depth-first order
     """
     for i in x:
-        if isinstance(x, qml.wires.Wires):
-            for item in x:
-                yield item
-        elif isinstance(i, Iterable) and not isinstance(i, (str, bytes, np.ndarray)):
-            yield from _flatten_except_numpy(i)
+        if isinstance(i, Iterable) and not isinstance(i, (str, bytes, np.ndarray, qml.wires.Wires)):
+            yield from _flatten_iterable(i)
         else:
             yield i
 
@@ -482,7 +479,7 @@ def _hash_object(obj):
 def _hash_iterable(iterable):
     """Returns a single hash of an input iterable.
 
-    The iterable is flattened using :func:`~._flatten_except_numpy` to support nested lists. A
+    The iterable is flattened using :func:`~._flatten_iterable` to support nested lists. A
     try/except statement is used to capture the case where the input iterable contains a
     PyTorch/TensorFlow tensor. In that case, no hash is generated and ``None`` is returned.
 
@@ -496,7 +493,7 @@ def _hash_iterable(iterable):
     if isinstance(iterable, dict):
         return _hash_dict(iterable)
     try:
-        hash_tuple = tuple(_hash_object(obj) for obj in _flatten_except_numpy(iterable))
+        hash_tuple = tuple(_hash_object(obj) for obj in _flatten_iterable(iterable))
         return hash(hash_tuple)
     except TypeError:
         return None
