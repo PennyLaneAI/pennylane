@@ -111,6 +111,9 @@ class DefaultQubitAutograd(DefaultQubit):
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         super().__init__(wires, shots=shots, analytic=analytic)
+
+        # prevent using special apply methods for these gates due to slowdown in Autograd
+        # implementation
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
