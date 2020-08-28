@@ -270,11 +270,11 @@ class DefaultQubit(QubitDevice):
         sl_0 = _get_slice(0, axes[0], self.num_wires)
         sl_1 = _get_slice(1, axes[0], self.num_wires)
 
-        # If axis[1] is larger than axis[0], then state[sl_1] will have self.num_wires - 1 axes with
-        # the target axes shifted down by one. Otherwise, if axis[1] is less than axis[0] then its
+        # If axes[1] is larger than axes[0], then state[sl_1] will have self.num_wires - 1 axes with
+        # the target axes shifted down by one. Otherwise, if axes[1] is less than axes[0] then its
         # axis number in state[sl_1] remains unchanged. For example: state has axes [0, 1, 2, 3] and
-        # axis[0] = 1 and axis[1] = 3. Then, state[sl_1] has axes [0, 1, 2] so that the target axis
-        # has shifted from 3 to 2. If axis[0] = 2 and axis[1] = 1, then state[sl_1] has axes
+        # axes[0] = 1 and axes[1] = 3. Then, state[sl_1] has axes [0, 1, 2] so that the target axis
+        # has shifted from 3 to 2. If axes[0] = 2 and axes[1] = 1, then state[sl_1] has axes
         # [0, 1, 2] but with the target axis remaining unchanged.
         if axes[1] > axes[0]:
             target_axes = [axes[1] - 1]
