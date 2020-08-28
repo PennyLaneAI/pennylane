@@ -465,14 +465,17 @@ def _hash_object(obj):
         int or None: the resulting hash, or None if the object is a PyTorch/TensorFlow tensor or any
         other unhashable type.
     """
-    try:
-        hashed = hash(obj)
-    except TypeError:
+    shape = getattr(obj, "shape", None)
+    if shape:  # Check if we have a NumPy array or PyTorch/TensorFlow tensor
         if isinstance(obj, np.ndarray):
-            hashed = hash(obj.tobytes())
-        else:
+            hashed = hash((obj.tobytes(), shape))
+        else:  # We do not want to hash if we have a PyTorch/TensorFlow tensor
             hashed = None
-
+    else:
+        try:
+            hashed = hash(obj)
+        except TypeError:  # Return None for unhashable types
+            hashed = None
     return hashed
 
 

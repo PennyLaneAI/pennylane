@@ -852,9 +852,32 @@ def test_flatten_iterable(nonflat, flat):
     assert all(comparison)
 
 
-# class TestHashing:
-#     """Tests for the _hash_iterable and _hash_dict functions."""
-#
+class TestHashing:
+    """Tests for the _hash_object, _hash_iterable and _hash_dict functions."""
+
+    torch = pytest.importorskip("torch")
+    tf = pytest.importorskip("tensorflow")
+
+    objects = [1, 1.4, "test", "tes", np.ones(6), np.ones((3, 2)), np.zeros(6)]
+    unhashable_objects = [torch.ones(3), tf.ones(3)]
+
+    @pytest.mark.parametrize("obj", objects)
+    def test_hash(self, obj):
+        """Test that a valid hash is generated"""
+        h = pu._hash_object(obj)
+        assert isinstance(h, int)
+
+    @pytest.mark.parametrize("obj1, obj2", itertools.combinations(objects, r=2))
+    def test_hash_object_different(self, obj1, obj2):
+        """Test that a different hash is given for each test object"""
+        assert pu._hash_object(obj1) != pu._hash_object(obj2)
+
+    @pytest.mark.parametrize("obj", unhashable_objects)
+    def test_invalid_hash(self, obj):
+        """Test that None is returned when passed a PyTorch/TensorFlow tensor"""
+        h = pu._hash_object(obj)
+        assert h is None
+
 #     iterables = [
 #         [1, 1.4, "f", None],
 #         [1, 1.4, [5, 6, "seven"]],
