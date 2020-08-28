@@ -73,7 +73,7 @@ def xy_mixer(graph):
             mixer_h = qaoa.xy_mixer(graph)
         >>> print(mixer_h)
         (0.5) [X0 X1] + (0.5) [Y0 Y1] + (0.5) [X1 X2] + (0.5) [Y1 Y2]
-        """
+    """
 
     if not isinstance(graph, nx.Graph):
         raise ValueError(
