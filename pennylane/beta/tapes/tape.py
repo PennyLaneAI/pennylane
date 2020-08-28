@@ -136,10 +136,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def num_params(self):
-        if self.trainable_params:
-            return len(self.trainable_params)
-
-        return len(self._par_info)
+        return len(self.trainable_params)
 
     @property
     def diagonalizing_gates(self):
@@ -175,17 +172,23 @@ class QuantumTape(AnnotatedQueue):
 
     def set_parameters(self, parameters, free_only=True):
         """Set the parameters incident on the tape operations"""
-        if len(parameters) != self.num_params:
-            raise ValueError("Number of provided parameters invalid.")
-
         if free_only:
             iterator = zip(self.trainable_params, parameters)
+            required_length = self.num_params
         else:
             iterator = enumerate(parameters)
+            required_length = len(self._par_info)
+
+        if len(parameters) != required_length:
+            raise ValueError("Number of provided parameters invalid.")
 
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
+
+    # ========================================================
+    # execution methods
+    # ========================================================
 
     def execute(self, device, params=None):
         """Execute the tape on `device` with gate input `params`"""
