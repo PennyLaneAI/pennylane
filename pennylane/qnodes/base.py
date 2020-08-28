@@ -205,7 +205,7 @@ class BaseQNode(qml.QueuingContext):
         self.model = self.device.capabilities()["model"]  #: str: circuit type, in {'cv', 'qubit'}
 
         self._caching = kwargs.get("caching", 0)
-        """float: number of circuit evaluations to store in a cache to speed up subsequent 
+        """float: number of circuit evaluations to store in a cache to speed up subsequent
         evaluations. If set to zero, no caching occurs."""
 
         self._hash_evaluate = OrderedDict()  #: OrderedDict[tuple[int, int, int]: Any]: Mapping
@@ -842,7 +842,7 @@ class BaseQNode(qml.QueuingContext):
                     ret = self._hash_evaluate[hash_tuple]
                 else:
                     ret = self.device.execute(self.circuit, return_native_type=temp)
-                    self._hash_evaluate[(hashed_args, hashed_kwargs, hashed_circuit)] = ret
+                    self._hash_evaluate[hash_tuple] = ret
 
                     if len(self._hash_evaluate) > self.caching:
                         self._hash_evaluate.popitem(last=False)
