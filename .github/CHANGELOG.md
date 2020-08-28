@@ -4,6 +4,48 @@
 
 <h3>Improvements</h3>
 
+* Adds arithmetic operations (addition, tensor product, 
+  subtraction, and scalar multiplication) between ``Hamiltonian``, 
+  ``Tensor``, and ``Observable`` objects, and inline arithmetic 
+  operations between Hamiltonians and other observables.
+  [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
+  
+  Hamiltonians can now easily be defined as sums of observables:
+  
+  ```pycon
+  >>> H = 3 * qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
+  >>> print(H)
+  ```
+  (7.0) [Z0] + (-1.0) [X0 X1]
+
+* Adds ``compare()`` method to `Observable` and `Hamiltonian` classes, which allows
+  for comparison between observable quantities.
+  [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
+  
+  ```pycon
+  >>> H = qml.Hamiltonian([1], [qml.PauliZ(0)])
+  >>> obs = qml.PauliZ(0) @ qml.Identity(1)
+  >>> print(H.compare(obs))
+  ```
+  True
+  
+  ```pycon
+  >>> H = qml.Hamiltonian([2], [qml.PauliZ(0)])
+  >>> obs = qml.PauliZ(1) @ qml.Identity(0)
+  >>> print(H.compare(obs))
+  ```
+  False
+  
+* Adds ``simplify()`` method to the ``Hamiltonian`` class.
+  [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
+
+  ```pycon
+  >>> H = qml.Hamiltonian([1, 2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.Identity(1)])
+  >>> H.simplify()
+  >>> print(H)
+  ```
+  (3.0) [Z0]
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -18,7 +60,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Antal Száva.
+Thomas Bromley, Jack Ceroni, Josh Izaac, Antal Száva.
 
 
 # Release 0.11.0 (current release)
