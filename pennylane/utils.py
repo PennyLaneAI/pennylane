@@ -520,6 +520,9 @@ def _hash_dict(dictionary):
     hash_list = []
     for key, value in dictionary.items():
         key_hash = hash(key)
+
+        if not isinstance(value, Iterable):
+            value = [value]
         value_hash = _hash_iterable(value)
 
         if value_hash is None:
