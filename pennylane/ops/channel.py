@@ -59,14 +59,14 @@ class QubitChannel(Channel):
             raise ValueError("All Kraus matrices must have the same shape.")
 
         # check the dimension of all Kraus matrices are valid
-        if not all(len(K.shape) == 2 for K in K_list):
+        if not all(K.ndim == 2 for K in K_list):
             raise ValueError(
                 "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
             )
 
         # check that the channel represents a trace-preserving map
-        K_dag = [K.conj().T for K in K_list]
-        Kraus_sum = np.sum(np.array([a @ b for a, b in zip(K_dag, K_list)]), axis=0)
+        K_arr = np.array(K_list)
+        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
 
