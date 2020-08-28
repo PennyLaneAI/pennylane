@@ -260,6 +260,10 @@ class DefaultQubit(QubitDevice):
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
         applying an X transformation along the second axis.
 
+        By slicing along the first axis, we are able to select all of the amplitudes with a
+        corresponding :math:`|1\rangle` for the control qubit. This means we then just need to apply
+        a :class:`~.PauliX` (NOT) gate to the result.
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
@@ -270,12 +274,12 @@ class DefaultQubit(QubitDevice):
         sl_0 = _get_slice(0, axes[0], self.num_wires)
         sl_1 = _get_slice(1, axes[0], self.num_wires)
 
-        # If axes[1] is larger than axes[0], then state[sl_1] will have self.num_wires - 1 axes with
-        # the target axes shifted down by one. Otherwise, if axes[1] is less than axes[0] then its
-        # axis number in state[sl_1] remains unchanged. For example: state has axes [0, 1, 2, 3] and
-        # axes[0] = 1 and axes[1] = 3. Then, state[sl_1] has axes [0, 1, 2] so that the target axis
-        # has shifted from 3 to 2. If axes[0] = 2 and axes[1] = 1, then state[sl_1] has axes
-        # [0, 1, 2] but with the target axis remaining unchanged.
+        # We will be slicing into the state according to state[sl_1], giving us all of the
+        # amplitudes with a |1> for the control qubit. The resulting array has lost an axis
+        # relative to state and we need to be careful about the axis we apply the PauliX rotation
+        # to. If axes[1] is larger than axes[0], then we need to shift the target axis down by
+        # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
+        # target=3. Then, state[sl_1] has 3 axes and target=3 now corresponds to the second axis.
         if axes[1] > axes[0]:
             target_axes = [axes[1] - 1]
         else:
