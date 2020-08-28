@@ -12,7 +12,7 @@
   
   Hamiltonians can now easily be defined as sums of observables:
   
-  ```pycon
+  ```pycon3
   >>> H = 3 * qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
   >>> print(H)
   (7.0) [Z0] + (-1.0) [X0 X1]
