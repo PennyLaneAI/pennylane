@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.vqe` submodule.
 import pytest
 import pennylane as qml
 import numpy as np
+from pennylane.wires import Wires
 
 
 try:
@@ -92,6 +93,182 @@ hamiltonians_with_expvals = [
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliX(1)), [0.5 * 1.0, 0]),
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(0)), [0.5 * 1.0, 1.2 * 1.0]),
     ((0.5, 1.2), (qml.PauliZ(0), qml.PauliZ(1)), [0.5 * 1.0, 1.2 * 1.0]),
+]
+
+simplify_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+        qml.Hamiltonian([2, 1], [qml.PauliX(0), qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([-1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0), qml.PauliX(1)]),
+        qml.Hamiltonian([1], [qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([1, 0.5], [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Identity(2) @ qml.PauliX(0)]),
+        qml.Hamiltonian([1.5], [qml.PauliX(0) @ qml.PauliY(1)])
+    ),
+    (
+        qml.Hamiltonian([1, 1, 0.5], [
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
+            qml.PauliX("b") @ qml.PauliY(1.3), qml.PauliY(1.3) @ qml.Identity(-0.9) @ qml.PauliX("b")
+        ]),
+        qml.Hamiltonian([1, 1.5], [
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
+            qml.PauliX("b") @ qml.PauliY(1.3)
+        ])
+    )
+]
+
+equal_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        True
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
+        True
+    ),
+    (
+        qml.Hamiltonian([1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        False
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        True
+    ),
+    (
+        qml.Hamiltonian([1], [qml.PauliZ(0)]),
+        qml.PauliZ(0),
+        True
+    ),
+    (
+        qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7), qml.PauliZ(3), qml.Identity(1.2)]),
+        qml.Hamiltonian([1, 1, 1], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)]),
+        True
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
+        qml.Hamiltonian([2], [qml.PauliZ(3)]),
+        True
+    )
+]
+
+add_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
+        qml.Hamiltonian([1.6, 0.2, 2.3, 0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2), qml.PauliX(0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([1.5, 1.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.PauliX(0) @ qml.Identity(1),
+        qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hadamard(1),
+        qml.Hamiltonian([1.3, 1.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.PauliX("b") @ qml.Identity(5),
+        qml.Hamiltonian([2, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+    )
+]
+
+sub_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1.6], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 1.2, -1.5, -0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)])
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hamiltonian([0.5, 0.3, 1], [qml.PauliX(0), qml.PauliX(1) @ qml.PauliX(0), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 0.2, -0.5], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.PauliX(0) @ qml.Identity(1),
+        qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1.3, 0.2, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)]),
+        qml.Hadamard(1),
+        qml.Hamiltonian([1.3, -0.8, 0.7], [qml.PauliX(0) @ qml.PauliX(1), qml.Hadamard(1), qml.PauliX(2)])
+    ),
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX("b"), qml.PauliZ(3.1), qml.PauliX(1.6)]),
+        qml.PauliX("b") @ qml.Identity(1),
+        qml.Hamiltonian([1.2, 0.1], [qml.PauliZ(3.1), qml.PauliX(1.6)]),
+    )
+]
+
+mul_hamiltonians = [
+    (3, qml.Hamiltonian([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
+     qml.Hamiltonian([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)])),
+    (-1.3, qml.Hamiltonian([1, -0.3], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]),
+     qml.Hamiltonian([-1.3, 0.39], [qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)])),
+    (-1.3, qml.Hamiltonian([1, -0.3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)]),
+     qml.Hamiltonian([-1.3, 0.39], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(23) @ qml.PauliZ(0)])),
+]
+
+matmul_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
+        qml.Hamiltonian([0.5, 0.5, 0.5, 0.5], [
+            qml.PauliX(0) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.PauliZ(3),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(3)
+        ])
+    ),
+    (
+        qml.Hamiltonian([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
+        qml.Hamiltonian([0.5, 0.5, 0.25, 0.25], [
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliX(3) @ qml.PauliZ(2),
+            qml.PauliZ(0) @ qml.PauliZ(2)
+        ])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
+        qml.Hamiltonian([2, 2, 2, 2], [
+            qml.PauliX("b") @ qml.PauliZ(1.2),
+            qml.PauliX("b") @ qml.PauliY("c"),
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliZ(1.2),
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliY("c")
+        ])
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(2),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(2), qml.PauliZ(1) @ qml.PauliX(2)])
+    )
 ]
 
 #####################################################
@@ -220,6 +397,94 @@ class TestHamiltonian:
         """
         H = qml.vqe.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+
+    @pytest.mark.parametrize(("old_H", "new_H"), simplify_hamiltonians)
+    def test_simplify(self, old_H, new_H):
+        """Tests the simplify method"""
+        old_H.simplify()
+        assert old_H.compare(new_H)
+
+    def test_data(self):
+        """Tests the obs_data method"""
+
+        H = qml.Hamiltonian([1, 1, 0.5], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(2) @ qml.Identity(1)])
+        data = H._obs_data()
+
+        assert data == {
+            (1, frozenset([('PauliZ', Wires(0), ())])),
+            (1, frozenset([('PauliZ', Wires(0), ()), ('PauliX', Wires(1), ())])),
+            (0.5, frozenset([('PauliX', Wires(2), ())]))
+        }
+
+    def test_hamiltonian_equal_error(self):
+        """Tests that the correct error is raised when compare() is called on invalid type"""
+
+        H = qml.Hamiltonian([1], [qml.PauliZ(0)])
+        with pytest.raises(ValueError, match=r"Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor."):
+            H.compare([[1, 0], [0, -1]])
+
+    @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
+    def test_hamiltonian_equal(self, H1, H2, res):
+        """Tests that equality can be checked between Hamiltonians"""
+        assert H1.compare(H2) == res
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
+    def test_hamiltonian_add(self, H1, H2, H):
+        """Tests that Hamiltonians are added correctly"""
+        assert H.compare(H1 + H2)
+
+    @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
+    def test_hamiltonian_mul(self, coeff, H, res):
+        """Tests that scalars and Hamiltonians are multiplied correctly"""
+        assert res.compare(coeff * H)
+        assert res.compare(H * coeff)
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
+    def test_hamiltonian_sub(self, H1, H2, H):
+        """Tests that Hamiltonians are subtracted correctly"""
+        assert H.compare(H1 - H2)
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
+    def test_hamiltonian_matmul(self, H1, H2, H):
+        """Tests that Hamiltonians are tensored correctly"""
+        assert H.compare(H1 @ H2)
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
+    def test_hamiltonian_iadd(self, H1, H2, H):
+        """Tests that Hamiltonians are added inline correctly"""
+        H1 += H2
+        assert H.compare(H1)
+
+    @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
+    def test_hamiltonian_imul(self, coeff, H, res):
+        """Tests that scalars and Hamiltonians are multiplied inline correctly"""
+        H *= coeff
+        assert res.compare(H)
+
+    @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
+    def test_hamiltonian_isub(self, H1, H2, H):
+        """Tests that Hamiltonians are subtracted inline correctly"""
+        H1 -= H2
+        assert H.compare(H1)
+
+    def test_arithmetic_errors(self):
+        """Tests that the arithmetic operations thrown the correct errors"""
+        H = qml.Hamiltonian([1], [qml.PauliZ(0)])
+        A = [[1, 0], [0, -1]]
+        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
+            H @ A
+        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+            H + A
+        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+            H * A
+        with pytest.raises(ValueError, match="Cannot subtract"):
+            H - A
+        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+            H += A
+        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+            H *= A
+        with pytest.raises(ValueError, match="Cannot subtract"):
+            H -= A
 
 
 class TestVQE:
