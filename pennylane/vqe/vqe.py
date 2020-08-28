@@ -16,6 +16,7 @@ This submodule contains functionality for running Variational Quantum Eigensolve
 computations using PennyLane.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
+import itertools
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
@@ -36,6 +37,8 @@ class Hamiltonian:
     Args:
         coeffs (Iterable[float]): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression
+        simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
+                         (like-terms are combined). The default value is `False`.
 
     .. seealso:: :class:`~.VQECost`, :func:`~.generate_hamiltonian`
 
@@ -55,7 +58,7 @@ class Hamiltonian:
     Hamiltonian.
     """
 
-    def __init__(self, coeffs, observables):
+    def __init__(self, coeffs, observables, simplify=False):
 
         if len(coeffs) != len(observables):
             raise ValueError(
@@ -76,6 +79,9 @@ class Hamiltonian:
 
         self._coeffs = coeffs
         self._ops = observables
+
+        if simplify:
+            self.simplify()
 
     @property
     def coeffs(self):
@@ -113,6 +119,42 @@ class Hamiltonian:
         """
         return qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
+    def simplify(self):
+        r"""Simplifies the Hamiltonian by combining like-terms.
+
+        **Example**
+
+        >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
+        >>> H = qml.Hamiltonian([1, 1, -2], ops)
+        >>> H.simplify()
+        >>> print(H)
+        (1.0) [Y2] + (-1.0) [X0]
+        """
+
+        coeffs = []
+        ops = []
+
+        for c, op in zip(self.coeffs, self.ops):
+            op = op if isinstance(op, Tensor) else Tensor(op)
+
+            ind = None
+            for i, other in enumerate(ops):
+                if op.compare(other):
+                    ind = i
+                    break
+
+            if ind is not None:
+                coeffs[ind] += c
+                if np.allclose([coeffs[ind]], [0]):
+                    del coeffs[ind]
+                    del ops[ind]
+            else:
+                ops.append(op.prune())
+                coeffs.append(c)
+
+        self._coeffs = coeffs
+        self._ops = ops
+
     def __str__(self):
         terms = []
 
@@ -128,6 +170,180 @@ class Hamiltonian:
             terms.append(coeff.format(term))
 
         return "\n+ ".join(terms)
+
+    def _obs_data(self):
+        r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
+
+        This allows for comparison between Hamiltonians that are equivalent, but are defined with terms and tensors
+        expressed in different orders. For example, `qml.PauliX(0) @ qml.PauliZ(1)` and
+        `qml.PauliZ(1) @ qml.PauliX(0)` are equivalent observables with different orderings.
+
+        .. Note::
+
+            In order to store the data from each term of the Hamiltonian in an order-independent serialization,
+            we make use of sets. Note that all data contained within each term must be immutable, hence the use of
+            strings and frozensets.
+
+        **Example**
+
+        >>> H = qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Paulix(1), qml.PauliZ(0)])
+        >>> print(H._obs_data())
+        {(1, frozenset({('PauliZ', <Wires = [1]>, ())})),
+        (1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())}))}
+        """
+        data = set()
+
+        for co, op in zip(*self.terms):
+            obs = op.non_identity_obs if isinstance(op, Tensor) else [op]
+            tensor = []
+            for ob in obs:
+                parameters = tuple(
+                    param.tostring() for param in ob.parameters
+                )  # Converts params into immutable type
+                tensor.append((ob.name, ob.wires, parameters))
+            data.add((co, frozenset(tensor)))
+
+        return data
+
+    def compare(self, H):
+        r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
+        to determine if they are equivalent.
+
+        Hamiltonians/observables are equivalent if they represent the same operator
+        (their matrix representations are equal), and they are defined on the same wires.
+
+        .. Warning::
+
+            The compare method does **not** check if the matrix representation
+            of a :class:`~.Hermitian` observable is equal to an equivalent
+            observable expressed in terms of Pauli matrices, or as a
+            linear combination of Hermitians.
+            To do so would require the matrix form of Hamiltonians and Tensors
+            be calculated, which would drastically increase runtime.
+
+        Returns:
+            (bool): True if equivalent.
+
+        **Examples**
+
+        >>> A = np.array([[1, 0], [0, -1]])
+        >>> H = qml.Hamiltonian(
+        ...     [0.5, 0.5],
+        ...     [qml.Hermitian(A, 0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Hermitian(A, 0) @ qml.Identity("a")]
+        ... )
+        >>> obs = qml.Hermitian(A, 0) @ qml.PauliY(1)
+        >>> print(H.compare(obs))
+        True
+
+        >>> H1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
+        >>> H2 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
+        >>> H1.compare(H2)
+        False
+
+        >>> ob1 = qml.Hamiltonian([1], [qml.PauliX(0)])
+        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
+        >>> ob1.compare(ob2)
+        False
+        """
+        if isinstance(H, Hamiltonian):
+            self.simplify()
+            H.simplify()
+            return self._obs_data() == H._obs_data()  # pylint: disable=protected-access
+
+        if isinstance(H, (Tensor, Observable)):
+            self.simplify()
+            return self._obs_data() == {
+                (1, frozenset(H._obs_data()))  # pylint: disable=protected-access
+            }
+
+        raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
+
+    def __matmul__(self, H):
+        r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        coeffs1 = self.coeffs.copy()
+        terms1 = self.ops.copy()
+
+        if isinstance(H, Hamiltonian):
+            coeffs2 = H.coeffs
+            terms2 = H.ops
+
+            coeffs = [c[0] * c[1] for c in itertools.product(coeffs1, coeffs2)]
+            term_list = itertools.product(terms1, terms2)
+            terms = [qml.operation.Tensor(t[0], t[1]) for t in term_list]
+
+            return qml.Hamiltonian(coeffs, terms, simplify=True)
+
+        if isinstance(H, (Tensor, Observable)):
+            coeffs = coeffs1
+            terms = [term @ H for term in terms1]
+
+            return qml.Hamiltonian(coeffs, terms, simplify=True)
+
+        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+
+    def __add__(self, H):
+        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        coeffs = self.coeffs.copy()
+        ops = self.ops.copy()
+
+        if isinstance(H, Hamiltonian):
+            coeffs.extend(H.coeffs.copy())
+            ops.extend(H.ops.copy())
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
+
+        if isinstance(H, (Tensor, Observable)):
+            coeffs.append(1)
+            ops.append(H)
+            return qml.Hamiltonian(coeffs, ops, simplify=True)
+
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    def __mul__(self, a):
+        r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
+        if isinstance(a, (int, float)):
+            coeffs = [a * c for c in self.coeffs.copy()]
+            return qml.Hamiltonian(coeffs, self.ops.copy())
+
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+
+    __rmul__ = __mul__
+
+    def __sub__(self, H):
+        r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            return self.__add__(H.__mul__(-1))
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+
+    def __iadd__(self, H):
+        r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, Hamiltonian):
+            self._coeffs.extend(H.coeffs.copy())
+            self._ops.extend(H.ops.copy())
+            self.simplify()
+            return self
+
+        if isinstance(H, (Tensor, Observable)):
+            self._coeffs.append(1)
+            self._ops.append(H)
+            self.simplify()
+            return self
+
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    def __imul__(self, a):
+        r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
+        if isinstance(a, (int, float)):
+            self._coeffs = [a * c for c in self.coeffs]
+            return self
+
+        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+
+    def __isub__(self, H):
+        r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, (Hamiltonian, Tensor, Observable)):
+            self.__iadd__(H.__mul__(-1))
+            return self
+        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
 
 class VQECost:
