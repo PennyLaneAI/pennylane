@@ -1500,3 +1500,41 @@ class TestTrainableArgs:
         # the user will evaluate the QNode with.
         node.set_trainable_args({0, 1, 6})
         assert node.get_trainable_args() == {0, 1, 6}
+
+
+class TestQNodeCaching:
+    """Tests for QNode caching."""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @staticmethod
+    def circuit(a, b, c=None, type=None, wires=None):
+        """A circuit designed to test the caching capabilities of the QNode."""
+        qml.RX(a, wires=0)
+        qml.Rot(*b[0], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(b[1], wires=0)
+        if c == 1:
+            qml.RZ(b[2][0], wires=0)
+            qml.RZ(b[2][1], wires=1)
+        else:
+            qml.RZ(b[2][0], wires=1)
+            qml.RZ(b[2][1], wires=0)
+        if type == "expval":
+            return qml.expval(qml.PauliZ(wires=wires))
+        elif type == "samples":
+            return qml.sample(qml.PauliZ(wires=wires))
+        elif type == "probs":
+            return qml.probs(wires=[0, 1])
+        elif type == "mixed":
+            return qml.expval(qml.PauliZ(wires=0)) @ qml.sample(qml.PauliX(wires=1))
+
+    def test_caching_set(self):
+        """Test that the caching property is set and can be subsequently set after instantiation."""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=10)
+        assert qnode.caching == 10
+        qnode.caching = 8
+        assert qnode.caching == 8
+
+
+
