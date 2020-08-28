@@ -208,7 +208,9 @@ class BaseQNode(qml.QueuingContext):
         """float: number of circuit evaluations to store in a cache to speed up subsequent 
         evaluations. If set to zero, no caching occurs."""
 
-        self._hash_evaluate = OrderedDict()  #: OrderedDict[tuple[int, int, int]: Any]: TOODO
+        self._hash_evaluate = OrderedDict()  #: OrderedDict[tuple[int, int, int]: Any]: Mapping
+        # from three hashes to the result of evaluating the QNode. The three hashes are generated
+        # from the arguments, keyword arguments, and circuit, respectively.
 
     def __repr__(self):
         """String representation."""
