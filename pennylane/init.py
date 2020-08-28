@@ -251,22 +251,22 @@ def cvqnn_layers_all(n_layers, n_wires, seed=None):
 def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -278,22 +278,22 @@ def cvqnn_layers_theta_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
 def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``theta`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean (float): mean of normal distribution
-            std (float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean (float): mean of normal distribution
+        std (float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -305,22 +305,22 @@ def cvqnn_layers_theta_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the arrays is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -332,22 +332,22 @@ def cvqnn_layers_phi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
 def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``phi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
+    The shape of the array is ``(n_layers, n_wires*(n_wires-1)/2)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean (float): mean of normal distribution
-            std (float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean (float): mean of normal distribution
+        std (float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -359,22 +359,22 @@ def cvqnn_layers_phi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -385,22 +385,22 @@ def cvqnn_layers_varphi_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None
 def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the ``varphi`` input to the interferometers of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -411,22 +411,22 @@ def cvqnn_layers_varphi_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_r_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     r"""Creates a parameter array for the squeezing amplitude ``r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -437,22 +437,22 @@ def cvqnn_layers_r_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 def cvqnn_layers_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the squeezing amplitude ``r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -463,22 +463,22 @@ def cvqnn_layers_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_phi_r_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the squeezing phase ``phi_r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -489,22 +489,22 @@ def cvqnn_layers_phi_r_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
 def cvqnn_layers_phi_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the squeezing phase ``phi_r`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -515,22 +515,22 @@ def cvqnn_layers_phi_r_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     r"""Creates a parameter array for the displacement amplitude ``a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -541,22 +541,22 @@ def cvqnn_layers_a_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the displacement amplitude ``a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -567,22 +567,22 @@ def cvqnn_layers_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_phi_a_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None):
     r"""Creates a parameter array for the displacement phase ``phi_a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -593,22 +593,22 @@ def cvqnn_layers_phi_a_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=None)
 def cvqnn_layers_phi_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the displacement phase ``phi_a`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -619,22 +619,22 @@ def cvqnn_layers_phi_a_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
 def cvqnn_layers_kappa_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
     r"""Creates a parameter array for the kerr parameter ``kappa`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a uniform distribution.
+    The parameters are drawn from a uniform distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            low (float): minimum value of uniform distribution
-            high (float): maximum value of uniform distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        low (float): minimum value of uniform distribution
+        high (float): maximum value of uniform distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
@@ -645,22 +645,22 @@ def cvqnn_layers_kappa_uniform(n_layers, n_wires, low=0, high=0.1, seed=None):
 def cvqnn_layers_kappa_normal(n_layers, n_wires, mean=0, std=0.1, seed=None):
     r"""Creates a parameter array for the kerr parameter ``kappa`` of :func:`~.CVNeuralNetLayers`.
 
-        The parameters are drawn from a normal distribution.
+    The parameters are drawn from a normal distribution.
 
-        The shape of the arrays is ``(n_layers, n_wires)``.
+    The shape of the arrays is ``(n_layers, n_wires)``.
 
-        Args:
-            n_layers (int): number of layers of the CV Neural Net
-            n_wires (int): number of modes of the CV Neural Net
+    Args:
+        n_layers (int): number of layers of the CV Neural Net
+        n_wires (int): number of modes of the CV Neural Net
 
-        Keyword Args:
-            mean(float): mean of normal distribution
-            std(float): standard deviation of normal distribution
-            seed (int): seed used in sampling the parameters, makes function call deterministic
+    Keyword Args:
+        mean(float): mean of normal distribution
+        std(float): standard deviation of normal distribution
+        seed (int): seed used in sampling the parameters, makes function call deterministic
 
-        Returns:
-            array: parameter array
-        """
+    Returns:
+        array: parameter array
+    """
     if seed is not None:
         np.random.seed(seed)
 
