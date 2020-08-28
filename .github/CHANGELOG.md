@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Adding quantum noisy channels: quantum channels provide a general
+* Quantum noisy channels: quantum channels provide a general
   formalism for discussing state evolution, including the evolution
   of pure states into mixed states due to noise and decoherence. It
   allows the user to simulate noise, benchmark algorithms running on
