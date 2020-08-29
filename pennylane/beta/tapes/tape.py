@@ -14,14 +14,13 @@
 """
 This module contains the base quantum tape.
 """
-
-from collections import deque, Sequence
+# pylint: disable=too-many-instance-attributes,protected-access
 import numpy as np
 
 import pennylane as qml
 
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.queuing import AnnotatedQueue, Queue, QueuingContext
+from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 
 from .circuit_graph import CircuitGraph
 
@@ -166,6 +165,7 @@ class QuantumTape(AnnotatedQueue):
         self._trainable_params = set()
         self._graph = None
         self._output_dim = 0
+        self.wires = qml.wires.Wires([])
 
         self.hash = 0
         self.is_sampled = False
@@ -724,6 +724,7 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        # pylint:disable=unused-argument
         if params is None:
             params = np.array(self.get_parameters())
 
@@ -875,7 +876,7 @@ class QuantumTape(AnnotatedQueue):
             # If explicitly using analytic mode, ensure that all parameters
             # support analytic differentiation.
             numeric_params = {
-                idx for idx, info in self._par_info.items() if info["grad_method"] is "F"
+                idx for idx, info in self._par_info.items() if info["grad_method"] == "F"
             }
 
             if numeric_params:

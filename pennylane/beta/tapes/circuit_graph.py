@@ -15,10 +15,21 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an operator and observable queue.
 """
-from collections import Counter, OrderedDict, namedtuple
+# from collections import Counter, OrderedDict, namedtuple
 
 
 import networkx as nx
+
+
+def _by_idx(x):
+    """Sorting key for Operators: queue index aka temporal order.
+
+    Args:
+        x (Operator): node in the circuit graph
+    Returns:
+        int: sorting key for the node
+    """
+    return x.queue_idx
 
 
 class CircuitGraph:

@@ -17,8 +17,6 @@ This module contains the abstract base classes for defining PennyLane
 operations and observables.
 """
 
-import pennylane as qml
-
 # --------------------
 # Beta related imports
 # --------------------

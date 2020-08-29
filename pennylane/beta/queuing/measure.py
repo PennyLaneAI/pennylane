@@ -17,11 +17,8 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
-import collections
-
 import pennylane as qml
 from pennylane.operation import Expectation, Observable, Probability, Sample, Variance
-from pennylane.ops import Identity
 from pennylane.qnodes import QuantumFunctionError
 
 
@@ -32,9 +29,12 @@ class MeasurementProcess:
     """NamedTuple: A namedtuple that contains the return_type of the circuit and
     whose instance can be queried by id."""
 
-    def __init__(self, return_type, wires=None):
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, return_type, obs=None, wires=None):
         self.return_type = return_type
         self.wires = wires
+        self.obs = obs
 
         # TODO: remove the following line once devices
         # have been refactored to no longer require dummy observable
@@ -74,7 +74,7 @@ def expval(op):
             "{} is not an observable: cannot be used with expval".format(op.name)
         )
 
-    meas_op = MeasurementProcess(Expectation)
+    meas_op = MeasurementProcess(Expectation, obs=op)
     QueuingContext.update_info(op, owner=meas_op)
     QueuingContext.append(meas_op, owns=op)
     return meas_op
@@ -112,7 +112,7 @@ def var(op):
             "{} is not an observable: cannot be used with var".format(op.name)
         )
 
-    meas_op = MeasurementProcess(Variance)
+    meas_op = MeasurementProcess(Variance, obs=op)
     QueuingContext.update_info(op, owner=meas_op)
     QueuingContext.append(meas_op, owns=op)
     return meas_op
@@ -151,7 +151,7 @@ def sample(op):
             "{} is not an observable: cannot be used with sample".format(op.name)
         )
 
-    meas_op = MeasurementProcess(Sample)
+    meas_op = MeasurementProcess(Sample, obs=op)
     QueuingContext.update_info(op, owner=meas_op)
     QueuingContext.append(meas_op, owns=op)
     return meas_op

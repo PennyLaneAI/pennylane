@@ -140,6 +140,8 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             return cls._active_contexts[-1]
 
+        return None
+
     @classmethod
     def append(cls, obj, **kwargs):
         """Append an object to the queue(s).
@@ -193,17 +195,11 @@ class QueuingContext(abc.ABC):
             object metadata
         """
         if cls.recording():
-            cls.active_context()._get_info(obj)  # pylint: disable=protected-access
+            return cls.active_context()._get_info(obj)  # pylint: disable=protected-access
 
     def _get_info(self, obj):
         """Retrieves information of an object in the queue instance."""
         raise NotImplementedError
-
-    @classmethod
-    def get_info(cls, obj):
-        """Returns information of an object in the queue."""
-        if cls.recording():
-            return cls.active_context()._get_info(obj)
 
 
 class Queue(QueuingContext):
