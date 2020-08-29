@@ -136,7 +136,7 @@ class TestDepolarizingChannel:
         expected = np.sqrt(p / 3) * X
         assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
 
-        
+
 class TestQubitChannel:
     """Tests for the quantum channel QubitChannel"""
 

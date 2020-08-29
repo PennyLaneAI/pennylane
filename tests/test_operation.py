@@ -1006,44 +1006,74 @@ equal_obs = [
     (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
     (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
-    (qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
-     qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0), True),
+    (
+        qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+        qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+        True,
+    ),
     (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
-    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True)
+    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True),
 ]
 
 add_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
-    (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
-     qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.PauliZ("b") @ qml.Identity(1),
-     qml.Hamiltonian([3], [qml.PauliZ("b")]), qml.Hamiltonian([4], [qml.PauliZ("b")])),
-    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
-     qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)])),
-    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-     qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
+    (
+        qml.PauliZ(0),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
+    (
+        qml.PauliZ("b") @ qml.Identity(1),
+        qml.Hamiltonian([3], [qml.PauliZ("b")]),
+        qml.Hamiltonian([4], [qml.PauliZ("b")]),
+    ),
+    (
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
+        qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)]),
+    ),
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+        qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+    ),
 ]
 
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"), 3,
-     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]))
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
+        3,
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]),
+    ),
 ]
 
 sub_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
-    (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
-     qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.PauliZ(0) @ qml.Identity(1), qml.Hamiltonian([3], [qml.PauliZ(0)]), qml.Hamiltonian([-2], [qml.PauliZ(0)])),
-    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-     qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)])),
-    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-     qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
+    (
+        qml.PauliZ(0),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
+    (
+        qml.PauliZ(0) @ qml.Identity(1),
+        qml.Hamiltonian([3], [qml.PauliZ(0)]),
+        qml.Hamiltonian([-2], [qml.PauliZ(0)]),
+    ),
+    (
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
+        qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]),
+    ),
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+        qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+    ),
 ]
+
 
 class TestTensorObservableOperations:
     """Tests arithmetic operations between observables/tensors"""
@@ -1065,7 +1095,13 @@ class TestTensorObservableOperations:
         data = obs._obs_data()
 
         assert data == {
-            ("Hermitian", Wires(0), (b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff',))
+            (
+                "Hermitian",
+                Wires(0),
+                (
+                    b"\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff",
+                ),
+            )
         }
 
     def test_equality_error(self):
@@ -1074,7 +1110,10 @@ class TestTensorObservableOperations:
         obs = qml.PauliZ(0)
         tensor = qml.PauliZ(0) @ qml.PauliX(1)
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."):
+        with pytest.raises(
+            ValueError,
+            match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.",
+        ):
             obs.compare(A)
             tensor.compare(A)
 
