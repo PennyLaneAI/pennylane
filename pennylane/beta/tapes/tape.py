@@ -115,6 +115,7 @@ class QuantumTape(AnnotatedQueue):
 
     Trainable parameters are taken into account when calculating the Jacobian,
     avoiding unnecessary calculations:
+
     >>> tape.jacobian(dev)
     [[-0.45478169]]
     """
@@ -123,10 +124,20 @@ class QuantumTape(AnnotatedQueue):
     def __init__(self):
         super().__init__()
         self._prep = []
+        """list[~.Operation]: Tape state preparations. Not currently used."""
+
         self._ops = []
+        """list[~.Operation]: quantum operations recorded by the tape."""
+
         self._obs = []
+        """list[tuple[~.MeasurementProcess, ~.Observable]]: measurement processes and
+        coresponding observables recorded by the tape."""
 
         self._par_info = {}
+        """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
+        parameter indices (in the order they appear on the tape), and values are a
+        dictionary containing the corresponding operation and operation parameter index."""
+
         self._trainable_params = set()
         self._graph = None
         self._output_dim = 0
@@ -334,13 +345,64 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def graph(self):
+        """Returns a directed acyclic graph representation of the recorded
+        quantum circuit:
+
+        >>> tape.graph
+        <pennylane.beta.tapes.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
+
+        Note that the circuit graph is only constructed once, on first call to this property,
+        and cached for future use.
+
+        Returns:
+            .beta.tapes.CircuitGraph: the circuit graph object
+        """
         if self._graph is None:
             self._graph = CircuitGraph(self.operations, self.observables, self.wires)
 
         return self._graph
 
     def get_parameters(self, free_only=True):
-        """Return the parameters incident on the tape operations"""
+        """Return the parameters incident on the tape operations.
+
+        The returned parameters are provided in order of appearance
+        on the tape.
+
+        Args:
+            free_only (bool): if True, returns only trainable parameters
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        By default, all parameters are trainable and will be returned:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        Setting the trainable parameter indices will result in only the specified
+        parameters being returned:
+
+        >>> tape.trainable_params = {1} # set the second parameter as free
+        >>> tape.get_parameters()
+        [0.543]
+
+        The ``free_only`` argument can be set to ``False`` to instead return
+        all parameters:
+
+        >>> tape.get_parameters(free_only=False)
+        [0.432, 0.543, 0.133]
+        """
         params = [o.data for o in self.operations]
         params = [item for sublist in params for item in sublist]
 
@@ -349,16 +411,59 @@ class QuantumTape(AnnotatedQueue):
 
         return [p for idx, p in enumerate(params) if idx in self.trainable_params]
 
-    def set_parameters(self, parameters, free_only=True):
-        """Set the parameters incident on the tape operations"""
+    def set_parameters(self, params, free_only=True):
+        """Set the parameters incident on the tape operations.
+
+        Args:
+            params (list[float]): A list of real numbers representing the
+                parameters of the quantum operations. The parameters should be
+                provided in order of appearance in the quantum tape.
+            free_only (bool): if True, set only trainable parameters
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        By default, all parameters are trainable and can be modified:
+
+        >>> tape.set_parameters([0.1, 0.2, 0.3])
+        >>> tape.get_parameters()
+        [0.1, 0.2, 0.3]
+
+        Setting the trainable parameter indices will result in only the specified
+        parameters being modifiable. Note that this only modifies the number of
+        parameters that must be passed.
+
+        >>> tape.trainable_params = {0, 2} # set the first and third parameter as free
+        >>> tape.set_parameters([-0.1, 0.5])
+        >>> tape.get_parameters(free_only=False)
+        [-0.1, 0.2, 0.5]
+
+        The ``free_only`` argument can be set to ``False`` to instead set
+        all parameters:
+
+        >>> tape.set_parameters([4, 1, 6])
+        >>> tape.get_parameters(free_only=False)
+        [4, 1, 6]
+        """
         if free_only:
-            iterator = zip(self.trainable_params, parameters)
+            iterator = zip(self.trainable_params, params)
             required_length = self.num_params
         else:
-            iterator = enumerate(parameters)
+            iterator = enumerate(params)
             required_length = len(self._par_info)
 
-        if len(parameters) != required_length:
+        if len(params) != required_length:
             raise ValueError("Number of provided parameters invalid.")
 
         for idx, p in iterator:
@@ -370,14 +475,61 @@ class QuantumTape(AnnotatedQueue):
     # ========================================================
 
     def execute(self, device, params=None):
-        """Execute the tape on `device` with gate input `params`"""
+        """Execute the tape on a quantum device.
+
+        Args:
+            device (~.Device, ~.QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameters are used (via :meth:`~.get_parameters`).
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                probs(wires=[0, 'a'])
+
+        If parameters are not provided, the existing tape parameters are used:
+
+        >>> dev = qml.device("default.qubit", wires=[0, 'a'])
+        >>> tape.execute(dev)
+        array([[8.84828969e-01, 3.92449987e-03, 4.91235209e-04, 1.10755296e-01]])
+
+        Parameters can be optionally passed during execution:
+
+        >>> tape.execute(dev, params=[1.0, 0.0, 1.0])
+        array([[0.5931328 , 0.17701835, 0.05283049, 0.17701835]])
+
+        Parameters provided for execution are temporary, and do not affect
+        the tapes' parameters in-place:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+        """
         if params is None:
             params = self.get_parameters()
 
         return self.cast(self._execute(params, device=device))
 
     def execute_device(self, params, device):
-        """Execute the tape on `device` with gate input `params`"""
+        """Execute the tape on a quantum device.
+
+        For more details, see :meth:`~.execute`.
+
+        Args:
+            device (~.Device, ~.QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+        """
         device.reset()
 
         # backup the current parameters
@@ -402,13 +554,23 @@ class QuantumTape(AnnotatedQueue):
     # ========================================================
 
     def _grad_method(self, idx, use_graph=True):
-        """Determine the correct partial derivative computation method for each gate argument.
+        """Determine the correct partial derivative computation method for each gate parameter.
+
+        Parameter gradient methods include:
+
+        * ``None``: the parameter does not support differentiation.
+        * ``"0"``: the variational circuit output does not depend on this
+            parameter (the partial derivative is zero).
+        * ``"F"``: the parameter has a non-zero derivative that should be computed
+            using finite-differences.
+        * ``"A"``: the parameter has a non-zero derivative that should be computed
+            using an analytic method.
 
         .. note::
 
-            The ``QuantumTape`` only supports numerical differentiation, so
+            The base ``QuantumTape`` class only supports numerical differentiation, so
             this method will always return either ``"F"`` or ``None``. If an inheriting
-            QNode supports analytic differentiation for certain operations, make sure
+            tape supports analytic differentiation for certain operations, make sure
             that this method is overwritten appropriately to return ``"A"`` where
             required.
 
@@ -445,9 +607,22 @@ class QuantumTape(AnnotatedQueue):
 
         return "F"
 
-    def igrad_numeric(self, idx, device, params=None, **options):
-        """Evaluate the gradient for the ith parameter in params
-        using finite differences."""
+    def numeric_pd(self, idx, device, params=None, **options):
+        """Evaluate the gradient of the tape with respect to
+        a single trainable tape parameter using numerical finite-differences.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            device (~.Device, ~.QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+
+        Keyword Args:
+            h=1e-7 (float): finite difference method step size
+            order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+                to forward finite differences, ``2`` to centered finite differences.
+        """
         if params is None:
             params = np.array(self.get_parameters())
 
@@ -471,13 +646,43 @@ class QuantumTape(AnnotatedQueue):
 
         raise ValueError("Order must be 1 or 2.")
 
+    def device_pd(self, device, params=None, **options):
+        if params is None:
+            params = np.array(self.get_parameters())
+
+        current_parameters = self.get_parameters()
+
+        # temporarily mutate the in-place parameters
+        self.set_parameters(params)
+
+        # TODO: modify devices that have device Jacobian methods to
+        # accept the quantum tape as an argument
+        jac = device.jacobian(self)
+
+        # restore original parameters
+        self.set_parameters(current_parameters)
+        return jac
+
+    def analytic_pd(self, idx, device, params=None, **options):
+        """Evaluate the gradient of the tape with respect to
+        a single trainable tape parameter using an analytic method.
+        """
+        raise NotImplementedError
+
     def jacobian(self, device, params=None, method="best", **options):
-        """Compute the Jacobian via the parameter-shift rule
-        on `device` with gate input `params`"""
+        r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
+
+        The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
+        mapping :math:`m` (trainable) gate parameters to :math:`n` measurement statistics,
+        such as expectation values or probabilities.
+        """
         if params is None:
             params = self.get_parameters()
 
         params = np.array(params)
+
+        if method == "device":
+            return self.device_pd(device, **options)
 
         if options.get("order", 1) == 1:
             # the value of the circuit at current params, computed only once here
@@ -492,6 +697,6 @@ class QuantumTape(AnnotatedQueue):
             method = self._grad_method(l[0], use_graph=options.get("use_graph", True))
 
             if method == "F":
-                jac[:, idx] = self.igrad_numeric(l, device, params=params, **options)
+                jac[:, idx] = self.numeric_pd(l, device, params=params, **options)
 
         return jac
