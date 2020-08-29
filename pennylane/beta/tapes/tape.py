@@ -38,6 +38,30 @@ def mock_queue(self):
     return self
 
 
+def mock_tensor_init(self, *args):
+    """mock tensor init"""
+    self._eigvals_cache = None
+    self.obs = []
+
+    for o in args:
+        if isinstance(o, qml.operation.Tensor):
+            self.obs.extend(o.obs)
+        elif isinstance(o, qml.operation.Observable):
+            self.obs.append(o)
+        else:
+            raise ValueError("Can only perform tensor products between observables.")
+
+    self.queue()
+
+
+def mock_tensor_queue(self):
+    """mock tensor queuing"""
+    QueuingContext.append(self, owns=tuple(self.obs))
+    for o in self.obs:
+        QueuingContext.update_info(o, owner=self)
+    return self
+
+
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
@@ -149,6 +173,9 @@ class QuantumTape(AnnotatedQueue):
     def __enter__(self):
         # monkeypatch operations to use the qml.beta.queuing.queuing.QueuingContext instead
         qml.operation.Operation.queue = mock_queue
+        qml.operation.CVObservable.queue = mock_queue
+        qml.operation.Tensor.__init__ = mock_tensor_init
+        qml.operation.Tensor.queue = mock_tensor_queue
 
         QueuingContext.append(self)
 
@@ -158,6 +185,8 @@ class QuantumTape(AnnotatedQueue):
         super().__exit__(exception_type, exception_value, traceback)
         # remove the monkeypatching
         qml.operation.Operation.queue = ORIGINAL_QUEUE
+        qml.operation.CVObservable.queue = ORIGINAL_QUEUE
+        qml.operation.Tensor.queue = lambda self: None
         self._construct()
 
     # ========================================================
@@ -177,6 +206,10 @@ class QuantumTape(AnnotatedQueue):
         * ``_trainable_params``
         * ``is_sampled``
         """
+        self._ops = []
+        self._obs = []
+        self._output_dim = 0
+
         param_count = 0
         op_count = 0
 
@@ -557,8 +590,19 @@ class QuantumTape(AnnotatedQueue):
         # Update output dim if incorrect.
         # Note that we cannot assume the type of `res`, so
         # we use duck typing to catch any 'array like' object.
-        if hasattr(res, "shape") and self.output_dim != np.prod(res.shape):
-            self._output_dim = np.prod(res.shape)
+        try:
+            if isinstance(res, np.ndarray) and res.dtype is np.dtype("object"):
+                output_dim = sum([len(i) for i in res])
+            else:
+                output_dim = sum(res.shape)
+
+            if self.output_dim != output_dim:
+                # update the output dimension estimate with the correct value
+                self._output_dim = output_dim
+
+        except (AttributeError, TypeError):
+            # unable to determine the output dimension
+            pass
 
         # restore original parameters
         self.set_parameters(current_parameters)
@@ -576,10 +620,13 @@ class QuantumTape(AnnotatedQueue):
         Parameter gradient methods include:
 
         * ``None``: the parameter does not support differentiation.
+
         * ``"0"``: the variational circuit output does not depend on this
             parameter (the partial derivative is zero).
+
         * ``"F"``: the parameter has a non-zero derivative that should be computed
             using finite-differences.
+
         * ``"A"``: the parameter has a non-zero derivative that should be computed
             using an analytic method.
 
