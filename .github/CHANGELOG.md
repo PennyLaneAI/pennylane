@@ -2,7 +2,60 @@
 
 <h3>New features since last release</h3>
 
+* Quantum noisy channels: quantum channels provide a general
+  formalism for discussing state evolution, including the evolution
+  of pure states into mixed states due to noise and decoherence. It
+  allows the user to simulate noise, benchmark algorithms running on
+  real hardware, and to test error-correction techniques. Moreover,
+  differentiable quantum channels could be a unique feature for 
+  PennyLane not present in other libraries.
+
+  [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
+  [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
+
 <h3>Improvements</h3>
+
+* Adds arithmetic operations (addition, tensor product, 
+  subtraction, and scalar multiplication) between ``Hamiltonian``, 
+  ``Tensor``, and ``Observable`` objects, and inline arithmetic 
+  operations between Hamiltonians and other observables.
+  [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
+  
+  Hamiltonians can now easily be defined as sums of observables:
+  
+  ```pycon3
+  >>> H = 3 * qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
+  >>> print(H)
+  (7.0) [Z0] + (-1.0) [X0 X1]
+  ```
+
+* Adds ``compare()`` method to `Observable` and `Hamiltonian` classes, which allows
+  for comparison between observable quantities.
+  [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
+  
+  ```pycon3
+  >>> H = qml.Hamiltonian([1], [qml.PauliZ(0)])
+  >>> obs = qml.PauliZ(0) @ qml.Identity(1)
+  >>> print(H.compare(obs))
+  True
+  ```
+  
+  ```pycon3
+  >>> H = qml.Hamiltonian([2], [qml.PauliZ(0)])
+  >>> obs = qml.PauliZ(1) @ qml.Identity(0)
+  >>> print(H.compare(obs))
+  False
+  ```
+  
+* Adds ``simplify()`` method to the ``Hamiltonian`` class.
+  [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
+
+  ```pycon3
+  >>> H = qml.Hamiltonian([1, 2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.Identity(1)])
+  >>> H.simplify()
+  >>> print(H)
+  (3.0) [Z0]
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -18,19 +71,13 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Josh Izaac, Antal Száva.
-
+Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Josh Izaac, Antal Száva, Jack Ceroni.
 
 # Release 0.11.0 (current release)
 
 <h3>New features since last release</h3>
 
-* Adding quantum noisy channels 
-
-  [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
-
 <h4>New and improved simulators</h4>
-
 * Added a new device, `default.qubit.autograd`, a pure-state qubit simulator written using Autograd.
   This device supports classical backpropagation (`diff_method="backprop"`); this can
   be faster than the parameter-shift rule for computing quantum gradients
