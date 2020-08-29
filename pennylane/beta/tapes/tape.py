@@ -329,6 +329,11 @@ class QuantumTape(AnnotatedQueue):
         return len(self.trainable_params)
 
     @property
+    def output_dim(self):
+        """The (estimated) output dimension of the quantum tape."""
+        return self._output_dim
+
+    @property
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -622,6 +627,10 @@ class QuantumTape(AnnotatedQueue):
             h=1e-7 (float): finite difference method step size
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
+
+        Returns:
+            array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
         """
         if params is None:
             params = np.array(self.get_parameters())
@@ -647,6 +656,15 @@ class QuantumTape(AnnotatedQueue):
         raise ValueError("Order must be 1 or 2.")
 
     def device_pd(self, device, params=None, **options):
+        """Evaluate the gradient of the tape with respect to
+        a single trainable tape parameter by querying the provided device.
+
+        Args:
+            device (~.Device, ~.QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+        """
         if params is None:
             params = np.array(self.get_parameters())
 
@@ -666,6 +684,17 @@ class QuantumTape(AnnotatedQueue):
     def analytic_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
         a single trainable tape parameter using an analytic method.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            device (~.Device, ~.QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+
+        Returns:
+            array[float]: 1-dimensional array of length determined by the tape output
+                measurement statistics
         """
         raise NotImplementedError
 
@@ -675,6 +704,91 @@ class QuantumTape(AnnotatedQueue):
         The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
         mapping :math:`m` (trainable) gate parameters to :math:`n` measurement statistics,
         such as expectation values or probabilities.
+
+        By default, the Jacobian will be computed with respect to all parameters on the quantum tape.
+        This can be modified by setting the :attr:`~.trainable_params` attribute of the tape.
+
+        The Jacobian can be computed using several methods:
+
+        * Finite differences (``'F'``). The first-order method evaluates the circuit at
+          :math:`n+1` points of the parameter space, the second-order method at :math:`2n` points,
+          where ``n = tape.num_params``.
+
+        * Analytic method (``'A'``). Analytic, if implemented by the inheriting quantum tape.
+
+        * Best known method for each parameter (``'best'``): uses the analytic method if
+          possible, otherwise finite difference.
+
+        * Device method (``'device'``): Delegates the computation of the Jacobian to the
+          device executing the circuit. Only supported by devices that provide their
+          own method for computing derivatives; support can be checked by
+          querying the device capabilities: ``dev.capabilities()['provides_jacobian']`` must
+          return ``True``. Examples of supported devices include the experimental
+          :class:`"default.tensor.tf" <~.DefaultTensorTF>` device.
+
+        .. note::
+
+            The finite difference method is sensitive to statistical noise in the circuit output,
+            since it compares the output at two points infinitesimally close to each other. Hence
+            the ``'F'`` method works best with exact expectation values when using simulator
+            devices.
+
+        Args:
+            device (~.Device, ~.QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+
+        Returns:
+            array[float]: 2-dimensional array of shape ``(tape.num_params, tape.output_dim)``
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                probs(wires=[0, 'a'])
+
+        If parameters are not provided, the existing tape parameters are used:
+
+        >>> dev = qml.device("default.qubit", wires=[0, 'a'])
+        >>> tape.jacobian(dev)
+        array([[-0.178441  , -0.23358253, -0.05892804],
+               [-0.00079144, -0.00103601,  0.05892804],
+               [ 0.00079144,  0.00103601,  0.00737611],
+               [ 0.178441  ,  0.23358253, -0.00737611]])
+
+        Parameters can be optionally passed during execution:
+
+        >>> tape.jacobian(dev, params=[1.0, 0.0, 1.0])
+        array([[-3.24029934e-01, -9.99200722e-09, -3.24029934e-01],
+               [-9.67055711e-02, -2.77555756e-09,  3.24029935e-01],
+               [ 9.67055709e-02,  3.05311332e-09,  9.67055709e-02],
+               [ 3.24029935e-01,  1.08246745e-08, -9.67055711e-02]])
+
+        Parameters provided for execution are temporary, and do not affect
+        the tapes' parameters in-place:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        Explicitly setting the trainable parameters can significantly reduce
+        computational resources, as non-trainable parameters are ignored
+        during the computation:
+
+        >>> tape.trainable_params = {0} # set only the first parameter as trainable
+        >>> tape.jacobian(dev)
+        array([[-0.178441  ],
+               [-0.00079144],
+               [ 0.00079144],
+               [ 0.178441  ]])
         """
         if params is None:
             params = self.get_parameters()
@@ -688,7 +802,8 @@ class QuantumTape(AnnotatedQueue):
             # the value of the circuit at current params, computed only once here
             options["y0"] = np.asarray(self.execute_device(params, device))
 
-        jac = np.zeros((self._output_dim, len(params)), dtype=float)
+        # jac = np.zeros((self.output_dim, len(params)), dtype=float)
+        jac = []
 
         p_ind = list(np.ndindex(*params.shape))
 
@@ -697,6 +812,9 @@ class QuantumTape(AnnotatedQueue):
             method = self._grad_method(l[0], use_graph=options.get("use_graph", True))
 
             if method == "F":
-                jac[:, idx] = self.numeric_pd(l, device, params=params, **options)
+                jac.append(self.numeric_pd(l, device, params=params, **options))
 
-        return jac
+            if method == "A":
+                jac.append(self.analytic_pd(l, device, params=params, **options))
+
+        return np.array(jac, dtype=float)
