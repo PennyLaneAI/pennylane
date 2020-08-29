@@ -197,6 +197,8 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             return cls.active_context()._get_info(obj)  # pylint: disable=protected-access
 
+        return None
+
     def _get_info(self, obj):
         """Retrieves information of an object in the queue instance."""
         raise NotImplementedError
