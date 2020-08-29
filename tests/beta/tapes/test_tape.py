@@ -510,3 +510,47 @@ class TestCVExecution:
 
         res = tape.execute(dev)
         assert res.shape == (2,)
+
+
+class TestGradMethod:
+    """Tests for parameter gradient methods"""
+
+    def test_non_differentiable(self):
+        """Test that a non-differentiable parameter is
+        correctly marked"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=[0, 1])
+
+        assert tape._grad_method(0) is None
+        assert tape._grad_method(1) == "F"
+        assert tape._grad_method(2) == "F"
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "F"
+        assert tape._par_info[2]["grad_method"] == "F"
+
+    def test_independent(self):
+        """Test that an independent variable is properly marked
+        as having a zero gradient"""
+
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            expval(qml.PauliY(0))
+
+        assert tape._grad_method(0) == "F"
+        assert tape._grad_method(1) == "0"
+
+        assert tape._par_info[0]["grad_method"] == "F"
+        assert tape._par_info[1]["grad_method"] == "0"
+
+        # in non-graph mode, it is impossible to determine
+        # if a parameter is independent or not
+        tape._graph = None
+        assert tape._grad_method(1, use_graph=False) == "F"
