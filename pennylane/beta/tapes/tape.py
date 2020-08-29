@@ -119,6 +119,7 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.jacobian(dev)
     [[-0.45478169]]
     """
+
     cast = staticmethod(np.array)
 
     def __init__(self):
@@ -553,6 +554,12 @@ class QuantumTape(AnnotatedQueue):
         else:
             res = device.execute(self.operations, self.observables, {})
 
+        # Update output dim if incorrect.
+        # Note that we cannot assume the type of `res`, so
+        # we use duck typing to catch any 'array like' object.
+        if hasattr(res, "shape") and self.output_dim != np.prod(res.shape):
+            self._output_dim = np.prod(res.shape)
+
         # restore original parameters
         self.set_parameters(current_parameters)
         return res
@@ -801,13 +808,18 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        if method not in ("best", "F", "A", "device"):
+            raise ValueError(f"Unknown gradient method '{method}'")
+
         if params is None:
             params = self.get_parameters()
 
         params = np.array(params)
 
         # check and raise an error if any parameters are non-differentiable
-        nondiff_params = {idx for idx, info in self._par_info.items() if info["grad_method"] is None}
+        nondiff_params = {
+            idx for idx, info in self._par_info.items() if info["grad_method"] is None
+        }
 
         if nondiff_params:
             raise ValueError(f"Cannot differentiate with respect to parameters(s) {nondiff_params}")
@@ -815,12 +827,16 @@ class QuantumTape(AnnotatedQueue):
         if method == "A":
             # If explicitly using analytic mode, ensure that all parameters
             # support analytic differentiation.
-            fd_params = {idx for idx, info in self._par_info.items() if info["grad_method"] is "F"}
+            numeric_params = {
+                idx for idx, info in self._par_info.items() if info["grad_method"] is "F"
+            }
 
-            if fd_params:
-                raise ValueError(f"The analytic gradient method cannot be used with the argument(s) {fd_params}.")
+            if numeric_params:
+                raise ValueError(
+                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
+                )
 
-        if method == "device":
+        elif method == "device":
             # Using device mode; query the device for the Jacobian
             return self.device_pd(device, **options)
 
@@ -833,12 +849,27 @@ class QuantumTape(AnnotatedQueue):
 
         # loop through each parameter and compute the gradient
         for idx, l in enumerate(p_ind):
-            method = self._par_info[idx]["grad_method"]
+            param_method = self._par_info[idx]["grad_method"]
 
-            if method == "F":
-                jac[:, idx] = self.numeric_pd(l, device, params=params, **options).flatten()
+            try:
+                if (method == "best" and param_method == "F") or (method == "F"):
+                    # finite difference method
+                    jac[:, idx] = self.numeric_pd(l, device, params=params, **options).flatten()
 
-            if method == "A":
-                jac[:, idx] = self.analytic_pd(l, device, params=params, **options).flatten()
+                elif (method == "best" and param_method == "A") or (method == "A"):
+                    # analytic method
+                    jac[:, idx] = self.analytic_pd(l, device, params=params, **options).flatten()
+
+            except ValueError as e:
+                if "could not broadcast input array from shape" in str(e):
+                    # the value of self._output_dim, which was estimated during
+                    # construction, is incorrect. A device execution is required
+                    # to properly infer output dimension.
+                    raise ValueError(
+                        "The quantum tape could not infer the correct output dimension "
+                        "of the quantum computation. Please execute the tape before "
+                        "computing the Jacobian."
+                    )
+                raise e
 
         return jac

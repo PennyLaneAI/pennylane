@@ -219,3 +219,8 @@ class TestParameters:
         assert tape.get_parameters() == new_params
 
         assert np.all(op.data[0] == b)
+
+
+class TestExecution:
+    """Tests for tape execution"""
+    
