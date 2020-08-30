@@ -187,13 +187,13 @@ class QuantumTape(AnnotatedQueue):
         qml.operation.Operation.queue = ORIGINAL_QUEUE
         qml.operation.CVObservable.queue = ORIGINAL_QUEUE
         qml.operation.Tensor.queue = lambda self: None
-        self._construct()
+        self._process_queue()
 
     # ========================================================
     # construction methods
     # ========================================================
 
-    def _construct(self):
+    def _process_queue(self):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
 
@@ -233,7 +233,9 @@ class QuantumTape(AnnotatedQueue):
 
                 elif "owns" in info:
                     # TODO: remove the following line once devices
-                    # have been refactored to no longer use obs.return_type
+                    # have been refactored to no longer use obs.return_type.
+                    # Monkeypatch the observable to have the same return
+                    # type as the measurement process.
                     info["owns"].return_type = obj.return_type
 
                     self._obs.append((obj, info["owns"]))
@@ -594,7 +596,7 @@ class QuantumTape(AnnotatedQueue):
             if isinstance(res, np.ndarray) and res.dtype is np.dtype("object"):
                 output_dim = sum([len(i) for i in res])
             else:
-                output_dim = sum(res.shape)
+                output_dim = np.prod(res.shape)
 
             if self.output_dim != output_dim:
                 # update the output dimension estimate with the correct value
@@ -702,7 +704,11 @@ class QuantumTape(AnnotatedQueue):
 
         if order == 1:
             # forward finite-difference
-            y0 = options.get("y0", np.asarray(self.execute_device(params, device)))
+            y0 = options.get("y0", None)
+
+            if y0 is None:
+                y0 = np.asarray(self.execute_device(params, device))
+
             y = np.array(self.execute_device(params + shift, device))
             return (y - y0) / h
 
@@ -770,11 +776,11 @@ class QuantumTape(AnnotatedQueue):
 
         The Jacobian can be computed using several methods:
 
-        * Finite differences (``'F'``). The first-order method evaluates the circuit at
+        * Finite differences (``'numeric'``). The first-order method evaluates the circuit at
           :math:`n+1` points of the parameter space, the second-order method at :math:`2n` points,
           where ``n = tape.num_params``.
 
-        * Analytic method (``'A'``). Analytic, if implemented by the inheriting quantum tape.
+        * Analytic method (``'analytic'``). Analytic, if implemented by the inheriting quantum tape.
 
         * Best known method for each parameter (``'best'``): uses the analytic method if
           possible, otherwise finite difference.
@@ -856,7 +862,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
-        if method not in ("best", "F", "A", "device"):
+        if method not in ("best", "numeric", "analytic", "device"):
             raise ValueError(f"Unknown gradient method '{method}'")
 
         if params is None:
@@ -866,17 +872,21 @@ class QuantumTape(AnnotatedQueue):
 
         # check and raise an error if any parameters are non-differentiable
         nondiff_params = {
-            idx for idx, info in self._par_info.items() if info["grad_method"] is None
+            idx
+            for idx, info in self._par_info.items()
+            if info["grad_method"] is None and idx in self.trainable_params
         }
 
         if nondiff_params:
-            raise ValueError(f"Cannot differentiate with respect to parameters(s) {nondiff_params}")
+            raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
-        if method == "A":
+        if method == "analytic":
             # If explicitly using analytic mode, ensure that all parameters
             # support analytic differentiation.
             numeric_params = {
-                idx for idx, info in self._par_info.items() if info["grad_method"] == "F"
+                idx
+                for idx, info in self._par_info.items()
+                if info["grad_method"] == "F" and idx in self.trainable_params
             }
 
             if numeric_params:
@@ -896,18 +906,27 @@ class QuantumTape(AnnotatedQueue):
         p_ind = list(np.ndindex(*params.shape))
 
         # loop through each parameter and compute the gradient
-        for idx, l in enumerate(p_ind):
-            param_method = self._par_info[idx]["grad_method"]
+        for idx, (l, p) in enumerate(zip(p_ind, self.trainable_params)):
+            param_method = self._par_info[p]["grad_method"]
+
+            if param_method == "0":
+                # independent parameter; skip.
+                continue
+
+            if (method == "best" and param_method == "F") or (method == "numeric"):
+                # finite difference method
+                g = self.numeric_pd(l, device, params=params, **options)
+
+            elif (method == "best" and param_method == "A") or (method == "analytic"):
+                # analytic method
+                g = self.analytic_pd(l, device, params=params, **options)
+
+            if g.dtype is np.dtype("object"):
+                # object arrays cannot be flattened; must hstack them
+                g = np.hstack(g)
 
             try:
-                if (method == "best" and param_method == "F") or (method == "F"):
-                    # finite difference method
-                    jac[:, idx] = self.numeric_pd(l, device, params=params, **options).flatten()
-
-                elif (method == "best" and param_method == "A") or (method == "A"):
-                    # analytic method
-                    jac[:, idx] = self.analytic_pd(l, device, params=params, **options).flatten()
-
+                jac[:, idx] = g.flatten()
             except ValueError as e:
                 if "could not broadcast input array from shape" in str(e):
                     # the value of self._output_dim, which was estimated during

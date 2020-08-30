@@ -85,7 +85,7 @@ class TestConstruction:
             assert isinstance(o1, o2.__class__)
             assert o1.wires == o2.wires
 
-    def test_tensor_construction(self):
+    def test_tensor_process_queueion(self):
         """Test that tensors are correctly queued"""
         with QuantumTape() as tape:
             A = qml.PauliX(wires=0)
@@ -171,6 +171,9 @@ class TestParameters:
 
         with pytest.raises(ValueError, match="must be positive integers"):
             tape.trainable_params = {0.5}
+
+        with pytest.raises(ValueError, match="has at most 5 trainable parameters"):
+            tape.trainable_params = {0, 7}
 
     def test_setting_parameters(self, make_tape):
         """Test that parameters are correctly modified after construction"""
@@ -554,3 +557,408 @@ class TestGradMethod:
         # if a parameter is independent or not
         tape._graph = None
         assert tape._grad_method(1, use_graph=False) == "F"
+
+
+class TestJacobian:
+    """Unit tests for the jacobian method"""
+
+    def test_unknown_grad_method_error(self):
+        """Test error raised if gradient method is unknown"""
+        tape = QuantumTape()
+        with pytest.raises(ValueError, match="Unknown gradient method"):
+            tape.jacobian(None, method="unknown method")
+
+    def test_non_differentiable_error(self):
+        """Test error raised if attempting to differentiate with
+        respect to a non-differentiable argument"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=[0, 1])
+
+        # by default all parameters are assumed to be trainable
+        with pytest.raises(
+            ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
+        ):
+            tape.jacobian(None)
+
+        # setting trainable parameters avoids this
+        tape.trainable_params = {1, 2}
+        dev = qml.device("default.qubit", wires=2)
+        res = tape.jacobian(dev)
+        assert res.shape == (4, 2)
+
+    def test_analytic_method_with_unsupported_params(self):
+        """Test that an exception is raised if method="A" but a parameter
+        only support finite differences"""
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            expval(qml.PauliY(0))
+
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.raises(ValueError, match=r"analytic gradient method cannot be used"):
+            tape.jacobian(dev, method="analytic")
+
+    def test_incorrect_output_dim_estimate(self):
+        """Test that a quantum tape with an incorrect output dimension
+        estimate raises an exception when computing the Jacobian."""
+        dev = qml.device("default.qubit", wires=3)
+        params = [1.0, 1.0, 1.0]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.RZ(params[2], wires=[2])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=0)
+            probs(wires=[1])
+
+        # estimate output dim should be correct
+        assert tape.output_dim == sum([2, 2])
+
+        # modify the output dim
+        tape._output_dim = 2
+
+        with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
+            # Note that we specify order=2 here. If we use first order differentiation,
+            # the tape is able to correctly infer the correct output dimension
+            # before the Jacobian is computed.
+            tape.jacobian(dev, order=2)
+
+    def test_incorrect_ragged_output_dim_estimate(self, mocker):
+        """Test that a quantum tape with an incorrect *ragged* output dimension
+        estimate corrects itself after evaluation."""
+        dev = qml.device("default.qubit", wires=3)
+        params = [1.0, 1.0, 1.0]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.RZ(params[2], wires=[2])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=0)
+            probs(wires=[1, 2])
+
+        # estimate output dim should be correct
+        assert tape.output_dim == sum([2, 4])
+
+        # modify the output dim
+        tape._output_dim = 2
+        with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
+            res = tape.jacobian(dev, order=2)
+
+        # if the Value error raised by the numeric_pd method has a different
+        # message unrelated to broadcasting shapes, then the original error
+        # message is raised.
+        mock = mocker.patch("pennylane.beta.tapes.QuantumTape.numeric_pd")
+        mock.side_effect = ValueError("different exception")
+
+        with pytest.raises(ValueError, match=r"different exception"):
+            res = tape.jacobian(dev, order=2)
+
+    def test_independent_parameter(self, mocker):
+        """Test that an independent parameter is skipped
+        during the Jacobian computation."""
+        numeric_spy = mocker.spy(QuantumTape, "numeric_pd")
+        analytic_spy = mocker.spy(QuantumTape, "analytic_pd")
+
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        res = tape.jacobian(dev)
+        assert res.shape == (1, 2)
+
+        # the numeric pd method is only called once
+        assert len(numeric_spy.call_args_list) == 1
+
+        # analytic pd should not be called at all
+        assert len(analytic_spy.call_args_list) == 0
+
+        # the numeric pd method is only called for parameter 0
+        assert numeric_spy.call_args[0] == (tape, (0,), dev)
+
+    def test_no_trainable_parameters(self, mocker):
+        """Test that if the tape has no trainable parameters, no
+        subroutines are called and the returned Jacobian is empty"""
+        numeric_spy = mocker.spy(QuantumTape, "numeric_pd")
+        analytic_spy = mocker.spy(QuantumTape, "analytic_pd")
+
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        tape.trainable_params = {}
+
+        res = tape.jacobian(dev)
+        assert res.size == 0
+        assert np.all(res == np.array([[]]))
+
+        numeric_spy.assert_not_called()
+        analytic_spy.assert_not_called()
+
+    def test_y0(self, mocker):
+        """Test that if first order finite differences is used, then
+        the tape is executed only once using the current parameter
+        values."""
+        execute_spy = mocker.spy(QuantumTape, "execute_device")
+        numeric_spy = mocker.spy(QuantumTape, "numeric_pd")
+
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        res = tape.jacobian(dev, order=1)
+
+        # the execute device method is called once per parameter,
+        # plus one global call
+        assert len(execute_spy.call_args_list) == tape.num_params + 1
+        assert "y0" in numeric_spy.call_args_list[0][1]
+        assert "y0" in numeric_spy.call_args_list[1][1]
+
+    def test_parameters(self, tol):
+        """Test Jacobian computation works when parameters are both passed and not passed."""
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        # test Jacobian with no parameters
+        res1 = tape.jacobian(dev)
+        assert tape.get_parameters() == params
+
+        # test Jacobian with parameters
+        res2 = tape.jacobian(dev, params=[0.5, 0.6])
+        assert tape.get_parameters() == params
+
+        # test setting parameters
+        tape.set_parameters(params=[0.5, 0.6])
+        res3 = tape.jacobian(dev)
+        assert np.allclose(res2, res3, atol=tol, rtol=0)
+        assert not np.allclose(res1, res2, atol=tol, rtol=0)
+        assert tape.get_parameters() == [0.5, 0.6]
+
+    def test_numeric_pd_no_y0(self, mocker, tol):
+        """Test that, if y0 is not passed when calling the numeric_pd method,
+        y0 is calculated."""
+        execute_spy = mocker.spy(QuantumTape, "execute_device")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        # compute numeric gradient of parameter 0, without passing y0
+        res1 = tape.numeric_pd(0, dev)
+        assert len(execute_spy.call_args_list) == 2
+
+        # compute y0 in advance
+        y0 = tape.execute(dev)
+        execute_spy.call_args_list = []
+        res2 = tape.numeric_pd(0, dev, y0=y0)
+        assert len(execute_spy.call_args_list) == 1
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+
+
+class TestJacobianIntegration:
+    """Integration tests for the Jacobian method"""
+
+    def test_ragged_output(self):
+        """Test that the Jacobian is correctly returned for a tape
+        with ragged output"""
+        dev = qml.device("default.qubit", wires=3)
+        params = [1.0, 1.0, 1.0]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.RZ(params[2], wires=[2])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=0)
+            probs(wires=[1, 2])
+
+        res = tape.jacobian(dev)
+        assert res.shape == (6, 3)
+
+    def test_ragged_output(self):
+        """Test that the Jacobian is correctly returned for a tape
+        with ragged output"""
+        dev = qml.device("default.qubit", wires=3)
+        params = [1.0, 1.0, 1.0]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.RZ(params[2], wires=[2])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=0)
+            probs(wires=[1, 2])
+
+        res = tape.jacobian(dev)
+        assert res.shape == (6, 3)
+
+    def test_single_expectation_value(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.jacobian(dev)
+        assert res.shape == (1, 2)
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiple_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with multiple expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            expval(qml.PauliX(1))
+
+        res = tape.jacobian(dev)
+        assert res.shape == (2, 2)
+
+        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_var_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            var(qml.PauliX(1))
+
+        res = tape.jacobian(dev)
+        assert res.shape == (2, 2)
+
+        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_prob_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            probs(wires=[0, 1])
+
+        res = tape.jacobian(dev)
+        assert res.shape == (5, 2)
+
+        expected = (
+            np.array(
+                [
+                    [-2 * np.sin(x), 0],
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestJacobianCVIntegration:
+    """Intgration tests for the Jacobian method and CV circuits"""
+
+    def test_single_output_value(self, tol):
+        """Tests correct Jacobian and output shape for a CV tape
+        with a single output"""
+        dev = qml.device("default.gaussian", wires=2)
+        n = 0.543
+        a = -0.654
+
+        with QuantumTape() as tape:
+            qml.ThermalState(n, wires=0)
+            qml.Displacement(a, 0, wires=0)
+            var(qml.NumberOperator(0))
+
+        tape.trainable_params = {0, 1}
+        res = tape.jacobian(dev)
+        assert res.shape == (1, 2)
+
+        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiple_output_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with multiple outputs"""
+        dev = qml.device("default.gaussian", wires=2)
+        n = 0.543
+        a = -0.654
+
+        with QuantumTape() as tape:
+            qml.ThermalState(n, wires=0)
+            qml.Displacement(a, 0, wires=0)
+            expval(qml.NumberOperator(0))
+            var(qml.NumberOperator(0))
+
+        tape.trainable_params = {0, 1}
+        res = tape.jacobian(dev)
+        assert res.shape == (2, 2)
+
+        expected = np.array([[1, 2 * a], [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
