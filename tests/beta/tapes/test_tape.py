@@ -605,6 +605,38 @@ class TestJacobian:
         with pytest.raises(ValueError, match=r"analytic gradient method cannot be used"):
             tape.jacobian(dev, method="analytic")
 
+    def test_analytic_method(self, mocker):
+        """Test that calling the Jacobian with method=analytic correctly
+        calls the analytic_pd method"""
+        mock = mocker.patch("pennylane.beta.tapes.QuantumTape._grad_method")
+        mock.return_value = "A"
+
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            expval(qml.PauliY(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        tape.analytic_pd = mocker.Mock()
+        tape.analytic_pd.return_value = np.array([1.])
+
+        tape.jacobian(dev, method="analytic")
+        assert len(tape.analytic_pd.call_args_list) == 2
+
+    def test_device_method(self, mocker):
+        """Test that calling the Jacobian with method=device correctly
+        calls the device_pd method"""
+        with QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[0])
+            expval(qml.PauliY(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        dev.jacobian = mocker.Mock()
+
+        tape.jacobian(dev, method="device")
+        dev.jacobian.assert_called_once()
+
     def test_incorrect_output_dim_estimate(self):
         """Test that a quantum tape with an incorrect output dimension
         estimate raises an exception when computing the Jacobian."""
@@ -651,15 +683,6 @@ class TestJacobian:
         # modify the output dim
         tape._output_dim = 2
         with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
-            res = tape.jacobian(dev, order=2)
-
-        # if the Value error raised by the numeric_pd method has a different
-        # message unrelated to broadcasting shapes, then the original error
-        # message is raised.
-        mock = mocker.patch("pennylane.beta.tapes.QuantumTape.numeric_pd")
-        mock.side_effect = ValueError("different exception")
-
-        with pytest.raises(ValueError, match=r"different exception"):
             res = tape.jacobian(dev, order=2)
 
     def test_independent_parameter(self, mocker):
@@ -778,6 +801,22 @@ class TestJacobian:
         res2 = tape.numeric_pd(0, dev, y0=y0)
         assert len(execute_spy.call_args_list) == 1
         assert np.allclose(res1, res2, atol=tol, rtol=0)
+
+    def test_numeric_unknown_order(self):
+        """Test that an exception is raised if the finite-difference
+        order is not supported"""
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(1, wires=[0])
+            qml.RY(1, wires=[1])
+            qml.RZ(1, wires=[2])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.operation.Tensor(qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(2)))
+
+        with pytest.raises(ValueError, match="Order must be 1 or 2"):
+            tape.jacobian(dev, order=3)
 
 
 class TestJacobianIntegration:
