@@ -287,6 +287,20 @@ class TestExecution:
         assert not np.allclose(res1, res2, atol=tol, rtol=0)
         assert tape.get_parameters() == [0.5, 0.6]
 
+    def test_no_output_execute(self):
+        """Test that tapes with no measurement process return
+        an empty list."""
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+
+        res = tape.execute(dev)
+        assert res.size == 0
+        assert np.all(res == np.array([]))
+
     def test_incorrect_output_dim_estimate(self):
         """Test that a quantum tape with an incorrect output dimension
         estimate corrects itself after evaluation."""
@@ -636,6 +650,19 @@ class TestJacobian:
 
         tape.jacobian(dev, method="device")
         dev.jacobian.assert_called_once()
+
+    def test_no_output_execute(self):
+        """Test that tapes with no measurement process return
+        an empty list."""
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+
+        res = tape.jacobian(dev)
+        assert res.size == 0
 
     def test_incorrect_output_dim_estimate(self):
         """Test that a quantum tape with an incorrect output dimension

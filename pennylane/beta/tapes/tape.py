@@ -145,8 +145,10 @@ class QuantumTape(AnnotatedQueue):
 
     cast = staticmethod(np.array)
 
-    def __init__(self):
+    def __init__(self, name=None):
         super().__init__()
+        self.name = name
+
         self._prep = []
         """list[~.Operation]: Tape state preparations. Not currently used."""
 
@@ -169,6 +171,7 @@ class QuantumTape(AnnotatedQueue):
 
         self.hash = 0
         self.is_sampled = False
+        self.inverse = False
 
     def __enter__(self):
         # monkeypatch operations to use the qml.beta.queuing.queuing.QueuingContext instead
@@ -456,6 +459,10 @@ class QuantumTape(AnnotatedQueue):
             return params
 
         return [p for idx, p in enumerate(params) if idx in self.trainable_params]
+
+    @property
+    def data(self):
+        return self.get_parameters()
 
     def set_parameters(self, params, free_only=True):
         """Set the parameters incident on the tape operations.
