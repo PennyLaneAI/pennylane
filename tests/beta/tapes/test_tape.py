@@ -67,11 +67,11 @@ class TestConstruction:
         tape, ops, obs = make_tape
         assert tape._trainable_params == set(range(5))
         assert tape._par_info == {
-            0: {"op": ops[0], "p_idx": 0, "grad_method": "F", "prep": False},
-            1: {"op": ops[1], "p_idx": 0, "grad_method": "F", "prep": False},
-            2: {"op": ops[1], "p_idx": 1, "grad_method": "F", "prep": False},
-            3: {"op": ops[1], "p_idx": 2, "grad_method": "F", "prep": False},
-            4: {"op": ops[3], "p_idx": 0, "grad_method": "0", "prep": False},
+            0: {"op": ops[0], "p_idx": 0, "grad_method": "F"},
+            1: {"op": ops[1], "p_idx": 0, "grad_method": "F"},
+            2: {"op": ops[1], "p_idx": 1, "grad_method": "F"},
+            3: {"op": ops[1], "p_idx": 2, "grad_method": "F"},
+            4: {"op": ops[3], "p_idx": 0, "grad_method": "0"},
         }
 
     def test_qubit_diagonalization(self, make_tape):
@@ -422,9 +422,8 @@ class TestExpand:
         new_tape = tape.expand()
 
         assert len(new_tape.operations) == 3
-        assert new_tape.num_params == 0
-        assert new_tape.get_parameters(free_only=False) == [np.pi / 2, np.pi, np.pi / 2]
-        assert new_tape.trainable_params == set()
+        assert new_tape.num_params == 3
+        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
 
     def test_nested_tape(self):
         """Test that a nested tape properly expands"""
@@ -455,10 +454,7 @@ class TestExpand:
             qml.RY(0.2, wires='a')
             probs(wires=0), probs(wires='a')
 
-        tape.trainable_params = {1, 4}
         new_tape = tape.expand()
-
-        assert new_tape.trainable_params == {0, 3}
         assert len(new_tape.operations) == 5
 
     def test_stopping_criterion(self):
@@ -489,10 +485,7 @@ class TestExpand:
             qml.RY(0.2, wires='a')
             probs(wires=0), probs(wires='a')
 
-        tape.trainable_params = {1, 4}
         new_tape = tape.expand(depth=2)
-
-        assert new_tape.trainable_params == {6, 9}
         assert len(new_tape.operations) == 11
 
     def test_stopping_criterion_with_depth(self):
@@ -510,10 +503,7 @@ class TestExpand:
             qml.RY(0.2, wires='a')
             probs(wires=0), probs(wires='a')
 
-        tape.trainable_params = {1, 4}
         new_tape = tape.expand(depth=2, stop_at=["PauliX"])
-
-        assert new_tape.trainable_params == {0, 3}
         assert len(new_tape.operations) == 7
 
 

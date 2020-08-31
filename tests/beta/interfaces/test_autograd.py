@@ -159,3 +159,56 @@ class TestAutogradQuantumTape:
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
+
+    def test_differentiable_expand(self, tol):
+        """Test that operation and nested tapes expansion
+        is differentiable"""
+
+        class U3(qml.U3):
+            def expand(self):
+                tape = QuantumTape()
+                theta, phi, lam = self.data
+                wires = self.wires
+                tape._ops += [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
+                return tape
+
+        def cost_fn(a, p, device):
+            tape = QuantumTape()
+
+            with tape:
+                qml.RX(a, wires=0)
+                U3(*p, wires=0)
+                expval(qml.PauliX(0))
+
+            tape = AutogradInterface.apply(tape.expand())
+
+            assert tape.trainable_params == {1, 2, 3, 4}
+            assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
+            assert np.all(tape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
+
+            return tape.execute(device=device)
+
+        a = np.array(0.1, requires_grad=False)
+        p = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=1)
+        res = cost_fn(a, p, device=dev)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(cost_fn)
+        res = jac_fn(a, p, device=dev)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1]) * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a) * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)

@@ -270,7 +270,7 @@ class QuantumTape(AnnotatedQueue):
 
             for p in range(len(obj.data)):
                 info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p, "prep": isinstance(obj, STATE_PREP_OPS)})
+                info.update({"op": obj, "p_idx": p,})
 
                 self._par_info[param_count] = info
                 param_count += 1
@@ -289,40 +289,20 @@ class QuantumTape(AnnotatedQueue):
         new_tape = QuantumTape()
         stop_at = stop_at or []
 
-        # create a dictionary mapping from operations in the
-        # current tape, to operation parameter indices that are trainable.
-        op_trainable_params = {}
-        for p, info in self._par_info.items():
-            s = op_trainable_params.get(info["op"], set())
-
-            if p in self.trainable_params:
-                op_trainable_params[info["op"]] = s | {info["p_idx"]}
-
         for op in self.operations:
             if op.name in stop_at:
-                with QuantumTape() as t:
-                    op.__class__(*op.data, wires=op.wires)
-            else:
-                if isinstance(op, QuantumTape):
-                    t = op
-                else:
-                    t = op.expand()
+                new_tape._ops.append(op)
+                continue
 
+            t = op if isinstance(op, QuantumTape) else op.expand()
             new_tape._prep += t._prep
             new_tape._ops += t._ops
-            new_tape._obs += t._obs
 
-            n = len(new_tape._par_info)
-            new_tape._update_par_info()
-
-            # update the trainable parameters of the new tape
-            if op in op_trainable_params:
-                new_tape.trainable_params = new_tape.trainable_params | {
-                    i + n for i in t.trainable_params if i in op_trainable_params[op]
-                }
-
+        new_tape._obs = self._obs
         new_tape._update_circuit_info()
+        new_tape._update_par_info()
         new_tape._update_gradient_info()
+        new_tape._update_trainable_params()
         return new_tape
 
     def expand(self, depth=1, stop_at=None):

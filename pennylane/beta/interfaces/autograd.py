@@ -131,6 +131,7 @@ class AutogradInterface(AnnotatedQueue):
         <AutogradQuantumTape: wires=<Wires = [0]>, params=1>
         """
         tape.__class__ = type("AutogradQuantumTape", (cls, tape.__class__), {})
+        tape._update_trainable_params()
         return tape
 
 
