@@ -462,7 +462,7 @@ def _hash_object(obj):
         obj (Any): the object to generate a hash for
 
     Returns:
-        int or None: the resulting hash, or None if the object is a PyTorch/TensorFlow tensor or any
+        int or None: the resulting hash, or ``None`` if the object is a PyTorch/TensorFlow tensor or any
         other unhashable type.
     """
     shape = getattr(obj, "shape", None)
