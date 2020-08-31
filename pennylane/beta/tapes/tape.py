@@ -15,6 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access
+import copy
 import numpy as np
 
 import pennylane as qml
@@ -26,6 +27,20 @@ from .circuit_graph import CircuitGraph
 
 
 ORIGINAL_QUEUE = qml.operation.Operation.queue
+ORIGINAL_INV = qml.operation.Operation.inv
+
+STATE_PREP_OPS = (
+    qml.BasisState,
+    qml.QubitStateVector,
+    qml.CatState,
+    qml.CoherentState,
+    qml.FockDensityMatrix,
+    qml.DisplacedSqueezedState,
+    qml.FockState,
+    qml.FockStateVector,
+    qml.ThermalState,
+    qml.GaussianState,
+)
 
 
 def mock_queue(self):
@@ -35,6 +50,14 @@ def mock_queue(self):
     method."""
     QueuingContext.append(self)
     return self
+
+
+def mock_inv(self):
+    """Mock inverse method for operations. This operation
+    acts as a 'radio button', swapping the current boolean
+    property of the 'inverse' annotation on the object in the queue."""
+    current_inv = QueuingContext.get_info(self).get("inverse", False)
+    QueuingContext.update_info(self, inverse=not current_inv)
 
 
 def mock_tensor_init(self, *args):
@@ -150,7 +173,7 @@ class QuantumTape(AnnotatedQueue):
         self.name = name
 
         self._prep = []
-        """list[~.Operation]: Tape state preparations. Not currently used."""
+        """list[~.Operation]: Tape state preparations."""
 
         self._ops = []
         """list[~.Operation]: quantum operations recorded by the tape."""
@@ -171,12 +194,14 @@ class QuantumTape(AnnotatedQueue):
 
         self.hash = 0
         self.is_sampled = False
-        self.inverse = False
 
     def __enter__(self):
         # monkeypatch operations to use the qml.beta.queuing.queuing.QueuingContext instead
         qml.operation.Operation.queue = mock_queue
+        qml.operation.Operation.inv = mock_inv
+
         qml.operation.CVObservable.queue = mock_queue
+
         qml.operation.Tensor.__init__ = mock_tensor_init
         qml.operation.Tensor.queue = mock_tensor_queue
 
@@ -188,6 +213,7 @@ class QuantumTape(AnnotatedQueue):
         super().__exit__(exception_type, exception_value, traceback)
         # remove the monkeypatching
         qml.operation.Operation.queue = ORIGINAL_QUEUE
+        qml.operation.Operation.inv = ORIGINAL_INV
         qml.operation.CVObservable.queue = ORIGINAL_QUEUE
         qml.operation.Tensor.queue = lambda self: None
         self._process_queue()
@@ -209,27 +235,37 @@ class QuantumTape(AnnotatedQueue):
         * ``_trainable_params``
         * ``is_sampled``
         """
+        self._prep = []
         self._ops = []
         self._obs = []
         self._output_dim = 0
 
         param_count = 0
-        op_count = 0
 
         for obj, info in self._queue.items():
-            if not info and isinstance(obj, qml.operation.Operation):
-                self._ops.append(obj)
-
-                for p in range(len(obj.data)):
-                    self._par_info[param_count] = {"op": obj, "p_idx": p}
-                    param_count += 1
-
-                op_count += 1
 
             if isinstance(obj, QuantumTape):
                 self._ops.append(obj)
 
-            if isinstance(obj, MeasurementProcess):
+            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
+                # operation objects with no owners
+
+                # invert the operation if required
+                obj.inverse = info.get("inverse", False)
+
+                if isinstance(obj, STATE_PREP_OPS):
+                    if self._ops:
+                        raise ValueError(
+                            f"State preperation operation {obj} must occur prior to any quantum operations."
+                        )
+
+                    self._prep.append(obj)
+                else:
+                    self._ops.append(obj)
+
+            elif isinstance(obj, MeasurementProcess):
+                # measurement process
+
                 if obj.return_type is qml.operation.Probability:
                     self._obs.append((obj, obj))
                     self._output_dim += 2 ** len(obj.wires)
@@ -251,11 +287,117 @@ class QuantumTape(AnnotatedQueue):
             [op.wires for op in self.operations + self.observables]
         )
 
-        self._trainable_params = set(range(param_count))
+        self._update_par_info()
+        self._trainable_params = set(self._par_info)
 
         # calculate gradient methods
         for i, info in self._par_info.items():
             info["grad_method"] = self._grad_method(i, use_graph=True)
+
+    def _update_par_info(self):
+        param_count = 0
+
+        for obj in self.operations + self.observables:
+
+            for p in range(len(obj.data)):
+                info = self._par_info.get(param_count, {})
+                info.update({"op": obj, "p_idx": p, "prep": isinstance(obj, STATE_PREP_OPS)})
+
+                self._par_info[param_count] = info
+                param_count += 1
+
+    def expand(self, device=None):
+        """Recursively expand the processed queue.
+
+        All nested tapes are"""
+
+    def inv(self):
+        """Inverts the processed operations.
+
+        Inversion is performed in-place.
+
+        .. note::
+
+            This method only inverts the quantum operations/unitary recorded
+            by the quantum tape; state preprations and measurements are left unchanged.
+
+        **Example**
+
+        .. code-block:: python
+
+            with QuantumTape() as tape:
+                qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+                qml.RX(0.432, wires=0)
+                qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
+                qml.CNOT(wires=[0, 'a'])
+                probs(wires=0), probs(wires='a')
+
+        This tape has the following properties:
+
+        >>> tape.operations
+        [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY.inv(0.543, wires=[0]), CNOT(wires=[0, 'a'])]
+        >>> tape.get_parameters()
+        [array([1, 1]), 0.432, 0.543]
+        >>> tape.trainable_params = {2}
+
+        Inverting the tape:
+
+        >>> tape.inv()
+        >>> tape.operations
+        [BasisState(array([1, 1]), wires=[0, 'a']), CNOT.inv(wires=[0, 'a']), RY(0.543, wires=[0]), RX.inv(0.432, wires=[0])]
+
+        Note that the state preparation remains as-is, while the operations have been
+        inverted and their order reversed.
+
+        Tape inversion also modifies the order of parameters:
+
+        >>> tape.get_parameters(free_only=False)
+        [array([1, 1]), 0.543, 0.432]
+        >>> tape.get_parameters(free_only=True)
+        >>> tape.trainable_params
+        """
+        for op in self._ops:
+            op.inverse = not op.inverse
+
+        if self.trainable_params != set(len(self._par_info)):
+            # if the trainable parameters have been set to a subset
+            # of all parameters, we must remap the old trainable parameter
+            # indices to the new ones after the operation order is reversed.
+            res = []
+            param_count = 0
+
+            for idx, queue in enumerate([self._prep, self._ops, self.observables]):
+                # iterate through all queues
+
+                obj_params = []
+
+                for obj in queue:
+                    # index the number of parameters on each operation
+                    num_obj_params = len(obj.data)
+                    obj_params.append(list(range(param_count, param_count + num_obj_params)))
+
+                    # keep track of the total number of parameters encountered so far
+                    param_count += num_obj_params
+
+                if idx == 1:
+                    # reverse the list representing operator parameters
+                    obj_params = obj_params[::-1]
+
+                res.extend(obj_params)
+
+            # flatten the list of parameter indices after the reversal
+            res = [item for sublist in res for item in sublist]
+
+            # remap the trainable parameter information
+            trainable_params = set()
+
+            for old_idx, new_idx in zip(res, range(len(res))):
+                if old_idx in self.trainable_params:
+                    trainable_params.add(new_idx)
+
+            self.trainable_params = trainable_params
+
+        self._ops = list(reversed(self._ops))
 
     # ========================================================
     # properties, setters, and getters
@@ -310,8 +452,8 @@ class QuantumTape(AnnotatedQueue):
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be positive integers.")
 
-        if any(i > self.num_params for i in param_indices):
-            raise ValueError(f"Tape has at most {self.num_params} trainable parameters.")
+        if any(i > len(self._par_info) for i in param_indices):
+            raise ValueError(f"Tape has at most {self.num_params} parameters.")
 
         self._trainable_params = param_indices
 
@@ -339,7 +481,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
         """
-        return self._ops
+        return self._prep + self._ops
 
     @property
     def observables(self):
@@ -452,17 +594,13 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters(free_only=False)
         [0.432, 0.543, 0.133]
         """
-        params = [o.data for o in self.operations]
+        params = [o.data for o in self.operations + self.observables]
         params = [item for sublist in params for item in sublist]
 
         if not free_only:
             return params
 
         return [p for idx, p in enumerate(params) if idx in self.trainable_params]
-
-    @property
-    def data(self):
-        return self.get_parameters()
 
     def set_parameters(self, params, free_only=True):
         """Set the parameters incident on the tape operations.

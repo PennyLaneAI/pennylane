@@ -40,6 +40,7 @@ class MeasurementProcess:
         # have been refactored to no longer require dummy observable
         self.name = "Identity"
         self.diagonalizing_gates = lambda: []
+        self.data = []
 
 
 def expval(op):
