@@ -1563,12 +1563,12 @@ class TestQNodeCaching:
         that size upon subsequent additions."""
         qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=5)
         for i in range(5):
-            self.args[0] += i
+            self.args[0] += 1
             qnode.evaluate(self.args, self.kwargs)
             hash_eval = qnode._hash_evaluate
             assert len(hash_eval) == i + 1
         for i in range(5):
-            self.args[0] += i
+            self.args[0] += 1
             qnode.evaluate(self.args, self.kwargs)
             hash_eval = qnode._hash_evaluate
             assert len(hash_eval) == 5
@@ -1579,7 +1579,7 @@ class TestQNodeCaching:
         qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=5)
         called_args = []
         for i in range(5):
-            self.args[0] += i
+            self.args[0] += 1
             qnode.evaluate(self.args, self.kwargs)
             called_args.append((self.args.copy(), i))
             hash_eval = qnode._hash_evaluate.popitem(last=True)
@@ -1589,3 +1589,22 @@ class TestQNodeCaching:
             res = qnode.evaluate(arg, self.kwargs)
             assert np.allclose(exp_res, res)
 
+    def test_drop_from_cache(self):
+        """Test that the first entry of the _hash_evaluate dictionary is the first to be dropped
+        from the dictionary once it becomes full"""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=2)
+        self.args[0] += 1
+        qnode.evaluate(self.args, self.kwargs)
+        key, result = list(qnode._hash_evaluate.items())[0]
+
+        self.args[0] += 1
+        qnode.evaluate(self.args, self.kwargs)
+        hash_eval = qnode._hash_evaluate
+        assert key in hash_eval
+        assert len(hash_eval) == 2
+
+        self.args[0] += 1
+        qnode.evaluate(self.args, self.kwargs)
+        hash_eval = qnode._hash_evaluate
+        assert key not in hash_eval
+        assert len(hash_eval) == 2
