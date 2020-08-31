@@ -126,6 +126,27 @@ class TestConstruction:
 
         assert tape.wires == qml.wires.Wires([0, "a"])
 
+    def test_state_preparation(self):
+        """Test that state preparations are correctly processed"""
+        params = [np.array([1, 0, 1, 0]) / np.sqrt(2), 1]
+
+        with QuantumTape() as tape:
+            A = qml.QubitStateVector(params[0], wires=[0, 1])
+            B = qml.RX(params[1], wires=0)
+            expval(qml.PauliZ(wires=1))
+
+        assert tape.operations == [A, B]
+        assert tape._prep == [A]
+        assert tape.get_parameters() == params
+
+    def test_state_preparation_error(self):
+        """Test that an exception is raised if a state preparation comes
+        after a quantum operation"""
+        with pytest.raises(ValueError, match="must occur prior to any quantum"):
+            with QuantumTape() as tape:
+                B = qml.PauliX(wires=0)
+                qml.BasisState(np.array([0, 1]), wires=[0, 1])
+
 
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""
@@ -152,6 +173,22 @@ class TestParameters:
         assert tape.get_parameters() == params
 
     def test_set_trainable_params(self, make_tape):
+        """Test that setting trainable parameters works as expected"""
+        tape, params = make_tape
+        trainable = {0, 2, 3}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == trainable
+        assert tape.num_params == 3
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+        # add an additiona trainable parameter
+        trainable = {1, 2, 3, 4}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == trainable
+        assert tape.num_params == 4
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+    def test_changing_params(self, make_tape):
         """Test that changing trainable parameters works as expected"""
         tape, params = make_tape
         trainable = {0, 2, 3}
@@ -172,7 +209,7 @@ class TestParameters:
         with pytest.raises(ValueError, match="must be positive integers"):
             tape.trainable_params = {0.5}
 
-        with pytest.raises(ValueError, match="has at most 5 trainable parameters"):
+        with pytest.raises(ValueError, match="has at most 5 parameters"):
             tape.trainable_params = {0, 7}
 
     def test_setting_parameters(self, make_tape):
@@ -254,6 +291,60 @@ class TestParameters:
         assert tape.get_parameters() == new_params
 
         assert np.all(op.data[0] == b)
+
+
+class TestInverse:
+    """Tests for tape inversion"""
+
+    def test_inverse(self):
+        """Test that inversion works as expected"""
+        init_state = np.array([1, 1])
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with QuantumTape() as tape:
+            prep = qml.BasisState(init_state, wires=[0, 'a'])
+            ops = [
+                qml.RX(p[0], wires=0),
+                qml.Rot(*p[1:], wires=0).inv(),
+                qml.CNOT(wires=[0, 'a'])
+            ]
+            m1 = probs(wires=0)
+            m2 = probs(wires='a')
+
+        tape.inv()
+
+        # check that operation order is reversed
+        assert tape.operations == [prep] + ops[::-1]
+
+        # check that operations are inverted
+        assert ops[0].inverse
+        assert not ops[1].inverse
+        assert ops[2].inverse
+
+        # check that parameter order has reversed
+        assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
+
+    def test_parameter_transforms(self):
+        """Test that inversion correctly changes trainable parameters"""
+        init_state = np.array([1, 1])
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with QuantumTape() as tape:
+            prep = qml.BasisState(init_state, wires=[0, 'a'])
+            ops = [
+                qml.RX(p[0], wires=0),
+                qml.Rot(*p[1:], wires=0).inv(),
+                qml.CNOT(wires=[0, 'a'])
+            ]
+            m1 = probs(wires=0)
+            m2 = probs(wires='a')
+
+        tape.trainable_params = {1, 2}
+        tape.inv()
+
+        # check that operation order is reversed
+        assert tape.trainable_params == {1, 4}
+        assert tape.get_parameters() == [p[1], p[0]]
 
 
 class TestExecution:

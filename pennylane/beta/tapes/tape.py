@@ -58,6 +58,7 @@ def mock_inv(self):
     property of the 'inverse' annotation on the object in the queue."""
     current_inv = QueuingContext.get_info(self).get("inverse", False)
     QueuingContext.update_info(self, inverse=not current_inv)
+    return self
 
 
 def mock_tensor_init(self, *args):
@@ -335,35 +336,48 @@ class QuantumTape(AnnotatedQueue):
         This tape has the following properties:
 
         >>> tape.operations
-        [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY.inv(0.543, wires=[0]), CNOT(wires=[0, 'a'])]
+        [BasisState(array([1, 1]), wires=[0, 'a']),
+         RX(0.432, wires=[0]),
+         Rot.inv(0.543, 0.1, 0.4, wires=[0]),
+         CNOT(wires=[0, 'a'])]
         >>> tape.get_parameters()
-        [array([1, 1]), 0.432, 0.543]
-        >>> tape.trainable_params = {2}
+        [array([1, 1]), 0.432, 0.543, 0.1, 0.4]
+
+        Here, lets set some trainable parameters:
+
+        >>> tape.trainable_params = {1, 2}
+        >>> tape.get_parameters()
+        [0.432, 0.543]
 
         Inverting the tape:
 
         >>> tape.inv()
         >>> tape.operations
-        [BasisState(array([1, 1]), wires=[0, 'a']), CNOT.inv(wires=[0, 'a']), RY(0.543, wires=[0]), RX.inv(0.432, wires=[0])]
+        [BasisState(array([1, 1]), wires=[0, 'a']),
+         CNOT.inv(wires=[0, 'a']),
+         Rot(0.543, 0.1, 0.4, wires=[0]),
+         RX.inv(0.432, wires=[0])]
 
         Note that the state preparation remains as-is, while the operations have been
         inverted and their order reversed.
 
-        Tape inversion also modifies the order of parameters:
+        Tape inversion also modifies the order of tape parameters:
 
         >>> tape.get_parameters(free_only=False)
-        [array([1, 1]), 0.543, 0.432]
+        [array([1, 1]), 0.543, 0.1, 0.4, 0.432]
         >>> tape.get_parameters(free_only=True)
+        [0.543, 0.432]
         >>> tape.trainable_params
+        {1, 4}
         """
         for op in self._ops:
             op.inverse = not op.inverse
 
-        if self.trainable_params != set(len(self._par_info)):
+        if self.trainable_params != set(range(len(self._par_info))):
             # if the trainable parameters have been set to a subset
             # of all parameters, we must remap the old trainable parameter
             # indices to the new ones after the operation order is reversed.
-            res = []
+            parameter_indices = []
             param_count = 0
 
             for idx, queue in enumerate([self._prep, self._ops, self.observables]):
@@ -383,15 +397,15 @@ class QuantumTape(AnnotatedQueue):
                     # reverse the list representing operator parameters
                     obj_params = obj_params[::-1]
 
-                res.extend(obj_params)
+                parameter_indices.extend(obj_params)
 
             # flatten the list of parameter indices after the reversal
-            res = [item for sublist in res for item in sublist]
+            parameter_indices = [item for sublist in parameter_indices for item in sublist]
 
             # remap the trainable parameter information
             trainable_params = set()
 
-            for old_idx, new_idx in zip(res, range(len(res))):
+            for old_idx, new_idx in zip(parameter_indices, range(len(parameter_indices))):
                 if old_idx in self.trainable_params:
                     trainable_params.add(new_idx)
 
