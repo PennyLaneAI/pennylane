@@ -79,7 +79,7 @@ def xy_mixer(graph):
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
-        graph (nx.Graph): A graph defining the pairs of wires on which each term of the Hamiltonian acts.
+        graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
 
     Returns:
          Hamiltonian: Mixer Hamiltonian
@@ -121,12 +121,12 @@ def bit_flip_mixer(graph, n):
 
     This mixer is defined as:
 
-    .. math:: H_M \ = \ \displaystyle\sum_{v \in V(G)} \frac{1}{2^d(v)} X_{v}
-              \displaystyle\prod_{w \in \text{nbhd}(v)} (\mathbb{I} \ + \ (-1)^n Z_w)
+    .. math:: H_M \ = \ \displaystyle\sum_{v \in V(G)} \frac{1}{2^{d(v)}} X_{v}
+              \displaystyle\prod_{w \in N(v)} (\mathbb{I} \ + \ (-1)^n Z_w)
 
     where :math:`V(G)` is the set of vertices of some graph :math:`G`, :math:`d(v)` is the
     `degree <https://en.wikipedia.org/wiki/Degree_(graph_theory)>`__ of vertex :math:`v`, and
-    :math:`\text{nbhd}(v)` is the `neighbourhood <https://en.wikipedia.org/wiki/Neighbourhood_(graph_theory)>`__
+    :math:`N(v)` is the `neighbourhood <https://en.wikipedia.org/wiki/Neighbourhood_(graph_theory)>`__
     of vertex :math:`v`. In addition, :math:`\mathbb{I}` is the identity operator, and :math:`X_v` and :math:`Z_v`
     are the Pauli-Z and Pauli-X operators on vertex :math:`v`, respectively.
 
@@ -135,7 +135,7 @@ def bit_flip_mixer(graph, n):
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
-         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts
+         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
          n (int): Either :math:`0` or :math:`1`. Determines whether the mixer performs a conditional
                   bit-flip of a vertex if all neighbouring vertices are labelled :math:`0` or :math:`1`.
 

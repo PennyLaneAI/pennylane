@@ -13,9 +13,6 @@
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
 
-* Added a new bit-flip mixer to the `qml.qaoa` module.
-  [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
-
 <h3>Improvements</h3>
 
 * Sped up the application of certain gates in ``default.qubit`` by using array/tensor
@@ -64,6 +61,9 @@
   >>> print(H)
   (3.0) [Z0]
   ```
+  
+* Added a new bit-flip mixer to the `qml.qaoa` module.
+  [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
 
 <h3>Breaking changes</h3>
 
