@@ -16,4 +16,4 @@ This subpackage contains queuing contexts and abstract classes.
 """
 from .queuing import AnnotatedQueue, Queue, QueuingContext
 from .measure import expval, var, sample, probs, MeasurementProcess
-from .operation import BetaTensor
+from .operation import BetaTensor, monkeypatch_operations, unmonkeypatch_operations

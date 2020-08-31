@@ -292,6 +292,26 @@ class TestParameters:
 
         assert np.all(op.data[0] == b)
 
+    def test_measurement_parameter(self):
+        """Test that measurement parameters integrate properly"""
+        H = np.array([[1, 0], [0, -1]])
+        params = [0.32, 0.76, 1.0, H]
+
+        with QuantumTape() as tape:
+            qml.Rot(params[0], params[1], params[2], wires=0)
+            obs = qml.Hermitian(params[3], wires=0)
+            expval(obs)
+
+        assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
+
+        H2 = np.array([[0, 1], [1, 1]])
+        new_params = [0.543, 0.654, 0.123, H2]
+        tape.set_parameters(new_params)
+        assert tape.get_parameters() == new_params
+
+        assert np.all(obs.data[0] == H2)
+
 
 class TestInverse:
     """Tests for tape inversion"""
@@ -345,6 +365,82 @@ class TestInverse:
         # check that operation order is reversed
         assert tape.trainable_params == {1, 4}
         assert tape.get_parameters() == [p[1], p[0]]
+
+        # undo the inverse
+        tape.inv()
+        assert tape.trainable_params == {1, 2}
+        assert tape.get_parameters() == [p[0], p[1]]
+        assert tape._ops == ops
+
+
+class TestExpand:
+    """Tests for tape expansion"""
+
+    def test_decomposition(self):
+        """Test expanding a tape with operations that have decompositions"""
+        with QuantumTape() as tape:
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        new_tape = tape.expand()
+
+        assert len(new_tape.operations) == 3
+        assert new_tape.get_parameters() == [0.1, 0.2, 0.3]
+        assert new_tape.trainable_params == {0, 1, 2}
+
+        assert isinstance(new_tape.operations[0], qml.RZ)
+        assert isinstance(new_tape.operations[1], qml.RY)
+        assert isinstance(new_tape.operations[2], qml.RZ)
+
+        # check that modifying the new tape does not affect the old tape
+
+        new_tape.trainable_params = {0}
+        new_tape.set_parameters([10])
+
+        assert tape.get_parameters() == [0.1, 0.2, 0.3]
+        assert tape.trainable_params == {0, 1, 2}
+
+    def test_decomposition_removing_parameters(self):
+        """Test that decompositions which reduce the number of parameters
+        on the tape retain tape consistency."""
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1]), wires=0)
+
+        new_tape = tape.expand()
+
+        assert len(new_tape.operations) == 1
+        assert new_tape.num_params == 0
+        assert new_tape.get_parameters() == []
+
+        assert isinstance(new_tape.operations[0], qml.PauliX)
+
+    def test_decomposition_adding_parameters(self):
+        """Test that decompositions which increase the number of parameters
+        on the tape retain tape consistency."""
+        with QuantumTape() as tape:
+            qml.PauliX(wires=0)
+
+        new_tape = tape.expand()
+
+        assert len(new_tape.operations) == 3
+        assert new_tape.num_params == 0
+        assert new_tape.get_parameters(free_only=False) == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.trainable_params == set()
+
+    def test_nested_tape(self):
+        """Test that a nested tape properly expands"""
+        with QuantumTape() as tape1:
+            with QuantumTape() as tape2:
+                op1 = qml.RX(0.543, wires=0)
+                op2 = qml.RY(0.1, wires=0)
+
+        assert tape1.num_params == 2
+        assert tape1.operations == [tape2]
+
+        new_tape = tape1.expand()
+        assert new_tape.num_params == 2
+        assert len(new_tape.operations) == 2
+        assert isinstance(new_tape.operations[0], qml.RX)
+        assert isinstance(new_tape.operations[1], qml.RY)
 
 
 class TestExecution:
@@ -1118,4 +1214,19 @@ class TestJacobianCVIntegration:
         assert res.shape == (2, 2)
 
         expected = np.array([[1, 2 * a], [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_trainable_measurement(self, tol):
+        """Test that a trainable measurement can be differentiated"""
+        dev = qml.device("default.gaussian", wires=2)
+        a = 0.32
+        phi = 0.54
+
+        with QuantumTape() as tape:
+            qml.Displacement(a, 0, wires=0)
+            expval(qml.QuadOperator(phi, wires=0))
+
+        tape.trainable_params = {2}
+        res = tape.jacobian(dev)
+        expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)

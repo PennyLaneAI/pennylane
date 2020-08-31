@@ -22,12 +22,10 @@ import pennylane as qml
 
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
+from pennylane.beta.queuing import monkeypatch_operations, unmonkeypatch_operations
 
 from .circuit_graph import CircuitGraph
 
-
-ORIGINAL_QUEUE = qml.operation.Operation.queue
-ORIGINAL_INV = qml.operation.Operation.inv
 
 STATE_PREP_OPS = (
     qml.BasisState,
@@ -41,48 +39,6 @@ STATE_PREP_OPS = (
     qml.ThermalState,
     qml.GaussianState,
 )
-
-
-def mock_queue(self):
-    """Mock queuing method. When within the QuantumTape
-    context, PennyLane operations are monkeypatched to
-    use this queuing method rather than their built-in queuing
-    method."""
-    QueuingContext.append(self)
-    return self
-
-
-def mock_inv(self):
-    """Mock inverse method for operations. This operation
-    acts as a 'radio button', swapping the current boolean
-    property of the 'inverse' annotation on the object in the queue."""
-    current_inv = QueuingContext.get_info(self).get("inverse", False)
-    QueuingContext.update_info(self, inverse=not current_inv)
-    return self
-
-
-def mock_tensor_init(self, *args):
-    """mock tensor init"""
-    self._eigvals_cache = None
-    self.obs = []
-
-    for o in args:
-        if isinstance(o, qml.operation.Tensor):
-            self.obs.extend(o.obs)
-        elif isinstance(o, qml.operation.Observable):
-            self.obs.append(o)
-        else:
-            raise ValueError("Can only perform tensor products between observables.")
-
-    self.queue()
-
-
-def mock_tensor_queue(self):
-    """mock tensor queuing"""
-    QueuingContext.append(self, owns=tuple(self.obs))
-    for o in self.obs:
-        QueuingContext.update_info(o, owner=self)
-    return self
 
 
 class QuantumTape(AnnotatedQueue):
@@ -191,32 +147,28 @@ class QuantumTape(AnnotatedQueue):
         self._trainable_params = set()
         self._graph = None
         self._output_dim = 0
+
         self.wires = qml.wires.Wires([])
+        self.num_wires = 0
+        self.grad_method = None
 
         self.hash = 0
         self.is_sampled = False
 
+    def __repr__(self):
+        return f"<QuantumTape: params={self.num_params}, wires={self.wires}>"
+
     def __enter__(self):
-        # monkeypatch operations to use the qml.beta.queuing.queuing.QueuingContext instead
-        qml.operation.Operation.queue = mock_queue
-        qml.operation.Operation.inv = mock_inv
-
-        qml.operation.CVObservable.queue = mock_queue
-
-        qml.operation.Tensor.__init__ = mock_tensor_init
-        qml.operation.Tensor.queue = mock_tensor_queue
-
+        monkeypatch_operations()
         QueuingContext.append(self)
-
         return super().__enter__()
 
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
-        # remove the monkeypatching
-        qml.operation.Operation.queue = ORIGINAL_QUEUE
-        qml.operation.Operation.inv = ORIGINAL_INV
-        qml.operation.CVObservable.queue = ORIGINAL_QUEUE
-        qml.operation.Tensor.queue = lambda self: None
+
+        if not QueuingContext.recording:
+            unmonkeypatch_operations()
+
         self._process_queue()
 
     # ========================================================
@@ -284,18 +236,37 @@ class QuantumTape(AnnotatedQueue):
                     if obj.return_type is qml.operation.Sample:
                         self.is_sampled = True
 
+        self._update_circuit_info()
+        self._update_par_info()
+        self._update_gradient_info()
+
+        self._trainable_params = set(self._par_info)
+
+    def _update_circuit_info(self):
+        """Update circuit metadata"""
         self.wires = qml.wires.Wires.all_wires(
             [op.wires for op in self.operations + self.observables]
         )
+        self.num_wires = len(self.wires)
 
-        self._update_par_info()
-        self._trainable_params = set(self._par_info)
+    def _update_gradient_info(self):
+        """Update the parameter information dictionary with gradient information
+        of each parameter"""
+        gmeth = []
 
-        # calculate gradient methods
         for i, info in self._par_info.items():
-            info["grad_method"] = self._grad_method(i, use_graph=True)
+            gmeth.append(self._grad_method(i, use_graph=True))
+            info["grad_method"] = gmeth[-1]
+
+        if None in gmeth:
+            self.grad_method = None
+        elif all(g == "A" for g in gmeth):
+            self.grad_method = "A"
+        else:
+            self.grad_method = "F"
 
     def _update_par_info(self):
+        """Update the parameter information dictionary"""
         param_count = 0
 
         for obj in self.operations + self.observables:
@@ -307,10 +278,63 @@ class QuantumTape(AnnotatedQueue):
                 self._par_info[param_count] = info
                 param_count += 1
 
-    def expand(self, device=None):
-        """Recursively expand the processed queue.
+    def expand(self):
+        """Expand all operations in the processed queue.
 
-        All nested tapes are"""
+        **Example**
+
+        Consider the following nested tape:
+
+        .. code-block:: python
+
+            with QuantumTape() as tape:
+                qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+                with QuantumTape() as tape2:
+                    qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+                qml.CNOT(wires=[0, 'a'])
+                qml.RY(0.2, wires='a')
+                probs(wires=0), probs(wires='a')
+
+        The nested structure is preserved:
+
+        >>> tape.operations
+        [BasisState(array([1, 1]), wires=[0, 'a']),
+         <QuantumTape: params=3, wires=<Wires = [0]>>,
+         CNOT(wires=[0, 'a']),
+         RY(0.2, wires=['a'])]
+
+        Calling ``.expand`` will return a tape with all nested tapes
+        expanded, resulting in a single tape of quantum operations:
+
+        >>> new_tape = tape.expand()
+        >>> new_tape.operations
+        [PauliX(wires=[0]),
+         PauliX(wires=['a']),
+         RZ(0.543, wires=[0]),
+         RY(0.1, wires=[0]),
+         RZ(0.4, wires=[0]),
+         CNOT(wires=[0, 'a']),
+         RY(0.2, wires=['a'])]
+        """
+        new_tape = QuantumTape()
+
+        for op in self.operations:
+            t = op.expand()
+
+            new_tape._prep += t._prep
+            new_tape._ops += t._ops
+            new_tape._obs += t._obs
+
+            new_tape._update_par_info()
+            new_tape.trainable_params = new_tape.trainable_params | {
+                i + new_tape.num_params for i in t.trainable_params
+            }
+
+        new_tape._update_circuit_info()
+        new_tape._update_gradient_info()
+        return new_tape
 
     def inv(self):
         """Inverts the processed operations.
@@ -674,6 +698,16 @@ class QuantumTape(AnnotatedQueue):
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
+
+    @property
+    def data(self):
+        """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
+        for backwards compatibilities with operations."""
+        return self.get_parameters(free_only=False)
+
+    @data.setter
+    def data(self, params):
+        self.set_parameters(params, free_only=False)
 
     # ========================================================
     # execution methods
