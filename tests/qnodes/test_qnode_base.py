@@ -1557,3 +1557,35 @@ class TestQNodeCaching:
         qnode._hash_evaluate[hash_eval[0]] = 1967
         res = qnode.evaluate(self.args, self.kwargs)
         assert res == 1967
+
+    def test_fill_cache(self):
+        """Test that the cache is added to until it reaches its maximum size, and then maintains
+        that size upon subsequent additions."""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=5)
+        for i in range(5):
+            self.args[0] += i
+            qnode.evaluate(self.args, self.kwargs)
+            hash_eval = qnode._hash_evaluate
+            assert len(hash_eval) == i + 1
+        for i in range(5):
+            self.args[0] += i
+            qnode.evaluate(self.args, self.kwargs)
+            hash_eval = qnode._hash_evaluate
+            assert len(hash_eval) == 5
+
+    def test_use_all_cache(self):
+        """Test that the multiple entries are stored in the cache and then subsequently accessed
+        for follow up evaluations."""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=5)
+        called_args = []
+        for i in range(5):
+            self.args[0] += i
+            qnode.evaluate(self.args, self.kwargs)
+            called_args.append((self.args.copy(), i))
+            hash_eval = qnode._hash_evaluate.popitem(last=True)
+            qnode._hash_evaluate[hash_eval[0]] = i
+
+        for arg, exp_res in called_args:
+            res = qnode.evaluate(arg, self.kwargs)
+            assert np.allclose(exp_res, res)
+
