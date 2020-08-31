@@ -1515,7 +1515,7 @@ class TestQNodeCaching:
     dev = qml.device("default.qubit", wires=wires)
 
     @staticmethod
-    def circuit(a, b, c=1, type="expval", wires=w_a):
+    def circuit(a, b, c=1, ret_type="expval", wires=w_a):
         """A circuit designed to test the caching capabilities of the QNode."""
         qml.RX(a, wires=w_a)
         qml.Rot(*b[0], wires=w_b)
@@ -1523,17 +1523,15 @@ class TestQNodeCaching:
         qml.RY(b[1], wires=w_a)
         qml.RY(c * b[2][0], wires=w_a)
         qml.RY(c * b[2][1], wires=w_b)
-        if type == "expval":
+        if ret_type == "expval":
             return qml.expval(qml.PauliZ(wires=wires))
-        elif type == "samples":
+        elif ret_type == "samples":
             return qml.sample(qml.PauliZ(wires=wires))
-        elif type == "probs":
-            return qml.probs(wires=[w_a, w_b])
-        elif type == "mixed":
-            return qml.expval(qml.PauliZ(wires=w_a)) @ qml.sample(qml.PauliX(wires=w_b))
+        elif ret_type == "mixed":
+            return qml.expval(qml.PauliZ(wires=w_a)), qml.sample(qml.PauliX(wires=w_b))
 
     args = [0.1, [[0.2, 0.3, 0.4], 0.5, [0.6, 0.7]]]
-    kwargs = {"c": 1, "type": "expval", "wires": w_a}
+    kwargs = {"c": 1, "ret_type": "expval", "wires": w_a}
     result = 0.45133003
 
     def test_caching_set(self):
@@ -1612,4 +1610,30 @@ class TestQNodeCaching:
         qnode.evaluate(self.args, self.kwargs)
         hash_eval = qnode._hash_evaluate
         assert key not in hash_eval
+        assert len(hash_eval) == 2
+
+    @pytest.mark.parametrize("ret_type", ["samples", "mixed"])
+    def test_skip_cache_for_samples(self, ret_type):
+        """Test that the cache is not added to when samples form part of the QNode return"""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=2)
+        kwargs = self.kwargs.copy()
+        kwargs["ret_type"] = ret_type
+        qnode.evaluate(self.args, kwargs)
+        hash_eval = qnode._hash_evaluate
+        assert len(hash_eval) == 0
+
+    def test_multiple_return_types(self):
+        """Test that within a QNode instance, the cache can be added to for an expectation value
+        return type but is not added to for a samples-based return type"""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=2)
+        kwargs = self.kwargs.copy()
+
+        qnode.evaluate(self.args, self.kwargs)
+        qnode.evaluate(self.args, kwargs)
+
+        self.args[0] += 1
+        qnode.evaluate(self.args, self.kwargs)
+        qnode.evaluate(self.args, kwargs)
+
+        hash_eval = qnode._hash_evaluate
         assert len(hash_eval) == 2

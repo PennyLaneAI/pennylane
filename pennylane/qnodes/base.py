@@ -833,19 +833,26 @@ class BaseQNode(qml.QueuingContext):
             # TODO: remove this if statement once all devices are ported to the QubitDevice API
 
             if self.caching:
-                hashed_args = _hash_iterable(args)
-                hashed_kwargs = _hash_dict(kwargs)
-                hashed_circuit = self.circuit.hash
-                hash_tuple = (hashed_args, hashed_kwargs, hashed_circuit)
+                returns_samples = [ob.return_type for ob in self.circuit.observables]
+                samples_returned = ObservableReturnTypes.Sample in returns_samples
 
-                if hash_tuple in self._hash_evaluate:
-                    ret = self._hash_evaluate[hash_tuple]
-                else:
+                if samples_returned:  # skip caching for samples-based return types
                     ret = self.device.execute(self.circuit, return_native_type=temp)
-                    self._hash_evaluate[hash_tuple] = ret
+                else:
+                    hashed_args = _hash_iterable(args)
+                    hashed_kwargs = _hash_dict(kwargs)
+                    hashed_circuit = self.circuit.hash
+                    hash_tuple = (hashed_args, hashed_kwargs, hashed_circuit)
+                    use_cache = hash_tuple in self._hash_evaluate
 
-                    if len(self._hash_evaluate) > self.caching:
-                        self._hash_evaluate.popitem(last=False)
+                    if use_cache:
+                        ret = self._hash_evaluate[hash_tuple]
+                    else:
+                        ret = self.device.execute(self.circuit, return_native_type=temp)
+                        self._hash_evaluate[hash_tuple] = ret
+
+                        if len(self._hash_evaluate) > self.caching:
+                            self._hash_evaluate.popitem(last=False)
             else:
                 ret = self.device.execute(self.circuit, return_native_type=temp)
         else:
