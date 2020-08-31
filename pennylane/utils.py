@@ -462,8 +462,8 @@ def _hash_object(obj):
         obj (Any): the object to generate a hash for
 
     Returns:
-        int or None: the resulting hash, or ``None`` if the object is a PyTorch/TensorFlow tensor or any
-        other unhashable type.
+        int or None: the resulting hash, or ``None`` if the object is a PyTorch/TensorFlow tensor or
+        any other unhashable type.
     """
     shape = getattr(obj, "shape", None)
     if shape:  # Check if we have a NumPy array or PyTorch/TensorFlow tensor
@@ -506,7 +506,7 @@ def _hash_dict(dictionary):
     """Returns a single hash for an input dictionary.
 
     Loops over the key-value pairs in the dictionary and creates a hash for each,
-    finally combining all the resulting hash into a single one. The values may be iterables and
+    finally combining all the resulting hashes into a single one. The values may be iterables and
     are passed to :func:`~._hash_iterable`. If any of the dictionary values contain a
     PyTorch/TensorFlow tensor, then no hash is generated and ``None`` is returned.
 
