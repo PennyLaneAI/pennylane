@@ -1504,31 +1504,36 @@ class TestTrainableArgs:
         assert node.get_trainable_args() == {0, 1, 6}
 
 
+wires = Wires(["a", -1])
+w_a = wires[0]
+w_b = wires[1]
+
+
 class TestQNodeCaching:
     """Tests for QNode caching."""
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit", wires=wires)
 
     @staticmethod
-    def circuit(a, b, c=1, type="expval", wires=0):
+    def circuit(a, b, c=1, type="expval", wires=w_a):
         """A circuit designed to test the caching capabilities of the QNode."""
-        qml.RX(a, wires=0)
-        qml.Rot(*b[0], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RY(b[1], wires=0)
-        qml.RY(c * b[2][0], wires=0)
-        qml.RY(c * b[2][1], wires=1)
+        qml.RX(a, wires=w_a)
+        qml.Rot(*b[0], wires=w_b)
+        qml.CNOT(wires=[w_a, w_b])
+        qml.RY(b[1], wires=w_a)
+        qml.RY(c * b[2][0], wires=w_a)
+        qml.RY(c * b[2][1], wires=w_b)
         if type == "expval":
             return qml.expval(qml.PauliZ(wires=wires))
         elif type == "samples":
             return qml.sample(qml.PauliZ(wires=wires))
         elif type == "probs":
-            return qml.probs(wires=[0, 1])
+            return qml.probs(wires=[w_a, w_b])
         elif type == "mixed":
-            return qml.expval(qml.PauliZ(wires=0)) @ qml.sample(qml.PauliX(wires=1))
+            return qml.expval(qml.PauliZ(wires=w_a)) @ qml.sample(qml.PauliX(wires=w_b))
 
     args = [0.1, [[0.2, 0.3, 0.4], 0.5, [0.6, 0.7]]]
-    kwargs = {"c": 1, "type": "expval", "wires": 0}
+    kwargs = {"c": 1, "type": "expval", "wires": w_a}
     result = 0.45133003
 
     def test_caching_set(self):
