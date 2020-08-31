@@ -156,7 +156,7 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = False
 
     def __repr__(self):
-        return f"<QuantumTape: params={self.num_params}, wires={self.wires}>"
+        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     def __enter__(self):
         monkeypatch_operations()
@@ -170,6 +170,11 @@ class QuantumTape(AnnotatedQueue):
             unmonkeypatch_operations()
 
         self._process_queue()
+
+    @property
+    def interface(self):
+        """str, None: automatic differentiation interface used by the quantum tap (if any)"""
+        return None
 
     # ========================================================
     # construction methods
@@ -239,8 +244,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_circuit_info()
         self._update_par_info()
         self._update_gradient_info()
-
-        self._trainable_params = set(self._par_info)
+        self._update_trainable_params()
 
     def _update_circuit_info(self):
         """Update circuit metadata"""
@@ -258,13 +262,6 @@ class QuantumTape(AnnotatedQueue):
             gmeth.append(self._grad_method(i, use_graph=True))
             info["grad_method"] = gmeth[-1]
 
-        if None in gmeth:
-            self.grad_method = None
-        elif all(g == "A" for g in gmeth):
-            self.grad_method = "A"
-        else:
-            self.grad_method = "F"
-
     def _update_par_info(self):
         """Update the parameter information dictionary"""
         param_count = 0
@@ -278,8 +275,63 @@ class QuantumTape(AnnotatedQueue):
                 self._par_info[param_count] = info
                 param_count += 1
 
-    def expand(self):
-        """Expand all operations in the processed queue.
+    def _update_trainable_params(self):
+        """Set the trainable parameters"""
+        self._trainable_params = set(self._par_info)
+
+    def _expand(self, stop_at=None):
+        """Expand all operations and tapes in the processed queue.
+
+        Args:
+            stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
+                An operation or tape appearing in this list of names is not expanded.
+        """
+        new_tape = QuantumTape()
+        stop_at = stop_at or []
+
+        # create a dictionary mapping from operations in the
+        # current tape, to operation parameter indices that are trainable.
+        op_trainable_params = {}
+        for p, info in self._par_info.items():
+            s = op_trainable_params.get(info["op"], set())
+
+            if p in self.trainable_params:
+                op_trainable_params[info["op"]] = s | {info["p_idx"]}
+
+        for op in self.operations:
+            if op.name in stop_at:
+                with QuantumTape() as t:
+                    op.__class__(*op.data, wires=op.wires)
+            else:
+                if isinstance(op, QuantumTape):
+                    t = op
+                else:
+                    t = op.expand()
+
+            new_tape._prep += t._prep
+            new_tape._ops += t._ops
+            new_tape._obs += t._obs
+
+            n = len(new_tape._par_info)
+            new_tape._update_par_info()
+
+            # update the trainable parameters of the new tape
+            if op in op_trainable_params:
+                new_tape.trainable_params = new_tape.trainable_params | {
+                    i + n for i in t.trainable_params if i in op_trainable_params[op]
+                }
+
+        new_tape._update_circuit_info()
+        new_tape._update_gradient_info()
+        return new_tape
+
+    def expand(self, depth=1, stop_at=None):
+        """Expand all operations in the processed to a specific depth.
+
+        Args:
+            depth (int): the depth the tape should be expanded
+            stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
+                An operation or tape appearing in this list of names is not expanded.
 
         **Example**
 
@@ -312,28 +364,15 @@ class QuantumTape(AnnotatedQueue):
         >>> new_tape.operations
         [PauliX(wires=[0]),
          PauliX(wires=['a']),
-         RZ(0.543, wires=[0]),
-         RY(0.1, wires=[0]),
-         RZ(0.4, wires=[0]),
+         Rot(0.543, 0.1, 0.4, wires=[0]),
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
         """
-        new_tape = QuantumTape()
+        new_tape = self
 
-        for op in self.operations:
-            t = op.expand()
+        for _ in range(depth):
+            new_tape = new_tape._expand(stop_at=stop_at)
 
-            new_tape._prep += t._prep
-            new_tape._ops += t._ops
-            new_tape._obs += t._obs
-
-            new_tape._update_par_info()
-            new_tape.trainable_params = new_tape.trainable_params | {
-                i + new_tape.num_params for i in t.trainable_params
-            }
-
-        new_tape._update_circuit_info()
-        new_tape._update_gradient_info()
         return new_tape
 
     def inv(self):

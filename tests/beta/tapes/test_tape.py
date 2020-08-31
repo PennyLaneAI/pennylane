@@ -442,6 +442,80 @@ class TestExpand:
         assert isinstance(new_tape.operations[0], qml.RX)
         assert isinstance(new_tape.operations[1], qml.RY)
 
+    def test_nesting_and_decomposition(self):
+        """Test an example that contains nested tapes and operation decompositions."""
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+            with QuantumTape() as tape2:
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=[0, 'a'])
+            qml.RY(0.2, wires='a')
+            probs(wires=0), probs(wires='a')
+
+        tape.trainable_params = {1, 4}
+        new_tape = tape.expand()
+
+        assert new_tape.trainable_params == {0, 3}
+        assert len(new_tape.operations) == 5
+
+    def test_stopping_criterion(self):
+        """Test that gates specified in the stop_at
+        argument are not expanded."""
+        with QuantumTape() as tape:
+            qml.U3(0, 1, 2, wires=0)
+            qml.Rot(3, 4, 5, wires=0)
+            probs(wires=0), probs(wires='a')
+
+        new_tape = tape.expand(stop_at=["Rot"])
+        assert len(new_tape.operations) == 4
+        assert "Rot" in [i.name for i in new_tape.operations]
+        assert not "U3" in [i.name for i in new_tape.operations]
+
+    def test_depth_expansion(self):
+        """Test expanding with depth=2"""
+        with QuantumTape() as tape:
+            # Will be decomposed into PauliX(0), PauliX(0)
+            # Each PauliX will then be decomposed into PhaseShift, RX, PhaseShift.
+            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+            with QuantumTape() as tape2:
+                # will be decomposed into a RZ, RY, RZ
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=[0, 'a'])
+            qml.RY(0.2, wires='a')
+            probs(wires=0), probs(wires='a')
+
+        tape.trainable_params = {1, 4}
+        new_tape = tape.expand(depth=2)
+
+        assert new_tape.trainable_params == {6, 9}
+        assert len(new_tape.operations) == 11
+
+    def test_stopping_criterion_with_depth(self):
+        """Test that gates specified in the stop_at
+        argument are not expanded."""
+        with QuantumTape() as tape:
+            # Will be decomposed into PauliX(0), PauliX(0)
+            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+            with QuantumTape() as tape2:
+                # will be decomposed into a RZ, RY, RZ
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=[0, 'a'])
+            qml.RY(0.2, wires='a')
+            probs(wires=0), probs(wires='a')
+
+        tape.trainable_params = {1, 4}
+        new_tape = tape.expand(depth=2, stop_at=["PauliX"])
+
+        assert new_tape.trainable_params == {0, 3}
+        assert len(new_tape.operations) == 7
+
 
 class TestExecution:
     """Tests for tape execution"""
@@ -673,6 +747,18 @@ class TestExecution:
         res = tape.execute(dev)
         assert res[0].shape == (10,)
         assert isinstance(res[1], float)
+
+    # def test_decomposition(self):
+    #     """Test decomposition onto a devices supported gate set"""
+    #     dev = qml.device("default.qubit", wires=1)
+
+    #     with QuantumTape() as tape:
+    #         qml.U3(0.1, 0.2, 0.3, wires=[0])
+    #         expval(qml.PauliZ(0))
+
+    #     res = tape.execute(dev)
+    #     print(dev.)
+    #     new_tape = 
 
 
 class TestCVExecution:

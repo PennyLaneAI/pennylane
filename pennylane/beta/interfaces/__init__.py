@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains various quantum tapes, which track, queue,
-validate, execute, and differentiate quantum circuits.
+This subpackage contains interfaces for connecting classical machine learning
+libraries with the QuantumTape.
 """
-from .tape import QuantumTape
-from .qnode import QNode, qnode

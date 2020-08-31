@@ -142,6 +142,7 @@ def monkeypatch_operations():
     qml.operation.Operation.expand = expand
     qml.operation.Tensor.__init__ = tensor_init
     qml.operation.Tensor.queue = tensor_queue
+    qml.operation.Operator.do_check_domain = False
 
 
 def unmonkeypatch_operations():
@@ -151,3 +152,4 @@ def unmonkeypatch_operations():
     qml.operation.Operation.inv = ORIGINAL_INV
     qml.operation.Operation.expand = lambda self: None
     qml.operation.Tensor.queue = lambda self: None
+    qml.operation.Operator.do_check_domain = True
