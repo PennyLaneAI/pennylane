@@ -109,7 +109,13 @@ class AutogradInterface(AnnotatedQueue):
     @autograd.extend.primitive
     def _execute(self, params, device):
         params = autograd.builtins.tuple(params)
-        return np.array(self.execute_device(params, device=device))
+
+        res = self.execute_device(params, device=device)
+
+        if res.dtype == np.dtype("object"):
+            return np.hstack(res)
+
+        return res
 
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
@@ -123,7 +129,8 @@ class AutogradInterface(AnnotatedQueue):
 
         def gradient_product(g):
             jac = self.jacobian(device, params=params)
-            return g @ jac
+            vjp = g.T.flatten() @ jac
+            return vjp
 
         return gradient_product
 

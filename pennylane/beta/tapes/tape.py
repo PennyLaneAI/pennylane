@@ -777,7 +777,7 @@ class QuantumTape(AnnotatedQueue):
         if params is None:
             params = self.get_parameters()
 
-        return self.cast(self._execute(params, device=device))
+        return self._execute(params, device=device)
 
     def execute_device(self, params, device):
         """Execute the tape on a quantum device.

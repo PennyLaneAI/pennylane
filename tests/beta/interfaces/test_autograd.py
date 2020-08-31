@@ -160,6 +160,26 @@ class TestAutogradQuantumTape:
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
+    def test_matrix_parameter(self, tol):
+        U = np.array([[0, 1], [1, 0]], requires_grad=False)
+        a = np.array(0.1, requires_grad=True)
+
+        def cost(a, U, device):
+            with AutogradInterface.apply(QuantumTape()) as tape:
+                qml.QubitUnitary(U, wires=0)
+                qml.RY(a, wires=0)
+                expval(qml.PauliZ(0))
+            assert tape.trainable_params == {1}
+            return tape.execute(device)
+
+        dev = qml.device("default.qubit", wires=2)
+        res = cost(a, U, device=dev)
+        assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(cost)
+        res = jac_fn(a, U, device=dev)
+        assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
+
     def test_differentiable_expand(self, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
@@ -214,3 +234,96 @@ class TestAutogradQuantumTape:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_probability_differentiation(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+
+        def cost(x, y, device):
+            with AutogradInterface.apply(QuantumTape()) as tape:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                probs(wires=[0])
+                probs(wires=[1])
+
+            return tape.execute(device)
+
+        dev = qml.device("default.qubit", wires=2)
+        x = np.array(0.543, requires_grad=True)
+        y = np.array(-0.654, requires_grad=True)
+
+        res = cost(x, y, device=dev)
+        expected = np.array(
+            [
+                [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
+                [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(cost)
+        res = jac_fn(x, y, device=dev)
+        assert res.shape == (2, 2, 2)
+        expected = np.array(
+            [
+                [[-np.sin(x) / 2, 0], [np.sin(x) / 2, 0]],
+                [
+                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                ],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_ragged_differentiation(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+
+        def cost(x, y, device):
+            with AutogradInterface.apply(QuantumTape()) as tape:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                expval(qml.PauliZ(0))
+                probs(wires=[1])
+
+            return tape.execute(device)
+
+        dev = qml.device("default.qubit", wires=2)
+        x = np.array(0.543, requires_grad=True)
+        y = np.array(-0.654, requires_grad=True)
+
+        res = cost(x, y, device=dev)
+        expected = np.array(
+            [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(cost)
+        res = jac_fn(x, y, device=dev)
+        expected = np.array(
+            [
+                [-np.sin(x), 0],
+                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_sampling(self):
+        """Test sampling works as expected"""
+
+        def cost(x, device):
+            with AutogradInterface.apply(QuantumTape()) as tape:
+                qml.Hadamard(wires=[0])
+                qml.CNOT(wires=[0, 1])
+                sample(qml.PauliZ(0))
+                sample(qml.PauliX(1))
+
+            return tape.execute(device)
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        x = np.array(0.543, requires_grad=True)
+        res = cost(x, device=dev)
+        assert res.shape == (2, 10)
