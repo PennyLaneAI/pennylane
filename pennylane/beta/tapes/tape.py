@@ -14,8 +14,7 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access
-import copy
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
 import numpy as np
 
 import pennylane as qml
@@ -198,8 +197,6 @@ class QuantumTape(AnnotatedQueue):
         self._obs = []
         self._output_dim = 0
 
-        param_count = 0
-
         for obj, info in self._queue.items():
 
             if isinstance(obj, QuantumTape):
@@ -270,7 +267,12 @@ class QuantumTape(AnnotatedQueue):
 
             for p in range(len(obj.data)):
                 info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p,})
+                info.update(
+                    {
+                        "op": obj,
+                        "p_idx": p,
+                    }
+                )
 
                 self._par_info[param_count] = info
                 param_count += 1

@@ -14,14 +14,13 @@
 """
 Differentiable quantum tapes with Autograd interface.
 """
+# pylint: disable=protected-access
 import autograd.extend
 import autograd.builtins
 
-from pennylane.utils import unflatten
 from pennylane import numpy as np
 
 from pennylane.beta.queuing import AnnotatedQueue
-from pennylane.beta.tapes import QuantumTape
 
 
 class AutogradInterface(AnnotatedQueue):
@@ -77,10 +76,13 @@ class AutogradInterface(AnnotatedQueue):
     [[ 0.39828408 -0.00045133]]
     """
 
+    # pylint: disable=attribute-defined-outside-init
+
     cast = staticmethod(np.stack)
 
     @property
     def interface(self):
+        """str, None: automatic differentiation interface used by the quantum tap (if any)"""
         return "autograd"
 
     def _update_trainable_params(self):
@@ -96,7 +98,7 @@ class AutogradInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         return params
 
-    def get_parameters(self, free_only=True):
+    def get_parameters(self, free_only=True):  # pylint: disable=missing-function-docstring
         params = self._update_trainable_params()
 
         if free_only:
@@ -110,7 +112,15 @@ class AutogradInterface(AnnotatedQueue):
         return np.array(self.execute_device(params, device=device))
 
     @staticmethod
-    def vjp(ans, self, params, device):
+    def vjp(ans, self, params, device):  # pylint: disable=unused-argument
+        """Returns the vector-Jacobian product operator for the quantum tape.
+
+        Takes the same arguments as :meth:`~.execute`, plus `ans`.
+
+        Returns:
+            function[array[float], array[float]]: vector-Jacobian product operator
+        """
+
         def gradient_product(g):
             jac = self.jacobian(device, params=params)
             return g @ jac
