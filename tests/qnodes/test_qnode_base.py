@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane` :class:`QNode` class.
 import contextlib
 import io
 import textwrap
+from collections import OrderedDict
 
 import pytest
 import numpy as np
@@ -26,6 +27,7 @@ from pennylane._device import Device
 from pennylane.qnodes.base import BaseQNode, QuantumFunctionError, decompose_queue
 from pennylane.variable import Variable
 from pennylane.wires import Wires, WireError
+from pennylane.utils import _hash_iterable, _hash_dict
 
 
 @pytest.fixture(scope="function")
@@ -1508,18 +1510,14 @@ class TestQNodeCaching:
     dev = qml.device("default.qubit", wires=2)
 
     @staticmethod
-    def circuit(a, b, c=None, type=None, wires=None):
+    def circuit(a, b, c=1, type="expval", wires=0):
         """A circuit designed to test the caching capabilities of the QNode."""
         qml.RX(a, wires=0)
         qml.Rot(*b[0], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RY(b[1], wires=0)
-        if c == 1:
-            qml.RZ(b[2][0], wires=0)
-            qml.RZ(b[2][1], wires=1)
-        else:
-            qml.RZ(b[2][0], wires=1)
-            qml.RZ(b[2][1], wires=0)
+        qml.RY(c * b[2][0], wires=0)
+        qml.RY(c * b[2][1], wires=1)
         if type == "expval":
             return qml.expval(qml.PauliZ(wires=wires))
         elif type == "samples":
@@ -1529,6 +1527,10 @@ class TestQNodeCaching:
         elif type == "mixed":
             return qml.expval(qml.PauliZ(wires=0)) @ qml.sample(qml.PauliX(wires=1))
 
+    args = [0.1, [[0.2, 0.3, 0.4], 0.5, [0.6, 0.7]]]
+    kwargs = {"c": 1, "type": "expval", "wires": 0}
+    result = 0.45133003
+
     def test_caching_set(self):
         """Test that the caching property is set and can be subsequently set after instantiation."""
         qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=10)
@@ -1536,5 +1538,22 @@ class TestQNodeCaching:
         qnode.caching = 8
         assert qnode.caching == 8
 
+    def test_add_to_hash_evaluate(self):
+        """Test that the hash and result is correctly added to the _hash_evaluate dictionary."""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=10)
+        qnode.evaluate(self.args, self.kwargs)
+        hash_eval = qnode._hash_evaluate
 
+        hashes, result = hash_eval.popitem()
+        assert hashes == (_hash_iterable(self.args), _hash_dict(self.kwargs), qnode.circuit.hash)
+        assert np.allclose(result, self.result)
 
+    def test_use_cache(self):
+        """Test that the evaluate method uses the cached result on the second call. Here,
+        the result stored in _hash_evaluate is changed to a fixed value for comparison."""
+        qnode = BaseQNode(self.circuit, self.dev, mutable=True, caching=10)
+        qnode.evaluate(self.args, self.kwargs)
+        hash_eval = qnode._hash_evaluate.popitem()
+        qnode._hash_evaluate[hash_eval[0]] = 1967
+        res = qnode.evaluate(self.args, self.kwargs)
+        assert res == 1967
