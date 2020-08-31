@@ -852,14 +852,31 @@ def test_flatten_iterable(nonflat, flat):
     assert all(comparison)
 
 
+unhashable_objects = []
+unhashable_iterables = []
+unhashable_dicts = []
+
+try:
+    import torch
+    unhashable_objects.append(torch.ones(3))
+    unhashable_iterables.append([1, [torch.ones(3)]])
+    unhashable_dicts.append({"c": torch.ones(4), "e": "f"})
+except ImportError as e:
+    pass
+
+try:
+    import tensorflow as tf
+    unhashable_objects.append(tf.ones(3))
+    unhashable_iterables.append([[[tf.ones(5)], 1], "g"])
+    unhashable_dicts.append({"a": tf.ones(4), "b": 4})
+except ImportError as e:
+    pass
+
+
 class TestHashing:
     """Tests for the _hash_object, _hash_iterable and _hash_dict functions."""
 
-    torch = pytest.importorskip("torch")
-    tf = pytest.importorskip("tensorflow")
-
     objects = [1, 1.4, "test", "tes", np.ones(6), np.ones((3, 2)), np.zeros(6)]
-    unhashable_objects = [torch.ones(3), tf.ones(3)]
 
     @pytest.mark.parametrize("obj", objects)
     def test_hash(self, obj):
@@ -889,10 +906,6 @@ class TestHashing:
         [np.zeros(6), np.zeros(3)],
         [np.zeros((3, 2)), np.zeros(3)],
         [1, [np.ones(3), {"test_dict": np.ones(3), "other": 9}]],
-    ]
-    unhashable_iterables = [
-        [1, [torch.ones(3)]],
-        [[[tf.ones(5)], 1], "g"],
     ]
 
     @pytest.mark.parametrize("iterable", iterables)
@@ -927,10 +940,6 @@ class TestHashing:
         {"a": iterables[0], "c": iterables[2]},
         {4: "2", "e": iterables[3]},
         {"double": iterables[7], 4: 5},
-    ]
-    unhashable_dicts = [
-        {"a": tf.ones(4), "b": 4},
-        {"c": torch.ones(4), "e": "f"},
     ]
 
     @pytest.mark.parametrize("d", dicts)
