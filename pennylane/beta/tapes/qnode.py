@@ -115,42 +115,49 @@ class QNode:
         self.device = device
         self.qtape = None
 
-        self.interface = interface
-        self.diff_method = diff_method
-        self.diff_options = diff_options or {}
+        if interface not in self.INTERFACE_MAP:
+            raise QuantumFunctionError(
+                f"Unkown interface {interface}. Interface must be "
+                f"one of {self.interface_map.values()}."
+            )
 
-        self._tape, self.interface, self.diff_method = self._get_tape()
+        self._tape, self.interface, self.diff_method = self._get_tape(
+            device, interface, diff_method
+        )
+        self.diff_options = diff_options or {}
         self.diff_options["method"] = self.diff_method
 
-    def _get_tape(self):
+    def _get_tape(self, device, interface, diff_method="best"):
         """Determine the best QuantumTape, differentiation method, and interface
         for a requested device, interface, and diff method.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+            diff_method (str): The requested method of differentiation. One of
+                ``"best"``, ``"backprop"``, ``"reversible"``, ``"device"``,
+                ``"parameter-shift"``, or ``"finite-diff"``.
 
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
             to pass to the ``QuantumTape.jacobian`` method.
         """
-        if self.interface not in self.INTERFACE_MAP:
-            raise QuantumFunctionError(
-                f"Unknown interface {self.interface}. Interface must be "
-                f"one of {self.interface_map.values()}."
-            )
 
-        if self.diff_method == "best":
-            return self._get_best_tape(self.device, self.interface)
+        if diff_method == "best":
+            return QNode._get_best_tape(device, interface)
 
-        if self.diff_method == "backprop":
-            return self._get_backprop_tape(self.device, self.interface)
+        if diff_method == "backprop":
+            return QNode._get_backprop_tape(device, interface)
 
-        if self.diff_method == "device":
-            return self._get_device_tape(self.device, self.interface)
+        if diff_method == "device":
+            return QNode._get_device_tape(device, interface)
 
-        if self.diff_method == "finite-diff":
-            return QuantumTape, self.interface, "numeric"
+        if diff_method == "finite-diff":
+            return QuantumTape, interface, "numeric"
 
         raise ValueError(
-            f"Differentiation method {self.diff_method} not recognized. Allowed "
+            f"Differentiation method {diff_method} not recognized. Allowed "
             "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible')."
         )
 
