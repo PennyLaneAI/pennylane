@@ -880,7 +880,7 @@ class QuantumTape(AnnotatedQueue):
             # loop over all observables
             for ob in self.observables:
                 # check if op is an ancestor of ob
-                has_path = self.graph.has_path(ob, op)
+                has_path = self.graph.has_path(op, ob)
 
                 # Use finite differences if there is a path, else the gradient is zero
                 best.append("F" if has_path else "0")
