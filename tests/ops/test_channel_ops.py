@@ -148,7 +148,7 @@ class TestQubitChannel:
         ]
         out = channel.QubitChannel(K_list1, wires=0).kraus_matrices
 
-        # verify equivalent to input state
+        # verify equivalent to input matrices
         assert np.allclose(out, K_list1, atol=tol, rtol=0)
 
     def test_kraus_matrices_valid(self):

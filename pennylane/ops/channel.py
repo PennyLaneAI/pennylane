@@ -15,7 +15,6 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
 
 from pennylane.operation import AnyWires, Channel
@@ -253,7 +252,7 @@ class QubitChannel(Channel):
         # check all Kraus matrices are square matrices
         if not all(K.shape[0] == K.shape[1] for K in K_list):
             raise ValueError(
-                "Only channels with similar input and output Hilbert space dimensions can be applied."
+                "Only channels with the same input and output Hilbert space dimensions can be applied."
             )
 
         # check all Kraus matrices have the same shape
