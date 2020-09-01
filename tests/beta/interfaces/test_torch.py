@@ -74,7 +74,7 @@ class TestTorchQuantumTape:
 
         with TorchInterface.apply(QuantumTape()) as tape:
             qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
+            qml.RX(torch.tensor(0.2), wires=0)
             expval(qml.PauliZ(0))
 
         assert tape.trainable_params == {0}
@@ -96,13 +96,14 @@ class TestTorchQuantumTape:
         dev = qml.device("default.qubit", wires=2)
 
         with TorchInterface.apply(QuantumTape()) as tape:
+            qml.RZ(torch.tensor(0.543), wires=0)
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             expval(qml.PauliZ(0))
             expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == {1, 2}
         res = tape.execute(dev)
 
         assert isinstance(res, torch.Tensor)
@@ -188,27 +189,27 @@ class TestTorchQuantumTape:
 
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""
-        a = torch.tensor(0.1, requires_grad=True)
-        b = torch.constant(0.2, dtype=torch.float64)
-        c = torch.tensor(0.3, requires_grad=True)
+        p_val = [0.1, 0.2]
+        params = torch.tensor(p_val, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=1)
 
-        with torch.GradientTape() as tape:
-            with TorchInterface.apply(QuantumTape()) as tape:
-                qml.RY(a * c, wires=0)
-                qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a_val), wires=0)
-                expval(qml.PauliZ(0))
+        with TorchInterface.apply(QuantumTape()) as tape:
+            qml.RY(params[0] * params[1], wires=0)
+            qml.RZ(0.2, wires=0)
+            qml.RX(params[1] + params[1] ** 2 + torch.sin(params[0]), wires=0)
+            expval(qml.PauliZ(0))
 
-            assert tape.trainable_params == {0, 2}
-            assert tape.get_parameters() == [a * c, c + c ** 2 + np.sin(a_val)]
-            res = tape.execute(dev)
+        assert tape.trainable_params == {0, 2}
 
-        res = tape.jacobian(res, [a, b, c])
-        assert isinstance(res[0], torch.Tensor)
-        assert res[1] is None
-        assert isinstance(res[2], torch.Tensor)
+        tape_params = [i.detach().numpy() for i in tape.get_parameters()]
+        assert np.allclose(tape_params, [p_val[0] * p_val[1], p_val[1] + p_val[1] ** 2 + np.sin(p_val[0])], atol=tol, rtol=0)
+
+        res = tape.execute(dev)
+        res.backward()
+
+        assert isinstance(params.grad, torch.Tensor)
+        assert params.shape == (2,)
 
     # def test_no_trainable_parameters(self, tol):
     #     """Test evaluation and Jacobian if there are no trainable parameters"""

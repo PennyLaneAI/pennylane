@@ -36,8 +36,14 @@ class _TorchInterface(torch.autograd.Function):
         tape = ctx.kwargs["tape"]
         device = ctx.kwargs["device"]
 
+        # # unwrap constant parameters
+        ctx.all_params = tape.get_parameters(free_only=False)
+        ctx.all_params_unwrapped = args_to_numpy(ctx.all_params)
+
         # evaluate the tape
+        tape.set_parameters(ctx.all_params_unwrapped, free_only=False)
         res = tape.execute_device(ctx.args, device)
+        tape.set_parameters(ctx.all_params, free_only=False)
 
         # if any input tensor uses the GPU, the output should as well
         for i in input_:
@@ -54,7 +60,10 @@ class _TorchInterface(torch.autograd.Function):
         tape = ctx.kwargs["tape"]
         device = ctx.kwargs["device"]
 
+        tape.set_parameters(ctx.all_params_unwrapped, free_only=False)
         jacobian = tape.jacobian(device, params=ctx.args)
+        tape.set_parameters(ctx.all_params, free_only=False)
+
         jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
         vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
