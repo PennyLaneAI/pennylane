@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Differentiable quantum tapes with Autograd interface.
+This module contains the mixin interface class for creating differentiable quantum tapes with
+Autograd.
 """
 # pylint: disable=protected-access
 import autograd.extend
@@ -41,14 +42,9 @@ class AutogradInterface(AnnotatedQueue):
 
     .. note::
 
-        If using a device that supports native autograd computation and backpropagation,
-        the Autograd interface **does not need to be applied**. It is only applied
-        to tapes executed on non-Autograd compatible devices.
-
-        On autograd-compatible devices, it is simply sufficient to set the ``tape.cast``
-        attribute:
-
-        >>> tape.cast = AutogradInterface.cast
+        If using a device that supports native autograd computation and backpropagation, such as
+        :class:`~.DefaultQubitAutograd`, the Autograd interface **does not need to be applied**. It
+        is only applied to tapes executed on non-Autograd compatible devices.
 
     **Example**
 
@@ -138,6 +134,9 @@ class AutogradInterface(AnnotatedQueue):
     def apply(cls, tape):
         """Apply the autograd interface to an existing tape in-place.
 
+        Args:
+            tape (.QuantumTape): a quantum tape to apply the Autograd interface to
+
         **Example**
 
         >>> with QuantumTape() as tape:
@@ -147,7 +146,9 @@ class AutogradInterface(AnnotatedQueue):
         >>> tape
         <AutogradQuantumTape: wires=<Wires = [0]>, params=1>
         """
-        tape.__class__ = type("AutogradQuantumTape", (cls, tape.__class__), {})
+        tape_class = getattr(tape, "__bare__", tape.__class__)
+        tape.__bare__ = tape_class
+        tape.__class__ = type("AutogradQuantumTape", (cls, tape_class), {})
         tape._update_trainable_params()
         return tape
 

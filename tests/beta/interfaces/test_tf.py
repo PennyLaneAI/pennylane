@@ -25,14 +25,33 @@ from pennylane.beta.interfaces.tf import TFInterface
 class TestTFQuantumTape:
     """Test the autograd interface applied to a tape"""
 
-    def test_interface_str(self):
-        """Test that the interface string is correctly identified as tf"""
+    def test_interface_construction(self):
+        """Test that the interface is correctly applied"""
         with TFInterface.apply(QuantumTape()) as tape:
             qml.RX(0.5, wires=0)
             expval(qml.PauliX(0))
 
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
+        assert tape.__bare__ == QuantumTape
+        assert tape.dtype is tf.float64
+
+    def test_repeated_interface_construction(self):
+        """Test that the interface is correctly applied multiple times"""
+        with TFInterface.apply(QuantumTape()) as tape:
+            qml.RX(0.5, wires=0)
+            expval(qml.PauliX(0))
+
+        assert tape.interface == "tf"
+        assert isinstance(tape, TFInterface)
+        assert tape.__bare__ == QuantumTape
+        assert tape.dtype is tf.float64
+
+        TFInterface.apply(QuantumTape(), dtype=tf.float32)
+        assert tape.interface == "tf"
+        assert isinstance(tape, TFInterface)
+        assert tape.__bare__ == QuantumTape
+        assert tape.dtype is tf.float64
 
     def test_get_parameters(self):
         """Test that the get parameters function correctly sets and returns the
@@ -99,6 +118,31 @@ class TestTFQuantumTape:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         spy.assert_called()
+
+    def test_jacobian_dtype(self, tol):
+        """Test calculating the jacobian with a different datatype"""
+        a = tf.Variable(0.1, dtype=tf.float32)
+        b = tf.Variable(0.2, dtype=tf.float32)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with tf.GradientTape() as tape:
+            with TFInterface.apply(QuantumTape(), dtype=tf.float32) as qtape:
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+                expval(qml.PauliZ(0))
+                expval(qml.PauliY(1))
+
+            assert qtape.trainable_params == {0, 1}
+            res = qtape.execute(dev)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (2,)
+        assert res.dtype is tf.float32
+
+        res = tape.jacobian(res, [a, b])
+        assert [r.dtype is tf.float32 for r in res]
 
     def test_reusing_quantum_tape(self, tol):
         """Test re-using a quantum tape by passing new parameters"""
