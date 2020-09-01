@@ -242,8 +242,8 @@ class QuantumTape(AnnotatedQueue):
 
         self._update_circuit_info()
         self._update_par_info()
-        self._update_gradient_info()
         self._update_trainable_params()
+        self._update_gradient_info()
 
     def _update_circuit_info(self):
         """Update circuit metadata"""
@@ -255,11 +255,13 @@ class QuantumTape(AnnotatedQueue):
     def _update_gradient_info(self):
         """Update the parameter information dictionary with gradient information
         of each parameter"""
-        gmeth = []
 
         for i, info in self._par_info.items():
-            gmeth.append(self._grad_method(i, use_graph=True))
-            info["grad_method"] = gmeth[-1]
+
+            if i not in self.trainable_params:
+                continue
+
+            info["grad_method"] = self._grad_method(i, use_graph=True)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -273,6 +275,7 @@ class QuantumTape(AnnotatedQueue):
                     {
                         "op": obj,
                         "p_idx": p,
+                        "grad_method": None
                     }
                 )
 
@@ -355,8 +358,8 @@ class QuantumTape(AnnotatedQueue):
 
         new_tape._update_circuit_info()
         new_tape._update_par_info()
-        new_tape._update_gradient_info()
         new_tape._update_trainable_params()
+        new_tape._update_gradient_info()
         return new_tape
 
     def inv(self):
