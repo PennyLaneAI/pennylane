@@ -119,6 +119,29 @@ class TestAutogradQuantumTape:
         expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_jacobian_options(self, mocker, tol):
+        """Test setting jacobian options"""
+        spy = mocker.spy(QuantumTape, "numeric_pd")
+
+        a = np.array([0.1, 0.2], requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def cost(a, device):
+            with AutogradInterface.apply(QuantumTape()) as qtape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                expval(qml.PauliZ(0))
+
+            qtape.jacobian_options = {"h": 1e-8, "order": 2}
+            return qtape.execute(dev)
+
+        res = qml.jacobian(cost)(a, device=dev)
+
+        for args in spy.call_args_list:
+            assert args[1]["order"] == 2
+            assert args[1]["h"] == 1e-8
+
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)

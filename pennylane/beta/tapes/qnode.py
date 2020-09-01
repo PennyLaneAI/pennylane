@@ -26,26 +26,239 @@ class QuantumFunctionError(Exception):
 
 
 class QNode:
-    def __init__(self, func, dev, interface="autograd", diff_method="best", diff_options=None):
-        self.func = func
-        self.dev = dev
-        self.qtape = None
+    """Base class for quantum nodes in the hybrid computational graph.
 
-        if self.interface not in self.INTERFACE_MAP:
-            raise QuantumFunctionError(
-                f"Unkown interface {interface}. Interface must be "
-                f"one of {self.interface_map.values()}."
-            )
+    A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
+    (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
+    and the computational device it is executed on.
+
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    the quantum circuit.
+
+    .. note::
+
+        As the quantum tape is a *beta* feature, the standard PennyLane
+        measurement functions cannot be used. You will need to instead
+        import modified measurement functions within the quantum tape:
+
+        >>> from pennylane.beta.queuing import expval, var, sample, probs
+
+    Args:
+        func (callable): a quantum function
+        device (~.Device): a PennyLane-compatible device
+        interface (str): The interface that will be used for classical backpropagation.
+            This affects the types of objects that can be passed to/returned from the QNode:
+
+            * ``interface='autograd'``: Allows autograd to backpropogate
+              through the QNode. The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``interface='torch'``: Allows PyTorch to backpropogate
+              through the QNode. The QNode accepts and returns Torch tensors.
+
+            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+              through the QNode. The QNode accepts and returns
+              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
+
+            * ``None``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays. It does not connect to any
+              machine learning library automatically for backpropagation.
+
+        diff_method (str, None): the method of differentiation to use in the created QNode.
+
+            * ``"best"``: Best available method. Uses classical backpropagation or the
+              device directly to compute the gradient if supported, otherwise will use
+              the analytic parameter-shift rule where possible with finite-difference as a fallback.
+
+            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
+              devices that are classically end-to-end differentiable, for example
+              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
+              QNode can only be used with the machine-learning framework supported
+              by the device; a separate ``interface`` argument should not be passed.
+
+            * ``"reversible"``: Uses a reversible method for computing the gradient.
+              This method is similar to ``"backprop"``, but trades off increased
+              runtime with significantly lower memory usage. Compared to the
+              parameter-shift rule, the reversible method can be faster or slower,
+              depending on the density and location of parametrized gates in a circuit.
+              Only allowed on (simulator) devices with the "reversible" capability,
+              for example :class:`default.qubit <~.DefaultQubit>`.
+
+            * ``"device"``: Queries the device directly for the gradient.
+              Only allowed on devices that provide their own gradient rules.
+
+            * ``"parameter-shift"``: Use the analytic parameter-shift
+              rule where possible, with finite-difference as a fallback.
+
+            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
+
+    Keyword Args:
+        h=1e-7 (float): Step size for the finite difference method.
+        order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+            to forward finite differences, ``2`` to centered finite differences.
+
+    **Example**
+
+    >>> from pennylane.beta.queuing import expval, var, sample, probs
+    >>> from pennylane.beta.tapes import QNode
+    >>> def circuit(x):
+    >>>     qml.RX(x, wires=0)
+    >>>     return expval(qml.PauliZ(0))
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> qnode = QNode(circuit, dev)
+    """
+
+    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+        self.func = func
+        self.device = device
+        self.qtape = None
 
         self.interface = interface
         self.diff_method = diff_method
-        self.diff_options = diff_options or []
+        self.diff_options = diff_options or {}
+
+        self._tape, self.interface, self.diff_method = self._get_tape()
+        self.diff_options["method"] = self.diff_method
+
+    def _get_tape(self):
+        """Determine the best QuantumTape, differentiation method, and interface
+        for a requested device, interface, and diff method.
+
+        Returns:
+            tuple[.QuantumTape, str, str]: tuple containing the compatible
+            QuantumTape, the interface to apply, and the method argument
+            to pass to the ``QuantumTape.jacobian`` method.
+        """
+        if self.interface not in self.INTERFACE_MAP:
+            raise QuantumFunctionError(
+                f"Unknown interface {self.interface}. Interface must be "
+                f"one of {self.interface_map.values()}."
+            )
+
+        if self.diff_method == "best":
+            return self._get_best_tape(self.device, self.interface)
+
+        if self.diff_method == "backprop":
+            return self._get_backprop_tape(self.device, self.interface)
+
+        if self.diff_method == "device":
+            return self._get_device_tape(self.device, self.interface)
+
+        if self.diff_method == "finite-diff":
+            return QuantumTape, self.interface, "numeric"
+
+        raise ValueError(
+            f"Differentiation method {self.diff_method} not recognized. Allowed "
+            "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible')."
+        )
+
+    @staticmethod
+    def _get_best_tape(device, interface):
+        """Returns the 'best' QuantumTape and differentiation method
+        for a particular device and interface combination.
+
+        This method attempts to determine support for differentiation
+        methods using the following order:
+
+        * ``"backprop"``
+        * ``"device"``
+        * ``"parameter-shift"``
+        * ``"reversible"``
+        * ``"finite-diff"``
+
+        The first differentiation method that is supported (going from
+        top to bottom) will be returned.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            tuple[.QuantumTape, str, str]: tuple containing the compatible
+            QuantumTape, the interface to apply, and the method argument
+            to pass to the ``QuantumTape.jacobian`` method.
+        """
+        try:
+            return QNode._get_backprop_tape(device, interface)
+        except ValueError:
+            try:
+                return QNode._get_device_tape(device, interface)
+            except ValueError:
+                # add parameter shift tapes here when available
+                return QuantumTape, interface, "numeric"
+
+    @staticmethod
+    def _get_backprop_tape(device, interface):
+        """Validates whether a particular device and QuantumTape interface
+        supports the ``"backprop"`` differentiation method.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            tuple[.QuantumTape, str, str]: tuple containing the compatible
+            QuantumTape, the interface to apply, and the method argument
+            to pass to the ``QuantumTape.jacobian`` method.
+
+        Raises:
+            ValueError: If the device does not support backpropagation, or the
+            interface provided is not compatible with the device.
+        """
+        # determine if the device supports backpropagation
+        backprop_interface = device.capabilities().get("passthru_interface", None)
+
+        if backprop_interface is not None:
+
+            if interface == backprop_interface:
+                return QuantumTape, None, "backprop"
+
+            raise ValueError(
+                f"Device {device.short_name} only supports diff_method='backprop' when using the "
+                f"{backprop_interface} interface."
+            )
+
+        raise ValueError(
+            f"The {device.short_name} device does not support native computations with "
+            "autodifferentiation frameworks."
+        )
+
+    @staticmethod
+    def _get_device_tape(device, interface):
+        """Validates whether a particular device and QuantumTape interface
+        supports the ``"device"`` differentiation method.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            tuple[.QuantumTape, str, str]: tuple containing the compatible
+            QuantumTape, the interface to apply, and the method argument
+            to pass to the ``QuantumTape.jacobian`` method.
+
+        Raises:
+            ValueError: if the device does not provide a native method for computing
+            the Jacobian.
+        """
+        # determine if the device provides its own jacobian method
+        provides_jacobian = device.capabilities().get("provides_jacobian", False)
+
+        if not provides_jacobian:
+            raise ValueError(
+                f"The {device.short_name} device does not provide a native "
+                "method for computing the jacobian."
+            )
+
+        return QuantumTape, interface, "device"
 
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context,
         ensuring the operations get queued."""
 
-        with QuantumTape() as self.qtape:
+        with self._tape() as self.qtape:
             # Note that the quantum function doesn't
             # return anything. We assume that all classical
             # pre-processing happens *prior* to the quantum
@@ -66,7 +279,7 @@ class QNode:
         self.construct(args, kwargs)
 
         # execute the tape
-        return self.qtape.execute(device=self.dev)
+        return self.qtape.execute(device=self.device)
 
     def to_tf(self):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -107,12 +320,90 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
-def qnode(device, *, interface="autograd", diff_method="best"):
-    """Decorator for creating QNodes."""
+def qnode(device, interface="autograd", diff_method="best", **diff_options):
+    """Decorator for creating QNodes.
+
+    When applied to a quantum function, this decorator converts it into
+    a :class:`QNode` instance.
+
+    .. note::
+
+        As the quantum tape is a *beta* feature, the standard PennyLane
+        measurement functions cannot be used. You will need to instead
+        import modified measurement functions within the quantum tape:
+
+        >>> from pennylane.beta.queuing import expval, var, sample, probs
+
+    Args:
+        func (callable): a quantum function
+        device (~.Device): a PennyLane-compatible device
+        interface (str): The interface that will be used for classical backpropagation.
+            This affects the types of objects that can be passed to/returned from the QNode:
+
+            * ``interface='autograd'``: Allows autograd to backpropogate
+              through the QNode. The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays.
+
+            * ``interface='torch'``: Allows PyTorch to backpropogate
+              through the QNode. The QNode accepts and returns Torch tensors.
+
+            * ``interface='tf'``: Allows TensorFlow in eager mode to backpropogate
+              through the QNode. The QNode accepts and returns
+              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
+
+            * ``None``: The QNode accepts default Python types
+              (floats, ints, lists) as well as NumPy array arguments,
+              and returns NumPy arrays. It does not connect to any
+              machine learning library automatically for backpropagation.
+
+        diff_method (str, None): the method of differentiation to use in the created QNode.
+
+            * ``"best"``: Best available method. Uses classical backpropagation or the
+              device directly to compute the gradient if supported, otherwise will use
+              the analytic parameter-shift rule where possible with finite-difference as a fallback.
+
+            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
+              devices that are classically end-to-end differentiable, for example
+              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
+              QNode can only be used with the machine-learning framework supported
+              by the device; a separate ``interface`` argument should not be passed.
+
+            * ``"reversible"``: Uses a reversible method for computing the gradient.
+              This method is similar to ``"backprop"``, but trades off increased
+              runtime with significantly lower memory usage. Compared to the
+              parameter-shift rule, the reversible method can be faster or slower,
+              depending on the density and location of parametrized gates in a circuit.
+              Only allowed on (simulator) devices with the "reversible" capability,
+              for example :class:`default.qubit <~.DefaultQubit>`.
+
+            * ``"device"``: Queries the device directly for the gradient.
+              Only allowed on devices that provide their own gradient rules.
+
+            * ``"parameter-shift"``: Use the analytic parameter-shift
+              rule where possible, with finite-difference as a fallback.
+
+            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.=
+
+    Keyword Args:
+        h=1e-7 (float): Step size for the finite difference method.
+        order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+            to forward finite differences, ``2`` to centered finite differences.
+
+    **Example**
+
+    >>> from pennylane.beta.queuing import expval, var, sample, probs
+    >>> from pennylane.beta.tapes import qnode
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> @qnode(dev)
+    >>> def circuit(x):
+    >>>     qml.RX(x, wires=0)
+    >>>     return expval(qml.PauliZ(0))
+    """
 
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        return QNode(func, device, interface=interface, diff_method=diff_method)
+        return QNode(func, device, interface=interface, diff_method=diff_method, **diff_options)
 
     return qfunc_decorator

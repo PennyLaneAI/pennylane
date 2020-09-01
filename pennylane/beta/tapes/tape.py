@@ -979,7 +979,7 @@ class QuantumTape(AnnotatedQueue):
         """
         raise NotImplementedError
 
-    def jacobian(self, device, params=None, method="best", **options):
+    def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
 
         The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
@@ -1019,10 +1019,10 @@ class QuantumTape(AnnotatedQueue):
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
-            method (str): The differentiation method. Must be one of ``"numeric"``,
-                ``"analytic"``, ``"best"``, or ``"device"``.
 
         Keyword Args:
+            method="best" (str): The differentiation method. Must be one of ``"numeric"``,
+                ``"analytic"``, ``"best"``, or ``"device"``.
             h=1e-7 (float): finite difference method step size
             order=1 (int): The order of the finite difference method to use. ``1`` corresponds
                 to forward finite differences, ``2`` to centered finite differences.
@@ -1084,6 +1084,8 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+        method = options.get("method", "best")
+
         if method not in ("best", "numeric", "analytic", "device"):
             raise ValueError(f"Unknown gradient method '{method}'")
 
