@@ -322,14 +322,10 @@ class TestInverse:
         p = [0.1, 0.2, 0.3, 0.4]
 
         with QuantumTape() as tape:
-            prep = qml.BasisState(init_state, wires=[0, 'a'])
-            ops = [
-                qml.RX(p[0], wires=0),
-                qml.Rot(*p[1:], wires=0).inv(),
-                qml.CNOT(wires=[0, 'a'])
-            ]
+            prep = qml.BasisState(init_state, wires=[0, "a"])
+            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
             m1 = probs(wires=0)
-            m2 = probs(wires='a')
+            m2 = probs(wires="a")
 
         tape.inv()
 
@@ -350,14 +346,10 @@ class TestInverse:
         p = [0.1, 0.2, 0.3, 0.4]
 
         with QuantumTape() as tape:
-            prep = qml.BasisState(init_state, wires=[0, 'a'])
-            ops = [
-                qml.RX(p[0], wires=0),
-                qml.Rot(*p[1:], wires=0).inv(),
-                qml.CNOT(wires=[0, 'a'])
-            ]
+            prep = qml.BasisState(init_state, wires=[0, "a"])
+            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
             m1 = probs(wires=0)
-            m2 = probs(wires='a')
+            m2 = probs(wires="a")
 
         tape.trainable_params = {1, 2}
         tape.inv()
@@ -445,14 +437,14 @@ class TestExpand:
         """Test an example that contains nested tapes and operation decompositions."""
 
         with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
 
             with QuantumTape() as tape2:
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
-            qml.CNOT(wires=[0, 'a'])
-            qml.RY(0.2, wires='a')
-            probs(wires=0), probs(wires='a')
+            qml.CNOT(wires=[0, "a"])
+            qml.RY(0.2, wires="a")
+            probs(wires=0), probs(wires="a")
 
         new_tape = tape.expand()
         assert len(new_tape.operations) == 5
@@ -463,7 +455,7 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.U3(0, 1, 2, wires=0)
             qml.Rot(3, 4, 5, wires=0)
-            probs(wires=0), probs(wires='a')
+            probs(wires=0), probs(wires="a")
 
         new_tape = tape.expand(stop_at=["Rot"])
         assert len(new_tape.operations) == 4
@@ -475,15 +467,15 @@ class TestExpand:
         with QuantumTape() as tape:
             # Will be decomposed into PauliX(0), PauliX(0)
             # Each PauliX will then be decomposed into PhaseShift, RX, PhaseShift.
-            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
 
             with QuantumTape() as tape2:
                 # will be decomposed into a RZ, RY, RZ
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
-            qml.CNOT(wires=[0, 'a'])
-            qml.RY(0.2, wires='a')
-            probs(wires=0), probs(wires='a')
+            qml.CNOT(wires=[0, "a"])
+            qml.RY(0.2, wires="a")
+            probs(wires=0), probs(wires="a")
 
         new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 11
@@ -493,15 +485,15 @@ class TestExpand:
         argument are not expanded."""
         with QuantumTape() as tape:
             # Will be decomposed into PauliX(0), PauliX(0)
-            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
 
             with QuantumTape() as tape2:
                 # will be decomposed into a RZ, RY, RZ
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
-            qml.CNOT(wires=[0, 'a'])
-            qml.RY(0.2, wires='a')
-            probs(wires=0), probs(wires='a')
+            qml.CNOT(wires=[0, "a"])
+            qml.RY(0.2, wires="a")
+            probs(wires=0), probs(wires="a")
 
         new_tape = tape.expand(depth=2, stop_at=["PauliX"])
         assert len(new_tape.operations) == 7
@@ -748,7 +740,7 @@ class TestExecution:
 
     #     res = tape.execute(dev)
     #     print(dev.)
-    #     new_tape = 
+    #     new_tape =
 
 
 class TestCVExecution:
@@ -895,7 +887,7 @@ class TestJacobian:
 
         dev = qml.device("default.qubit", wires=1)
         tape.analytic_pd = mocker.Mock()
-        tape.analytic_pd.return_value = np.array([1.])
+        tape.analytic_pd.return_value = np.array([1.0])
 
         tape.jacobian(dev, method="analytic")
         assert len(tape.analytic_pd.call_args_list) == 2

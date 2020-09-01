@@ -22,39 +22,6 @@ from pennylane.operation import Tensor
 from .queuing import QueuingContext
 
 
-class BetaTensor(Tensor):
-    """Container class representing tensor products of observables.
-
-    To create a tensor, simply initiate it like so:
-
-    >>> T = Tensor(qml.PauliX(0), qml.Hermitian(A, [1, 2]))
-
-    You can also create a tensor from other Tensors:
-
-    >>> T = Tensor(T, qml.PauliZ(4))
-
-    The ``@`` symbol can be used as a tensor product operation:
-
-    >>> T = qml.PauliX(0) @ qml.Hadamard(2)
-    """
-
-    # pylint: disable=abstract-method,too-few-public-methods
-
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.queue()
-
-    def queue(self):
-        """Queues the Tensor instance and updates the ownership related info if applicable."""
-        QueuingContext.append(self, owns=tuple(self.obs))
-
-        try:
-            for o in self.obs:
-                QueuingContext.update_info(o, owner=self)
-        except NotImplementedError:
-            pass
-
-
 # ========================================================
 # Monkeypatching methods
 # ========================================================

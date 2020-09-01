@@ -151,6 +151,7 @@ class QuantumTape(AnnotatedQueue):
         self.num_wires = 0
 
         self.jacobian_options = {}
+        self.grad_method = None
 
         self.hash = 0
         self.is_sampled = False
