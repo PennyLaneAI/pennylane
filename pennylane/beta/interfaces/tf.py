@@ -61,7 +61,7 @@ class TFInterface(AnnotatedQueue):
 
         with tf.GradientTape() as tape:
             with TFInterface.apply(QuantumTape()) as qtape:
-                qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * np.sin(p[2]), wires=0)
+                qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * tf.sin(p[2]), wires=0)
                 expval(qml.PauliX(0))
 
             result = qtape.execute(dev)

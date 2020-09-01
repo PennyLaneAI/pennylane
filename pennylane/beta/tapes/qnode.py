@@ -5,11 +5,13 @@ from pennylane.beta.tapes import QuantumTape
 # from tf_interface import TFInterface
 # from torch_interface import TorchInterface
 from pennylane.beta.interfaces.autograd import AutogradInterface
+from pennylane.beta.interfaces.tf import TFInterface
+from pennylane.beta.interfaces.torch import TorchInterface
 
 
 INTERFACE_MAP = {
-    # "tf": TFInterface,
-    # "torch": TorchInterface,
+    "tf": TFInterface,
+    "torch": TorchInterface,
     "autograd": AutogradInterface
 }
 
@@ -34,9 +36,6 @@ class QNode:
 
         if self.interface in INTERFACE_MAP:
             self.qtape = INTERFACE_MAP[self.interface].apply(self.qtape)
-
-        if self.diff_method == "backprop":
-            self.qtape.cast = INTERFACE_MAP[self.dev.capabilities()["passthru_interface"]].cast
 
     def __call__(self, *args, **kwargs):
         # construct the tape
