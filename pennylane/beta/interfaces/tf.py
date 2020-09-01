@@ -15,6 +15,7 @@
 Differentiable quantum tapes with TF interface.
 """
 # pylint: disable=protected-access
+import numpy as np
 import tensorflow as tf
 
 try:
@@ -28,7 +29,6 @@ from pennylane.beta.queuing import AnnotatedQueue
 
 class TFInterface(AnnotatedQueue):
     name = "tf"
-    # cast = staticmethod(tf.stack)
     dtype = tf.float64
 
     @property
@@ -59,7 +59,6 @@ class TFInterface(AnnotatedQueue):
     @staticmethod
     def convert_to_numpy(tensors):
         return [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in tensors]
-
 
     @tf.custom_gradient
     def _execute(self, params, **input_kwargs):
@@ -97,6 +96,9 @@ class TFInterface(AnnotatedQueue):
                 return grad_input, variables
 
             return grad_input
+
+        if res.dtype == np.dtype("object"):
+            res = np.hstack(res)
 
         return tf.convert_to_tensor(res, dtype=self.dtype), grad
 
