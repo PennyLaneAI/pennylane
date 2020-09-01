@@ -271,13 +271,7 @@ class QuantumTape(AnnotatedQueue):
 
             for p in range(len(obj.data)):
                 info = self._par_info.get(param_count, {})
-                info.update(
-                    {
-                        "op": obj,
-                        "p_idx": p,
-                        "grad_method": None
-                    }
-                )
+                info.update({"op": obj, "p_idx": p, "grad_method": None})
 
                 self._par_info[param_count] = info
                 param_count += 1
