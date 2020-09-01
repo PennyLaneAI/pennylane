@@ -301,10 +301,6 @@ class QuantumTape(AnnotatedQueue):
             new_tape._ops += t._ops
 
         new_tape._obs = self._obs
-        new_tape._update_circuit_info()
-        new_tape._update_par_info()
-        new_tape._update_gradient_info()
-        new_tape._update_trainable_params()
         return new_tape
 
     def expand(self, depth=1, stop_at=None):
@@ -355,6 +351,10 @@ class QuantumTape(AnnotatedQueue):
         for _ in range(depth):
             new_tape = new_tape._expand(stop_at=stop_at)
 
+        new_tape._update_circuit_info()
+        new_tape._update_par_info()
+        new_tape._update_gradient_info()
+        new_tape._update_trainable_params()
         return new_tape
 
     def inv(self):
