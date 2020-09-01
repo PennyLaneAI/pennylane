@@ -86,6 +86,61 @@ class _TorchInterface(torch.autograd.Function):
 
 
 class TorchInterface(AnnotatedQueue):
+    """Mixin class for applying an Torch interface to a :class:`~.QuantumTape`.
+
+    Torch-compatible quantum tape classes can be created via subclassing:
+
+    .. code-block:: python
+
+        class MyAutogradQuantumTape(AutogradInterface, QuantumTape):
+
+    Alternatively, the autograd interface can be dynamically applied to existing
+    quantum tapes via the :meth:`~.apply` class method. This modifies the
+    tape **in place**.
+
+    Once created, the autograd interface can be used to perform quantum-classical
+    differentiable programming.
+
+    **Example**
+
+    One a Torch quantum tape has been created, it can be differentiated using the gradient tape:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+        p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+
+        with TorchInterface.apply(QuantumTape()) as qtape:
+            qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
+            expval(qml.PauliX(0))
+
+        result = qtape.execute(dev)
+
+    >>> print(result)
+    tensor([0.0698], dtype=torch.float64, grad_fn=<_TorchInterfaceBackward>)
+    >>> result.backward()
+    >>> print(p.grad)
+    tensor([0.2987, 0.3971, 0.0988])
+
+    The Torch interface defaults to ``torch.float64`` output. This can be modified by
+    providing the ``dtype`` argument when applying the interface:
+
+    >>> p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+    >>> with TorchInterface.apply(QuantumTape()) as qtape:
+    ...     qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
+    ...     expval(qml.PauliX(0))
+    >>> result = qtape.execute(dev)
+    >>> print(result)
+    tensor([0.0698], grad_fn=<_TorchInterfaceBackward>)
+    >>> print(result.dtype)
+    torch.float32
+    >>> result.backward()
+    >>> print(p.grad)
+    tensor([0.2987, 0.3971, 0.0988])
+    >>> print(p.grad.dtype)
+    torch.float32
+    """
+
     @property
     def interface(self):  # pylint: disable=missing-function-docstring
         return "torch"
