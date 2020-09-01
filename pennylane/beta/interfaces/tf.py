@@ -23,8 +23,6 @@ except ImportError:
     from tensorflow.python.eager.tape import should_record as should_record_backprop
 
 
-from pennylane.interfaces.tf import unflatten_tf
-
 from pennylane.beta.queuing import AnnotatedQueue
 
 
@@ -58,28 +56,42 @@ class TFInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         return params
 
+    @staticmethod
+    def convert_to_numpy(tensors):
+        return [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in tensors]
+
+
     @tf.custom_gradient
     def _execute(self, params, **input_kwargs):
         """TensorFlow execution interface"""
-        args = [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
+
+        # unwrap free parameters
+        args = self.convert_to_numpy(params)
+
+        # unwrap constant parameters
+        all_params = self.get_parameters(free_only=False)
+        all_params_unwrapped = self.convert_to_numpy(all_params)
+
+        self.set_parameters(all_params_unwrapped, free_only=False)
         res = self.execute_device(args, input_kwargs["device"])
+        self.set_parameters(all_params, free_only=False)
 
         def grad(grad_output, **tfkwargs):
             variables = tfkwargs.get("variables", None)
 
+            self.set_parameters(all_params_unwrapped, free_only=False)
             jacobian = self.jacobian(input_kwargs["device"], params=args)
+            self.set_parameters(all_params, free_only=False)
+
             jacobian = tf.constant(jacobian, dtype=self.dtype)
-            grad_input = tf.matmul(grad_output, jacobian)
 
-            # # Reshape gradient output array as a 2D row-vector.
+            # Reshape gradient output array as a 2D row-vector.
             # grad_output = tf.cast(grad_output, dtype=self.dtype)
-            # grad_output_row = tf.transpose(tf.reshape(grad_output, [-1, 1]))
+            grad_output_row = tf.transpose(tf.reshape(grad_output, [-1, 1]))
 
-            # # Calculate the vector-Jacobian matrix product, and flatten the output.
-            # grad_input = tf.matmul(grad_output_row, jacobian)
-            # grad_input = tf.reshape(grad_input, [-1])
-
-            # grad_input_unflattened = unflatten_tf(grad_input, params)[0]
+            # Calculate the vector-Jacobian matrix product, and unstack the output.
+            grad_input = tf.matmul(grad_output_row, jacobian)
+            grad_input = tf.unstack(tf.reshape(grad_input, [-1]))
 
             if variables is not None:
                 return grad_input, variables

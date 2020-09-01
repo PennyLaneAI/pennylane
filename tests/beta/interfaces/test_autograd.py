@@ -100,26 +100,23 @@ class TestAutogradQuantumTape:
         def cost(a, b, device):
             with AutogradInterface.apply(QuantumTape()) as tape:
                 qml.RY(a, wires=0)
-                qml.RX(b, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
                 expval(qml.PauliZ(0))
-                expval(qml.PauliY(0))
+                expval(qml.PauliY(1))
             assert tape.trainable_params == {0, 1}
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=2)
+
+        res = cost(a, b, device=dev)
+        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
         res = qml.jacobian(cost)(a, b, device=dev)
         assert res.shape == (2, 2)
 
-        # compare to standard tape jacobian
-        with QuantumTape() as tape:
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            expval(qml.PauliZ(0))
-            expval(qml.PauliY(0))
-
-        tape.trainable_params = {0, 1}
-        expected = tape.jacobian(dev)
-        assert expected.shape == (2, 2)
+        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing(self, tol):
@@ -161,6 +158,8 @@ class TestAutogradQuantumTape:
         assert res.shape == (2,)
 
     def test_matrix_parameter(self, tol):
+        """Test that the autograd interface works correctly
+        with a matrix parameter"""
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
         a = np.array(0.1, requires_grad=True)
 
