@@ -24,7 +24,6 @@ from pennylane.beta.queuing import AnnotatedQueue
 
 
 class _TorchInterface(torch.autograd.Function):
-
     @staticmethod
     def forward(ctx, input_kwargs, *input_):
         """Implements the forward pass QNode evaluation"""
@@ -50,7 +49,12 @@ class _TorchInterface(torch.autograd.Function):
             if isinstance(i, torch.Tensor):
                 if i.is_cuda:  # pragma: no cover
                     cuda_device = i.get_device()
-                    return torch.as_tensor(torch.from_numpy(res), device=cuda_device, dtype=tape.dtype)
+                    return torch.as_tensor(
+                        torch.from_numpy(res), device=cuda_device, dtype=tape.dtype
+                    )
+
+        if res.dtype == np.dtype("object"):
+            res = np.hstack(res)
 
         return torch.as_tensor(torch.from_numpy(res), dtype=tape.dtype)
 
@@ -82,7 +86,6 @@ class _TorchInterface(torch.autograd.Function):
 
 
 class TorchInterface(AnnotatedQueue):
-
     @property
     def interface(self):  # pylint: disable=missing-function-docstring
         return "torch"

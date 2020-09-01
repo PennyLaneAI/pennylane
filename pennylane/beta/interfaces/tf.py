@@ -85,6 +85,7 @@ class TFInterface(AnnotatedQueue):
     >>> print(grad)
     tf.Tensor([0.2895088  0.38464668 0.09645163], shape=(3,), dtype=float32)
     """
+
     dtype = tf.float64
 
     @property

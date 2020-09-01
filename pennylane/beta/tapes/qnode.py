@@ -9,11 +9,7 @@ from pennylane.beta.interfaces.tf import TFInterface
 from pennylane.beta.interfaces.torch import TorchInterface
 
 
-INTERFACE_MAP = {
-    "tf": TFInterface,
-    "torch": TorchInterface,
-    "autograd": AutogradInterface
-}
+INTERFACE_MAP = {"tf": TFInterface, "torch": TorchInterface, "autograd": AutogradInterface}
 
 
 class QNode:
