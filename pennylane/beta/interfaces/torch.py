@@ -65,7 +65,7 @@ class _TorchInterface(torch.autograd.Function):
         device = ctx.kwargs["device"]
 
         tape.set_parameters(ctx.all_params_unwrapped, free_only=False)
-        jacobian = tape.jacobian(device, params=ctx.args)
+        jacobian = tape.jacobian(device, params=ctx.args, **tape.jacobian_options)
         tape.set_parameters(ctx.all_params, free_only=False)
 
         jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)

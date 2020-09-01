@@ -122,6 +122,27 @@ class TestTorchQuantumTape:
 
         spy.assert_called()
 
+    def test_jacobian_options(self, mocker, tol):
+        """Test setting jacobian options"""
+        spy = mocker.spy(QuantumTape, "numeric_pd")
+
+        a = torch.tensor([0.1, 0.2], requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        with TorchInterface.apply(QuantumTape()) as tape:
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            expval(qml.PauliZ(0))
+
+        tape.jacobian_options = {"h": 1e-8, "order": 2}
+        res = tape.execute(dev)
+        res.backward()
+
+        for args in spy.call_args_list:
+            assert args[1]["order"] == 2
+            assert args[1]["h"] == 1e-8
+
     def test_jacobian_dtype(self, tol):
         """Test calculating the jacobian with a different datatype"""
         a_val = 0.1

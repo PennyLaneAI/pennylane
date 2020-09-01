@@ -121,7 +121,7 @@ class AutogradInterface(AnnotatedQueue):
         """
 
         def gradient_product(g):
-            jac = self.jacobian(device, params=params)
+            jac = self.jacobian(device, params=params, **self.jacobian_options)
             vjp = g.flatten() @ jac
             return vjp
 

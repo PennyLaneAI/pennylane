@@ -146,6 +146,29 @@ class TestTFQuantumTape:
         res = tape.jacobian(res, [a, b])
         assert [r.dtype is tf.float32 for r in res]
 
+    def test_jacobian_options(self, mocker, tol):
+        """Test setting jacobian options"""
+        spy = mocker.spy(QuantumTape, "numeric_pd")
+
+        a = tf.Variable([0.1, 0.2])
+
+        dev = qml.device("default.qubit", wires=1)
+
+        with tf.GradientTape() as tape:
+            with TFInterface.apply(QuantumTape()) as qtape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                expval(qml.PauliZ(0))
+
+            res = qtape.execute(dev)
+
+        qtape.jacobian_options = {"h": 1e-8, "order": 2}
+        tape.jacobian(res, a)
+
+        for args in spy.call_args_list:
+            assert args[1]["order"] == 2
+            assert args[1]["h"] == 1e-8
+
     def test_reusing_quantum_tape(self, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = tf.Variable(0.1, dtype=tf.float64)

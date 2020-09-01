@@ -141,7 +141,7 @@ class TFInterface(AnnotatedQueue):
             variables = tfkwargs.get("variables", None)
 
             self.set_parameters(all_params_unwrapped, free_only=False)
-            jacobian = self.jacobian(input_kwargs["device"], params=args)
+            jacobian = self.jacobian(input_kwargs["device"], params=args, **self.jacobian_options)
             self.set_parameters(all_params, free_only=False)
 
             jacobian = tf.constant(jacobian, dtype=self.dtype)

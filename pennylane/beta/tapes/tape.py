@@ -149,7 +149,8 @@ class QuantumTape(AnnotatedQueue):
 
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
-        self.grad_method = None
+
+        self.jacobian_options = {}
 
         self.hash = 0
         self.is_sampled = False
@@ -1018,6 +1019,13 @@ class QuantumTape(AnnotatedQueue):
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
+            method (str): The differentiation method. Must be one of ``"numeric"``,
+                ``"analytic"``, ``"best"``, or ``"device"``.
+
+        Keyword Args:
+            h=1e-7 (float): finite difference method step size
+            order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+                to forward finite differences, ``2`` to centered finite differences.
 
         Returns:
             array[float]: 2-dimensional array of shape ``(tape.num_params, tape.output_dim)``
