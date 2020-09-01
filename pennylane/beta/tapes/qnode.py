@@ -269,17 +269,18 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context,
         ensuring the operations get queued."""
+        self.qtape = self._tape()
 
-        with self._tape() as self.qtape:
+        # apply the interface (if any)
+        if self.interface is not None:
+            self.INTERFACE_MAP[self.interface](self)
+
+        with self.qtape:
             # Note that the quantum function doesn't
             # return anything. We assume that all classical
             # pre-processing happens *prior* to the quantum
             # tape, and the tape is the final step in the function.
             self.func(*args, **kwargs)
-
-        # apply the interface (if any)
-        if self.interface is not None:
-            self.INTERFACE_MAP[self.interface](self)
 
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options

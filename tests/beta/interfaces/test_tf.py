@@ -61,7 +61,7 @@ class TestTFQuantumTape:
         a = tf.Variable(0.1)
         b = tf.constant(0.2)
         c = tf.Variable(0.3)
-        d = tf.constant(0.4)
+        d = 0.4
 
         with tf.GradientTape() as tape:
             with TFInterface.apply(QuantumTape()) as qtape:
