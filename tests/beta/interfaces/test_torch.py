@@ -20,7 +20,7 @@ from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.torch import TorchInterface
 
-torch = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch", minversion="1.3")
 
 
 class TestTorchQuantumTape:
