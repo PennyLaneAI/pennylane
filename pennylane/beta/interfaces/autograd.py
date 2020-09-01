@@ -48,7 +48,7 @@ class AutogradInterface(AnnotatedQueue):
 
     **Example**
 
-    One an autograd quantum tape has been created, it can be differentiated using autograd:
+    Once an autograd quantum tape has been created, it can be differentiated using autograd:
 
     .. code-block:: python
 
