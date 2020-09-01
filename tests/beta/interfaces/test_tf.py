@@ -291,6 +291,39 @@ class TestTFQuantumTape:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_ragged_differentiation(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            with TFInterface.apply(QuantumTape()) as qtape:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                expval(qml.PauliZ(0))
+                probs(wires=[1])
+
+            res = qtape.execute(dev)
+
+
+        expected = np.array(
+            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [-tf.sin(x), 0],
+                [-tf.sin(x) * tf.cos(y) / 2, -tf.cos(x) * tf.sin(y) / 2],
+                [tf.cos(y) * tf.sin(x) / 2, tf.cos(x) * tf.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestTFPassthru:
     """Test that the quantum tape works with a TF passthru
