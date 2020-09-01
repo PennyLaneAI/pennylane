@@ -74,11 +74,8 @@ class AutogradInterface(AnnotatedQueue):
 
     # pylint: disable=attribute-defined-outside-init
 
-    cast = staticmethod(np.stack)
-
     @property
-    def interface(self):
-        """str, None: automatic differentiation interface used by the quantum tap (if any)"""
+    def interface(self):  # pylint: disable=missing-function-docstring
         return "autograd"
 
     def _update_trainable_params(self):

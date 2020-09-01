@@ -15,7 +15,7 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 TensorFlow.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, attribute-defined-outside-init
 import numpy as np
 import tensorflow as tf
 
@@ -85,16 +85,13 @@ class TFInterface(AnnotatedQueue):
     >>> print(grad)
     tf.Tensor([0.2895088  0.38464668 0.09645163], shape=(3,), dtype=float32)
     """
-
-    name = "tf"
     dtype = tf.float64
 
     @property
-    def interface(self):
-        """str, None: automatic differentiation interface used by the quantum tap (if any)"""
+    def interface(self):  # pylint: disable=missing-function-docstring
         return "tf"
 
-    def _update_trainable_params(self):  # pylint: disable=missing-function-docstring
+    def _update_trainable_params(self):
         params = [o.data for o in self.operations + self.observables]
         params = [item for sublist in params for item in sublist]
 
