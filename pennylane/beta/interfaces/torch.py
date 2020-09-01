@@ -15,7 +15,7 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 PyTorch.
 """
-# pylint: disable=protected-access, attribute-defined-outside-init
+# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member
 import numpy as np
 import torch
 
@@ -165,6 +165,22 @@ class TorchInterface(AnnotatedQueue):
 
     @classmethod
     def apply(cls, tape, dtype=torch.float64):
+        """Apply the Torch interface to an existing tape in-place.
+
+        Args:
+            tape (.QuantumTape): a quantum tape to apply the Torch interface to
+            dtype (torch.dtype): the dtype that the returned quantum tape should
+                output
+
+        **Example**
+
+        >>> with QuantumTape() as tape:
+        ...     qml.RX(0.5, wires=0)
+        ...     expval(qml.PauliZ(0))
+        >>> TorchInterface.apply(tape)
+        >>> tape
+        <TorchQuantumTape: wires=<Wires = [0]>, params=1>
+        """
         tape_class = getattr(tape, "__bare__", tape.__class__)
         tape.__bare__ = tape_class
         tape.__class__ = type("TorchQuantumTape", (cls, tape_class), {"dtype": dtype})

@@ -14,12 +14,14 @@
 """Unit tests for the tf interface"""
 import pytest
 import numpy as np
-import tensorflow as tf
 
 import pennylane as qml
 from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.tf import TFInterface
+
+
+tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
 class TestTFQuantumTape:

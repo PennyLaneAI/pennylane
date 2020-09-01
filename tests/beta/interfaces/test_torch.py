@@ -14,12 +14,13 @@
 """Unit tests for the torch interface"""
 import pytest
 import numpy as np
-import torch
 
 import pennylane as qml
 from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.torch import TorchInterface
+
+torch = pytest.importorskip("tensorflow", minversion="2.1")
 
 
 class TestTorchQuantumTape:
