@@ -16,6 +16,7 @@ This module contains the QNode class and qnode decorator.
 """
 from functools import lru_cache
 
+from pennylane import Device
 from pennylane.beta.tapes import QuantumTape
 
 from pennylane.beta.interfaces.autograd import AutogradInterface
@@ -111,15 +112,19 @@ class QNode:
     """
 
     def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+
+        if interface is not None and interface not in self.INTERFACE_MAP:
+            raise QuantumFunctionError(
+                f"Unknown interface {interface}. Interface must be "
+                f"one of {self.INTERFACE_MAP.values()}."
+            )
+
+        if not isinstance(device, Device):
+            raise QuantumFunctionError("Invalid device. Device must be a valid PennyLane device.")
+
         self.func = func
         self.device = device
         self.qtape = None
-
-        if interface not in self.INTERFACE_MAP:
-            raise QuantumFunctionError(
-                f"Unkown interface {interface}. Interface must be "
-                f"one of {self.interface_map.values()}."
-            )
 
         self._tape, self.interface, self.diff_method = self._get_tape(
             device, interface, diff_method
@@ -156,7 +161,7 @@ class QNode:
         if diff_method == "finite-diff":
             return QuantumTape, interface, "numeric"
 
-        raise ValueError(
+        raise QuantumFunctionError(
             f"Differentiation method {diff_method} not recognized. Allowed "
             "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible')."
         )
@@ -189,10 +194,10 @@ class QNode:
         """
         try:
             return QNode._get_backprop_tape(device, interface)
-        except ValueError:
+        except QuantumFunctionError:
             try:
                 return QNode._get_device_tape(device, interface)
-            except ValueError:
+            except QuantumFunctionError:
                 # add parameter shift tapes here when available
                 return QuantumTape, interface, "numeric"
 
@@ -211,7 +216,7 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method.
 
         Raises:
-            ValueError: If the device does not support backpropagation, or the
+            QuantumFunctionError: If the device does not support backpropagation, or the
             interface provided is not compatible with the device.
         """
         # determine if the device supports backpropagation
@@ -222,12 +227,12 @@ class QNode:
             if interface == backprop_interface:
                 return QuantumTape, None, "backprop"
 
-            raise ValueError(
+            raise QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "
                 f"{backprop_interface} interface."
             )
 
-        raise ValueError(
+        raise QuantumFunctionError(
             f"The {device.short_name} device does not support native computations with "
             "autodifferentiation frameworks."
         )
@@ -247,14 +252,14 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method.
 
         Raises:
-            ValueError: if the device does not provide a native method for computing
+            QuantumFunctionError: if the device does not provide a native method for computing
             the Jacobian.
         """
         # determine if the device provides its own jacobian method
         provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
         if not provides_jacobian:
-            raise ValueError(
+            raise QuantumFunctionError(
                 f"The {device.short_name} device does not provide a native "
                 "method for computing the jacobian."
             )
@@ -273,7 +278,8 @@ class QNode:
             self.func(*args, **kwargs)
 
         # apply the interface (if any)
-        self.INTERFACE_MAP[self.interface](self)
+        if self.interface is not None:
+            self.INTERFACE_MAP[self.interface](self)
 
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
