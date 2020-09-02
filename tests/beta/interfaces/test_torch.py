@@ -13,6 +13,9 @@
 # limitations under the License.
 """Unit tests for the torch interface"""
 import pytest
+
+torch = pytest.importorskip("torch", minversion="1.3")
+
 import numpy as np
 
 import pennylane as qml
@@ -20,7 +23,6 @@ from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.torch import TorchInterface
 
-torch = pytest.importorskip("torch", minversion="1.3")
 
 
 class TestTorchQuantumTape:
