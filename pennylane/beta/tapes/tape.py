@@ -259,8 +259,8 @@ class QuantumTape(AnnotatedQueue):
                     if obj.return_type is qml.operation.Sample:
                         self.is_sampled = True
 
-            # elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
-            #     raise ValueError(f"Observable {obj} does not have a measurement type specified.")
+            elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
+                raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
         self._update_circuit_info()
         self._update_par_info()
@@ -309,7 +309,7 @@ class QuantumTape(AnnotatedQueue):
             stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
                 An operation or tape appearing in this list of names is not expanded.
         """
-        new_tape = QuantumTape()
+        new_tape = self.__class__()
         stop_at = stop_at or []
 
         for op in self.operations:
@@ -588,6 +588,32 @@ class QuantumTape(AnnotatedQueue):
         [expval(PauliZ(wires=[0]))]
         """
         return [m[1] for m in self._obs]
+
+    @property
+    def measurements(self):
+        """Returns the measurements on the quantum tape.
+
+        Returns:
+            list[.MeasurementProcess]: list of recorded measurement processess
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        >>> tape.measurements
+        [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f10b2150c10>]
+        """
+        return [m[0] for m in self._obs]
 
     @property
     def num_params(self):

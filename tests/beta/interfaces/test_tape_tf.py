@@ -1036,75 +1036,72 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
+        @qnode(dev, interface="tf")
+        def circuit(U, a):
+            qml.QubitUnitary(U, wires=0)
+            qml.RY(a, wires=0)
+            return expval(qml.PauliZ(0))
+
         with tf.GradientTape() as tape:
+            res = circuit(U, a)
 
-            with TFInterface.apply(QuantumTape()) as qtape:
-                qml.QubitUnitary(U, wires=0)
-                qml.RY(a, wires=0)
-                expval(qml.PauliZ(0))
-
-            assert qtape.trainable_params == {1}
-            res = qtape.execute(dev)
+        assert circuit.qtape.trainable_params == {1}
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
         res = tape.jacobian(res, a)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
-    # def test_differentiable_expand(self, mocker, tol):
-    #     """Test that operation and nested tapes expansion
-    #     is differentiable"""
-    #     mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
+    def test_differentiable_expand(self, mocker, tol):
+        """Test that operation and nested tapes expansion
+        is differentiable"""
+        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
-    #     class U3(qml.U3):
-    #         def expand(self):
-    #             tape = QuantumTape()
-    #             theta, phi, lam = self.data
-    #             wires = self.wires
-    #             tape._ops += [
-    #                 qml.Rot(lam, theta, -lam, wires=wires),
-    #                 qml.PhaseShift(phi + lam, wires=wires),
-    #             ]
-    #             return tape
+        class U3(qml.U3):
+            def expand(self):
+                tape = QuantumTape()
+                theta, phi, lam = self.data
+                wires = self.wires
+                tape._ops += [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
+                return tape
 
-    #     qtape = QuantumTape()
+        dev = qml.device("default.qubit", wires=1)
+        a = np.array(0.1)
+        p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-    #     dev = qml.device("default.qubit", wires=1)
-    #     a = np.array(0.1)
-    #     p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
+        @qnode(dev, interface="tf")
+        def circuit(a, p):
+            qml.RX(a, wires=0)
+            U3(p[0], p[1], p[2], wires=0)
+            return expval(qml.PauliX(0))
 
-    #     with tf.GradientTape() as tape:
+        with tf.GradientTape() as tape:
+            res = circuit(a, p)
 
-    #         with qtape:
-    #             qml.RX(a, wires=0)
-    #             U3(p[0], p[1], p[2], wires=0)
-    #             expval(qml.PauliX(0))
+        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
+        assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
-    #         qtape = TFInterface.apply(qtape.expand())
+        expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
+            tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    #         assert qtape.trainable_params == {1, 2, 3, 4}
-    #         assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
-    #         assert np.all(qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
-
-    #         res = qtape.execute(device=dev)
-
-    #     expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
-    #         tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
-    #     )
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    #     res = tape.jacobian(res, p)
-    #     expected = np.array(
-    #         [
-    #             tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
-    #             tf.cos(p[1]) * tf.cos(p[2]) * tf.sin(a)
-    #             - tf.sin(p[1])
-    #             * (tf.cos(a) * tf.sin(p[0]) + tf.cos(p[0]) * tf.sin(a) * tf.sin(p[2])),
-    #             tf.sin(a)
-    #             * (tf.cos(p[0]) * tf.cos(p[1]) * tf.cos(p[2]) - tf.sin(p[1]) * tf.sin(p[2])),
-    #         ]
-    #     )
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = tape.jacobian(res, p)
+        expected = np.array(
+            [
+                tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
+                tf.cos(p[1]) * tf.cos(p[2]) * tf.sin(a)
+                - tf.sin(p[1])
+                * (tf.cos(a) * tf.sin(p[0]) + tf.cos(p[0]) * tf.sin(a) * tf.sin(p[2])),
+                tf.sin(a)
+                * (tf.cos(p[0]) * tf.cos(p[1]) * tf.cos(p[2]) - tf.sin(p[1]) * tf.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     # def test_probability_differentiation(self, tol):
     #     """Tests correct output shape and evaluation for a tape

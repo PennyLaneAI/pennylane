@@ -197,6 +197,72 @@ class TestTapeConstruction:
 
         assert jac.shape == (4, 2)
 
+    def test_returning_non_measurements(self):
+        """Test that an exception is raised if a non-measurement
+        is returned from the QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return 5
+
+        qn = QNode(func, dev)
+
+        with pytest.raises(
+            QuantumFunctionError, match="must return either a single measured observable"
+        ):
+            qn(5, 1)
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return expval(qml.PauliZ(0)), 5
+
+        qn = QNode(func, dev)
+
+        with pytest.raises(
+            QuantumFunctionError, match="must return either a single measured observable"
+        ):
+            qn(5, 1)
+
+    def test_inconsistent_measurement_order(self):
+        """Test that an exception is raised if measurements are returned in an
+        order different to how they were queued on the tape"""
+        dev = qml.device("default.qubit", wires=2)
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            m = expval(qml.PauliZ(0))
+            return expval(qml.PauliX(1)), m
+
+        qn = QNode(func, dev)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="measurements must be returned in the order they are measured",
+        ):
+            qn(5, 1)
+
+        # mutating the order should work fine
+        def func(x, y):
+            global op1, op2, op3, m1, m2
+            op1 = qml.RX(x, wires=0)
+            op2 = qml.RY(y, wires=1)
+            op3 = qml.CNOT(wires=[0, 1])
+            m1 = expval(qml.PauliZ(0))
+            m2 = expval(qml.PauliX(1))
+            return [m1, m2]
+
+        qn = QNode(func, dev)
+        qn(5, 1)  # evaluate the QNode
+        assert qn.qtape.operations == [op1, op2, op3]
+        assert qn.qtape.measurements == [m1, m2]
+
 
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""

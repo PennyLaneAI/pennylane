@@ -14,13 +14,14 @@
 """
 This module contains the QNode class and qnode decorator.
 """
+from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 
 import numpy as np
 
 from pennylane import Device
 from pennylane.beta.tapes import QuantumTape
-
+from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -112,6 +113,8 @@ class QNode:
     >>> dev = qml.device("default.qubit", wires=1)
     >>> qnode = QNode(circuit, dev)
     """
+
+    # pylint:disable=too-many-instance-attributes
 
     def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
 
@@ -281,14 +284,28 @@ class QNode:
             self.INTERFACE_MAP[self.interface](self)
 
         with self.qtape:
-            # Note that the quantum function doesn't
-            # return anything. We assume that all classical
-            # pre-processing happens *prior* to the quantum
-            # tape, and the tape is the final step in the function.
-            self.func(*args, **kwargs)
+            measurements = self.func(*args, **kwargs)
+
+        if not isinstance(measurements, Sequence):
+            measurements = (measurements,)
+
+        if not all(isinstance(m, MeasurementProcess) for m in measurements):
+            raise QuantumFunctionError(
+                "A quantum function must return either a single measured observable "
+                "or a nonempty sequence of measured observables."
+            )
+
+        if not all(ret == tape[0] for ret, tape in zip(measurements, self.qtape._obs)):
+            raise QuantumFunctionError(
+                "All measurements must be returned in the order they are measured."
+            )
 
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
+
+        # expand out the tape, if any operations are not supported on the device
+        if not {op.name for op in self.qtape.operations}.issubset(self.device.operations):
+            self.qtape = self.qtape.expand(depth=2, stop_at=self.device.operations)
 
     def __call__(self, *args, **kwargs):
         # construct the tape

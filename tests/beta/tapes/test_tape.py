@@ -68,6 +68,7 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.interface is None
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
@@ -171,8 +172,26 @@ class TestConstruction:
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
 
+        with pytest.raises(ValueError, match="must occur prior to any measurements"):
+            with QuantumTape() as tape:
+                expval(qml.PauliZ(wires=1))
+                qml.RX(0.5, wires=0)
+                expval(qml.PauliZ(wires=1))
+
     def test_observable_with_no_measurement(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
+
+        with pytest.raises(ValueError, match="does not have a measurement type specified"):
+            with QuantumTape() as tape:
+                qml.RX(0.5, wires=0)
+                qml.Hermitian(np.array([[0, 1], [1, 0]]), wires=1)
+                expval(qml.PauliZ(wires=1))
+
+        with pytest.raises(ValueError, match="does not have a measurement type specified"):
+            with QuantumTape() as tape:
+                qml.RX(0.5, wires=0)
+                qml.PauliX(wires=0) @ qml.PauliY(wires=1)
+                expval(qml.PauliZ(wires=1))
 
 
 class TestParameters:
@@ -245,6 +264,14 @@ class TestParameters:
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.set_parameters(new_params)
+
+        for pinfo, pval in zip(tape._par_info.values(), new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert tape.get_parameters() == new_params
+
+        new_params = [0.1, -0.2, 1, 5, 0]
+        tape.data = new_params
 
         for pinfo, pval in zip(tape._par_info.values(), new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
@@ -1122,7 +1149,9 @@ class TestJacobian:
             qml.RY(1, wires=[1])
             qml.RZ(1, wires=[2])
             qml.CNOT(wires=[0, 1])
-            expval(qml.operation.Tensor(qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(2)))
+            expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2))
+            for k, v in tape._queue.items():
+                print(k, v)
 
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             tape.jacobian(dev, order=3)
