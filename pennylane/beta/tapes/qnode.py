@@ -16,6 +16,8 @@ This module contains the QNode class and qnode decorator.
 """
 from functools import lru_cache, update_wrapper
 
+import numpy as np
+
 from pennylane import Device
 from pennylane.beta.tapes import QuantumTape
 
@@ -131,6 +133,8 @@ class QNode:
         )
         self.diff_options = diff_options or {}
         self.diff_options["method"] = self.diff_method
+
+        self.dtype = np.float64
 
     @staticmethod
     def _get_tape(device, interface, diff_method="best"):
@@ -293,34 +297,62 @@ class QNode:
         # execute the tape
         return self.qtape.execute(device=self.device)
 
-    def to_tf(self):
+    def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
+
+        Args:
+            dtype (tf.dtype): The dtype that the TensorFlow QNode should
+                output. If not provided, the default is ``tf.float64``.
 
         Raises:
             QuantumFunctionError: if TensorFlow >= 2.1 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
+            import tensorflow as tf
             from pennylane.beta.interfaces.tf import TFInterface
 
-            TFInterface.apply(self.qtape)
+            self.interface = "tf"
+
+            if not isinstance(self.dtype, tf.DType):
+                self.dtype = None
+
+            self.dtype = dtype or self.dtype or TFInterface.dtype
+
+            if self.qtape is not None:
+                TFInterface.apply(self.qtape, dtype=self.dtype)
+
         except ImportError:
             raise QuantumFunctionError(
                 "TensorFlow not found. Please install the latest "
                 "version of TensorFlow to enable the 'tf' interface."
             )
 
-    def to_torch(self):
+    def to_torch(self, dtype=None):
         """Apply the Torch interface to the internal quantum tape.
+
+        Args:
+            dtype (tf.dtype): The dtype that the Torch QNode should
+                output. If not provided, the default is ``torch.float64``.
 
         Raises:
             QuantumFunctionError: if PyTorch >= 1.3 is not installed
         """
         # pylint: disable=import-outside-toplevel
         try:
+            import torch
             from pennylane.beta.interfaces.torch import TorchInterface
 
-            TorchInterface.apply(self.qtape)
+            self.interface = "torch"
+
+            if not isinstance(self.dtype, torch.dtype):
+                self.dtype = None
+
+            self.dtype = dtype or self.dtype or TorchInterface.dtype
+
+            if self.qtape is not None:
+                TorchInterface.apply(self.qtape, dtype=self.dtype)
+
         except ImportError:
             raise QuantumFunctionError(
                 "PyTorch not found. Please install the latest "
@@ -329,7 +361,11 @@ class QNode:
 
     def to_autograd(self):
         """Apply the Autograd interface to the internal quantum tape."""
-        AutogradInterface.apply(self.qtape)
+        self.interface = "autograd"
+        self.dtype = AutogradInterface.dtype
+
+        if self.qtape is not None:
+            AutogradInterface.apply(self.qtape)
 
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 

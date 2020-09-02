@@ -168,6 +168,12 @@ class TestConstruction:
                 B = qml.PauliX(wires=0)
                 qml.BasisState(np.array([0, 1]), wires=[0, 1])
 
+    def test_measurement_before_operation(self):
+        """Test that an exception is raised if a measurement occurs before a operation"""
+
+    def test_observable_with_no_measurement(self):
+        """Test that an exception is raised if a measurement occurs before a operation"""
+
 
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""

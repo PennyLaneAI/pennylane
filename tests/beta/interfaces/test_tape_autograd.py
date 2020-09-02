@@ -230,7 +230,7 @@ class TestAutogradQuantumTape:
 
             assert tape.trainable_params == {1, 2, 3, 4}
             assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
-            assert np.all(tape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
+            assert np.all(np.array(tape.get_parameters()) == [p[2], p[0], -p[2], p[1] + p[2]])
 
             return tape.execute(device=device)
 

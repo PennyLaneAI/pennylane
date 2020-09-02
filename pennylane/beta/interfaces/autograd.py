@@ -73,6 +73,7 @@ class AutogradInterface(AnnotatedQueue):
     """
 
     # pylint: disable=attribute-defined-outside-init
+    dtype = np.float64
 
     @property
     def interface(self):  # pylint: disable=missing-function-docstring
@@ -97,7 +98,7 @@ class AutogradInterface(AnnotatedQueue):
         if free_only:
             params = [p for idx, p in enumerate(params) if idx in self.trainable_params]
 
-        return np.array(params)
+        return autograd.builtins.list(params)
 
     @autograd.extend.primitive
     def _execute(self, params, device):

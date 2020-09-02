@@ -141,6 +141,8 @@ class TorchInterface(AnnotatedQueue):
     torch.float32
     """
 
+    dtype = torch.float64
+
     @property
     def interface(self):  # pylint: disable=missing-function-docstring
         return "torch"

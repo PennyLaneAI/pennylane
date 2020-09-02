@@ -218,6 +218,10 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
+                if self._obs:
+                    raise ValueError(
+                        f"Quantum operation {obj} must occur prior to any measurements."
+                    )
 
                 obj.do_check_domain = False
 
@@ -254,6 +258,9 @@ class QuantumTape(AnnotatedQueue):
 
                     if obj.return_type is qml.operation.Sample:
                         self.is_sampled = True
+
+            # elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
+            #     raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
         self._update_circuit_info()
         self._update_par_info()
