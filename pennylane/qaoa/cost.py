@@ -56,7 +56,7 @@ def bit_driver(wires, n):
     elif n == 1:
         coeffs = [1 for _ in wires]
     else:
-        raise ValueError("'state' argument must be either 0 or 1, got {}".format(n))
+        raise ValueError("'state' must be either 0 or 1, got {}".format(n))
 
     ops = [qml.PauliZ(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
@@ -67,13 +67,13 @@ def edge_driver(graph, reward):
 
     Given some graph, :math:`G`, this method will return a Hamiltonian that assigns
     lower energies to two-bit bitstrings supplied in ``reward``. Each bitstring corresponds
-    to the state of some edge in :math:`G`, determined by the states of its endpoints.
+    to the state of some edge in :math:`G`, which is defined by the states of its vertex endpoints.
 
     See usage details for more information.
 
     Args:
          graph (nx.Graph): The graph on which the Hamiltonian is defined
-         reward (list[str]): The list of two-bit bitstrings that are assigned lower energy by the Hamiltonian
+         reward (list[str]): The list of two-bit bitstrings that are assigned a lower energy by the Hamiltonian
 
     Returns:
         .Hamiltonian
@@ -89,9 +89,7 @@ def edge_driver(graph, reward):
 
         The goal of many combinatorial problems that can be solved with QAOA is to
         find a `Graph colouring <https://en.wikipedia.org/wiki/Graph_coloring>`__ of some supplied
-        graph :math:`G` that minimizes some cost function.
-
-        It is oftentimes natural to consider the class
+        graph :math:`G`, that minimizes some cost function. It is oftentimes natural to consider the class
         of graph colouring problems that only admit two colours, as we can easily encode these two colours
         using the :math:`|1\rangle` and :math:`|0\rangle` states of qubits. Therefore, given
         some graph :math:`G`, each edge of the graph can be described by a pair of qubits, :math:`|00\rangle`,
@@ -99,14 +97,14 @@ def edge_driver(graph, reward):
 
         When constructing QAOA cost functions, one must "penalize" certain states of the graph, and "reward"
         others, by assigning higher and lower energies to these respective configurations. Given a set of vertex-colour
-        pairs (which describe an edge), the `edge_driver` method will output a Hamiltonian that rewards the edge-stats
-        in the set, and penalizes the others. For example, given the set:
-        :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle}` and the graph :math:`G`,
+        pairs (which each describe a possible  state of a graph edge), the `edge_driver`
+        method will output a Hamiltonian that rewards the edges in the set, and penalizes the others. For example,
+        given the set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle}` and the graph :math:`G`,
         the `edge_driver` method will output the following Hamiltonian:
 
         ..math:: H \ = \ \frac{1}{4} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_{i} Z_{j} \ - \ Z_{i} \ - \ Z_{j} \big)
 
-        where :math:`E(G)` is the set of edges of :math:`G` and :math:`Z_i` is the Pauli-Z operator acting on the
+        where :math:`E(G)` is the set of edges of :math:`G`, and :math:`Z_i` is the Pauli-Z operator acting on the
         :math:`i`-th wire. As can be checked, this Hamiltonian assigns an energy of :math:`-1/4` to the states
         :math:`|00\rangle`, :math:`|01\rangle` and :math:`|10\rangle`, and an energy of :math:`3/4` to the state
         :math:`|11\rangle`.
@@ -125,7 +123,7 @@ def edge_driver(graph, reward):
 
     if "01" in reward and "10" not in reward or "10" in reward and "01" not in reward:
         raise ValueError(
-            "'reward' cannot contain either '10' or '01', must contain neither, or both."
+            "'reward' cannot contain either '10' or '01', must contain neither or both."
         )
 
     if not isinstance(graph, nx.Graph):
