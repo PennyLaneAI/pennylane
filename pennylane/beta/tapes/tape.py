@@ -873,13 +873,11 @@ class QuantumTape(AnnotatedQueue):
 
             # loop over all observables
             for ob in self.observables:
-                # get the set of operations betweens the
-                # operation and the observable
-                S = self.graph.nodes_between(op, ob)
+                # check if op is an ancestor of ob
+                has_path = self.graph.has_path(op, ob)
 
-                # If there is no path between them, gradient is zero
-                # Otherwise, use finite differences
-                best.append("0" if not S else "F")
+                # Use finite differences if there is a path, else the gradient is zero
+                best.append("F" if has_path else "0")
 
             if all(k == "0" for k in best):
                 return "0"

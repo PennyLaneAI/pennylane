@@ -197,6 +197,19 @@ class CircuitGraph:
         B.add(b)
         return A & B
 
+    def has_path(self, a, b):
+        """Checks if a path exists between the two given nodes.
+
+        Args:
+            a (Operator): initial node
+            b (Operator): final node
+
+        Returns:
+            bool: returns ``True`` if a path exists
+        """
+        return nx.has_path(self._graph, a, b)
+
+
     def invisible_operations(self):
         """Operations that cannot affect the circuit output.
 
