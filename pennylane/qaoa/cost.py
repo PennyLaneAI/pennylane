@@ -65,15 +65,15 @@ def bit_driver(wires, n):
 def edge_driver(graph, reward):
     r"""Returns the edge-driver cost Hamiltonian component.
 
-    Given some graph, :math:`G`, this method will return a Hamiltonian that "rewards"
-    bitstrings encoding graph colourings of :math:`G` (assigns them a lower
-    energy) with edges that end in nodes with colourings supplied in ``reward``.
+    Given some graph, :math:`G`, this method will return a Hamiltonian that assigns
+    lower energies to two-bit bitstrings supplied in ``reward``. Each bitstring corresponds
+    to the state of some edge in :math:`G`, determined by the states of its endpoints.
 
     See usage details for more information.
 
     Args:
          graph (nx.Graph): The graph on which the Hamiltonian is defined
-         reward (list[str]): The list of two-bit bitstrings that are "rewarded" by the Hamiltonian
+         reward (list[str]): The list of two-bit bitstrings that are assigned lower energy by the Hamiltonian
 
     Returns:
         .Hamiltonian
@@ -83,7 +83,39 @@ def edge_driver(graph, reward):
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
-    (1.0) [Z0 Z1] + (1.0) [Z0] + (2.0) [Z1] + (1.0) [Z1 Z2] + (1.0) [Z2]
+    (0.25) [Z0 Z1] + (0.25) [Z0] + (0.25) [Z1] + (0.25) [Z1 Z2] + (0.25) [Z2]
+
+    ..UsageDetails::
+
+        The goal of many combinatorial problems that can be solved with QAOA is to
+        find a `Graph colouring <https://en.wikipedia.org/wiki/Graph_coloring>`__ of some supplied
+        graph :math:`G` that minimizes some cost function.
+
+        It is oftentimes natural to consider the class
+        of graph colouring problems that only admit two colours, as we can easily encode these two colours
+        using the :math:`|1\rangle` and :math:`|0\rangle` states of qubits. Therefore, given
+        some graph :math:`G`, each edge of the graph can be described by a pair of qubits, :math:`|00\rangle`,
+        :math:`01\rangle`, :math:`|10\rangle`, or :math:`|11\rangle`, corresponding to the colourings of its endpoints.
+
+        When constructing QAOA cost functions, one must "penalize" certain states of the graph, and "reward"
+        others, by assigning higher and lower energies to these respective configurations. Given a set of vertex-colour
+        pairs (which describe an edge), the `edge_driver` method will output a Hamiltonian that rewards the edge-stats
+        in the set, and penalizes the others. For example, given the set:
+        :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle}` and the graph :math:`G`,
+        the `edge_driver` method will output the following Hamiltonian:
+
+        ..math:: H \ = \ \frac{1}{4} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_{i} Z_{j} \ - \ Z_{i} \ - \ Z_{j} \big)
+
+        where :math:`E(G)` is the set of edges of :math:`G` and :math:`Z_i` is the Pauli-Z operator acting on the
+        :math:`i`-th wire. As can be checked, this Hamiltonian assigns an energy of :math:`-1/4` to the states
+        :math:`|00\rangle`, :math:`|01\rangle` and :math:`|10\rangle`, and an energy of :math:`3/4` to the state
+        :math:`|11\rangle`.
+
+        .. Note::
+
+            If either of the states :math:`\01\rangle` or :math:`|10\rangle` is contained in ``reward``, then so too
+            must :math:`|10\rangle` or :math:`|01\rangle`, respectively. Within a graph, there is no notion of "order"
+            of edge endpoints, so these two states are effectively the same.
     """
 
     allowed = ["00", "01", "10", "11"]
@@ -119,19 +151,19 @@ def edge_driver(graph, reward):
 
         if reward == "00":
             for e in graph.edges:
-                coeffs.extend([0.5 * sign, 0.5 * sign, 0.5 * sign])
+                coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
                     [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
                 )
 
         if reward == "10":
             for e in graph.edges:
-                coeffs.append(-1 * sign)
+                coeffs.append(-0.5 * sign)
                 ops.append(qml.PauliZ(e[0]) @ qml.PauliZ(e[1]))
 
         if reward == "11":
             for e in graph.edges:
-                coeffs.extend([0.5 * sign, -0.5 * sign, -0.5 * sign])
+                coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
                     [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
                 )
@@ -188,5 +220,5 @@ def maxcut(graph):
     identity_h = qml.Hamiltonian(
         [-0.5 for e in graph.edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph.edges]
     )
-    H = 0.5 * edge_driver(graph, ["10", "01"]) + identity_h
+    H = edge_driver(graph, ["10", "01"]) + identity_h
     return (H, qaoa.x_mixer(graph.nodes))
