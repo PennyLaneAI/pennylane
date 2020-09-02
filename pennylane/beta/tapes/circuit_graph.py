@@ -209,7 +209,6 @@ class CircuitGraph:
         """
         return nx.has_path(self._graph, a, b)
 
-
     def invisible_operations(self):
         """Operations that cannot affect the circuit output.
 
