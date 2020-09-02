@@ -24,8 +24,6 @@ from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.tf import TFInterface
 
 
-
-
 class TestTFQuantumTape:
     """Test the autograd interface applied to a tape"""
 
@@ -276,9 +274,10 @@ class TestTFQuantumTape:
         res = tape.jacobian(res, a)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, tol):
+    def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
+        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
@@ -593,6 +592,7 @@ class TestTFPassthru:
         """Test that operation and nested tapes expansion
         is differentiable"""
         spy = mocker.spy(QuantumTape, "jacobian")
+        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):

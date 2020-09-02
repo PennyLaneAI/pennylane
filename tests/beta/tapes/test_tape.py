@@ -20,6 +20,27 @@ from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
+def TestOperationMonkeypatching():
+    """Test that operations are monkeypatched only within the quantum tape"""
+    with QuantumTape() as tape:
+        op = qml.RX(0.432, wires=0)
+        obs = qml.PauliX(wires="a")
+        measure = expval(qml.PauliX(wires="a"))
+
+    assert tape.operations == [op]
+    assert tape.observables == [obs]
+
+    # now create an old QNode
+    dev = qml.device("default.qubit", wires=[0, "a"])
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        return qml.PauliX(wires="a")
+
+    func(0.432)
+
+
 class TestConstruction:
     """Test for queuing and construction"""
 

@@ -201,6 +201,8 @@ class TestTapeConstruction:
 class TestTFInterface:
     """Unittests for applying the tensorflow interface"""
 
+    tf = pytest.importorskip("tensorflow", minversion="2.1")
+
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
         tf = mocker.patch("pennylane.beta.interfaces.tf.TFInterface.apply")

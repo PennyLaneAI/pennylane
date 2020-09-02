@@ -15,13 +15,15 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
+import contextlib
+
 import numpy as np
 
 import pennylane as qml
 
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
-from pennylane.beta.queuing import monkeypatch_operations, unmonkeypatch_operations
+from pennylane.beta.queuing import mock_operations
 
 from .circuit_graph import CircuitGraph
 
@@ -160,15 +162,23 @@ class QuantumTape(AnnotatedQueue):
         return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     def __enter__(self):
-        monkeypatch_operations()
+        if not QueuingContext.recording():
+            # if the tape is the first active queuing context
+            # monkeypatch the operations to support the new queuing context
+            with contextlib.ExitStack() as stack:
+                for mock in mock_operations():
+                    stack.enter_context(mock)
+                self._stack = stack.pop_all()
+
         QueuingContext.append(self)
         return super().__enter__()
 
     def __exit__(self, exception_type, exception_value, traceback):
         super().__exit__(exception_type, exception_value, traceback)
 
-        if not QueuingContext.recording:
-            unmonkeypatch_operations()
+        if not QueuingContext.recording():
+            # remove the monkeypatching
+            self._stack.__exit__(exception_type, exception_value, traceback)
 
         self._process_queue()
 
@@ -207,6 +217,8 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
 
+                obj.do_check_domain = False
+
                 # invert the operation if required
                 obj.inverse = info.get("inverse", False)
 
@@ -233,6 +245,7 @@ class QuantumTape(AnnotatedQueue):
                     # Monkeypatch the observable to have the same return
                     # type as the measurement process.
                     info["owns"].return_type = obj.return_type
+                    info["owns"].do_check_domain = False
 
                     self._obs.append((obj, info["owns"]))
                     self._output_dim += 1

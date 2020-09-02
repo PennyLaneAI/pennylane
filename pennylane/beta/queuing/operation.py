@@ -16,6 +16,8 @@ r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
 """
+from unittest import mock
+
 import pennylane as qml
 from pennylane.operation import Tensor
 
@@ -27,9 +29,6 @@ from .queuing import QueuingContext
 # ========================================================
 # The following functions monkeypatch and un-monkeypatch
 # the PennyLane operations to work with the new QueuingContext.
-
-ORIGINAL_QUEUE = qml.operation.Operation.queue
-ORIGINAL_INV = qml.operation.Operation.inv
 
 
 def queue(self):
@@ -101,22 +100,17 @@ def tensor_queue(self):
     return self
 
 
-def monkeypatch_operations():
+def mock_operations():
     """Monkeypatch the operations to work with the new QueuingContext."""
-    qml.operation.Operation.queue = queue
-    qml.operation.Observable.queue = queue
-    qml.operation.Operation.inv = inv
     qml.operation.Operation.expand = expand
-    qml.operation.Tensor.__init__ = tensor_init
-    qml.operation.Tensor.queue = tensor_queue
-    qml.operation.Operator.do_check_domain = False
 
+    mocks = []
 
-def unmonkeypatch_operations():
-    """Remove the monkeypatching."""
-    qml.operation.Operation.queue = ORIGINAL_QUEUE
-    qml.operation.Observable.queue = ORIGINAL_QUEUE
-    qml.operation.Operation.inv = ORIGINAL_INV
-    qml.operation.Operation.expand = lambda self: None
-    qml.operation.Tensor.queue = lambda self: None
-    qml.operation.Operator.do_check_domain = True
+    mocks += [mock.patch.object(qml.operation.Operation, "queue", queue)]
+    mocks += [mock.patch.object(qml.operation.Observable, "queue", queue)]
+    mocks += [mock.patch.object(qml.operation.Operation, "inv", inv)]
+    mocks += [mock.patch.object(qml.operation.Tensor, "__init__", tensor_init)]
+    mocks += [mock.patch.object(qml.operation.Tensor, "queue", tensor_queue, create=True)]
+    mocks += [mock.patch.object(qml.operation.Operator, "do_check_domain", False)]
+
+    return mocks

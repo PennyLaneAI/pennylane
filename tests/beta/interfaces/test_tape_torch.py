@@ -24,7 +24,6 @@ from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.torch import TorchInterface
 
 
-
 class TestTorchQuantumTape:
     """Test the autograd interface applied to a tape"""
 
@@ -288,9 +287,10 @@ class TestTorchQuantumTape:
         res.backward()
         assert np.allclose(a.grad, np.sin(a_val), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, tol):
+    def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
+        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):

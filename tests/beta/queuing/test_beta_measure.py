@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the measure module"""
 import pytest
+import contextlib
 import numpy as np
 
 import pennylane as qml
@@ -21,7 +22,7 @@ from pennylane.qnodes import QuantumFunctionError
 
 # Beta imports
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
-from pennylane.beta.queuing.operation import monkeypatch_operations, unmonkeypatch_operations
+from pennylane.beta.queuing.operation import mock_operations
 from pennylane.beta.queuing.measure import (
     expval,
     var,
@@ -101,15 +102,15 @@ class TestBetaStatistics:
     def test_annotating_tensor_return_type(self, op1, op2, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
         when called for an Tensor observable"""
-        monkeypatch_operations()
+        with contextlib.ExitStack() as stack:
+            for mock in mock_operations():
+                stack.enter_context(mock)
 
-        with AnnotatedQueue() as q:
-            A = op1(0)
-            B = op2(1)
-            tensor_op = A @ B
-            stat_func(tensor_op)
-
-        unmonkeypatch_operations()
+            with AnnotatedQueue() as q:
+                A = op1(0)
+                B = op2(1)
+                tensor_op = A @ B
+                stat_func(tensor_op)
 
         assert q.queue[:-1] == [A, B, tensor_op]
         meas_proc = q.queue[-1]

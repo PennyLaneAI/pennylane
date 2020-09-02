@@ -202,9 +202,10 @@ class TestAutogradQuantumTape:
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, tol):
+    def test_differentiable_expand(self, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
+        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
@@ -504,6 +505,7 @@ class TestAutogradPassthru:
         """Test that operation and nested tapes expansion
         is differentiable"""
         spy = mocker.spy(QuantumTape, "jacobian")
+        mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
