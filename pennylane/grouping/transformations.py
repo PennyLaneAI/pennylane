@@ -46,7 +46,7 @@ def qwc_rotation(pauli_operators):
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
         raise TypeError(
             "All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
-            " instead got values: {}.".format(pauli_dict.values())
+            " instead got values: {}.".format(pauli_operators)
         )
 
     for pauli in pauli_operators:

@@ -137,7 +137,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         if self.grouping_type == "qwc":
             adj = get_qwc_complement_adj_matrix(self.binary_observables)
 
-        elif self.grouping_type in ["commuting", "anticommuting"]:
+        elif self.grouping_type in frozenset(["commuting", "anticommuting"]):
             symplectic_form = np.block(
                 [
                     [np.zeros((n_qubits, n_qubits)), np.eye(n_qubits)],
