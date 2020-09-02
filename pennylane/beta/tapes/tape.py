@@ -158,6 +158,8 @@ class QuantumTape(AnnotatedQueue):
         self.hash = 0
         self.is_sampled = False
 
+        self._stack = None
+
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 

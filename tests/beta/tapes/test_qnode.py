@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, QNode, QuantumFunctionError
+from pennylane.beta.tapes import QuantumTape, QNode, qnode, QuantumFunctionError
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -205,8 +205,8 @@ class TestTFInterface:
 
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
-        tf = mocker.patch("pennylane.beta.interfaces.tf.TFInterface.apply")
-        tf.side_effect = ImportError()
+        mock = mocker.patch("pennylane.beta.interfaces.tf.TFInterface.apply")
+        mock.side_effect = ImportError()
 
         def func(x, y):
             qml.RX(x, wires=0)
@@ -214,7 +214,7 @@ class TestTFInterface:
             qml.CNOT(wires=[0, 1])
             return expval(qml.PauliZ(0))
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=2)
         qn = QNode(func, dev, interface="tf")
 
         with pytest.raises(
@@ -222,3 +222,68 @@ class TestTFInterface:
             match="TensorFlow not found. Please install the latest version of TensorFlow to enable the 'tf' interface",
         ):
             qn(0.1, 0.1)
+
+
+class TestTorchInterface:
+    """Unittests for applying the tensorflow interface"""
+
+    torch = pytest.importorskip("torch", minversion="1.3")
+
+    def test_import_error(self, mocker):
+        """Test that an exception is caught on import error"""
+        mock = mocker.patch("pennylane.beta.interfaces.torch.TorchInterface.apply")
+        mock.side_effect = ImportError()
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=2)
+        qn = QNode(func, dev, interface="torch")
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="PyTorch not found. Please install the latest version of PyTorch to enable the 'torch' interface",
+        ):
+            qn(0.1, 0.1)
+
+
+class TestDecorator:
+    """Unittests for the decorator"""
+
+    def test_decorator(self, tol):
+        """Test that the decorator correctly creates a QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev)
+        def func(x, y):
+            """My function docstring"""
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return expval(qml.PauliZ(0))
+
+        assert isinstance(func, QNode)
+        assert func.__doc__ == "My function docstring"
+
+        x = 0.12
+        y = 0.54
+
+        res = func(x, y)
+
+        assert isinstance(func.qtape, QuantumTape)
+        assert len(func.qtape.operations) == 3
+        assert len(func.qtape.observables) == 1
+        assert func.qtape.num_params == 2
+
+        expected = func.qtape.execute(dev)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # when called, a new quantum tape is constructed
+        old_tape = func.qtape
+        res2 = func(x, y)
+
+        assert np.allclose(res, res2, atol=tol, rtol=0)
+        assert func.qtape is not old_tape

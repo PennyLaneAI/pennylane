@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-from functools import lru_cache
+from functools import lru_cache, update_wrapper
 
 from pennylane import Device
 from pennylane.beta.tapes import QuantumTape
@@ -132,7 +132,8 @@ class QNode:
         self.diff_options = diff_options or {}
         self.diff_options["method"] = self.diff_method
 
-    def _get_tape(self, device, interface, diff_method="best"):
+    @staticmethod
+    def _get_tape(device, interface, diff_method="best"):
         """Determine the best QuantumTape, differentiation method, and interface
         for a requested device, interface, and diff method.
 
@@ -285,9 +286,6 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
-        # bind some pre-existing methods for backward compatibility
-        self.jacobian = self.qtape.jacobian
-
     def __call__(self, *args, **kwargs):
         # construct the tape
         self.construct(args, kwargs)
@@ -301,6 +299,7 @@ class QNode:
         Raises:
             QuantumFunctionError: if TensorFlow >= 2.1 is not installed
         """
+        # pylint: disable=import-outside-toplevel
         try:
             from pennylane.beta.interfaces.tf import TFInterface
 
@@ -317,13 +316,14 @@ class QNode:
         Raises:
             QuantumFunctionError: if PyTorch >= 1.3 is not installed
         """
+        # pylint: disable=import-outside-toplevel
         try:
-            from pennylane.beta.interfaces.tf import TFInterface
+            from pennylane.beta.interfaces.torch import TorchInterface
 
-            TFInterface.apply(self.qtape)
+            TorchInterface.apply(self.qtape)
         except ImportError:
             raise QuantumFunctionError(
-                "PyTorch not found. Please install "
+                "PyTorch not found. Please install the latest "
                 "version of PyTorch to enable the 'torch' interface."
             )
 
@@ -418,6 +418,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        return QNode(func, device, interface=interface, diff_method=diff_method, **diff_options)
+        qn = QNode(func, device, interface=interface, diff_method=diff_method, **diff_options)
+        return update_wrapper(qn, func)
 
     return qfunc_decorator

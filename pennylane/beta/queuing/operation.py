@@ -19,7 +19,6 @@ operations and observables.
 from unittest import mock
 
 import pennylane as qml
-from pennylane.operation import Tensor
 
 from .queuing import QueuingContext
 
