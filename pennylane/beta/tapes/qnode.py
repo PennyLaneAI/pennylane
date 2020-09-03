@@ -296,7 +296,7 @@ class QNode:
                 "or a nonempty sequence of measured observables."
             )
 
-        if not all(ret == tape[0] for ret, tape in zip(measurements, self.qtape._obs)):
+        if not all(ret == m for ret, m in zip(measurements, self.qtape.measurements)):
             raise QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
