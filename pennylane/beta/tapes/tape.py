@@ -1150,14 +1150,15 @@ class QuantumTape(AnnotatedQueue):
         if nondiff_params:
             raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
+        numeric_params = {
+            idx
+            for idx, info in self._par_info.items()
+            if info["grad_method"] == "F" and idx in self.trainable_params
+        }
+
         if method == "analytic":
             # If explicitly using analytic mode, ensure that all parameters
             # support analytic differentiation.
-            numeric_params = {
-                idx
-                for idx, info in self._par_info.items()
-                if info["grad_method"] == "F" and idx in self.trainable_params
-            }
 
             if numeric_params:
                 raise ValueError(
@@ -1168,9 +1169,10 @@ class QuantumTape(AnnotatedQueue):
             # Using device mode; query the device for the Jacobian
             return self.device_pd(device, **options)
 
-        if options.get("order", 1) == 1:
-            # the value of the circuit at current params, computed only once here
-            options["y0"] = np.asarray(self.execute_device(params, device))
+        if method == "numeric" or numeric_params:
+            if options.get("order", 1) == 1:
+                # the value of the circuit at current params, computed only once here
+                options["y0"] = np.asarray(self.execute_device(params, device))
 
         jac = np.zeros((self.output_dim, len(params)), dtype=float)
         p_ind = list(np.ndindex(*params.shape))

@@ -71,22 +71,15 @@ class QubitParamShiftTape(QuantumTape):
 
     def jacobian(self, device, params=None, **options):
         if any(self.var_mask):
-            # the value of the circuit at current params with all variances converted to expectations.
-            # Computed only once here for all parameters.
-
+            self._evA = None
             self._original_obs = self._obs.copy()
 
-            for i in self.var_idx:
-                for j in range(2):
-                    self._obs[i][j].return_type = qml.operation.Expectation
+        ret = super().jacobian(device, params, **options)
 
-            if params is None:
-                params = self.get_parameters()
+        if any(self.var_mask):
+            self._evA = None
 
-            options["all_expval_y0"] = np.asarray(self.execute_device(params, device))
-            self._obs = self._original_obs
-
-        return super().jacobian(device, params, **options)
+        return ret
 
     def _parameter_shift(self, idx, device, params, **options):
         """Partial derivative of expectation values of an observable using the parameter-shift method.
@@ -126,12 +119,14 @@ class QubitParamShiftTape(QuantumTape):
             array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
         """
-        # get <A>
-        evA = options["all_expval_y0"]
 
         for i in self.var_idx:
             for j in range(2):
                 self._obs[i][j].return_type = qml.operation.Expectation
+
+        # get <A>
+        if self._evA is None:
+            self._evA = np.asarray(self.execute_device(params, device))
 
         # evaluate the analytic derivative of <A>
         pdA = self._parameter_shift(idx, device, params, **options)
@@ -166,4 +161,4 @@ class QubitParamShiftTape(QuantumTape):
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations
-        return np.where(self.var_mask, pdA2 - 2 * evA * pdA, pdA)
+        return np.where(self.var_mask, pdA2 - 2 * self._evA * pdA, pdA)
