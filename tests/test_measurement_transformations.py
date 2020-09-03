@@ -124,6 +124,7 @@ class TestMeasurementTransformations:
 
     @pytest.mark.parametrize("qwc_grouping,qwc_sol_tuple", qwc_diagonalization_io)
     def test_diagonalize_qwc_grouping(self, qwc_grouping, qwc_sol_tuple):
+        """Tests for validating diagonalize_qwc_grouping solutions."""
 
         qwc_rot, diag_qwc_grouping = diagonalize_qwc_grouping(qwc_grouping)
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
@@ -149,4 +150,7 @@ class TestMeasurementTransformations:
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)
     def test_diagonalize_qwc_grouping_catch_when_not_qwc(self, not_qwc_grouping):
+        """Test for ValueError raise when diagonalize_qwc_grouping is not given a list of
+        qubit-wise commuting Pauli words."""
+        
         assert pytest.raises(ValueError, diagonalize_qwc_grouping, not_qwc_grouping)

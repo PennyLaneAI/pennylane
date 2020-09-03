@@ -79,6 +79,9 @@ class TestGroupingUtils:
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_pauli_to_binary_non_pauli_word_catch(self, non_pauli_word):
+        """Tests TypeError raise for when non Pauli-word Pennylane operations/operators are given
+        as input to pauli_to_binary."""
+
         assert pytest.raises(TypeError, pauli_to_binary, non_pauli_word)
 
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
@@ -108,6 +111,9 @@ class TestGroupingUtils:
 
     @pytest.mark.parametrize("not_binary_symplectic", not_binary_symplectic_vecs)
     def test_binary_to_pauli_with_illegal_vectors(self, not_binary_symplectic):
+        """Test ValueError raise for when non even-dimensional binary vectors are given to
+        binary_to_pauli."""
+
         assert pytest.raises(ValueError, binary_to_pauli, not_binary_symplectic)
 
     def test_convert_observables_to_binary_matrix(self):
@@ -170,6 +176,9 @@ class TestGroupingUtils:
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
+        """Tests TypeError raise for when non-Pauli word Pennylane operators/operations are given
+        as input to are_identical_pauli_words."""
+
         assert pytest.raises(
             TypeError, are_identical_pauli_words, (non_pauli_word, PauliZ(0) @ PauliZ(1))
         )
