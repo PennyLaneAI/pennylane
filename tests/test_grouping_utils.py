@@ -16,7 +16,7 @@ Unit tests for the :mod:`grouping` utility functions in `grouping/utils.py`.
 """
 import pytest
 import numpy as np
-from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard
+from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
 from pennylane.grouping.utils import (
@@ -28,6 +28,13 @@ from pennylane.grouping.utils import (
     convert_observables_to_binary_matrix,
 )
 
+
+non_pauli_words = [
+    PauliX(0) @ Hadamard(1) @ Identity(2),
+    Hadamard("a"),
+    U3(0.1, 1, 1, wires="a"),
+    Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires="a") @ PauliX("b"),
+]
 
 class TestGroupingUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
@@ -69,6 +76,10 @@ class TestGroupingUtils:
         (np.zeros(6), Identity(0)),
     ]
 
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_pauli_to_binary_non_pauli_word_catch(self, non_pauli_word):
+        assert pytest.raises(TypeError, pauli_to_binary, non_pauli_word)
+
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
     def test_binary_to_pauli_no_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when no
@@ -91,6 +102,15 @@ class TestGroupingUtils:
         wire_map = {Wires("alice"): 0, Wires("bob"): 1, Wires("ancilla"): 2}
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
+
+    not_binary_symplectic_vecs = [[1,0,1,1,0],
+                                  [1],
+                                  [2,0,0,1],
+                                  [0.1,4.3,2.0,1.3]]
+
+    @pytest.mark.parametrize("not_binary_symplectic", not_binary_symplectic_vecs)
+    def test_binary_to_pauli_with_illegal_vectors(self, not_binary_symplectic):
+        assert pytest.raises(ValueError, binary_to_pauli, not_binary_symplectic)
 
     def test_convert_observables_to_binary_matrix(self):
         """Test conversion of list of Pauli word operators to representation as a binary matrix."""
@@ -149,3 +169,10 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
+        assert pytest.raises(
+            TypeError, are_identical_pauli_words, (non_pauli_word, PauliZ(0) @ PauliZ(1))
+        )
+        assert pytest.raises(TypeError, are_identical_pauli_words, (non_pauli_word, non_pauli_word))
