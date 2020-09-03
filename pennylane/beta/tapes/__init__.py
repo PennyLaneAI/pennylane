@@ -16,4 +16,5 @@ This subpackage contains various quantum tapes, which track, queue,
 validate, execute, and differentiate quantum circuits.
 """
 from .tape import QuantumTape
+from .qubit_param_shift import QubitParamShiftTape
 from .qnode import QNode, qnode, QuantumFunctionError
