@@ -36,6 +36,7 @@ non_pauli_words = [
     Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires="a") @ PauliX("b"),
 ]
 
+
 class TestGroupingUtils:
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
@@ -103,10 +104,7 @@ class TestGroupingUtils:
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
-    not_binary_symplectic_vecs = [[1,0,1,1,0],
-                                  [1],
-                                  [2,0,0,1],
-                                  [0.1,4.3,2.0,1.3]]
+    not_binary_symplectic_vecs = [[1, 0, 1, 1, 0], [1], [2, 0, 0, 1], [0.1, 4.3, 2.0, 1.3]]
 
     @pytest.mark.parametrize("not_binary_symplectic", not_binary_symplectic_vecs)
     def test_binary_to_pauli_with_illegal_vectors(self, not_binary_symplectic):
