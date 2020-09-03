@@ -685,7 +685,7 @@ class TestTFPassthru:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, tol):
+    def test_ragged_differentiation(self, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -697,7 +697,8 @@ class TestTFPassthru:
             res = tf.concat(res, axis=0)
             return tf.cast(res, dtype=dtype)
 
-        dev._asarray = _asarray
+        # we need to patch the asarray method on the device
+        monkeypatch.setattr(dev, "_asarray", _asarray)
 
         with tf.GradientTape() as tape:
             with QuantumTape() as qtape:
@@ -740,12 +741,18 @@ class TestTFPassthru:
         assert isinstance(res, tf.Tensor)
 
 
+@pytest.mark.parametrize(
+    "dev_name,diff_method", [["default.qubit", "finite-diff"], ["default.qubit.tf", "backprop"]]
+)
 class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
 
-    def test_execution_no_interface(self):
+    def test_execution_no_interface(self, dev_name, diff_method):
         """Test execution works without an interface"""
-        dev = qml.device("default.qubit", wires=1)
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        dev = qml.device(dev_name, wires=1)
 
         @qnode(dev)
         def circuit(a):
@@ -773,9 +780,12 @@ class TestQNode:
         with pytest.raises(AttributeError, match="has no attribute '_id'"):
             assert tape.gradient(res, a) is None
 
-    def test_execution_with_interface(self):
-        """Test execution works without an interface"""
-        dev = qml.device("default.qubit", wires=1)
+    def test_execution_with_interface(self, dev_name, diff_method):
+        """Test execution works with the interface"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        dev = qml.device(dev_name, wires=1)
 
         @qnode(dev, interface="tf")
         def circuit(a):
@@ -807,10 +817,13 @@ class TestQNode:
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == tuple()
 
-    def test_interface_swap(self, tol):
+    def test_interface_swap(self, dev_name, diff_method, tol):
         """Test that the TF interface can be applied to a QNode
         with a pre-existing interface"""
-        dev = qml.device("default.qubit", wires=1)
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        dev = qml.device(dev_name, wires=1)
 
         @qnode(dev, interface="autograd")
         def circuit(a):
@@ -838,15 +851,15 @@ class TestQNode:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    def test_jacobian(self, mocker, tol):
+    def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""
         spy = mocker.spy(QuantumTape, "jacobian")
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -868,10 +881,16 @@ class TestQNode:
         expected = [[-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        spy.assert_called()
+        if diff_method == "finite-diff":
+            spy.assert_called()
+        elif diff_method == "backprop":
+            spy.assert_not_called()
 
-    def test_jacobian_dtype(self, tol):
+    def test_jacobian_dtype(self, dev_name, diff_method, tol):
         """Test calculating the jacobian with a different datatype"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
         a = tf.Variable(0.1, dtype=tf.float32)
         b = tf.Variable(0.2, dtype=tf.float32)
 
@@ -900,8 +919,11 @@ class TestQNode:
         res = tape.jacobian(res, [a, b])
         assert [r.dtype is tf.float32 for r in res]
 
-    def test_jacobian_options(self, mocker, tol):
+    def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
         """Test setting jacobian options"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
         spy = mocker.spy(QuantumTape, "numeric_pd")
 
         a = tf.Variable([0.1, 0.2])
@@ -923,9 +945,12 @@ class TestQNode:
             assert args[1]["order"] == 2
             assert args[1]["h"] == 1e-8
 
-    def test_changing_trainability(self, mocker, tol):
+    def test_changing_trainability(self, dev_name, diff_method, mocker, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
@@ -980,15 +1005,15 @@ class TestQNode:
         # QuantumTape.numeric_pd has been called only once
         assert len(spy.call_args_list) == 1
 
-    def test_classical_processing(self, tol):
+    def test_classical_processing(self, dev_name, diff_method, tol):
         """Test classical processing within the quantum tape"""
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.constant(0.2, dtype=tf.float64)
         c = tf.Variable(0.3, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
@@ -998,8 +1023,9 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, b, c)
 
-        assert circuit.qtape.trainable_params == {0, 2}
-        assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c])
 
@@ -1007,11 +1033,11 @@ class TestQNode:
         assert res[1] is None
         assert isinstance(res[2], tf.Tensor)
 
-    def test_no_trainable_parameters(self, tol):
+    def test_no_trainable_parameters(self, dev_name, diff_method, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -1024,19 +1050,21 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == set()
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == set()
+
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
 
     @pytest.mark.parametrize("U", [tf.constant([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])])
-    def test_matrix_parameter(self, U, tol):
+    def test_matrix_parameter(self, dev_name, diff_method, U, tol):
         """Test that the TF interface works correctly
         with a matrix parameter"""
         a = tf.Variable(0.1, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
@@ -1045,34 +1073,35 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(U, a)
 
-        assert circuit.qtape.trainable_params == {1}
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == {1}
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
         res = tape.jacobian(res, a)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, mocker, tol):
+    def test_differentiable_expand(self, dev_name, diff_method, mocker, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
         mock = mocker.patch.object(qml.operation.Operation, "do_check_domain", False)
 
         class U3(qml.U3):
             def expand(self):
-                tape = QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
+
+                with QuantumTape() as tape:
+                    qml.Rot(lam, theta, -lam, wires=wires)
+                    qml.PhaseShift(phi + lam, wires=wires)
+
                 return tape
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device(dev_name, wires=1)
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-        @qnode(dev, interface="tf")
+        @qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -1081,9 +1110,17 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, p)
 
-        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        elif diff_method == "backprop":
+            assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
+
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
-        assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
+
+        if diff_method == "finite-diff":
+            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
+        elif diff_method == "backprop":
+            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
             tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
@@ -1103,90 +1140,99 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # def test_probability_differentiation(self, tol):
-    #     """Tests correct output shape and evaluation for a tape
-    #     with prob and expval outputs"""
+    def test_probability_differentiation(self, dev_name, diff_method, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
 
-    #     dev = qml.device("default.qubit", wires=2)
-    #     x = tf.Variable(0.543, dtype=tf.float64)
-    #     y = tf.Variable(-0.654, dtype=tf.float64)
+        dev = qml.device(dev_name, wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
-    #     with tf.GradientTape() as tape:
-    #         with TFInterface.apply(QuantumTape()) as qtape:
-    #             qml.RX(x, wires=[0])
-    #             qml.RY(y, wires=[1])
-    #             qml.CNOT(wires=[0, 1])
-    #             probs(wires=[0])
-    #             probs(wires=[1])
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return probs(wires=[0]), probs(wires=[1])
 
-    #         res = qtape.execute(dev)
+        with tf.GradientTape() as tape:
+            res = circuit(x, y)
 
-    #     expected = np.array(
-    #         [
-    #             [tf.cos(x / 2) ** 2, tf.sin(x / 2) ** 2],
-    #             [(1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2],
-    #         ]
-    #     )
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = np.array(
+            [
+                [tf.cos(x / 2) ** 2, tf.sin(x / 2) ** 2],
+                [(1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    #     res = tape.jacobian(res, [x, y])
-    #     expected = np.array(
-    #         [
-    #             [
-    #                 [-tf.sin(x) / 2, tf.sin(x) / 2],
-    #                 [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
-    #             ],
-    #             [
-    #                 [0, 0],
-    #                 [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
-    #             ],
-    #         ]
-    #     )
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [
+                    [-tf.sin(x) / 2, tf.sin(x) / 2],
+                    [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
+                ],
+                [
+                    [0, 0],
+                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+                ],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # def test_ragged_differentiation(self, tol):
-    #     """Tests correct output shape and evaluation for a tape
-    #     with prob and expval outputs"""
-    #     dev = qml.device("default.qubit", wires=2)
-    #     x = tf.Variable(0.543, dtype=tf.float64)
-    #     y = tf.Variable(-0.654, dtype=tf.float64)
+    def test_ragged_differentiation(self, dev_name, diff_method, monkeypatch, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device(dev_name, wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
-    #     with tf.GradientTape() as tape:
-    #         with TFInterface.apply(QuantumTape()) as qtape:
-    #             qml.RX(x, wires=[0])
-    #             qml.RY(y, wires=[1])
-    #             qml.CNOT(wires=[0, 1])
-    #             expval(qml.PauliZ(0))
-    #             probs(wires=[1])
+        def _asarray(args, dtype=tf.float64):
+            res = [tf.reshape(i, [-1]) for i in args]
+            res = tf.concat(res, axis=0)
+            return tf.cast(res, dtype=dtype)
 
-    #         res = qtape.execute(dev)
+        if dev_name == "default.qubit.tf":
+            # we need to patch the asarray method on the device
+            monkeypatch.setattr(dev, "_asarray", _asarray)
 
-    #     expected = np.array(
-    #         [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]
-    #     )
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return [expval(qml.PauliZ(0)), probs(wires=[1])]
 
-    #     res = tape.jacobian(res, [x, y])
-    #     expected = np.array(
-    #         [
-    #             [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
-    #             [0, -tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
-    #         ]
-    #     )
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
+        with tf.GradientTape() as tape:
+            res = circuit(x, y)
 
-    # def test_sampling(self):
-    #     """Test sampling works as expected"""
-    #     dev = qml.device("default.qubit", wires=2, shots=10)
+        expected = np.array(
+            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    #     with tf.GradientTape() as tape:
-    #         with TFInterface.apply(QuantumTape()) as qtape:
-    #             qml.Hadamard(wires=[0])
-    #             qml.CNOT(wires=[0, 1])
-    #             sample(qml.PauliZ(0))
-    #             sample(qml.PauliX(1))
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
+                [0, -tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    #         res = qtape.execute(dev)
+    def test_sampling(self, dev_name, diff_method):
+        """Test sampling works as expected"""
+        dev = qml.device(dev_name, wires=2, shots=10)
 
-    #     assert res.shape == (2, 10)
-    #     assert isinstance(res, tf.Tensor)
+        @qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return [sample(qml.PauliZ(0)), sample(qml.PauliX(1))]
+
+        with tf.GradientTape() as tape:
+            res = circuit()
+
+        assert res.shape == (2, 10)
+        assert isinstance(res, tf.Tensor)

@@ -138,6 +138,7 @@ class QNode:
         self.diff_options["method"] = self.diff_method
 
         self.dtype = np.float64
+        self.max_expansion = 2
 
     @staticmethod
     def _get_tape(device, interface, diff_method="best"):
@@ -305,7 +306,7 @@ class QNode:
 
         # expand out the tape, if any operations are not supported on the device
         if not {op.name for op in self.qtape.operations}.issubset(self.device.operations):
-            self.qtape = self.qtape.expand(depth=2, stop_at=self.device.operations)
+            self.qtape = self.qtape.expand(depth=self.max_expansion, stop_at=self.device.operations)
 
     def __call__(self, *args, **kwargs):
         # construct the tape
