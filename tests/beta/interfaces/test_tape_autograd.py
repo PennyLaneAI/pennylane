@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, qnode
+from pennylane.beta.tapes import QuantumTape, qnode, QNode
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
@@ -1140,3 +1140,78 @@ class TestQNode:
 
         assert res.shape == (2, 10)
         assert isinstance(res, np.ndarray)
+
+
+def qtransform(qnode, a, interface=np):
+    """transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
+
+    def construct(self, args, kwargs):
+        """New quantum tape construct method, that performs
+        the transform on the tape in a define-by-run manner"""
+        global t_op
+
+        QNode.construct(self, args, kwargs)
+
+        new_ops = []
+        for o in self.qtape.operations:
+            if isinstance(o, qml.RY):
+                t_op = qml.RX(-a * interface.cos(o.data[0]), wires=o.wires)
+                new_ops.append(t_op)
+            else:
+                new_ops.append(o)
+
+        self.qtape._ops = new_ops
+        self.qtape._update()
+
+    import copy
+
+    new_qnode = copy.deepcopy(qnode)
+    new_qnode.construct = construct.__get__(new_qnode, QNode)
+    return new_qnode
+
+
+@pytest.mark.parametrize(
+    "dev_name,diff_method",
+    [("default.qubit", "finite-diff"), ("default.qubit.autograd", "backprop")],
+)
+def test_transform(dev_name, diff_method, monkeypatch, tol):
+    """Test an example transform"""
+    monkeypatch.setattr(qml.operation.Operation, "do_check_domain", False)
+
+    dev = qml.device(dev_name, wires=1)
+
+    @qnode(dev, interface="autograd", diff_method=diff_method)
+    def circuit(weights):
+        global op1, op2
+        op1 = qml.RY(weights[0], wires=0)
+        op2 = qml.RX(weights[1], wires=0)
+        return expval(qml.PauliZ(wires=0))
+
+    weights = np.array([0.32, 0.543], requires_grad=True)
+    a = np.array(0.5, requires_grad=True)
+
+    def loss(weights, a):
+        global new_qnode
+        new_qnode = qtransform(circuit, a)
+        return new_qnode(weights)[0] + circuit(np.sin(weights))[0]
+
+    res = loss(weights, a)
+
+    assert circuit.qtape.operations == [op1, op2]
+    assert new_qnode.qtape.operations[0] == t_op
+    assert new_qnode.qtape.operations[1].name == op2.name
+    assert new_qnode.qtape.operations[1].wires == op2.wires
+
+    assert np.all(np.array(circuit.qtape.get_parameters()) == np.sin(weights))
+    assert np.all(
+        np.array(new_qnode.qtape.get_parameters()) == [-a * np.cos(weights[0]), weights[1]]
+    )
+
+    grad = qml.grad(loss)(weights, a)
+    assert len(grad) == 2
+    assert grad[0].shape == weights.shape
+    assert grad[1].shape == a.shape
+
+    assert np.allclose(res, 1.8244501889992706, atol=tol, rtol=0)
+    assert np.allclose(grad[0], [-0.26610258, -0.47053553], atol=tol, rtol=0)
+    assert np.allclose(grad[1], 0.06486032, atol=tol, rtol=0)

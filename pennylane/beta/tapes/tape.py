@@ -262,10 +262,7 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
 
-        self._update_circuit_info()
-        self._update_par_info()
-        self._update_trainable_params()
-        self._update_gradient_info()
+        self._update()
 
     def _update_circuit_info(self):
         """Update circuit metadata"""
@@ -301,6 +298,14 @@ class QuantumTape(AnnotatedQueue):
     def _update_trainable_params(self):
         """Set the trainable parameters"""
         self._trainable_params = set(self._par_info)
+
+    def _update(self):
+        """Update all internal tape metadata regarding processed operations and observables"""
+        self._graph = None
+        self._update_circuit_info()
+        self._update_par_info()
+        self._update_trainable_params()
+        self._update_gradient_info()
 
     def _expand(self, stop_at=None):
         """Expand all operations and tapes in the processed queue.
@@ -372,10 +377,7 @@ class QuantumTape(AnnotatedQueue):
         for _ in range(depth):
             new_tape = new_tape._expand(stop_at=stop_at)
 
-        new_tape._update_circuit_info()
-        new_tape._update_par_info()
-        new_tape._update_trainable_params()
-        new_tape._update_gradient_info()
+        new_tape._update()
         return new_tape
 
     def inv(self):
