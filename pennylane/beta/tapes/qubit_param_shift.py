@@ -17,6 +17,7 @@ Qubit parameter shift quantum tape.
 Provides analytic differentiation for all one-parameter gates where the generator
 only has two unique eigenvalues; this includes one-parameter single-qubit gates.
 """
+# pylint: disable=attribute-defined-outside-init
 import numpy as np
 
 import pennylane as qml
@@ -35,8 +36,9 @@ class QubitParamShiftTape(QuantumTape):
         super()._update_circuit_info()
 
         self.analytic_pd = self._parameter_shift
-        self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
+
         self.var_idx = None
+        self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
 
         if any(self.var_mask):
             self.analytic_pd = self._parameter_shift_var
@@ -48,7 +50,7 @@ class QubitParamShiftTape(QuantumTape):
         if op.grad_method is None:
             return None
 
-        if op.grad_method is "F":
+        if op.grad_method == "F":
             return "F"
 
         if (self._graph is not None) or use_graph:
@@ -119,10 +121,9 @@ class QubitParamShiftTape(QuantumTape):
             array[float]: 1-dimensional array of length determined by the tape output
                 measurement statistics
         """
-
         for i in self.var_idx:
-            for j in range(2):
-                self._obs[i][j].return_type = qml.operation.Expectation
+            for obs in self._obs[i]:
+                obs.return_type = qml.operation.Expectation
 
         # get <A>
         if self._evA is None:
@@ -146,6 +147,7 @@ class QubitParamShiftTape(QuantumTape):
 
             new_obs = qml.Hermitian(A @ A, wires=w)
             new_obs.return_type = qml.operation.Expectation
+
             new_measurement = MeasurementProcess(qml.operation.Expectation, obs=new_obs)
             self._obs[i] = [new_measurement, new_obs]
 
