@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
 from pennylane.templates import template
-from pennylane.grouping.utils import pauli_to_binary, is_qwc
+from pennylane.grouping.utils import pauli_to_binary, are_identical_pauli_words, is_qwc
 import numpy as np
 
 
@@ -46,7 +46,7 @@ def qwc_rotation(pauli_operators):
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
         raise TypeError(
             "All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
-            " instead got values: {}.".format(pauli_operators)
+            " instead got pauli_operators = {}.".format(pauli_operators)
         )
 
     for pauli in pauli_operators:
@@ -109,7 +109,13 @@ def diagonalize_qwc_grouping(qwc_grouping):
         if isinstance(term, Tensor):
             for sigma in term.obs:
                 if sigma.name != "Identity":
-                    pauli_operators.append(sigma)
+                    if not any(
+                        [
+                            are_identical_pauli_words(sigma, existing_pauli)
+                            for existing_pauli in pauli_operators
+                        ]
+                    ):
+                        pauli_operators.append(sigma)
                     if diag_term is None:
                         diag_term = qml.PauliZ(wires=sigma.wires)
                     else:
@@ -117,7 +123,13 @@ def diagonalize_qwc_grouping(qwc_grouping):
         elif isinstance(term, paulis_with_identity):
             sigma = term
             if sigma.name != "Identity":
-                pauli_operators.append(sigma)
+                if not any(
+                    [
+                        are_identical_pauli_words(sigma, existing_pauli)
+                        for existing_pauli in pauli_operators
+                    ]
+                ):
+                    pauli_operators.append(sigma)
                 diag_term = qml.PauliZ(wires=sigma.wires)
 
         if diag_term is None:
