@@ -245,8 +245,8 @@ class QubitChannel(Channel):
     par_domain = "L"
     grad_method = None
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
+    def __init__(self, *params, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=do_queue)
         K_list = params[0]
 
         # check all Kraus matrices are square matrices
@@ -271,6 +271,9 @@ class QubitChannel(Channel):
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
 
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        K_list = params[0]
         return K_list
 
 
