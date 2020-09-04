@@ -348,9 +348,15 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
+        stop_at = self.device.operations
+
+        if isinstance(self.qtape, QubitParamShiftTape):
+            # controlled rotations aren't supported by the parameter-shift rule
+            stop_at = set(self.device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
+
         # expand out the tape, if any operations are not supported on the device
-        if not {op.name for op in self.qtape.operations}.issubset(self.device.operations):
-            self.qtape = self.qtape.expand(depth=self.max_expansion, stop_at=self.device.operations)
+        if not {op.name for op in self.qtape.operations}.issubset(stop_at):
+            self.qtape = self.qtape.expand(depth=self.max_expansion, stop_at=stop_at)
 
     def __call__(self, *args, **kwargs):
         # construct the tape
