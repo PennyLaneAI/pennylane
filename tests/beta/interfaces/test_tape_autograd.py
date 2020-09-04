@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, qnode, QNode
+from pennylane.beta.tapes import QuantumTape, qnode, QNode, QubitParamShiftTape
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
@@ -874,7 +874,7 @@ class TestQNode:
             return np.sum(circuit(a, b))
 
         grad_fn = qml.grad(loss)
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
 
         res = grad_fn(a, b)
 
@@ -884,7 +884,7 @@ class TestQNode:
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        # QuantumTape.numeric_pd has been called for each argument
+        # The parameter-shift rule has been called for each argument
         assert len(spy.call_args_list) == 2
 
         # make the second QNode argument a constant

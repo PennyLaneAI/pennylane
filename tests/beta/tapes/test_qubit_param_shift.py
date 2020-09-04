@@ -85,9 +85,9 @@ class TestGradMethod:
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
 
-    @pytest.mark.parametrize('theta', np.linspace(-2*np.pi, 2*np.pi, 7))
-    @pytest.mark.parametrize("shift", [np.pi/2, 0.3, np.sqrt(2)])
-    @pytest.mark.parametrize('G', [qml.RX, qml.RY, qml.RZ])
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
         spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
@@ -98,13 +98,16 @@ class TestParameterShiftRule:
             expval(qml.PauliZ(0))
 
         autograd_val = tape.jacobian(dev, shift=shift, method="analytic")
-        manualgrad_val = (tape.execute(dev, params=[theta + np.pi / 2]) - tape.execute(dev, params=[theta - np.pi / 2])) / 2
+        manualgrad_val = (
+            tape.execute(dev, params=[theta + np.pi / 2])
+            - tape.execute(dev, params=[theta - np.pi / 2])
+        ) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
 
         assert spy.call_args[1]["shift"] == shift
 
-    @pytest.mark.parametrize('theta', np.linspace(-2*np.pi, 2*np.pi, 7))
-    @pytest.mark.parametrize("shift", [np.pi/2, 0.3, np.sqrt(2)])
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
         """Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."""
         spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
@@ -120,7 +123,7 @@ class TestParameterShiftRule:
 
         for idx in list(np.ndindex(*params.shape)):
             s = np.zeros_like(params)
-            s[idx] += np.pi/2
+            s[idx] += np.pi / 2
 
             forward = tape.execute(dev, params=params + s)
             backward = tape.execute(dev, params=params - s)
@@ -130,8 +133,8 @@ class TestParameterShiftRule:
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
         assert spy.call_args[1]["shift"] == shift
 
-    # @pytest.mark.xfail(reason="CRX gate does not satisfy the parameter-shift rule")
-    @pytest.mark.parametrize('G', [qml.CRX, qml.CRY, qml.CRZ])
+    @pytest.mark.xfail(reason="CRX gate does not satisfy the parameter-shift rule")
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled RX gate"""
         dev = qml.device("default.qubit", wires=2)
@@ -148,114 +151,6 @@ class TestParameterShiftRule:
         grad = tape.jacobian(dev, method="analytic")
         expected = -np.sin(-b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
-
-        # @qnode(dev)
-        # def circuit(b):
-        #     qml.Hadamard(wires=0)
-        #     G(b, wires=[0, 1])
-        #     return expval(qml.PauliX(0))
-
-        # from pennylane import numpy as anp
-        # from pennylane.beta.interfaces.autograd import AutogradInterface
-
-        # res = circuit(b)
-        # assert np.allclose(res, np.cos(b / 2), atol=tol, rtol=0)
-
-        # circuit.qtape.__class__ = QubitParamShiftTape
-        # AutogradInterface.apply(circuit.qtape)
-
-        # grad = qml.grad(circuit)(b)
-        # expected = -np.sin(b / 2) / 2
-        # assert np.allclose(grad, expected, atol=tol, rtol=0)
-
-
-    # def test_controlled_RY_gradient(self, tol):
-    #     """Test gradient of controlled RY gate"""
-    #     dev = qml.device("default.qubit", wires=2)
-
-    #     def circuit(x):
-    #         qml.PauliX(wires=0)
-    #         qml.CRY(x, wires=[0, 1])
-    #         return qml.expval(qml.PauliZ(0))
-
-    #     circuit = QubitQNode(circuit, dev)
-
-    #     a = 0.542  # any value of a should give zero gradient
-
-    #     # get the analytic gradient
-    #     gradA = circuit.jacobian([a], method="A")
-    #     # get the finite difference gradient
-    #     gradF = circuit.jacobian([a], method="F")
-
-    #     # the expected gradient
-    #     expected = 0
-
-    #     assert gradF == pytest.approx(expected, abs=tol)
-    #     assert gradA == pytest.approx(expected, abs=tol)
-
-    #     def circuit1(x):
-    #         qml.RX(x, wires=0)
-    #         qml.CRY(x, wires=[0, 1])
-    #         return qml.expval(qml.PauliZ(0))
-
-    #     circuit1 = QubitQNode(circuit1, dev)
-
-    #     b = 0.123  # gradient is -sin(x)
-
-    #     # get the analytic gradient
-    #     gradA = circuit1.jacobian([b], method="A")
-    #     # get the finite difference gradient
-    #     gradF = circuit1.jacobian([b], method="F")
-
-    #     # the expected gradient
-    #     expected = -np.sin(b)
-
-    #     assert gradF == pytest.approx(expected, abs=tol)
-    #     assert gradA == pytest.approx(expected, abs=tol)
-
-    # def test_controlled_RZ_gradient(self, tol):
-    #     """Test gradient of controlled RZ gate"""
-    #     dev = qml.device("default.qubit", wires=2)
-
-    #     def circuit(x):
-    #         qml.PauliX(wires=0)
-    #         qml.CRZ(x, wires=[0, 1])
-    #         return qml.expval(qml.PauliZ(0))
-
-    #     circuit = QubitQNode(circuit, dev)
-
-    #     a = 0.542  # any value of a should give zero gradient
-
-    #     # get the analytic gradient
-    #     gradA = circuit.jacobian([a], method="A")
-    #     # get the finite difference gradient
-    #     gradF = circuit.jacobian([a], method="F")
-
-    #     # the expected gradient
-    #     expected = 0
-
-    #     assert gradF == pytest.approx(expected, abs=tol)
-    #     assert gradA == pytest.approx(expected, abs=tol)
-
-    #     def circuit1(x):
-    #         qml.RX(x, wires=0)
-    #         qml.CRZ(x, wires=[0, 1])
-    #         return qml.expval(qml.PauliZ(0))
-
-    #     circuit1 = QubitQNode(circuit1, dev)
-
-    #     b = 0.123  # gradient is -sin(x)
-
-    #     # get the analytic gradient
-    #     gradA = circuit1.jacobian([b], method="A")
-    #     # get the finite difference gradient
-    #     gradF = circuit1.jacobian([b], method="F")
-
-    #     # the expected gradient
-    #     expected = -np.sin(b)
-
-    #     assert gradF == pytest.approx(expected, abs=tol)
-    #     assert gradA == pytest.approx(expected, abs=tol)
 
 
 class TestJacobianIntegration:

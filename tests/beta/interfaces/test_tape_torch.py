@@ -504,7 +504,7 @@ class TestQNode:
         assert grad.shape == tuple()
 
     def test_interface_swap(self, tol):
-        """Test that the TF interface can be applied to a QNode
+        """Test that the Torch interface can be applied to a QNode
         with a pre-existing interface"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -522,7 +522,7 @@ class TestQNode:
         grad_fn = qml.grad(circuit)
         grad1 = grad_fn(a)
 
-        # switch to TF interface
+        # switch to Torch interface
         circuit.to_torch()
 
         a = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
@@ -634,7 +634,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev, interface="torch")
+        @qnode(dev, interface="torch", diff_method="finite-diff")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -735,7 +735,7 @@ class TestQNode:
         "U", [torch.tensor([[0, 1], [1, 0]], requires_grad=False), np.array([[0, 1], [1, 0]])]
     )
     def test_matrix_parameter(self, U, tol):
-        """Test that the TF interface works correctly
+        """Test that the Torch interface works correctly
         with a matrix parameter"""
         a_val = 0.1
         a = torch.tensor(a_val, dtype=torch.float64, requires_grad=True)
@@ -749,7 +749,6 @@ class TestQNode:
             return expval(qml.PauliZ(0))
 
         res = circuit(U, a)
-
         assert circuit.qtape.trainable_params == {1}
 
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)

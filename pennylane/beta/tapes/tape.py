@@ -879,7 +879,7 @@ class QuantumTape(AnnotatedQueue):
     # gradient methods
     # ========================================================
 
-    def _grad_method(self, idx, use_graph=True):
+    def _grad_method(self, idx, use_graph=True, default_method="F"):
         """Determine the correct partial derivative computation method for each gate parameter.
 
         Parameter gradient methods include:
@@ -907,6 +907,8 @@ class QuantumTape(AnnotatedQueue):
             idx (int): parameter index
             use_graph: whether to use a directed-acyclic graph to determine
                 if the parameter has a gradient of 0
+            default_method (str): the default differentiation value to return
+                for parameters that where the grad method is not ``"0"`` or ``None``
 
         Returns:
             str: partial derivative method to be used
@@ -927,12 +929,12 @@ class QuantumTape(AnnotatedQueue):
                 has_path = self.graph.has_path(op, ob)
 
                 # Use finite differences if there is a path, else the gradient is zero
-                best.append("F" if has_path else "0")
+                best.append(default_method if has_path else "0")
 
             if all(k == "0" for k in best):
                 return "0"
 
-        return "F"
+        return default_method
 
     def numeric_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to

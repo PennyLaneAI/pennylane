@@ -16,11 +16,12 @@ This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
+import warnings
 
 import numpy as np
 
 from pennylane import Device
-from pennylane.beta.tapes import QuantumTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
@@ -159,13 +160,16 @@ class QNode:
         """
 
         if diff_method == "best":
-            return QNode._get_best_tape(device, interface)
+            return QNode._get_best_method(device, interface)
 
         if diff_method == "backprop":
-            return QNode._get_backprop_tape(device, interface)
+            return QNode._validate_backprop_method(device, interface)
 
         if diff_method == "device":
-            return QNode._get_device_tape(device, interface)
+            return QNode._validate_device_method(device, interface)
+
+        if diff_method == "parameter-shift":
+            return QNode._get_parameter_shift_method(device, interface)
 
         if diff_method == "finite-diff":
             return QuantumTape, interface, "numeric"
@@ -176,7 +180,7 @@ class QNode:
         )
 
     @staticmethod
-    def _get_best_tape(device, interface):
+    def _get_best_method(device, interface):
         """Returns the 'best' QuantumTape and differentiation method
         for a particular device and interface combination.
 
@@ -202,16 +206,18 @@ class QNode:
             to pass to the ``QuantumTape.jacobian`` method.
         """
         try:
-            return QNode._get_backprop_tape(device, interface)
+            return QNode._validate_backprop_method(device, interface)
         except QuantumFunctionError:
             try:
-                return QNode._get_device_tape(device, interface)
+                return QNode._validate_device_method(device, interface)
             except QuantumFunctionError:
-                # add parameter shift tapes here when available
-                return QuantumTape, interface, "numeric"
+                try:
+                    return QNode._get_parameter_shift_method(device, interface)
+                except QuantumFunctionError:
+                    return QuantumTape, interface, "numeric"
 
     @staticmethod
-    def _get_backprop_tape(device, interface):
+    def _validate_backprop_method(device, interface):
         """Validates whether a particular device and QuantumTape interface
         supports the ``"backprop"`` differentiation method.
 
@@ -247,7 +253,7 @@ class QNode:
         )
 
     @staticmethod
-    def _get_device_tape(device, interface):
+    def _validate_device_method(device, interface):
         """Validates whether a particular device and QuantumTape interface
         supports the ``"device"`` differentiation method.
 
@@ -274,6 +280,44 @@ class QNode:
             )
 
         return QuantumTape, interface, "device"
+
+    @staticmethod
+    def _get_parameter_shift_method(device, interface):
+        """Validates whether a particular device and QuantumTape interface
+        supports the parameter-shift differentiation method, and returns
+        the correct tape.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            tuple[.QuantumTape, str, str]: tuple containing the compatible
+            QuantumTape, the interface to apply, and the method argument
+            to pass to the ``QuantumTape.jacobian`` method.
+
+        Raises:
+            QuantumFunctionError: if the device model does not have a corresponding
+            parameter-shift rule.
+        """
+        # determine if the device provides its own jacobian method
+        model = device.capabilities().get("model", None)
+
+        if model == "qubit":
+            return QubitParamShiftTape, interface, "analytic"
+
+        if model == "cv":
+            warnings.warn(
+                "CV parameter-shift rule not yet implemented! Falling back "
+                "to finite-differences."
+            )
+
+            return QuantumTape, interface, "numeric"
+
+        raise QuantumFunctionError(
+            f"Device {device.short_name} has model {model} "
+            "that does not support the parameter-shift rule."
+        )
 
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context,

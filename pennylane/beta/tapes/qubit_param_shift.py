@@ -51,33 +51,13 @@ class QubitParamShiftTape(QuantumTape):
         #     stop = set(device.operations) - {"CRX", "CRZ", "CRY", "CRot"}
         #     self = self.expand(depth=2, stop_at=stop)
 
-
-    def _grad_method(self, idx, use_graph=True):
+    def _grad_method(self, idx, use_graph=True, default_method="F"):
         op = self._par_info[idx]["op"]
-
-        if op.grad_method is None:
-            return None
 
         if op.grad_method == "F":
             return "F"
 
-        if (self._graph is not None) or use_graph:
-            # an empty list to store the 'best' partial derivative method
-            # for each observable
-            best = []
-
-            # loop over all observables
-            for ob in self.observables:
-                # check if op is an ancestor of ob
-                has_path = self.graph.has_path(op, ob)
-
-                # Use analytic method if there is a path, else the gradient is zero
-                best.append("A" if has_path else "0")
-
-            if all(k == "0" for k in best):
-                return "0"
-
-        return "A"
+        return super()._grad_method(idx, use_graph=use_graph, default_method="A")
 
     def jacobian(self, device, params=None, **options):
         self._evA = None
@@ -105,7 +85,11 @@ class QubitParamShiftTape(QuantumTape):
         op = self._par_info[idx[0]]["op"]
         p_idx = self._par_info[idx[0]]["p_idx"]
 
-        s = np.pi/2 if op.grad_recipe[p_idx] is None else op.grad_recipe[p_idx]
+        s = (
+            np.pi / 2
+            if op.grad_recipe is None or op.grad_recipe[p_idx] is None
+            else op.grad_recipe[p_idx]
+        )
         s = options.get("shift", s)
 
         shift = np.zeros_like(params)

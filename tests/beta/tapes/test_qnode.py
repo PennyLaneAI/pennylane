@@ -16,7 +16,13 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, QNode, qnode, QuantumFunctionError
+from pennylane.beta.tapes import (
+    QuantumTape,
+    QNode,
+    qnode,
+    QuantumFunctionError,
+    QubitParamShiftTape,
+)
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -35,7 +41,7 @@ class TestValidation:
         with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(None, None)
 
-    def test_get_device_tape(self, monkeypatch):
+    def test_validate_device_method(self, monkeypatch):
         """Test that the method for validating the device diff method
         tape works as expected"""
         dev = qml.device("default.qubit", wires=1)
@@ -44,36 +50,71 @@ class TestValidation:
             QuantumFunctionError,
             match="does not provide a native method for computing the jacobian",
         ):
-            QNode._get_device_tape(dev, None)
+            QNode._validate_device_method(dev, None)
 
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-        tape_class, interface, method = QNode._get_device_tape(dev, "interface")
+        tape_class, interface, method = QNode._validate_device_method(dev, "interface")
 
         assert tape_class is QuantumTape
         assert method == "device"
         assert interface == "interface"
 
-    def test_get_backprop_tape(self, monkeypatch):
+    def test_validate_backprop_method(self, monkeypatch):
         """Test that the method for validating the backprop diff method
         tape works as expected"""
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(QuantumFunctionError, match="does not support native computations"):
-            QNode._get_backprop_tape(dev, None)
+            QNode._validate_backprop_method(dev, None)
 
         test_interface = "something"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
         with pytest.raises(QuantumFunctionError, match=f"when using the {test_interface}"):
-            QNode._get_backprop_tape(dev, None)
+            QNode._validate_backprop_method(dev, None)
 
-        tape_class, interface, method = QNode._get_backprop_tape(dev, test_interface)
+        tape_class, interface, method = QNode._validate_backprop_method(dev, test_interface)
 
         assert tape_class is QuantumTape
         assert method == "backprop"
         assert interface == None
 
-    def test_best_tape(self, monkeypatch):
+    def test_get_parameter_shift_method(self, monkeypatch):
+        """Test that the get_parameter_shift_method method correctly
+        returns the correct tape."""
+
+        # qubit devices return the QubitParamShiftTape
+        dev = qml.device("default.qubit", wires=1)
+        tape_class, interface, method = QNode._get_parameter_shift_method(dev, "autograd")
+        assert tape_class is QubitParamShiftTape
+        assert method == "analytic"
+        assert interface == "autograd"
+
+        # CV devices not yet supported; raises a warning and returns the
+        # finite difference method
+        dev = qml.device("default.gaussian", wires=1)
+
+        with pytest.warns(UserWarning, match="CV parameter-shift rule not yet implemented"):
+            tape_class, interface, method = QNode._get_parameter_shift_method(dev, "autograd")
+
+        assert tape_class is QuantumTape
+        assert method == "numeric"
+        assert interface == "autograd"
+
+        # test an unknown model raises an exception
+
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.raises(QuantumFunctionError, match="does not support the parameter-shift rule"):
+            QNode._get_parameter_shift_method(dev, None)
+
+    def test_best_method(self, monkeypatch):
         """Test that the method for determining the best diff method
         for a given device and interface works correctly"""
         dev = qml.device("default.qubit", wires=1)
@@ -81,16 +122,26 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
         # backprop is given priority
-        res = QNode._get_best_tape(dev, 1)
+        res = QNode._get_best_method(dev, 1)
         assert res == (QuantumTape, None, "backprop")
 
         # device is the next priority
-        res = QNode._get_best_tape(dev, 2)
+        res = QNode._get_best_method(dev, 2)
         assert res == (QuantumTape, 2, "device")
 
-        # finally, if both fail, finite differences is the fallback
+        # The next fallback is parameter-shift
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
-        res = QNode._get_best_tape(dev, 2)
+        res = QNode._get_best_method(dev, 2)
+        assert res == (QubitParamShiftTape, 2, "analytic")
+
+        # finally, if both fail, finite differences is the fallback
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        res = QNode._get_best_method(dev, 2)
         assert res == (QuantumTape, 2, "numeric")
 
     def test_diff_method(self, mocker):
@@ -98,13 +149,13 @@ class TestValidation:
         quantum tape, interface, and diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.beta.tapes.QNode._get_best_tape")
+        mock_best = mocker.patch("pennylane.beta.tapes.QNode._get_best_method")
         mock_best.return_value = 1, 2, 3
 
-        mock_backprop = mocker.patch("pennylane.beta.tapes.QNode._get_backprop_tape")
+        mock_backprop = mocker.patch("pennylane.beta.tapes.QNode._validate_backprop_method")
         mock_backprop.return_value = 4, 5, 6
 
-        mock_device = mocker.patch("pennylane.beta.tapes.QNode._get_device_tape")
+        mock_device = mocker.patch("pennylane.beta.tapes.QNode._validate_device_method")
         mock_device.return_value = 7, 8, 9
 
         qn = QNode(None, dev, diff_method="best")
@@ -128,6 +179,10 @@ class TestValidation:
         qn = QNode(None, dev, diff_method="finite-diff")
         assert qn._tape == QuantumTape
         assert qn.diff_options["method"] == "numeric"
+
+        qn = QNode(None, dev, diff_method="parameter-shift")
+        assert qn._tape == QubitParamShiftTape
+        assert qn.diff_options["method"] == "analytic"
 
     def test_unknown_diff_method(self):
         """Test that an exception is raised for an unknown differentiation method"""
