@@ -134,7 +134,7 @@ class TestOperation:
         elif test_class.par_domain == "N":
             pars = [0] * n
         elif test_class.par_domain == "L":
-            pars = [[np.eye(2), np.eye(2)]] * n
+            pars = [[np.eye(2) / np.sqrt(2), np.eye(2) / np.sqrt(2)]] * n
         else:
             pars = [0.0] * n
 
