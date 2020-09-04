@@ -372,10 +372,18 @@ class QuantumTape(AnnotatedQueue):
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
         """
-        new_tape = self
+        old_tape = self
 
         for _ in range(depth):
-            new_tape = new_tape._expand(stop_at=stop_at)
+            new_tape = old_tape._expand(stop_at=stop_at)
+
+            if len(new_tape.operations) == len(old_tape.operations) and [
+                o1.name == o2.name for o1, o2 in zip(new_tape.operations, old_tape.operations)
+            ]:
+                # expansion has found a fixed point
+                break
+
+            old_tape = new_tape
 
         new_tape._update()
         return new_tape
