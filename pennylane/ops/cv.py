@@ -868,7 +868,7 @@ class X(CVObservable):
     The position quadrature observable :math:`\hat{x}`.
 
     When used with the :func:`~.expval` function, the position expectation
-    value :math:`\braket{\hat{n}}` is returned. This corresponds to
+    value :math:`\braket{\hat{x}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`x` axis.
 
     **Details:**
