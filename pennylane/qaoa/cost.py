@@ -39,15 +39,15 @@ def bit_driver(wires, n):
     Args:
         wires (Iterable or Wires): The wires on which the returned Hamiltonian acts
         n (int): Either :math:`0` or :math:`1`. Determines whether the Hamiltonian assigns
-                 lower energies to bitstrings with more :math:`0`s or :math:`1`s, respectively.
+                 lower energies to bitstrings with more :math:`0` or :math:`1` terms, respectively.
 
     Returns:
-        .Hamiltonian
+        .Hamiltonian:
 
     **Example**
 
     >>> wires = range(3)
-    >>> hamiltonian = qaoa.pauli_driver(wires, 1)
+    >>> hamiltonian = qaoa.bit_driver(wires, 1)
     >>> print(hamiltonian)
     (1.0) [Z0] + (1.0) [Z1] + (1.0) [Z2]
     """
@@ -56,7 +56,7 @@ def bit_driver(wires, n):
     elif n == 1:
         coeffs = [1 for _ in wires]
     else:
-        raise ValueError("'state' must be either 0 or 1, got {}".format(n))
+        raise ValueError("'n' must be either 0 or 1, got {}".format(n))
 
     ops = [qml.PauliZ(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
@@ -76,7 +76,7 @@ def edge_driver(graph, reward):
          reward (list[str]): The list of two-bit bitstrings that are assigned a lower energy by the Hamiltonian
 
     Returns:
-        .Hamiltonian
+        .Hamiltonian:
 
     **Example**
 
@@ -85,7 +85,7 @@ def edge_driver(graph, reward):
     >>> print(hamiltonian)
     (0.25) [Z0 Z1] + (0.25) [Z0] + (0.25) [Z1] + (0.25) [Z1 Z2] + (0.25) [Z2]
 
-    ..UsageDetails::
+    .. UsageDetails::
 
         The goal of many combinatorial problems that can be solved with QAOA is to
         find a `Graph colouring <https://en.wikipedia.org/wiki/Graph_coloring>`__ of some supplied
@@ -93,16 +93,16 @@ def edge_driver(graph, reward):
         of graph colouring problems that only admit two colours, as we can easily encode these two colours
         using the :math:`|1\rangle` and :math:`|0\rangle` states of qubits. Therefore, given
         some graph :math:`G`, each edge of the graph can be described by a pair of qubits, :math:`|00\rangle`,
-        :math:`01\rangle`, :math:`|10\rangle`, or :math:`|11\rangle`, corresponding to the colourings of its endpoints.
+        :math:`|01\rangle`, :math:`|10\rangle`, or :math:`|11\rangle`, corresponding to the colourings of its endpoints.
 
         When constructing QAOA cost functions, one must "penalize" certain states of the graph, and "reward"
         others, by assigning higher and lower energies to these respective configurations. Given a set of vertex-colour
-        pairs (which each describe a possible  state of a graph edge), the `edge_driver`
-        method will output a Hamiltonian that rewards the edges in the set, and penalizes the others. For example,
-        given the set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle}` and the graph :math:`G`,
-        the `edge_driver` method will output the following Hamiltonian:
+        pairs (which each describe a possible  state of a graph edge), the ``edge_driver()``
+        function will output a Hamiltonian that rewards the pairs in the set, and penalizes the others. For example,
+        given the set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle\}` and the graph :math:`G`,
+        the ``edge_driver()`` function will output the following Hamiltonian:
 
-        ..math:: H \ = \ \frac{1}{4} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_{i} Z_{j} \ - \ Z_{i} \ - \ Z_{j} \big)
+        .. math:: H \ = \ \frac{1}{4} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_{i} Z_{j} \ - \ Z_{i} \ - \ Z_{j} \big)
 
         where :math:`E(G)` is the set of edges of :math:`G`, and :math:`Z_i` is the Pauli-Z operator acting on the
         :math:`i`-th wire. As can be checked, this Hamiltonian assigns an energy of :math:`-1/4` to the states
@@ -111,7 +111,7 @@ def edge_driver(graph, reward):
 
         .. Note::
 
-            If either of the states :math:`\01\rangle` or :math:`|10\rangle` is contained in ``reward``, then so too
+            If either of the states :math:`|01\rangle` or :math:`|10\rangle` is contained in ``reward``, then so too
             must :math:`|10\rangle` or :math:`|01\rangle`, respectively. Within a graph, there is no notion of "order"
             of edge endpoints, so these two states are effectively the same.
     """
