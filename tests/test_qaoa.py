@@ -182,7 +182,7 @@ REWARDS = [['00'], ['00', '11'], ['00', '01', '10'], ['00', '11', '01', '10'], [
 
 HAMILTONIANS = [
     qml.Hamiltonian(
-        [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5],
+        [-0.25, -0.25, -0.25, -0.25, -0.25, -0.25],
         [
             qml.PauliZ(0) @ qml.PauliZ(1),
             qml.PauliZ(0), qml.PauliZ(1),
@@ -191,7 +191,7 @@ HAMILTONIANS = [
         ]
     ),
     qml.Hamiltonian(
-        [-1, -1, -1],
+        [-0.5, -0.5, -0.5],
         [
             qml.PauliZ(0) @ qml.PauliZ(1),
             qml.PauliZ(0) @ qml.PauliZ(2),
@@ -199,7 +199,7 @@ HAMILTONIANS = [
         ]
     ),
     qml.Hamiltonian(
-        [0.5, -0.5, -0.5, 0.5, -0.5, -0.5],
+        [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
         [
             qml.PauliZ(0) @ qml.PauliZ(1),
             qml.PauliZ(0), qml.PauliZ(1),
@@ -216,7 +216,7 @@ HAMILTONIANS = [
         ]
     ),
     qml.Hamiltonian(
-        [0.5, -0.5, -0.5, 0.5, -0.5, -0.5],
+        [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
         [
             qml.PauliZ("b") @ qml.PauliZ(1),
             qml.PauliZ("b"), qml.PauliZ(1),
@@ -245,7 +245,7 @@ class TestCostHamiltonians:
     def test_bit_driver_error(self):
         """Tests that the bit driver Hamiltonian throws the correct error"""
 
-        with pytest.raises(ValueError, match=r"'state' argument must be either 0 or 1"):
+        with pytest.raises(ValueError, match=r"'n' must be either 0 or 1"):
             qaoa.bit_driver(range(3), 2)
 
     def test_bit_driver_output(self):
@@ -264,7 +264,7 @@ class TestCostHamiltonians:
 
         with pytest.raises(
                 ValueError,
-                match=r"'reward' cannot contain either '10' or '01', must contain neither, or both."
+                match=r"'reward' cannot contain either '10' or '01', must contain neither or both."
         ):
             qaoa.edge_driver(Graph([(0, 1), (1, 2)]), ['11', '00', '01'])
 
