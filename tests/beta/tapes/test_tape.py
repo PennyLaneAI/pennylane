@@ -87,6 +87,7 @@ class TestConstruction:
     def test_parameter_info(self, make_tape):
         """Test that parameter information is correctly extracted"""
         tape, ops, obs = make_tape
+        tape._update_gradient_info()
         assert tape._trainable_params == set(range(5))
         assert tape._par_info == {
             0: {"op": ops[0], "p_idx": 0, "grad_method": "F"},
@@ -857,6 +858,8 @@ class TestGradMethod:
         assert tape._grad_method(1) == "F"
         assert tape._grad_method(2) == "F"
 
+        tape._update_gradient_info()
+
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "F"
         assert tape._par_info[2]["grad_method"] == "F"
@@ -872,6 +875,8 @@ class TestGradMethod:
 
         assert tape._grad_method(0) == "F"
         assert tape._grad_method(1) == "0"
+
+        tape._update_gradient_info()
 
         assert tape._par_info[0]["grad_method"] == "F"
         assert tape._par_info[1]["grad_method"] == "0"

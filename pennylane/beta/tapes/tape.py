@@ -278,9 +278,9 @@ class QuantumTape(AnnotatedQueue):
         for i, info in self._par_info.items():
 
             if i not in self.trainable_params:
-                continue
-
-            info["grad_method"] = self._grad_method(i, use_graph=True)
+                info["grad_method"] = None
+            else:
+                info["grad_method"] = self._grad_method(i, use_graph=True)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -290,7 +290,7 @@ class QuantumTape(AnnotatedQueue):
 
             for p in range(len(obj.data)):
                 info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p, "grad_method": None})
+                info.update({"op": obj, "p_idx": p})  # , "grad_method": None})
 
                 self._par_info[param_count] = info
                 param_count += 1
@@ -305,7 +305,9 @@ class QuantumTape(AnnotatedQueue):
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
-        self._update_gradient_info()
+
+        if self.interface is not None:
+            self._update_gradient_info()
 
     def _expand(self, stop_at=None):
         """Expand all operations and tapes in the processed queue.
@@ -1144,6 +1146,9 @@ class QuantumTape(AnnotatedQueue):
 
         if method not in ("best", "numeric", "analytic", "device"):
             raise ValueError(f"Unknown gradient method '{method}'")
+
+        if "grad_method" not in self._par_info[0]:
+            self._update_gradient_info()
 
         if params is None:
             params = self.get_parameters()

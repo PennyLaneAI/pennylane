@@ -39,6 +39,8 @@ class TestGradMethod:
         assert tape._grad_method(1) == "A"
         assert tape._grad_method(2) == "A"
 
+        tape._update_gradient_info()
+
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "A"
         assert tape._par_info[2]["grad_method"] == "A"
@@ -54,6 +56,8 @@ class TestGradMethod:
 
         assert tape._grad_method(0) == "A"
         assert tape._grad_method(1) == "0"
+
+        tape._update_gradient_info()
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "0"
