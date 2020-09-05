@@ -164,6 +164,7 @@ class DefaultQubitTF(DefaultQubit):
         capabilities = super().capabilities().copy()
         capabilities.update(
             passthru_interface="tf",
+            supports_reversible_diff=False,
         )
         return capabilities
 

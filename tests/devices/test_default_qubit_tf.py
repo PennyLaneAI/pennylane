@@ -794,7 +794,7 @@ class TestQNodeIntegration:
 
     @pytest.mark.parametrize("cap, value", [("model", "qubit"),
                                             ("passthru_interface", 'tf'),
-                                            ("supports_reversible_diff", True),
+                                            ("supports_reversible_diff", False),
                                             ("supports_exact", True),
                                             ("supports_sampled", True),
                                             ("supports_inverse_operations", True),
