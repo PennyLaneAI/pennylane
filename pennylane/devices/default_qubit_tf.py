@@ -150,6 +150,14 @@ class DefaultQubitTF(DefaultQubit):
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
     _imag = staticmethod(tf.math.conj)
+    _roll = staticmethod(tf.roll)
+    _stack = staticmethod(tf.stack)
+
+    def __init__(self, wires, *, shots=1000, analytic=True):
+        super().__init__(wires, shots=shots, analytic=analytic)
+
+        # prevent using special apply method for this gate due to slowdown in TF implementation
+        del self._apply_ops["CZ"]
 
     @classmethod
     def capabilities(cls):

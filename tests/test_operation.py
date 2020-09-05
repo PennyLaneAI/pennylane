@@ -980,6 +980,121 @@ class TestTensor:
         assert O_pruned.return_type == O_expected.return_type
 
 
+equal_obs = [
+    (qml.PauliZ(0), qml.PauliZ(0), True),
+    (qml.PauliZ(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliX(1) @ qml.Identity(2), True),
+    (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
+    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
+    (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
+    (qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+     qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0), True),
+    (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
+    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True)
+]
+
+add_obs = [
+    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
+    (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
+     qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
+    (qml.PauliZ("b") @ qml.Identity(1),
+     qml.Hamiltonian([3], [qml.PauliZ("b")]), qml.Hamiltonian([4], [qml.PauliZ("b")])),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
+     qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)])),
+    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+     qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
+]
+
+mul_obs = [
+    (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
+    (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
+    (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
+    (qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"), 3,
+     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]))
+]
+
+sub_obs = [
+    (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
+    (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
+     qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
+    (qml.PauliZ(0) @ qml.Identity(1), qml.Hamiltonian([3], [qml.PauliZ(0)]), qml.Hamiltonian([-2], [qml.PauliZ(0)])),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
+     qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)])),
+    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+     qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
+]
+
+class TestTensorObservableOperations:
+    """Tests arithmetic operations between observables/tensors"""
+
+    def test_data(self):
+        """Tests the data() method for Tensors and Observables"""
+
+        obs = qml.PauliZ(0)
+        data = obs._obs_data()
+
+        assert data == {("PauliZ", Wires(0), ())}
+
+        obs = qml.PauliZ(0) @ qml.PauliX(1)
+        data = obs._obs_data()
+
+        assert data == {("PauliZ", Wires(0), ()), ("PauliX", Wires(1), ())}
+
+        obs = qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)
+        data = obs._obs_data()
+
+        assert data == {
+            ("Hermitian", Wires(0), (b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff',))
+        }
+
+    def test_equality_error(self):
+        """Tests that the correct error is raised when compare() is called on invalid type"""
+
+        obs = qml.PauliZ(0)
+        tensor = qml.PauliZ(0) @ qml.PauliX(1)
+        A = [[1, 0], [0, -1]]
+        with pytest.raises(ValueError, match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."):
+            obs.compare(A)
+            tensor.compare(A)
+
+    @pytest.mark.parametrize(("obs1", "obs2", "res"), equal_obs)
+    def test_equality(self, obs1, obs2, res):
+        """Tests the compare() method for Tensors and Observables"""
+        assert obs1.compare(obs2) == res
+
+    @pytest.mark.parametrize(("obs1", "obs2", "obs"), add_obs)
+    def test_addition(self, obs1, obs2, obs):
+        """Tests addition between Tensors and Observables"""
+        assert obs.compare(obs1 + obs2)
+
+    @pytest.mark.parametrize(("coeff", "obs", "res_obs"), mul_obs)
+    def test_scalar_multiplication(self, coeff, obs, res_obs):
+        """Tests scalar multiplication of Tensors and Observables"""
+        assert res_obs.compare(coeff * obs)
+        assert res_obs.compare(obs * coeff)
+
+    @pytest.mark.parametrize(("obs1", "obs2", "obs"), sub_obs)
+    def test_subtraction(self, obs1, obs2, obs):
+        """Tests subtraction between Tensors and Observables"""
+        assert obs.compare(obs1 - obs2)
+
+    def test_arithmetic_errors(self):
+        """Tests that the arithmetic operations throw the correct errors"""
+        obs = qml.PauliZ(0)
+        tensor = qml.PauliZ(0) @ qml.PauliX(1)
+        A = [[1, 0], [0, -1]]
+        with pytest.raises(ValueError, match="Cannot add Observable"):
+            obs + A
+            tensor + A
+        with pytest.raises(ValueError, match="Cannot multiply Observable"):
+            obs * A
+            A * tensor
+        with pytest.raises(ValueError, match="Cannot subtract"):
+            obs - A
+            tensor - A
+
+
 class TestDecomposition:
     """Test for operation decomposition"""
 
