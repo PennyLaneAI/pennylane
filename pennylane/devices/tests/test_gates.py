@@ -233,7 +233,7 @@ class TestSupportedGates:
             "supports_inverse_operations" in dev.capabilities()
             and dev.capabilities()["supports_inverse_operations"]
         )
-        if supports_inv:
+        if not supports_inv:
             pytest.skip("Device does not support inverse operations.")
 
         assert hasattr(dev, "operations")

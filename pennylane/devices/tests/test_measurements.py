@@ -71,7 +71,11 @@ class TestSupportedObservables:
         This test is skipped for devices that do not support tensor observables."""
         device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
-        if not dev.capabilities()["supports_tensor_observables"]:
+        supports_tensor = (
+                "supports_tensor_observables" in dev.capabilities()
+                and dev.capabilities()["supports_tensor_observables"]
+        )
+        if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
 
         @qml.qnode(dev)
