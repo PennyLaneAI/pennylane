@@ -65,9 +65,11 @@ def bit_driver(wires, n):
 def edge_driver(graph, reward):
     r"""Returns the edge-driver cost Hamiltonian component.
 
-    Given some graph, :math:`G`, this method will return a Hamiltonian that assigns
-    lower energies to two-bit bitstrings supplied in ``reward``. Each bitstring corresponds
-    to the state of some edge in :math:`G`, which is defined by the states of its vertex endpoints.
+    Given some graph, :math:`G`, with a binary colouring (each node is assigned either
+    :math:`0` or :math:`1`), the edge driver cost Hamiltonian will assign a lower energy
+    to edges with endpoint colourings supplied in ``reward``. For instance, if ``reward`` is
+    ``["11"]``, then edges with both endpoints coloured as ``1`` will be assigned a lower energy, while
+    the other colourings  (``"00"``, ``"10"``, and ``"01"``) will be assigned a higher energy.
 
     See usage details for more information.
 
@@ -79,6 +81,9 @@ def edge_driver(graph, reward):
         .Hamiltonian:
 
     **Example**
+
+    As can be seen in the following example, ``"11"``, ``"10"``, and ``"01"`` will be assigned a lower
+    energy than ``"00"``:
 
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
@@ -111,9 +116,15 @@ def edge_driver(graph, reward):
 
         .. Note::
 
-            If either of the states :math:`|01\rangle` or :math:`|10\rangle` is contained in ``reward``, then so too
-            must :math:`|10\rangle` or :math:`|01\rangle`, respectively. Within a graph, there is no notion of "order"
-            of edge endpoints, so these two states are effectively the same.
+            ``reward`` must always contain both :math:`|01\rangle` and :math:`|10\rangle`, or neither of the two.
+            Within a graph, there is no notion of "order"
+            of edge endpoints, so these two states are effectively the same. Therefore, there is no well-defined way to
+            penalize one and reward the other.
+
+        .. Note::
+
+            The absolute difference in energy between colourings in ``reward`` and colourings in its
+            complement is always :math:`1`.
     """
 
     allowed = ["00", "01", "10", "11"]
@@ -207,8 +218,8 @@ def maxcut(graph):
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
     >>> print(cost_h)
-    >>> print(mixer_h)
     (0.5) [Z0 Z1] + (0.5) [Z1 Z2] + (-1.0) [I0]
+    >>> print(mixer_h)
     (1.0) [X0] + (1.0) [X1] + (1.0) [X2]
     """
 
