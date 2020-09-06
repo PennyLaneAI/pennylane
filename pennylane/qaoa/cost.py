@@ -65,10 +65,11 @@ def bit_driver(wires, n):
 def edge_driver(graph, reward):
     r"""Returns the edge-driver cost Hamiltonian component.
 
-    Given some graph, :math:`G`, with a binary colouring (each node is assigned either
-    :math:`0` or :math:`1`), the edge driver cost Hamiltonian will assign a lower energy
-    to edges with endpoint colourings supplied in ``reward``. For instance, if ``reward`` is
-    ``["11"]``, then edges with both endpoints coloured as ``1`` will be assigned a lower energy, while
+    Given some graph, :math:`G`, with each node representing a wire, and a binary
+    colouring (each node/wire is assigned either :math:`|0\rangle` or :math:`|1\rangle`), the edge driver
+    cost Hamiltonian will assign a lower energy to edges with endpoint colourings
+    supplied in ``reward``. For instance, if ``reward`` is ``["11"]``, then edges
+    with both endpoints coloured as ``1`` will be assigned a lower energy, while
     the other colourings  (``"00"``, ``"10"``, and ``"01"``) will be assigned a higher energy.
 
     See usage details for more information.
