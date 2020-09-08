@@ -305,9 +305,10 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
         for row in table:
             if np.array(row).shape not in (sp_op_shape, tp_op_shape):
                 raise ValueError(
-                    "expected entries of matrix element tables to be of shape (3,) or (5,); got {}"
-                    .format(np.array(row).shape)
+                    "expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
+                        np.array(row).shape
                     )
+                )
 
     # Initialize the FermionOperator
     mb_obs = FermionOperator() + FermionOperator("") * init_term
