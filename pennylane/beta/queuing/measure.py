@@ -18,7 +18,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, Variance
+from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.qnodes import QuantumFunctionError
 
 
@@ -194,5 +194,42 @@ def probs(wires):
     """
     # pylint: disable=protected-access
     meas_op = MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+    QueuingContext.append(meas_op)
+    return meas_op
+
+
+def state():
+    r"""Quantum state in the computational basis.
+
+    This function accepts no observables and instead instructs the QNode to return its state. A
+    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
+    describing all wires in the device.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=1)
+            return qml.state()
+
+    Executing this QNode:
+
+    >>> circuit()
+    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
+
+    The returned array is in lexicographic order, so corresponds
+    to a :math:`1/\sqrt{2}` amplitude in both :math:`|00\rangle`
+    and :math:`|01\rangle`.
+
+    .. note::
+
+        The ``state()`` function does not currently support differentiation of the returned state.
+    """
+    # pylint: disable=protected-access
+    meas_op = MeasurementProcess(State)
     QueuingContext.append(meas_op)
     return meas_op
