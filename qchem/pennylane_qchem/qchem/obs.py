@@ -209,35 +209,36 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     return observable(table, init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
 
 
-def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
+def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     r"""Builds the many-body observable whose expectation value can be
     measured in PennyLane.
 
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
-    PennyLane observables. In general, single- and two-particle operators can be
-    expanded in a defined active space,
+    PennyLane observables. In general, the many-body observable :math:`\hat{O}` can combine
+    one-particle and two-particle operators as it is the case for electronic Hamiltonians
 
     .. math::
 
-        &&\hat A = \sum_{\alpha \leq 2n_\mathrm{docc}} \langle \alpha \vert \hat{\mathcal{A}}
-        \vert \alpha \rangle ~ \hat{n}_\alpha +
-        \sum_{\alpha, \beta ~ \in ~ \mathrm{active~space}} \langle \alpha \vert \hat{\mathcal{A}}
-        \vert \beta \rangle ~ \hat{c}_\alpha^\dagger\hat{c}_\beta \\
-        &&\hat B = \frac{1}{2} \left\{ \sum_{\alpha, \beta \leq 2n_\mathrm{docc}}
-        \langle \alpha, \beta \vert \hat{\mathcal{B}} \vert \beta, \alpha \rangle
-        ~ \hat{n}_\alpha \hat{n}_\beta + \sum_{\alpha, \beta, \gamma, \delta ~
-        \in ~ \mathrm{active~space}} \langle \alpha, \beta \vert \hat{\mathcal{B}}
-        \vert \gamma, \delta \rangle ~ \hat{c}_{\alpha}^\dagger \hat{c}_{\beta}^\dagger
-        \hat{c}_{\gamma} \hat{c}_{\delta} \right\}.
+        \hat{O} = && \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} + \hat{t}^{(2)}
+        \cdots + \hat{t}^{(n)} \vert \beta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta \\
+        && + \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
+        \langle \alpha, \beta \vert \hat{v}^{(1)} + \hat{v}^{(2)} \cdots + \hat{v}^{(n)}
+        \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
+        \hat{c}_\gamma \hat{c}_\delta.
 
-    In the latter equations :math:`n_\mathrm{docc}` denotes the doubly-occupied orbitals,
-    if any, not included in the active space and
-    :math:`\langle \alpha \vert \hat{\mathcal{A}} \vert \beta \rangle` and
-    :math:`\langle \alpha, \beta \vert\hat{\mathcal{B}} \vert \gamma, \delta \rangle`
-    are the matrix elements of the one- and two-particle operators
-    :math:`\hat{\mathcal{A}}` and :math:`\hat{\mathcal{B}}`, respectively.
+    In the latter equations the indices :math:`\alpha, \beta, \gamma, \delta` run over the
+    basis of single-particle states. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
+    are the particle creation and annihilation operators, respectively. :math:`\hat{t}` denotes
+    the single-particle operators entering the observable. For example, in electronic structure
+    calculations this is the case for the kinetic energy operator, the nuclei Coulomb
+    potential and any external fields included in the model Hamiltonian. On the other hand,
+    :math:`\hat{v}` denotes the two-particle operators, for example, the Coulomb interaction
+    between the electrons. If an
+    `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_ is defined the
+    observable is expanded over the truncated basis of active orbitals. The contribution of
+    core orbitals, if any, can be passed to the function using the keyword argument ``init_term``.
 
     The function utilizes tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
     to build the second-quantized operator and map it to basis of Pauli matrices via the
@@ -245,16 +246,18 @@ def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
     Args:
-        me_table (array[float]): Numpy array with the table of matrix elements.
-            For single-particle operators this array will have shape
-            ``(me_table.shape[0], 3)`` with each row containing the indices
-            :math:`\alpha`, :math:`\beta` and the matrix element :math:`\langle \alpha \vert
-            \hat{\mathcal{A}}\vert \beta \rangle`. For two-particle operators this
-            array will have shape ``(me_table.shape[0], 5)`` with each row containing
+        me_tables (list(array[float])): list of Numpy arrays with the tables of matrix elements
+            of the single-particle and two-particle operators :math:`\hat{t}` and :math:`\hat{v}`.
+            For single-particle operators the :math:`i-`th array in the list will have shape
+            ``(me_tables[i].shape[0], 3)`` with each row containing the indices
+            :math:`\alpha`, :math:`\beta` and the matrix element
+            :math:`\langle \alpha \vert \hat{t}^{(i)}\vert \beta \rangle`.
+            For two-particle operators the :math:`j-`th array in the list
+            will have shape ``(me_tables[j].shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
-            the matrix elements :math:`\langle \alpha, \beta \vert \hat{\mathcal{B}}
-            \vert \gamma, \delta \rangle`.
-        init_term: the contribution of doubly-occupied orbitals, if any, or other quantity
+            the matrix elements
+            :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
+        init_term: the contribution of core orbitals, if any, or other quantity
             required to initialize the many-body observable.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
@@ -270,15 +273,24 @@ def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
 
     **Example**
 
-    >>> table = np.array([[0.0, 0.0, 0.4], [1.0, 1.0, -0.5], [1.0, 0.0, 0.0]])
-    >>> print(observable(table, init_term=1 / 4, mapping="bravyi_kitaev"))
-    (0.2) [I0]
-    + (-0.2) [Z0]
-    + (0.25) [Z0 Z1]
-    >>> print(observable(table, init_term=1 / 4, mapping="bravyi_kitaev", wires=['w0','w1']))
-    (0.2) [Iw0]
-    + (-0.2) [Zw0]
-    + (0.25) [Zw0 Zw1]
+    >>> t1 = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
+    >>> v1 = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
+
+    >>> me_tables = []
+    >>> me_tables.append(t1)
+    >>> me_tables.append(v1)
+
+    >>> print(observable(me_tables, init_term=1/4, mapping="bravyi_kitaev"))
+    (0.0625) [I0]
+    + (-0.0625) [Z0]
+    + (0.4375) [Z0 Z1]
+    + (-0.1875) [Z1]
+
+    >>> print(observable(me_tables, init_term=1/4, mapping="bravyi_kitaev", wires=['w0','w1']))
+    (0.0625) [Iw0]
+    + (-0.0625) [Zw0]
+    + (0.4375) [Zw0 Zw1]
+    + (-0.1875) [Zw1]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
@@ -289,27 +301,28 @@ def observable(me_table, init_term=0, mapping="jordan_wigner", wires=None):
 
     sp_op_shape = (3,)
     tp_op_shape = (5,)
-    for i_table in me_table:
-        if np.array(i_table).shape not in (sp_op_shape, tp_op_shape):
-            raise ValueError(
-                "expected entries of 'me_table' to be of shape (3,) or (5,) ; got {}".format(
-                    np.array(i_table).shape
-                )
-            )
+    for table in me_tables:
+        for row in table:
+            if np.array(row).shape not in (sp_op_shape, tp_op_shape):
+                raise ValueError(
+                    "expected entries of matrix element tables to be of shape (3,) or (5,); got {}"
+                    .format(np.array(row).shape)
+                    )
 
     # Initialize the FermionOperator
     mb_obs = FermionOperator() + FermionOperator("") * init_term
 
-    for i in me_table:
+    for table in me_tables:
+        for i in table:
 
-        if i.shape == (5,):
-            # two-particle operator
-            mb_obs += FermionOperator(
-                ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4]
-            )
-        elif i.shape == (3,):
-            # single-particle operator
-            mb_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
+            if i.shape == (5,):
+                # two-particle operator
+                mb_obs += FermionOperator(
+                    ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4]
+                )
+            elif i.shape == (3,):
+                # single-particle operator
+                mb_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
