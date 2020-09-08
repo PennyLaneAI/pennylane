@@ -150,6 +150,7 @@ class ObservableReturnTypes(Enum):
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
+    State = "state"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -171,6 +172,8 @@ Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
 
+State = ObservableReturnTypes.State
+"""Enum: An enumeration which represents returning the state in the computational basis."""
 
 # =============================================================================
 # Class property
