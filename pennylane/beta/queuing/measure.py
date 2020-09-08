@@ -198,7 +198,7 @@ def probs(wires):
     return meas_op
 
 
-def state():
+def state(wires):
     r"""Quantum state in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its state. A
@@ -228,8 +228,11 @@ def state():
     .. note::
 
         The ``state()`` function does not currently support differentiation of the returned state.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on TODO
     """
     # pylint: disable=protected-access
-    meas_op = MeasurementProcess(State)
+    meas_op = MeasurementProcess(State, wires=qml.wires.Wires(wires))
     QueuingContext.append(meas_op)
     return meas_op
