@@ -21,6 +21,7 @@ import warnings
 import numpy as np
 
 from pennylane import Device
+from pennylane.operation import ObservableReturnTypes
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.interfaces.autograd import AutogradInterface
@@ -324,10 +325,6 @@ class QNode:
         ensuring the operations get queued."""
         self.qtape = self._tape()
 
-        # apply the interface (if any)
-        if self.interface is not None:
-            self.INTERFACE_MAP[self.interface](self)
-
         with self.qtape:
             measurements = self.func(*args, **kwargs)
 
@@ -339,6 +336,15 @@ class QNode:
                 "A quantum function must return either a single measured observable "
                 "or a nonempty sequence of measured observables."
             )
+
+        returns_state = any(m.return_type is ObservableReturnTypes.State for m in measurements)
+
+        # apply the interface (if any)
+        if self.interface is not None:
+            if returns_state and self.interface in ["torch", "tf"]:
+                self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)
+            else:
+                self.INTERFACE_MAP[self.interface](self)
 
         if not all(ret == m for ret, m in zip(measurements, self.qtape.measurements)):
             raise QuantumFunctionError(
@@ -388,7 +394,7 @@ class QNode:
             self.dtype = dtype or self.dtype or TFInterface.dtype
 
             if self.qtape is not None:
-                TFInterface.apply(self.qtape, dtype=self.dtype)
+                TFInterface.apply(self.qtape, dtype=tf.as_dtype(self.dtype))
 
         except ImportError:
             raise QuantumFunctionError(
