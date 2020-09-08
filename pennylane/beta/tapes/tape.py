@@ -241,7 +241,7 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, MeasurementProcess):
                 # measurement process
 
-                if obj.return_type is qml.operation.Probability:
+                if obj.return_type in (qml.operation.Probability, qml.operation.State):
                     self._obs.append((obj, obj))
                     self._output_dim += 2 ** len(obj.wires)
 
