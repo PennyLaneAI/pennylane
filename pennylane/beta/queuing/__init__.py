@@ -15,5 +15,5 @@
 This subpackage contains queuing contexts and abstract classes.
 """
 from .queuing import AnnotatedQueue, Queue, QueuingContext
-from .measure import expval, var, sample, probs, MeasurementProcess
+from .measure import expval, var, sample, state, probs, MeasurementProcess
 from .operation import mock_operations
