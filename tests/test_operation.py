@@ -132,6 +132,8 @@ class TestOperation:
             pars = [np.eye(2)] * n
         elif test_class.par_domain == "N":
             pars = [0] * n
+        elif test_class.par_domain == "L":
+            pars = [[np.eye(2) / np.sqrt(2), np.eye(2) / np.sqrt(2)]] * n
         else:
             pars = [0.0] * n
 
@@ -184,6 +186,10 @@ class TestOperation:
                 # params must be real numbers
                 with pytest.raises(TypeError, match="Real scalar parameter expected"):
                     test_class(*n * [1j], wires=ww)
+            elif test_class.par_domain == "L":
+                # params must be list of numpy arrays
+                with pytest.raises(TypeError, match="List parameter"):
+                    test_class(*n * [np.eye(2)], wires=ww)
 
             # if par_domain ever gets overridden to an unsupported value, should raise exception
             monkeypatch.setattr(test_class, "par_domain", "junk")
@@ -397,6 +403,19 @@ class TestOperationConstruction:
 
         with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
+
+    def test_list_of_arrays(self):
+        """Test that an exception is raised if a list of arrays is expected
+         but a list of mixed types is passed"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "L"
+
+        with pytest.raises(TypeError, match="List elements must be Numpy arrays."):
+            DummyOp([[np.eye(2), "a"]], wires=[0])
 
     def test_variable_instead_of_array(self):
         """Test that an exception is raised if an array is expected but a variable is passed"""
@@ -986,44 +1005,74 @@ equal_obs = [
     (qml.PauliZ("b"), qml.PauliZ("b") @ qml.Identity(1.3), True),
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), True),
     (qml.PauliZ(0), qml.PauliZ(1) @ qml.Identity(0), False),
-    (qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
-     qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0), True),
+    (
+        qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+        qml.Identity(1) @ qml.Hermitian(np.array([[0, 1], [1, 0]]), 0),
+        True,
+    ),
     (qml.PauliZ("a") @ qml.PauliX(1), qml.PauliX(1) @ qml.PauliZ("a"), True),
-    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True)
+    (qml.PauliZ("a"), qml.Hamiltonian([1], [qml.PauliZ("a")]), True),
 ]
 
 add_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([2], [qml.PauliZ(0)])),
-    (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
-     qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.PauliZ("b") @ qml.Identity(1),
-     qml.Hamiltonian([3], [qml.PauliZ("b")]), qml.Hamiltonian([4], [qml.PauliZ("b")])),
-    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
-     qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)])),
-    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-     qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
+    (
+        qml.PauliZ(0),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
+    (
+        qml.PauliZ("b") @ qml.Identity(1),
+        qml.Hamiltonian([3], [qml.PauliZ("b")]),
+        qml.Hamiltonian([4], [qml.PauliZ("b")]),
+    ),
+    (
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliZ(1) @ qml.Identity(2) @ qml.PauliX(0),
+        qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliZ(1)]),
+    ),
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+        qml.Hamiltonian([4], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+    ),
 ]
 
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.PauliX(1), 4.5, qml.Hamiltonian([4.5], [qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"), 3,
-     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]))
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), "c"),
+        3,
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]),
+    ),
 ]
 
 sub_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
-    (qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1),
-     qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])),
-    (qml.PauliZ(0) @ qml.Identity(1), qml.Hamiltonian([3], [qml.PauliZ(0)]), qml.Hamiltonian([-2], [qml.PauliZ(0)])),
-    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
-     qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)])),
-    (qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-     qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
-     qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]))
+    (
+        qml.PauliZ(0),
+        qml.PauliZ(0) @ qml.PauliX(1),
+        qml.Hamiltonian([1, -1], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)]),
+    ),
+    (
+        qml.PauliZ(0) @ qml.Identity(1),
+        qml.Hamiltonian([3], [qml.PauliZ(0)]),
+        qml.Hamiltonian([-2], [qml.PauliZ(0)]),
+    ),
+    (
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliZ(3) @ qml.Identity(2) @ qml.PauliX(0),
+        qml.Hamiltonian([1, -1], [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(3) @ qml.PauliX(0)]),
+    ),
+    (
+        qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+        qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+        qml.Hamiltonian([-2], [qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2)]),
+    ),
 ]
+
 
 class TestTensorObservableOperations:
     """Tests arithmetic operations between observables/tensors"""
@@ -1045,7 +1094,13 @@ class TestTensorObservableOperations:
         data = obs._obs_data()
 
         assert data == {
-            ("Hermitian", Wires(0), (b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff',))
+            (
+                "Hermitian",
+                Wires(0),
+                (
+                    b"\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff",
+                ),
+            )
         }
 
     def test_equality_error(self):
@@ -1054,7 +1109,10 @@ class TestTensorObservableOperations:
         obs = qml.PauliZ(0)
         tensor = qml.PauliZ(0) @ qml.PauliX(1)
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."):
+        with pytest.raises(
+            ValueError,
+            match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.",
+        ):
             obs.compare(A)
             tensor.compare(A)
 
@@ -1334,6 +1392,7 @@ class TestChannel:
 
     def test_instance_made_correctly(self):
         """Test that instance of channel class is initialized correctly"""
+
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
             num_wires = 1
@@ -1344,7 +1403,7 @@ class TestChannel:
             def _kraus_matrices(self, *params):
                 p = params[0]
                 K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1-p) * I
+                K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
@@ -1366,7 +1425,7 @@ class TestChannel:
             def _kraus_matrices(self, *params):
                 p = params[0]
                 K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1-p) * I
+                K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         with pytest.raises(
