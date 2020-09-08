@@ -20,6 +20,7 @@ import contextlib
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import ObservableReturnTypes
 
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
@@ -1142,6 +1143,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
+
         method = options.get("method", "best")
 
         if method not in ("best", "numeric", "analytic", "device"):
@@ -1188,6 +1190,13 @@ class QuantumTape(AnnotatedQueue):
             if options.get("order", 1) == 1:
                 # the value of the circuit at current params, computed only once here
                 options["y0"] = np.asarray(self.execute_device(params, device))
+
+        state_required = any(
+            ob.return_type is ObservableReturnTypes.State for ob in self.observables
+        )
+        if state_required:
+            raise NotImplementedError("The jacobian() method is not supported when the circuit "
+                                      "returns a state")
 
         jac = np.zeros((self.output_dim, len(params)), dtype=float)
         p_ind = list(np.ndindex(*params.shape))
