@@ -17,7 +17,8 @@ import contextlib
 import numpy as np
 
 import pennylane as qml
-from pennylane.qnodes import QuantumFunctionError
+from pennylane import QuantumFunctionError
+from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
 
 
 # Beta imports
@@ -135,7 +136,7 @@ class TestBetaStatisticsError:
         argument is not an observable"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
             return stat_func(qml.CNOT(wires=[0, 1]))
@@ -282,6 +283,23 @@ class TestState:
         assert state.dtype == torch.complex128
         assert torch.allclose(state_expected, state)
         assert state.shape == (1, 16)
+
+    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    def test_interface_torch_wrong_version(self, monkeypatch):
+        import torch
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev, interface="torch")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state(range(4))
+
+        with monkeypatch.context() as m:
+            m.setattr(torch, "__version__", "1.5.0")
+
+            with pytest.raises(QuantumFunctionErrorBeta, match="Version 1.6.0 or above of PyTorch"):
+                func()
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     @pytest.mark.parametrize(
