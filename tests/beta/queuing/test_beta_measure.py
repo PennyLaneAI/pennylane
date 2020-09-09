@@ -317,6 +317,18 @@ class TestState:
         with pytest.raises(NotImplementedError, match="The jacobian method is not supported"):
             d_func(0.1)
 
+    def test_no_state(self):
+        """Test if an error is raised for devices that do not inherit from QubitDevice,
+        such as default.gaussian"""
+        dev = qml.device("default.gaussian", wires=1)
+
+        @qnode(dev)
+        def func():
+            return qml.state(range(1))
+
+        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+            func()
+
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     @pytest.mark.parametrize(
         "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
