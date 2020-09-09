@@ -128,7 +128,7 @@ as well as potential further capabilities, by providing the following class attr
      physical or simulated noise.
 
   Capabilities are queried by PennyLane core to make decisions on how to best run computations,
-  and by external apps build on top of the device ecosystem.
+  and by external apps built on top of the device ecosystem.
 
 Adding arguments to your device
 --------------------------------
