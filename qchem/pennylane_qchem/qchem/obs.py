@@ -251,11 +251,11 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     Args:
         me_tables (list(array[float])): list containing the tables of matrix elements
             of the operators :math:`\hat{t}` and :math:`\hat{v}`.
-            For single-particle operators the :math:`i-`th array in the list will have shape
+            For single-particle operators the :math:`ith` array in the list will have shape
             ``(me_tables[i].shape[0], 3)`` with each row containing the indices
             :math:`\alpha`, :math:`\beta` and the matrix element
             :math:`\langle \alpha \vert \hat{t}^{(i)}\vert \beta \rangle`.
-            For two-particle operators the :math:`j-`th array in the list
+            For two-particle operators the :math:`jth` array in the list
             will have shape ``(me_tables[j].shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix element
