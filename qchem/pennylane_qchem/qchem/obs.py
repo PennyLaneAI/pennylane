@@ -206,7 +206,7 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
 
     table = _spin2_matrix_elements(sz)
 
-    return observable(table, init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
+    return observable([table], init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
 
 
 def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
@@ -385,7 +385,7 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     sz_orb = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
     table = np.vstack([r, r, sz_orb]).T
 
-    return observable(table, mapping=mapping, wires=wires)
+    return observable([table], mapping=mapping, wires=wires)
 
 
 def particle_number(orbitals, mapping="jordan_wigner", wires=None):
@@ -444,7 +444,7 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     r = np.arange(orbitals)
     table = np.vstack([r, r, np.ones([orbitals])]).T
 
-    return observable(table, mapping=mapping, wires=wires)
+    return observable([table], mapping=mapping, wires=wires)
 
 
 __all__ = [
