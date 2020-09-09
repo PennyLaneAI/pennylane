@@ -33,6 +33,7 @@ The available measurement functions are
     ~pennylane.sample
     ~pennylane.var
     ~pennylane.probs
+    ~pennylane.state
 
 :html:`</div>`
 
@@ -152,6 +153,43 @@ The returned probability array uses lexicographical ordering,
 so corresponds to a :math:`99.75\%` probability of measuring
 state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
+
+State
+-----
+
+Support for returning the quantum state of the QNode is also provided. Similar to the ``probs()``
+measurement function, **observables should not be input** into the ``state()`` function.
+Moreover, the state must be returned over **all** wires in the device so that it is pure.
+For example:
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=3)
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        return qml.state(wires=range(3))
+
+Creating a QNode and evaluating it gives:
+
+>>> qnode = qml.QNode(my_quantum_function, dev)
+>>> qnode(0.56, 0.1)
+array([0.95985437-0.27601028j, 0.        +0.j        ,
+       0.04803275-0.01381203j, 0.        +0.j        ,
+       0.        +0.j        , 0.        +0.j        ,
+       0.        +0.j        , 0.        +0.j        ])
+
+The state array is in lexicographic order so that the amplitude ``0.95985437-0.27601028j``
+corresponds to :math:`|000\rangle` and ``0.04803275-0.01381203j`` corresponds to
+:math:`|010\rangle`.
+
+.. note::
+
+    Calculating the derivative of ``state()`` is not supported when using the parameter-shift and
+    finite-difference methods.
 
 Changing the number of shots
 ----------------------------
