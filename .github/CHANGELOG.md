@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* The quantum state of a QNode can now be returned using the ``state()`` return function.
+  [(#789)](https://github.com/XanaduAI/pennylane/pull/789)
+  
+  Consider the following QNode:
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+  
+  @qml.qnode(dev)
+  def qnode(x, y):
+      qml.RZ(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=1)
+      qml.CNOT(wires=[0, 2])
+      return qml.state(range(3))
+  ```
+  
+  Calling the QNode will return its state
+  
+  ```pycon
+  >>> qnode(0.56, 0.1)
+  array([0.95985437-0.27601028j, 0.        +0.j        ,
+       0.04803275-0.01381203j, 0.        +0.j        ,
+       0.        +0.j        , 0.        +0.j        ,
+       0.        +0.j        , 0.        +0.j        ])
+  ```
+
 * Quantum noisy channels: quantum channels provide a general
   formalism for discussing state evolution, including the evolution
   of pure states into mixed states due to noise and decoherence. It
