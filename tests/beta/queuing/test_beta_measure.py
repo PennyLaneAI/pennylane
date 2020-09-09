@@ -286,6 +286,7 @@ class TestState:
 
     @pytest.mark.usefixtures("skip_if_no_torch_support")
     def test_interface_torch_wrong_version(self, monkeypatch):
+        """Test if an error is raised when a version of torch before 1.6.0 is used"""
         import torch
         dev = qml.device("default.qubit", wires=4)
 
@@ -300,6 +301,21 @@ class TestState:
 
             with pytest.raises(QuantumFunctionErrorBeta, match="Version 1.6.0 or above of PyTorch"):
                 func()
+
+    def test_jacobian_not_supported(self):
+        """Test if an error is raised if the jacobian method is called via qml.grad"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev)
+        def func(x):
+            for i in range(4):
+                qml.RX(x, wires=i)
+            return qml.state(range(4))
+
+        d_func = qml.jacobian(func)
+
+        with pytest.raises(NotImplementedError, match="The jacobian method is not supported"):
+            d_func(0.1)
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     @pytest.mark.parametrize(
