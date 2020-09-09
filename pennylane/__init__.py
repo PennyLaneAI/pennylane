@@ -41,6 +41,7 @@ from ._device import Device, DeviceError
 from .collections import apply, map, sum, dot, QNodeCollection
 from ._qubit_device import QubitDevice
 from .measure import expval, var, sample, probs
+from .beta.queuing.measure import state  # TODO update to import in line above
 from .ops import *
 from .optimize import *
 from .qnodes import qnode, QNode, QuantumFunctionError
