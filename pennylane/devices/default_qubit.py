@@ -365,6 +365,7 @@ class DefaultQubit(QubitDevice):
         capabilities.update(
             supports_reversible_diff=True,
             supports_inverse_operations=True,
+            supports_exact=True,
         )
         return capabilities
 

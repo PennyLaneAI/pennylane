@@ -571,8 +571,6 @@ class TestInterfaceDeviceIntegration:
                                             ("supports_inverse_operations", True),
                                             ("supports_tensor_observables", True),
                                             ("provides_jacobian", True),
-                                            ("executes_in_remote", False),
-                                            ("has_max_number_of_wires", False),
                                             ])
     def test_defines_correct_capabilities(self, cap, value, rep):
         """Test that the device defines the right capabilities"""

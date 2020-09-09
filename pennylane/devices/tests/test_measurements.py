@@ -33,13 +33,6 @@ obs = {
     "PauliX": qml.PauliX(wires=[0]),
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
-    # 'FockStateProjector': qml.FockStateProjector(np.array([0]), wires=[0]),
-    # 'NumberOperator': qml.NumberOperator(wires=[0]),
-    # 'P': qml.P(wires=[0]),
-    # 'PolyXP': qml.PolyXP(np.array([0]), wires=[0]),
-    # 'QuadOperator': qml.QuadOperator(0, wires=[0]),
-    # 'TensorN': qml.TensorN(wires=[0]),
-    # 'X': qml.X(wires=[0]),
 }
 
 all_obs = obs.keys()
@@ -72,8 +65,8 @@ class TestSupportedObservables:
         device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
         supports_tensor = (
-                "supports_tensor_observables" in dev.capabilities()
-                and dev.capabilities()["supports_tensor_observables"]
+            "supports_tensor_observables" in dev.capabilities()
+            and dev.capabilities()["supports_tensor_observables"]
         )
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")

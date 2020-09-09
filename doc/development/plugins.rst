@@ -120,15 +120,8 @@ as well as potential further capabilities, by providing the following class attr
   *  ``'supports_tensor_observables'`` (*bool*): ``True`` if the device supports observables composed from tensor
      products such as ``PauliZ(wires=0) @ PauliZ(wires=1)``.
 
-  *  ``'executes_in_remote'`` (*bool*): ``True`` if the device runs computations on remote servers or devices.
-
-  *  ``'takes_fixed_number_of_wires'`` (*bool*): ``True`` if the device's number of wires are fixed.
-
-  *  ``'runs_noisy_computations'`` (*bool*): ``True`` if the device's results are stochastic due to
-     physical or simulated noise.
-
-  Capabilities are queried by PennyLane core to make decisions on how to best run computations,
-  and by external apps built on top of the device ecosystem.
+  Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
+  by external apps built on top of the device ecosystem.
 
 Adding arguments to your device
 --------------------------------
