@@ -63,12 +63,15 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit():
             qml.Hadamard(wires=0)
+            qml.RZ(np.pi / 4, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         circuit()
         state = dev.state
 
-        expected = np.array([1.0, 0, 1.0, 0]) / np.sqrt(2)
+        amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
+
+        expected = np.array([amplitude, 0, np.conj(amplitude), 0])
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 

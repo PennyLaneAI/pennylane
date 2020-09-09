@@ -8,8 +8,8 @@ Quantum operations
 
 .. currentmodule:: pennylane.ops
 
-PennyLane supports a wide variety of quantum operations---such as gates, state preparations and measurements. These operations can be used exclusively in quantum functions, like shown
-in the following example:
+PennyLane supports a wide variety of quantum operations---such as gates, noisy channels, state preparations and measurements.
+These operations can be used exclusively in quantum functions, like shown in the following example:
 
 .. code-block:: python
 
@@ -20,14 +20,17 @@ in the following example:
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
         qml.T(wires=0).inv()
+        qml.AmplitudeDamping(0.1, wires=0)
         return qml.expval(qml.PauliZ(1))
 
 This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :class:`CNOT <pennylane.CNOT>`,
-:class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>` as well as the
+:class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>`, the
+:class:`AmplitudeDamping <pennylane.AmplitudeDamping>`
+:ref:`noisy channel <intro_ref_ops_channels>` as well as the
 :class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
 
-Note that PennyLane supports inverting quantum opperations via the
+Note that PennyLane supports inverting quantum operations via the
 :meth:`Op(param, wires).inv() <.Operation.inv>` method. Additionally, PennyLane
 provides a function :func:`qml.inv <.pennylane.inv>` that can be used to invert sequences
 of operations and :doc:`templates`.
@@ -53,6 +56,8 @@ Qubit gates
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
+    ~pennylane.S
+    ~pennylane.T
     ~pennylane.Rot
     ~pennylane.RX
     ~pennylane.RY
@@ -62,18 +67,16 @@ Qubit gates
     ~pennylane.PhaseShift
     ~pennylane.CNOT
     ~pennylane.SWAP
+    ~pennylane.CZ
     ~pennylane.U1
     ~pennylane.U2
     ~pennylane.U3
-    ~pennylane.CZ
     ~pennylane.CRot
     ~pennylane.CRX
     ~pennylane.CRY
     ~pennylane.CRZ
     ~pennylane.Toffoli
     ~pennylane.CSWAP
-    ~pennylane.S
-    ~pennylane.T
     ~pennylane.QubitUnitary
     ~pennylane.DiagonalQubitUnitary
 
@@ -91,6 +94,26 @@ Qubit state preparation
 
     ~pennylane.BasisState
     ~pennylane.QubitStateVector
+
+:html:`</div>`
+
+
+.. _intro_ref_ops_channels:
+
+Noisy channels
+^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.AmplitudeDamping
+    ~pennylane.GeneralizedAmplitudeDamping
+    ~pennylane.PhaseDamping
+    ~pennylane.DepolarizingChannel
+    ~pennylane.QubitChannel
 
 :html:`</div>`
 
