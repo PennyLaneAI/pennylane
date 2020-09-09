@@ -604,7 +604,7 @@ class TestDefaultGaussianIntegration:
                                             ("passthru_interface", None),
                                             ("supports_reversible_diff", False),
                                             ("supports_exact", True),
-                                            ("supports_sampled", False),
+                                            ("supports_sampled", True),
                                             ("supports_inverse_operations", False),
                                             ("supports_tensor_observables", False),
                                             ("provides_jacobian", False),
