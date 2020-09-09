@@ -221,9 +221,9 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     .. math::
 
-        \hat{O} = && \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} + \hat{t}^{(2)}
-        \cdots + \hat{t}^{(n)} \vert \beta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta \\
-        && + \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
+        \hat{O} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} + \hat{t}^{(2)}
+        \cdots + \hat{t}^{(n)} \vert \beta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta
+        + \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
         \langle \alpha, \beta \vert \hat{v}^{(1)} + \hat{v}^{(2)} \cdots + \hat{v}^{(n)}
         \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
         \hat{c}_\gamma \hat{c}_\delta.
