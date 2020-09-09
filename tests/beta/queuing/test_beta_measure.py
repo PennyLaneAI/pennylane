@@ -21,6 +21,8 @@ from pennylane.qnodes import QuantumFunctionError
 
 
 # Beta imports
+from pennylane.beta.tapes import qnode
+from pennylane.operation import ObservableReturnTypes
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing.operation import mock_operations
 from pennylane.beta.queuing.measure import (
@@ -30,6 +32,7 @@ from pennylane.beta.queuing.measure import (
     probs,
     Expectation,
     Sample,
+    State,
     Variance,
     Probability,
     MeasurementProcess
@@ -155,3 +158,149 @@ class TestBetaProbs:
         meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == Probability
+
+
+class TestState:
+    """Tests for the state function"""
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_shape_and_dtype(self, wires):
+        """Test that the state is of correct size and dtype for a trivial circuit"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qnode(dev)
+        def func():
+            return qml.state(range(wires))
+
+        state = func()
+        assert state.shape == (1, 2 ** wires)
+        assert state.dtype == np.complex128
+
+    def test_return_type_is_state(self):
+        """Test that the return type of the observable is State"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(0)
+            return qml.state([0])
+
+        func()
+        obs = func.qtape.observables
+        assert len(obs) == 1
+        assert obs[0].return_type is ObservableReturnTypes.State
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_correct_ghz(self, wires):
+        """Test that the correct state is returned when the circuit prepares a GHZ state"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            for i in range(wires - 1):
+                qml.CNOT(wires=[i, i + 1])
+            return qml.state(range(wires))
+
+        state = func()[0]
+        assert np.allclose(np.sum(np.abs(state) ** 2), 1)
+        assert np.allclose(state[0], 1 / np.sqrt(2))
+        assert np.allclose(state[-1], 1 / np.sqrt(2))
+
+    @pytest.mark.parametrize("wires", range(2, 5))
+    def test_state_equal_to_dev_state(self, wires):
+        """Test that the returned state is equal to the one stored in dev.state for a template
+        circuit"""
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        weights = qml.init.strong_ent_layers_uniform(3, wires)
+
+        @qnode(dev)
+        def func():
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+            return qml.state(range(wires))
+
+        state = func()
+        assert np.allclose(state, dev.state)
+
+    def test_all_wires(self):
+        """Test that an error is raised if the state is requested on a subset of wires"""
+        wires = 4
+        dev = qml.device("default.qubit", wires=wires)
+
+        weights = qml.init.strong_ent_layers_uniform(3, wires)
+
+        @qnode(dev)
+        def func():
+            qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
+            return qml.state(range(wires - 1))
+
+        with pytest.raises(QuantumFunctionError, match="The state must be returned over all wires"):
+            func()
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    def test_interface_tf(self, skip_if_no_tf_support):
+        """Test that the state correctly outputs in the tensorflow interface"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev, interface="tf")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state(range(4))
+
+        state_expected = 0.25 * tf.ones(16)
+        state = func()
+
+        assert isinstance(state, tf.Tensor)
+        assert state.dtype == tf.complex128
+        assert np.allclose(state_expected, state.numpy())
+        assert state.shape == (1, 16)
+
+    def test_interface_torch(self):
+        """Test that the state correctly outputs in the torch interface"""
+        torch = pytest.importorskip("torch", minversion="1.6")
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qnode(dev, interface="torch")
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state(range(4))
+
+        state_expected = 0.25 * torch.ones(16, dtype=torch.complex128)
+        state = func()
+
+        assert isinstance(state, torch.Tensor)
+        assert state.dtype == torch.complex128
+        assert torch.allclose(state_expected, state)
+        assert state.shape == (1, 16)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.parametrize(
+        "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
+    )
+    def test_devices(self, device, skip_if_no_tf_support):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device(device, wires=4)
+
+        @qnode(dev)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return qml.state(range(4))
+
+        state = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state, state_expected)
+        assert np.allclose(state, dev.state)
