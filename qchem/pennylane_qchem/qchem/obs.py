@@ -230,13 +230,16 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     In the latter equations the indices :math:`\alpha, \beta, \gamma, \delta` run over the
     basis of single-particle states. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
-    are the particle creation and annihilation operators, respectively. :math:`\hat{t}` denotes
-    the single-particle operators entering the observable. For example, in electronic structure
-    calculations this is the case for the kinetic energy operator, the nuclei Coulomb
-    potential and any external fields included in the model Hamiltonian. On the other hand,
-    :math:`\hat{v}` denotes the two-particle operators, for example, the Coulomb interaction
-    between the electrons. If an
-    `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_ is defined the
+    are the particle creation and annihilation operators, respectively.
+    :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix element of
+    the single-particle operator :math:`\hat{t}` entering the observable. For example,
+    in electronic structure calculations this is the case for the kinetic energy operator,
+    the nuclei Coulomb potential or any other external fields included in the model Hamiltonian.
+    On the other hand, :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
+    denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
+    Coulomb interaction between the electrons.
+
+    If an `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_ is defined the
     observable is expanded over the truncated basis of active orbitals. The contribution of
     core orbitals, if any, can be passed to the function using the keyword argument ``init_term``.
 
@@ -246,8 +249,8 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
     Args:
-        me_tables (list(array[float])): list of Numpy arrays with the tables of matrix elements
-            of the single-particle and two-particle operators :math:`\hat{t}` and :math:`\hat{v}`.
+        me_tables (list(array[float])): list containing the tables of matrix elements
+            of the operators :math:`\hat{t}` and :math:`\hat{v}`.
             For single-particle operators the :math:`i-`th array in the list will have shape
             ``(me_tables[i].shape[0], 3)`` with each row containing the indices
             :math:`\alpha`, :math:`\beta` and the matrix element
@@ -255,7 +258,7 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
             For two-particle operators the :math:`j-`th array in the list
             will have shape ``(me_tables[j].shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
-            the matrix elements
+            the matrix element
             :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
         init_term: the contribution of core orbitals, if any, or other quantity
             required to initialize the many-body observable.
@@ -273,12 +276,12 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     **Example**
 
-    >>> t1 = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
-    >>> v1 = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
+    >>> t = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
+    >>> v = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
 
     >>> me_tables = []
-    >>> me_tables.append(t1)
-    >>> me_tables.append(v1)
+    >>> me_tables.append(t)
+    >>> me_tables.append(v)
 
     >>> print(observable(me_tables, init_term=1/4, mapping="bravyi_kitaev"))
     (0.0625) [I0]
@@ -305,7 +308,7 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
         for row in table:
             if np.array(row).shape not in (sp_op_shape, tp_op_shape):
                 raise ValueError(
-                    "expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
+                    "Expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
                         np.array(row).shape
                     )
                 )
