@@ -24,6 +24,7 @@ from pennylane.operation import (
     Operation,
     Observable,
     Sample,
+    State,
     Variance,
     Expectation,
     Probability,
@@ -281,6 +282,9 @@ class Device(abc.ABC):
 
                 elif obs.return_type is Probability:
                     results.append(list(self.probability(wires=wires).values()))
+
+                elif obs.return_type is State:
+                    raise QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
                     raise QuantumFunctionError(
