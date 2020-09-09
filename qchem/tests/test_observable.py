@@ -139,30 +139,35 @@ def test_observable(me_tables, init_term, mapping, terms_exp, custom_wires, monk
     assert qchem._qubit_operators_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
-# @pytest.mark.parametrize(
-#     "me_table",
-#     [
-#         np.array([[0.0, 0.0, 1.0, 0.5], [1.0, 1.0, -0.5]]),
-#         np.array([[0.0, 0.0, 1.0, 0.5], [1.0, -0.5]]),
-#         np.array([[0.0, 0.0, 1.0, 2.0, 0.5], [1.0, -0.5]]),
-#         np.array([[0.0, 0.0, 1.0, 2.0, 3.0, 0.5], [1.0, 0.0, -0.5]]),
-#     ],
-# )
-# def test_exceptions_observable(
-#     me_table, message_match="expected entries of 'me_table' to be of shape"
-# ):
-#     """Test that the 'observable' function throws an exception if the
-#     array containing the matrix elements has incorrect shapes."""
+@pytest.mark.parametrize(
+    "me_tables",
+    [
+        [np.array([[0.0, 0.0, 1.0, 0.5], [1.0, 1.0, -0.5]])],
+        [np.array([[0.0, 0.0, 1.0, 0.5], [1.0, -0.5]])],
+        [np.array([[0.0, 0.0, 1.0, 2.0, 0.5], [1.0, -0.5]])],
+        [np.array([[0.0, 0.0, 1.0, 2.0, 3.0, 0.5], [1.0, 0.0, -0.5]])],
+        [
+            np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]]),
+            np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.25]]),
+        ],
+        [np.array([[0.0, 0.0, 0.5, 3], [1.0, 1.0, -0.5]]), np.array([[0.0, 0.0, 0.0, 0.0, 0.25]])],
+    ],
+)
+def test_exceptions_observable(
+    me_tables, message_match="Expected entries of matrix element tables to be of shape"
+):
+    """Test that the 'observable' function throws an exception if the
+    array containing the matrix elements has incorrect shapes."""
 
-#     with pytest.raises(ValueError, match=message_match):
-#         qchem.observable(me_table)
+    with pytest.raises(ValueError, match=message_match):
+        qchem.observable(me_tables)
 
 
-# def test_mapping_observable(message_match="transformation is not available"):
-#     """Test that the 'observable' function throws an exception if the
-#     fermionic-to-qubit mapping is not properly defined."""
+def test_mapping_observable(message_match="transformation is not available"):
+    """Test that the 'observable' function throws an exception if the
+    fermionic-to-qubit mapping is not properly defined."""
 
-#     me_table = np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])
+    me_table = [np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])]
 
-#     with pytest.raises(TypeError, match=message_match):
-#         qchem.observable(me_table, mapping="no_valid_transformation")
+    with pytest.raises(TypeError, match=message_match):
+        qchem.observable(me_table, mapping="no_valid_transformation")
