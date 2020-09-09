@@ -111,7 +111,7 @@ as well as potential further capabilities, by providing the following class attr
 
   * ``'supports_exact'`` (*bool*): ``True`` if the device is a simulator that returns analytic results.
 
-  *  ``'supports_sampled'`` (*bool*): ``True`` if outputs are estimates computed from samples of measurement outcomes.
+  * ``'supports_sampled'`` (*bool*): ``True`` if outputs are estimates computed from samples of measurement outcomes.
 
   * ``'supports_inverse_operations'`` (*bool*): ``True`` if the device supports
     applying the inverse of operations. Operations which should be inverted
@@ -122,6 +122,9 @@ as well as potential further capabilities, by providing the following class attr
 
   Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
   by external apps built on top of the device ecosystem.
+
+  To find out which capabilities are (possibly automatically) defined for your device ``dev = device('my.device')``,
+  check the output of ``dev.capabilities()``.
 
 Adding arguments to your device
 --------------------------------
