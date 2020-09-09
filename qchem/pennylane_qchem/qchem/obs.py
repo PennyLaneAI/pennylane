@@ -278,7 +278,6 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     >>> t = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
     >>> v = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
-
     >>> me_tables = []
     >>> me_tables.append(t)
     >>> me_tables.append(v)
