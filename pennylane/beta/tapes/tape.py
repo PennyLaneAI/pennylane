@@ -1194,8 +1194,8 @@ class QuantumTape(AnnotatedQueue):
             ob.return_type is ObservableReturnTypes.State for ob in self.observables
         )
         if state_required:
-            raise NotImplementedError("The jacobian method is not supported when the circuit "
-                                      "returns a state")
+            raise NotImplementedError("The jacobian method does not support circuits "
+                                      "that return the state")
 
         jac = np.zeros((self.output_dim, len(params)), dtype=float)
         p_ind = list(np.ndindex(*params.shape))
