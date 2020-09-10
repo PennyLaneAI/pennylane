@@ -223,7 +223,6 @@ def probs(wires):
     Returns:
         MeasurementProcess: measurement process representing the measurement
     """
-    # pylint: disable=protected-access
     meas_op = MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
     QueuingContext.append(meas_op)
     return meas_op
@@ -264,7 +263,6 @@ def state(wires):
     Args:
         wires (Sequence[int]): all the wires used in the device
     """
-    # pylint: disable=protected-access
     meas_op = MeasurementProcess(State, wires=qml.wires.Wires(wires))
     QueuingContext.append(meas_op)
     return meas_op
