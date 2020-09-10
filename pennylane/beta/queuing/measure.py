@@ -47,7 +47,6 @@ class MeasurementProcess:
         self.wires = wires
         self.obs = obs
 
-
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
         # measurement processes rather than specific observables.
