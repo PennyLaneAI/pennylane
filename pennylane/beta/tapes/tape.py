@@ -491,8 +491,9 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.jacobian`, and changes the default
-        output size of methods :meth:`~.jacobian` and :meth:`~.get_parameters()`.
+        :meth:`~.set_parameters`, :meth:`~.QuantumTape.execute`, and :meth:`~.QuantumTape.jacobian`,
+        and changes the default output size of methods :meth:`~.QuantumTape.jacobian` and
+        :meth:`~.get_parameters()`.
 
         **Example**
 
