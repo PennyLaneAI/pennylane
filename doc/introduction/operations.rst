@@ -113,6 +113,7 @@ Noisy channels
     ~pennylane.GeneralizedAmplitudeDamping
     ~pennylane.PhaseDamping
     ~pennylane.DepolarizingChannel
+    ~pennylane.QubitChannel
 
 :html:`</div>`
 
