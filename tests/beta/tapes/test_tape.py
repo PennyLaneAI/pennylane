@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape
+from pennylane.beta.tapes import QuantumTape, NewCircuitGraph
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -83,6 +83,61 @@ class TestConstruction:
 
         assert isinstance(tape._obs[1][0], MeasurementProcess)
         assert tape._obs[1][0].return_type == qml.operation.Probability
+
+    def test_tensor_observables(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue"""
+
+        # test multiple tensor observables constructed via matmul
+        with QuantumTape() as tape:
+            op = qml.RX(1.0, wires=0)
+            t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
+            t_obs2 = t_obs1 @ qml.PauliZ(3)
+            m = expval(t_obs2)
+
+        assert tape.operations == [op]
+        assert tape.observables == [t_obs2]
+        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].obs is t_obs2
+
+        # test multiple tensor observables constructed via matmul
+        # with the observable occuring on the left hand side
+        with QuantumTape() as tape:
+            op = qml.RX(1.0, wires=0)
+            t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
+            t_obs2 = qml.Hadamard(2) @ t_obs1
+            m = expval(t_obs2)
+
+        assert tape.operations == [op]
+        assert tape.observables == [t_obs2]
+        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].obs is t_obs2
+
+        # test multiple tensor observables constructed via explicit Tensor creation
+        with QuantumTape() as tape:
+            op = qml.RX(1.0, wires=0)
+            t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
+            t_obs2 = qml.operation.Tensor(t_obs1, qml.Hadamard(2))
+            m = expval(t_obs2)
+
+        assert tape.operations == [op]
+        assert tape.observables == [t_obs2]
+        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].obs is t_obs2
+
+        # test multiple tensor observables constructed via matmul
+        # between two tensor observables
+        with QuantumTape() as tape:
+            op = qml.RX(1.0, wires=0)
+            t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
+            t_obs2 = qml.PauliY(2) @ qml.PauliZ(3)
+            t_obs = t_obs1 @ t_obs2
+            m = var(t_obs)
+
+        assert tape.operations == [op]
+        assert tape.observables == [t_obs]
+        assert tape.measurements[0].return_type is qml.operation.Variance
+        assert tape.measurements[0].obs is t_obs
 
     def test_parameter_info(self, make_tape):
         """Test that parameter information is correctly extracted"""
@@ -193,6 +248,48 @@ class TestConstruction:
                 qml.RX(0.5, wires=0)
                 qml.PauliX(wires=0) @ qml.PauliY(wires=1)
                 expval(qml.PauliZ(wires=1))
+
+    def test_sampling(self):
+        """Test that the tape correctly marks itself as returning samples"""
+        with QuantumTape() as tape:
+            expval(qml.PauliZ(wires=1))
+
+        assert not tape.is_sampled
+
+        with QuantumTape() as tape:
+            sample(qml.PauliZ(wires=0))
+
+        assert tape.is_sampled
+
+
+class TestGraph:
+    """Tests involving graph creation"""
+
+    def test_graph_creation(self, mocker):
+        """Test that the circuit graph is correctly created"""
+        spy = mocker.spy(NewCircuitGraph, "__init__")
+
+        with QuantumTape() as tape:
+            op = qml.RX(1.0, wires=0)
+            obs = qml.PauliZ(1)
+            expval(obs)
+
+        # graph has not yet been created
+        assert tape._graph is None
+        spy.assert_not_called()
+
+        # requested the graph creates it
+        g = tape.graph
+        assert g.operations == [op]
+        assert g.observables == [obs]
+        assert tape._graph is not None
+        spy.assert_called_once()
+
+        # calling the graph property again does
+        # not reconstruct the graph
+        g2 = tape.graph
+        assert g2 is g
+        spy.assert_called_once()
 
 
 class TestParameters:

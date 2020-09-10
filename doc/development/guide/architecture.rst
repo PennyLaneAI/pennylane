@@ -175,11 +175,11 @@ QNode is evaluated. On QNode evaluation, the quantum function is executed.
 
 Operators are queued to the QNode on instantiation, by having :meth:`.Operator.__init__`
 call the :meth:`.Operator.queue` method. The operators themselves queue themselves to
-the surrounding :class:`~.QueuingContext`.
+the surrounding :class:`~.pennylane.QueuingContext`.
 
-Measurement functions such as :func:`~.expval` are responsible for queuing observables.
+Measurement functions such as :func:`~.pennylane.expval` are responsible for queuing observables.
 
-For further details, refer to the description in :class:`~.QueuingContext`.
+For further details, refer to the description in :class:`~.pennylane.QueuingContext`.
 
 Variables
 *********

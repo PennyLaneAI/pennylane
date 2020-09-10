@@ -38,6 +38,7 @@
 
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
+  [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
 
 <h3>Improvements</h3>
 
