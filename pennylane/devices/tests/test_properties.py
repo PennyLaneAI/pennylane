@@ -20,6 +20,7 @@ from pennylane._device import DeviceError
 
 try:
     import tensorflow as tf
+
     TF_SUPPORT = True
 
 except ImportError:
@@ -206,7 +207,7 @@ class TestCapabilities:
             dev.state  # pylint: disable = pointless-statement
         else:
             with pytest.raises(AttributeError):
-                dev.state # pylint: disable = pointless-statement
+                dev.state  # pylint: disable = pointless-statement
 
     def test_returns_probs(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""
