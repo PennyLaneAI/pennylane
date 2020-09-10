@@ -109,8 +109,9 @@ class DefaultMixed(QubitDevice):
 
     @property
     def state(self):
+        """Allows users to retrieve state as a property"""
         # User obtains state as a matrix
-        return self._reshape(self._pre_rotated_state, (2 ** num_wires, 2 ** num_wires))
+        return self._reshape(self._pre_rotated_state, (2 ** self.num_wires, 2 ** self.num_wires))
 
     def reset(self):
         """Resets the device"""
@@ -126,7 +127,7 @@ class DefaultMixed(QubitDevice):
             return None
 
         # convert rho from tensor to matrix
-        rho = self._reshape(self._state, (2 ** num_wires, 2 ** num_wires))
+        rho = self._reshape(self._state, (2 ** self.num_wires, 2 ** self.num_wires))
         # probs are diagonal elements
         probs = self.marginal_prob(self._diag(rho), wires)
         return probs
