@@ -86,6 +86,8 @@ class QubitDevice(Device):
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
+    _outer = staticmethod(np.outer)
+    _diag = staticmethod(np.diag)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
