@@ -372,3 +372,27 @@ class TestState:
         grad = tape.jacobian(result, x)
         expected = tf.stack([-0.5 * tf.sin(x/2), 0.5 * tf.cos(x/2)])
         assert np.allclose(grad, expected)
+
+    def test_gradient_with_passthru_autograd(self):
+        """Test that the gradient of the state is accessible when using default.qubit.autograd
+        with the backprop diff_method."""
+        from pennylane import numpy as npa
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        @qnode(dev, interface="autograd", diff_method="backprop")
+        def func(x):
+            qml.RY(x, wires=0)
+            return qml.state(wires=[0])
+
+        x = npa.array(0.1, requires_grad=True)
+
+        def loss_fn(x):
+            res = func(x)[0]
+            return npa.real(res)  # This errors without the real. Likely an issue with complex
+            # numbers in autograd
+
+        d_loss_fn = qml.jacobian(loss_fn)
+
+        grad = d_loss_fn(x)
+        expected = np.array([-0.5 * np.sin(x/2), 0.5 * np.cos(x/2)])
+        assert np.allclose(grad, expected)
