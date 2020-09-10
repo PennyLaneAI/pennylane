@@ -350,3 +350,25 @@ class TestState:
 
         assert np.allclose(state, state_expected)
         assert np.allclose(state, dev.state)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    def test_gradient_with_passthru_tf(self, skip_if_no_tf_support):
+        """Test that the gradient of the state is accessible when using default.qubit.tf with the
+        backprop diff_method."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qnode(dev, interface="tf", diff_method="backprop")
+        def func(x):
+            qml.RY(x, wires=0)
+            return qml.state(wires=[0])
+
+        x = tf.Variable(0.1, dtype=tf.complex128)
+
+        with tf.GradientTape() as tape:
+            result = func(x)
+
+        grad = tape.jacobian(result, x)
+        expected = tf.stack([-0.5 * tf.sin(x/2), 0.5 * tf.cos(x/2)])
+        assert np.allclose(grad, expected)
