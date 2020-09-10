@@ -26,8 +26,19 @@ from .queuing import QueuingContext
 
 
 class MeasurementProcess:
-    """NamedTuple: A namedtuple that contains the return_type of the circuit and
-    whose instance can be queried by id."""
+    """Represents a measurement process occurring at the end of a
+    quantum variational circuit.
+
+    Args:
+        return_type (.ObservableReturnTypes): The type of measurement process.
+            This includes ``Expectation``, ``Variance``, ``Sample``, or ``Probability``.
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to. If the measurement
+            process includes observables, this argument should be the union of all
+            observable wires.
+    """
 
     # pylint: disable=too-few-public-methods
 
@@ -36,8 +47,17 @@ class MeasurementProcess:
         self.wires = wires
         self.obs = obs
 
-        # TODO: remove the following line once devices
-        # have been refactored to no longer require dummy observable
+
+        # TODO: remove the following lines once devices
+        # have been refactored to accept and understand recieving
+        # measurement processes rather than specific observables.
+
+        # The following lines are only applicable for measurement processes
+        # that do no have corresponding observables (e.g., Probability). We use
+        # them to 'trick' the device into thinking it has recieved an observable.
+
+        # Below, we imitate an identity observable, so that the
+        # device undertakes no action upon recieving this observable.
         self.name = "Identity"
         self.diagonalizing_gates = lambda: []
         self.data = []
@@ -66,6 +86,9 @@ def expval(op):
 
     Args:
         op (Observable): a quantum observable object
+
+    Returns:
+        MeasurementProcess: measurement process representing the measurement
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -105,6 +128,9 @@ def var(op):
     Args:
         op (Observable): a quantum observable object
 
+    Returns:
+        MeasurementProcess: measurement process representing the measurement
+
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
@@ -143,6 +169,9 @@ def sample(op):
 
     Args:
         op (Observable): a quantum observable object
+
+    Returns:
+        MeasurementProcess: measurement process representing the measurement
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -191,6 +220,9 @@ def probs(wires):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    Returns:
+        MeasurementProcess: measurement process representing the measurement
     """
     # pylint: disable=protected-access
     meas_op = MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
