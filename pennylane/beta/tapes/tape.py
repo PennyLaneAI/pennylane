@@ -25,7 +25,7 @@ from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
 
-from .circuit_graph import CircuitGraph
+from .circuit_graph import NewCircuitGraph
 
 
 STATE_PREP_OPS = (
@@ -81,10 +81,10 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The :class:`~.beta.tapes.CircuitGraph` can also be accessed:
+    The :class:`~.beta.tapes.NewCircuitGraph` can also be accessed:
 
     >>> tape.graph
-    <pennylane.beta.tapes.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
+    <pennylane.beta.tapes.circuit_graph.NewCircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
     device:
@@ -153,7 +153,6 @@ class QuantumTape(AnnotatedQueue):
         self.num_wires = 0
 
         self.jacobian_options = {}
-        self.grad_method = None
 
         self.hash = 0
         self.is_sampled = False
@@ -271,17 +270,6 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-    def _update_gradient_info(self):
-        """Update the parameter information dictionary with gradient information
-        of each parameter"""
-
-        for i, info in self._par_info.items():
-
-            if i not in self.trainable_params:
-                info["grad_method"] = None
-            else:
-                info["grad_method"] = self._grad_method(i, use_graph=True)
-
     def _update_par_info(self):
         """Update the parameter information dictionary"""
         param_count = 0
@@ -290,7 +278,7 @@ class QuantumTape(AnnotatedQueue):
 
             for p in range(len(obj.data)):
                 info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p})  # , "grad_method": None})
+                info.update({"op": obj, "p_idx": p})
 
                 self._par_info[param_count] = info
                 param_count += 1
@@ -305,9 +293,6 @@ class QuantumTape(AnnotatedQueue):
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
-
-        if self.interface is not None:
-            self._update_gradient_info()
 
     def _expand(self, stop_at=None):
         """Expand all operations and tapes in the processed queue.
@@ -658,16 +643,16 @@ class QuantumTape(AnnotatedQueue):
         quantum circuit:
 
         >>> tape.graph
-        <pennylane.beta.tapes.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
+        <pennylane.beta.tapes.circuit_graph.NewCircuitGraph object at 0x7fcc0433a690>
 
         Note that the circuit graph is only constructed once, on first call to this property,
         and cached for future use.
 
         Returns:
-            .beta.tapes.CircuitGraph: the circuit graph object
+            .beta.tapes.NewCircuitGraph: the circuit graph object
         """
         if self._graph is None:
-            self._graph = CircuitGraph(self.operations, self.observables, self.wires)
+            self._graph = NewCircuitGraph(self.operations, self.observables, self.wires)
 
         return self._graph
 
@@ -788,442 +773,3 @@ class QuantumTape(AnnotatedQueue):
     @data.setter
     def data(self, params):
         self.set_parameters(params, free_only=False)
-
-    # ========================================================
-    # execution methods
-    # ========================================================
-
-    def execute(self, device, params=None):
-        """Execute the tape on a quantum device.
-
-        Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameters are used (via :meth:`~.get_parameters`).
-
-        **Example**
-
-        .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
-
-        If parameters are not provided, the existing tape parameters are used:
-
-        >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-        >>> tape.execute(dev)
-        array([[8.84828969e-01, 3.92449987e-03, 4.91235209e-04, 1.10755296e-01]])
-
-        Parameters can be optionally passed during execution:
-
-        >>> tape.execute(dev, params=[1.0, 0.0, 1.0])
-        array([[0.5931328 , 0.17701835, 0.05283049, 0.17701835]])
-
-        Parameters provided for execution are temporary, and do not affect
-        the tapes' parameters in-place:
-
-        >>> tape.get_parameters()
-        [0.432, 0.543, 0.133]
-        """
-        if params is None:
-            params = self.get_parameters()
-
-        return self._execute(params, device=device)
-
-    def execute_device(self, params, device):
-        """Execute the tape on a quantum device.
-
-        For more details, see :meth:`~.execute`.
-
-        Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
-        """
-        device.reset()
-
-        # backup the current parameters
-        current_parameters = self.get_parameters()
-
-        # temporarily mutate the in-place parameters
-        self.set_parameters(params)
-
-        if isinstance(device, qml.QubitDevice):
-            res = device.execute(self)
-        else:
-            res = device.execute(self.operations, self.observables, {})
-
-        # Update output dim if incorrect.
-        # Note that we cannot assume the type of `res`, so
-        # we use duck typing to catch any 'array like' object.
-        try:
-            if isinstance(res, np.ndarray) and res.dtype is np.dtype("object"):
-                output_dim = sum([len(i) for i in res])
-            else:
-                output_dim = np.prod(res.shape)
-
-            if self.output_dim != output_dim:
-                # update the output dimension estimate with the correct value
-                self._output_dim = output_dim
-
-        except (AttributeError, TypeError):
-            # unable to determine the output dimension
-            pass
-
-        # restore original parameters
-        self.set_parameters(current_parameters)
-        return res
-
-    _execute = execute_device
-
-    # ========================================================
-    # gradient methods
-    # ========================================================
-
-    def _grad_method(self, idx, use_graph=True, default_method="F"):
-        """Determine the correct partial derivative computation method for each gate parameter.
-
-        Parameter gradient methods include:
-
-        * ``None``: the parameter does not support differentiation.
-
-        * ``"0"``: the variational circuit output does not depend on this
-            parameter (the partial derivative is zero).
-
-        * ``"F"``: the parameter has a non-zero derivative that should be computed
-            using finite-differences.
-
-        * ``"A"``: the parameter has a non-zero derivative that should be computed
-            using an analytic method.
-
-        .. note::
-
-            The base ``QuantumTape`` class only supports numerical differentiation, so
-            this method will always return either ``"F"`` or ``None``. If an inheriting
-            tape supports analytic differentiation for certain operations, make sure
-            that this method is overwritten appropriately to return ``"A"`` where
-            required.
-
-        Args:
-            idx (int): parameter index
-            use_graph: whether to use a directed-acyclic graph to determine
-                if the parameter has a gradient of 0
-            default_method (str): the default differentiation value to return
-                for parameters that where the grad method is not ``"0"`` or ``None``
-
-        Returns:
-            str: partial derivative method to be used
-        """
-        op = self._par_info[idx]["op"]
-
-        if op.grad_method is None:
-            return None
-
-        if (self._graph is not None) or use_graph:
-            # an empty list to store the 'best' partial derivative method
-            # for each observable
-            best = []
-
-            # loop over all observables
-            for ob in self.observables:
-                # check if op is an ancestor of ob
-                has_path = self.graph.has_path(op, ob)
-
-                # Use finite differences if there is a path, else the gradient is zero
-                best.append(default_method if has_path else "0")
-
-            if all(k == "0" for k in best):
-                return "0"
-
-        return default_method
-
-    def numeric_pd(self, idx, device, params=None, **options):
-        """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter using numerical finite-differences.
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
-
-        Keyword Args:
-            h=1e-7 (float): finite difference method step size
-            order=1 (int): The order of the finite difference method to use. ``1`` corresponds
-                to forward finite differences, ``2`` to centered finite differences.
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
-        """
-        if params is None:
-            params = np.array(self.get_parameters())
-
-        order = options.get("order", 1)
-        h = options.get("h", 1e-7)
-
-        shift = np.zeros_like(params)
-        shift[idx] = h
-
-        if order == 1:
-            # forward finite-difference
-            y0 = options.get("y0", None)
-
-            if y0 is None:
-                y0 = np.asarray(self.execute_device(params, device))
-
-            y = np.array(self.execute_device(params + shift, device))
-            return (y - y0) / h
-
-        if order == 2:
-            # central finite difference
-            shift_forward = np.array(self.execute_device(params + shift / 2, device))
-            shift_backward = np.array(self.execute_device(params - shift / 2, device))
-            return (shift_forward - shift_backward) / h
-
-        raise ValueError("Order must be 1 or 2.")
-
-    def device_pd(self, device, params=None, **options):
-        """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter by querying the provided device.
-
-        Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
-        """
-        # pylint:disable=unused-argument
-        if params is None:
-            params = np.array(self.get_parameters())
-
-        current_parameters = self.get_parameters()
-
-        # temporarily mutate the in-place parameters
-        self.set_parameters(params)
-
-        # TODO: modify devices that have device Jacobian methods to
-        # accept the quantum tape as an argument
-        jac = device.jacobian(self)
-
-        # restore original parameters
-        self.set_parameters(current_parameters)
-        return jac
-
-    def analytic_pd(self, idx, device, params=None, **options):
-        """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter using an analytic method.
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
-        """
-        raise NotImplementedError
-
-    def jacobian(self, device, params=None, **options):
-        r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
-
-        The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
-        mapping :math:`m` (trainable) gate parameters to :math:`n` measurement statistics,
-        such as expectation values or probabilities.
-
-        By default, the Jacobian will be computed with respect to all parameters on the quantum tape.
-        This can be modified by setting the :attr:`~.trainable_params` attribute of the tape.
-
-        The Jacobian can be computed using several methods:
-
-        * Finite differences (``'numeric'``). The first-order method evaluates the circuit at
-          :math:`n+1` points of the parameter space, the second-order method at :math:`2n` points,
-          where ``n = tape.num_params``.
-
-        * Analytic method (``'analytic'``). Analytic, if implemented by the inheriting quantum tape.
-
-        * Best known method for each parameter (``'best'``): uses the analytic method if
-          possible, otherwise finite difference.
-
-        * Device method (``'device'``): Delegates the computation of the Jacobian to the
-          device executing the circuit. Only supported by devices that provide their
-          own method for computing derivatives; support can be checked by
-          querying the device capabilities: ``dev.capabilities()['provides_jacobian']`` must
-          return ``True``. Examples of supported devices include the experimental
-          :class:`"default.tensor.tf" <~.DefaultTensorTF>` device.
-
-        .. note::
-
-            The finite difference method is sensitive to statistical noise in the circuit output,
-            since it compares the output at two points infinitesimally close to each other. Hence
-            the ``'F'`` method works best with exact expectation values when using simulator
-            devices.
-
-        Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
-
-        Keyword Args:
-            method="best" (str): The differentiation method. Must be one of ``"numeric"``,
-                ``"analytic"``, ``"best"``, or ``"device"``.
-            h=1e-7 (float): finite difference method step size
-            order=1 (int): The order of the finite difference method to use. ``1`` corresponds
-                to forward finite differences, ``2`` to centered finite differences.
-
-        Returns:
-            array[float]: 2-dimensional array of shape ``(tape.num_params, tape.output_dim)``
-
-        **Example**
-
-        .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                probs(wires=[0, 'a'])
-
-        If parameters are not provided, the existing tape parameters are used:
-
-        >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-        >>> tape.jacobian(dev)
-        array([[-0.178441  , -0.23358253, -0.05892804],
-               [-0.00079144, -0.00103601,  0.05892804],
-               [ 0.00079144,  0.00103601,  0.00737611],
-               [ 0.178441  ,  0.23358253, -0.00737611]])
-
-        Parameters can be optionally passed during execution:
-
-        >>> tape.jacobian(dev, params=[1.0, 0.0, 1.0])
-        array([[-3.24029934e-01, -9.99200722e-09, -3.24029934e-01],
-               [-9.67055711e-02, -2.77555756e-09,  3.24029935e-01],
-               [ 9.67055709e-02,  3.05311332e-09,  9.67055709e-02],
-               [ 3.24029935e-01,  1.08246745e-08, -9.67055711e-02]])
-
-        Parameters provided for execution are temporary, and do not affect
-        the tapes' parameters in-place:
-
-        >>> tape.get_parameters()
-        [0.432, 0.543, 0.133]
-
-        Explicitly setting the trainable parameters can significantly reduce
-        computational resources, as non-trainable parameters are ignored
-        during the computation:
-
-        >>> tape.trainable_params = {0} # set only the first parameter as trainable
-        >>> tape.jacobian(dev)
-        array([[-0.178441  ],
-               [-0.00079144],
-               [ 0.00079144],
-               [ 0.178441  ]])
-
-        If a tape has no trainable parameters, the Jacobian will be empty:
-
-        >>> tape.trainable_params = {}
-        >>> tape.jacobian(dev)
-        array([], shape=(4, 0), dtype=float64)
-        """
-        method = options.get("method", "best")
-
-        if method not in ("best", "numeric", "analytic", "device"):
-            raise ValueError(f"Unknown gradient method '{method}'")
-
-        if "grad_method" not in self._par_info[0]:
-            self._update_gradient_info()
-
-        if params is None:
-            params = self.get_parameters()
-
-        params = np.array(params)
-
-        # check and raise an error if any parameters are non-differentiable
-        nondiff_params = {
-            idx
-            for idx, info in self._par_info.items()
-            if info["grad_method"] is None and idx in self.trainable_params
-        }
-
-        if nondiff_params:
-            raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
-
-        numeric_params = {
-            idx
-            for idx, info in self._par_info.items()
-            if info["grad_method"] == "F" and idx in self.trainable_params
-        }
-
-        if method == "analytic":
-            # If explicitly using analytic mode, ensure that all parameters
-            # support analytic differentiation.
-
-            if numeric_params:
-                raise ValueError(
-                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
-                )
-
-        elif method == "device":
-            # Using device mode; query the device for the Jacobian
-            return self.device_pd(device, **options)
-
-        if method == "numeric" or numeric_params:
-            if options.get("order", 1) == 1:
-                # the value of the circuit at current params, computed only once here
-                options["y0"] = np.asarray(self.execute_device(params, device))
-
-        jac = np.zeros((self.output_dim, len(params)), dtype=float)
-        p_ind = list(np.ndindex(*params.shape))
-
-        # loop through each parameter and compute the gradient
-        for idx, (l, p) in enumerate(zip(p_ind, self.trainable_params)):
-            param_method = self._par_info[p]["grad_method"]
-
-            if param_method == "0":
-                # independent parameter; skip.
-                continue
-
-            if (method == "best" and param_method == "F") or (method == "numeric"):
-                # finite difference method
-                g = self.numeric_pd(l, device, params=params, **options)
-
-            elif (method == "best" and param_method == "A") or (method == "analytic"):
-                # analytic method
-                g = self.analytic_pd(l, device, params=params, **options)
-
-            if g.dtype is np.dtype("object"):
-                # object arrays cannot be flattened; must hstack them
-                g = np.hstack(g)
-
-            try:
-                jac[:, idx] = g.flatten()
-            except ValueError as e:
-                if "could not broadcast input array from shape" in str(e):
-                    # the value of self._output_dim, which was estimated during
-                    # construction, is incorrect. A device execution is required
-                    # to properly infer output dimension.
-                    raise ValueError(
-                        "The quantum tape could not infer the correct output dimension "
-                        "of the quantum computation. Please execute the tape before "
-                        "computing the Jacobian."
-                    )
-                raise e
-
-        return jac
