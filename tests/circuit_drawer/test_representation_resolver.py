@@ -541,7 +541,7 @@ class TestRepresentationResolver:
                 "Sample[H0 ⊗ H1]",
             ),
             (qml.probs([0]), 0, "Probs"),
-            (qml.state(), 0, "State"),
+            (qml.state([0]), 0, "State"),
         ],
     )
     def test_output_representation_unicode(
@@ -696,7 +696,7 @@ class TestRepresentationResolver:
                 "Sample[H0 @ H1]",
             ),
             (qml.probs([0]), 0, "Probs"),
-            (qml.state(), 0, "State"),
+            (qml.state([0]), 0, "State"),
         ],
     )
     def test_output_representation_ascii(self, ascii_representation_resolver, obs, wire, target):
