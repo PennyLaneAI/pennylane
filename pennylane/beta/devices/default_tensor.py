@@ -175,7 +175,7 @@ class DefaultTensor(Device):
             supports_finite_shots=False,
             supports_tensor_observables=True,
             returns_state=False,
-            returns_probs=False
+            returns_probs=False,
         )
         return capabilities
 
