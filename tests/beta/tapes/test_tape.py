@@ -161,11 +161,11 @@ class TestConstruction:
         # tape._update_gradient_info()
         assert tape._trainable_params == set(range(5))
         assert tape._par_info == {
-            0: {"op": ops[0], "p_idx": 0},#, "grad_method": "F"},
-            1: {"op": ops[1], "p_idx": 0},#, "grad_method": "F"},
-            2: {"op": ops[1], "p_idx": 1},#, "grad_method": "F"},
-            3: {"op": ops[1], "p_idx": 2},#, "grad_method": "F"},
-            4: {"op": ops[3], "p_idx": 0},#, "grad_method": "0"},
+            0: {"op": ops[0], "p_idx": 0},  # , "grad_method": "F"},
+            1: {"op": ops[1], "p_idx": 0},  # , "grad_method": "F"},
+            2: {"op": ops[1], "p_idx": 1},  # , "grad_method": "F"},
+            3: {"op": ops[1], "p_idx": 2},  # , "grad_method": "F"},
+            4: {"op": ops[3], "p_idx": 0},  # , "grad_method": "0"},
         }
 
     def test_qubit_diagonalization(self, make_tape):
