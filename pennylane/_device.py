@@ -53,13 +53,6 @@ class Device(abc.ABC):
     # pylint: disable=too-many-public-methods
     _capabilities = {
         "model": None,
-        "passthru_interface": None,
-        "supports_reversible_diff": False,
-        "supports_exact": False,
-        "supports_sampled": False,
-        "supports_inverse_operations": False,
-        "supports_tensor_observables": False,
-        "provides_jacobian": False,
     }
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""

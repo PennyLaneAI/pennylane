@@ -117,8 +117,9 @@ class QubitDevice(Device):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_sampled=True,
+            supports_finite_shots=True,
             supports_tensor_observables=True,
+            returns_probs=True,
         )
         return capabilities
 

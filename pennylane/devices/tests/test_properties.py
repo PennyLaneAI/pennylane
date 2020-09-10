@@ -14,9 +14,38 @@
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use
 import pytest
-import numpy as np
+import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane._device import DeviceError
+
+
+# Shared test data =====
+
+
+def qfunc_no_input():
+    return qml.expval(qml.Identity(wires=0))
+
+
+def qfunc_tensor_obs():
+    return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
+
+
+def qfunc_probs():
+    return qml.probs(wires=0)
+
+def qfunc_with_scalar_input(model=None):
+
+    def qfunc(x):
+        if model == "qubit":
+            qml.RX(x, wires=0)
+        elif model == "cv":
+            qml.Displacement(x, 0., wires=0)
+        return qml.expval(qml.Identity(wires=0))
+
+    return qfunc
+
+
+# =======================
 
 
 class TestDeviceProperties:
@@ -49,7 +78,7 @@ class TestDeviceProperties:
 
 
 class TestCapabilities:
-    """Test that the device has a valid capabilities dictionary."""
+    """Test that the device declares its capabilities correctly."""
 
     def test_has_capabilities_dictionary(self, device_kwargs):
         """Test that the device class has a capabilities() method returning a dictionary."""
@@ -58,7 +87,7 @@ class TestCapabilities:
         cap = dev.capabilities()
         assert isinstance(cap, dict)
 
-    def test_model_is_defined_and_valid(self, device_kwargs):
+    def test_model_is_defined_valid_and_correct(self, device_kwargs):
         """Test that the capabilities dictionary defines a valid model."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
@@ -66,76 +95,128 @@ class TestCapabilities:
         assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
-    def test_passthru_is_valid(self, device_kwargs):
+        qnode = qml.QNode(qfunc_no_input, dev)
+
+        # assert that device can measure observable from its model
+        qnode()
+
+    def test_passthru_interface_is_correct(self, device_kwargs):
         """Test that the capabilities dictionary defines a valid passthru interface, if not None."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
-        passthru_interf = cap.get("passthru_interface", None)
-        assert passthru_interf in [None, "tf", "autograd", "numpy", "torch"]
 
-    def test_supports_sampled_mode(self, device_kwargs):
-        """Test that the device's "analytic" attribute can be set to false if it claims to support sampled mode."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-        supports_sampled = cap.get("supports_sampled", False)
+        if "passthru_interface" not in cap:
+            pytest.skip("No passthru_interface capability specified by device.")
 
-        if not supports_sampled:
-            pytest.skip("Device does not support sampled mode.")
+        interface = cap["passthru_interface"]
+        assert interface in ["tf", "autograd"]  # for new interface, add test case
 
-        else:
-            device_kwargs["analytic"] = False
-            dev_sampled = qml.device(**device_kwargs)
-            assert not dev_sampled.analytic
+        qfunc = qfunc_with_scalar_input(cap["model"])
+        qnode = qml.qnodes.passthru.PassthruQNode(qfunc, dev)
+        qnode.interface = interface
 
-    def test_supports_exact_mode(self, device_kwargs):
-        """Test that the device's "analytic" attribute can be set to true if it claims to support exact mode."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-        supports_exact = cap.get("supports_exact", False)
+        # assert that we can do a simple gradient computation in the passthru interface
+        # without raising an error
 
-        if not supports_exact:
-            pytest.skip("Device does not support exact mode.")
+        if interface == "tf":
+            try:
+                import tensorflow as tf
 
-        else:
-            device_kwargs["analytic"] = True
-            dev_exact = qml.device(**device_kwargs)
-            assert dev_exact.analytic
+                x = tf.Variable(0.1)
+                with tf.GradientTape() as tape:
+                    res = qnode(x)
+                    tape.gradient(res, [x])
+
+            except ImportError:
+                pytest.skip("Cannot import tensorflow.")
+
+        if interface == "autograd":
+            x = pnp.array(0.1, requires_grad=True)
+            g = qml.grad(qnode)
+            g(x)
 
     def test_provides_jacobian(self, device_kwargs):
         """Test that the device computes the jacobian."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
-        provides_jacobian = cap.get("provides_jacobian", False)
 
-        if not provides_jacobian:
-            pytest.skip("Device does not provide jacobian.")
+        if "provides_jacobian" not in cap:
+            pytest.skip("No provides_jacobian capability specified by device.")
 
+        qnode = qml.QNode(qfunc_no_input, dev)
+
+        assert cap["provides_jacobian"] == hasattr(qnode, "jacobian")
+
+    def test_supports_tensor_observables(self, device_kwargs):
+        """Tests that the device reports correctly whether it supports tensor observables."""
+        device_kwargs["wires"] = 2
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+
+        if "supports_tensor_observables" not in cap:
+            pytest.skip("No supports_tensor_observables capability specified by device.")
+
+        qnode = qml.QNode(qfunc_tensor_obs, dev)
+
+        if cap["supports_tensor_observables"]:
+            qnode()
         else:
-
-            @qml.qnode(dev)
-            def circuit():
-                return qml.expval(qml.Identity(wires=0))
-
-            assert hasattr(circuit, "jacobian")
+            with pytest.raises(qml.QuantumFunctionError):
+                qnode()
 
     def test_reversible_diff(self, device_kwargs):
-        """Test that the device supports reversible differentiation."""
+        """Tests that the device reports correctly whether it supports reversible differentiation."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
-        rev_diff = cap.get("supports_reversible_diff", False)
 
-        if not rev_diff:
-            pytest.skip("Device does not support reversible differentiation.")
+        if "supports_reversible_diff" not in cap:
+            pytest.skip("No supports_reversible_diff capability specified by device.")
 
+        if cap["supports_reversible_diff"]:
+            qfunc = qfunc_with_scalar_input(model=cap["model"])
+            qnode = qml.QNode(qfunc, dev, diff_method="reversible")
+            g = qml.grad(qnode)
+            g(0.1)
+        # no need to check else statement, since the reversible qnode creation fails in that case by default
+
+    def test_returns_state(self, device_kwargs):
+        """Tests that the device reports correctly whether it supports reversible differentiation."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+
+        if "returns_state" not in cap:
+            pytest.skip("No returns_state capability specified by device.")
+
+        qnode = qml.QNode(qfunc_no_input, dev)
+        qnode()
+
+        if cap["returns_state"]:
+            dev.state
         else:
+            with pytest.raises(AttributeError):
+                dev.state
 
-            @qml.qnode(dev, diff_method="reversible")
-            def circuit():
-                return qml.expval(qml.Identity(wires=0))
+    def test_returns_probs(self, device_kwargs):
+        """Tests that the device reports correctly whether it supports reversible differentiation."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
 
-            assert isinstance(circuit(), (float, np.ndarray))
+        if "returns_probs" not in cap:
+            pytest.skip("No returns_probs capability specified by device.")
+
+        qnode = qml.QNode(qfunc_probs, dev)
+
+        if cap["returns_probs"]:
+            qnode()
+        else:
+            with pytest.raises(NotImplementedError):
+                qnode()
+
+    # TODO: Add tests for supports_finite_shots and supports_analytic_computation
+    # once the shots refactor is done
+

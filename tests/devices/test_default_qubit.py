@@ -665,26 +665,26 @@ class TestSample:
         # they square to 1
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
+
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
-    @pytest.mark.parametrize("cap, value", [("model", "qubit"),
-                                            ("passthru_interface", None),
-                                            ("supports_reversible_diff", True),
-                                            ("supports_exact", True),
-                                            ("supports_sampled", True),
-                                            ("supports_inverse_operations", True),
-                                            ("supports_tensor_observables", True),
-                                            ("provides_jacobian", False),
-                                            ])
-    def test_defines_correct_capabilities(self, cap, value):
+    @pytest.mark.parametrize("capabilities", [{"model": "qubit",
+                                               "supports_finite_shots": True,
+                                               "supports_tensor_observables": True,
+                                               "returns_probs": True,
+                                               "returns_state": True,
+                                               "supports_reversible_diff": True,
+                                               "supports_inverse_operations": True,
+                                               "supports_analytic_computation": True,
+                                               }])
+    def test_defines_correct_capabilities(self, capabilities):
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.qubit", wires=1)
-        capabilities = dev.capabilities()
-        assert cap in capabilities
-        assert capabilities[cap] == value
+        cap = dev.capabilities()
+        assert cap == capabilities
 
     def test_load_default_qubit_device(self):
         """Test that the default plugin loads correctly"""

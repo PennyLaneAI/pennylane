@@ -171,9 +171,11 @@ class DefaultTensor(Device):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_exact=True,
+            supports_analytic_computation=True,
+            supports_finite_shots=False,
             supports_tensor_observables=True,
-            supports_inverse_operations=True,
+            returns_state=False,
+            returns_probs=False
         )
         return capabilities
 

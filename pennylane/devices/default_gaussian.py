@@ -698,8 +698,11 @@ class DefaultGaussian(Device):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="cv",
-            supports_exact=True,
-            supports_sampled=True,
+            supports_analytic_computation=True,
+            supports_finite_shots=True,
+            returns_probs=False,
+            returns_state=False,
+            supports_reversible_diff=False,
         )
         return capabilities
 

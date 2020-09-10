@@ -684,3 +684,18 @@ class TestActiveWires:
         res = dev.active_wires(queue)
 
         assert res == Wires([0, 2, 5])
+
+
+class TestCapabilities:
+    """Test that a default qubit device defines capabilities that all devices inheriting
+     from it will automatically have."""
+
+    @pytest.mark.parametrize("capabilities", [{"model": "qubit",
+                                               "supports_finite_shots": True,
+                                               "supports_tensor_observables": True,
+                                               "returns_probs": True,
+                                               }])
+    def test_defines_correct_capabilities(self, capabilities):
+        """Test that the device defines the right capabilities"""
+
+        assert capabilities == QubitDevice.capabilities()
