@@ -124,7 +124,7 @@ class QuantumTape(AnnotatedQueue):
     [[-0.45478169]]
     """
 
-    cast = staticmethod(np.array)
+    _cast = staticmethod(np.array)
 
     def __init__(self, name=None):
         super().__init__()
