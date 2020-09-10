@@ -15,12 +15,14 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an operator and observable queue.
 """
-import networkx as nx
-
 from pennylane import CircuitGraph
 
 
 class NewCircuitGraph(CircuitGraph):
+    """New circuit graph object. This will eventually grow to replace
+    the existing CircuitGraph; for now, we simply inherit from the
+    current CircuitGraph, and modify the instantiation so that it
+    can be created via the quantum tape."""
 
     def __init__(self, ops, obs, wires):
         self._operations = ops
@@ -29,8 +31,10 @@ class NewCircuitGraph(CircuitGraph):
 
     @property
     def operations(self):
+        """Operations in the circuit."""
         return self._operations
 
     @property
     def observables(self):
+        """Observables in the circuit."""
         return self._observables

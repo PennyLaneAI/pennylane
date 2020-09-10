@@ -24,7 +24,7 @@ requirements = [
     "autograd",
     "toml",
     "appdirs",
-    "semantic_version==2.6"
+    "semantic_version==2.6",
 ]
 
 info = {
