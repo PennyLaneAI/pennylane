@@ -1143,7 +1143,6 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.jacobian(dev)
         array([], shape=(4, 0), dtype=float64)
         """
-
         method = options.get("method", "best")
 
         if method not in ("best", "numeric", "analytic", "device"):
