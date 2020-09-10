@@ -294,9 +294,9 @@ class TestGatesQubit:
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_single_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
         """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
@@ -307,12 +307,12 @@ class TestGatesQubit:
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(rnd_state, wires=range(n_wires))
-            op(theta, wires=range(n_wires))
+            op(gamma, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
-        expected = np.abs(func(theta) @ rnd_state) ** 2
+        expected = np.abs(func(gamma) @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
     def test_rotation(self, device, init_state, tol, skip_if):
@@ -445,9 +445,9 @@ class TestInverseGatesQubit:
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_single_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
         """Test inverse single qubit gates taking one scalar parameter."""
         n_wires = 1
         dev = device(n_wires)
@@ -459,12 +459,12 @@ class TestInverseGatesQubit:
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(rnd_state, wires=range(n_wires))
-            op(theta, wires=range(n_wires)).inv()
+            op(gamma, wires=range(n_wires)).inv()
             return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
-        mat = func(theta)
+        mat = func(gamma)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))

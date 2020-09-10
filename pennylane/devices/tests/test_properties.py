@@ -18,23 +18,34 @@ import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane._device import DeviceError
 
+try:
+    import tensorflow as tf
+    TF_SUPPORT = True
+
+except ImportError:
+    TF_SUPPORT = False
 
 # Shared test data =====
 
 
 def qfunc_no_input():
+    """Model agnostic quantum function """
     return qml.expval(qml.Identity(wires=0))
 
 
 def qfunc_tensor_obs():
+    """Model agnostic quantum function with tensor observable"""
     return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
 
 def qfunc_probs():
+    """Model agnostic quantum function returning probs"""
     return qml.probs(wires=0)
 
 
 def qfunc_with_scalar_input(model=None):
+    """Model dependent quantum function taking a single input"""
+
     def qfunc(x):
         if model == "qubit":
             qml.RX(x, wires=0)
@@ -120,15 +131,12 @@ class TestCapabilities:
         # without raising an error
 
         if interface == "tf":
-            try:
-                import tensorflow as tf
-
+            if TF_SUPPORT:
                 x = tf.Variable(0.1)
                 with tf.GradientTape() as tape:
                     res = qnode(x)
                     tape.gradient(res, [x])
-
-            except ImportError:
+            else:
                 pytest.skip("Cannot import tensorflow.")
 
         if interface == "autograd":
@@ -195,10 +203,10 @@ class TestCapabilities:
         qnode()
 
         if cap["returns_state"]:
-            dev.state
+            dev.state  # pylint: disable = pointless-statement
         else:
             with pytest.raises(AttributeError):
-                dev.state
+                dev.state # pylint: disable = pointless-statement
 
     def test_returns_probs(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""
