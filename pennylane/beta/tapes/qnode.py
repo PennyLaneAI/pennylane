@@ -431,8 +431,10 @@ class QNode:
                 if min_version_for_complex:
                     self.dtype = torch.complex128
                 else:
-                    raise QuantumFunctionError("Version 1.6.0 or above of PyTorch must be installed"
-                                               "for complex support, such as returning the state")
+                    raise QuantumFunctionError(
+                        "Version 1.6.0 or above of PyTorch must be installed"
+                        "for complex support, such as returning the state"
+                    )
 
             if self.qtape is not None:
                 TorchInterface.apply(self.qtape, dtype=self.dtype)
