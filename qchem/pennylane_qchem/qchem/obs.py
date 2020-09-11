@@ -445,7 +445,7 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
 
     In the equation above the indices :math:`\alpha, \beta` run over the basis of spatial
     orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Notice that the spin quantum numbers
-    are accounted for explicitly with the up/down arrows since the operator :math:`t` 
+    are accounted for explicitly with the up/down arrows since the operator :math:`t`
     is assumed to act only on the spatial coordinates. The operators :math:`\hat{c}^\dagger`
     and :math:`\hat{c}` are the particle creation and annihilation operators, respectively.
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix elements of
@@ -468,14 +468,14 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
             not correlated in the many-body wave function
         active (list): indices of active orbitals, i.e., the orbitals used to
             build the correlated many-body wave function
-        cutoff (float): Threshold for including the matrix elements in the table. The 
+        cutoff (float): Threshold for including the matrix elements in the table. The
             matrix elements with absolute value less than ``cutoff`` are discarded.
         
     Returns:
         tuple: The table with the matrix elements of the one-particle operator
         and the contribution due to core orbitals. The table is returned as a 2D Numpy
         array where each row contains the two indices of the *spin* orbitals
-        and the corresponding value of the matrix element. 
+        and the corresponding value of the matrix element.
 
     **Example**
 
@@ -505,60 +505,58 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
     >>> print(t_core)
     -9.45478625532135
     """
-   
+
     orbitals = t_me.shape[0]
-    
+
     if t_me.ndim != 2:
-        raise ValueError(
-            "'t_me' must be a 2D array; got 't_me.ndim = ' {}".format(t_me.ndim)
-        )
-    
+        raise ValueError("'t_me' must be a 2D array; got 't_me.ndim = ' {}".format(t_me.ndim))
+
     if core is None:
         t_core = 0
     else:
-        if (True in [i > orbitals or i < 0 for i in core]):
+        if True in [i > orbitals or i < 0 for i in core]:
             raise ValueError("Indices of core orbitals must be between 0 and {}".format(orbitals))
-            
+
         # Compute contribution due to core orbitals
         t_core = 0
         for i in core:
-            t_core += t_me[i,i]
-        t_core = 2*t_core
-    
+            t_core += t_me[i, i]
+        t_core = 2 * t_core
+
     if active is None:
         if core is None:
             active = list(range(orbitals))
         else:
             active = [i for i in range(orbitals) if i not in core]
-            
-    if (True in [i > orbitals or i < 0 for i in active]):
+
+    if True in [i > orbitals or i < 0 for i in active]:
         raise ValueError("Indices of active orbitals must be between 0 and {}".format(orbitals))
-    
+
     # Indices of the matrix elements with absolute values >= cutoff
     row, column = np.nonzero(np.abs(t_me) >= cutoff)
-    
+
     # Singling out the indices of active orbitals
     rc_pairs = []
     for i in range(len(row)):
         if row[i] in active and column[i] in active:
             rc_pairs.append([row[i], column[i]])
-    
+
     # Building the table of matrix elements
-    t_table = np.zeros((2*len(rc_pairs), 3))
+    t_table = np.zeros((2 * len(rc_pairs), 3))
     for i, pair in enumerate(rc_pairs):
         alpha, beta = pair
-        element = t_me[alpha, beta] 
-        
+        element = t_me[alpha, beta]
+
         # spin-up term
-        t_table[2*i,0] = 2*active.index(alpha)
-        t_table[2*i,1] = 2*active.index(beta)
-        t_table[2*i,2] = element
-        
+        t_table[2 * i, 0] = 2 * active.index(alpha)
+        t_table[2 * i, 1] = 2 * active.index(beta)
+        t_table[2 * i, 2] = element
+
         # spin-down term
-        t_table[2*i+1,0] = 2*active.index(alpha) + 1
-        t_table[2*i+1,1] = 2*active.index(beta) + 1
-        t_table[2*i+1,2] = element
-    
+        t_table[2 * i + 1, 0] = 2 * active.index(alpha) + 1
+        t_table[2 * i + 1, 1] = 2 * active.index(beta) + 1
+        t_table[2 * i + 1, 2] = element
+
     return t_table, t_core
 
 
