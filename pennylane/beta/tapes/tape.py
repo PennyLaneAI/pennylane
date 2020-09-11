@@ -845,22 +845,7 @@ class QuantumTape(AnnotatedQueue):
         if params is None:
             params = self.get_parameters()
 
-        if not self._caching:
-            return self._execute(params, device=device)
-
-        all_params = self.get_parameters(free_only=False)
-        hashed_params = _hash_iterable(all_params)
-
-        if hashed_params in self._hash_execute:
-            return self._hash_execute[hashed_params]
-        else:
-            result = self._execute(params, device=device)
-            self._hash_execute[hashed_params] = result
-
-            if len(self._hash_execute) > self._caching:
-                self._hash_execute.popitem(last=False)
-
-            return result
+        return self._execute(params, device=device)
 
     def execute_device(self, params, device):
         """Execute the tape on a quantum device.
@@ -873,6 +858,11 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
         """
+        if self._caching:
+            hashed_params = _hash_iterable(params)
+            if hashed_params in self._hash_execute:
+                return self._hash_execute[hashed_params]
+
         device.reset()
 
         # backup the current parameters
@@ -905,6 +895,12 @@ class QuantumTape(AnnotatedQueue):
 
         # restore original parameters
         self.set_parameters(current_parameters)
+
+        if self._caching and hashed_params not in self._hash_execute:
+            self._hash_execute[hashed_params] = res
+            if len(self._hash_execute) > self._caching:
+                self._hash_execute.popitem(last=False)
+
         return res
 
     _execute = execute_device
