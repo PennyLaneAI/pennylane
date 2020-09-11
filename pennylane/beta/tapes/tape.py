@@ -15,11 +15,13 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
+from collections import OrderedDict
 import contextlib
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.utils import _hash_iterable
 
 from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
@@ -159,6 +161,13 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = False
 
         self._stack = None
+
+        self._caching = 0
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        self._hash_execute = OrderedDict()  #: OrderedDict[int: Any]: Mapping from hashes of the
+        # input parameters to results of executing the device.
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
@@ -836,7 +845,22 @@ class QuantumTape(AnnotatedQueue):
         if params is None:
             params = self.get_parameters()
 
-        return self._execute(params, device=device)
+        if not self._caching:
+            return self._execute(params, device=device)
+
+        all_params = self.get_parameters(free_only=False)
+        hashed_params = _hash_iterable(all_params)
+
+        if hashed_params in self._hash_execute:
+            return self._hash_execute[hashed_params]
+        else:
+            result = self._execute(params, device=device)
+            self._hash_execute[hashed_params] = result
+
+            if len(self._hash_execute) > self._caching:
+                self._hash_execute.popitem(last=False)
+
+            return result
 
     def execute_device(self, params, device):
         """Execute the tape on a quantum device.
@@ -1227,3 +1251,13 @@ class QuantumTape(AnnotatedQueue):
                 raise e
 
         return jac
+
+    @property
+    def caching(self):
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._caching
+
+    @caching.setter
+    def caching(self, value):
+        self._caching = value
