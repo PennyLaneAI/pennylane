@@ -136,8 +136,10 @@ def bit_flip_mixer(graph, n):
 
     Args:
          graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
-         n (int): Either :math:`0` or :math:`1`. Determines whether the mixer performs a conditional
-                  bit-flip of a vertex if all neighbouring vertices are labelled :math:`0` or :math:`1`.
+         n (int): Either :math:`0` or :math:`1`. When :math:`n=0`, a bit flip is performed on
+             vertex :math:`v` only when all neighbouring nodes are in state :math:`|0\rangle`. 
+             Instead, for :math:`n=1`, a bit flip is performed only when all the neighbours of 
+             :math:`v` are in the state :math:`|1\rangle`.
 
     Returns:
         Hamiltonian: Mixer Hamiltonian
