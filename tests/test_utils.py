@@ -25,6 +25,7 @@ import numpy as np
 import pennylane as qml
 import pennylane._queuing
 import pennylane.utils as pu
+from pennylane.wires import Wires
 
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
@@ -825,3 +826,138 @@ class TestInv:
             ValueError, match="The given operation_list does not only contain Operations"
         ):
             pu.inv(arg)
+
+
+iterable_flat_pairs = (
+    ([1, [2, [3, [4, [5]]]]], [1, 2, 3, 4, 5]),
+    (["axyz", ["b"], ["c", ["d"], "e"]], ["axyz", "b", "c", "d", "e"]),
+    ([1.2, [b"b"]], [1.2, b"b"]),
+    ([[1], [2], [np.ones(4)]], [1, 2, np.ones(4)]),
+    ([Wires(["a", 1, "c"]), ["wires"]], [Wires(["a", 1, "c"]), "wires"])
+)
+
+
+@pytest.mark.parametrize("nonflat, flat", iterable_flat_pairs)
+def test_flatten_iterable(nonflat, flat):
+    """Test that the _flatten_iterable function operates correctly."""
+    flattened = list(pu._flatten_iterable(nonflat))
+
+    comparison = []
+    for f1, f2 in zip(flat, flattened):
+        if isinstance(f1, np.ndarray) and isinstance(f2, np.ndarray):
+            comparison.append((f1 == f2).all())
+        else:
+            comparison.append(f1 == f2)
+
+    assert all(comparison)
+
+
+unhashable_objects = []
+unhashable_iterables = []
+unhashable_dicts = []
+
+try:
+    import torch
+    unhashable_objects.append(torch.ones(3))
+    unhashable_iterables.append([1, [torch.ones(3)]])
+    unhashable_dicts.append({"c": torch.ones(4), "e": "f"})
+except ImportError as e:
+    pass
+
+try:
+    import tensorflow as tf
+    unhashable_objects.append(tf.ones(3))
+    unhashable_iterables.append([[[tf.ones(5)], 1], "g"])
+    unhashable_dicts.append({"a": tf.ones(4), "b": 4})
+except ImportError as e:
+    pass
+
+
+class TestHashing:
+    """Tests for the _hash_object, _hash_iterable and _hash_dict functions."""
+
+    objects = [1, 1.4, "test", "tes", np.ones(6), np.ones((3, 2)), np.zeros(6)]
+
+    @pytest.mark.parametrize("obj", objects)
+    def test_hash(self, obj):
+        """Test that a valid hash is generated"""
+        h = pu._hash_object(obj)
+        h2 = pu._hash_object(obj)
+        assert isinstance(h, int)
+        assert h == h2
+
+    @pytest.mark.parametrize("obj1, obj2", itertools.combinations(objects, r=2))
+    def test_hash_object_different(self, obj1, obj2):
+        """Test that a different hash is given for each test object"""
+        assert pu._hash_object(obj1) != pu._hash_object(obj2)
+
+    @pytest.mark.parametrize("obj", unhashable_objects)
+    def test_invalid_hash(self, obj):
+        """Test that None is returned when passed a PyTorch/TensorFlow tensor"""
+        h = pu._hash_object(obj)
+        assert h is None
+
+    iterables = [
+        [1, 1.4, "f", None],
+        [1, 1.4, [5, 6, "seven"]],
+        [np.ones(2), [np.zeros(3)]],
+        [np.ones(2), [1j * np.zeros(3)]],
+        [1, [2, [3, [4, [5]]]]],
+        [np.zeros(6), np.zeros(3)],
+        [np.zeros((3, 2)), np.zeros(3)],
+        [1, [np.ones(3), {"test_dict": np.ones(3), "other": 9}]],
+    ]
+
+    @pytest.mark.parametrize("iterable", iterables)
+    def test_hash_iterable(self, iterable):
+        """Test that a valid hash is generated"""
+        h = pu._hash_iterable(iterable)
+        h2 = pu._hash_iterable(iterable)
+        assert isinstance(h, int)
+        assert h == h2
+
+    @pytest.mark.parametrize("iterable1, iterable2", itertools.combinations(iterables, r=2))
+    def test_hash_iterable_different(self, iterable1, iterable2):
+        """Test that a different hash is given for each test iterable"""
+        assert pu._hash_iterable(iterable1) != pu._hash_iterable(iterable2)
+
+    @pytest.mark.xfail  # It is not clear how to fix this edge case
+    def test_hash_iterable_different_edge(self):
+        """Tests an edge case where the iterables are identical up to some trivial nesting"""
+        iterable1 = [np.zeros((3, 2)), np.zeros(3)]
+        iterable2 = [np.zeros((3, 2)), [np.zeros(3)]]
+        assert pu._hash_iterable(iterable1) != pu._hash_iterable(iterable2)
+
+    @pytest.mark.parametrize("it", unhashable_iterables)
+    def test_invalid_hash_iterable(self, it):
+        """Test that None is returned when passed an iterable containing a PyTorch/TensorFlow
+        tensor"""
+        h = pu._hash_iterable(it)
+        assert h is None
+
+    dicts = [
+        {"a": iterables[0], "b": iterables[1]},
+        {"a": iterables[0], "c": iterables[2]},
+        {4: "2", "e": iterables[3]},
+        {"double": iterables[7], 4: 5},
+    ]
+
+    @pytest.mark.parametrize("d", dicts)
+    def test_hash_dict(self, d):
+        """Test that a valid hash is generated"""
+        h = pu._hash_dict(d)
+        h2 = pu._hash_dict(d)
+        assert isinstance(h, int)
+        assert h == h2
+
+    @pytest.mark.parametrize("d1, d2", itertools.combinations(dicts, r=2))
+    def test_hash_dict_different(self, d1, d2):
+        """Test that a different hash is given for each test dictionary"""
+        assert pu._hash_dict(d1) != pu._hash_dict(d2)
+
+    @pytest.mark.parametrize("d", unhashable_dicts)
+    def test_invalid_hash_dict(self, d):
+        """Test that None is returned when passed an dictionary containing a PyTorch/TensorFlow
+        tensor"""
+        h = pu._hash_dict(d)
+        assert h is None
