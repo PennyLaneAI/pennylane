@@ -19,6 +19,11 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 qubit-based quantum circuits.
 """
 
+import numpy as np
+
+from pennylane import QubitDevice
+from pennylane.operation import DiagonalOperation, Channel
+
 # tolerance for numerical errors
 tolerance = 1e-10
 
