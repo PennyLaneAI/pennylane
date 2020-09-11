@@ -33,7 +33,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
         assert (
-            grouping_instance.construct_complement_adj_matrix_for_operator()
+            grouping_instance.obtain_complement_adj_matrix_for_operator()
             == qwc_complement_adjacency_matrix
         ).all()
 
@@ -46,7 +46,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
         assert (
-            grouping_instance.construct_complement_adj_matrix_for_operator()
+            grouping_instance.obtain_complement_adj_matrix_for_operator()
             == commuting_complement_adjacency_matrix
         ).all()
 
@@ -59,7 +59,7 @@ class TestPauliGroupingStrategy:
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (
-            grouping_instance.construct_complement_adj_matrix_for_operator()
+            grouping_instance.obtain_complement_adj_matrix_for_operator()
             == anticommuting_complement_adjacency_matrix
         ).all()
 
@@ -70,42 +70,40 @@ class TestPauliGroupingStrategy:
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_qwc_adj_matrix_for_trivial_operators(self, observables):
-        """Constructing the compliment of QWC graph's adjacency matrix for a list of identity
+        """Constructing the complement of QWC graph's adjacency matrix for a list of identity
         operations and various symmetric binary relations"""
 
         qwc_complement_adjacency_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
         assert (
-            grouping_instance.construct_complement_adj_matrix_for_operator()
+            grouping_instance.obtain_complement_adj_matrix_for_operator()
             == qwc_complement_adjacency_matrix
         ).all()
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_commuting_adj_matrix_for_trivial_operators(self, observables):
-        """Constructing the compliment of commutativity graph's adjacency matrix for a list of
+        """Constructing the complement of commutativity graph's adjacency matrix for a list of
         identity operations and various symmetric binary relations"""
 
         commuting_complement_adjacency_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
         assert (
-            grouping_instance.construct_complement_adj_matrix_for_operator()
+            grouping_instance.obtain_complement_adj_matrix_for_operator()
             == commuting_complement_adjacency_matrix
         ).all()
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_anticommuting_adj_matrix_for_trivial_operators(self, observables):
-        """Constructing the compliment of anticommutativity graph's adjacency matrix for a list of
+        """Constructing the complement of anticommutativity graph's adjacency matrix for a list of
         identity operations and various symmetric binary relations"""
-
-        observables = [Identity(0), Identity(0), Identity(7)]
 
         anticommuting_complement_adjacency_matrix = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (
-            grouping_instance.construct_complement_adj_matrix_for_operator()
+            grouping_instance.obtain_complement_adj_matrix_for_operator()
             == anticommuting_complement_adjacency_matrix
         ).all()
 
@@ -207,10 +205,6 @@ class TestGroupObservables:
 
     qwc_tuples = [(obs, qwc_sols[i]) for i, obs in enumerate(observables_list)]
 
-    com_tuples = [(obs, commuting_sols[i]) for i, obs in enumerate(observables_list)]
-
-    anticom_tuples = [(obs, anticommuting_sols[i]) for i, obs in enumerate(observables_list)]
-
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
 
@@ -228,6 +222,8 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
 
+    com_tuples = [(obs, commuting_sols[i]) for i, obs in enumerate(observables_list)]
+
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
 
@@ -244,6 +240,8 @@ class TestGroupObservables:
         for i, partition in enumerate(com_partitions):
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
+
+    anticom_tuples = [(obs, anticommuting_sols[i]) for i, obs in enumerate(observables_list)]
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):

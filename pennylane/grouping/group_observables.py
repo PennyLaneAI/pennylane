@@ -110,16 +110,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         else:
             self.__wire_map = wire_map
 
-        self.binary_observables = convert_observables_to_binary_matrix(
-            self.observables, n_qubits, self.__wire_map
-        )
-
         self.__n_qubits = n_qubits
 
-        return self.binary_observables
+        return convert_observables_to_binary_matrix(self.observables, n_qubits, self.__wire_map)
 
-    def construct_complement_adj_matrix_for_operator(self):
-        """Constructs the adjacency matrix for complement of Pauli graph.
+    def obtain_complement_adj_matrix_for_operator(self):
+        """Constructs the adjacency matrix for the complement of the Pauli graph.
 
         The adjacency matrix for an undirected graph of N vertices is an N by N symmetric binary
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
@@ -130,7 +126,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if self.binary_observables is None:
-            self.obtain_binary_repr()
+            self.binary_observables = self.obtain_binary_repr()
 
         n_qubits = int(np.shape(self.binary_observables)[0] / 2)
 
@@ -157,7 +153,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 adj = (mat_prod + 1) % 2
                 np.fill_diagonal(adj, 0)
 
-        self.adj_matrix = adj
         return adj
 
     def colour_pauli_graph(self):
@@ -171,7 +166,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
 
         if self.adj_matrix is None:
-            self.construct_complement_adj_matrix_for_operator()
+            self.adj_matrix = self.obtain_complement_adj_matrix_for_operator()
 
         coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
 
