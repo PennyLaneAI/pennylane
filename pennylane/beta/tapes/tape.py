@@ -92,6 +92,7 @@ class QuantumTape(AnnotatedQueue):
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
 
     Execution can take place either using the in-place constructed parameters,
+
     >>> tape.execute(dev)
     [0.77750694]
 
@@ -185,7 +186,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def interface(self):
-        """str, None: automatic differentiation interface used by the quantum tap (if any)"""
+        """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
     # ========================================================
@@ -230,7 +231,7 @@ class QuantumTape(AnnotatedQueue):
                 if isinstance(obj, STATE_PREP_OPS):
                     if self._ops:
                         raise ValueError(
-                            f"State preperation operation {obj} must occur prior to any quantum operations."
+                            f"State preparation operation {obj} must occur prior to any quantum operations."
                         )
 
                     self._prep.append(obj)
@@ -317,7 +318,7 @@ class QuantumTape(AnnotatedQueue):
         return new_tape
 
     def expand(self, depth=1, stop_at=None):
-        """Expand all operations in the processed to a specific depth.
+        """Expand all operations in the processed queue to a specific depth.
 
         Args:
             depth (int): the depth the tape should be expanded
@@ -406,7 +407,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters()
         [array([1, 1]), 0.432, 0.543, 0.1, 0.4]
 
-        Here, lets set some trainable parameters:
+        Here, let's set some trainable parameters:
 
         >>> tape.trainable_params = {1, 2}
         >>> tape.get_parameters()
@@ -540,7 +541,7 @@ class QuantumTape(AnnotatedQueue):
         """Returns the operations on the quantum tape.
 
         Returns:
-            list[.Operation]: list of recorded quantum operations
+            list[.Operation]: recorded quantum operations
 
         **Example**
 
@@ -582,7 +583,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RX(0.133, wires='a')
                 expval(qml.PauliZ(wires=[0]))
 
-        >>> tape.operations
+        >>> tape.observables
         [expval(PauliZ(wires=[0]))]
         """
         return [m[1] for m in self._obs]
@@ -620,7 +621,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def output_dim(self):
-        """The (estimated) output dimension of the quantum tape."""
+        """The (inferred) output dimension of the quantum tape."""
         return self._output_dim
 
     @property
@@ -759,7 +760,7 @@ class QuantumTape(AnnotatedQueue):
             required_length = len(self._par_info)
 
         if len(params) != required_length:
-            raise ValueError("Number of provided parameters invalid.")
+            raise ValueError("Number of provided parameters does not match the required number.")
 
         for idx, p in iterator:
             op = self._par_info[idx]["op"]

@@ -179,7 +179,7 @@ class TestConstruction:
             assert isinstance(o1, o2.__class__)
             assert o1.wires == o2.wires
 
-    def test_tensor_process_queueion(self):
+    def test_tensor_process_queuing(self):
         """Test that tensors are correctly queued"""
         with QuantumTape() as tape:
             A = qml.PauliX(wires=0)
@@ -251,7 +251,7 @@ class TestConstruction:
                 expval(qml.PauliZ(wires=1))
 
     def test_observable_with_no_measurement(self):
-        """Test that an exception is raised if a measurement occurs before a operation"""
+        """Test that an exception is raised if an observable is used without a measurement"""
 
         with pytest.raises(ValueError, match="does not have a measurement type specified"):
             with QuantumTape() as tape:
@@ -294,7 +294,7 @@ class TestGraph:
         assert tape._graph is None
         spy.assert_not_called()
 
-        # requested the graph creates it
+        # requesting the graph creates it
         g = tape.graph
         assert g.operations == [op]
         assert g.observables == [obs]
@@ -341,7 +341,7 @@ class TestParameters:
         assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
 
-        # add an additiona trainable parameter
+        # add additional trainable parameters
         trainable = {1, 2, 3, 4}
         tape.trainable_params = trainable
         assert tape._trainable_params == trainable
