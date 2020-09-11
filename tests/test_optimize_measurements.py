@@ -30,7 +30,7 @@ class TestOptimizeMeasurements:
         ),
         (
             [
-                Identity(1),
+                Identity(0),
                 PauliX(1) @ PauliY(2),
                 PauliY(3) @ PauliX(1) @ PauliZ(2),
                 PauliY(4) @ PauliZ(1),

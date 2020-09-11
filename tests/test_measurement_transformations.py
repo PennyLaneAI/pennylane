@@ -17,9 +17,13 @@ Unit tests for the circuit implementations required in measurement optimization 
 """
 import pytest
 import numpy as np
-from pennylane import PauliX, PauliY, PauliZ, Identity, Hadamard, RX, RY
+from pennylane import PauliX, PauliY, PauliZ, Identity, Hadamard, Hermitian, RX, RY, U3
 from pennylane.grouping.utils import are_identical_pauli_words
-from pennylane.grouping.transformations import qwc_rotation, diagonalize_qwc_grouping
+from pennylane.grouping.transformations import (
+    qwc_rotation,
+    diagonalize_pauli_word,
+    diagonalize_qwc_grouping,
+)
 
 
 class TestMeasurementTransformations:
@@ -89,6 +93,31 @@ class TestMeasurementTransformations:
 
         assert pytest.raises(TypeError, qwc_rotation, bad_input)
 
+    diagonalized_paulis = [
+        (Identity("a"), Identity("a")),
+        (PauliX(1) @ Identity(2) @ PauliZ("b"), PauliZ(1) @ PauliZ("b")),
+        (PauliZ(1) @ PauliZ(2), PauliZ(1) @ PauliZ(2)),
+        (PauliX("a") @ PauliY("b") @ PauliY("c"), PauliZ("a") @ PauliZ("b") @ PauliZ("c")),
+    ]
+
+    @pytest.mark.parametrize("pauli_word, diag_pauli_word", diagonalized_paulis)
+    def test_diagonalize_pauli_word(self, pauli_word, diag_pauli_word):
+        """Tests `diagonalize_pauli_word` returns the correct diagonal Pauli word in computational
+        basis for a given Pauli word."""
+
+        assert are_identical_pauli_words(diagonalize_pauli_word(pauli_word), diag_pauli_word)
+
+    non_pauli_words = [
+        PauliX(0) @ Hadamard(1) @ Identity(2),
+        Hadamard("a"),
+        U3(0.1, 1, 1, wires="a"),
+        Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires="a") @ PauliX("b"),
+    ]
+
+    @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
+    def test_diagonalize_pauli_word_catch_non_pauli_word(self, non_pauli_word):
+        assert pytest.raises(TypeError, diagonalize_pauli_word, non_pauli_word)
+
     qwc_diagonalization_io = [
         (
             [PauliX(0) @ PauliY(1), PauliX(0) @ PauliZ(2)],
@@ -152,5 +181,5 @@ class TestMeasurementTransformations:
     def test_diagonalize_qwc_grouping_catch_when_not_qwc(self, not_qwc_grouping):
         """Test for ValueError raise when diagonalize_qwc_grouping is not given a list of
         qubit-wise commuting Pauli words."""
-        
+
         assert pytest.raises(ValueError, diagonalize_qwc_grouping, not_qwc_grouping)
