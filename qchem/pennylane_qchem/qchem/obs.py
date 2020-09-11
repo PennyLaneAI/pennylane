@@ -469,7 +469,7 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
         active (list): indices of active orbitals, i.e., the orbitals used to
             build the correlated many-body wave function
         cutoff (float): Threshold for including the matrix elements in the table. The
-            matrix elements with absolute value less than ``cutoff`` are discarded.
+            matrix elements with absolute value less than ``cutoff`` are neglected.
         
     Returns:
         tuple: The table with the matrix elements of the one-particle operator
@@ -509,13 +509,17 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
     orbitals = t_me.shape[0]
 
     if t_me.ndim != 2:
-        raise ValueError("'t_me' must be a 2D array; got 't_me.ndim = ' {}".format(t_me.ndim))
+        raise ValueError("'t_me' must be a 2D array; got t_me.ndim = {}".format(t_me.ndim))
 
     if core is None:
         t_core = 0
     else:
-        if True in [i > orbitals or i < 0 for i in core]:
-            raise ValueError("Indices of core orbitals must be between 0 and {}".format(orbitals))
+        if True in [i > orbitals - 1 or i < 0 for i in core]:
+            raise ValueError(
+                "Indices of core orbitals must be between 0 and {}; got core = {}".format(
+                    orbitals, core
+                )
+            )
 
         # Compute contribution due to core orbitals
         t_core = 0
@@ -529,8 +533,12 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
         else:
             active = [i for i in range(orbitals) if i not in core]
 
-    if True in [i > orbitals or i < 0 for i in active]:
-        raise ValueError("Indices of active orbitals must be between 0 and {}".format(orbitals))
+    if True in [i > orbitals - 1 or i < 0 for i in active]:
+        raise ValueError(
+            "Indices of active orbitals must be between 0 and {}; got active = {}".format(
+                orbitals, active
+            )
+        )
 
     # Indices of the matrix elements with absolute values >= cutoff
     row, column = np.nonzero(np.abs(t_me) >= cutoff)
