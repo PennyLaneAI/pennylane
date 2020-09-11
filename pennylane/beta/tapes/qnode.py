@@ -98,6 +98,7 @@ class QNode:
               rule where possible, with finite-difference as a fallback.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
+        mutable (bool) – whether the QNode circuit is mutable
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
@@ -117,7 +118,8 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes
 
-    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+    def __init__(self, func, device, interface="autograd", diff_method="best",
+                 mutable=True, **diff_options):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise QuantumFunctionError(
@@ -140,6 +142,8 @@ class QNode:
 
         self.dtype = np.float64
         self.max_expansion = 2
+
+        self.mutable = mutable
 
     @staticmethod
     def _get_tape(device, interface, diff_method="best"):
@@ -360,7 +364,8 @@ class QNode:
 
     def __call__(self, *args, **kwargs):
         # construct the tape
-        self.construct(args, kwargs)
+        if self.qtape is None or self.mutable:
+            self.construct(args, kwargs)
 
         # execute the tape
         return self.qtape.execute(device=self.device)
@@ -438,7 +443,7 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
-def qnode(device, interface="autograd", diff_method="best", **diff_options):
+def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff_options):
     """Decorator for creating QNodes.
 
     When applied to a quantum function, this decorator converts it into
@@ -502,6 +507,7 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
               rule where possible, with finite-difference as a fallback.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all parameters.=
+        mutable (bool) – whether the QNode circuit is mutable
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
@@ -522,7 +528,8 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        qn = QNode(func, device, interface=interface, diff_method=diff_method, **diff_options)
+        qn = QNode(func, device, interface=interface, diff_method=diff_method,
+                   mutable=mutable, **diff_options)
         return update_wrapper(qn, func)
 
     return qfunc_decorator
