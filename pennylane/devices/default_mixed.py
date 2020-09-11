@@ -24,9 +24,6 @@ import numpy as np
 from pennylane import QubitDevice
 from pennylane.operation import DiagonalOperation, Channel
 
-# tolerance for numerical errors
-tolerance = 1e-10
-
 
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
@@ -34,8 +31,7 @@ class DefaultMixed(QubitDevice):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers
-            (i.e., ``[-1, 0, 2]``) or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not
-             specified.
+            (i.e., ``[-1, 0, 2]``) or strings (``['ancilla', 'q1', 'q2']``).
         shots (int): Number of times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to 1000 if not specified.
             If ``analytic == True``, the number of shots is ignored
@@ -47,10 +43,6 @@ class DefaultMixed(QubitDevice):
 
     name = "Default mixed-state qubit PennyLane plugin"
     short_name = "default.mixed"
-    pennylane_requires = "0.12"
-    version = "0.12.0"
-    author = "Xanadu Inc."
-    _capabilities = {"inverse_operations": True, "reversible_diff": True}  # check this
 
     operations = {
         "BasisState",
@@ -85,8 +77,6 @@ class DefaultMixed(QubitDevice):
         "QubitChannel",
     }
 
-    observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
-
     def __init__(self, wires, *, shots=1000, analytic=True):
         # call QubitDevice init
         super().__init__(wires, shots, analytic)
@@ -114,9 +104,10 @@ class DefaultMixed(QubitDevice):
 
     @property
     def state(self):
-        """Allows users to retrieve state as a property"""
+        """Returns the state density matrix of the circuit prior to measurement"""
+        dim = 2 ** self.num_wires
         # User obtains state as a matrix
-        return self._reshape(self._pre_rotated_state, (2 ** self.num_wires, 2 ** self.num_wires))
+        return self._reshape(self._pre_rotated_state, (dim, dim))
 
     def reset(self):
         """Resets the device"""
@@ -126,7 +117,6 @@ class DefaultMixed(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-        """Computes the probability of observing each computational basis state"""
 
         if self._state is None:
             return None
@@ -144,7 +134,7 @@ class DefaultMixed(QubitDevice):
             operation (~.Operation): a PennyLane operation
 
         Returns:
-            array[complex]: Returns a list of 2D matrices representing the Kraus operators. If
+            list[array[complex]]: Returns a list of 2D matrices representing the Kraus operators. If
             the operation is unitary, returns a single Kraus operator. In the case of a diagonal
              unitary, returns a 1D array representing the matrix diagonal.
         """
@@ -154,4 +144,4 @@ class DefaultMixed(QubitDevice):
         if isinstance(operation, Channel):
             return operation.kraus_matrices
 
-        return operation.matrix
+        return [operation.matrix]
