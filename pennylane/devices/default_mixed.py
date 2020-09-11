@@ -136,7 +136,7 @@ class DefaultMixed(QubitDevice):
         Returns:
             list[array[complex]]: Returns a list of 2D matrices representing the Kraus operators. If
             the operation is unitary, returns a single Kraus operator. In the case of a diagonal
-             unitary, returns a 1D array representing the matrix diagonal.
+            unitary, returns a 1D array representing the matrix diagonal.
         """
         if isinstance(operation, DiagonalOperation):
             return operation.eigvals
