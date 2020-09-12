@@ -173,7 +173,7 @@ class TestConstruction:
 
         assert len(tape.queue) == 4
         assert not tape.operations
-        assert tape._obs == [(D, C)]
+        assert tape.measurements == [D]
         assert tape.observables == [C]
         assert tape.output_dim == 1
 
@@ -418,10 +418,10 @@ class TestParameters:
         are attempted to be set"""
         tape, _ = make_tape
 
-        with pytest.raises(ValueError, match="Number of provided parameters invalid"):
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
             tape.set_parameters([0.54])
 
-        with pytest.raises(ValueError, match="Number of provided parameters invalid"):
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
             tape.trainable_params = {2, 3}
             tape.set_parameters([0.54, 0.54, 0.123])
 

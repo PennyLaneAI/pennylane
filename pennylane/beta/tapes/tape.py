@@ -124,8 +124,6 @@ class QuantumTape(AnnotatedQueue):
     [[-0.45478169]]
     """
 
-    _cast = staticmethod(np.array)
-
     def __init__(self, name=None):
         super().__init__()
         self.name = name
@@ -136,9 +134,8 @@ class QuantumTape(AnnotatedQueue):
         self._ops = []
         """list[~.Operation]: quantum operations recorded by the tape."""
 
-        self._obs = []
-        """list[tuple[~.MeasurementProcess, ~.Observable]]: measurement processes and
-        coresponding observables recorded by the tape."""
+        self._measurements = []
+        """list[~.MeasurementProcess]: measurement processes recorded by the tape."""
 
         self._par_info = {}
         """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
@@ -200,7 +197,7 @@ class QuantumTape(AnnotatedQueue):
         This method sets the following attributes:
 
         * ``_ops``
-        * ``_obs``
+        * ``_measurements``
         * ``_par_info``
         * ``_output_dim``
         * ``_trainable_params``
@@ -208,7 +205,7 @@ class QuantumTape(AnnotatedQueue):
         """
         self._prep = []
         self._ops = []
-        self._obs = []
+        self._measurements = []
         self._output_dim = 0
 
         for obj, info in self._queue.items():
@@ -218,12 +215,11 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
-                if self._obs:
+
+                if self._measurements:
                     raise ValueError(
                         f"Quantum operation {obj} must occur prior to any measurements."
                     )
-
-                obj.do_check_domain = False
 
                 # invert the operation if required
                 obj.inverse = info.get("inverse", False)
@@ -240,24 +236,17 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, MeasurementProcess):
                 # measurement process
+                self._measurements.append(obj)
 
+                # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
-                    self._obs.append((obj, obj))
                     self._output_dim += 2 ** len(obj.wires)
-
-                elif "owns" in info:
-                    # TODO: remove the following line once devices
-                    # have been refactored to no longer use obs.return_type.
-                    # Monkeypatch the observable to have the same return
-                    # type as the measurement process.
-                    info["owns"].return_type = obj.return_type
-                    info["owns"].do_check_domain = False
-
-                    self._obs.append((obj, info["owns"]))
+                else:
                     self._output_dim += 1
 
-                    if obj.return_type is qml.operation.Sample:
-                        self.is_sampled = True
+                # check if any sampling is occuring
+                if obj.return_type is qml.operation.Sample:
+                    self.is_sampled = True
 
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
@@ -328,7 +317,7 @@ class QuantumTape(AnnotatedQueue):
             new_tape._prep += t._prep
             new_tape._ops += t._ops
 
-        new_tape._obs = self._obs
+        new_tape._measurements = self._measurements
         return new_tape
 
     def expand(self, depth=1, stop_at=None):
@@ -625,7 +614,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.measurements
         [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f10b2150c10>]
         """
-        return [m[0] for m in self._obs]
+        return self._measurements
 
     @property
     def num_params(self):
