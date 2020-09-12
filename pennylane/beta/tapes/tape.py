@@ -774,7 +774,7 @@ class QuantumTape(AnnotatedQueue):
             required_length = len(self._par_info)
 
         if len(params) != required_length:
-            raise ValueError("Number of provided parameters invalid.")
+            raise ValueError("Number of provided parameters does not match.")
 
         for idx, p in iterator:
             op = self._par_info[idx]["op"]

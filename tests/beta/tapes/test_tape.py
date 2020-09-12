@@ -77,12 +77,12 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, ops, obs = make_tape
 
-        assert isinstance(tape._obs[0][0], MeasurementProcess)
-        assert tape._obs[0][0].return_type == qml.operation.Expectation
-        assert tape._obs[0][1] == obs[0]
+        assert isinstance(tape.measurements[0], MeasurementProcess)
+        assert tape.measurements[0].return_type == qml.operation.Expectation
+        assert tape.observables[0] == obs[0]
 
-        assert isinstance(tape._obs[1][0], MeasurementProcess)
-        assert tape._obs[1][0].return_type == qml.operation.Probability
+        assert isinstance(tape.measurements[1], MeasurementProcess)
+        assert tape.measurements[1].return_type == qml.operation.Probability
 
     def test_tensor_observables(self):
         """Test that tensor observables are correctly processed from the annotated
