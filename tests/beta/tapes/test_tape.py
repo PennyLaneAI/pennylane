@@ -81,13 +81,13 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, ops, obs = make_tape
 
-        # test that the internal tape._obs list is created properly
-        assert isinstance(tape._obs[0][0], MeasurementProcess)
-        assert tape._obs[0][0].return_type == qml.operation.Expectation
-        assert tape._obs[0][1] == obs[0]
+        # test that the internal tape._measurements list is created properly
+        assert isinstance(tape._measurements[0], MeasurementProcess)
+        assert tape._measurements[0].return_type == qml.operation.Expectation
+        assert tape._measurements[0].obs == obs[0]
 
-        assert isinstance(tape._obs[1][0], MeasurementProcess)
-        assert tape._obs[1][0].return_type == qml.operation.Probability
+        assert isinstance(tape._measurements[1], MeasurementProcess)
+        assert tape._measurements[1].return_type == qml.operation.Probability
 
         # test the public observables property
         assert len(tape.observables) == 2
@@ -189,7 +189,7 @@ class TestConstruction:
 
         assert len(tape.queue) == 4
         assert not tape.operations
-        assert tape._obs == [(D, C)]
+        assert tape.measurements == [D]
         assert tape.observables == [C]
         assert tape.output_dim == 1
 
@@ -434,10 +434,10 @@ class TestParameters:
         are attempted to be set"""
         tape, _ = make_tape
 
-        with pytest.raises(ValueError, match="Number of provided parameters invalid"):
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
             tape.set_parameters([0.54])
 
-        with pytest.raises(ValueError, match="Number of provided parameters invalid"):
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
             tape.trainable_params = {2, 3}
             tape.set_parameters([0.54, 0.54, 0.123])
 
