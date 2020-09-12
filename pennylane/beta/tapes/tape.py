@@ -17,8 +17,6 @@ This module contains the base quantum tape.
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
 import contextlib
 
-import numpy as np
-
 import pennylane as qml
 
 from pennylane.beta.queuing import MeasurementProcess
