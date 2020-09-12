@@ -588,7 +588,19 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [expval(PauliZ(wires=[0]))]
         """
-        return [m[1] for m in self._obs]
+        # TODO: modify this property once devices
+        # have been refactored to accept and understand recieving
+        # measurement processes rather than specific observables.
+        obs = []
+
+        for m in self._measurements:
+            if m.obs is not None:
+                m.obs.return_type = m.return_type
+                obs.append(m.obs)
+            else:
+                obs.append(m)
+
+        return obs
 
     @property
     def measurements(self):
