@@ -356,7 +356,7 @@ class TestParameters:
         assert tape._trainable_params == trainable
         assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-        assert tape.get_parameters(free_only=False) == params
+        assert tape.get_parameters(trainable_only=False) == params
 
     def test_set_trainable_params_error(self, make_tape):
         """Test that exceptions are raised if incorrect parameters
@@ -408,7 +408,7 @@ class TestParameters:
             else:
                 assert pinfo["op"].data[pinfo["p_idx"]] == params[idx]
 
-        assert tape.get_parameters(free_only=False) == [
+        assert tape.get_parameters(trainable_only=False) == [
             params[0],
             new_params[0],
             params[2],
@@ -422,12 +422,12 @@ class TestParameters:
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.trainable_params = {1, 3}
-        tape.set_parameters(new_params, free_only=False)
+        tape.set_parameters(new_params, trainable_only=False)
 
         for pinfo, pval in zip(tape._par_info.values(), new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
-        assert tape.get_parameters(free_only=False) == new_params
+        assert tape.get_parameters(trainable_only=False) == new_params
 
     def test_setting_parameters_error(self, make_tape):
         """Test that exceptions are raised if incorrect parameters
@@ -506,6 +506,8 @@ class TestInverse:
         assert ops[2].inverse
 
         # check that parameter order has reversed
+        print(tape.get_parameters())
+        print([init_state, p[1], p[2], p[3], p[0]])
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
 
     def test_parameter_transforms(self):
