@@ -91,7 +91,10 @@ def tensor_init(self, *args):
         elif isinstance(o, qml.operation.Observable):
             self.obs.append(o)
 
-        QueuingContext.update_info(o, owner=self)
+        try:
+            QueuingContext.update_info(o, owner=self)
+        except NotImplementedError:
+            pass
 
     QueuingContext.append(self, owns=tuple(args))
 
