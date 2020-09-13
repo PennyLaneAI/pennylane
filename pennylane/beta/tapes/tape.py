@@ -40,6 +40,74 @@ STATE_PREP_OPS = (
 )
 
 
+def expand_tape(tape, depth=1, stop_at=None):
+    """Expand all objects in a tape to a specific depth.
+
+    Args:
+        depth (int): the depth the tape should be expanded
+        stop_at (Sequence[str, Any]): Sequence containing names as well as specific objects.
+            Any object within the tape found within this list, or with a matching
+            name, is not expanded.
+
+    **Example**
+
+    Consider the following nested tape:
+
+    .. code-block:: python
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+            with QuantumTape() as tape2:
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=[0, 'a'])
+            qml.RY(0.2, wires='a')
+            probs(wires=0), probs(wires='a')
+
+    The nested structure is preserved:
+
+    >>> tape.operations
+    [BasisState(array([1, 1]), wires=[0, 'a']),
+     <QuantumTape: wires=[0], params=3>,
+     CNOT(wires=[0, 'a']),
+     RY(0.2, wires=['a'])]
+
+    Calling ``expand_tape`` will return a tape with all nested tapes
+    expanded, resulting in a single tape of quantum operations:
+
+    >>> new_tape = expand_tape(tape)
+    >>> new_tape.operations
+    [PauliX(wires=[0]),
+     PauliX(wires=['a']),
+     Rot(0.543, 0.1, 0.4, wires=[0]),
+     CNOT(wires=[0, 'a']),
+     RY(0.2, wires=['a'])]
+    """
+    new_tape = tape.__class__()
+    stop_at = stop_at or []
+
+    for queue in ("_prep", "_ops", "_measurements"):
+        for obj in getattr(tape, queue):
+
+            stop = (obj in stop_at) or (obj.name in stop_at) or depth == 0
+
+            if stop or isinstance(obj, MeasurementProcess):
+                getattr(new_tape, queue).append(obj)
+                continue
+
+            if isinstance(obj, qml.operation.Operation):
+                obj = obj.expand()
+
+            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
+
+            new_tape._prep += expanded_tape._prep
+            new_tape._ops += expanded_tape._ops
+            new_tape._measurements += expanded_tape._measurements
+
+    return new_tape
+
+
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
@@ -282,28 +350,6 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
 
-    def _expand(self, stop_at=None):
-        """Expand all operations and tapes in the processed queue.
-
-        Args:
-            stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
-                An operation or tape appearing in this list of names is not expanded.
-        """
-        new_tape = self.__class__()
-        stop_at = stop_at or []
-
-        for op in self.operations:
-            if op.name in stop_at:
-                new_tape._ops.append(op)
-                continue
-
-            t = op if isinstance(op, QuantumTape) else op.expand()
-            new_tape._prep += t._prep
-            new_tape._ops += t._ops
-
-        new_tape._measurements = self._measurements
-        return new_tape
-
     def expand(self, depth=1, stop_at=None):
         """Expand all operations in the processed queue to a specific depth.
 
@@ -347,19 +393,7 @@ class QuantumTape(AnnotatedQueue):
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
         """
-        old_tape = self
-
-        for _ in range(depth):
-            new_tape = old_tape._expand(stop_at=stop_at)
-
-            if len(new_tape.operations) == len(old_tape.operations) and [
-                o1.name == o2.name for o1, o2 in zip(new_tape.operations, old_tape.operations)
-            ]:
-                # expansion has found a fixed point
-                break
-
-            old_tape = new_tape
-
+        new_tape = expand_tape(self, depth=depth, stop_at=stop_at)
         new_tape._update()
         return new_tape
 
