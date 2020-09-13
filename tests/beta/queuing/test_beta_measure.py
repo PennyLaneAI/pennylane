@@ -248,5 +248,5 @@ class TestExpansion:
         be expanded has no observable"""
         m = MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1]))
 
-        with pytest.raises(ValueError, match="Cannot expand"):
+        with pytest.raises(NotImplementedError, match="Cannot expand"):
             m.expand()

@@ -40,14 +40,16 @@ STATE_PREP_OPS = (
 )
 
 
-def expand_tape(tape, depth=1, stop_at=None):
+def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
     Args:
         depth (int): the depth the tape should be expanded
-        stop_at (Sequence[str, Any]): Sequence containing names as well as specific objects.
-            Any object within the tape found within this list, or with a matching
-            name, is not expanded.
+        stop_at (Callable): A function which accepts a queue object,
+            and returns ``True`` if this object should *not* be expanded.
+            If not provided, all objects that support expansion will be expanded.
+        expand_measurements (bool): If ``True``, measurements will be expanded
+            to basis rotations and computational basis measurements.
 
     **Example**
 
@@ -84,21 +86,42 @@ def expand_tape(tape, depth=1, stop_at=None):
      CNOT(wires=[0, 'a']),
      RY(0.2, wires=['a'])]
     """
+    if depth == 0:
+        return tape
+
+    if stop_at is None:
+        # by default expand all objects
+        stop_at = lambda obj: False
+
     new_tape = tape.__class__()
-    stop_at = stop_at or []
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
 
-            stop = (obj in stop_at) or (obj.name in stop_at) or depth == 0
+            stop = stop_at(obj)
 
-            if stop or isinstance(obj, MeasurementProcess):
+            if not expand_measurements:
+                # Measurements should not be expanded; treat measurements
+                # as a stopping condition
+                stop = stop or isinstance(obj, MeasurementProcess)
+
+            if stop:
+                # do not expand out the object; append it to the
+                # new tape, and continue to the next object in the queue
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, qml.operation.Operation):
-                obj = obj.expand()
+            if isinstance(obj, (qml.operation.Operation, MeasurementProcess)):
+                # Object is an operation; query it for its expansion
+                try:
+                    obj = obj.expand()
+                except NotImplementedError:
+                    # Object does not define an expansion; treat this as
+                    # a stopping condition.
+                    getattr(new_tape, queue).append(obj)
+                    continue
 
+            # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
             new_tape._prep += expanded_tape._prep
@@ -350,13 +373,16 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
 
-    def expand(self, depth=1, stop_at=None):
+    def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
 
         Args:
             depth (int): the depth the tape should be expanded
-            stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
-                An operation or tape appearing in this list of names is not expanded.
+            stop_at (Callable): A function which accepts a queue object,
+                and returns ``True`` if this object should *not* be expanded.
+                If not provided, all objects that support expansion will be expanded.
+            expand_measurements (bool): If ``True``, measurements will be expanded
+                to basis rotations and computational basis measurements.
 
         **Example**
 
@@ -393,7 +419,9 @@ class QuantumTape(AnnotatedQueue):
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
         """
-        new_tape = expand_tape(self, depth=depth, stop_at=stop_at)
+        new_tape = expand_tape(
+            self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
+        )
         new_tape._update()
         return new_tape
 

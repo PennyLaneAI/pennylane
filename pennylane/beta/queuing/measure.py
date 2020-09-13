@@ -151,7 +151,7 @@ class MeasurementProcess:
         None
         """
         if self.obs is None:
-            raise ValueError("Cannot expand a measurement process with no observable.")
+            raise NotImplementedError("Cannot expand a measurement process with no observable.")
 
         from pennylane.beta.tapes import QuantumTape
 
