@@ -17,6 +17,8 @@ This module contains the base quantum tape.
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches
 import contextlib
 
+import numpy as np
+
 import pennylane as qml
 
 from pennylane.beta.queuing import MeasurementProcess
@@ -532,7 +534,7 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.QuantumTape.execute`, and :meth:`~.QuantumTape.jacobian`,
+        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.QuantumTape.jacobian`,
         and changes the default output size of methods :meth:`~.QuantumTape.jacobian` and
         :meth:`~.get_parameters()`.
 
@@ -833,3 +835,105 @@ class QuantumTape(AnnotatedQueue):
     @data.setter
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
+
+    # ========================================================
+    # execution methods
+    # ========================================================
+
+    def execute(self, device, params=None):
+        """Execute the tape on a quantum device.
+
+        Args:
+            device (~.Device): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameters are used (via :meth:`~.get_parameters`).
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                probs(wires=[0, 'a'])
+
+        If parameters are not provided, the existing tape parameters are used:
+
+        >>> dev = qml.device("default.qubit", wires=[0, 'a'])
+        >>> tape.execute(dev)
+        array([[8.84828969e-01, 3.92449987e-03, 4.91235209e-04, 1.10755296e-01]])
+
+        Parameters can be optionally passed during execution:
+
+        >>> tape.execute(dev, params=[1.0, 0.0, 1.0])
+        array([[0.5931328 , 0.17701835, 0.05283049, 0.17701835]])
+
+        Parameters provided for execution are temporary, and do not affect
+        the tapes' parameters in-place:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+        """
+        if params is None:
+            params = self.get_parameters()
+
+        return self._execute(params, device=device)
+
+    def execute_device(self, params, device):
+        """Execute the tape on a quantum device.
+
+        This is a low-level method, intended to be called by an interface,
+        and does not support autodifferentiation.
+
+        For more details on differentiable tape execution, see :meth:`~.execute`.
+
+        Args:
+            device (~.Device): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): The quantum tape operation parameters. If not provided,
+                the current tape parameter values are used (via :meth:`~.get_parameters`).
+        """
+        device.reset()
+
+        # backup the current parameters
+        current_parameters = self.get_parameters()
+
+        # temporarily mutate the in-place parameters
+        self.set_parameters(params)
+
+        if isinstance(device, qml.QubitDevice):
+            res = device.execute(self)
+        else:
+            res = device.execute(self.operations, self.observables, {})
+
+        # Update output dim if incorrect.
+        # Note that we cannot assume the type of `res`, so
+        # we use duck typing to catch any 'array like' object.
+        try:
+            if isinstance(res, np.ndarray) and res.dtype is np.dtype("object"):
+                output_dim = sum([len(i) for i in res])
+            else:
+                output_dim = np.prod(res.shape)
+
+            if self.output_dim != output_dim:
+                # update the output dimension estimate with the correct value
+                self._output_dim = output_dim
+
+        except (AttributeError, TypeError):
+            # unable to determine the output dimension
+            pass
+
+        # restore original parameters
+        self.set_parameters(current_parameters)
+        return res
+
+    # interfaces can optionally override the _execute method
+    # if they need to perform any logic inbetween the users
+    # call to tape.execute and the internal call to tape.execute_device.
+    _execute = execute_device
