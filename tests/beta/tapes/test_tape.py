@@ -611,7 +611,7 @@ class TestExpand:
             qml.Rot(3, 4, 5, wires=0)
             probs(wires=0), probs(wires="a")
 
-        new_tape = tape.expand(stop_at=["Rot"])
+        new_tape = tape.expand(stop_at=lambda obj: obj.name in ["Rot"])
         assert len(new_tape.operations) == 4
         assert "Rot" in [i.name for i in new_tape.operations]
         assert not "U3" in [i.name for i in new_tape.operations]
@@ -649,8 +649,34 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             probs(wires=0), probs(wires="a")
 
-        new_tape = tape.expand(depth=2, stop_at=["PauliX"])
+        new_tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in ["PauliX"])
         assert len(new_tape.operations) == 7
+
+    def test_measurement_expansion(self):
+        """Test that measurement expansion works as expected"""
+        with QuantumTape() as tape:
+            # expands into 2 PauliX
+            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
+            qml.CNOT(wires=[0, "a"])
+            qml.RY(0.2, wires="a")
+            probs(wires=0)
+            # expands into RY on wire b
+            expval(qml.PauliZ("a") @ qml.Hadamard("b"))
+            # expands into QubitUnitary on wire 0
+            var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[0]))
+
+        new_tape = tape.expand(expand_measurements=True)
+
+        assert len(new_tape.operations) == 6
+
+        expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
+        assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
+
+        expected = [None, None, None]
+        assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
+
+        expected = [None, [1, -1, -1, 1], [0, 5]]
+        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
 
 
 class TestExecution:
