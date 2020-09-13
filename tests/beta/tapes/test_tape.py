@@ -100,11 +100,10 @@ class TestConstruction:
         assert tape.observables[0].return_type == qml.operation.Expectation
         assert tape.observables[1].return_type == qml.operation.Probability
 
-    def test_tensor_observables(self):
+    def test_tensor_observables_matmul(self):
         """Test that tensor observables are correctly processed from the annotated
-        queue"""
+        queue. Here, we test multiple tensor observables constructed via matmul."""
 
-        # test multiple tensor observables constructed via matmul
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
@@ -116,8 +115,11 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.operation.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-        # test multiple tensor observables constructed via matmul
-        # with the observable occuring on the left hand side
+    def test_tensor_observables_rmatmul(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue. Here, we test multiple tensor observables constructed via matmul
+        with the observable occuring on the left hand side."""
+
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
@@ -129,7 +131,11 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.operation.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-        # test multiple tensor observables constructed via explicit Tensor creation
+    def test_tensor_observables_tensor_init(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue. Here, we test multiple tensor observables constructed via explicit
+        Tensor creation."""
+
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
@@ -141,8 +147,11 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.operation.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-        # test multiple tensor observables constructed via matmul
-        # between two tensor observables
+    def test_tensor_observables_tensor_matmul(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue". Here, wetest multiple tensor observables constructed via matmul
+        between two tensor observables."""
+
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
@@ -570,6 +579,8 @@ class TestExpand:
         new_tape = tape.expand()
 
         assert len(new_tape.operations) == 1
+        assert new_tape.operations[0].name == "PauliX"
+        assert new_tape.operations[0].wires.tolist() == [0]
         assert new_tape.num_params == 0
         assert new_tape.get_parameters() == []
 
@@ -584,6 +595,11 @@ class TestExpand:
         new_tape = tape.expand()
 
         assert len(new_tape.operations) == 3
+
+        assert new_tape.operations[0].name == "PhaseShift"
+        assert new_tape.operations[1].name == "RX"
+        assert new_tape.operations[2].name == "PhaseShift"
+
         assert new_tape.num_params == 3
         assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
 
