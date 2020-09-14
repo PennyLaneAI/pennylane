@@ -24,6 +24,9 @@ from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
 from pennylane.circuit_drawer.grid import Grid, _transpose
 from pennylane.wires import Wires
 
+from pennylane.beta.queuing import state
+
+
 class TestFunctions:
     """Test the helper functions."""
 
@@ -599,7 +602,7 @@ def qubit_circuit_with_state():
         qml.PauliX(5)
         qml.Toffoli(wires=[5, 1, 0])
 
-        return qml.state(range(6))
+        return state(range(6))
 
     dev = qml.device("default.qubit", wires=6)
 

@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import QuantumFunctionError
 from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
+from pennylane.beta.queuing import state as qstate
 
 
 # Beta imports
@@ -267,7 +268,7 @@ class TestState:
 
         @qnode(dev)
         def func():
-            return qml.state(range(wires))
+            return qstate(range(wires))
 
         state = func()
         assert state.shape == (1, 2 ** wires)
@@ -281,7 +282,7 @@ class TestState:
         @qnode(dev)
         def func():
             qml.Hadamard(0)
-            return qml.state([0])
+            return qstate([0])
 
         func()
         obs = func.qtape.observables
@@ -299,7 +300,7 @@ class TestState:
             qml.Hadamard(wires=0)
             for i in range(wires - 1):
                 qml.CNOT(wires=[i, i + 1])
-            return qml.state(range(wires))
+            return qstate(range(wires))
 
         state = func()[0]
         assert np.allclose(np.sum(np.abs(state) ** 2), 1)
@@ -318,7 +319,7 @@ class TestState:
         @qnode(dev)
         def func():
             qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
-            return qml.state(range(wires))
+            return qstate(range(wires))
 
         state = func()
         assert np.allclose(state, dev.state)
@@ -333,7 +334,7 @@ class TestState:
         @qnode(dev)
         def func():
             qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
-            return qml.state(range(wires - 1))
+            return qstate(range(wires - 1))
 
         with pytest.raises(QuantumFunctionError, match="The state must be returned over all wires"):
             func()
@@ -349,7 +350,7 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qml.state(range(4))
+            return qstate(range(4))
 
         state_expected = 0.25 * tf.ones(16)
         state = func()
@@ -369,7 +370,7 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qml.state(range(4))
+            return qstate(range(4))
 
         state_expected = 0.25 * torch.ones(16, dtype=torch.complex128)
         state = func()
@@ -389,7 +390,7 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qml.state(range(4))
+            return qstate(range(4))
 
         with monkeypatch.context() as m:
             m.setattr(torch, "__version__", "1.5.0")
@@ -405,7 +406,7 @@ class TestState:
         def func(x):
             for i in range(4):
                 qml.RX(x, wires=i)
-            return qml.state(range(4))
+            return qstate(range(4))
 
         d_func = qml.jacobian(func)
 
@@ -419,7 +420,7 @@ class TestState:
 
         @qnode(dev)
         def func():
-            return qml.state(range(1))
+            return qstate(range(1))
 
         with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
             func()
@@ -438,7 +439,7 @@ class TestState:
         def func():
             for i in range(4):
                 qml.Hadamard(i)
-            return qml.state(range(4))
+            return qstate(range(4))
 
         state = func()
         state_expected = 0.25 * np.ones(16)
@@ -457,7 +458,7 @@ class TestState:
         @qnode(dev, interface="tf", diff_method="backprop")
         def func(x):
             qml.RY(x, wires=0)
-            return qml.state(wires=[0])
+            return qstate(wires=[0])
 
         x = tf.Variable(0.1, dtype=tf.complex128)
 
@@ -477,7 +478,7 @@ class TestState:
         @qnode(dev, interface="autograd", diff_method="backprop")
         def func(x):
             qml.RY(x, wires=0)
-            return qml.state(wires=[0])
+            return qstate(wires=[0])
 
         x = npa.array(0.1, requires_grad=True)
 
