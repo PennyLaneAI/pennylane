@@ -689,7 +689,7 @@ class QuantumTape(AnnotatedQueue):
             op.data[self._par_info[idx]["p_idx"]] = p
 
     # ========================================================
-    # properties, setters, and getters
+    # Tape properties
     # ========================================================
 
     @property
