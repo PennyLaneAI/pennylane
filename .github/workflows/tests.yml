@@ -60,10 +60,12 @@ jobs:
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
-        with:
-          file: ./coverage.xml
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        flag-name: core-tests-${{ matrix.test_number }}
+        parallel: true
 
 
   device-tests:
@@ -118,10 +120,12 @@ jobs:
             --shots=${{ matrix.config.shots }} \
             --cov=pennylane $COVERAGE_FLAGS
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
-        with:
-          file: ./coverage.xml
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        flag-name: device-tests-${{ matrix.test_number }}
+        parallel: true
 
 
   qchem-tests:
@@ -160,7 +164,20 @@ jobs:
         run: |
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@master
         with:
-          file: ./qchem/coverage.xml
+          github-token: ${{ secrets.github_token }}
+          flag-name: qchem-tests
+          parallel: true
+
+
+  upload-coverage:
+    needs: [core-test, device-tests, qchem-tests]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
