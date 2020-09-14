@@ -116,13 +116,13 @@ def xy_mixer(graph):
     return qml.Hamiltonian(coeffs, obs)
 
 
-def bit_flip_mixer(graph, n):
+def bit_flip_mixer(graph, b):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:
 
     .. math:: H_M \ = \ \displaystyle\sum_{v \in V(G)} \frac{1}{2^{d(v)}} X_{v}
-              \displaystyle\prod_{w \in N(v)} (\mathbb{I} \ + \ (-1)^n Z_w)
+              \displaystyle\prod_{w \in N(v)} (\mathbb{I} \ + \ (-1)^b Z_w)
 
     where :math:`V(G)` is the set of vertices of some graph :math:`G`, :math:`d(v)` is the
     `degree <https://en.wikipedia.org/wiki/Degree_(graph_theory)>`__ of vertex :math:`v`, and
@@ -130,13 +130,11 @@ def bit_flip_mixer(graph, n):
     of vertex :math:`v`. In addition, :math:`\mathbb{I}` is the identity operator, and :math:`X_v` and :math:`Z_v`
     are the Pauli-Z and Pauli-X operators on vertex :math:`v`, respectively.
 
-    This mixer was introduced in *From the Quantum Approximate Optimization Algorithm
-    to a Quantum Alternating Operator Ansatz* by Stuart Hadfield, Zhihui Wang, Bryan O'Gorman,
-    Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
+    This mixer was introduced in [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
          graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
-         n (int): Either :math:`0` or :math:`1`. Determines whether the mixer performs a conditional
+         b (int): Either :math:`0` or :math:`1`. Determines whether the mixer performs a conditional
                   bit-flip of a vertex if all neighbouring vertices are labelled :math:`0` or :math:`1`.
 
     Returns:
@@ -170,10 +168,10 @@ def bit_flip_mixer(graph, n):
             "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
         )
 
-    if n not in [0, 1]:
-        raise ValueError("'n' must be either 0 or 1, got {}".format(n))
+    if b not in [0, 1]:
+        raise ValueError("'b' must be either 0 or 1, got {}".format(b))
 
-    sign = 1 if n == 0 else -1
+    sign = 1 if b == 0 else -1
 
     coeffs = []
     terms = []

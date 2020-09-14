@@ -152,7 +152,7 @@ class TestMixerHamiltonians:
             qaoa.bit_flip_mixer(graph, 0)
 
         n = 2
-        with pytest.raises(ValueError, match=r"'n' must be either 0 or 1"):
+        with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
             qaoa.bit_flip_mixer(Graph(graph), n)
 
     @pytest.mark.parametrize(("graph", "n", "target_hamiltonian"), [
