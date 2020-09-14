@@ -24,7 +24,7 @@ class TestQNodeIntegration:
     """Integration tests for default.qubit.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
 
-    def test_defines_correct_capabilities(self, capabilities):
+    def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.qubit.autograd", wires=1)
