@@ -173,7 +173,7 @@ jobs:
 
 
   upload-coverage:
-    needs: [core-test, device-tests, qchem-tests]
+    needs: [core-tests, device-tests, qchem-tests]
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
