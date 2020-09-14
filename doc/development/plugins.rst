@@ -446,7 +446,8 @@ where
 
 * :attr:`~.Operator.par_domain`: the domain of the gate parameters; ``'N'`` for natural
   numbers (including zero), ``'R'`` for floats, ``'A'`` for arrays of floats/complex numbers,
-  and ``None`` if the gate does not have free parameters
+  ``'L'`` for list of arrays of floats/complex numbers and ``None`` if the gate does not have
+  free parameters
 
 * :attr:`~.Operation.grad_method`: the gradient computation method; ``'A'`` for the analytic
   method, ``'F'`` for finite differences, and ``None`` if the operation may not be differentiated

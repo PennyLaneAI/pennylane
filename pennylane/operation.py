@@ -344,6 +344,7 @@ class Operator(abc.ABC):
         * ``'N'``: natural numbers (including zero).
         * ``'R'``: floats.
         * ``'A'``: arrays of real or complex values.
+        * ``'L'``: list of arrays of real or complex values.
         * ``None``: if there are no parameters.
         """
 
@@ -461,6 +462,11 @@ class Operator(abc.ABC):
                     raise TypeError(
                         "{}: Natural number parameter expected, got {}.".format(self.name, p)
                     )
+        elif self.par_domain == "L":
+            if not isinstance(p, list):
+                raise TypeError("{}: List parameter expected, got {}.".format(self.name, type(p)))
+            if not all(isinstance(elem, np.ndarray) for elem in p):
+                raise TypeError("List elements must be Numpy arrays.")
         else:
             raise ValueError(
                 "{}: Unknown parameter domain '{}'.".format(self.name, self.par_domain)
@@ -496,6 +502,18 @@ class Operator(abc.ABC):
                     temp = np.array([x.val if isinstance(x, Variable) else x for x in p.flat])
                     return temp.reshape(p.shape)
                 return p
+
+            if isinstance(p, list):
+                # p is assumed to be a list of numpy arrays
+                # object arrays may have Variables inside them
+                evaled_list = []
+                for arr in p:
+                    if arr.dtype == object:
+                        temp = np.array([x.val if isinstance(x, Variable) else x for x in arr.flat])
+                        evaled_list.append(temp.reshape(arr.shape))
+                        return evaled_list
+                return p
+
             if isinstance(p, Variable):
                 p = self.check_domain(p.val)
             return p
@@ -880,10 +898,8 @@ class Channel(Operation, abc.ABC):
     def __init__(self, *params, wires=None, do_queue=True):
 
         # check parameters are valid
-        if any(not 0 <= np.real(p) <= 1 for p in params):
-            raise ValueError(
-                "Channel probability parameters should be real numbers between 0 and 1."
-            )
+        if self.par_domain == "R" and any(not 0 <= np.real(p) <= 1 for p in params):
+            raise ValueError("Channel probability parameters should be numbers between 0 and 1.")
 
         # check the grad_method validity
         if self.par_domain == "R" and self.grad_method not in (None, "F"):
