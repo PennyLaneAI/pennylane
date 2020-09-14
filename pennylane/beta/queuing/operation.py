@@ -66,10 +66,7 @@ def operation_expand(self):
     tape = qml.beta.tapes.QuantumTape()
 
     with tape:
-        try:
-            self.decomposition(*self.data, wires=self.wires)
-        except NotImplementedError:
-            self.__class__(*self.data, wires=self.wires)
+        self.decomposition(*self.data, wires=self.wires)
 
     if not self.data:
         # original operation has no trainable parameters
@@ -94,7 +91,10 @@ def tensor_init(self, *args):
         elif isinstance(o, qml.operation.Observable):
             self.obs.append(o)
 
-        QueuingContext.update_info(o, owner=self)
+        try:
+            QueuingContext.update_info(o, owner=self)
+        except NotImplementedError:
+            pass
 
     QueuingContext.append(self, owns=tuple(args))
 

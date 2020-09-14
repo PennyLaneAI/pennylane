@@ -77,12 +77,12 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, ops, obs = make_tape
 
-        assert isinstance(tape._obs[0][0], MeasurementProcess)
-        assert tape._obs[0][0].return_type == qml.operation.Expectation
-        assert tape._obs[0][1] == obs[0]
+        assert isinstance(tape.measurements[0], MeasurementProcess)
+        assert tape.measurements[0].return_type == qml.operation.Expectation
+        assert tape.observables[0] == obs[0]
 
-        assert isinstance(tape._obs[1][0], MeasurementProcess)
-        assert tape._obs[1][0].return_type == qml.operation.Probability
+        assert isinstance(tape.measurements[1], MeasurementProcess)
+        assert tape.measurements[1].return_type == qml.operation.Probability
 
     def test_tensor_observables(self):
         """Test that tensor observables are correctly processed from the annotated
@@ -173,7 +173,7 @@ class TestConstruction:
 
         assert len(tape.queue) == 4
         assert not tape.operations
-        assert tape._obs == [(D, C)]
+        assert tape.measurements == [D]
         assert tape.observables == [C]
         assert tape.output_dim == 1
 
@@ -340,7 +340,7 @@ class TestParameters:
         assert tape._trainable_params == trainable
         assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-        assert tape.get_parameters(free_only=False) == params
+        assert tape.get_parameters(trainable_only=False) == params
 
     def test_set_trainable_params_error(self, make_tape):
         """Test that exceptions are raised if incorrect parameters
@@ -392,7 +392,7 @@ class TestParameters:
             else:
                 assert pinfo["op"].data[pinfo["p_idx"]] == params[idx]
 
-        assert tape.get_parameters(free_only=False) == [
+        assert tape.get_parameters(trainable_only=False) == [
             params[0],
             new_params[0],
             params[2],
@@ -406,22 +406,22 @@ class TestParameters:
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
         tape.trainable_params = {1, 3}
-        tape.set_parameters(new_params, free_only=False)
+        tape.set_parameters(new_params, trainable_only=False)
 
         for pinfo, pval in zip(tape._par_info.values(), new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
-        assert tape.get_parameters(free_only=False) == new_params
+        assert tape.get_parameters(trainable_only=False) == new_params
 
     def test_setting_parameters_error(self, make_tape):
         """Test that exceptions are raised if incorrect parameters
         are attempted to be set"""
         tape, _ = make_tape
 
-        with pytest.raises(ValueError, match="Number of provided parameters invalid"):
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
             tape.set_parameters([0.54])
 
-        with pytest.raises(ValueError, match="Number of provided parameters invalid"):
+        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
             tape.trainable_params = {2, 3}
             tape.set_parameters([0.54, 0.54, 0.123])
 
@@ -490,6 +490,8 @@ class TestInverse:
         assert ops[2].inverse
 
         # check that parameter order has reversed
+        print(tape.get_parameters())
+        print([init_state, p[1], p[2], p[3], p[0]])
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
 
     def test_parameter_transforms(self):
@@ -609,7 +611,7 @@ class TestExpand:
             qml.Rot(3, 4, 5, wires=0)
             probs(wires=0), probs(wires="a")
 
-        new_tape = tape.expand(stop_at=["Rot"])
+        new_tape = tape.expand(stop_at=lambda obj: obj.name in ["Rot"])
         assert len(new_tape.operations) == 4
         assert "Rot" in [i.name for i in new_tape.operations]
         assert not "U3" in [i.name for i in new_tape.operations]
@@ -647,8 +649,34 @@ class TestExpand:
             qml.RY(0.2, wires="a")
             probs(wires=0), probs(wires="a")
 
-        new_tape = tape.expand(depth=2, stop_at=["PauliX"])
+        new_tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in ["PauliX"])
         assert len(new_tape.operations) == 7
+
+    def test_measurement_expansion(self):
+        """Test that measurement expansion works as expected"""
+        with QuantumTape() as tape:
+            # expands into 2 PauliX
+            qml.BasisState(np.array([1, 1]), wires=[0, "a"])
+            qml.CNOT(wires=[0, "a"])
+            qml.RY(0.2, wires="a")
+            probs(wires=0)
+            # expands into RY on wire b
+            expval(qml.PauliZ("a") @ qml.Hadamard("b"))
+            # expands into QubitUnitary on wire 0
+            var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[0]))
+
+        new_tape = tape.expand(expand_measurements=True)
+
+        assert len(new_tape.operations) == 6
+
+        expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
+        assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
+
+        expected = [None, None, None]
+        assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
+
+        expected = [None, [1, -1, -1, 1], [0, 5]]
+        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
 
 
 class TestExecution:

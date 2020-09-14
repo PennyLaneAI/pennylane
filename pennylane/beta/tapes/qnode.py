@@ -362,7 +362,9 @@ class QNode:
 
         # expand out the tape, if any operations are not supported on the device
         if not {op.name for op in self.qtape.operations}.issubset(stop_at):
-            self.qtape = self.qtape.expand(depth=self.max_expansion, stop_at=stop_at)
+            self.qtape = self.qtape.expand(
+                depth=self.max_expansion, stop_at=lambda obj: obj.name in stop_at
+            )
 
     def __call__(self, *args, **kwargs):
         # construct the tape
