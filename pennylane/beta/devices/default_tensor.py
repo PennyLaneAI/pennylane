@@ -14,6 +14,7 @@
 r"""
 Experimental simulator plugin based on tensor network contractions
 """
+# pylint: disable=too-many-instance-attributes
 import warnings
 from itertools import product
 
@@ -101,7 +102,6 @@ class DefaultTensor(Device):
     pennylane_requires = "0.12"
     version = "0.12.0"
     author = "Xanadu Inc."
-    _capabilities = {"model": "qubit", "tensor_observables": True}
 
     _operation_map = {
         "BasisState": None,
@@ -164,6 +164,20 @@ class DefaultTensor(Device):
         self._rep = representation
         self._contraction_method = contraction_method
         self.reset()
+        self.analytic = False
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            model="qubit",
+            supports_analytic_computation=True,
+            supports_finite_shots=False,
+            supports_tensor_observables=True,
+            returns_state=False,
+            returns_probs=False,
+        )
+        return capabilities
 
     def reset(self):
         """Reset the device."""
