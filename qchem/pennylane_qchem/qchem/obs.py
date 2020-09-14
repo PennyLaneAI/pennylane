@@ -205,6 +205,8 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     sz = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
 
     table = _spin2_matrix_elements(sz)
+    # To be consistent with the 'observable' function
+    table[:, 4] = 2 * table[:, 4]
 
     return observable([table], init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
 
@@ -260,7 +262,7 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
             will have shape ``(matrix_elements[j].shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix element
-            :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
+            :math:`1/2 \langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
         init_term (float): the contribution of core orbitals, if any, or other quantity
             required to initialize the many-body observable.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
@@ -283,16 +285,16 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
     >>> matrix_elements.append(t)
     >>> matrix_elements.append(v)
     >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev"))
-    (0.0625) [I0]
-    + (-0.0625) [Z0]
-    + (0.4375) [Z0 Z1]
-    + (-0.1875) [Z1]
+    (0.15625) [I0]
+    + (-0.15625) [Z0]
+    + (0.34375) [Z0 Z1]
+    + (-0.09375) [Z1]
 
     >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev", wires=['w0','w1']))
-    (0.0625) [Iw0]
-    + (-0.0625) [Zw0]
-    + (0.4375) [Zw0 Zw1]
-    + (-0.1875) [Zw1]
+    (0.15625) [Iw0]
+    + (-0.15625) [Zw0]
+    + (0.34375) [Zw0 Zw1]
+    + (-0.09375) [Zw1]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
@@ -326,9 +328,8 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
                 )
 
             if i.shape == (5,):
-                # two-particle operator
                 mb_obs += FermionOperator(
-                    ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4]
+                    ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4] / 2
                 )
             elif i.shape == (3,):
                 # single-particle operator
