@@ -130,19 +130,19 @@ class TFInterface(AnnotatedQueue):
         args = self.convert_to_numpy(params)
 
         # unwrap constant parameters
-        all_params = self.get_parameters(free_only=False)
+        all_params = self.get_parameters(trainable_only=False)
         all_params_unwrapped = self.convert_to_numpy(all_params)
 
-        self.set_parameters(all_params_unwrapped, free_only=False)
+        self.set_parameters(all_params_unwrapped, trainable_only=False)
         res = self.execute_device(args, input_kwargs["device"])
-        self.set_parameters(all_params, free_only=False)
+        self.set_parameters(all_params, trainable_only=False)
 
         def grad(grad_output, **tfkwargs):
             variables = tfkwargs.get("variables", None)
 
-            self.set_parameters(all_params_unwrapped, free_only=False)
+            self.set_parameters(all_params_unwrapped, trainable_only=False)
             jacobian = self.jacobian(input_kwargs["device"], params=args, **self.jacobian_options)
-            self.set_parameters(all_params, free_only=False)
+            self.set_parameters(all_params, trainable_only=False)
 
             jacobian = tf.constant(jacobian, dtype=self.dtype)
 

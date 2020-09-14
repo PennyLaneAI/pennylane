@@ -92,10 +92,10 @@ class AutogradInterface(AnnotatedQueue):
         self.trainable_params = trainable_params
         return params
 
-    def get_parameters(self, free_only=True):  # pylint: disable=missing-function-docstring
+    def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
         params = self._update_trainable_params()
 
-        if free_only:
+        if trainable_only:
             params = [p for idx, p in enumerate(params) if idx in self.trainable_params]
 
         return autograd.builtins.list(params)

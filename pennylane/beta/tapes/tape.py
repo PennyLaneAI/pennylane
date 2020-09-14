@@ -44,6 +44,97 @@ STATE_PREP_OPS = (
 )
 
 
+def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
+    """Expand all objects in a tape to a specific depth.
+
+    Args:
+        depth (int): the depth the tape should be expanded
+        stop_at (Callable): A function which accepts a queue object,
+            and returns ``True`` if this object should *not* be expanded.
+            If not provided, all objects that support expansion will be expanded.
+        expand_measurements (bool): If ``True``, measurements will be expanded
+            to basis rotations and computational basis measurements.
+
+    **Example**
+
+    Consider the following nested tape:
+
+    .. code-block:: python
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+            with QuantumTape() as tape2:
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=[0, 'a'])
+            qml.RY(0.2, wires='a')
+            probs(wires=0), probs(wires='a')
+
+    The nested structure is preserved:
+
+    >>> tape.operations
+    [BasisState(array([1, 1]), wires=[0, 'a']),
+     <QuantumTape: wires=[0], params=3>,
+     CNOT(wires=[0, 'a']),
+     RY(0.2, wires=['a'])]
+
+    Calling ``expand_tape`` will return a tape with all nested tapes
+    expanded, resulting in a single tape of quantum operations:
+
+    >>> new_tape = expand_tape(tape)
+    >>> new_tape.operations
+    [PauliX(wires=[0]),
+     PauliX(wires=['a']),
+     Rot(0.543, 0.1, 0.4, wires=[0]),
+     CNOT(wires=[0, 'a']),
+     RY(0.2, wires=['a'])]
+    """
+    if depth == 0:
+        return tape
+
+    if stop_at is None:
+        # by default expand all objects
+        stop_at = lambda obj: False
+
+    new_tape = tape.__class__()
+
+    for queue in ("_prep", "_ops", "_measurements"):
+        for obj in getattr(tape, queue):
+
+            stop = stop_at(obj)
+
+            if not expand_measurements:
+                # Measurements should not be expanded; treat measurements
+                # as a stopping condition
+                stop = stop or isinstance(obj, MeasurementProcess)
+
+            if stop:
+                # do not expand out the object; append it to the
+                # new tape, and continue to the next object in the queue
+                getattr(new_tape, queue).append(obj)
+                continue
+
+            if isinstance(obj, (qml.operation.Operation, MeasurementProcess)):
+                # Object is an operation; query it for its expansion
+                try:
+                    obj = obj.expand()
+                except NotImplementedError:
+                    # Object does not define an expansion; treat this as
+                    # a stopping condition.
+                    getattr(new_tape, queue).append(obj)
+                    continue
+
+            # recursively expand out the newly created tape
+            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
+
+            new_tape._prep += expanded_tape._prep
+            new_tape._ops += expanded_tape._ops
+            new_tape._measurements += expanded_tape._measurements
+
+    return new_tape
+
+
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
@@ -116,7 +207,7 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.set_parameters(0.56)
     >>> tape.get_parameters()
     [0.56]
-    >>> tape.get_parameters(free_only=False)
+    >>> tape.get_parameters(trainable_only=False)
     [0.56, 0.543, 0.133]
 
     Trainable parameters are taken into account when calculating the Jacobian,
@@ -125,8 +216,6 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.jacobian(dev)
     [[-0.45478169]]
     """
-
-    _cast = staticmethod(np.array)
 
     def __init__(self, name=None):
         super().__init__()
@@ -138,9 +227,8 @@ class QuantumTape(AnnotatedQueue):
         self._ops = []
         """list[~.Operation]: quantum operations recorded by the tape."""
 
-        self._obs = []
-        """list[tuple[~.MeasurementProcess, ~.Observable]]: measurement processes and
-        coresponding observables recorded by the tape."""
+        self._measurements = []
+        """list[~.MeasurementProcess]: measurement processes recorded by the tape."""
 
         self._par_info = {}
         """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
@@ -170,7 +258,7 @@ class QuantumTape(AnnotatedQueue):
         # input parameters to results of executing the device.
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
     def __enter__(self):
         if not QueuingContext.recording():
@@ -209,7 +297,7 @@ class QuantumTape(AnnotatedQueue):
         This method sets the following attributes:
 
         * ``_ops``
-        * ``_obs``
+        * ``_measurements``
         * ``_par_info``
         * ``_output_dim``
         * ``_trainable_params``
@@ -217,7 +305,7 @@ class QuantumTape(AnnotatedQueue):
         """
         self._prep = []
         self._ops = []
-        self._obs = []
+        self._measurements = []
         self._output_dim = 0
 
         for obj, info in self._queue.items():
@@ -227,12 +315,11 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
-                if self._obs:
+
+                if self._measurements:
                     raise ValueError(
                         f"Quantum operation {obj} must occur prior to any measurements."
                     )
-
-                obj.do_check_domain = False
 
                 # invert the operation if required
                 obj.inverse = info.get("inverse", False)
@@ -249,24 +336,17 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, MeasurementProcess):
                 # measurement process
+                self._measurements.append(obj)
 
+                # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
-                    self._obs.append((obj, obj))
                     self._output_dim += 2 ** len(obj.wires)
-
-                elif "owns" in info:
-                    # TODO: remove the following line once devices
-                    # have been refactored to no longer use obs.return_type.
-                    # Monkeypatch the observable to have the same return
-                    # type as the measurement process.
-                    info["owns"].return_type = obj.return_type
-                    info["owns"].do_check_domain = False
-
-                    self._obs.append((obj, info["owns"]))
+                else:
                     self._output_dim += 1
 
-                    if obj.return_type is qml.operation.Sample:
-                        self.is_sampled = True
+                # check if any sampling is occuring
+                if obj.return_type is qml.operation.Sample:
+                    self.is_sampled = True
 
             elif isinstance(obj, qml.operation.Observable) and "owner" not in info:
                 raise ValueError(f"Observable {obj} does not have a measurement type specified.")
@@ -318,35 +398,16 @@ class QuantumTape(AnnotatedQueue):
         if self.interface is not None:
             self._update_gradient_info()
 
-    def _expand(self, stop_at=None):
-        """Expand all operations and tapes in the processed queue.
-
-        Args:
-            stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
-                An operation or tape appearing in this list of names is not expanded.
-        """
-        new_tape = self.__class__()
-        stop_at = stop_at or []
-
-        for op in self.operations:
-            if op.name in stop_at:
-                new_tape._ops.append(op)
-                continue
-
-            t = op if isinstance(op, QuantumTape) else op.expand()
-            new_tape._prep += t._prep
-            new_tape._ops += t._ops
-
-        new_tape._obs = self._obs
-        return new_tape
-
-    def expand(self, depth=1, stop_at=None):
+    def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed to a specific depth.
 
         Args:
             depth (int): the depth the tape should be expanded
-            stop_at (Sequence[str]): Sequence of PennyLane operation or tape names.
-                An operation or tape appearing in this list of names is not expanded.
+            stop_at (Callable): A function which accepts a queue object,
+                and returns ``True`` if this object should *not* be expanded.
+                If not provided, all objects that support expansion will be expanded.
+            expand_measurements (bool): If ``True``, measurements will be expanded
+                to basis rotations and computational basis measurements.
 
         **Example**
 
@@ -368,7 +429,7 @@ class QuantumTape(AnnotatedQueue):
 
         >>> tape.operations
         [BasisState(array([1, 1]), wires=[0, 'a']),
-         <QuantumTape: params=3, wires=<Wires = [0]>>,
+         <QuantumTape: wires=[0], params=3>,
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
 
@@ -383,19 +444,9 @@ class QuantumTape(AnnotatedQueue):
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
         """
-        old_tape = self
-
-        for _ in range(depth):
-            new_tape = old_tape._expand(stop_at=stop_at)
-
-            if len(new_tape.operations) == len(old_tape.operations) and [
-                o1.name == o2.name for o1, o2 in zip(new_tape.operations, old_tape.operations)
-            ]:
-                # expansion has found a fixed point
-                break
-
-            old_tape = new_tape
-
+        new_tape = expand_tape(
+            self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
+        )
         new_tape._update()
         return new_tape
 
@@ -407,7 +458,7 @@ class QuantumTape(AnnotatedQueue):
         .. note::
 
             This method only inverts the quantum operations/unitary recorded
-            by the quantum tape; state preprations and measurements are left unchanged.
+            by the quantum tape; state preparations and measurements are left unchanged.
 
         **Example**
 
@@ -445,63 +496,54 @@ class QuantumTape(AnnotatedQueue):
          Rot(0.543, 0.1, 0.4, wires=[0]),
          RX.inv(0.432, wires=[0])]
 
-        Note that the state preparation remains as-is, while the operations have been
-        inverted and their order reversed.
-
         Tape inversion also modifies the order of tape parameters:
 
-        >>> tape.get_parameters(free_only=False)
+        >>> tape.get_parameters(trainable_only=False)
         [array([1, 1]), 0.543, 0.1, 0.4, 0.432]
-        >>> tape.get_parameters(free_only=True)
+        >>> tape.get_parameters(trainable_only=True)
         [0.543, 0.432]
         >>> tape.trainable_params
         {1, 4}
         """
+        # we must remap the old parameter
+        # indices to the new ones after the operation order is reversed.
+        parameter_indices = []
+        param_count = 0
+
+        for queue in [self._prep, self._ops, self.observables]:
+            # iterate through all queues
+
+            obj_params = []
+
+            for obj in queue:
+                # index the number of parameters on each operation
+                num_obj_params = len(obj.data)
+                obj_params.append(list(range(param_count, param_count + num_obj_params)))
+
+                # keep track of the total number of parameters encountered so far
+                param_count += num_obj_params
+
+            if queue == self._ops:
+                # reverse the list representing operator parameters
+                obj_params = obj_params[::-1]
+
+            parameter_indices.extend(obj_params)
+
+        # flatten the list of parameter indices after the reversal
+        parameter_indices = [item for sublist in parameter_indices for item in sublist]
+        parameter_mapping = dict(zip(parameter_indices, range(len(parameter_indices))))
+
+        # map the params
+        self.trainable_params = {parameter_mapping[i] for i in self.trainable_params}
+        self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
+
         for op in self._ops:
             op.inverse = not op.inverse
-
-        if self.trainable_params != set(range(len(self._par_info))):
-            # if the trainable parameters have been set to a subset
-            # of all parameters, we must remap the old trainable parameter
-            # indices to the new ones after the operation order is reversed.
-            parameter_indices = []
-            param_count = 0
-
-            for idx, queue in enumerate([self._prep, self._ops, self.observables]):
-                # iterate through all queues
-
-                obj_params = []
-
-                for obj in queue:
-                    # index the number of parameters on each operation
-                    num_obj_params = len(obj.data)
-                    obj_params.append(list(range(param_count, param_count + num_obj_params)))
-
-                    # keep track of the total number of parameters encountered so far
-                    param_count += num_obj_params
-
-                if idx == 1:
-                    # reverse the list representing operator parameters
-                    obj_params = obj_params[::-1]
-
-                parameter_indices.extend(obj_params)
-
-            # flatten the list of parameter indices after the reversal
-            parameter_indices = [item for sublist in parameter_indices for item in sublist]
-
-            # remap the trainable parameter information
-            trainable_params = set()
-
-            for old_idx, new_idx in zip(parameter_indices, range(len(parameter_indices))):
-                if old_idx in self.trainable_params:
-                    trainable_params.add(new_idx)
-
-            self.trainable_params = trainable_params
 
         self._ops = list(reversed(self._ops))
 
     # ========================================================
-    # properties, setters, and getters
+    # Parameter handling
     # ========================================================
 
     @property
@@ -558,6 +600,120 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = param_indices
 
+    def get_parameters(self, trainable_only=True):
+        """Return the parameters incident on the tape operations.
+
+        The returned parameters are provided in order of appearance
+        on the tape.
+
+        Args:
+            trainable_only (bool): if True, returns only trainable parameters
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        By default, all parameters are trainable and will be returned:
+
+        >>> tape.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        Setting the trainable parameter indices will result in only the specified
+        parameters being returned:
+
+        >>> tape.trainable_params = {1} # set the second parameter as free
+        >>> tape.get_parameters()
+        [0.543]
+
+        The ``trainable_only`` argument can be set to ``False`` to instead return
+        all parameters:
+
+        >>> tape.get_parameters(trainable_only=False)
+        [0.432, 0.543, 0.133]
+        """
+        params = []
+        iterator = self.trainable_params if trainable_only else self._par_info
+
+        for p_idx in iterator:
+            op = self._par_info[p_idx]["op"]
+            op_idx = self._par_info[p_idx]["p_idx"]
+            params.append(op.data[op_idx])
+
+        return params
+
+    def set_parameters(self, params, trainable_only=True):
+        """Set the parameters incident on the tape operations.
+
+        Args:
+            params (list[float]): A list of real numbers representing the
+                parameters of the quantum operations. The parameters should be
+                provided in order of appearance in the quantum tape.
+            trainable_only (bool): if True, set only trainable parameters
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.beta.tapes import QuantumTape
+            from pennylane.beta.queuing import expval, var, sample, probs
+
+            with QuantumTape() as tape:
+                qml.RX(0.432, wires=0)
+                qml.RY(0.543, wires=0)
+                qml.CNOT(wires=[0, 'a'])
+                qml.RX(0.133, wires='a')
+                expval(qml.PauliZ(wires=[0]))
+
+        By default, all parameters are trainable and can be modified:
+
+        >>> tape.set_parameters([0.1, 0.2, 0.3])
+        >>> tape.get_parameters()
+        [0.1, 0.2, 0.3]
+
+        Setting the trainable parameter indices will result in only the specified
+        parameters being modifiable. Note that this only modifies the number of
+        parameters that must be passed.
+
+        >>> tape.trainable_params = {0, 2} # set the first and third parameter as free
+        >>> tape.set_parameters([-0.1, 0.5])
+        >>> tape.get_parameters(trainable_only=False)
+        [-0.1, 0.2, 0.5]
+
+        The ``trainable_only`` argument can be set to ``False`` to instead set
+        all parameters:
+
+        >>> tape.set_parameters([4, 1, 6], trainable_only=False)
+        >>> tape.get_parameters(trainable_only=False)
+        [4, 1, 6]
+        """
+        if trainable_only:
+            iterator = zip(self.trainable_params, params)
+            required_length = self.num_params
+        else:
+            iterator = enumerate(params)
+            required_length = len(self._par_info)
+
+        if len(params) != required_length:
+            raise ValueError("Number of provided parameters does not match.")
+
+        for idx, p in iterator:
+            op = self._par_info[idx]["op"]
+            op.data[self._par_info[idx]["p_idx"]] = p
+
+    # ========================================================
+    # properties, setters, and getters
+    # ========================================================
+
     @property
     def operations(self):
         """Returns the operations on the quantum tape.
@@ -608,7 +764,19 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [expval(PauliZ(wires=[0]))]
         """
-        return [m[1] for m in self._obs]
+        # TODO: modify this property once devices
+        # have been refactored to accept and understand recieving
+        # measurement processes rather than specific observables.
+        obs = []
+
+        for m in self._measurements:
+            if m.obs is not None:
+                m.obs.return_type = m.return_type
+                obs.append(m.obs)
+            else:
+                obs.append(m)
+
+        return obs
 
     @property
     def measurements(self):
@@ -634,7 +802,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.measurements
         [<pennylane.beta.queuing.measure.MeasurementProcess object at 0x7f10b2150c10>]
         """
-        return [m[0] for m in self._obs]
+        return self._measurements
 
     @property
     def num_params(self):
@@ -680,123 +848,15 @@ class QuantumTape(AnnotatedQueue):
 
         return self._graph
 
-    def get_parameters(self, free_only=True):
-        """Return the parameters incident on the tape operations.
-
-        The returned parameters are provided in order of appearance
-        on the tape.
-
-        Args:
-            free_only (bool): if True, returns only trainable parameters
-
-        **Example**
-
-        .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
-
-        By default, all parameters are trainable and will be returned:
-
-        >>> tape.get_parameters()
-        [0.432, 0.543, 0.133]
-
-        Setting the trainable parameter indices will result in only the specified
-        parameters being returned:
-
-        >>> tape.trainable_params = {1} # set the second parameter as free
-        >>> tape.get_parameters()
-        [0.543]
-
-        The ``free_only`` argument can be set to ``False`` to instead return
-        all parameters:
-
-        >>> tape.get_parameters(free_only=False)
-        [0.432, 0.543, 0.133]
-        """
-        params = [o.data for o in self.operations + self.observables]
-        params = [item for sublist in params for item in sublist]
-
-        if not free_only:
-            return params
-
-        return [p for idx, p in enumerate(params) if idx in self.trainable_params]
-
-    def set_parameters(self, params, free_only=True):
-        """Set the parameters incident on the tape operations.
-
-        Args:
-            params (list[float]): A list of real numbers representing the
-                parameters of the quantum operations. The parameters should be
-                provided in order of appearance in the quantum tape.
-            free_only (bool): if True, set only trainable parameters
-
-        **Example**
-
-        .. code-block:: python
-
-            from pennylane.beta.tapes import QuantumTape
-            from pennylane.beta.queuing import expval, var, sample, probs
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                expval(qml.PauliZ(wires=[0]))
-
-        By default, all parameters are trainable and can be modified:
-
-        >>> tape.set_parameters([0.1, 0.2, 0.3])
-        >>> tape.get_parameters()
-        [0.1, 0.2, 0.3]
-
-        Setting the trainable parameter indices will result in only the specified
-        parameters being modifiable. Note that this only modifies the number of
-        parameters that must be passed.
-
-        >>> tape.trainable_params = {0, 2} # set the first and third parameter as free
-        >>> tape.set_parameters([-0.1, 0.5])
-        >>> tape.get_parameters(free_only=False)
-        [-0.1, 0.2, 0.5]
-
-        The ``free_only`` argument can be set to ``False`` to instead set
-        all parameters:
-
-        >>> tape.set_parameters([4, 1, 6])
-        >>> tape.get_parameters(free_only=False)
-        [4, 1, 6]
-        """
-        if free_only:
-            iterator = zip(self.trainable_params, params)
-            required_length = self.num_params
-        else:
-            iterator = enumerate(params)
-            required_length = len(self._par_info)
-
-        if len(params) != required_length:
-            raise ValueError("Number of provided parameters invalid.")
-
-        for idx, p in iterator:
-            op = self._par_info[idx]["op"]
-            op.data[self._par_info[idx]["p_idx"]] = p
-
     @property
     def data(self):
         """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
         for backwards compatibilities with operations."""
-        return self.get_parameters(free_only=False)
+        return self.get_parameters(trainable_only=False)
 
     @data.setter
     def data(self, params):
-        self.set_parameters(params, free_only=False)
+        self.set_parameters(params, trainable_only=False)
 
     # ========================================================
     # execution methods
