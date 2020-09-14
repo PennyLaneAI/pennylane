@@ -29,7 +29,7 @@
   ```
   
   Differentiating the state is not yet fully supported, but is currently available when using the
-  classical backpropagation differentiation method with the TensorFlow interface.
+  classical backpropagation differentiation method (``diff_method="backprop"``) with a compatible device.
 
 * Quantum noisy channels: quantum channels provide a general
   formalism for discussing state evolution, including the evolution
