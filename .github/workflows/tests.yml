@@ -60,12 +60,12 @@ jobs:
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
 
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        flag-name: core-tests-${{ matrix.test_number }}
-        parallel: true
+      - name: Coveralls Parallel
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          github-token: ${{ secrets.github_token }}
+          flag-name: core-tests-${{ matrix.test_number }}
+          parallel: true
 
 
   device-tests:
@@ -120,12 +120,12 @@ jobs:
             --shots=${{ matrix.config.shots }} \
             --cov=pennylane $COVERAGE_FLAGS
 
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        flag-name: device-tests-${{ matrix.test_number }}
-        parallel: true
+      - name: Coveralls Parallel
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          github-token: ${{ secrets.github_token }}
+          flag-name: device-tests-${{ matrix.test_number }}
+          parallel: true
 
 
   qchem-tests:
@@ -165,7 +165,7 @@ jobs:
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
       - name: Coveralls Parallel
-        uses: coverallsapp/github-action@master
+        uses: AndreMiras/coveralls-python-action@develop
         with:
           github-token: ${{ secrets.github_token }}
           flag-name: qchem-tests
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
+      uses: AndreMiras/coveralls-python-action@develop
       with:
         github-token: ${{ secrets.github_token }}
         parallel-finished: true
