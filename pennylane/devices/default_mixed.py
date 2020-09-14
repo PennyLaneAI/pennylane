@@ -95,11 +95,9 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
-        state[index] = 1
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        # density matrix is |state><state|
-        rho = self._outer(state, state)
+        rho = np.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=np.complex128)
+        rho[index, index] = 1
+        rho = self._asarray(rho, dtype=self.C_DTYPE)
         return self._reshape(rho, [2] * (2 * self.num_wires))
 
     @property
