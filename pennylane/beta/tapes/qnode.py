@@ -366,23 +366,18 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
-        if self._caching:
-            hashed_args = _hash_iterable(args)
-            hashed_kwargs = _hash_dict(kwargs)
-            combined_hash = hash((hashed_args, hashed_kwargs))
-            if combined_hash in self._hash_call:
-                return self._hash_call[combined_hash]
-
         # construct the tape
         self.construct(args, kwargs)
+
+        if self._caching:
+            self.qtape._hash_execute = self._hash_call
+            self.qtape._caching = self._caching
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
-        if self._caching and combined_hash not in self._hash_call:
-            self._hash_call[combined_hash] = res
-            if len(self._hash_call) > self._caching:
-                self._hash_call.popitem(last=False)
+        if self._caching:
+            self._hash_call = self.qtape._hash_execute
 
         return res
 
