@@ -377,7 +377,7 @@ class QNode:
         self.construct(args, kwargs)
 
         # execute the tape
-        res =  self.qtape.execute(device=self.device)
+        res = self.qtape.execute(device=self.device)
 
         if self._caching and combined_hash not in self._hash_call:
             self._hash_call[combined_hash] = res
