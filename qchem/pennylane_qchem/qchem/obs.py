@@ -209,7 +209,7 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     return observable([table], init_term=3 / 4 * electrons, mapping=mapping, wires=wires)
 
 
-def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
+def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None):
 
     r"""Builds the many-body observable whose expectation value can be
     measured in PennyLane.
@@ -217,7 +217,7 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
     PennyLane observables. In general, the many-body observable :math:`\hat{O}` can combine
-    one-particle and two-particle operators as it is the case for electronic Hamiltonians
+    one-particle and two-particle operators as it is the case for electronic Hamiltonians.
 
     .. math::
 
@@ -226,7 +226,7 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
         + \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
         \langle \alpha, \beta \vert \hat{v}^{(1)} + \hat{v}^{(2)} \cdots + \hat{v}^{(n)}
         \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
-        \hat{c}_\gamma \hat{c}_\delta.
+        \hat{c}_\gamma \hat{c}_\delta
 
     In the latter equations the indices :math:`\alpha, \beta, \gamma, \delta` run over the
     basis of single-particle states. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
@@ -239,9 +239,10 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
     Coulomb interaction between the electrons.
 
-    If an `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_ is defined the
-    observable is expanded over the truncated basis of active orbitals. The contribution of
-    core orbitals, if any, can be passed to the function using the keyword argument ``init_term``.
+    If an `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_
+    (see :func:`~.active_space`) is defined, the observable is expanded over the truncated
+    basis of active orbitals. The contribution of core orbitals, if any, can be passed to the
+    function using the keyword argument ``init_term``.
 
     The function utilizes tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
     to build the second-quantized operator and map it to basis of Pauli matrices via the
@@ -249,14 +250,14 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
 
     Args:
-        me_tables (list(array[float])): list containing the tables of matrix elements
-            of the operators :math:`\hat{t}` and :math:`\hat{v}`.
+        matrix_elements (list(array[float])): list containing 2D numpy arrays with the matrix
+            elements of the operators :math:`\hat{t}` and :math:`\hat{v}`.
             For single-particle operators the :math:`i`-th array in the list will have shape
-            ``(me_tables[i].shape[0], 3)`` with each row containing the indices
+            ``(matrix_elements[i].shape[0], 3)`` with each row containing the indices
             :math:`\alpha`, :math:`\beta` and the matrix element
             :math:`\langle \alpha \vert \hat{t}^{(i)}\vert \beta \rangle`.
-            For two-particle operators the :math:`jth` array in the list
-            will have shape ``(me_tables[j].shape[0], 5)`` with each row containing
+            For two-particle operators the :math:`j`-th array in the list
+            will have shape ``(matrix_elements[j].shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix element
             :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
@@ -278,16 +279,16 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     >>> t = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
     >>> v = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
-    >>> me_tables = []
-    >>> me_tables.append(t)
-    >>> me_tables.append(v)
-    >>> print(observable(me_tables, init_term=1/4, mapping="bravyi_kitaev"))
+    >>> matrix_elements = []
+    >>> matrix_elements.append(t)
+    >>> matrix_elements.append(v)
+    >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev"))
     (0.0625) [I0]
     + (-0.0625) [Z0]
     + (0.4375) [Z0 Z1]
     + (-0.1875) [Z1]
 
-    >>> print(observable(me_tables, init_term=1/4, mapping="bravyi_kitaev", wires=['w0','w1']))
+    >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev", wires=['w0','w1']))
     (0.0625) [Iw0]
     + (-0.0625) [Zw0]
     + (0.4375) [Zw0 Zw1]
@@ -302,20 +303,27 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
 
     sp_op_shape = (3,)
     tp_op_shape = (5,)
-    for table in me_tables:
-        for row in table:
-            if np.array(row).shape not in (sp_op_shape, tp_op_shape):
-                raise ValueError(
-                    "Expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
-                        np.array(row).shape
-                    )
-                )
 
     # Initialize the FermionOperator
     mb_obs = FermionOperator() + FermionOperator("") * init_term
 
-    for table in me_tables:
+    for table in matrix_elements:
+
+        if len(table.shape) != 2:
+            raise ValueError(
+                "Expected dimension for arrays in 'matrix_elements' is 2; got {}".format(
+                    table.shape
+                )
+            )
+
         for i in table:
+
+            if np.array(i).shape not in (sp_op_shape, tp_op_shape):
+                raise ValueError(
+                    "Expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
+                        np.array(i).shape
+                    )
+                )
 
             if i.shape == (5,):
                 # two-particle operator

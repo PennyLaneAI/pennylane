@@ -9,7 +9,7 @@ from openfermion.ops._qubit_operator import QubitOperator
 
 
 @pytest.mark.parametrize(
-    ("me_tables", "init_term", "mapping", "terms_exp"),
+    ("matrix_elements", "init_term", "mapping", "terms_exp"),
     [
         (
             [
@@ -123,7 +123,7 @@ from openfermion.ops._qubit_operator import QubitOperator
         ),
     ],
 )
-def test_observable(me_tables, init_term, mapping, terms_exp, custom_wires, monkeypatch):
+def test_observable(matrix_elements, init_term, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the 'observable' function used to build many-body observables.
 
     The parametrized inputs `terms_exp` are `.terms` attribute of the corresponding
@@ -131,7 +131,9 @@ def test_observable(me_tables, init_term, mapping, terms_exp, custom_wires, monk
     as it could be something useful to the users as well.
     """
 
-    res_obs = qchem.observable(me_tables, init_term=init_term, mapping=mapping, wires=custom_wires)
+    res_obs = qchem.observable(
+        matrix_elements, init_term=init_term, mapping=mapping, wires=custom_wires
+    )
 
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
@@ -139,35 +141,34 @@ def test_observable(me_tables, init_term, mapping, terms_exp, custom_wires, monk
     assert qchem._qubit_operators_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
+msg1 = "Expected entries of matrix element tables to be of shape"
+msg2 = "Expected dimension for arrays in 'matrix_elements' is 2"
+
+
 @pytest.mark.parametrize(
-    "me_tables",
+    ("matrix_elements", "msg_match"),
     [
-        [np.array([[0.0, 0.0, 1.0, 0.5], [1.0, 1.0, -0.5]])],
-        [np.array([[0.0, 0.0, 1.0, 0.5], [1.0, -0.5]])],
-        [np.array([[0.0, 0.0, 1.0, 2.0, 0.5], [1.0, -0.5]])],
-        [np.array([[0.0, 0.0, 1.0, 2.0, 3.0, 0.5], [1.0, 0.0, -0.5]])],
-        [
-            np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]]),
-            np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.25]]),
-        ],
-        [np.array([[0.0, 0.0, 0.5, 3], [1.0, 1.0, -0.5]]), np.array([[0.0, 0.0, 0.0, 0.0, 0.25]])],
+        ([np.array([[0.0, 0.0, 1.0, 0.5]])], msg1),
+        ([np.array([[0.0, 0.0, 1.0, 0.0, 1.0, 0.5]])], msg1),
+        ([np.array([[0.0, 0.0, 0.5]]), np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.25]])], msg1),
+        ([np.array([[0.0, 0.0, 0.5, 3]]), np.array([[0.0, 0.0, 0.0, 0.0, 0.25]])], msg1),
+        ([np.array([0.0, 0.0, 1.0, 0.5])], msg2),
+        ([np.array([[0.0, 0.0, 1.0, 0.5], [0.0, 0.0, 0.5]])], msg2),
     ],
 )
-def test_exceptions_observable(
-    me_tables, message_match="Expected entries of matrix element tables to be of shape"
-):
+def test_exceptions_observable(matrix_elements, msg_match):
     """Test that the 'observable' function throws an exception if the
     array containing the matrix elements has incorrect shapes."""
 
-    with pytest.raises(ValueError, match=message_match):
-        qchem.observable(me_tables)
+    with pytest.raises(ValueError, match=msg_match):
+        qchem.observable(matrix_elements)
 
 
-def test_mapping_observable(message_match="transformation is not available"):
+def test_mapping_observable(msg_match="transformation is not available"):
     """Test that the 'observable' function throws an exception if the
     fermionic-to-qubit mapping is not properly defined."""
 
-    me_table = [np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])]
+    matrix_elements = [np.array([[0.0, 0.0, 0.5], [1.0, 1.0, -0.5]])]
 
-    with pytest.raises(TypeError, match=message_match):
-        qchem.observable(me_table, mapping="no_valid_transformation")
+    with pytest.raises(TypeError, match=msg_match):
+        qchem.observable(matrix_elements, mapping="no_valid_transformation")
