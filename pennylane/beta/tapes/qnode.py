@@ -15,11 +15,13 @@
 This module contains the QNode class and qnode decorator.
 """
 from collections.abc import Sequence
+from collections import OrderedDict
 from functools import lru_cache, update_wrapper
 import warnings
 
 import numpy as np
 
+from pennylane.utils import _hash_iterable, _hash_dict
 from pennylane import Device
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.queuing import MeasurementProcess
@@ -98,7 +100,6 @@ class QNode:
               rule where possible, with finite-difference as a fallback.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
-        mutable (bool) – whether the QNode circuit is mutable
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
@@ -118,8 +119,7 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes
 
-    def __init__(self, func, device, interface="autograd", diff_method="best",
-                 mutable=True, **diff_options):
+    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise QuantumFunctionError(
@@ -143,7 +143,8 @@ class QNode:
         self.dtype = np.float64
         self.max_expansion = 2
 
-        self.mutable = mutable
+        self._caching = False
+        self._hash_call = OrderedDict()
 
     @staticmethod
     def _get_tape(device, interface, diff_method="best"):
@@ -365,12 +366,25 @@ class QNode:
             )
 
     def __call__(self, *args, **kwargs):
+        if self._caching:
+            hashed_args = _hash_iterable(args)
+            hashed_kwargs = _hash_dict(kwargs)
+            combined_hash = hash((hashed_args, hashed_kwargs))
+            if combined_hash in self._hash_call:
+                return self._hash_call[combined_hash]
+
         # construct the tape
-        if self.qtape is None or self.mutable:
-            self.construct(args, kwargs)
+        self.construct(args, kwargs)
 
         # execute the tape
-        return self.qtape.execute(device=self.device)
+        res =  self.qtape.execute(device=self.device)
+
+        if self._caching and combined_hash not in self._hash_call:
+            self._hash_call[combined_hash] = res
+            if len(self._hash_call) > self._caching:
+                self._hash_call.popitem(last=False)
+
+        return res
 
     def to_tf(self, dtype=None):
         """Apply the TensorFlow interface to the internal quantum tape.
@@ -445,7 +459,7 @@ class QNode:
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
-def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff_options):
+def qnode(device, interface="autograd", diff_method="best", **diff_options):
     """Decorator for creating QNodes.
 
     When applied to a quantum function, this decorator converts it into
@@ -509,7 +523,6 @@ def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff
               rule where possible, with finite-difference as a fallback.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all parameters.=
-        mutable (bool) – whether the QNode circuit is mutable
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
@@ -530,8 +543,7 @@ def qnode(device, interface="autograd", diff_method="best", mutable=True, **diff
     @lru_cache()
     def qfunc_decorator(func):
         """The actual decorator"""
-        qn = QNode(func, device, interface=interface, diff_method=diff_method,
-                   mutable=mutable, **diff_options)
+        qn = QNode(func, device, interface=interface, diff_method=diff_method, **diff_options)
         return update_wrapper(qn, func)
 
     return qfunc_decorator
