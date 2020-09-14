@@ -147,6 +147,11 @@ class QuantumTape(AnnotatedQueue):
 
         >>> from pennylane.beta.queuing import expval, var, sample, probs
 
+    Args:
+        name (str): a name given to the quantum tape
+        caching (int): number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs.
+
     **Example**
 
     .. code-block:: python
@@ -217,7 +222,7 @@ class QuantumTape(AnnotatedQueue):
     [[-0.45478169]]
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, caching=None):
         super().__init__()
         self.name = name
 
@@ -250,12 +255,13 @@ class QuantumTape(AnnotatedQueue):
 
         self._stack = None
 
-        self._caching = 0
+        self._caching = caching or 0
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 
-        self._hash_execute = OrderedDict()  #: OrderedDict[int: Any]: Mapping from hashes of the
-        # input parameters to results of executing the device.
+        self._hash_execute = OrderedDict()
+        """OrderedDict[int: Any]: Mapping from hashes of the input parameters to results of 
+        executing the device."""
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
