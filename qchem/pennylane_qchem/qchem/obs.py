@@ -251,7 +251,7 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     Args:
         me_tables (list(array[float])): list containing the tables of matrix elements
             of the operators :math:`\hat{t}` and :math:`\hat{v}`.
-            For single-particle operators the :math:`ith` array in the list will have shape
+            For single-particle operators the :math:`i`-th array in the list will have shape
             ``(me_tables[i].shape[0], 3)`` with each row containing the indices
             :math:`\alpha`, :math:`\beta` and the matrix element
             :math:`\langle \alpha \vert \hat{t}^{(i)}\vert \beta \rangle`.
@@ -260,7 +260,7 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix element
             :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
-        init_term: the contribution of core orbitals, if any, or other quantity
+        init_term (float): the contribution of core orbitals, if any, or other quantity
             required to initialize the many-body observable.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
@@ -281,7 +281,6 @@ def observable(me_tables, init_term=0, mapping="jordan_wigner", wires=None):
     >>> me_tables = []
     >>> me_tables.append(t)
     >>> me_tables.append(v)
-
     >>> print(observable(me_tables, init_term=1/4, mapping="bravyi_kitaev"))
     (0.0625) [I0]
     + (-0.0625) [Z0]
