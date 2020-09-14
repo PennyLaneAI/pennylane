@@ -25,21 +25,22 @@ from pennylane import qaoa
 # Hamiltonian components
 
 
-def bit_driver(wires, n):
-    r"""Returns the bit-driver cost Hamiltonian component.
+def bit_driver(wires, b):
+    r"""Returns the bit-driver cost Hamiltonian.
 
     This Hamiltonian is defined as:
 
-    .. math:: H \ = \ (-1)^{n + 1} \displaystyle\sum_{i} Z_i
+    .. math:: H \ = \ (-1)^{b + 1} \displaystyle\sum_{i} Z_i
 
     where :math:`Z_i` is the Pauli-Z operator acting on the
-    :math:`i`-th wire and :math:`n \ \in \ \{0, \ 1\}`. This Hamiltonian is often used as a term when
+    :math:`i`-th wire and :math:`b \ \in \ \{0, \ 1\}`. This Hamiltonian is often used when
     constructing larger QAOA cost Hamiltonians.
 
     Args:
-        wires (Iterable or Wires): The wires on which the returned Hamiltonian acts
-        n (int): Either :math:`0` or :math:`1`. Determines whether the Hamiltonian assigns
-                 lower energies to bitstrings with more :math:`0` or :math:`1` terms, respectively.
+        wires (Iterable or Wires): The wires on which the Hamiltonian acts
+        b (int): Either :math:`0` or :math:`1`. Determines whether the Hamiltonian assigns
+                 lower energies to bitstrings with a majority of bits being :math:`0` or
+                 a majority of bits being :math:`1`, respectively.
 
     Returns:
         .Hamiltonian:
@@ -51,24 +52,26 @@ def bit_driver(wires, n):
     >>> print(hamiltonian)
     (1.0) [Z0] + (1.0) [Z1] + (1.0) [Z2]
     """
-    if n == 0:
+    if b == 0:
         coeffs = [-1 for _ in wires]
-    elif n == 1:
+    elif b == 1:
         coeffs = [1 for _ in wires]
     else:
-        raise ValueError("'n' must be either 0 or 1, got {}".format(n))
+        raise ValueError("'b' must be either 0 or 1, got {}".format(b))
 
     ops = [qml.PauliZ(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
 
 
 def edge_driver(graph, reward):
-    r"""Returns the edge-driver cost Hamiltonian component.
+    r"""Returns the edge-driver cost Hamiltonian.
 
     Given some graph, :math:`G`, with each node representing a wire, and a binary
     colouring (each node/wire is assigned either :math:`|0\rangle` or :math:`|1\rangle`), the edge driver
     cost Hamiltonian will assign a lower energy to edges with endpoint colourings
-    supplied in ``reward``. For instance, if ``reward`` is ``["11"]``, then edges
+    supplied in ``reward``.
+
+    For instance, if ``reward`` is ``["11"]``, then edges
     with both endpoints coloured as ``1`` will be assigned a lower energy, while
     the other colourings  (``"00"``, ``"10"``, and ``"01"``) will be assigned a higher energy.
 
@@ -95,7 +98,7 @@ def edge_driver(graph, reward):
 
         The goal of many combinatorial problems that can be solved with QAOA is to
         find a `Graph colouring <https://en.wikipedia.org/wiki/Graph_coloring>`__ of some supplied
-        graph :math:`G`, that minimizes some cost function. It is oftentimes natural to consider the class
+        graph :math:`G`, that minimizes some cost function. With QAOA, it is natural to consider the class
         of graph colouring problems that only admit two colours, as we can easily encode these two colours
         using the :math:`|1\rangle` and :math:`|0\rangle` states of qubits. Therefore, given
         some graph :math:`G`, each edge of the graph can be described by a pair of qubits, :math:`|00\rangle`,
@@ -104,8 +107,9 @@ def edge_driver(graph, reward):
         When constructing QAOA cost functions, one must "penalize" certain states of the graph, and "reward"
         others, by assigning higher and lower energies to these respective configurations. Given a set of vertex-colour
         pairs (which each describe a possible  state of a graph edge), the ``edge_driver()``
-        function will output a Hamiltonian that rewards the pairs in the set, and penalizes the others. For example,
-        given the set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle\}` and the graph :math:`G`,
+        function outputs a Hamiltonian that rewards the pairs in the set, and penalizes the others.
+
+        For example, given the set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle\}` and the graph :math:`G`,
         the ``edge_driver()`` function will output the following Hamiltonian:
 
         .. math:: H \ = \ \frac{1}{4} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_{i} Z_{j} \ - \ Z_{i} \ - \ Z_{j} \big)

@@ -245,7 +245,7 @@ class TestCostHamiltonians:
     def test_bit_driver_error(self):
         """Tests that the bit driver Hamiltonian throws the correct error"""
 
-        with pytest.raises(ValueError, match=r"'n' must be either 0 or 1"):
+        with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
             qaoa.bit_driver(range(3), 2)
 
     def test_bit_driver_output(self):
