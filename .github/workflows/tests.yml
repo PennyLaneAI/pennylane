@@ -61,7 +61,7 @@ jobs:
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
+        uses: codecov/codecov-action@v1
         with:
           file: ./coverage.xml
 
@@ -119,7 +119,7 @@ jobs:
             --cov=pennylane $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
+        uses: codecov/codecov-action@v1
         with:
           file: ./coverage.xml
 
@@ -161,6 +161,6 @@ jobs:
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.7
+        uses: codecov/codecov-action@v1
         with:
           file: ./qchem/coverage.xml

@@ -15,10 +15,9 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
-
 import numpy as np
 
-from pennylane.operation import Channel
+from pennylane.operation import AnyWires, Channel
 
 
 class AmplitudeDamping(Channel):
@@ -224,11 +223,66 @@ class DepolarizingChannel(Channel):
         return [K0, K1, K2, K3]
 
 
+class QubitChannel(Channel):
+    r"""QubitChannel(K_list, wires)
+    Apply an arbitrary fixed quantum channel.
+
+    Kraus matrices that represent the fixed channel are provided
+    as a list of NumPy arrays.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        K_list (list[array[complex]]): List of Kraus matrices
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
+    """
+    num_params = 1
+    num_wires = AnyWires
+    par_domain = "L"
+    grad_method = None
+
+    def __init__(self, *params, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+        K_list = params[0]
+
+        # check all Kraus matrices are square matrices
+        if not all(K.shape[0] == K.shape[1] for K in K_list):
+            raise ValueError(
+                "Only channels with the same input and output Hilbert space dimensions can be applied."
+            )
+
+        # check all Kraus matrices have the same shape
+        if not all(K.shape == K_list[0].shape for K in K_list):
+            raise ValueError("All Kraus matrices must have the same shape.")
+
+        # check the dimension of all Kraus matrices are valid
+        if not all(K.ndim == 2 for K in K_list):
+            raise ValueError(
+                "Dimension of all Kraus matrices must be (2**num_wires, 2**num_wires)."
+            )
+
+        # check that the channel represents a trace-preserving map
+        K_arr = np.array(K_list)
+        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+        if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
+            raise ValueError("Only trace preserving channels can be applied.")
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        K_list = params[0]
+        return K_list
+
+
 __qubit_channels__ = {
     "AmplitudeDamping",
     "GeneralizedAmplitudeDamping",
     "PhaseDamping",
     "DepolarizingChannel",
+    "QubitChannel",
 }
 
 __all__ = list(__qubit_channels__)
