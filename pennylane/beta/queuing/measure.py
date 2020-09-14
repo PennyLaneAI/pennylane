@@ -324,13 +324,15 @@ def state(wires):
     **Example:**
 
     .. code-block:: python3
+        from pennylane.beta.queuing import state
+        from pennylane.beta.tapes import qnode
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qnode(dev)
         def circuit():
             qml.Hadamard(wires=1)
-            return qml.state(wires=range(2))
+            return state(wires=range(2))
 
     Executing this QNode:
 
