@@ -204,10 +204,14 @@ class TestCapabilities:
         qnode()
 
         if cap["returns_state"]:
-            dev.state  # pylint: disable = pointless-statement
+            assert dev.state is not None
         else:
-            with pytest.raises(AttributeError):
-                dev.state  # pylint: disable = pointless-statement
+            try:
+                state = dev.state
+            except AttributeError:
+                state = None
+
+            assert state is None
 
     def test_returns_probs(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""

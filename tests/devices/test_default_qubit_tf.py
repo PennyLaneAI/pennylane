@@ -792,21 +792,21 @@ class TestQNodeIntegration:
     """Integration tests for default.qubit.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
 
-    @pytest.mark.parametrize("capabilities", [{"model": "qubit",
-                                               "supports_finite_shots": True,
-                                               "supports_tensor_observables": True,
-                                               "returns_probs": True,
-                                               "returns_state": True,
-                                               "supports_reversible_diff": False,
-                                               "supports_inverse_operations": True,
-                                               "supports_analytic_computation": True,
-                                               "passthru_interface": 'tf',
-                                               }])
-    def test_defines_correct_capabilities(self, capabilities):
+    def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.qubit.tf", wires=1)
         cap = dev.capabilities()
+        capabilities = {"model": "qubit",
+                        "supports_finite_shots": True,
+                        "supports_tensor_observables": True,
+                        "returns_probs": True,
+                        "returns_state": True,
+                        "supports_reversible_diff": False,
+                        "supports_inverse_operations": True,
+                        "supports_analytic_computation": True,
+                        "passthru_interface": 'tf',
+                        }
         assert cap == capabilities
 
     def test_load_tensornet_tf_device(self):

@@ -73,8 +73,8 @@ and use the device. These include:
 Defining all these attributes is mandatory.
 
 
-Supporting operations
----------------------
+Device capabilities
+-------------------
 
 You must further tell PennyLane about the operations that your device supports
 as well as potential further capabilities, by providing the following class attributes/properties:
@@ -107,11 +107,9 @@ as well as potential further capabilities, by providing the following class attr
 
   Examples of capabilities are:
 
-  * ``'model'`` (*str*): either ``'qubit'`` or ``'CV'``.
+  * ``'model'`` (*str*): either ``'qubit'`` or ``'cv'``.
 
-  * ``'supports_exact'`` (*bool*): ``True`` if the device is a simulator that returns analytic results.
-
-  * ``'supports_sampled'`` (*bool*): ``True`` if outputs are estimates computed from samples of measurement outcomes.
+  * ``'returns_state'`` (*bool*): ``True`` if the device returns the quantum state via ``dev.state``.
 
   * ``'supports_inverse_operations'`` (*bool*): ``True`` if the device supports
     applying the inverse of operations. Operations which should be inverted

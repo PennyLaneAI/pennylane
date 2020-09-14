@@ -516,9 +516,9 @@ class TestInverseGatesQubit:
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))
 
-    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device, init_state, op, func, theta, tol, skip_if):
+    def test_two_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
         """Test inverse of two qubit gates taking one parameter."""
         n_wires = 2
         dev = device(n_wires)
@@ -530,12 +530,12 @@ class TestInverseGatesQubit:
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(rnd_state, wires=range(n_wires))
-            op(theta, wires=range(n_wires)).inv()
+            op(gamma, wires=range(n_wires)).inv()
             return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
-        mat = func(theta)
+        mat = func(gamma)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.analytic))

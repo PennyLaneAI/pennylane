@@ -690,12 +690,11 @@ class TestCapabilities:
     """Test that a default qubit device defines capabilities that all devices inheriting
      from it will automatically have."""
 
-    @pytest.mark.parametrize("capabilities", [{"model": "qubit",
-                                               "supports_finite_shots": True,
-                                               "supports_tensor_observables": True,
-                                               "returns_probs": True,
-                                               }])
-    def test_defines_correct_capabilities(self, capabilities):
+    def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
-
+        capabilities = {"model": "qubit",
+                        "supports_finite_shots": True,
+                        "supports_tensor_observables": True,
+                        "returns_probs": True,
+                        }
         assert capabilities == QubitDevice.capabilities()

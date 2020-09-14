@@ -563,20 +563,20 @@ class TestInterfaceDeviceIntegration:
 
         return circuit_fn
 
-    @pytest.mark.parametrize("capabilities", [{"model": "qubit",
-                                               "supports_finite_shots": False,
-                                               "supports_tensor_observables": True,
-                                               "returns_probs": False,
-                                               "returns_state": False,
-                                               "supports_analytic_computation": True,
-                                               "passthru_interface": 'tf',
-                                               "provides_jacobian": True,
-                                               }])
-    def test_defines_correct_capabilities(self, capabilities, rep):
+    def test_defines_correct_capabilities(self, rep):
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
         cap = dev.capabilities()
+        capabilities = {"model": "qubit",
+                        "supports_finite_shots": False,
+                        "supports_tensor_observables": True,
+                        "returns_probs": False,
+                        "returns_state": False,
+                        "supports_analytic_computation": True,
+                        "passthru_interface": 'tf',
+                        "provides_jacobian": True,
+                        }
         assert cap == capabilities
 
     @pytest.mark.parametrize("interface", ["autograd"])

@@ -600,18 +600,18 @@ class TestDefaultGaussianIntegration:
     """Integration tests for default.gaussian. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
-    @pytest.mark.parametrize("capabilities", [{"model": "cv",
-                                               "supports_finite_shots": True,
-                                               "returns_probs": False,
-                                               "returns_state": False,
-                                               "supports_reversible_diff": False,
-                                               "supports_analytic_computation": True,
-                                               }])
-    def test_defines_correct_capabilities(self, capabilities):
+    def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.gaussian", wires=1)
         cap = dev.capabilities()
+        capabilities = {"model": "cv",
+                        "supports_finite_shots": True,
+                        "returns_probs": False,
+                        "returns_state": False,
+                        "supports_reversible_diff": False,
+                        "supports_analytic_computation": True,
+                        }
         assert cap == capabilities
 
     def test_load_default_gaussian_device(self):
