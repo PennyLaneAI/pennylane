@@ -100,6 +100,8 @@ class QNode:
               rule where possible, with finite-difference as a fallback.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
+        caching (int): number of device executions to store in a cache to speed up subsequent
+            executions. Caching does not take place by default.
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
@@ -119,7 +121,8 @@ class QNode:
 
     # pylint:disable=too-many-instance-attributes
 
-    def __init__(self, func, device, interface="autograd", diff_method="best", **diff_options):
+    def __init__(self, func, device, interface="autograd", diff_method="best", caching=None,
+                 **diff_options):
 
         if interface is not None and interface not in self.INTERFACE_MAP:
             raise QuantumFunctionError(
@@ -143,8 +146,13 @@ class QNode:
         self.dtype = np.float64
         self.max_expansion = 2
 
-        self._caching = False
-        self._hash_call = OrderedDict()
+        self._caching = caching or 0
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+
+        self._hash_execute = OrderedDict()
+        """OrderedDict[int: Any]: A copy of the ``_hash_execute`` dictionary from the quantum 
+        tape"""
 
     @staticmethod
     def _get_tape(device, interface, diff_method="best"):
@@ -370,14 +378,14 @@ class QNode:
         self.construct(args, kwargs)
 
         if self._caching:
-            self.qtape._hash_execute = self._hash_call
+            self.qtape._hash_execute = self._hash_execute
             self.qtape._caching = self._caching
 
         # execute the tape
         res = self.qtape.execute(device=self.device)
 
         if self._caching:
-            self._hash_call = self.qtape._hash_execute
+            self._hash_execute = self.qtape._hash_execute
 
         return res
 
