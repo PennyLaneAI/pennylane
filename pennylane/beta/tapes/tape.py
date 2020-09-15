@@ -133,6 +133,106 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
+def unfold_batching(tape, unfold_operations=True, unfold_measurements=False):
+    """Explode all ``BatchTape`` objects in a tape. This creates a list of tapes, each
+       sharing all objects except from the ones recorded with ``BatchTape``.
+
+    Args:
+        tape (QuantumTape): tape to unfold
+        unfold_operations (bool): If ``True``, operations will be unfolded.
+        unfold_measurements (bool): If ``True``, measurements will be unfolded.
+
+    **Example**
+
+    Consider the following nested tape:
+
+    .. code-block:: python
+
+        with QuantumTape() as tape:
+            qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+            with QuantumTape() as tape2:
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=[0, 'a'])
+
+            with BatchTape() as tape3:
+                qml.RY(0.2, wires='a')
+                qml.RX(0.2, wires='a')
+                qml.RZ(0.2, wires='a')
+
+            probs(wires=0), probs(wires='a')
+
+    The nested structure contains both ``QuantumTape`` and ``BatchTape`` objects:
+
+    >>> tape.operations
+    [BasisState(array([1, 1]), wires=[0, 'a']),
+     <QuantumTape: wires=[0], params=3>,
+     CNOT(wires=[0, 'a']),
+     <BatchTape: wires=[0], params=1>]
+
+    Calling ``unfold_batching`` will return a tape with all nested batch tapes
+    are exploded, resulting in a list of tapes of quantum operations:
+
+    >>> tape_batch = unfold_batching(tape)
+    >>> tape_batch[0]
+     [PauliX(wires=[0]),
+     PauliX(wires=['a']),
+     <QuantumTape: wires=[0], params=3>,
+     CNOT(wires=[0, 'a']),
+     RX(0.2, wires=['a'])]
+
+    >>> tape_batch[1]
+     [PauliX(wires=[0]),
+     PauliX(wires=['a']),
+     <QuantumTape: wires=[0], params=3>,
+     CNOT(wires=[0, 'a']),
+     RY(0.2, wires=['a'])]
+
+    >>> tape_batch[2]
+     [PauliX(wires=[0]),
+     PauliX(wires=['a']),
+     <QuantumTape: wires=[0], params=3>,
+     CNOT(wires=[0, 'a']),
+     RZ(0.2, wires=['a'])]
+    """
+
+    tape_batch = []
+
+    for queue in ("_prep", "_ops", "_measurements"):
+        for obj in getattr(tape, queue):
+
+            if not unfold_measurements:
+                # Measurements should not be expanded; treat measurements
+                # as a stopping condition
+                stop = stop or isinstance(obj, MeasurementProcess)
+
+            if stop:
+                # do not expand out the object; append it to the
+                # new tape, and continue to the next object in the queue
+                getattr(new_tape, queue).append(obj)
+                continue
+
+            if isinstance(obj, BatchTape):
+                # Object is an operation; query it for its expansion
+                try:
+                    obj = obj.explode()
+                except NotImplementedError:
+                    # Object does not define an expansion; treat this as
+                    # a stopping condition.
+                    getattr(new_tape, queue).append(obj)
+                    continue
+
+            # recursively expand out the newly created tape
+            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
+
+            new_tape._prep += expanded_tape._prep
+            new_tape._ops += expanded_tape._ops
+            new_tape._measurements += expanded_tape._measurements
+
+    return new_tape
+
+
 class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates, executes,
     and differentiates variational quantum programs.
