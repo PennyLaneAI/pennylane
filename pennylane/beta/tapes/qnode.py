@@ -158,7 +158,7 @@ class QNode:
                 "Caching mode activated. The quantum circuit being "
                 "executed by the QNode must have a fixed structure.",
             )
-            if self.diff_method in ["backprop"]:
+            if self.diff_method is "backprop":
                 raise ValueError(
                     'Caching mode is incompatible with the "backprop" diff_method'
                 )
