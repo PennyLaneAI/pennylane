@@ -153,7 +153,7 @@ class MeasurementProcess:
         if self.obs is None:
             raise NotImplementedError("Cannot expand a measurement process with no observable.")
 
-        from pennylane.beta.tapes import QuantumTape
+        from pennylane.beta.tapes import QuantumTape  # pylint: disable=import-outside-toplevel
 
         with QuantumTape() as tape:
             self.obs.diagonalizing_gates()

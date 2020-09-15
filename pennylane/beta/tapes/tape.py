@@ -22,7 +22,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import ObservableReturnTypes
 
-from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
 
@@ -106,7 +105,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
-                stop = stop or isinstance(obj, MeasurementProcess)
+                stop = stop or isinstance(obj, qml.beta.queuing.MeasurementProcess)
 
             if stop:
                 # do not expand out the object; append it to the
@@ -114,7 +113,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operation, qml.beta.queuing.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -184,6 +183,7 @@ class QuantumTape(AnnotatedQueue):
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
 
     Execution can take place either using the in-place constructed parameters,
+
     >>> tape.execute(dev)
     [0.77750694]
 
@@ -221,13 +221,13 @@ class QuantumTape(AnnotatedQueue):
         self.name = name
 
         self._prep = []
-        """list[~.Operation]: Tape state preparations."""
+        """list[.Operation]: Tape state preparations."""
 
         self._ops = []
-        """list[~.Operation]: quantum operations recorded by the tape."""
+        """list[.Operation]: quantum operations recorded by the tape."""
 
         self._measurements = []
-        """list[~.MeasurementProcess]: measurement processes recorded by the tape."""
+        """list[.MeasurementProcess]: measurement processes recorded by the tape."""
 
         self._par_info = {}
         """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
@@ -242,7 +242,6 @@ class QuantumTape(AnnotatedQueue):
         self.num_wires = 0
 
         self.jacobian_options = {}
-        self.grad_method = None
 
         self.hash = 0
         self.is_sampled = False
@@ -275,7 +274,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def interface(self):
-        """str, None: automatic differentiation interface used by the quantum tap (if any)"""
+        """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
     # ========================================================
@@ -319,14 +318,14 @@ class QuantumTape(AnnotatedQueue):
                 if isinstance(obj, STATE_PREP_OPS):
                     if self._ops:
                         raise ValueError(
-                            f"State preperation operation {obj} must occur prior to any quantum operations."
+                            f"State preparation operation {obj} must occur prior to any quantum operations."
                         )
 
                     self._prep.append(obj)
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, MeasurementProcess):
+            elif isinstance(obj, qml.beta.queuing.MeasurementProcess):
                 # measurement process
                 self._measurements.append(obj)
 
@@ -352,17 +351,6 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-    def _update_gradient_info(self):
-        """Update the parameter information dictionary with gradient information
-        of each parameter"""
-
-        for i, info in self._par_info.items():
-
-            if i not in self.trainable_params:
-                info["grad_method"] = None
-            else:
-                info["grad_method"] = self._grad_method(i, use_graph=True)
-
     def _update_par_info(self):
         """Update the parameter information dictionary"""
         param_count = 0
@@ -371,7 +359,7 @@ class QuantumTape(AnnotatedQueue):
 
             for p in range(len(obj.data)):
                 info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p})  # , "grad_method": None})
+                info.update({"op": obj, "p_idx": p})
 
                 self._par_info[param_count] = info
                 param_count += 1
@@ -387,11 +375,8 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
 
-        if self.interface is not None:
-            self._update_gradient_info()
-
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
-        """Expand all operations in the processed to a specific depth.
+        """Expand all operations in the processed queue to a specific depth.
 
         Args:
             depth (int): the depth the tape should be expanded
@@ -473,7 +458,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters()
         [array([1, 1]), 0.432, 0.543, 0.1, 0.4]
 
-        Here, lets set some trainable parameters:
+        Here, let's set some trainable parameters:
 
         >>> tape.trainable_params = {1, 2}
         >>> tape.get_parameters()
@@ -549,8 +534,9 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.jacobian`, and changes the default
-        output size of methods :meth:`~.jacobian` and :meth:`~.get_parameters()`.
+        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.QuantumTape.jacobian`,
+        and changes the default output size of methods :meth:`~.QuantumTape.jacobian` and
+        :meth:`~.get_parameters()`.
 
         **Example**
 
@@ -703,7 +689,7 @@ class QuantumTape(AnnotatedQueue):
             op.data[self._par_info[idx]["p_idx"]] = p
 
     # ========================================================
-    # properties, setters, and getters
+    # Tape properties
     # ========================================================
 
     @property
@@ -711,7 +697,7 @@ class QuantumTape(AnnotatedQueue):
         """Returns the operations on the quantum tape.
 
         Returns:
-            list[.Operation]: list of recorded quantum operations
+            list[.Operation]: recorded quantum operations
 
         **Example**
 
@@ -753,7 +739,7 @@ class QuantumTape(AnnotatedQueue):
                 qml.RX(0.133, wires='a')
                 expval(qml.PauliZ(wires=[0]))
 
-        >>> tape.operations
+        >>> tape.observables
         [expval(PauliZ(wires=[0]))]
         """
         # TODO: modify this property once devices
@@ -803,7 +789,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def output_dim(self):
-        """The (estimated) output dimension of the quantum tape."""
+        """The (inferred) output dimension of the quantum tape."""
         return self._output_dim
 
     @property
@@ -858,7 +844,7 @@ class QuantumTape(AnnotatedQueue):
         """Execute the tape on a quantum device.
 
         Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (~.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameters are used (via :meth:`~.get_parameters`).
@@ -902,10 +888,13 @@ class QuantumTape(AnnotatedQueue):
     def execute_device(self, params, device):
         """Execute the tape on a quantum device.
 
-        For more details, see :meth:`~.execute`.
+        This is a low-level method, intended to be called by an interface,
+        and does not support autodifferentiation.
+
+        For more details on differentiable tape execution, see :meth:`~.execute`.
 
         Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (~.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -913,7 +902,7 @@ class QuantumTape(AnnotatedQueue):
         device.reset()
 
         # backup the current parameters
-        current_parameters = self.get_parameters()
+        saved_parameters = self.get_parameters()
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
@@ -933,7 +922,7 @@ class QuantumTape(AnnotatedQueue):
                 output_dim = np.prod(res.shape)
 
             if self.output_dim != output_dim:
-                # update the output dimension estimate with the correct value
+                # update the inferred output dimension with the correct value
                 self._output_dim = output_dim
 
         except (AttributeError, TypeError):
@@ -941,9 +930,12 @@ class QuantumTape(AnnotatedQueue):
             pass
 
         # restore original parameters
-        self.set_parameters(current_parameters)
+        self.set_parameters(saved_parameters)
         return res
 
+    # interfaces can optionally override the _execute method
+    # if they need to perform any logic in between the user's
+    # call to tape.execute and the internal call to tape.execute_device.
     _execute = execute_device
 
     # ========================================================
@@ -1007,6 +999,68 @@ class QuantumTape(AnnotatedQueue):
 
         return default_method
 
+    def _update_gradient_info(self):
+        """Update the parameter information dictionary with gradient information
+        of each parameter"""
+
+        for i, info in self._par_info.items():
+
+            if i not in self.trainable_params:
+                info["grad_method"] = None
+            else:
+                info["grad_method"] = self._grad_method(i, use_graph=True)
+
+    def _grad_method_validation(self, method):
+        """Validates if the Jacobian method requested is supported by the trainable
+        parameters, and returns the allowed parameter gradient methods.
+
+        This method will generate parameter gradient information if it has not already
+        been generated, and then proceed to validate the gradient method. In particular:
+
+        * An exception will be raised if there exist non-differentiable trainable
+          parameters on the tape.
+
+        * An exception will be raised if the Jacobian method is ``"analytic"`` but there
+          exist some trainable parameters on the tape that only support numeric differentiation.
+
+        If all validations pass, this method will return a tuple containing the allowed parameter
+        gradient methods for each trainable parameter.
+
+        Args:
+            method (str): the overall Jacobian differentiation method
+
+        Returns:
+            tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
+        """
+
+        if "grad_method" not in self._par_info[0]:
+            self._update_gradient_info()
+
+        allowed_param_methods = {
+            idx: info["grad_method"]
+            for idx, info in self._par_info.items()
+            if idx in self.trainable_params
+        }
+
+        # check and raise an error if any parameters are non-differentiable
+        nondiff_params = {idx for idx, g in allowed_param_methods.items() if g is None}
+
+        if nondiff_params:
+            raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+        numeric_params = {idx for idx, g in allowed_param_methods.items() if g == "F"}
+
+        if method == "analytic":
+            # If explicitly using analytic mode, ensure that all parameters
+            # support analytic differentiation.
+
+            if numeric_params:
+                raise ValueError(
+                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
+                )
+
+        return tuple(allowed_param_methods.values())
+
     def numeric_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
         a single trainable tape parameter using numerical finite-differences.
@@ -1037,7 +1091,9 @@ class QuantumTape(AnnotatedQueue):
         shift[idx] = h
 
         if order == 1:
-            # forward finite-difference
+            # Forward finite-difference.
+            # Check if the device has already be pre-computed with
+            # unshifted parameter values, to avoid redundant evaluations.
             y0 = options.get("y0", None)
 
             if y0 is None:
@@ -1068,7 +1124,7 @@ class QuantumTape(AnnotatedQueue):
         if params is None:
             params = np.array(self.get_parameters())
 
-        current_parameters = self.get_parameters()
+        saved_parameters = self.get_parameters()
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
@@ -1078,7 +1134,7 @@ class QuantumTape(AnnotatedQueue):
         jac = device.jacobian(self)
 
         # restore original parameters
-        self.set_parameters(current_parameters)
+        self.set_parameters(saved_parameters)
         return jac
 
     def analytic_pd(self, idx, device, params=None, **options):
@@ -1208,46 +1264,30 @@ class QuantumTape(AnnotatedQueue):
         if method not in ("best", "numeric", "analytic", "device"):
             raise ValueError(f"Unknown gradient method '{method}'")
 
-        if "grad_method" not in self._par_info[0]:
-            self._update_gradient_info()
-
         if params is None:
             params = self.get_parameters()
 
         params = np.array(params)
 
-        # check and raise an error if any parameters are non-differentiable
-        nondiff_params = {
-            idx
-            for idx, info in self._par_info.items()
-            if info["grad_method"] is None and idx in self.trainable_params
-        }
+        if method == "device":
+            # Using device mode; simply query the device for the Jacobian
+            return self.device_pd(device, params=params, **options)
 
-        if nondiff_params:
-            raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+        # perform gradient method validation
+        allowed_param_methods = self._grad_method_validation(method)
 
-        numeric_params = {
-            idx
-            for idx, info in self._par_info.items()
-            if info["grad_method"] == "F" and idx in self.trainable_params
-        }
+        if not params.size or all(g == "0" for g in allowed_param_methods):
+            # Either all parameters had grad method 0, or there are no trainable
+            # parameters. Simply return an empty Jacobian.
+            return np.zeros((self.output_dim, len(params)), dtype=float)
 
-        if method == "analytic":
-            # If explicitly using analytic mode, ensure that all parameters
-            # support analytic differentiation.
+        if method == "numeric" or "F" in allowed_param_methods:
+            # there exist parameters that will be differentiated numerically
 
-            if numeric_params:
-                raise ValueError(
-                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
-                )
-
-        elif method == "device":
-            # Using device mode; query the device for the Jacobian
-            return self.device_pd(device, **options)
-
-        if method == "numeric" or numeric_params:
             if options.get("order", 1) == 1:
-                # the value of the circuit at current params, computed only once here
+                # First order (forward) finite-difference will be performed.
+                # Compute the value of the tape at the current parameters here. This ensures
+                # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
         state_required = any(
@@ -1258,15 +1298,15 @@ class QuantumTape(AnnotatedQueue):
                 "The jacobian method does not support circuits " "that return the state"
             )
 
-        jac = np.zeros((self.output_dim, len(params)), dtype=float)
+        jac = None
+
         p_ind = list(np.ndindex(*params.shape))
 
         # loop through each parameter and compute the gradient
-        for idx, (l, p) in enumerate(zip(p_ind, self.trainable_params)):
-            param_method = self._par_info[p]["grad_method"]
+        for idx, (l, param_method) in enumerate(zip(p_ind, allowed_param_methods)):
 
             if param_method == "0":
-                # independent parameter; skip.
+                # Independent parameter. Skip, as this parameter has a gradient of 0.
                 continue
 
             if (method == "best" and param_method == "F") or (method == "numeric"):
@@ -1281,18 +1321,12 @@ class QuantumTape(AnnotatedQueue):
                 # object arrays cannot be flattened; must hstack them
                 g = np.hstack(g)
 
-            try:
-                jac[:, idx] = g.flatten()
-            except ValueError as e:
-                if "could not broadcast input array from shape" in str(e):
-                    # the value of self._output_dim, which was estimated during
-                    # construction, is incorrect. A device execution is required
-                    # to properly infer output dimension.
-                    raise ValueError(
-                        "The quantum tape could not infer the correct output dimension "
-                        "of the quantum computation. Please execute the tape before "
-                        "computing the Jacobian."
-                    )
-                raise e
+            if jac is None:
+                # The Jacobian matrix has not yet been created, as we needed at least
+                # one device execution to occur so that we could ensure that the output
+                # dimension is known.
+                jac = np.zeros((self.output_dim, len(params)), dtype=float)
+
+            jac[:, idx] = g.flatten()
 
         return jac

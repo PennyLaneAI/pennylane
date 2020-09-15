@@ -35,10 +35,14 @@ def TestOperationMonkeypatching():
 
     @qml.qnode(dev)
     def func(x):
-        qml.RX(x, wires=0)
-        return qml.PauliX(wires="a")
+        global op
+        op = qml.RX(x, wires=0)
+        return qml.expval(qml.PauliX(wires="a"))
 
+    # this should evaluate without error
     func(0.432)
+
+    assert func.circuit.operations == [op]
 
 
 class TestConstruction:
@@ -77,18 +81,29 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, ops, obs = make_tape
 
-        assert isinstance(tape.measurements[0], MeasurementProcess)
-        assert tape.measurements[0].return_type == qml.operation.Expectation
-        assert tape.observables[0] == obs[0]
+        # test that the internal tape._measurements list is created properly
+        assert isinstance(tape._measurements[0], MeasurementProcess)
+        assert tape._measurements[0].return_type == qml.operation.Expectation
+        assert tape._measurements[0].obs == obs[0]
 
-        assert isinstance(tape.measurements[1], MeasurementProcess)
-        assert tape.measurements[1].return_type == qml.operation.Probability
+        assert isinstance(tape._measurements[1], MeasurementProcess)
+        assert tape._measurements[1].return_type == qml.operation.Probability
 
-    def test_tensor_observables(self):
+        # test the public observables property
+        assert len(tape.observables) == 2
+        assert tape.observables[0].name == "PauliX"
+        assert tape.observables[1].return_type == qml.operation.Probability
+
+        # test the public measurements property
+        assert len(tape.measurements) == 2
+        assert all(isinstance(m, MeasurementProcess) for m in tape.measurements)
+        assert tape.observables[0].return_type == qml.operation.Expectation
+        assert tape.observables[1].return_type == qml.operation.Probability
+
+    def test_tensor_observables_matmul(self):
         """Test that tensor observables are correctly processed from the annotated
-        queue"""
+        queue. Here, we test multiple tensor observables constructed via matmul."""
 
-        # test multiple tensor observables constructed via matmul
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
@@ -100,8 +115,11 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.operation.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-        # test multiple tensor observables constructed via matmul
-        # with the observable occuring on the left hand side
+    def test_tensor_observables_rmatmul(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue. Here, we test multiple tensor observables constructed via matmul
+        with the observable occuring on the left hand side."""
+
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
@@ -113,7 +131,11 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.operation.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-        # test multiple tensor observables constructed via explicit Tensor creation
+    def test_tensor_observables_tensor_init(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue. Here, we test multiple tensor observables constructed via explicit
+        Tensor creation."""
+
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(1) @ qml.PauliX(0)
@@ -125,8 +147,11 @@ class TestConstruction:
         assert tape.measurements[0].return_type is qml.operation.Expectation
         assert tape.measurements[0].obs is t_obs2
 
-        # test multiple tensor observables constructed via matmul
-        # between two tensor observables
+    def test_tensor_observables_tensor_matmul(self):
+        """Test that tensor observables are correctly processed from the annotated
+        queue". Here, wetest multiple tensor observables constructed via matmul
+        between two tensor observables."""
+
         with QuantumTape() as tape:
             op = qml.RX(1.0, wires=0)
             t_obs1 = qml.PauliZ(0) @ qml.PauliX(1)
@@ -163,7 +188,7 @@ class TestConstruction:
             assert isinstance(o1, o2.__class__)
             assert o1.wires == o2.wires
 
-    def test_tensor_process_queueion(self):
+    def test_tensor_process_queuing(self):
         """Test that tensors are correctly queued"""
         with QuantumTape() as tape:
             A = qml.PauliX(wires=0)
@@ -235,7 +260,7 @@ class TestConstruction:
                 expval(qml.PauliZ(wires=1))
 
     def test_observable_with_no_measurement(self):
-        """Test that an exception is raised if a measurement occurs before a operation"""
+        """Test that an exception is raised if an observable is used without a measurement"""
 
         with pytest.raises(ValueError, match="does not have a measurement type specified"):
             with QuantumTape() as tape:
@@ -278,7 +303,7 @@ class TestGraph:
         assert tape._graph is None
         spy.assert_not_called()
 
-        # requested the graph creates it
+        # requesting the graph creates it
         g = tape.graph
         assert g.operations == [op]
         assert g.observables == [obs]
@@ -325,7 +350,7 @@ class TestParameters:
         assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
 
-        # add an additiona trainable parameter
+        # add additional trainable parameters
         trainable = {1, 2, 3, 4}
         tape.trainable_params = trainable
         assert tape._trainable_params == trainable
@@ -554,6 +579,8 @@ class TestExpand:
         new_tape = tape.expand()
 
         assert len(new_tape.operations) == 1
+        assert new_tape.operations[0].name == "PauliX"
+        assert new_tape.operations[0].wires.tolist() == [0]
         assert new_tape.num_params == 0
         assert new_tape.get_parameters() == []
 
@@ -568,6 +595,11 @@ class TestExpand:
         new_tape = tape.expand()
 
         assert len(new_tape.operations) == 3
+
+        assert new_tape.operations[0].name == "PhaseShift"
+        assert new_tape.operations[1].name == "RX"
+        assert new_tape.operations[2].name == "PhaseShift"
+
         assert new_tape.num_params == 3
         assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
 
@@ -725,8 +757,8 @@ class TestExecution:
         assert np.all(res == np.array([]))
 
     def test_incorrect_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect output dimension
-        estimate corrects itself after evaluation."""
+        """Test that a quantum tape with an incorrect inferred output dimension
+        corrects itself after evaluation."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -861,7 +893,7 @@ class TestExecution:
 
     def test_single_mode_sample(self):
         """Test that there is only one array of values returned
-        for single mode samples"""
+        for a single wire sample"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
@@ -910,17 +942,17 @@ class TestExecution:
         assert res[0].shape == (10,)
         assert isinstance(res[1], float)
 
-    # def test_decomposition(self):
-    #     """Test decomposition onto a devices supported gate set"""
-    #     dev = qml.device("default.qubit", wires=1)
+    def test_decomposition(self, tol):
+        """Test decomposition onto a device's supported gate set"""
+        dev = qml.device("default.qubit", wires=1)
 
-    #     with QuantumTape() as tape:
-    #         qml.U3(0.1, 0.2, 0.3, wires=[0])
-    #         expval(qml.PauliZ(0))
+        with QuantumTape() as tape:
+            qml.U3(0.1, 0.2, 0.3, wires=[0])
+            expval(qml.PauliZ(0))
 
-    #     res = tape.execute(dev)
-    #     print(dev.)
-    #     new_tape =
+        tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
+        res = tape.execute(dev)
+        assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
 
 
 class TestCVExecution:
@@ -946,7 +978,7 @@ class TestCVExecution:
 
     def test_multiple_output_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple expval outputs"""
+        with multiple measurement types"""
         dev = qml.device("default.gaussian", wires=2)
         x = 0.543
         y = -0.654
@@ -1085,8 +1117,12 @@ class TestJacobian:
             expval(qml.PauliY(0))
 
         dev = qml.device("default.qubit", wires=1)
-        dev.jacobian = mocker.Mock()
 
+        dev.jacobian = mocker.Mock()
+        tape.device_pd(dev)
+        dev.jacobian.assert_called_once()
+
+        dev.jacobian = mocker.Mock()
         tape.jacobian(dev, method="device")
         dev.jacobian.assert_called_once()
 
@@ -1103,9 +1139,9 @@ class TestJacobian:
         res = tape.jacobian(dev)
         assert res.size == 0
 
-    def test_incorrect_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect output dimension
-        estimate raises an exception when computing the Jacobian."""
+    def test_incorrect_inferred_output_dim(self):
+        """Test that a quantum tape with an incorrect inferred output dimension
+        corrects itself when computing the Jacobian."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -1117,21 +1153,21 @@ class TestJacobian:
             probs(wires=0)
             probs(wires=[1])
 
-        # estimate output dim should be correct
+        # inferred output dim should be correct
         assert tape.output_dim == sum([2, 2])
 
         # modify the output dim
         tape._output_dim = 2
 
-        with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
-            # Note that we specify order=2 here. If we use first order differentiation,
-            # the tape is able to correctly infer the correct output dimension
-            # before the Jacobian is computed.
-            tape.jacobian(dev, order=2)
+        res = tape.jacobian(dev, order=2)
 
-    def test_incorrect_ragged_output_dim_estimate(self, mocker):
-        """Test that a quantum tape with an incorrect *ragged* output dimension
-        estimate corrects itself after evaluation."""
+        # output dim should be correct
+        assert tape.output_dim == sum([2, 2])
+        assert res.shape == (4, 3)
+
+    def test_incorrect_ragged_output_dim(self, mocker):
+        """Test that a quantum tape with an incorrect inferred *ragged* output dimension
+        corrects itself after evaluation."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -1143,13 +1179,17 @@ class TestJacobian:
             probs(wires=0)
             probs(wires=[1, 2])
 
-        # estimate output dim should be correct
+        # inferred output dim should be correct
         assert tape.output_dim == sum([2, 4])
 
         # modify the output dim
         tape._output_dim = 2
-        with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
-            res = tape.jacobian(dev, order=2)
+
+        res = tape.jacobian(dev, order=2)
+
+        # output dim should be correct
+        assert tape.output_dim == sum([2, 4])
+        assert res.shape == (6, 3)
 
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
