@@ -7,10 +7,13 @@
   
   Consider the following QNode:
   ```python
+  import pennylane as qml
+  from pennylane.beta.tapes import qnode
+  
   dev = qml.device("default.qubit", wires=3)
   
-  @qml.qnode(dev)
-  def qnode(x, y):
+  @qnode(dev)
+  def qfunc(x, y):
       qml.RZ(x, wires=0)
       qml.CNOT(wires=[0, 1])
       qml.RY(y, wires=1)
@@ -21,7 +24,7 @@
   Calling the QNode will return its state
   
   ```pycon
-  >>> qnode(0.56, 0.1)
+  >>> qfunc(0.56, 0.1)
   array([0.95985437-0.27601028j, 0.        +0.j        ,
        0.04803275-0.01381203j, 0.        +0.j        ,
        0.        +0.j        , 0.        +0.j        ,
