@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
 # pylint: disable=no-self-use
+# pylint: disable=pointless-statement
 import numpy as np
 import pytest
 from flaky import flaky
@@ -24,8 +25,57 @@ pytestmark = pytest.mark.skip_unsupported
 # ==========================================================
 # Some useful global variables
 
+# observables for which device support is tested
+obs = {
+    "Identity": qml.Identity(wires=[0]),
+    "Hadamard": qml.Hadamard(wires=[0]),
+    "Hermitian": qml.Hermitian(np.eye(2), wires=[0]),
+    "PauliX": qml.PauliX(wires=[0]),
+    "PauliY": qml.PauliY(wires=[0]),
+    "PauliZ": qml.PauliZ(wires=[0]),
+}
+
+all_obs = obs.keys()
+
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+
+
+class TestSupportedObservables:
+    """Test that the device can implement all observables that it supports."""
+
+    @pytest.mark.parametrize("observable", all_obs)
+    def test_supported_observables_can_be_implemented(self, device_kwargs, observable):
+        """Test that the device can implement all its supported observables."""
+        device_kwargs["wires"] = 3
+        dev = qml.device(**device_kwargs)
+
+        assert hasattr(dev, "observables")
+        if observable in dev.observables:
+
+            @qml.qnode(dev)
+            def circuit():
+                return qml.expval(obs[observable])
+
+            assert isinstance(circuit(), (float, np.ndarray))
+
+    def test_tensor_observables_can_be_implemented(self, device_kwargs):
+        """Test that the device can implement a simple tensor observable.
+        This test is skipped for devices that do not support tensor observables."""
+        device_kwargs["wires"] = 2
+        dev = qml.device(**device_kwargs)
+        supports_tensor = (
+            "supports_tensor_observables" in dev.capabilities()
+            and dev.capabilities()["supports_tensor_observables"]
+        )
+        if not supports_tensor:
+            pytest.skip("Device does not support tensor observables.")
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
+
+        assert isinstance(circuit(), (float, np.ndarray))
 
 
 @flaky(max_runs=10)
@@ -201,7 +251,7 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -211,10 +261,10 @@ class TestTensorExpval:
         def circuit():
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
-            qml.RX(phi, wires=[2])
+            qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(wires=0)), qml.expval(qml.PauliX(wires=2))
+            return qml.expval(qml.PauliX(wires=0) @ qml.PauliY(wires=2))
 
         res = circuit()
 
@@ -225,7 +275,7 @@ class TestTensorExpval:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -235,14 +285,10 @@ class TestTensorExpval:
         def circuit():
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
-            qml.RX(phi, wires=[2])
+            qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return (
-                qml.expval(qml.PauliZ(wires=0)),
-                qml.expval(qml.Hadamard(wires=1)),
-                qml.expval(qml.PauliY(wires=2)),
-            )
+            return qml.expval(qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2))
 
         res = circuit()
 
@@ -253,7 +299,7 @@ class TestTensorExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -271,10 +317,10 @@ class TestTensorExpval:
         def circuit():
             qml.RX(theta, wires=[0])
             qml.RX(phi, wires=[1])
-            qml.RX(phi, wires=[2])
+            qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.Hermitian(A_, wires=[1, 2]))
+            return qml.expval(qml.PauliZ(wires=0) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
@@ -390,7 +436,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -408,11 +454,11 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(dev.analytic))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
-        assert np.allclose(mean, expected, atol=tol(dev.analytic))
+        assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
         expected = (
@@ -429,7 +475,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -449,11 +495,11 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(dev.analytic))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
-        assert np.allclose(mean, expected, atol=tol(dev.analytic))
+        assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
         expected = (
@@ -468,13 +514,13 @@ class TestTensorSample:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        A_ = np.array(
+        A_ = 0.1 * np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -498,48 +544,56 @@ class TestTensorSample:
         # the hermitian matrix tensor product Z
         Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A_))
-        assert np.allclose(sorted(list(set(res))), sorted(eigvals), atol=tol(dev.analytic))
+        assert np.allclose(sorted(np.unique(res)), sorted(eigvals), atol=tol(False))
 
         mean = np.mean(res)
-        expected = 0.5 * (
-            -6 * np.cos(theta) * (np.cos(varphi) + 1)
-            - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
-            + 3 * np.cos(varphi) * np.sin(phi)
-            + np.sin(phi)
+        expected = (
+            0.1
+            * 0.5
+            * (
+                -6 * np.cos(theta) * (np.cos(varphi) + 1)
+                - 2 * np.sin(varphi) * (np.cos(theta) + np.sin(phi) - 2 * np.cos(phi))
+                + 3 * np.cos(varphi) * np.sin(phi)
+                + np.sin(phi)
+            )
         )
         assert np.allclose(mean, expected, atol=tol(False))
 
         var = np.var(res)
         expected = (
-            1057
-            - np.cos(2 * phi)
-            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
-            + 16 * np.sin(2 * phi)
-            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
-            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
-            - 8
-            * np.cos(theta)
+            0.01
             * (
-                4
-                * np.cos(phi)
+                1057
+                - np.cos(2 * phi)
+                + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+                - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+                + 16 * np.sin(2 * phi)
+                - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+                - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+                - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+                - 8
+                * np.cos(theta)
                 * (
                     4
-                    + 8 * np.cos(varphi)
-                    + np.cos(2 * varphi)
-                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
-                )
-                + np.sin(phi)
-                * (
-                    15
-                    + 8 * np.cos(varphi)
-                    - 11 * np.cos(2 * varphi)
-                    + 42 * np.sin(varphi)
-                    + 3 * np.sin(2 * varphi)
+                    * np.cos(phi)
+                    * (
+                        4
+                        + 8 * np.cos(varphi)
+                        + np.cos(2 * varphi)
+                        - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                    )
+                    + np.sin(phi)
+                    * (
+                        15
+                        + 8 * np.cos(varphi)
+                        - 11 * np.cos(2 * varphi)
+                        + 42 * np.sin(varphi)
+                        + 3 * np.sin(2 * varphi)
+                    )
                 )
             )
-        ) / 16
+            / 16
+        )
         assert np.allclose(var, expected, atol=tol(False))
 
 
@@ -610,7 +664,7 @@ class TestTensorVar:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -641,7 +695,7 @@ class TestTensorVar:
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
@@ -654,9 +708,7 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(
-                qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2])
-            )
+            return qml.var(qml.PauliZ(wires=[0]) @ qml.Hadamard(wires=[1]) @ qml.PauliY(wires=[2]))
 
         res = circuit()
 
@@ -672,13 +724,13 @@ class TestTensorVar:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
         dev = device(n_wires)
-        skip_if(dev, {"tensor_observable": False})
+        skip_if(dev, {"supports_tensor_observables": False})
 
         theta = 0.432
         phi = 0.123
         varphi = -0.543
 
-        A_ = np.array(
+        A_ = 0.1 * np.array(
             [
                 [-6, 2 + 1j, -3, -5 + 2j],
                 [2 - 1j, 0, 2 - 1j, -5 + 4j],
@@ -694,39 +746,43 @@ class TestTensorVar:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.sample(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
+            return qml.var(qml.PauliZ(wires=[0]) @ qml.Hermitian(A_, wires=[1, 2]))
 
         res = circuit()
 
         expected = (
-            1057
-            - np.cos(2 * phi)
-            + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
-            - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
-            + 16 * np.sin(2 * phi)
-            - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
-            - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
-            - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
-            - 8
-            * np.cos(theta)
+            0.01
             * (
-                4
-                * np.cos(phi)
+                1057
+                - np.cos(2 * phi)
+                + 12 * (27 + np.cos(2 * phi)) * np.cos(varphi)
+                - 2 * np.cos(2 * varphi) * np.sin(phi) * (16 * np.cos(phi) + 21 * np.sin(phi))
+                + 16 * np.sin(2 * phi)
+                - 8 * (-17 + np.cos(2 * phi) + 2 * np.sin(2 * phi)) * np.sin(varphi)
+                - 8 * np.cos(2 * theta) * (3 + 3 * np.cos(varphi) + np.sin(varphi)) ** 2
+                - 24 * np.cos(phi) * (np.cos(phi) + 2 * np.sin(phi)) * np.sin(2 * varphi)
+                - 8
+                * np.cos(theta)
                 * (
                     4
-                    + 8 * np.cos(varphi)
-                    + np.cos(2 * varphi)
-                    - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
-                )
-                + np.sin(phi)
-                * (
-                    15
-                    + 8 * np.cos(varphi)
-                    - 11 * np.cos(2 * varphi)
-                    + 42 * np.sin(varphi)
-                    + 3 * np.sin(2 * varphi)
+                    * np.cos(phi)
+                    * (
+                        4
+                        + 8 * np.cos(varphi)
+                        + np.cos(2 * varphi)
+                        - (1 + 6 * np.cos(varphi)) * np.sin(varphi)
+                    )
+                    + np.sin(phi)
+                    * (
+                        15
+                        + 8 * np.cos(varphi)
+                        - 11 * np.cos(2 * varphi)
+                        + 42 * np.sin(varphi)
+                        + 3 * np.sin(2 * varphi)
+                    )
                 )
             )
-        ) / 16
+            / 16
+        )
 
         assert np.allclose(res, expected, atol=tol(dev.analytic))

@@ -35,7 +35,7 @@ N_SHOTS = 10000
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf", "default.qubit.autograd"}
 # TODO: add beta devices "default.tensor", "default.tensor.tf", which currently
-# do not have an "analytic" attribute.
+# do not return probabilities.
 
 
 @pytest.fixture(scope="function")
@@ -104,7 +104,7 @@ def device(device_kwargs):
             )
 
         capabilities = dev.capabilities()
-        if "model" not in capabilities or not capabilities["model"] == "qubit":
+        if capabilities.get("model", None) != "qubit":
             # exit the tests if device based on cv model (currently not supported)
             pytest.exit("The device test suite currently only runs on qubit-based devices.")
 
