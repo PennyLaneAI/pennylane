@@ -9,6 +9,7 @@
   ```python
   import pennylane as qml
   from pennylane.beta.tapes import qnode
+  from pennylane.beta.queuing import state
   
   dev = qml.device("default.qubit", wires=3)
   
