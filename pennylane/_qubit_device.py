@@ -319,7 +319,7 @@ class QubitDevice(Device):
 
         Args:
             samples (List[int]): samples of basis states in base 10 representation
-            number_of_states (int): the number of basis states to sample from
+            num_wires (int): the number of qubits
 
         Returns:
             List[int]: basis states in binary representation
@@ -478,7 +478,10 @@ class QubitDevice(Device):
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+        num_wires = len(device_wires)
+        states_base_ten = np.arange(2 ** num_wires)
+
+        basis_states = self.states_to_binary(states_base_ten, num_wires)
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(device_wires))].T, [2] * len(device_wires)
         )
