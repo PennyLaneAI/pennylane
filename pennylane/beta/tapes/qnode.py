@@ -154,7 +154,6 @@ class QNode:
 
         if caching is not None:
             warnings.warn(
-                UserWarning,
                 "Caching mode activated. The quantum circuit being "
                 "executed by the QNode must have a fixed structure.",
             )
