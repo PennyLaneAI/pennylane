@@ -35,15 +35,15 @@ class TestMeasurementTransformations:
         parameters.
 
         Arguments:
-            gate_1 (Union[RX, RY, RZ]): the first single-qubit rotation gate.
-            gate_2 (Union[RX, RY, RZ]): the second single-qubit rotation gate.
+            gate_1 (Union[RX, RY, RZ]): the first single-qubit rotation gate
+            gate_2 (Union[RX, RY, RZ]): the second single-qubit rotation gate
 
         Keyword arguments:
             param_tol (float): the relative tolerance for considering whether two gates parameter
-                values are the same.
+                values are the same
 
         Returns:
-            bool: whether the input rotation gates are identical up to the parameter tolerance.
+            bool: whether the input rotation gates are identical up to the parameter tolerance
 
         """
 

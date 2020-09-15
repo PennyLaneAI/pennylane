@@ -40,11 +40,11 @@ def qwc_rotation(pauli_operators):
     [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
 
     Args:
-        pauli_operators (list[Union[PauliX, PauliY, PauliZ, Identity]]): single-qubit Pauli
+        pauli_operators (list[Union[PauliX, PauliY, PauliZ, Identity]]): Single-qubit Pauli
             operations. No Pauli operations in this list may be acting on the same wire.
     Raises:
         TypeError: if any elements of `pauli_operators` are not instances of qml.PauliX, qml.PauliY,
-            qml.PauliZ, or qml.Identity.
+            qml.PauliZ, or qml.Identity
 
     """
     paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
@@ -71,14 +71,14 @@ def diagonalize_pauli_word(pauli_word):
     Tensor(PauliZ(wires=['a']), PauliZ(wires=['b']), PauliZ(wires=['c']))
 
     Args:
-        pauli_word (Observable): the Pauli word to diagonalize in computational basis.
+        pauli_word (Observable): the Pauli word to diagonalize in computational basis
 
     Returns:
-        Observable: the Pauli word diagonalized in the computational basis.
+        Observable: the Pauli word diagonalized in the computational basis
 
     Raises:
-        TypeError: if the input is not a Pauli word, i.e. a Pauli operator, identity, or `Tensor`
-        instances thereof.
+        TypeError: if the input is not a Pauli word, i.e., a Pauli operator, identity, or `Tensor`
+        instances thereof
 
     """
 
@@ -123,16 +123,16 @@ def diagonalize_qwc_grouping(qwc_grouping):
 
     Args:
         qwc_grouping (list[Observable]): a list of observables containing mutually
-            qubit-wise commutative Pauli words.
+            qubit-wise commutative Pauli words
 
     Returns:
         unitary (list[Operation]): an instance of the qwc_rotation template which diagonalizes the
-            qubit-wise commuting grouping.
+            qubit-wise commuting grouping
         diag_terms (list[Observable]): list of Pauli string observables diagonal in the
-            computational basis.
+            computational basis
 
     Raises:
-        ValueError: if any 2 elements in the input QWC grouping are not qubit-wise commutative.
+        ValueError: if any 2 elements in the input QWC grouping are not qubit-wise commutative
 
     """
     m_paulis = len(qwc_grouping)
@@ -204,14 +204,14 @@ def obtain_qwc_post_rotations_and_diagonalized_groupings(qwc_groupings):
 
     Args:
         qwc_groupings (list[list[Observable]]): a list of mutually qubit-wise commutative groupings
-            of Pauli string observables.
+            of Pauli string observables
 
     Returns:
         post_rotations (list[list[Operation]]): a list of instances of the qwc_rotation template
             which diagonalizes the qubit-wise commuting grouping, order corresponding to
-            qwc_groupings.
+            qwc_groupings
         diag_groupings (list[list[Observable]]): a list of QWC groupings diagonalized in the
-            computational basis, order corresponding to qwc_groupings.
+            computational basis, order corresponding to qwc_groupings
 
     """
 
