@@ -337,11 +337,9 @@ class QNode:
                 "or a nonempty sequence of measured observables."
             )
 
-        returns_state = any(m.return_type is ObservableReturnTypes.State for m in measurements)
-
         # apply the interface (if any)
         if self.interface is not None:
-            if returns_state and self.interface in ["torch", "tf"]:
+            if self.qtape._returns_state and self.interface in ["torch", "tf"]:
                 self.INTERFACE_MAP[self.interface](self, dtype=np.complex128)
             else:
                 self.INTERFACE_MAP[self.interface](self)

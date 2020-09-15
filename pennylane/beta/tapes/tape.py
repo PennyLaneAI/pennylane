@@ -1305,7 +1305,6 @@ class QuantumTape(AnnotatedQueue):
             )
 
         jac = None
-
         p_ind = list(np.ndindex(*params.shape))
 
         # loop through each parameter and compute the gradient
