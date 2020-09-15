@@ -52,8 +52,7 @@ def patch_operator():
 
 
 @pytest.mark.parametrize(
-    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample), (qstate,
-                                                                                         State)]
+    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
 )
 class TestBetaStatistics:
     """Tests for annotating the return types of the statistics functions"""
