@@ -502,7 +502,9 @@ class QubitDevice(Device):
         else:
             # A slower, but less memory intensive method
             generator_basis_states = itertools.product((0, 1), repeat=num_wires)
-            basis_states = np.fromiter(itertools.chain(*generator_basis_states),dtype=int).reshape(-1,num_wires)
+            basis_states = np.fromiter(itertools.chain(*generator_basis_states), dtype=int).reshape(
+                -1, num_wires
+            )
 
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(device_wires))].T, [2] * len(device_wires)
