@@ -31,6 +31,9 @@ to verify and test quantum gradient computations.
     autograd_ops
     tests
 """
+# DefaultQubitTF and DefaultQubitAutograd not imported here since this
+# would lead to an automatic import of tensorflow and autograd, which are
+# not PennyLane core dependencies
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
