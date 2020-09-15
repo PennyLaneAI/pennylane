@@ -21,7 +21,6 @@ import warnings
 
 import numpy as np
 
-from pennylane.utils import _hash_iterable, _hash_dict
 from pennylane import Device
 from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
 from pennylane.beta.queuing import MeasurementProcess

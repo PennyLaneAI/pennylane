@@ -452,82 +452,20 @@ def _flatten_iterable(x):
             yield i
 
 
-def _hash_object(obj):
-    """Returns the hash of an input object.
-
-    Supports hashing of NumPy objects using their ``tobytes()`` method. If the input object is a
-    PyTorch or TensorFlow tensor, then a hash is not generated and ``None`` is returned.
-
-    Args:
-        obj (Any): the object to generate a hash for
-
-    Returns:
-        int or None: the resulting hash, or ``None`` if the object is a PyTorch/TensorFlow tensor or
-        any other unhashable type.
-    """
-    shape = getattr(obj, "shape", None)
-    if shape:  # Check if we have a NumPy array or PyTorch/TensorFlow tensor
-        if isinstance(obj, np.ndarray):
-            hashed = hash((obj.tobytes(), shape))
-        else:  # We do not want to hash if we have a PyTorch/TensorFlow tensor
-            hashed = None
-    else:
-        try:
-            hashed = hash(obj)
-        except TypeError:  # Return None for unhashable types
-            hashed = None
-    return hashed
-
-
 def _hash_iterable(iterable):
     """Returns a single hash of an input iterable.
 
-    The iterable is flattened using :func:`~._flatten_iterable` to support nested lists. A
-    try/except statement is used to capture the case where the input iterable contains a
-    PyTorch/TensorFlow tensor. In that case, no hash is generated and ``None`` is returned.
+    The iterable must be flat and can contain only numbers and NumPy arrays.
 
     Args:
         iterable (Iterable): the iterable to generate a hash for
 
     Returns:
-        int or None: the resulting hash, or None if the iterable contains a PyTorch/TensorFlow
-        tensor.
+        int: the resulting hash
     """
-    if isinstance(iterable, dict):
-        return _hash_dict(iterable)
-    try:
-        hash_tuple = tuple(_hash_object(obj) for obj in _flatten_iterable(iterable))
-        return hash(hash_tuple)
-    except TypeError:
-        return None
-
-
-def _hash_dict(dictionary):
-    """Returns a single hash for an input dictionary.
-
-    Loops over the key-value pairs in the dictionary and creates a hash for each,
-    finally combining all the resulting hashes into a single one. The values may be iterables and
-    are passed to :func:`~._hash_iterable`. If any of the dictionary values contain a
-    PyTorch/TensorFlow tensor, then no hash is generated and ``None`` is returned.
-
-    Args:
-        dictionary (dict): the dictionary to be hashed
-
-    Returns:
-        int or None: the resulting hash, or None if the dictionary contains a PyTorch/TensorFlow
-        tensor.
-    """
-    hash_list = []
-    for key, value in dictionary.items():
-        key_hash = hash(key)
-
-        if not isinstance(value, Iterable):
-            value = [value]
-        value_hash = _hash_iterable(value)
-
-        if value_hash is None:
-            return None
-
-        hash_list.append((key_hash, value_hash))
-
-    return hash(tuple(hash_list))
+    hashes = []
+    for obj in iterable:
+        to_hash = (obj.tobytes(), obj.shape) if isinstance(obj, np.ndarray) else obj
+        obj_hash = hash(to_hash)
+        hashes.append(obj_hash)
+    return hash(tuple(hashes))
