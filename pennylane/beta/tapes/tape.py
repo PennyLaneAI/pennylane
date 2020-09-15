@@ -21,7 +21,6 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane.beta.queuing import MeasurementProcess
 from pennylane.beta.queuing import AnnotatedQueue, QueuingContext
 from pennylane.beta.queuing import mock_operations
 
@@ -105,7 +104,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
-                stop = stop or isinstance(obj, MeasurementProcess)
+                stop = stop or isinstance(obj, qml.beta.queuing.MeasurementProcess)
 
             if stop:
                 # do not expand out the object; append it to the
@@ -113,7 +112,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operation, qml.beta.queuing.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -221,13 +220,13 @@ class QuantumTape(AnnotatedQueue):
         self.name = name
 
         self._prep = []
-        """list[~.Operation]: Tape state preparations."""
+        """list[.Operation]: Tape state preparations."""
 
         self._ops = []
-        """list[~.Operation]: quantum operations recorded by the tape."""
+        """list[.Operation]: quantum operations recorded by the tape."""
 
         self._measurements = []
-        """list[~.MeasurementProcess]: measurement processes recorded by the tape."""
+        """list[.MeasurementProcess]: measurement processes recorded by the tape."""
 
         self._par_info = {}
         """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
@@ -325,7 +324,7 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, MeasurementProcess):
+            elif isinstance(obj, qml.beta.queuing.MeasurementProcess):
                 # measurement process
                 self._measurements.append(obj)
 

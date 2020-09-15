@@ -978,7 +978,7 @@ class TestCVExecution:
 
     def test_multiple_output_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple measurement types
+        with multiple measurement types"""
         dev = qml.device("default.gaussian", wires=2)
         x = 0.543
         y = -0.654
