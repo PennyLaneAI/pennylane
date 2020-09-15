@@ -709,3 +709,288 @@ class TestExpand:
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
         assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
+
+
+class TestExecution:
+    """Tests for tape execution"""
+
+    def test_execute_parameters(self, tol):
+        """Test execution works when parameters are both passed and not passed."""
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        assert tape.output_dim == 1
+
+        # test execution with no parameters
+        res1 = tape.execute(dev)
+        assert tape.get_parameters() == params
+
+        # test execution with parameters
+        res2 = tape.execute(dev, params=[0.5, 0.6])
+        assert tape.get_parameters() == params
+
+        # test setting parameters
+        tape.set_parameters(params=[0.5, 0.6])
+        res3 = tape.execute(dev)
+        assert np.allclose(res2, res3, atol=tol, rtol=0)
+        assert not np.allclose(res1, res2, atol=tol, rtol=0)
+        assert tape.get_parameters() == [0.5, 0.6]
+
+    def test_no_output_execute(self):
+        """Test that tapes with no measurement process return
+        an empty list."""
+        dev = qml.device("default.qubit", wires=2)
+        params = [0.1, 0.2]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+
+        res = tape.execute(dev)
+        assert res.size == 0
+        assert np.all(res == np.array([]))
+
+    def test_incorrect_output_dim_estimate(self):
+        """Test that a quantum tape with an incorrect inferred output dimension
+        corrects itself after evaluation."""
+        dev = qml.device("default.qubit", wires=3)
+        params = [1.0, 1.0, 1.0]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.RZ(params[2], wires=[2])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=0)
+            probs(wires=[1])
+
+        # estimate output dim should be correct
+        assert tape.output_dim == sum([2, 2])
+
+        # modify the output dim
+        tape._output_dim = 2
+
+        res = tape.execute(dev)
+        assert tape.output_dim == sum([2, 2])
+
+    def test_incorrect_ragged_output_dim_estimate(self):
+        """Test that a quantum tape with an incorrect *ragged* output dimension
+        estimate corrects itself after evaluation."""
+        dev = qml.device("default.qubit", wires=3)
+        params = [1.0, 1.0, 1.0]
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.RZ(params[2], wires=[2])
+            qml.CNOT(wires=[0, 1])
+            probs(wires=0)
+            probs(wires=[1, 2])
+
+        # estimate output dim should be correct
+        assert tape.output_dim == sum([2, 4])
+
+        # modify the output dim
+        tape._output_dim = 2
+
+        res = tape.execute(dev)
+        assert tape.output_dim == sum([2, 4])
+
+    def test_single_expectation_value(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        assert tape.output_dim == 1
+
+        res = tape.execute(dev)
+        assert res.shape == (1,)
+
+        expected = np.sin(y) * np.cos(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiple_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with multiple expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            expval(qml.PauliX(1))
+
+        assert tape.output_dim == 2
+
+        res = tape.execute(dev)
+        assert res.shape == (2,)
+
+        expected = [np.cos(x), np.sin(y)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_var_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and var outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            var(qml.PauliX(1))
+
+        assert tape.output_dim == 2
+
+        res = tape.execute(dev)
+        assert res.shape == (2,)
+
+        expected = [np.cos(x), np.cos(y) ** 2]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_prob_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and var outputs"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            probs(wires=[0, 1])
+
+        assert tape.output_dim == 5
+
+        res = tape.execute(dev)
+
+        assert isinstance(res[0], float)
+        assert np.allclose(res[0], np.cos(x), atol=tol, rtol=0)
+
+        assert isinstance(res[1], np.ndarray)
+        assert np.allclose(res[1], np.abs(dev.state) ** 2, atol=tol, rtol=0)
+
+    def test_single_mode_sample(self):
+        """Test that there is only one array of values returned
+        for a single wire sample"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            sample(qml.PauliZ(0) @ qml.PauliX(1))
+
+        res = tape.execute(dev)
+        assert res.shape == (1, 10)
+
+    def test_multiple_samples(self):
+        """Test that there is only one array of values returned
+        for multiple samples"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            sample(qml.PauliZ(0))
+            sample(qml.PauliZ(1))
+
+        res = tape.execute(dev)
+        assert res.shape == (2, 10)
+
+    def test_samples_expval(self):
+        """Test that multiple arrays of values are returned
+        for combinations of samples and statistics"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            sample(qml.PauliZ(0))
+            expval(qml.PauliZ(1))
+
+        res = tape.execute(dev)
+        assert res[0].shape == (10,)
+        assert isinstance(res[1], float)
+
+    def test_decomposition(self, tol):
+        """Test decomposition onto a device's supported gate set"""
+        dev = qml.device("default.qubit", wires=1)
+
+        with QuantumTape() as tape:
+            qml.U3(0.1, 0.2, 0.3, wires=[0])
+            expval(qml.PauliZ(0))
+
+        tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
+        res = tape.execute(dev)
+        assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
+
+
+class TestCVExecution:
+    """Tests for CV tape execution"""
+
+    def test_single_output_value(self, tol):
+        """Tests correct execution and output shape for a CV tape
+        with a single expval output"""
+        dev = qml.device("default.gaussian", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.Displacement(x, 0, wires=[0])
+            qml.Squeezing(y, 0, wires=[1])
+            qml.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
+            expval(qml.NumberOperator(0))
+
+        assert tape.output_dim == 1
+
+        res = tape.execute(dev)
+        assert res.shape == (1,)
+
+    def test_multiple_output_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with multiple measurement types"""
+        dev = qml.device("default.gaussian", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with QuantumTape() as tape:
+            qml.Displacement(x, 0, wires=[0])
+            qml.Squeezing(y, 0, wires=[1])
+            qml.Beamsplitter(np.pi / 4, 0, wires=[0, 1])
+            expval(qml.PolyXP(np.diag([0, 1, 0]), wires=0))  # X^2
+            var(qml.P(1))
+
+        assert tape.output_dim == 2
+
+        res = tape.execute(dev)
+        assert res.shape == (2,)
