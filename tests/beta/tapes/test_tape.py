@@ -943,7 +943,7 @@ class TestExecution:
         assert isinstance(res[1], float)
 
     def test_decomposition(self, tol):
-        """Test decomposition onto a devices supported gate set"""
+        """Test decomposition onto a device's supported gate set"""
         dev = qml.device("default.qubit", wires=1)
 
         with QuantumTape() as tape:
@@ -978,7 +978,7 @@ class TestCVExecution:
 
     def test_multiple_output_values(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with multiple expval outputs"""
+        with multiple measurement types
         dev = qml.device("default.gaussian", wires=2)
         x = 0.543
         y = -0.654

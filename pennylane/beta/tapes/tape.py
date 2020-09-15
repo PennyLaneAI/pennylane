@@ -934,6 +934,6 @@ class QuantumTape(AnnotatedQueue):
         return res
 
     # interfaces can optionally override the _execute method
-    # if they need to perform any logic inbetween the users
+    # if they need to perform any logic in between the user's
     # call to tape.execute and the internal call to tape.execute_device.
     _execute = execute_device
