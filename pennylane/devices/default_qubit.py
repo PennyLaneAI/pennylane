@@ -86,7 +86,6 @@ class DefaultQubit(QubitDevice):
     pennylane_requires = "0.12"
     version = "0.12.0"
     author = "Xanadu Inc."
-    _capabilities = {"inverse_operations": True, "reversible_diff": True}
 
     operations = {
         "BasisState",
@@ -359,6 +358,18 @@ class DefaultQubit(QubitDevice):
             return unitary.eigvals
 
         return unitary.matrix
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            model="qubit",
+            supports_reversible_diff=True,
+            supports_inverse_operations=True,
+            supports_analytic_computation=True,
+            returns_state=True,
+        )
+        return capabilities
 
     def _create_basis_state(self, index):
         """Return a computational basis state over all wires.

@@ -73,8 +73,8 @@ and use the device. These include:
 Defining all these attributes is mandatory.
 
 
-Supporting operations
----------------------
+Device capabilities
+-------------------
 
 You must further tell PennyLane about the operations that your device supports
 as well as potential further capabilities, by providing the following class attributes/properties:
@@ -101,14 +101,28 @@ as well as potential further capabilities, by providing the following class attr
       conversion between the two conventions takes place automatically
       by the plugin device.
 
-* :attr:`.Device._capabilities`: a dictionary containing information about the capabilities of
-  the device. Keys currently supported include:
+* :func:`.Device.capabilities`: A class method which returns the dictionary of capabilities of a device. A
+  new device should override this method to retrieve the parent classes' capabilities dictionary, make a copy
+  and update and/or add capabilities before returning the copy.
 
-  * ``'model'`` (*str*): either ``'qubit'`` or ``'CV'``.
+  Examples of capabilities are:
 
-  * ``'inverse_operations'`` (*bool*): ``True`` if the device supports
+  * ``'model'`` (*str*): either ``'qubit'`` or ``'cv'``.
+
+  * ``'returns_state'`` (*bool*): ``True`` if the device returns the quantum state via ``dev.state``.
+
+  * ``'supports_inverse_operations'`` (*bool*): ``True`` if the device supports
     applying the inverse of operations. Operations which should be inverted
     have the property ``operation.inverse == True``.
+
+  *  ``'supports_tensor_observables'`` (*bool*): ``True`` if the device supports observables composed from tensor
+     products such as ``PauliZ(wires=0) @ PauliZ(wires=1)``.
+
+  Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
+  by external apps built on top of the device ecosystem.
+
+  To find out which capabilities are (possibly automatically) defined for your device ``dev = device('my.device')``,
+  check the output of ``dev.capabilities()``.
 
 Adding arguments to your device
 --------------------------------
