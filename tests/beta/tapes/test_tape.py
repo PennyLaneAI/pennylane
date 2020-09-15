@@ -724,9 +724,9 @@ class TestExecution:
         assert res.size == 0
         assert np.all(res == np.array([]))
 
-    def test_incorrect_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect output dimension
-        estimate corrects itself after evaluation."""
+    def test_incorrect_output_dim(self):
+        """Test that a quantum tape with an incorrect inferred output dimension
+        corrects itself after evaluation."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -738,7 +738,7 @@ class TestExecution:
             probs(wires=0)
             probs(wires=[1])
 
-        # estimate output dim should be correct
+        # inferred output dim should be correct
         assert tape.output_dim == sum([2, 2])
 
         # modify the output dim
@@ -747,9 +747,9 @@ class TestExecution:
         res = tape.execute(dev)
         assert tape.output_dim == sum([2, 2])
 
-    def test_incorrect_ragged_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect *ragged* output dimension
-        estimate corrects itself after evaluation."""
+    def test_incorrect_ragged_output_dim(self):
+        """Test that a quantum tape with an incorrect inferred *ragged* output dimension
+        corrects itself after evaluation."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -761,7 +761,7 @@ class TestExecution:
             probs(wires=0)
             probs(wires=[1, 2])
 
-        # estimate output dim should be correct
+        # inferred output dim should be correct
         assert tape.output_dim == sum([2, 4])
 
         # modify the output dim
@@ -1103,9 +1103,9 @@ class TestJacobian:
         res = tape.jacobian(dev)
         assert res.size == 0
 
-    def test_incorrect_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect output dimension
-        estimate raises an exception when computing the Jacobian."""
+    def test_incorrect_inferred_output_dim(self):
+        """Test that a quantum tape with an incorrect inferred output dimension
+        corrects itself when computing the Jacobian."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -1117,21 +1117,21 @@ class TestJacobian:
             probs(wires=0)
             probs(wires=[1])
 
-        # estimate output dim should be correct
+        # inferred output dim should be correct
         assert tape.output_dim == sum([2, 2])
 
         # modify the output dim
         tape._output_dim = 2
 
-        with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
-            # Note that we specify order=2 here. If we use first order differentiation,
-            # the tape is able to correctly infer the correct output dimension
-            # before the Jacobian is computed.
-            tape.jacobian(dev, order=2)
+        res = tape.jacobian(dev, order=2)
 
-    def test_incorrect_ragged_output_dim_estimate(self, mocker):
-        """Test that a quantum tape with an incorrect *ragged* output dimension
-        estimate corrects itself after evaluation."""
+        # output dim should be correct
+        assert tape.output_dim == sum([2, 2])
+        assert res.shape == (4, 3)
+
+    def test_incorrect_ragged_output_dim(self, mocker):
+        """Test that a quantum tape with an incorrect inferred *ragged* output dimension
+        corrects itself after evaluation."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -1143,13 +1143,17 @@ class TestJacobian:
             probs(wires=0)
             probs(wires=[1, 2])
 
-        # estimate output dim should be correct
+        # inferred output dim should be correct
         assert tape.output_dim == sum([2, 4])
 
         # modify the output dim
         tape._output_dim = 2
-        with pytest.raises(ValueError, match=r"could not infer the correct output dimension"):
-            res = tape.jacobian(dev, order=2)
+
+        res = tape.jacobian(dev, order=2)
+
+        # output dim should be correct
+        assert tape.output_dim == sum([2, 4])
+        assert res.shape == (6, 3)
 
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped

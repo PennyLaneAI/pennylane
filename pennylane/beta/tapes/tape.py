@@ -922,9 +922,6 @@ class QuantumTape(AnnotatedQueue):
         else:
             res = device.execute(self.operations, self.observables, {})
 
-        # Update output dim if incorrect.
-        # Note that we cannot assume the type of `res`, so
-        # we use duck typing to catch any 'array like' object.
         try:
             if isinstance(res, np.ndarray) and res.dtype is np.dtype("object"):
                 output_dim = sum([len(i) for i in res])
@@ -932,7 +929,7 @@ class QuantumTape(AnnotatedQueue):
                 output_dim = np.prod(res.shape)
 
             if self.output_dim != output_dim:
-                # update the output dimension estimate with the correct value
+                # update the inferred output dimension with the correct value
                 self._output_dim = output_dim
 
         except (AttributeError, TypeError):
@@ -1006,6 +1003,57 @@ class QuantumTape(AnnotatedQueue):
 
         return default_method
 
+    def _grad_method_validation(self, method):
+        """Validates if the Jacobian method requested is supported by the trainable
+        parameters, and returns the allowed parameter gradient methods.
+
+        This method will generate parameter gradient information if it has not already
+        been generated, and then proceed to validate the gradient method. In particular:
+
+        * An exception will be raised if there exist non-differentiable trainable
+          parameters on the tape.
+
+        * An exception will be raised if the Jacobian method is ``"analytic"`` but there
+          exist some trainable parameters on the tape that only support numeric differentiation.
+
+        If all validations pass, this method will return a tuple containing the allowed parameter
+        gradient methods for each trainable parameter.
+
+        Args:
+            method (str): the overall Jacobian differentiation method
+
+        Returns:
+            tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
+        """
+
+        if "grad_method" not in self._par_info[0]:
+            self._update_gradient_info()
+
+        allowed_param_methods = {
+            idx: info["grad_method"]
+            for idx, info in self._par_info.items()
+            if idx in self.trainable_params
+        }
+
+        # check and raise an error if any parameters are non-differentiable
+        nondiff_params = {idx for idx, g in allowed_param_methods.items() if g is None}
+
+        if nondiff_params:
+            raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+        numeric_params = {idx for idx, g in allowed_param_methods.items() if g is "F"}
+
+        if method == "analytic":
+            # If explicitly using analytic mode, ensure that all parameters
+            # support analytic differentiation.
+
+            if numeric_params:
+                raise ValueError(
+                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
+                )
+
+        return tuple(allowed_param_methods.values())
+
     def numeric_pd(self, idx, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
         a single trainable tape parameter using numerical finite-differences.
@@ -1067,7 +1115,7 @@ class QuantumTape(AnnotatedQueue):
         if params is None:
             params = np.array(self.get_parameters())
 
-        current_parameters = self.get_parameters()
+        saved_parameters = self.get_parameters()
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
@@ -1077,7 +1125,7 @@ class QuantumTape(AnnotatedQueue):
         jac = device.jacobian(self)
 
         # restore original parameters
-        self.set_parameters(current_parameters)
+        self.set_parameters(saved_parameters)
         return jac
 
     def analytic_pd(self, idx, device, params=None, **options):
@@ -1207,57 +1255,40 @@ class QuantumTape(AnnotatedQueue):
         if method not in ("best", "numeric", "analytic", "device"):
             raise ValueError(f"Unknown gradient method '{method}'")
 
-        if "grad_method" not in self._par_info[0]:
-            self._update_gradient_info()
-
         if params is None:
             params = self.get_parameters()
 
         params = np.array(params)
 
-        # check and raise an error if any parameters are non-differentiable
-        nondiff_params = {
-            idx
-            for idx, info in self._par_info.items()
-            if info["grad_method"] is None and idx in self.trainable_params
-        }
+        if method == "device":
+            # Using device mode; simply query the device for the Jacobian
+            return self.device_pd(device, params=params, **options)
 
-        if nondiff_params:
-            raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+        # perform gradient method validation
+        allowed_param_methods = self._grad_method_validation(method)
 
-        numeric_params = {
-            idx
-            for idx, info in self._par_info.items()
-            if info["grad_method"] == "F" and idx in self.trainable_params
-        }
+        if not params.size or all(g == "0" for g in allowed_param_methods):
+            # Either all parameters had grad method 0, or there are no trainable
+            # parameters. Simply return an empty Jacobian.
+            return np.zeros((self.output_dim, len(params)), dtype=float)
 
-        if method == "analytic":
-            # If explicitly using analytic mode, ensure that all parameters
-            # support analytic differentiation.
+        if method == "numeric" or "F" in allowed_param_methods:
+            # there exist parameters that will be differentiated numerically
 
-            if numeric_params:
-                raise ValueError(
-                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
-                )
-
-        elif method == "device":
-            # Using device mode; query the device for the Jacobian
-            return self.device_pd(device, **options)
-
-        if method == "numeric" or numeric_params:
             if options.get("order", 1) == 1:
-                # the value of the circuit at current params, computed only once here
+                # First order (forward) finite-difference will be performed.
+                # Compute the value of the tape at the current parameters here. This ensures
+                # this computation is only performed once, for all parameters.
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
-        jac = np.zeros((self.output_dim, len(params)), dtype=float)
+        jac = None
         p_ind = list(np.ndindex(*params.shape))
 
         # loop through each parameter and compute the gradient
-        for idx, (l, p) in enumerate(zip(p_ind, self.trainable_params)):
-            param_method = self._par_info[p]["grad_method"]
+        for idx, (l, param_method) in enumerate(zip(p_ind, allowed_param_methods)):
 
             if param_method == "0":
-                # independent parameter; skip.
+                # Independent parameter. Skip, as this parameter has a gradient of 0.
                 continue
 
             if (method == "best" and param_method == "F") or (method == "numeric"):
@@ -1272,18 +1303,12 @@ class QuantumTape(AnnotatedQueue):
                 # object arrays cannot be flattened; must hstack them
                 g = np.hstack(g)
 
-            try:
-                jac[:, idx] = g.flatten()
-            except ValueError as e:
-                if "could not broadcast input array from shape" in str(e):
-                    # the value of self._output_dim, which was estimated during
-                    # construction, is incorrect. A device execution is required
-                    # to properly infer output dimension.
-                    raise ValueError(
-                        "The quantum tape could not infer the correct output dimension "
-                        "of the quantum computation. Please execute the tape before "
-                        "computing the Jacobian."
-                    )
-                raise e
+            if jac is None:
+                # The Jacobian matrix has not yet been created, as we needed at least
+                # one device execution to occur so that we could ensure that the output
+                # dimension is known.
+                jac = np.zeros((self.output_dim, len(params)), dtype=float)
+
+            jac[:, idx] = g.flatten()
 
         return jac
