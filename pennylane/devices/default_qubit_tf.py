@@ -124,12 +124,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    _capabilities = {
-        "model": "qubit",
-        "provides_jacobian": False,
-        "passthru_interface": "tf",
-    }
-
     parametric_ops = {
         "PhaseShift": tf_ops.PhaseShift,
         "RX": tf_ops.RX,
@@ -164,6 +158,15 @@ class DefaultQubitTF(DefaultQubit):
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            passthru_interface="tf",
+            supports_reversible_diff=False,
+        )
+        return capabilities
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
