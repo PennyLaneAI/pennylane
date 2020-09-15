@@ -1117,8 +1117,12 @@ class TestJacobian:
             expval(qml.PauliY(0))
 
         dev = qml.device("default.qubit", wires=1)
-        dev.jacobian = mocker.Mock()
 
+        dev.jacobian = mocker.Mock()
+        tape.device_pd(dev)
+        dev.jacobian.assert_called_once()
+
+        dev.jacobian = mocker.Mock()
         tape.jacobian(dev, method="device")
         dev.jacobian.assert_called_once()
 

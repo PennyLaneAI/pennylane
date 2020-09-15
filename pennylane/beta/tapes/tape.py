@@ -350,17 +350,6 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-    def _update_gradient_info(self):
-        """Update the parameter information dictionary with gradient information
-        of each parameter"""
-
-        for i, info in self._par_info.items():
-
-            if i not in self.trainable_params:
-                info["grad_method"] = None
-            else:
-                info["grad_method"] = self._grad_method(i, use_graph=True)
-
     def _update_par_info(self):
         """Update the parameter information dictionary"""
         param_count = 0
@@ -384,9 +373,6 @@ class QuantumTape(AnnotatedQueue):
         self._update_circuit_info()
         self._update_par_info()
         self._update_trainable_params()
-
-        if self.interface is not None:
-            self._update_gradient_info()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -1012,6 +998,17 @@ class QuantumTape(AnnotatedQueue):
 
         return default_method
 
+    def _update_gradient_info(self):
+        """Update the parameter information dictionary with gradient information
+        of each parameter"""
+
+        for i, info in self._par_info.items():
+
+            if i not in self.trainable_params:
+                info["grad_method"] = None
+            else:
+                info["grad_method"] = self._grad_method(i, use_graph=True)
+
     def _grad_method_validation(self, method):
         """Validates if the Jacobian method requested is supported by the trainable
         parameters, and returns the allowed parameter gradient methods.
@@ -1124,7 +1121,7 @@ class QuantumTape(AnnotatedQueue):
         if params is None:
             params = np.array(self.get_parameters())
 
-        saved_parameterss = self.get_parameters()
+        saved_parameters = self.get_parameters()
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
@@ -1134,7 +1131,7 @@ class QuantumTape(AnnotatedQueue):
         jac = device.jacobian(self)
 
         # restore original parameters
-        self.set_parameters(saved_parameterss)
+        self.set_parameters(saved_parameters)
         return jac
 
     def analytic_pd(self, idx, device, params=None, **options):
