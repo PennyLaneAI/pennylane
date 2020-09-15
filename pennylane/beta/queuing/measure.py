@@ -324,6 +324,7 @@ def state(wires):
     **Example:**
 
     .. code-block:: python3
+
         from pennylane.beta.queuing import state
         from pennylane.beta.tapes import qnode
 
@@ -345,8 +346,9 @@ def state(wires):
 
     .. note::
 
-        Calculating the derivative of the ``state()`` return type is not supported when using the
-        parameter-shift and finite-difference methods.
+        Calculating the derivative of :func:`~.state` is currently only supported when using the
+        classical backpropagation differentiation method (``diff_method="backprop"``) with a
+        compatible device.
 
     Args:
         wires (Sequence[int]): all the wires used in the device
