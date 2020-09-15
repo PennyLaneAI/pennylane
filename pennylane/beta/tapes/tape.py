@@ -902,7 +902,7 @@ class QuantumTape(AnnotatedQueue):
         device.reset()
 
         # backup the current parameters
-        current_parameters = self.get_parameters()
+        saved_parameters = self.get_parameters()
 
         # temporarily mutate the in-place parameters
         self.set_parameters(params)
@@ -930,7 +930,7 @@ class QuantumTape(AnnotatedQueue):
             pass
 
         # restore original parameters
-        self.set_parameters(current_parameters)
+        self.set_parameters(saved_parameters)
         return res
 
     # interfaces can optionally override the _execute method

@@ -757,8 +757,8 @@ class TestExecution:
         assert np.all(res == np.array([]))
 
     def test_incorrect_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect output dimension
-        estimate corrects itself after evaluation."""
+        """Test that a quantum tape with an incorrect inferred output dimension
+        corrects itself after evaluation."""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
@@ -893,7 +893,7 @@ class TestExecution:
 
     def test_single_mode_sample(self):
         """Test that there is only one array of values returned
-        for single mode samples"""
+        for a single wire sample"""
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = 0.543
         y = -0.654
