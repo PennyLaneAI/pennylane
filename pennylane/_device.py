@@ -51,7 +51,12 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods
-    _capabilities = {}  #: dict[str->*]: plugin capabilities
+    _capabilities = {
+        "model": None,
+    }
+    """The capabilities dictionary stores the properties of a device. Devices can add their
+    own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
+
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
@@ -213,9 +218,20 @@ class Device(abc.ABC):
 
     @classmethod
     def capabilities(cls):
-        """Get the other capabilities of the plugin.
+        """Get the capabilities of this device class.
 
-        Measurements, batching etc.
+        Inheriting classes that change or add capabilities must override this method, for example via
+
+        .. code-block:: python
+
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    supports_inverse_operations=False,
+                    supports_a_new_capability=True,
+                )
+                return capabilities
 
         Returns:
             dict[str->*]: results
@@ -411,9 +427,12 @@ class Device(abc.ABC):
         if isinstance(operation, str):
 
             if operation.endswith(Operation.string_for_inverse):
-                return operation[
-                    : -len(Operation.string_for_inverse)
-                ] in self.operations and self.capabilities().get("inverse_operations", False)
+                in_ops = operation[: -len(Operation.string_for_inverse)] in self.operations
+                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                supports_inv = self.capabilities().get(
+                    "supports_inverse_operations", False
+                ) or self.capabilities().get("inverse_operations", False)
+                return in_ops and supports_inv
 
             return operation in self.operations
 
@@ -468,7 +487,11 @@ class Device(abc.ABC):
             operation_name = o.name
 
             if o.inverse:
-                if not self.capabilities().get("inverse_operations", False):
+                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                supports_inv = self.capabilities().get(
+                    "supports_inverse_operations", False
+                ) or self.capabilities().get("inverse_operations", False)
+                if not supports_inv:
                     raise DeviceError(
                         "The inverse of gates are not supported on device {}".format(
                             self.short_name
@@ -484,7 +507,11 @@ class Device(abc.ABC):
         for o in observables:
 
             if isinstance(o, Tensor):
-                if not self.capabilities().get("tensor_observables", False):
+                # TODO: update when all capabilities keys changed to "supports_tensor_observables"
+                supports_tensor = self.capabilities().get(
+                    "supports_tensor_observables", False
+                ) or self.capabilities().get("tensor_observables", False)
+                if not supports_tensor:
                     raise DeviceError(
                         "Tensor observables not supported on device {}".format(self.short_name)
                     )
@@ -501,7 +528,11 @@ class Device(abc.ABC):
                 observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:
-                    if not self.capabilities().get("inverse_operations", False):
+                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                    supports_inv = self.capabilities().get(
+                        "supports_inverse_operations", False
+                    ) or self.capabilities().get("inverse_operations", False)
+                    if not supports_inv:
                         raise DeviceError(
                             "The inverse of gates are not supported on device {}".format(
                                 self.short_name
