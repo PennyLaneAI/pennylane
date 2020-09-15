@@ -15,6 +15,8 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an operator and observable queue.
 """
+import networkx as nx
+
 from pennylane import CircuitGraph
 
 
@@ -38,3 +40,15 @@ class NewCircuitGraph(CircuitGraph):
     def observables(self):
         """Observables in the circuit."""
         return self._observables
+
+    def has_path(self, a, b):
+        """Checks if a path exists between the two given nodes.
+
+        Args:
+            a (Operator): initial node
+            b (Operator): final node
+
+        Returns:
+            bool: returns ``True`` if a path exists
+        """
+        return nx.has_path(self._graph, a, b)
