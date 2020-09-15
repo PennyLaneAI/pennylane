@@ -68,12 +68,13 @@ def edge_driver(graph, reward):
 
     Given some graph, :math:`G` with each node representing a wire, and a binary
     colouring where each node/wire is assigned either :math:`|0\rangle` or :math:`|1\rangle`, the edge driver
-    cost Hamiltonian will assign a lower energy to edges with endpoint colourings
+    cost Hamiltonian will assign a lower energy to edges represented by qubit states with endpoint colourings
     supplied in ``reward``.
 
     For instance, if ``reward`` is ``["11"]``, then edges
-    with both endpoints coloured as ``1`` will be assigned a lower energy, while
-    the other colourings  (``"00"``, ``"10"``, and ``"01"``) will be assigned a higher energy.
+    with both endpoints coloured as ``1`` (the state :math:`|11\rangle`) will be assigned a lower energy, while
+    the other colourings  (``"00"``, ``"10"``, and ``"01"`` corresponding to states
+    :math:`|00\rangle`, :math:`|10\rangle`, and :math:`|10\rangle`, respectively) will be assigned a higher energy.
 
     See usage details for more information.
 
@@ -86,13 +87,20 @@ def edge_driver(graph, reward):
 
     **Example**
 
-    As can be seen in the following example, ``"11"``, ``"10"``, and ``"01"`` will be assigned a lower
-    energy than ``"00"``:
-
     >>> graph = nx.Graph([(0, 1), (1, 2)])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
-    (0.25) [Z0 Z1] + (0.25) [Z0] + (0.25) [Z1] + (0.25) [Z1 Z2] + (0.25) [Z2]
+    (0.25) [Z0 Z1] + (0.25) [Z0] + (0.5) [Z1] + (0.25) [Z1 Z2] + (0.25) [Z2]
+
+    In the above example, ``"11"``, ``"10"``, and ``"01"`` are assigned a lower
+    energy than ``"00"``. For example, a quick calculation of expectation values gives us:
+
+    .. math:: \langle 000 | H | 000 \rangle \ = \ 1.5
+    .. math:: \langle 100 | H | 100 \rangle \ = \ 0.5
+    .. math:: \langle 110 | H | 110\rangle \ = \ -0.5
+
+    In the first example, both vertex pairs are not in ``reward``. In the second example, one pair is in ``reward`` and
+    the other is not. Finally, in the third example, both pairs are in ``reward``.
 
     .. UsageDetails::
 
