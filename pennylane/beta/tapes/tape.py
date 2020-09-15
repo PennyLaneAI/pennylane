@@ -913,9 +913,18 @@ class QuantumTape(AnnotatedQueue):
             params (list[Any]): The quantum tape operation parameters.
         """
         if self._caching:
-            all_parameters = self.get_parameters(trainable_only=False)
-            for i, index in enumerate(self._trainable_params):
-                all_parameters[index] = params[i]
+            saved_parameters = self.get_parameters(trainable_only=False)
+            all_parameters = []
+            position = 0
+
+            for i in range(len(saved_parameters)):
+                if i in self._trainable_params:
+                    p = params[position]
+                    position += 1
+                else:
+                    p = saved_parameters[i]
+                all_parameters.append(p)
+
             hashed_params = _hash_iterable(all_parameters)
             if hashed_params in self._cache_execute:
                 return self._cache_execute[hashed_params]
