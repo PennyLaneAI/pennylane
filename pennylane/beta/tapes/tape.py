@@ -1090,7 +1090,9 @@ class QuantumTape(AnnotatedQueue):
         shift[idx] = h
 
         if order == 1:
-            # forward finite-difference
+            # Forward finite-difference.
+            # Check if the device has already be pre-computed with
+            # unshifted parameter values, to avoid redundant evaluations.
             y0 = options.get("y0", None)
 
             if y0 is None:
