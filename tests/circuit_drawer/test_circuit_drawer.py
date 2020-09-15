@@ -750,6 +750,7 @@ class TestCircuitDrawerIntegration:
 
         assert output == drawn_qubit_circuit_with_probs
 
+    # This test is expected to fail until the new quantum-tape core has been fully merged
     @pytest.mark.xfail
     def test_qubit_circuit_with_state(
         self, qubit_circuit_with_state, drawn_qubit_circuit_with_state

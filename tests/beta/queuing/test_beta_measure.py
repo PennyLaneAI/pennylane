@@ -19,8 +19,6 @@ import numpy as np
 import pennylane as qml
 from pennylane import QuantumFunctionError
 from pennylane.devices import DefaultGaussian
-from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
-from pennylane.beta.queuing import state as qstate
 
 
 # Beta imports
@@ -40,6 +38,8 @@ from pennylane.beta.queuing.measure import (
     Probability,
     MeasurementProcess
 )
+from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
+from pennylane.beta.queuing import state as qstate
 
 
 
@@ -52,7 +52,8 @@ def patch_operator():
 
 
 @pytest.mark.parametrize(
-    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
+    "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample), (qstate,
+                                                                                         State)]
 )
 class TestBetaStatistics:
     """Tests for annotating the return types of the statistics functions"""
@@ -288,7 +289,7 @@ class TestState:
         func()
         obs = func.qtape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is ObservableReturnTypes.State
+        assert obs[0].return_type is State
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_correct_ghz(self, wires):
