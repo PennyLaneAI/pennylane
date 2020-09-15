@@ -66,8 +66,8 @@ def bit_driver(wires, b):
 def edge_driver(graph, reward):
     r"""Returns the edge-driver cost Hamiltonian.
 
-    Given some graph, :math:`G`, with each node representing a wire, and a binary
-    colouring (each node/wire is assigned either :math:`|0\rangle` or :math:`|1\rangle`), the edge driver
+    Given some graph, :math:`G` with each node representing a wire, and a binary
+    colouring where each node/wire is assigned either :math:`|0\rangle` or :math:`|1\rangle`, the edge driver
     cost Hamiltonian will assign a lower energy to edges with endpoint colourings
     supplied in ``reward``.
 
@@ -109,7 +109,7 @@ def edge_driver(graph, reward):
         pairs (which each describe a possible  state of a graph edge), the ``edge_driver()``
         function outputs a Hamiltonian that rewards the pairs in the set, and penalizes the others.
 
-        For example, given the set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle\}` and the graph :math:`G`,
+        For example, given the reward set: :math:`\{|00\rangle, \ |01\rangle, \ |10\rangle\}` and the graph :math:`G`,
         the ``edge_driver()`` function will output the following Hamiltonian:
 
         .. math:: H \ = \ \frac{1}{4} \displaystyle\sum_{(i, j) \in E(G)} \big( Z_{i} Z_{j} \ - \ Z_{i} \ - \ Z_{j} \big)
@@ -122,7 +122,7 @@ def edge_driver(graph, reward):
         .. Note::
 
             ``reward`` must always contain both :math:`|01\rangle` and :math:`|10\rangle`, or neither of the two.
-            Within a graph, there is no notion of "order"
+            Within an undirected graph, there is no notion of "order"
             of edge endpoints, so these two states are effectively the same. Therefore, there is no well-defined way to
             penalize one and reward the other.
 
