@@ -1047,7 +1047,7 @@ class QuantumTape(AnnotatedQueue):
         if nondiff_params:
             raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
 
-        numeric_params = {idx for idx, g in allowed_param_methods.items() if g is "F"}
+        numeric_params = {idx for idx, g in allowed_param_methods.items() if g == "F"}
 
         if method == "analytic":
             # If explicitly using analytic mode, ensure that all parameters
