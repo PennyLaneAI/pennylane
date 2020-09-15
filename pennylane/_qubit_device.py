@@ -312,7 +312,7 @@ class QubitDevice(Device):
         return np.random.choice(basis_states, self.shots, p=state_probability)
 
     @staticmethod
-    def states_to_binary(samples, num_wires):
+    def states_to_binary(samples, num_wires, dtype=None):
         """Convert basis states from base 10 to binary representation.
 
         This is an auxiliary method to the generate_samples method.
@@ -320,11 +320,15 @@ class QubitDevice(Device):
         Args:
             samples (List[int]): samples of basis states in base 10 representation
             num_wires (int): the number of qubits
+            dtype (type): type of the internal array to be used. Can be
+                important to specify for large systems for memory allocation
+                purposes.
 
         Returns:
             List[int]: basis states in binary representation
         """
-        powers_of_two = 1 << np.arange(num_wires)
+        wires_array = np.arange(num_wires) if dtype is None else np.arange(num_wires, dtype=dtype)
+        powers_of_two = 1 << wires_array
         states_sampled_base_ten = samples[:, None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(int)[:, ::-1]
 
@@ -479,9 +483,27 @@ class QubitDevice(Device):
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
-        states_base_ten = np.arange(2 ** num_wires)
 
-        basis_states = self.states_to_binary(states_base_ten, num_wires)
+        if 2 < num_wires < 31:
+
+            # The states_to_binary method creates basis states faster (for
+            # larger systems at times over x25 times faster) than the approach
+            # using itertools, at the expense of using more memory.
+            # Due to the large size of the integer arrays for more than 32
+            # bits, memory allocation errors may arise in the states_to_binary
+            # method. Hence we constraint the dtype of the array to 32 bits.
+            # Due to this constraint, an overflow occurs for 31 or more wires,
+            # therefore this approach is used only for fewer wires.
+            # For smaller number of wires speed is comparable to the next
+            # approach, hence we resort to that one for testing purposes
+            states_base_ten = np.arange(2 ** num_wires, dtype=np.int32)
+            basis_states = self.states_to_binary(states_base_ten, num_wires)
+
+        else:
+            # A slower, but less memory intensive method
+            generator_basis_states = itertools.product((0, 1), repeat=num_wires)
+            basis_states = np.fromiter(itertools.chain(*generator_basis_states),dtype=int).reshape(-1,num_wires)
+
         perm = np.ravel_multi_index(
             basis_states[:, np.argsort(np.argsort(device_wires))].T, [2] * len(device_wires)
         )
