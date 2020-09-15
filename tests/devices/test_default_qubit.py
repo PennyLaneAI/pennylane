@@ -665,9 +665,26 @@ class TestSample:
         # they square to 1
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
+
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
+
+    def test_defines_correct_capabilities(self):
+        """Test that the device defines the right capabilities"""
+
+        dev = qml.device("default.qubit", wires=1)
+        cap = dev.capabilities()
+        capabilities = {"model": "qubit",
+                        "supports_finite_shots": True,
+                        "supports_tensor_observables": True,
+                        "returns_probs": True,
+                        "returns_state": True,
+                        "supports_reversible_diff": True,
+                        "supports_inverse_operations": True,
+                        "supports_analytic_computation": True,
+                        }
+        assert cap == capabilities
 
     def test_load_default_qubit_device(self):
         """Test that the default plugin loads correctly"""
@@ -782,8 +799,6 @@ class TestDefaultQubitIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
-
-
 
     @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
                                                            multiplier * 0.5432) for multiplier in range(8)

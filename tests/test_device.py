@@ -80,12 +80,13 @@ def mock_device_supporting_paulis_and_inverse(monkeypatch):
         m.setattr(Device, 'operations', mock_device_paulis)
         m.setattr(Device, 'observables', mock_device_paulis)
         m.setattr(Device, 'short_name', 'MockDevice')
-        m.setattr(Device, '_capabilities', {"inverse_operations": True})
+        m.setattr(Device, '_capabilities', {"supports_inverse_operations": True})
 
         def get_device(wires=1):
             return Device(wires=wires)
 
         yield get_device
+
 
 @pytest.fixture(scope="function")
 def mock_device_supporting_observables_and_inverse(monkeypatch):
@@ -96,12 +97,13 @@ def mock_device_supporting_observables_and_inverse(monkeypatch):
         m.setattr(Device, 'operations', mock_device_paulis)
         m.setattr(Device, 'observables', mock_device_paulis + ['Hermitian'])
         m.setattr(Device, 'short_name', 'MockDevice')
-        m.setattr(Device, '_capabilities', {"inverse_operations": True})
+        m.setattr(Device, '_capabilities', {"supports_inverse_operations": True})
 
         def get_device(wires=1):
             return Device(wires=wires)
 
         yield get_device
+
 
 mock_device_capabilities = {
     "measurements": "everything",
@@ -329,7 +331,7 @@ class TestInternalFunctions:
             m.setattr(D, '__abstractmethods__', frozenset())
             m.setattr(D, 'operations', ["PauliX", "PauliY", "PauliZ"])
             m.setattr(D, 'observables', ["PauliX", "PauliY", "PauliZ"])
-            m.setattr(D, 'capabilities', lambda self: {"tensor_observables": True})
+            m.setattr(D, 'capabilities', lambda self: {"supports_tensor_observables": True})
             m.setattr(D, 'short_name', "Dummy")
 
             dev = D()

@@ -25,7 +25,7 @@ class QueuingContext(abc.ABC):
     Queuable objects are objects that queue themselves via ``QueuingContext.append(self)``, while
     queuing functions queue external objects.
 
-    Queuable objects can take use of the following ``QueuingContext`` methods and properties:
+    Queuable objects make use of the following ``QueuingContext`` methods and properties:
 
     * :attr:`~.recording`: determine whether a queuing context is actively recording operations
     * :meth:`~.append`: append an object to the active queuing context
@@ -77,7 +77,7 @@ class QueuingContext(abc.ABC):
     ...
     >>> print(q1.queue)
     ['second object']
-    >>> print(q1.queue)
+    >>> print(q2.queue)
     ['first object']
 
     Finally, queuing contexts *themselves* can be queuable objects:
@@ -111,7 +111,7 @@ class QueuingContext(abc.ABC):
         """Adds this instance to the global list of active contexts.
 
         Returns:
-            QueuingContext: This instance
+            QueuingContext: this instance
         """
         QueuingContext._active_contexts.append(self)
 
