@@ -921,7 +921,7 @@ class QuantumTape(AnnotatedQueue):
                 output_dim = np.prod(res.shape)
 
             if self.output_dim != output_dim:
-                # update the output dimension estimate with the correct value
+                # update the inferred output dimension with the correct value
                 self._output_dim = output_dim
 
         except (AttributeError, TypeError):
