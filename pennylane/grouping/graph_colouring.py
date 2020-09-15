@@ -23,9 +23,9 @@
 A module for heuristic algorithms for colouring Pauli graphs.
 
 A Pauli graph is a graph where vertices represent Pauli words and edges denote
-if a specified symmetric binary relation (e.g. commutation) is satisfied for the
+if a specified symmetric binary relation (e.g., commutation) is satisfied for the
 corresponding Pauli words. The graph colouring problem is to assign a colour to
-each vertice such that no vertices of the same colour are connected, using the
+each vertex such that no vertices of the same colour are connected, using the
 fewest number of colours (lowest "chromatic number") as possible.
 """
 
@@ -54,8 +54,8 @@ def largest_first(binary_observables, adj):
 
     Args:
         binary_observables (array[bool]): the set of Pauli words represented by a column matrix
-            of the Pauli words in binary vector represenation.
-        adj (array[bool]): The adjacency matrix of the Pauli graph.
+            of the Pauli words in binary vector represenation
+        adj (array[bool]): the adjacency matrix of the Pauli graph
 
     Returns:
         dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
@@ -107,12 +107,12 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
 
     Args:
         binary_observables (array[bool]): the set of Pauli words represented by a column matrix of
-            the Pauli words in binary vector represenation.
-        adj (array[bool]): The adjacency matrix of the Pauli graph.
+            the Pauli words in binary vector represenation
+        adj (array[bool]): the adjacency matrix of the Pauli graph
 
     Returns:
         dict(int, list[array[bool]]): keys correspond to colours (labelled by integers) and values
-            are list of Pauli words of the same colour in binary vector representation.
+            are lists of Pauli words of the same colour in binary vector representation.
 
     """
 
