@@ -18,6 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import QuantumFunctionError
+from pennylane.devices import DefaultGaussian
 from pennylane.beta.tapes.qnode import QuantumFunctionError as QuantumFunctionErrorBeta  # TODO
 from pennylane.beta.queuing import state as qstate
 
@@ -414,7 +415,7 @@ class TestState:
             d_func(0.1)
 
     def test_no_state(self):
-        """Test if an error is raised for devices that do not inherit from QubitDevice,
+        """Test if an error is raised for devices that are not capable of returning the state,
         such as default.gaussian"""
         dev = qml.device("default.gaussian", wires=1)
 
@@ -422,8 +423,24 @@ class TestState:
         def func():
             return qstate(range(1))
 
-        with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+        with pytest.raises(ValueError, match="The current device is not capable"):
             func()
+
+    def test_no_state_but_capable(self, monkeypatch):
+        """Test if an error is raised for a device that incorrectly says it is capable of returning
+        the state. This is tested by changing the capability of default.gaussian."""
+        dev = qml.device("default.gaussian", wires=1)
+        capabilities = dev.capabilities().copy()
+        capabilities["returns_state"] = True
+
+        @qnode(dev)
+        def func():
+            return qstate(range(1))
+
+        with monkeypatch.context() as m:
+            m.setattr(DefaultGaussian, "capabilities", lambda *args, **kwargs: capabilities)
+            with pytest.raises(QuantumFunctionError, match="Returning the state is not supported"):
+                func()
 
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     @pytest.mark.parametrize(
