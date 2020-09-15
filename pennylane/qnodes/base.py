@@ -812,6 +812,7 @@ class BaseQNode(qml.QueuingContext):
         Returns:
             float or array[float]: output measured value(s)
         """
+        shots = kwargs.pop("shots", None)
         kwargs = self._default_args(kwargs)
         self._set_variables(args, kwargs)
 
@@ -819,6 +820,9 @@ class BaseQNode(qml.QueuingContext):
             self._construct(args, kwargs)
 
         self.device.reset()
+        default_shots = self.device.shots
+        if shots is not None:
+            self.device.shots = shots  # temporarily change shots
 
         temp = self.kwargs.get("use_native_type", False)
         if isinstance(self.device, qml.QubitDevice):
@@ -831,6 +835,9 @@ class BaseQNode(qml.QueuingContext):
                 self.variable_deps,
                 return_native_type=temp,
             )
+
+        self.device.shots = default_shots # restore default
+
         return self.output_conversion(ret)
 
     def evaluate_obs(self, obs, args, kwargs):

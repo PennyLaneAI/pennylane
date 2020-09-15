@@ -117,9 +117,9 @@ class DefaultQubit(QubitDevice):
 
     observables = {"PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian", "Identity"}
 
-    def __init__(self, wires, *, shots=1000, analytic=True):
+    def __init__(self, wires, *, shots=1000):
         # call QubitDevice init
-        super().__init__(wires, shots, analytic)
+        super().__init__(wires, shots)
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.

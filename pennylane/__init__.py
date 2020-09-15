@@ -113,7 +113,7 @@ def device(name, *args, **kwargs):
       of qubit-based quantum circuit architectures which allows
       automatic differentiation through the simulation via python's autograd library.
 
-    In addition, additional devices are supported through plugins — see
+    Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
     details.
 
