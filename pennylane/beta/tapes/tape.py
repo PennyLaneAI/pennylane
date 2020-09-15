@@ -258,8 +258,8 @@ class QuantumTape(AnnotatedQueue):
         """float: number of device executions to store in a cache to speed up subsequent
         executions. If set to zero, no caching occurs."""
 
-        self._hash_execute = OrderedDict()
-        """OrderedDict[int: Any]: Mapping from hashes of the input parameters to results of 
+        self._cache_execute = OrderedDict()
+        """OrderedDict[int: Any]: Mapping from hashes of the input parameters to results of
         executing the device."""
 
     def __repr__(self):
@@ -910,13 +910,15 @@ class QuantumTape(AnnotatedQueue):
         Args:
             device (~.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
+            params (list[Any]): The quantum tape operation parameters.
         """
         if self._caching:
-            hashed_params = _hash_iterable(params)
-            if hashed_params in self._hash_execute:
-                return self._hash_execute[hashed_params]
+            all_parameters = self.get_parameters(trainable_only=False)
+            for i, index in enumerate(self._trainable_params):
+                all_parameters[index] = params[i]
+            hashed_params = _hash_iterable(all_parameters)
+            if hashed_params in self._cache_execute:
+                return self._cache_execute[hashed_params]
 
         device.reset()
 
@@ -951,10 +953,10 @@ class QuantumTape(AnnotatedQueue):
         # restore original parameters
         self.set_parameters(saved_parameters)
 
-        if self._caching and hashed_params not in self._hash_execute:
-            self._hash_execute[hashed_params] = res
-            if len(self._hash_execute) > self._caching:
-                self._hash_execute.popitem(last=False)
+        if self._caching and hashed_params not in self._cache_execute:
+            self._cache_execute[hashed_params] = res
+            if len(self._cache_execute) > self._caching:
+                self._cache_execute.popitem(last=False)
 
         return res
 
