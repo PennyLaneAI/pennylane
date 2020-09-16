@@ -13,12 +13,14 @@
 # limitations under the License.
 """Tests for caching executions of the quantum tape and QNode."""
 import numpy as np
+import pytest
 
 import pennylane as qml
 import pennylane
 from pennylane.beta.queuing import expval
-from pennylane.beta.tapes import QuantumTape
+from pennylane.beta.tapes import QuantumTape, qnode
 from pennylane.devices import DefaultQubit
+from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane.utils import _hash_iterable
 
 
@@ -31,6 +33,20 @@ def get_tape(caching):
         qml.CNOT(wires=[0, 1])
         expval(qml.PauliZ(wires=1))
     return tape
+
+
+def get_qnode(caching, diff_method="finite-diff"):
+    """Creates a simple QNode"""
+    dev = qml.device("default.qubit.autograd", wires=3)
+
+    @qnode(dev, caching=caching, diff_method=diff_method)
+    def qfunc(x, y):
+        qml.QubitUnitary(np.eye(2), wires=0)
+        qml.RX(x, wires=0)
+        qml.RX(y, wires=1)
+        qml.CNOT(wires=[0, 1])
+        return expval(qml.PauliZ(wires=1))
+    return qfunc
 
 
 class TestTapeCaching:
@@ -99,5 +115,91 @@ class TestTapeCaching:
         for arg, exp_arg in zip(call, expected_call):
             assert np.allclose(arg, exp_arg)
 
+    def test_fill_cache(self):
+        """Test that the cache is added to until it reaches its maximum size (in this case 10),
+        and then maintains that size upon subsequent additions."""
+        dev = qml.device("default.qubit", wires=2)
+        tape = get_tape(10)
+
+        tape.trainable_params = {1}
+        args = np.arange(20)
+
+        for i, arg in enumerate(args[:10]):
+            tape.execute(params=[arg], device=dev)
+            assert len(tape._cache_execute) == i + 1
+
+        for arg in args[10:]:
+            tape.execute(params=[arg], device=dev)
+            assert len(tape._cache_execute) == 10
+
+    def test_drop_from_cache(self):
+        """Test that the first entry of the _cache_execute dictionary is the first to be dropped
+         from the dictionary once it becomes full"""
+        dev = qml.device("default.qubit", wires=2)
+        tape = get_tape(2)
+
+        tape.trainable_params = {1}
+        tape.execute(device=dev)
+        first_hash = list(tape._cache_execute.keys())[0]
+
+        tape.execute(device=dev, params=[0.2])
+        assert first_hash in tape._cache_execute
+        tape.execute(device=dev, params=[0.3])
+        assert first_hash not in tape._cache_execute
+
+    def test_caching_multiple_values(self, mocker):
+        """Test that multiple device executions with different params are cached and accessed on
+        subsequent executions"""
+        dev = qml.device("default.qubit", wires=2)
+        tape = get_tape(10)
+
+        tape.trainable_params = {1}
+        args = np.arange(10)
+
+        for arg in args[:10]:
+            tape.execute(params=[arg], device=dev)
+
+        spy = mocker.spy(DefaultQubit, "execute")
+        for arg in args[:10]:
+            tape.execute(params=[arg], device=dev)
+
+        spy.assert_not_called()
 
 
+@pytest.mark.filterwarnings("ignore:Caching mode activated")
+class TestQNodeCaching:
+    """Tests for caching when using the QNode"""
+
+    def test_set_and_get(self):
+        """Test that the caching attribute can be set and accessed"""
+        with pytest.warns(UserWarning, match="Caching mode activated."):
+            qnode = get_qnode(caching=0)
+            assert qnode.caching == 0
+
+            qnode = get_qnode(caching=10)
+            assert qnode.caching == 10
+
+            qnode.caching = 20
+            assert qnode.caching == 20
+
+    def test_backprop_error(self):
+        """Test if an error is raised when caching is used with the backprop diff_method"""
+        with pytest.raises(ValueError, match="Caching mode is incompatible"):
+            get_qnode(caching=10, diff_method="backprop")
+
+    def test_caching(self, mocker):
+        """Test that multiple device executions with different params are cached and accessed on
+        subsequent executions"""
+        qnode = get_qnode(caching=10)
+        args = np.arange(10)
+
+        for arg in args[:10]:
+            qnode(arg, 0.2)
+
+        assert qnode.qtape.caching == 10
+
+        spy = mocker.spy(DefaultQubitAutograd, "execute")
+        for arg in args[:10]:
+            qnode(arg, 0.2)
+
+        spy.assert_not_called()
