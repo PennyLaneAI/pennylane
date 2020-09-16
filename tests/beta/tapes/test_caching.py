@@ -35,13 +35,12 @@ def get_tape(caching):
     return tape
 
 
-def get_qnode(caching, diff_method="finite-diff"):
+def get_qnode(caching, diff_method="finite-diff", interface="autograd"):
     """Creates a simple QNode"""
     dev = qml.device("default.qubit.autograd", wires=3)
 
-    @qnode(dev, caching=caching, diff_method=diff_method)
+    @qnode(dev, caching=caching, diff_method=diff_method, interface=interface)
     def qfunc(x, y):
-        qml.QubitUnitary(np.eye(2), wires=0)
         qml.RX(x, wires=0)
         qml.RX(y, wires=1)
         qml.CNOT(wires=[0, 1])
@@ -202,4 +201,56 @@ class TestQNodeCaching:
         for arg in args[:10]:
             qnode(arg, 0.2)
 
+        spy.assert_not_called()
+
+    def test_gradient_autograd(self, mocker):
+        """Test that caching works when calculating the gradient method using the autograd
+        interface"""
+        qnode = get_qnode(caching=10, interface="autograd")
+        d_qnode = qml.grad(qnode)
+        args = [0.1, 0.2]
+
+        d_qnode(*args)
+        spy = mocker.spy(DefaultQubitAutograd, "execute")
+        d_qnode(*args)
+        spy.assert_not_called()
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    def test_gradient_tf(self, mocker):
+        """Test that caching works when calculating the gradient method using the TF interface"""
+        import tensorflow as tf
+
+        qnode = get_qnode(caching=10, interface="tf")
+        args0 = tf.Variable(0.1)
+        args1 = tf.Variable(0.2)
+
+        with tf.GradientTape() as tape:
+            res = qnode(args0, args1)
+
+        grad = tape.gradient(res, args0)
+        assert grad is not None
+
+        spy = mocker.spy(DefaultQubitAutograd, "execute")
+        with tf.GradientTape() as tape:
+            res = qnode(args0, args1)
+
+        tape.gradient(res, args0)
+        spy.assert_not_called()
+
+    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    def test_gradient_torch(self, mocker):
+        """Test that caching works when calculating the gradient method using the Torch interface"""
+        import torch
+
+        qnode = get_qnode(caching=10, interface="torch")
+        args0 = torch.tensor(0.1, requires_grad=True)
+        args1 = torch.tensor(0.2)
+
+        res = qnode(args0, args1)
+        res.backward()
+        assert args0.grad is not None
+
+        spy = mocker.spy(DefaultQubitAutograd, "execute")
+        res = qnode(args0, args1)
+        res.backward()
         spy.assert_not_called()
