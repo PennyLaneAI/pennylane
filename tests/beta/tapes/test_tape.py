@@ -515,8 +515,6 @@ class TestInverse:
         assert ops[2].inverse
 
         # check that parameter order has reversed
-        print(tape.get_parameters())
-        print([init_state, p[1], p[2], p[3], p[0]])
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
 
     def test_parameter_transforms(self):
@@ -1320,8 +1318,6 @@ class TestJacobian:
             qml.RZ(1, wires=[2])
             qml.CNOT(wires=[0, 1])
             expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2))
-            for k, v in tape._queue.items():
-                print(k, v)
 
         with pytest.raises(ValueError, match="Order must be 1 or 2"):
             tape.jacobian(dev, order=3)
@@ -1524,3 +1520,46 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestGetAllParameters:
+    """Tests for the _get_all_parameters method"""
+
+    def test_all_params_trainable(self):
+        """Test that the input params are simply returned when all params are trainable"""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=1)
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(wires=1))
+
+        new_params = tape._get_all_parameters([0.8, 0.9])
+        assert new_params == [0.8, 0.9]
+
+    def test_some_params_trainable(self):
+        """Test that the trainable params are combined with non-trainable params"""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=1)
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(wires=1))
+
+        tape.trainable_params = {0}
+        new_params = tape._get_all_parameters([0.8])
+        assert new_params == [0.8, 0.2]
+
+        tape.trainable_params = {1}
+        new_params = tape._get_all_parameters([0.9])
+        assert new_params == [0.1, 0.9]
+
+    def test_no_params_trainable(self):
+        """Test that the existing tape params are simply returned when no params are trainable"""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.RX(0.2, wires=1)
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(wires=1))
+
+        tape.trainable_params = {}
+        new_params = tape._get_all_parameters([])
+        assert new_params == [0.1, 0.2]
