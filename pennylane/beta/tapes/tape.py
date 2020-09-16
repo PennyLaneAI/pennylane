@@ -949,13 +949,13 @@ class QuantumTape(AnnotatedQueue):
         * ``None``: the parameter does not support differentiation.
 
         * ``"0"``: the variational circuit output does not depend on this
-            parameter (the partial derivative is zero).
+          parameter (the partial derivative is zero).
 
         * ``"F"``: the parameter has a non-zero derivative that should be computed
-            using finite-differences.
+          using finite-differences.
 
         * ``"A"``: the parameter has a non-zero derivative that should be computed
-            using an analytic method.
+          using an analytic method.
 
         .. note::
 
@@ -1049,14 +1049,12 @@ class QuantumTape(AnnotatedQueue):
 
         numeric_params = {idx for idx, g in allowed_param_methods.items() if g == "F"}
 
-        if method == "analytic":
-            # If explicitly using analytic mode, ensure that all parameters
-            # support analytic differentiation.
-
-            if numeric_params:
-                raise ValueError(
-                    f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
-                )
+        # If explicitly using analytic mode, ensure that all parameters
+        # support analytic differentiation.
+        if method == "analytic" and numeric_params:
+            raise ValueError(
+                f"The analytic gradient method cannot be used with the argument(s) {numeric_params}."
+            )
 
         return tuple(allowed_param_methods.values())
 
@@ -1066,7 +1064,7 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1078,7 +1076,7 @@ class QuantumTape(AnnotatedQueue):
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
+            measurement statistics
         """
         if params is None:
             params = np.array(self.get_parameters())
@@ -1111,10 +1109,10 @@ class QuantumTape(AnnotatedQueue):
 
     def device_pd(self, device, params=None, **options):
         """Evaluate the gradient of the tape with respect to
-        a single trainable tape parameter by querying the provided device.
+        all trainable tape parameters by querying the provided device.
 
         Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1142,7 +1140,7 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1189,7 +1187,7 @@ class QuantumTape(AnnotatedQueue):
             devices.
 
         Args:
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameter values are used (via :meth:`~.get_parameters`).
@@ -1276,7 +1274,7 @@ class QuantumTape(AnnotatedQueue):
         allowed_param_methods = self._grad_method_validation(method)
 
         if not params.size or all(g == "0" for g in allowed_param_methods):
-            # Either all parameters had grad method 0, or there are no trainable
+            # Either all parameters have grad method 0, or there are no trainable
             # parameters. Simply return an empty Jacobian.
             return np.zeros((self.output_dim, len(params)), dtype=float)
 

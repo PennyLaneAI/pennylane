@@ -1346,24 +1346,6 @@ class TestJacobianIntegration:
 
         res = tape.jacobian(dev)
         assert res.shape == (6, 3)
-
-    def test_ragged_output(self):
-        """Test that the Jacobian is correctly returned for a tape
-        with ragged output"""
-        dev = qml.device("default.qubit", wires=3)
-        params = [1.0, 1.0, 1.0]
-
-        with QuantumTape() as tape:
-            qml.RX(params[0], wires=[0])
-            qml.RY(params[1], wires=[1])
-            qml.RZ(params[2], wires=[2])
-            qml.CNOT(wires=[0, 1])
-            probs(wires=0)
-            probs(wires=[1, 2])
-
-        res = tape.jacobian(dev)
-        assert res.shape == (6, 3)
-
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
