@@ -607,11 +607,17 @@ class TestAutogradPassthru:
         assert np.allclose(res, expected, atol=tol, rtol=0)
         spy.assert_not_called()
 
-    @pytest.mark.xfail
-    def test_ragged_differentiation(self, mocker, tol):
+    def test_ragged_differentiation(self, mocker, monkeypatch, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         spy = mocker.spy(QuantumTape, "jacobian")
+        dev = qml.device("default.qubit.autograd", wires=2)
+
+        def _asarray(args, dtype=np.float64):
+            return np.hstack(args).flatten()
+
+        # we need to patch the asarray method on the device
+        monkeypatch.setattr(dev, "_asarray", _asarray)
 
         def cost(x, y, device):
             with QuantumTape() as tape:
@@ -621,9 +627,8 @@ class TestAutogradPassthru:
                 expval(qml.PauliZ(0))
                 probs(wires=[1])
 
-            return np.hstack(tape.execute(device))
+            return tape.execute(device)
 
-        dev = qml.device("default.qubit.autograd", wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
