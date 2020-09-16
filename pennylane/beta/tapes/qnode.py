@@ -470,6 +470,16 @@ class QNode:
         if self.qtape is not None:
             AutogradInterface.apply(self.qtape)
 
+    @property
+    def caching(self):
+        """float: number of device executions to store in a cache to speed up subsequent
+        executions. If set to zero, no caching occurs."""
+        return self._caching
+
+    @caching.setter
+    def caching(self, value):
+        self._caching = value
+
     INTERFACE_MAP = {"autograd": to_autograd, "torch": to_torch, "tf": to_tf}
 
 
