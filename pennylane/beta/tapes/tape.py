@@ -925,7 +925,7 @@ class QuantumTape(AnnotatedQueue):
 
         Suppose only parameters 0 and 2 are trainable:
 
-        >>> tape.trainable_parameters = {0, 2}
+        >>> tape.trainable_params = {0, 2}
 
         We can access all parameters using:
 
