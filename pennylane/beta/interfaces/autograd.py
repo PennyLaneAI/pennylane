@@ -52,13 +52,14 @@ class AutogradInterface(AnnotatedQueue):
 
     .. code-block:: python
 
+        tape = AutogradInterface.apply(QuantumTape())
+
+        with tape:
+            qml.Rot(0, 0, 0, wires=0)
+            expval(qml.PauliX(0))
+
         def cost_fn(x, y, z, device):
-            tape = AutogradInterface.apply(QuantumTape())
-
-            with tape:
-                qml.Rot(x, y ** 2, y * np.sin(z), wires=0)
-                expval(qml.PauliX(0))
-
+            tape.set_parameters([x, y ** 2, y * np.sin(z)], trainable_only=False)
             return tape.execute(device=device)
 
     >>> x = np.array(0.1, requires_grad=False)
@@ -68,7 +69,7 @@ class AutogradInterface(AnnotatedQueue):
     >>> cost_fn(x, y, z, device=dev)
     [0.03991951]
     >>> jac_fn = qml.jacobian(cost_fn)
-    >>> jac_fn(x, y, z, device=dev))
+    >>> jac_fn(x, y, z, device=dev)
     [[ 0.39828408 -0.00045133]]
     """
 
