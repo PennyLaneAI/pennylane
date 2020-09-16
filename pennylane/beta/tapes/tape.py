@@ -1010,7 +1010,7 @@ class QuantumTape(AnnotatedQueue):
                 info["grad_method"] = self._grad_method(i, use_graph=True)
 
     def _grad_method_validation(self, method):
-        """Validates if the Jacobian method requested is supported by the trainable
+        """Validates if the gradient method requested is supported by the trainable
         parameters, and returns the allowed parameter gradient methods.
 
         This method will generate parameter gradient information if it has not already
