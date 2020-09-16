@@ -45,6 +45,7 @@ def get_qnode(caching, diff_method="finite-diff", interface="autograd"):
         qml.RX(y, wires=1)
         qml.CNOT(wires=[0, 1])
         return expval(qml.PauliZ(wires=1))
+
     return qfunc
 
 
