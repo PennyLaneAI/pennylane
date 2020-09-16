@@ -80,8 +80,12 @@ class AutogradInterface(AnnotatedQueue):
         return "autograd"
 
     def _update_trainable_params(self):
-        params = [o.data for o in self.operations + self.observables]
-        params = [item for sublist in params for item in sublist]
+        params = []
+
+        for p_idx in self._par_info:
+            op = self._par_info[p_idx]["op"]
+            op_idx = self._par_info[p_idx]["p_idx"]
+            params.append(op.data[op_idx])
 
         trainable_params = set()
 
