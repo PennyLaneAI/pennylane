@@ -18,6 +18,7 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
+from string import ascii_letters as ABC
 
 import numpy as np
 import pennylane as qml
