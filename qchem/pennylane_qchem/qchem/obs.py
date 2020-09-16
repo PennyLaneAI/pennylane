@@ -568,11 +568,145 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
     return t_table, t_core
 
 
+def two_particle(v_matrix_elements, core=None, active=None, cutoff=1.0e-12):
+    r"""Generates the table of matrix elements of a given two-particle operator
+    required to build many-body qubit observables.
+
+    Second quantized two-particle operators are expanded in the basis of single-particle
+    states as
+
+    .. math::
+
+        \hat{V} = \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
+        \langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle
+        ~ &[& \hat{c}_{\alpha\uparrow}^\dagger \hat{c}_{\beta\uparrow}^\dagger
+        \hat{c}_{\gamma\uparrow} \hat{c}_{\delta\uparrow} + \hat{c}_{\alpha\uparrow}^\dagger
+        \hat{c}_{\beta\downarrow}^\dagger \hat{c}_{\gamma\downarrow} \hat{c}_{\delta\uparrow} \\
+        &+& \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\uparrow}^\dagger
+        \hat{c}_{\gamma\uparrow} \hat{c}_{\delta\downarrow} + \hat{c}_{\alpha\downarrow}^\dagger
+        \hat{c}_{\beta\downarrow}^\dagger \hat{c}_{\gamma\downarrow} \hat{c}_{\delta\downarrow}~].
+
+    In the equation above the indices :math:`\alpha, \beta, \gamma, \delta` run over the basis
+    of spatial orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Since the operator
+    :math:`v` acts only on the spatial the spin quantum numbers are indicated explicitly
+    with the up/down arrows. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
+    are the particle creation and annihilation operators, respectively, and
+    :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle` denotes the
+    matrix elements of the operator :math:`\hat{v}`
+
+    .. math::
+
+        \langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle =
+        \int dr_1 \int dr_2 ~ \phi_\alpha^*(r_1) \phi_\beta^*(r_2) ~\hat{v}(r_1, r_2)~
+        \phi_\gamma(r_2) \phi_\delta(r_1).
+
+    If an active space is defined (see :func:`~.active_space`), the summation indices
+    run over the active orbitals and the contribution due to core orbitals, is computed as
+    :math:`V_\mathrm{core} = 2 \sum_{\alpha, \beta \in \mathrm{core}}
+    \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle`.
+
+    Args:
+        v_matrix_elements (array[float]): 4D Numpy array with the matrix elements
+            :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
+        core (list): indices of core orbitals, i.e., the orbitals that are
+            not correlated in the many-body wave function
+        active (list): indices of active orbitals, i.e., the orbitals used to
+            build the correlated many-body wave function
+        cutoff (float): cutoff value for including matrix elements. The
+            matrix elements with absolute value less than ``cutoff`` are neglected.
+        
+    Returns:
+        tuple: The table with the matrix elements of the two-particle operator
+        and the contribution due to core orbitals. The table is returned as a 2D Numpy
+        array where each row contains five elements, the *spin*-orbital indices
+        :math:`\alpha, \beta, \gamma, \delta` and the matrix element value
+        :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`.
+    """
+
+    orbitals = v_matrix_elements.shape[0]
+
+    if v_matrix_elements.ndim != 4:
+        raise ValueError(
+            "'v_matrix_elements' must be a 4D array; got 'v_matrix_elements.ndim = ' {}".format(
+                v_matrix_elements.ndim
+            )
+        )
+
+    if core is None:
+        v_core = 0
+    else:
+        if True in [i > orbitals - 1 or i < 0 for i in core]:
+            raise ValueError("Indices of core orbitals must be between 0 and {}".format(orbitals))
+
+        # Compute contribution due to core orbitals
+        v_core = 2 * sum(
+            [v_matrix_elements[alpha, beta, alpha, beta] for alpha in core for beta in core]
+        )
+
+    if active is None:
+        if core is None:
+            active = list(range(orbitals))
+        else:
+            active = [i for i in range(orbitals) if i not in core]
+
+    if True in [i > orbitals - 1 or i < 0 for i in active]:
+        raise ValueError("Indices of active orbitals must be between 0 and {}".format(orbitals))
+
+    # Indices of the matrix elements with absolute values >= cutoff
+    indices = np.nonzero(np.abs(v_matrix_elements) >= cutoff)
+
+    # Single out the indices of active orbitals
+    num_indices = len(indices[0])
+    quads = [
+        [indices[0][i], indices[1][i], indices[2][i], indices[3][i]]
+        for i in range(num_indices)
+        if all(indices[j][i] in active for j in range(len(indices)))
+    ]
+
+    # Building the table of matrix elements
+    v_table = np.zeros((4 * len(quads), 5))
+
+    for i, quad in enumerate(quads):
+        alpha, beta, gamma, delta = quad
+        element = v_matrix_elements[alpha, beta, gamma, delta]
+
+        # up-up-up-up term
+        v_table[4 * i, 0] = 2 * active.index(alpha)
+        v_table[4 * i, 1] = 2 * active.index(beta)
+        v_table[4 * i, 2] = 2 * active.index(gamma)
+        v_table[4 * i, 3] = 2 * active.index(delta)
+        v_table[4 * i, 4] = element
+
+        # up-down-down-up term
+        v_table[4 * i + 1, 0] = 2 * active.index(alpha)
+        v_table[4 * i + 1, 1] = 2 * active.index(beta) + 1
+        v_table[4 * i + 1, 2] = 2 * active.index(gamma) + 1
+        v_table[4 * i + 1, 3] = 2 * active.index(delta)
+        v_table[4 * i + 1, 4] = element
+
+        # down-up-up-down term
+        v_table[4 * i + 2, 0] = 2 * active.index(alpha) + 1
+        v_table[4 * i + 2, 1] = 2 * active.index(beta)
+        v_table[4 * i + 2, 2] = 2 * active.index(gamma)
+        v_table[4 * i + 2, 3] = 2 * active.index(delta) + 1
+        v_table[4 * i + 2, 4] = element
+
+        # down-down-down-down term
+        v_table[4 * i + 3, 0] = 2 * active.index(alpha) + 1
+        v_table[4 * i + 3, 1] = 2 * active.index(beta) + 1
+        v_table[4 * i + 3, 2] = 2 * active.index(gamma) + 1
+        v_table[4 * i + 3, 3] = 2 * active.index(delta) + 1
+        v_table[4 * i + 3, 4] = element
+
+    return v_table, v_core
+
+
 __all__ = [
     "observable",
     "particle_number",
     "spin_z",
     "spin2",
     "one_particle",
+    "two_particle",
     "_spin2_matrix_elements",
 ]
