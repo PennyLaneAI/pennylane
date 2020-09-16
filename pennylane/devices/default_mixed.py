@@ -163,7 +163,7 @@ class DefaultMixed(QubitDevice):
         kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
 
         # Changes tensor shape
-        kraus_shape = len(kraus) + [2] * len(device_wires) * 2
+        kraus_shape = len(kraus) + [2] * len(channel_wires) * 2
         kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
         kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
