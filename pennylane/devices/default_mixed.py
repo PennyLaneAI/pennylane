@@ -274,3 +274,5 @@ class DefaultMixed(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._apply_operation(operation)
+            
+            
