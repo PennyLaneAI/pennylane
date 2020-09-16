@@ -62,6 +62,9 @@
   >>> print(H)
   (3.0) [Z0]
   ```
+  
+* Added a new bit-flip mixer to the `qml.qaoa` module.
+  [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
 
 <h3>Breaking changes</h3>
 
@@ -77,7 +80,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Josh Izaac, Antal Száva, Jack Ceroni.
+Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Antal Száva
 
 # Release 0.11.0 (current release)
 
