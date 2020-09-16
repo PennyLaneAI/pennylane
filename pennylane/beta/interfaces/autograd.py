@@ -114,7 +114,12 @@ class AutogradInterface(AnnotatedQueue):
         if res.dtype == np.dtype("object"):
             return np.hstack(res)
 
-        return res
+        requires_grad = False
+
+        if self.trainable_params:
+            requires_grad = True
+
+        return np.array(res, requires_grad=requires_grad)
 
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
