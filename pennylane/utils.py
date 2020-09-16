@@ -435,23 +435,6 @@ def expand_vector(vector, original_wires, expanded_wires):
     return expanded_tensor.reshape(2 ** M)
 
 
-def _flatten_iterable(x):
-    """Iterate recursively through an arbitrarily nested structure in depth-first order. Unlike
-    :func:`_flatten`, this function does not flatten NumPy arrays and PennyLane Wires.
-
-    Args:
-        x (Iterable): the iterable to flatten
-
-    Yields:
-        Any: elements of x in depth-first order
-    """
-    for i in x:
-        if isinstance(i, Iterable) and not isinstance(i, (str, bytes, np.ndarray, qml.wires.Wires)):
-            yield from _flatten_iterable(i)
-        else:
-            yield i
-
-
 def _hash_iterable(iterable):
     """Returns a single hash of an input iterable.
 
