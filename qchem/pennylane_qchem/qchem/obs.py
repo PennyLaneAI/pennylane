@@ -430,9 +430,9 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     return observable(table, mapping=mapping, wires=wires)
 
 
-def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
-    r"""Generates the table of  matrix elements of a given one-particle operator
-    that can be used to build the many-body observable.
+def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
+    r"""Generates the table of matrix elements of a given one-particle operator
+    required to build many-body qubit observables.
 
     Second quantized one-particle operators are expanded in the basis of single-particle
     states as
@@ -444,10 +444,10 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
         \hat{c}_{\alpha\downarrow}^\dagger \hat{c}_{\beta\downarrow}].
 
     In the equation above the indices :math:`\alpha, \beta` run over the basis of spatial
-    orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Notice that the spin quantum numbers
-    are accounted for explicitly with the up/down arrows since the operator :math:`t`
-    is assumed to act only on the spatial coordinates. The operators :math:`\hat{c}^\dagger`
-    and :math:`\hat{c}` are the particle creation and annihilation operators, respectively.
+    orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Since the operator :math:`t`
+    acts only on the spatial coordinates, the spin quantum numbers are indicated explicitly
+    with the up/down arrows. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
+    particle creation and annihilation operators, respectively, and 
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix elements of
     the operator :math:`\hat{t}`
 
@@ -456,43 +456,43 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
         \langle \alpha \vert \hat{t} \vert \beta \rangle = \int dr ~ \phi_\alpha^*(r)
         \hat{t}(r) \phi_\beta(r).
 
-    If an active space is defined (see :func:`~.active_space`), the indices
-    :math:`\alpha, \beta` run over the active orbitals and the contribution due to core
-    orbitals, if any, is computed as
+    If an active space is defined (see :func:`~.active_space`), the summation indices
+    run over the active orbitals and the contribution due to core orbitals is computed as
     :math:`t_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}  \langle \alpha \vert \hat{t}`.
 
     Args:
-        t_me (array[float]): 2D Numpy array with the matrix elements
+        t_matrix_elements (array[float]): 2D Numpy array with the matrix elements
             :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle`
         core (list): indices of core orbitals, i.e., the orbitals that are
             not correlated in the many-body wave function
         active (list): indices of active orbitals, i.e., the orbitals used to
             build the correlated many-body wave function
-        cutoff (float): Threshold for including the matrix elements in the table. The
+        cutoff (float): Cutoff value for including matrix elements. The
             matrix elements with absolute value less than ``cutoff`` are neglected.
         
     Returns:
-        tuple: The table with the matrix elements of the one-particle operator
-        and the contribution due to core orbitals. The table is returned as a 2D Numpy
-        array where each row contains the two indices of the *spin* orbitals
-        and the corresponding value of the matrix element.
+        tuple: Table of indices and matrix elements of the one-particle operator
+        and the contribution due to core orbitals. The returned table is a 2D Numpy
+        array where each row contains three elements, the *spin*-orbital indices
+        :math:`\alpha, \beta` and the matrix element
+        :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle`.
 
     **Example**
 
-    >>> t_me = np.array([[-4.72739313e+00, -1.05499666e-01, -1.66961416e-01,  6.18014041e-16,
-    ...                    2.86964662e-16, -3.46772026e-02],
-    ...                  [-1.05499666e-01, -1.49264622e+00, 3.28928073e-02, -2.20398308e-16,
-    ...                    1.93277291e-16,  5.27078882e-02],
-    ...                  [-1.66961416e-01,  3.28928073e-02, -1.12554473e+00, -2.82912389e-17,
-    ...                    2.55224784e-16, -3.04455743e-02],
-    ...                  [ 6.18014041e-16, -2.20398308e-16, -2.82912389e-17, -1.13579985e+00,
-    ...                   -1.94289029e-16, -2.36158697e-16],
-    ...                  [ 2.86964662e-16,  1.93277291e-16,  2.55224784e-16, -2.77555756e-16,
-    ...                   -1.13579985e+00,  2.06665432e-16],
-    ...                  [-3.46772026e-02,  5.27078882e-02, -3.04455743e-02, -2.36158697e-16,
-    ...                    2.06665432e-16, -9.50966595e-01]]
+    >>> t_matrix_elements = np.array([[-4.72739313e+00, -1.05499666e-01, -1.66961416e-01,
+    ...                                 6.18014041e-16,  2.86964662e-16, -3.46772026e-02],
+    ...                               [-1.05499666e-01, -1.49264622e+00, 3.28928073e-02,
+    ...                                -2.20398308e-16,  1.93277291e-16, 5.27078882e-02],
+    ...                               [-1.66961416e-01,  3.28928073e-02, -1.12554473e+00,
+    ...                                -2.82912389e-17,  2.55224784e-16, -3.04455743e-02],
+    ...                               [ 6.18014041e-16, -2.20398308e-16, -2.82912389e-17,
+    ...                                -1.13579985e+00, -1.94289029e-16, -2.36158697e-16],
+    ...                               [ 2.86964662e-16,  1.93277291e-16,  2.55224784e-16,
+    ...                                -2.77555756e-16, -1.13579985e+00,  2.06665432e-16],
+    ...                               [-3.46772026e-02,  5.27078882e-02, -3.04455743e-02,
+    ...                                -2.36158697e-16,  2.06665432e-16, -9.50966595e-01]]
 
-    >>> t_table, t_core = one_particle(t_me, core=[0], active=[1, 2])
+    >>> t_table, t_core = one_particle(t_matrix_elements, core=[0], active=[1, 2])
     >>> print(t_table)
     [[ 0.          0.         -1.49264622]
      [ 1.          1.         -1.49264622]
@@ -506,10 +506,12 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
     -9.45478625532135
     """
 
-    orbitals = t_me.shape[0]
+    orbitals = t_matrix_elements.shape[0]
 
-    if t_me.ndim != 2:
-        raise ValueError("'t_me' must be a 2D array; got t_me.ndim = {}".format(t_me.ndim))
+    if t_matrix_elements.ndim != 2:
+        raise ValueError(
+            "'t_me' must be a 2D array; got t_me.ndim = {}".format(t_matrix_elements.ndim)
+        )
 
     if core is None:
         t_core = 0
@@ -522,10 +524,7 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
             )
 
         # Compute contribution due to core orbitals
-        t_core = 0
-        for i in core:
-            t_core += t_me[i, i]
-        t_core = 2 * t_core
+        t_core = 2 * sum([t_matrix_elements[alpha, alpha] for alpha in core])
 
     if active is None:
         if core is None:
@@ -541,19 +540,22 @@ def one_particle(t_me, core=None, active=None, cutoff=1.0e-12):
         )
 
     # Indices of the matrix elements with absolute values >= cutoff
-    row, column = np.nonzero(np.abs(t_me) >= cutoff)
+    indices = np.nonzero(np.abs(t_matrix_elements) >= cutoff)
 
-    # Singling out the indices of active orbitals
-    rc_pairs = []
-    for i in range(len(row)):
-        if row[i] in active and column[i] in active:
-            rc_pairs.append([row[i], column[i]])
+    # Single out the indices of active orbitals
+    num_indices = len(indices[0])
+    pairs = [
+        [indices[0][i], indices[1][i]]
+        for i in range(num_indices)
+        if all(indices[j][i] in active for j in range(len(indices)))
+    ]
 
-    # Building the table of matrix elements
-    t_table = np.zeros((2 * len(rc_pairs), 3))
-    for i, pair in enumerate(rc_pairs):
+    # Building the table of indices and matrix elements
+    t_table = np.zeros((2 * len(pairs), 3))
+
+    for i, pair in enumerate(pairs):
         alpha, beta = pair
-        element = t_me[alpha, beta]
+        element = t_matrix_elements[alpha, beta]
 
         # spin-up term
         t_table[2 * i, 0] = 2 * active.index(alpha)
@@ -612,14 +614,14 @@ def two_particle(v_matrix_elements, core=None, active=None, cutoff=1.0e-12):
             not correlated in the many-body wave function
         active (list): indices of active orbitals, i.e., the orbitals used to
             build the correlated many-body wave function
-        cutoff (float): cutoff value for including matrix elements. The
+        cutoff (float): Cutoff value for including matrix elements. The
             matrix elements with absolute value less than ``cutoff`` are neglected.
         
     Returns:
-        tuple: The table with the matrix elements of the two-particle operator
-        and the contribution due to core orbitals. The table is returned as a 2D Numpy
+        tuple: Table with indices and matrix elements of the two-particle operator
+        and the contribution due to core orbitals. The returned table is a 2D Numpy
         array where each row contains five elements, the *spin*-orbital indices
-        :math:`\alpha, \beta, \gamma, \delta` and the matrix element value
+        :math:`\alpha, \beta, \gamma, \delta` and the matrix element
         :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`.
     """
 
