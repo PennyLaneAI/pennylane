@@ -828,36 +828,26 @@ class TestInv:
             pu.inv(arg)
 
 
-class TestHashing:
+class TestHashIterable:
     """Tests for the _hash_iterable function."""
 
     iterables = [
         [1, 1.4, -1],
-        [1, 1.4, [5, 6, "seven"]],
-        [np.ones(2), [np.zeros(3)]],
-        [np.ones(2), [1j * np.zeros(3)]],
-        [1, [2, [3, [4, [5]]]]],
-        [np.zeros(6), np.zeros(3)],
-        [np.zeros((3, 2)), np.zeros(3)],
-        [1, [np.ones(3), {"test_dict": np.ones(3), "other": 9}]],
+        [],
+        [1, np.ones((4, 4)), 19.67],
+        [1, np.ones((2, 4)), np.ones((2, 4)), 19.67],
+        [1, np.zeros((4, 4)), 19.67],
     ]
 
     @pytest.mark.parametrize("iterable", iterables)
-    def test_hash_iterable(self, iterable):
-        """Test that a valid hash is generated"""
+    def test_valid_hash(self, iterable):
+        """Test that a valid hash is generated and that it is the same when generated again"""
         h = pu._hash_iterable(iterable)
         h2 = pu._hash_iterable(iterable)
         assert isinstance(h, int)
         assert h == h2
 
     @pytest.mark.parametrize("iterable1, iterable2", itertools.combinations(iterables, r=2))
-    def test_hash_iterable_different(self, iterable1, iterable2):
+    def test_different(self, iterable1, iterable2):
         """Test that a different hash is given for each test iterable"""
-        assert pu._hash_iterable(iterable1) != pu._hash_iterable(iterable2)
-
-    @pytest.mark.xfail  # It is not clear how to fix this edge case
-    def test_hash_iterable_different_edge(self):
-        """Tests an edge case where the iterables are identical up to some trivial nesting"""
-        iterable1 = [np.zeros((3, 2)), np.zeros(3)]
-        iterable2 = [np.zeros((3, 2)), [np.zeros(3)]]
         assert pu._hash_iterable(iterable1) != pu._hash_iterable(iterable2)
