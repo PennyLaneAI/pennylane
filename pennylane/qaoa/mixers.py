@@ -127,8 +127,9 @@ def bit_flip_mixer(graph, b):
     where :math:`V(G)` is the set of vertices of some graph :math:`G`, :math:`d(v)` is the
     `degree <https://en.wikipedia.org/wiki/Degree_(graph_theory)>`__ of vertex :math:`v`, and
     :math:`N(v)` is the `neighbourhood <https://en.wikipedia.org/wiki/Neighbourhood_(graph_theory)>`__
-    of vertex :math:`v`. In addition, :math:`\mathbb{I}` is the identity operator, and :math:`X_v`, :math:`Z_v`
-    are the Pauli-Z and Pauli-X operators on vertex :math:`v`, respectively.
+    of vertex :math:`v`. In addition, :math:`X_v` and :math:`Z_v`
+    are the Pauli-Z and Pauli-X operators on vertex :math:`v`, respectively,
+    and :math:`\mathbb{I}` is the identity operator.
 
     This mixer was introduced in [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
