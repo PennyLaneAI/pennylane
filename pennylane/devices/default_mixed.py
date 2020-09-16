@@ -22,8 +22,10 @@ from string import ascii_letters as ABC
 
 import numpy as np
 import pennylane as qml
-from pennylane import QubitDevice
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation, Channel
+
+ABC_ARRAY = np.array(list(ABC))
 
 
 class DefaultMixed(QubitDevice):
@@ -179,13 +181,16 @@ class DefaultMixed(QubitDevice):
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
         # indices in einsum must be replaced with new ones
-        new_row_indices = ABC[2 * self.num_wires: 2 * self.num_wires + len(channel_wires)]
-        new_col_indices = ABC[2 * self.num_wires + len(channel_wires): 2 * (self.num_wires +
-                              len(channel_wires))]
+        new_row_indices = ABC[2 * self.num_wires : 2 * self.num_wires + len(channel_wires)]
+        new_col_indices = ABC[
+            2 * self.num_wires + len(channel_wires) : 2 * (self.num_wires + len(channel_wires))
+        ]
 
         # index for summation over Kraus operators
-        kraus_index = ABC[2 * (self.num_wires + len(channel_wires)): 2 * (self.num_wires + len(
-            channel_wires)) + 1]
+        kraus_index = ABC[
+            2 * (self.num_wires + len(channel_wires)) : 2 * (self.num_wires + len(channel_wires))
+            + 1
+        ]
 
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(
@@ -204,7 +209,7 @@ class DefaultMixed(QubitDevice):
                 state_indices=state_indices,
                 row_indices=row_indices,
                 new_row_indices=new_row_indices,
-                new_state_indices=new_state_indices
+                new_state_indices=new_state_indices,
             )
         )
 
@@ -233,9 +238,7 @@ class DefaultMixed(QubitDevice):
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
         einsum_indices = "{row_indices},{state_indices},{col_indices}->{state_indices}".format(
-            col_indices=col_indices,
-            state_indices=state_indices,
-            row_indices=row_indices
+            col_indices=col_indices, state_indices=state_indices, row_indices=row_indices
         )
 
         self._state = self._einsum(einsum_indices, eigvals, self._state, self._conj(eigvals))
@@ -275,5 +278,3 @@ class DefaultMixed(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._apply_operation(operation)
-            
-            
