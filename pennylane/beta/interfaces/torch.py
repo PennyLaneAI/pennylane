@@ -35,7 +35,8 @@ class _TorchInterface(torch.autograd.Function):
         tape = ctx.kwargs["tape"]
         device = ctx.kwargs["device"]
 
-        # # unwrap constant parameters
+        # unwrap constant parameters
+
         ctx.all_params = tape.get_parameters(trainable_only=False)
         ctx.all_params_unwrapped = args_to_numpy(ctx.all_params)
 
@@ -92,18 +93,21 @@ class TorchInterface(AnnotatedQueue):
 
     .. code-block:: python
 
-        class MyAutogradQuantumTape(AutogradInterface, QuantumTape):
+        class MyTorchQuantumTape(TorchInterface, QuantumTape):
 
-    Alternatively, the autograd interface can be dynamically applied to existing
+
+    Alternatively, the Torch interface can be dynamically applied to existing
+
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
-    Once created, the autograd interface can be used to perform quantum-classical
+    Once created, the Torch interface can be used to perform quantum-classical
+
     differentiable programming.
 
     **Example**
 
-    One a Torch quantum tape has been created, it can be differentiated using the gradient tape:
+    Once a Torch quantum tape has been created, it can be evaluated and differentiated:
 
     .. code-block:: python
 
