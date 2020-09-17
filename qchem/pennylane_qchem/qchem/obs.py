@@ -281,20 +281,12 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
 
     >>> t = np.array([[0., 0., 0.5], [1.0, 1.0, -0.5], [1.0, 0., 0.]])
     >>> v = np.array([[ 0., 0., 0., 0., 0.25], [ 0., 1., 1., 0., -0.25], [ 1., 0., 0., 1., -0.5]])
-    >>> matrix_elements = []
-    >>> matrix_elements.append(t)
-    >>> matrix_elements.append(v)
+    >>> matrix_elements = [t, v]
     >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev"))
     (0.15625) [I0]
     + (-0.15625) [Z0]
     + (0.34375) [Z0 Z1]
     + (-0.09375) [Z1]
-
-    >>> print(observable(matrix_elements, init_term=1/4, mapping="bravyi_kitaev", wires=['w0','w1']))
-    (0.15625) [Iw0]
-    + (-0.15625) [Zw0]
-    + (0.34375) [Zw0 Zw1]
-    + (-0.09375) [Zw1]
     """
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
