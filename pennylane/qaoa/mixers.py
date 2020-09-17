@@ -59,7 +59,7 @@ def xy_mixer(graph):
     to a Quantum Alternating Operator Ansatz* by Stuart Hadfield, Zhihui Wang, Bryan O'Gorman,
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
     Args:
-        graph (nx.Graph): A graph defining the pairs of wires on which each term of the Hamiltonian acts.
+         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
     Returns:
          Hamiltonian: Mixer Hamiltonian
     .. UsageDetails::
