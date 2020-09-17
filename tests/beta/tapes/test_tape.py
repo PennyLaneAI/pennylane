@@ -1346,6 +1346,7 @@ class TestJacobianIntegration:
 
         res = tape.jacobian(dev)
         assert res.shape == (6, 3)
+
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
