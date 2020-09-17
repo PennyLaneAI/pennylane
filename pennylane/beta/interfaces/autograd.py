@@ -71,7 +71,6 @@ class AutogradInterface(AnnotatedQueue):
     >>> jac_fn = qml.jacobian(cost_fn)
     >>> jac_fn(x, y, z, device=dev)
     [[ 0.39828408, -0.00045133]]
-
     """
 
     # pylint: disable=attribute-defined-outside-init
@@ -138,12 +137,11 @@ class AutogradInterface(AnnotatedQueue):
     @staticmethod
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
         """Returns the vector-Jacobian product operator for the quantum tape.
-
         The returned function takes the arguments as :meth:`~.execute`.
 
         Args:
-                        ans (array): the result of the tape execution
-                        self (.AutogradQuantumTape): the tape instance
+            ans (array): the result of the tape execution
+            self (.AutogradQuantumTape): the tape instance
             params (list[Any]): the quantum tape operation parameters
             device (.Device): a PennyLane device that can execute quantum
                 operations and return measurement statistics

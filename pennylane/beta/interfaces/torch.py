@@ -24,6 +24,7 @@ from pennylane.beta.queuing import AnnotatedQueue
 
 
 class _TorchInterface(torch.autograd.Function):
+
     @staticmethod
     def forward(ctx, input_kwargs, *input_):
         """Implements the forward pass QNode evaluation"""
@@ -36,7 +37,6 @@ class _TorchInterface(torch.autograd.Function):
         device = ctx.kwargs["device"]
 
         # unwrap constant parameters
-
         ctx.all_params = tape.get_parameters(trainable_only=False)
         ctx.all_params_unwrapped = args_to_numpy(ctx.all_params)
 
@@ -95,14 +95,11 @@ class TorchInterface(AnnotatedQueue):
 
         class MyTorchQuantumTape(TorchInterface, QuantumTape):
 
-
     Alternatively, the Torch interface can be dynamically applied to existing
-
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
     Once created, the Torch interface can be used to perform quantum-classical
-
     differentiable programming.
 
     **Example**

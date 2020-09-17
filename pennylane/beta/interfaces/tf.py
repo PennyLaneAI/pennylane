@@ -37,27 +37,22 @@ class TFInterface(AnnotatedQueue):
 
         class MyTFQuantumTape(TFInterface, QuantumTape):
 
-
     Alternatively, the TensorFlow interface can be dynamically applied to existing
-
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
     Once created, the TensorFlow interface can be used to perform quantum-classical
-
     differentiable programming.
 
     .. note::
 
         If using a device that supports native TensorFlow computation and backpropagation, such as
-
         :class:`~.DefaultQubitTF`, the TensorFlow interface **does not need to be applied**. It is
         only applied to tapes executed on non-TensorFlow compatible devices.
 
     **Example**
 
     Once a TensorFlow quantum tape has been created, it can be differentiated using the gradient tape:
-
 
     .. code-block:: python
 
