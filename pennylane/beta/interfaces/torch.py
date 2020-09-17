@@ -24,7 +24,6 @@ from pennylane.beta.queuing import AnnotatedQueue
 
 
 class _TorchInterface(torch.autograd.Function):
-
     @staticmethod
     def forward(ctx, input_kwargs, *input_):
         """Implements the forward pass QNode evaluation"""
