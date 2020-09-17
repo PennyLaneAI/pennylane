@@ -71,7 +71,7 @@ class _TorchInterface(torch.autograd.Function):
 
         jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
-        vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
+        vjp = grad_output.view(1, -1) @ jacobian
         grad_input_list = torch.unbind(vjp.flatten())
         grad_input = []
 
