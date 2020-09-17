@@ -143,6 +143,44 @@ class TestAutogradQuantumTape:
             assert args[1]["order"] == 2
             assert args[1]["h"] == 1e-8
 
+    def test_reusing_quantum_tape(self, tol):
+        """Test re-using a quantum tape by passing new parameters"""
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with AutogradInterface.apply(QuantumTape()) as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            expval(qml.PauliY(1))
+
+        assert tape.trainable_params == {0, 1}
+
+        def cost(a, b):
+            tape.set_parameters([a, b])
+            return tape.execute(dev)
+
+        jac_fn = qml.jacobian(cost)
+        jac = jac_fn(a, b)
+
+        a = np.array(0.54, requires_grad=True)
+        b = np.array(0.8, requires_grad=True)
+
+        res2 = cost(2 * a, b)
+        expected = [np.cos(2 * a), -np.cos(2 * a) * np.sin(b)]
+        assert np.allclose(res2, expected, atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
+        jac = jac_fn(a, b)
+        expected = [
+            [-2 * np.sin(2 * a), 0],
+            [2 * np.sin(2 * a) * np.sin(b), -np.cos(2 * a) * np.cos(b)],
+        ]
+        assert np.allclose(jac, expected, atol=tol, rtol=0)
+
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
@@ -180,6 +218,17 @@ class TestAutogradQuantumTape:
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
+
+        res = qml.jacobian(cost)(a, b, device=dev)
+        assert not res
+
+        def loss(a, b):
+            return np.sum(cost(a, b, device=dev))
+
+        with pytest.warns(UserWarning, match="Output seems independent"):
+            res = qml.grad(loss)(a, b)
+
+        assert not res
 
     def test_matrix_parameter(self, tol):
         """Test that the autograd interface works correctly
@@ -481,6 +530,17 @@ class TestAutogradPassthru:
         assert res.shape == (2,)
         spy.assert_not_called()
 
+        res = qml.jacobian(cost)(a, b, device=dev)
+        assert not res
+
+        def loss(a, b):
+            return np.sum(cost(a, b, device=dev))
+
+        with pytest.warns(UserWarning, match="Output seems independent"):
+            res = qml.grad(loss)(a, b)
+
+        assert not res
+
     def test_matrix_parameter(self, mocker, tol):
         """Test jacobian computation when the tape includes a matrix parameter"""
         spy = mocker.spy(QuantumTape, "jacobian")
@@ -618,7 +678,11 @@ class TestAutogradPassthru:
         def _asarray(args, dtype=np.float64):
             return np.hstack(args).flatten()
 
-        # we need to patch the asarray method on the device
+        # The current DefaultQubitAutograd device provides an _asarray method that does
+        # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
+        # flatten the array. Here, we patch the _asarray method on the device to achieve this
+        # behaviour; once the tape has moved from the beta folder, we should implement
+        # this change directly in the device.
         monkeypatch.setattr(dev, "_asarray", _asarray)
 
         def cost(x, y, device):

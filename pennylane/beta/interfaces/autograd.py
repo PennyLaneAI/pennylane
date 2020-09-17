@@ -82,6 +82,15 @@ class AutogradInterface(AnnotatedQueue):
         return "autograd"
 
     def _update_trainable_params(self):
+        """Set the trainable parameters.
+
+        Unlike in :class:`~.QuantumTape`, we also set the private attribute
+        ``self._all_parameter_values``.
+
+        Since :meth:`~.get_parameters` **always** calls ``_update_trainable_params``, we access this
+        private attribute there. This allows the :meth:`~.get_parameters` method to avoid performing
+        a redundant parameter extraction.
+        """
         params = []
 
         for p_idx in self._par_info:
@@ -96,13 +105,17 @@ class AutogradInterface(AnnotatedQueue):
                 trainable_params.add(idx)
 
         self.trainable_params = trainable_params
-        return params
+        self._all_parameter_values = params
 
     def get_parameters(self, trainable_only=True):  # pylint: disable=missing-function-docstring
-        params = self._update_trainable_params()
+        self._update_trainable_params()
 
         if trainable_only:
-            params = [p for idx, p in enumerate(params) if idx in self.trainable_params]
+            params = [
+                p
+                for idx, p in enumerate(self._all_parameter_values)
+                if idx in self.trainable_params
+            ]
 
         return autograd.builtins.list(params)
 
@@ -126,10 +139,18 @@ class AutogradInterface(AnnotatedQueue):
     def vjp(ans, self, params, device):  # pylint: disable=unused-argument
         """Returns the vector-Jacobian product operator for the quantum tape.
 
-        Takes the same arguments as :meth:`~.execute`, plus `ans`.
+        The returned function takes the arguments as :meth:`~.execute`.
+
+        Args:
+                        ans (array): the result of the tape execution
+                        self (.AutogradQuantumTape): the tape instance
+            params (list[Any]): the quantum tape operation parameters
+            device (.Device): a PennyLane device that can execute quantum
+                operations and return measurement statistics
 
         Returns:
-            function[array[float], array[float]]: vector-Jacobian product operator
+            function: this function accepts the backpropagation
+            gradient output vector, and computes the vector-Jacobian product
         """
 
         def gradient_product(g):
