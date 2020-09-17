@@ -103,7 +103,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> U.eigvals
+        >>> m.eigvals
         array([1, -1])
 
         Returns:
