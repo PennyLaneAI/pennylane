@@ -458,10 +458,11 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
     run over the active orbitals and the contribution due to core orbitals is computed as
-    :math:`T_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}  \langle \alpha \vert \hat{t}`.
+    :math:`T_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}
+    \langle \alpha \vert \hat{t} \vert \beta \rangle`.
 
     Args:
-        t_matrix_elements (array[float]): 2D Numpy array with the matrix elements
+        t_matrix_elements (array[float]): 2D NumPy array with the matrix elements
             :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle`
         core (list): indices of core orbitals, i.e., the orbitals that are
             not correlated in the many-body wave function
@@ -610,7 +611,7 @@ def two_particle(v_matrix_elements, core=None, active=None, cutoff=1.0e-12):
     \langle \alpha, \beta \vert \hat{v} \vert \alpha, \beta \rangle`.
 
     Args:
-        v_matrix_elements (array[float]): 4D Numpy array with the matrix elements
+        v_matrix_elements (array[float]): 4D NumPy array with the matrix elements
             :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
         core (list): indices of core orbitals, i.e., the orbitals that are
             not correlated in the many-body wave function
