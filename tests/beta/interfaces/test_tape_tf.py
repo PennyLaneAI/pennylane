@@ -210,6 +210,45 @@ class TestTFQuantumTape:
         ]
         assert np.allclose(jac2, expected, atol=tol, rtol=0)
 
+    def test_reusing_pre_constructed_quantum_tape(self, tol):
+        """Test re-using a quantum tape that was previously constructed
+        *outside of* a gradient tape, by passing new parameters"""
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.Variable(0.2, dtype=tf.float64)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with TFInterface.apply(QuantumTape()) as qtape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            expval(qml.PauliY(1))
+
+        with tf.GradientTape() as tape:
+            qtape.set_parameters([a, b], trainable_only=False)
+            qtape._update_trainable_params()
+            assert qtape.trainable_params == {0, 1}
+            res = qtape.execute(dev)
+
+        jac = tape.jacobian(res, [a, b])
+
+        a = tf.Variable(0.54, dtype=tf.float64)
+        b = tf.Variable(0.8, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res2 = qtape.execute(dev, params=[2 * a, b])
+
+        expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
+        assert np.allclose(res2, expected, atol=tol, rtol=0)
+
+        jac2 = tape.jacobian(res2, [a, b])
+        expected = [
+            [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
+            [0, -tf.cos(2 * a) * tf.cos(b)],
+        ]
+        assert np.allclose(jac2, expected, atol=tol, rtol=0)
+
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""
         a = tf.Variable(0.1, dtype=tf.float64)
