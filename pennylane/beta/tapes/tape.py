@@ -1288,7 +1288,7 @@ class QuantumTape(AnnotatedQueue):
                 options["y0"] = np.asarray(self.execute_device(params, device))
 
         jac = None
-        p_ind = list(np.ndindex(*params.shape))
+        p_ind = range(len(params))
 
         # loop through each parameter and compute the gradient
         for idx, (l, param_method) in enumerate(zip(p_ind, allowed_param_methods)):

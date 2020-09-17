@@ -1213,7 +1213,7 @@ class TestJacobian:
         assert len(analytic_spy.call_args_list) == 0
 
         # the numeric pd method is only called for parameter 0
-        assert numeric_spy.call_args[0] == (tape, (0,), dev)
+        assert numeric_spy.call_args[0] == (tape, 0, dev)
 
     def test_no_trainable_parameters(self, mocker):
         """Test that if the tape has no trainable parameters, no
