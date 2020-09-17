@@ -20,7 +20,6 @@ qubit-based quantum circuits.
 """
 
 import numpy as np
-import pennylane as qml
 from pennylane import QubitDevice
 from pennylane.operation import DiagonalOperation, Channel
 
@@ -148,6 +147,6 @@ class DefaultMixed(QubitDevice):
         return [operation.matrix]
 
     # Note: placeholder to be able to run tests
-    def apply(self, operations, rotations=None, **kwargs):
+    def apply(self, operations, **kwargs):
 
         lambda x: True
