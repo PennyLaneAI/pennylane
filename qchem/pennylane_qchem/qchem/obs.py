@@ -243,7 +243,7 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
 
     If an `active space <https://en.wikipedia.org/wiki/Complete_active_space>`_
     (see :func:`~.active_space`) is defined, the observable is expanded over the truncated
-    basis of active orbitals. The contribution of core orbitals, if any, can be passed to the
+    basis of active orbitals. The contribution of core orbitals can be passed to the
     function using the keyword argument ``init_term``.
 
     The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
