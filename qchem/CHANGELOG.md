@@ -2,6 +2,13 @@
 
 <h3>New features since last release</h3>
 
+* The functions ``one_particle`` and ``two_particle`` have been implemented
+  to extend PennyLane-QChem capabilities to construct observables of many-body
+  quantum systems. These functions can be used in conjunction with the
+  ``observable`` function to construct electronic structure hamiltonians
+  involving one- and two-particle operators.
+  [(#)]()
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
