@@ -447,7 +447,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
     orbitals :math:`\vert \alpha \rangle = \phi_\alpha(r)`. Since the operator :math:`t`
     acts only on the spatial coordinates, the spin quantum numbers are indicated explicitly
     with the up/down arrows. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}` are the
-    particle creation and annihilation operators, respectively, and 
+    particle creation and annihilation operators, respectively, and
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix elements of
     the operator :math:`\hat{t}`
 
@@ -469,7 +469,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
             build the correlated many-body wave function
         cutoff (float): Cutoff value for including matrix elements. The
             matrix elements with absolute value less than ``cutoff`` are neglected.
-        
+
     Returns:
         tuple: Table of indices and matrix elements of the one-particle operator
         and the contribution due to core orbitals. The returned table is a 2D Numpy
@@ -618,7 +618,7 @@ def two_particle(v_matrix_elements, core=None, active=None, cutoff=1.0e-12):
             build the correlated many-body wave function
         cutoff (float): Cutoff value for including matrix elements. The
             matrix elements with absolute value less than ``cutoff`` are neglected.
-        
+
     Returns:
         tuple: Table with indices and matrix elements of the two-particle operator
         and the contribution due to core orbitals. The returned table is a 2D Numpy

@@ -7,7 +7,7 @@
   quantum systems. These functions can be used in conjunction with the
   ``observable`` function to construct electronic structure hamiltonians
   involving one- and two-particle operators.
-  [(#)]()
+  [(#809)](https://github.com/PennyLaneAI/pennylane/pull/809)
 
 <h3>Improvements</h3>
 
