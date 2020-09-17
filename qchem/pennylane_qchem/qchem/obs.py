@@ -510,7 +510,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     if t_matrix_elements.ndim != 2:
         raise ValueError(
-            "'t_matrix_elements' must be a 2D array; got t_me.ndim = {}".format(
+            "'t_matrix_elements' must be a 2D array; got t_matrix_elements.ndim = {}".format(
                 t_matrix_elements.ndim
             )
         )
