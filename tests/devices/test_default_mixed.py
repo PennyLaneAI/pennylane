@@ -27,6 +27,17 @@ diags = [PauliZ, CZ, PauliX]
 gates = [PauliX, Hadamard, CNOT]
 channels = [AmplitudeDamping, DepolarizingChannel]
 
+
+def basis_state(index, nr_wires):
+    rho = np.zeros((2 ** nr_wires, 2 ** nr_wires))
+    rho[index, index] = 1
+    return rho
+
+
+def hadamard_state(nr_wires):
+    return np.ones((2 ** nr_wires, 2 ** nr_wires))/(2 ** nr_wires)
+
+
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestCreateBasisState:
     """Unit tests for the method `_create_basis_state()`"""
