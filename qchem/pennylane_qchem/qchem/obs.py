@@ -503,14 +503,16 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
      [ 2.          2.         -1.12554473]
      [ 3.          3.         -1.12554473]]
     >>> print(t_core)
-    -9.45478625532135
+    -9.45478626
     """
 
     orbitals = t_matrix_elements.shape[0]
 
     if t_matrix_elements.ndim != 2:
         raise ValueError(
-            "'t_me' must be a 2D array; got t_me.ndim = {}".format(t_matrix_elements.ndim)
+            "'t_matrix_elements' must be a 2D array; got t_me.ndim = {}".format(
+                t_matrix_elements.ndim
+            )
         )
 
     if core is None:
@@ -623,6 +625,26 @@ def two_particle(v_matrix_elements, core=None, active=None, cutoff=1.0e-12):
         array where each row contains five elements, the *spin*-orbital indices
         :math:`\alpha, \beta, \gamma, \delta` and the matrix element
         :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`.
+
+    **Example**
+
+    >>> v_matrix_elements = np.array([[[[ 6.82389533e-01, -1.45716772e-16],
+    ...                                 [-2.77555756e-17,  1.79000576e-01]],
+    ...                                [[-2.77555756e-17,  1.79000576e-16],
+    ...                                 [ 6.70732778e-01, 0.00000000e+00]]],
+    ...                               [[[-1.45716772e-16,  6.70732778e-16],
+    ...                                 [ 1.79000576e-01, -8.32667268e-17]],
+    ...                                [[ 1.79000576e-16, -8.32667268e-17],
+    ...                                 [ 0.00000000e+00,  7.05105632e-01]]]])
+
+    >>> v_table, v_core = one_particle(v_matrix_elements, core=[0], active=[1])
+    >>> print(v_table)
+    [[0.         0.         0.         0.         0.70510563]
+     [0.         1.         1.         0.         0.70510563]
+     [1.         0.         0.         1.         0.70510563]
+     [1.         1.         1.         1.         0.70510563]]
+    >>> print(v_core)
+    1.364779066
     """
 
     orbitals = v_matrix_elements.shape[0]
