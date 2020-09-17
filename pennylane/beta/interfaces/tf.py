@@ -106,12 +106,12 @@ class TFInterface(AnnotatedQueue):
             # Determine which input tensors/Variables are being recorded for backpropagation.
             # The function should_record_backprop, documented here:
             # https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/eager/tape.py#L167
-
             # accepts lists of *Tensors* (not Variables), returning True if all are being watched by one or more
-
             # existing gradient tapes, False if not.
 
             if isinstance(p, (tf.Variable, tf.Tensor)) and should_record_backprop(
+                # we need to convert any Variable objects to Tensors here, otherwise
+                # should_record_backprop will raise an error
                 [tf.convert_to_tensor(p)]
             ):
                 trainable_params.add(idx)
@@ -153,7 +153,7 @@ class TFInterface(AnnotatedQueue):
             jacobian = tf.constant(jacobian, dtype=self.dtype)
 
             # Reshape gradient output array as a 2D row-vector.
-            grad_output_row = tf.transpose(tf.reshape(grad_output, [-1, 1]))
+            grad_output_row = tf.reshape(grad_output, [1, -1])
 
             # Calculate the vector-Jacobian matrix product, and unstack the output.
             grad_input = tf.matmul(grad_output_row, jacobian)
