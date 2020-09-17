@@ -70,7 +70,8 @@ class AutogradInterface(AnnotatedQueue):
     [0.03991951]
     >>> jac_fn = qml.jacobian(cost_fn)
     >>> jac_fn(x, y, z, device=dev)
-    [[ 0.39828408 -0.00045133]]
+    [[ 0.39828408, -0.00045133]]
+
     """
 
     # pylint: disable=attribute-defined-outside-init
