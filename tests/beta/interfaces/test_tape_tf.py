@@ -25,7 +25,7 @@ from pennylane.beta.interfaces.tf import TFInterface
 
 
 class TestTFQuantumTape:
-    """Test the autograd interface applied to a tape"""
+    """Test the TensorFlow interface applied to a tape"""
 
     def test_interface_construction(self):
         """Test that the interface is correctly applied"""
@@ -49,11 +49,11 @@ class TestTFQuantumTape:
         assert tape.__bare__ == QuantumTape
         assert tape.dtype is tf.float64
 
-        TFInterface.apply(QuantumTape(), dtype=tf.float32)
+        TFInterface.apply(tape, dtype=tf.float32)
         assert tape.interface == "tf"
         assert isinstance(tape, TFInterface)
         assert tape.__bare__ == QuantumTape
-        assert tape.dtype is tf.float64
+        assert tape.dtype is tf.float32
 
     def test_get_parameters(self):
         """Test that the get parameters function correctly sets and returns the
@@ -122,7 +122,8 @@ class TestTFQuantumTape:
         spy.assert_called()
 
     def test_jacobian_dtype(self, tol):
-        """Test calculating the jacobian with a different datatype"""
+        """Test calculating the jacobian with a different datatype. Here, we
+        specify tf.float32, as opposed to the default value of tf.float64."""
         a = tf.Variable(0.1, dtype=tf.float32)
         b = tf.Variable(0.2, dtype=tf.float32)
 
@@ -200,12 +201,52 @@ class TestTFQuantumTape:
         expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac = tape.jacobian(res2, [a, b])
+        jac2 = tape.jacobian(res2, [a, b])
         expected = [
             [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
             [0, -tf.cos(2 * a) * tf.cos(b)],
         ]
-        assert np.allclose(jac, expected, atol=tol, rtol=0)
+        assert np.allclose(jac2, expected, atol=tol, rtol=0)
+
+    def test_reusing_pre_constructed_quantum_tape(self, tol):
+        """Test re-using a quantum tape that was previously constructed
+        *outside of* a gradient tape, by passing new parameters"""
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.Variable(0.2, dtype=tf.float64)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with TFInterface.apply(QuantumTape()) as qtape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0))
+            expval(qml.PauliY(1))
+
+        with tf.GradientTape() as tape:
+            qtape.set_parameters([a, b], trainable_only=False)
+            qtape._update_trainable_params()
+            assert qtape.trainable_params == {0, 1}
+            res = qtape.execute(dev)
+
+        jac = tape.jacobian(res, [a, b])
+
+        a = tf.Variable(0.54, dtype=tf.float64)
+        b = tf.Variable(0.8, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res2 = qtape.execute(dev, params=[2 * a, b])
+
+        expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
+        assert np.allclose(res2, expected, atol=tol, rtol=0)
+
+        jac2 = tape.jacobian(res2, [a, b])
+        expected = [
+            [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
+            [0, -tf.cos(2 * a) * tf.cos(b)],
+        ]
+        assert np.allclose(jac2, expected, atol=tol, rtol=0)
+>>>>>>> master
 
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""
@@ -232,7 +273,7 @@ class TestTFQuantumTape:
         assert isinstance(res[2], tf.Tensor)
 
     def test_no_trainable_parameters(self, tol):
-        """Test evaluation and Jacobian if there are no trainable parameters"""
+        """Test evaluation if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as tape:
@@ -331,7 +372,7 @@ class TestTFQuantumTape:
 
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with multiple prob outputs"""
 
         dev = qml.device("default.qubit", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -548,7 +589,7 @@ class TestTFPassthru:
         spy.assert_not_called()
 
     def test_no_trainable_parameters(self, mocker, tol):
-        """Test evaluation and Jacobian if there are no trainable parameters"""
+        """Test evaluation if there are no trainable parameters"""
         spy = mocker.spy(QuantumTape, "jacobian")
         dev = qml.device("default.qubit.tf", wires=2)
 
@@ -646,7 +687,7 @@ class TestTFPassthru:
 
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with multiple prob outputs"""
 
         dev = qml.device("default.qubit.tf", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -697,7 +738,11 @@ class TestTFPassthru:
             res = tf.concat(res, axis=0)
             return tf.cast(res, dtype=dtype)
 
-        # we need to patch the asarray method on the device
+        # The current DefaultQubitTF device provides an _asarray method that does
+        # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
+        # flatten the array. Here, we patch the _asarray method on the device to achieve this
+        # behaviour; once the tape has moved from the beta folder, we should implement
+        # this change directly in the device.
         monkeypatch.setattr(dev, "_asarray", _asarray)
 
         with tf.GradientTape() as tape:

@@ -15,7 +15,7 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 PyTorch.
 """
-# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member
+# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self
 import numpy as np
 import torch
 
@@ -35,7 +35,7 @@ class _TorchInterface(torch.autograd.Function):
         tape = ctx.kwargs["tape"]
         device = ctx.kwargs["device"]
 
-        # # unwrap constant parameters
+        # unwrap constant parameters
         ctx.all_params = tape.get_parameters(trainable_only=False)
         ctx.all_params_unwrapped = args_to_numpy(ctx.all_params)
 
@@ -70,7 +70,7 @@ class _TorchInterface(torch.autograd.Function):
 
         jacobian = torch.as_tensor(jacobian, dtype=grad_output.dtype)
 
-        vjp = torch.transpose(grad_output.view(-1, 1), 0, 1) @ jacobian
+        vjp = grad_output.view(1, -1) @ jacobian
         grad_input_list = torch.unbind(vjp.flatten())
         grad_input = []
 
@@ -92,18 +92,18 @@ class TorchInterface(AnnotatedQueue):
 
     .. code-block:: python
 
-        class MyAutogradQuantumTape(AutogradInterface, QuantumTape):
+        class MyTorchQuantumTape(TorchInterface, QuantumTape):
 
-    Alternatively, the autograd interface can be dynamically applied to existing
+    Alternatively, the Torch interface can be dynamically applied to existing
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
-    Once created, the autograd interface can be used to perform quantum-classical
+    Once created, the Torch interface can be used to perform quantum-classical
     differentiable programming.
 
     **Example**
 
-    One a Torch quantum tape has been created, it can be differentiated using the gradient tape:
+    Once a Torch quantum tape has been created, it can be evaluated and differentiated:
 
     .. code-block:: python
 
@@ -148,8 +148,7 @@ class TorchInterface(AnnotatedQueue):
         return "torch"
 
     def _update_trainable_params(self):
-        params = [o.data for o in self.operations + self.observables]
-        params = [item for sublist in params for item in sublist]
+        params = self.get_parameters(trainable_only=False)
 
         trainable_params = set()
 

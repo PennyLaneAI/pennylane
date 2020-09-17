@@ -7,53 +7,59 @@
   of pure states into mixed states due to noise and decoherence. It
   allows the user to simulate noise, benchmark algorithms running on
   real hardware, and to test error-correction techniques. Moreover,
-  differentiable quantum channels could be a unique feature for 
+  differentiable quantum channels could be a unique feature for
   PennyLane not present in other libraries.
 
   [(#760)](https://github.com/PennyLaneAI/pennylane/pull/760)
   [(#766)](https://github.com/PennyLaneAI/pennylane/pull/766)
   [(#778)](https://github.com/PennyLaneAI/pennylane/pull/778)
 
+* The controlled-Y operation is now available via `qml.CY`. For devices that do
+  not natively support the controlled-Y operation, it will be decomposed
+  into `qml.RY`, `qml.CNOT`, and `qml.S` operations.
+  [(#806)](https://github.com/PennyLaneAI/pennylane/pull/806)
+
+
 <h3>Improvements</h3>
 
-* Sped up the application of certain gates in ``default.qubit`` by using array/tensor
-  manipulation tricks. The following gates are affected: ``PauliX``, ``PauliY``, ``PauliZ``,
-  ``Hadamard``, ``SWAP``, ``S``, ``T``, ``CNOT``, ``CZ``.
+* Sped up the application of certain gates in `default.qubit` by using array/tensor
+  manipulation tricks. The following gates are affected: `PauliX`, `PauliY`, `PauliZ`,
+  `Hadamard`, `SWAP`, `S`, `T`, `CNOT`, `CZ`.
   [(#772)](https://github.com/PennyLaneAI/pennylane/pull/772)
 
-* Adds arithmetic operations (addition, tensor product, 
-  subtraction, and scalar multiplication) between ``Hamiltonian``, 
-  ``Tensor``, and ``Observable`` objects, and inline arithmetic 
+* Adds arithmetic operations (addition, tensor product,
+  subtraction, and scalar multiplication) between `Hamiltonian`,
+  `Tensor`, and `Observable` objects, and inline arithmetic
   operations between Hamiltonians and other observables.
   [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
-  
+
   Hamiltonians can now easily be defined as sums of observables:
-  
+
   ```pycon3
   >>> H = 3 * qml.PauliZ(0) - (qml.PauliX(0) @ qml.PauliX(1)) + qml.Hamiltonian([4], [qml.PauliZ(0)])
   >>> print(H)
   (7.0) [Z0] + (-1.0) [X0 X1]
   ```
 
-* Adds ``compare()`` method to `Observable` and `Hamiltonian` classes, which allows
+* Adds `compare()` method to `Observable` and `Hamiltonian` classes, which allows
   for comparison between observable quantities.
   [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
-  
+
   ```pycon3
   >>> H = qml.Hamiltonian([1], [qml.PauliZ(0)])
   >>> obs = qml.PauliZ(0) @ qml.Identity(1)
   >>> print(H.compare(obs))
   True
   ```
-  
+
   ```pycon3
   >>> H = qml.Hamiltonian([2], [qml.PauliZ(0)])
   >>> obs = qml.PauliZ(1) @ qml.Identity(0)
   >>> print(H.compare(obs))
   False
   ```
-  
-* Adds ``simplify()`` method to the ``Hamiltonian`` class.
+
+* Adds `simplify()` method to the `Hamiltonian` class.
   [(#765)](https://github.com/PennyLaneAI/pennylane/pull/765)
 
   ```pycon3
@@ -62,7 +68,7 @@
   >>> print(H)
   (3.0) [Z0]
   ```
-  
+
 * Added a new bit-flip mixer to the `qml.qaoa` module.
   [(#774)](https://github.com/PennyLaneAI/pennylane/pull/774)
 
@@ -70,8 +76,8 @@
 
 <h3>Bug fixes</h3>
 
-* Changed to use lists for storing variable values inside ``BaseQNode``
-  allowing complex matrices to be passed to ``QubitUnitary``.
+* Changed to use lists for storing variable values inside `BaseQNode`
+  allowing complex matrices to be passed to `QubitUnitary`.
   [(#773)](https://github.com/PennyLaneAI/pennylane/pull/773)
 
 <h3>Documentation</h3>
@@ -220,7 +226,7 @@ Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Anta
   can be strings or numbers.
   [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
-  Custom wire labels are defined by passing a list to the ``wires`` argument when creating the device:
+  Custom wire labels are defined by passing a list to the `wires` argument when creating the device:
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=['anc1', 'anc2', 0, 1, 3])
@@ -237,7 +243,7 @@ Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Anta
   ```
 
   The existing behaviour, in which the number of wires is specified on device initialization,
-  continues to work as usual. This gives a default behaviour where wires are labelled 
+  continues to work as usual. This gives a default behaviour where wires are labelled
   by consecutive integers.
 
   ```pycon
@@ -250,7 +256,7 @@ Aroosa Ijaz, Juan Miguel Arrazola, Thomas Bromley, Jack Ceroni, Josh Izaac, Anta
   [(#724)](https://github.com/PennyLaneAI/pennylane/pull/724)
   [(#733)](https://github.com/PennyLaneAI/pennylane/pull/733)
 
-  The test can be invoked against a particular device by calling the ``pl-device-test``
+  The test can be invoked against a particular device by calling the `pl-device-test`
   command line program:
 
   ```console
@@ -433,7 +439,7 @@ Isacsson, Josh Izaac, Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucc
 
 <h3>Improvements</h3>
 
-* Improves the wire management by making the ``Operator.wires`` attribute a ``wires`` object.
+* Improves the wire management by making the `Operator.wires` attribute a `wires` object.
   [(#666)](https://github.com/XanaduAI/pennylane/pull/666)
 
 * A significant improvement with respect to how QNodes and interfaces mark quantum function
@@ -691,14 +697,14 @@ Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
   <img src="https://pennylane.readthedocs.io/en/latest/_images/iqp.png"
   width=50%></img>
 
-* Added the ``SimplifiedTwoDesign`` template, which implements the circuit
+* Added the `SimplifiedTwoDesign` template, which implements the circuit
   design of [Cerezo et al. (2020)](<https://arxiv.org/abs/2001.00550>).
   [(#556)](https://github.com/XanaduAI/pennylane/pull/556)
 
   <img src="https://pennylane.readthedocs.io/en/latest/_images/simplified_two_design.png"
   width=50%></img>
 
-* Added the ``BasicEntanglerLayers`` template, which is a simple layer architecture
+* Added the `BasicEntanglerLayers` template, which is a simple layer architecture
   of rotations and CNOT nearest-neighbour entanglers.
   [(#555)](https://github.com/XanaduAI/pennylane/pull/555)
 
@@ -793,7 +799,7 @@ Nathan Killoran, Maria Schuld, Antal Száva, Nicola Vitucci.
   - `"backprop"`: Use classical backpropagation. Default on simulator
     devices that are classically end-to-end differentiable.
     The returned QNode can only be used with the same machine learning
-    framework (e.g., ``default.tensor.tf`` simulator with the ``tensorflow`` interface).
+    framework (e.g., `default.tensor.tf` simulator with the `tensorflow` interface).
 
   - `"device"`: Queries the device directly for the gradient.
 

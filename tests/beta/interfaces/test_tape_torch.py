@@ -25,7 +25,7 @@ from pennylane.beta.interfaces.torch import TorchInterface
 
 
 class TestTorchQuantumTape:
-    """Test the autograd interface applied to a tape"""
+    """Test the Torch interface applied to a tape"""
 
     def test_interface_construction(self):
         """Test that the interface is correctly applied"""
@@ -47,10 +47,11 @@ class TestTorchQuantumTape:
         assert isinstance(tape, TorchInterface)
         assert tape.__bare__ == QuantumTape
 
-        TorchInterface.apply(QuantumTape())
+        TorchInterface.apply(tape, dtype=torch.float32)
         assert tape.interface == "torch"
         assert isinstance(tape, TorchInterface)
         assert tape.__bare__ == QuantumTape
+        assert tape.dtype is torch.float32
 
     def test_get_parameters(self):
         """Test that the get parameters function correctly sets and returns the
@@ -352,7 +353,7 @@ class TestTorchQuantumTape:
 
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with multiple prob outputs"""
 
         dev = qml.device("default.qubit", wires=2)
         x_val = 0.543
