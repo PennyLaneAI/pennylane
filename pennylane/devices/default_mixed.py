@@ -46,38 +46,9 @@ class DefaultMixed(QubitDevice):
     version = "0.12.0"
     author = "Xanadu Inc."
 
-    # operations = {
-    #     "BasisState",
-    #     "QubitStateVector",
-    #     "QubitUnitary",
-    #     "DiagonalQubitUnitary",
-    #     "PauliX",
-    #     "PauliY",
-    #     "PauliZ",
-    #     "MultiRZ",
-    #     "Hadamard",
-    #     "S",
-    #     "T",
-    #     "CNOT",
-    #     "SWAP",
-    #     "CSWAP",
-    #     "Toffoli",
-    #     "CZ",
-    #     "PhaseShift",
-    #     "RX",
-    #     "RY",
-    #     "RZ",
-    #     "Rot",
-    #     "CRX",
-    #     "CRY",
-    #     "CRZ",
-    #     "CRot",
-    #     "AmplitudeDamping",
-    #     "GeneralizedAmplitudeDamping",
-    #     "PhaseDamping",
-    #     "DepolarizingChannel",
-    #     "QubitChannel",
-    # }
+    # placeholder
+    operations = {
+    }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         # call QubitDevice init
