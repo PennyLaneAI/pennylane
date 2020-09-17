@@ -1096,7 +1096,7 @@ class QuantumTape(AnnotatedQueue):
             if y0 is None:
                 y0 = np.asarray(self.execute_device(params, device))
 
-            y = np.array(self.execute_device(params + shift, device))
+            y = np.asarray(self.execute_device(params + shift, device))
             return (y - y0) / h
 
         if order == 2:
