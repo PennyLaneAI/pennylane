@@ -47,8 +47,7 @@ class DefaultMixed(QubitDevice):
     author = "Xanadu Inc."
 
     # placeholder
-    operations = {
-    }
+    operations = {}
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         # call QubitDevice init
