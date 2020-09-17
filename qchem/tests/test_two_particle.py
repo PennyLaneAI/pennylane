@@ -144,3 +144,26 @@ def test_table_two_particle(name, core, active, v_table_exp, v_core_exp, tol):
 
     assert np.allclose(v_table, v_table_exp, **tol)
     assert np.allclose(v_core, v_core_exp, **tol)
+
+
+v_me_1D = np.array([1, 2, 3, 4])
+v_me_4D = np.full((2, 2, 2, 2), 0.5)
+
+
+@pytest.mark.parametrize(
+    ("v_me", "core", "active", "msg_match"),
+    [
+        (v_me_1D, [0], None, "'v_matrix_elements' must be a 4D array"),
+        (v_me_4D, [-1, 0, 1, 2], None, "Indices of core orbitals must be between 0 and"),
+        (v_me_4D, [0, 1, 2, 3], None, "Indices of core orbitals must be between 0 and"),
+        (v_me_4D, None, [-1, 0], "Indices of active orbitals must be between 0 and"),
+        (v_me_4D, None, [2, 6], "Indices of active orbitals must be between 0 and"),
+    ],
+)
+def test_exceptions_two_particle(v_me, core, active, msg_match):
+    """Test that the function `'two_particle'` throws an exception
+    if the dimension of the matrix elements array is not a 4D array or
+    if the indices of core and/or active orbitals are out of range."""
+
+    with pytest.raises(ValueError, match=msg_match):
+        qchem.two_particle(v_me, core=core, active=active)
