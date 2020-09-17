@@ -334,7 +334,7 @@ class TestTFQuantumTape:
 
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with multiple prob outputs"""
 
         dev = qml.device("default.qubit", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
