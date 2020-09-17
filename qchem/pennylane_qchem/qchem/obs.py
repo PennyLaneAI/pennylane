@@ -262,7 +262,7 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
             will have shape ``(matrix_elements[j].shape[0], 5)`` with each row containing
             the indices :math:`\alpha`, :math:`\beta`, :math:`\gamma`, :math:`\delta` and
             the matrix element
-            :math:`1/2 \langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
+            :math:`\langle \alpha, \beta \vert \hat{v}^{(j)}\vert \gamma, \delta \rangle`.
         init_term (float): the contribution of core orbitals, if any, or other quantity
             required to initialize the many-body observable.
         mapping (str): specifies the fermion-to-qubit mapping. Input values can
