@@ -46,38 +46,38 @@ class DefaultMixed(QubitDevice):
     version = "0.12.0"
     author = "Xanadu Inc."
 
-    operations = {
-        "BasisState",
-        "QubitStateVector",
-        "QubitUnitary",
-        "DiagonalQubitUnitary",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "MultiRZ",
-        "Hadamard",
-        "S",
-        "T",
-        "CNOT",
-        "SWAP",
-        "CSWAP",
-        "Toffoli",
-        "CZ",
-        "PhaseShift",
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "AmplitudeDamping",
-        "GeneralizedAmplitudeDamping",
-        "PhaseDamping",
-        "DepolarizingChannel",
-        "QubitChannel",
-    }
+    # operations = {
+    #     "BasisState",
+    #     "QubitStateVector",
+    #     "QubitUnitary",
+    #     "DiagonalQubitUnitary",
+    #     "PauliX",
+    #     "PauliY",
+    #     "PauliZ",
+    #     "MultiRZ",
+    #     "Hadamard",
+    #     "S",
+    #     "T",
+    #     "CNOT",
+    #     "SWAP",
+    #     "CSWAP",
+    #     "Toffoli",
+    #     "CZ",
+    #     "PhaseShift",
+    #     "RX",
+    #     "RY",
+    #     "RZ",
+    #     "Rot",
+    #     "CRX",
+    #     "CRY",
+    #     "CRZ",
+    #     "CRot",
+    #     "AmplitudeDamping",
+    #     "GeneralizedAmplitudeDamping",
+    #     "PhaseDamping",
+    #     "DepolarizingChannel",
+    #     "QubitChannel",
+    # }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         # call QubitDevice init
@@ -147,6 +147,7 @@ class DefaultMixed(QubitDevice):
         return [operation.matrix]
 
     # Note: placeholder to be able to run tests
+    # pylint:disable=pointless-statement
     def apply(self, operations, **kwargs):
 
         lambda x: True
