@@ -21,8 +21,8 @@ import warnings
 import numpy as np
 
 from pennylane import Device
-from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.queuing import MeasurementProcess
+from pennylane.beta.tapes import QuantumTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
