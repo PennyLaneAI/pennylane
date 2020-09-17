@@ -219,14 +219,14 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
     This function can be used to build second-quantized operators in the basis
     of single-particle states (e.g., HF states) and to transform them into
     PennyLane observables. In general, the many-body observable :math:`\hat{O}` can combine
-    one-particle and two-particle operators as it is the case for electronic Hamiltonians.
+    one-particle and two-particle operators, as in the case for electronic Hamiltonians:
 
     .. math::
 
-        \hat{O} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} + \hat{t}^{(2)}
+        \hat{O} = \sum_{\alpha, \beta} \langle \alpha \vert \hat{t}^{(1)} +
         \cdots + \hat{t}^{(n)} \vert \beta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta
         + \frac{1}{2} \sum_{\alpha, \beta, \gamma, \delta}
-        \langle \alpha, \beta \vert \hat{v}^{(1)} + \hat{v}^{(2)} \cdots + \hat{v}^{(n)}
+        \langle \alpha, \beta \vert \hat{v}^{(1)} + \cdots + \hat{v}^{(n)}
         \vert \gamma, \delta \rangle ~ \hat{c}_\alpha^\dagger \hat{c}_\beta^\dagger
         \hat{c}_\gamma \hat{c}_\delta
 
@@ -235,8 +235,8 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
     are the particle creation and annihilation operators, respectively.
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix element of
     the single-particle operator :math:`\hat{t}` entering the observable. For example,
-    in electronic structure calculations this is the case for the kinetic energy operator,
-    the nuclei Coulomb potential or any other external fields included in the model Hamiltonian.
+    in electronic structure calculations, this is the case for: the kinetic energy operator,
+    the nuclei Coulomb potential, or any other external fields included in the model Hamiltonian.
     On the other hand, :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
     denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
     Coulomb interaction between the electrons.
@@ -246,7 +246,7 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
     basis of active orbitals. The contribution of core orbitals, if any, can be passed to the
     function using the keyword argument ``init_term``.
 
-    The function utilizes tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
+    The function uses tools of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_
     to build the second-quantized operator and map it to basis of Pauli matrices via the
     Jordan-Wigner or Bravyi-Kitaev transformation. Finally, the qubit operator is
     converted to a a PennyLane observable by the function :func:`~.convert_observable`.
