@@ -19,7 +19,6 @@ import numpy as np
 import pennylane as qml
 from pennylane import qaoa
 from networkx import Graph
-from pennylane.templates import ApproxTimeEvolution
 from pennylane.wires import Wires
 
 
@@ -30,6 +29,15 @@ graph.add_nodes_from([0, 1, 2])
 graph.add_edges_from([(0, 1), (1, 2)])
 
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
+
+
+def decompose_hamiltonian(hamiltonian):
+
+    coeffs = hamiltonian.coeffs
+    ops = [i.name for i in hamiltonian.ops]
+    wires = [i.wires for i in hamiltonian.ops]
+
+    return [coeffs, ops, wires]
 
 
 class TestMixerHamiltonians:
@@ -135,6 +143,73 @@ class TestMixerHamiltonians:
         assert mixer_ops == target_ops
         assert mixer_wires == target_wires
 
+    def test_bit_flip_mixer_errors(self):
+        """Tests that the bit-flip mixer throws the correct errors"""
+
+        graph = [(0, 1), (1, 2)]
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph object"):
+            qaoa.bit_flip_mixer(graph, 0)
+
+        n = 2
+        with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
+            qaoa.bit_flip_mixer(Graph(graph), n)
+
+    @pytest.mark.parametrize(("graph", "n", "target_hamiltonian"), [
+        (
+                Graph([(0, 1)]), 1,
+                qml.Hamiltonian(
+                    [0.5, -0.5, 0.5, -0.5],
+                    [
+                        qml.PauliX(0),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(0)
+                    ]
+                )
+        ),
+        (
+                Graph([(0, 1), (1, 2)]), 0,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
+                    [
+                        qml.PauliX(0),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(2),
+                        qml.PauliX(1) @ qml.PauliZ(0),
+                        qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
+                        qml.PauliX(2),
+                        qml.PauliX(2) @ qml.PauliZ(1)
+                    ]
+                )
+        ),
+        (
+                Graph([("b", 1), (1, 0.3), (0.3, "b")]), 1,
+                qml.Hamiltonian(
+                    [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
+                    [
+                        qml.PauliX("b"),
+                        qml.PauliX("b") @ qml.PauliZ(0.3),
+                        qml.PauliX("b") @ qml.PauliZ(1),
+                        qml.PauliX("b") @ qml.PauliZ(1) @ qml.PauliZ(0.3),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(0.3),
+                        qml.PauliX(1) @ qml.PauliZ("b"),
+                        qml.PauliX(1) @ qml.PauliZ("b") @ qml.PauliZ(0.3),
+                        qml.PauliX(0.3),
+                        qml.PauliX(0.3) @ qml.PauliZ("b"),
+                        qml.PauliX(0.3) @ qml.PauliZ(1),
+                        qml.PauliX(0.3) @ qml.PauliZ(1) @ qml.PauliZ("b")
+                    ]
+                )
+        )
+    ])
+    def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
+        """Tests that the output of the bit-flip mixer is correct"""
+
+        mixer_hamiltonian = qaoa.bit_flip_mixer(graph, n)
+        assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(target_hamiltonian)
+
 
 GRAPHS = [
     Graph([(0, 1), (1, 2)]),
@@ -142,28 +217,24 @@ GRAPHS = [
     graph,
 ]
 
-COST_COEFFS = [[-0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], [-0.5, 0.5, -0.5, 0.5]]
+COST_COEFFS = [[0.5, 0.5, -1.0], [0.5, 0.5, 0.5, -1.5], [0.5, 0.5, -1.0]]
 
 COST_TERMS = [
     [
-        qml.Identity(0) @ qml.Identity(1),
         qml.PauliZ(0) @ qml.PauliZ(1),
-        qml.Identity(1) @ qml.Identity(2),
         qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.Identity(0)
     ],
     [
-        qml.Identity(0) @ qml.Identity(1),
         qml.PauliZ(0) @ qml.PauliZ(1),
-        qml.Identity(0) @ qml.Identity(2),
         qml.PauliZ(0) @ qml.PauliZ(2),
-        qml.Identity(1) @ qml.Identity(2),
         qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.Identity(0)
     ],
     [
-        qml.Identity(0) @ qml.Identity(1),
         qml.PauliZ(0) @ qml.PauliZ(1),
-        qml.Identity(1) @ qml.Identity(2),
         qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.Identity(0)
     ],
 ]
 
@@ -181,6 +252,58 @@ MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in 
 
 MAXCUT = zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
 
+GRAPHS.append(graph)
+GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
+REWARDS = [['00'], ['00', '11'], ['00', '01', '10'], ['00', '11', '01', '10'], ['00', '01', '10']]
+
+HAMILTONIANS = [
+    qml.Hamiltonian(
+        [-0.25, -0.25, -0.25, -0.25, -0.25, -0.25],
+        [
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0), qml.PauliZ(1),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1), qml.PauliZ(2)
+        ]
+    ),
+    qml.Hamiltonian(
+        [-0.5, -0.5, -0.5],
+        [
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(2)
+        ]
+    ),
+    qml.Hamiltonian(
+        [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
+        [
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliZ(0), qml.PauliZ(1),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1), qml.PauliZ(2)
+        ]
+    ),
+    qml.Hamiltonian(
+        [1, 1, 1],
+        [
+            qml.Identity(0),
+            qml.Identity(1),
+            qml.Identity(2)
+        ]
+    ),
+    qml.Hamiltonian(
+        [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
+        [
+            qml.PauliZ("b") @ qml.PauliZ(1),
+            qml.PauliZ("b"), qml.PauliZ(1),
+            qml.PauliZ(1) @ qml.PauliZ(2.3),
+            qml.PauliZ(1), qml.PauliZ(2.3)
+        ]
+    )
+]
+
+EDGE_DRIVER = zip(GRAPHS, REWARDS, HAMILTONIANS)
+
 def decompose_hamiltonian(hamiltonian):
 
     coeffs = hamiltonian.coeffs
@@ -189,16 +312,55 @@ def decompose_hamiltonian(hamiltonian):
 
     return [coeffs, ops, wires]
 
-
 class TestCostHamiltonians:
     """Tests that the cost Hamiltonians are being generated correctly"""
+
+    """Tests the cost Hamiltonian components"""
+
+    def test_bit_driver_error(self):
+        """Tests that the bit driver Hamiltonian throws the correct error"""
+
+        with pytest.raises(ValueError, match=r"'b' must be either 0 or 1"):
+            qaoa.bit_driver(range(3), 2)
+
+    def test_bit_driver_output(self):
+        """Tests that the bit driver Hamiltonian has the correct output"""
+
+        H = qaoa.bit_driver(range(3), 1)
+        hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)])
+
+        assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
+
+    def test_edge_driver_errors(self):
+        """Tests that the edge driver Hamiltonian throws the correct errors"""
+
+        with pytest.raises(ValueError, match=r"Encountered invalid entry in 'reward', expected 2-bit bitstrings."):
+            qaoa.edge_driver(Graph([(0, 1), (1, 2)]), ['10', '11', 21, 'g'])
+
+        with pytest.raises(
+                ValueError,
+                match=r"'reward' cannot contain either '10' or '01', must contain neither or both."
+        ):
+            qaoa.edge_driver(Graph([(0, 1), (1, 2)]), ['11', '00', '01'])
+
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph"):
+            qaoa.edge_driver([(0, 1), (1, 2)], ['00', '11'])
+
+    @pytest.mark.parametrize(("graph", "reward", "hamiltonian"), EDGE_DRIVER)
+    def test_edge_driver_output(self, graph, reward, hamiltonian):
+        """Tests that the edge driver Hamiltonian throws the correct errors"""
+
+        H = qaoa.edge_driver(graph, reward)
+        assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
+
+    """Tests the cost Hamiltonians"""
 
     def test_maxcut_error(self):
         """Tests that the MaxCut Hamiltonian throws the correct error"""
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"nput graph must be a nx\.Graph"):
+        with pytest.raises(ValueError, match=r"Input graph must be a nx\.Graph"):
             qaoa.maxcut(graph)
 
     @pytest.mark.parametrize(("graph", "cost_hamiltonian", "mixer_hamiltonian"), MAXCUT)

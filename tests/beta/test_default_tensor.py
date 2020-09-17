@@ -819,6 +819,20 @@ class TestDefaultTensorIntegration:
     """Integration tests for default.tensor. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
+    def test_defines_correct_capabilities(self, rep):
+        """Test that the device defines the right capabilities"""
+
+        dev = qml.device("default.tensor", wires=1, representation=rep)
+        cap = dev.capabilities()
+        capabilities = {"model": "qubit",
+                        "supports_finite_shots": False,
+                        "supports_tensor_observables": True,
+                        "returns_probs": False,
+                        "returns_state": False,
+                        "supports_analytic_computation": True,
+                        }
+        assert cap == capabilities
+
     def test_load_tensornet_device(self, rep):
         """Test that the tensor network plugin loads correctly"""
 

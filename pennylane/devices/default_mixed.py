@@ -14,14 +14,13 @@
 r"""
 The default.mixed device is PennyLane's standard qubit simulator for mixed-state computations.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
-:mod:`qubit operations <pennylane.ops.qubit>`, providing a simple mixed-state simulation of
+It implements the necessary :class:`~pennylane.Device` methods as well as some built-in
+qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
 from string import ascii_letters as ABC
 
 import numpy as np
-import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.operation import DiagonalOperation, Channel
 
@@ -50,38 +49,39 @@ class DefaultMixed(QubitDevice):
     version = "0.12.0"
     author = "Xanadu Inc."
 
-    operations = {
-        "BasisState",
-        "QubitStateVector",
-        "QubitUnitary",
-        "DiagonalQubitUnitary",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "MultiRZ",
-        "Hadamard",
-        "S",
-        "T",
-        "CNOT",
-        "SWAP",
-        "CSWAP",
-        "Toffoli",
-        "CZ",
-        "PhaseShift",
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "AmplitudeDamping",
-        "GeneralizedAmplitudeDamping",
-        "PhaseDamping",
-        "DepolarizingChannel",
-        "QubitChannel",
-    }
+
+    # operations = {
+    #     "BasisState",
+    #     "QubitStateVector",
+    #     "QubitUnitary",
+    #     "DiagonalQubitUnitary",
+    #     "PauliX",
+    #     "PauliY",
+    #     "PauliZ",
+    #     "MultiRZ",
+    #     "Hadamard",
+    #     "S",
+    #     "T",
+    #     "CNOT",
+    #     "SWAP",
+    #     "CSWAP",
+    #     "Toffoli",
+    #     "CZ",
+    #     "PhaseShift",
+    #     "RX",
+    #     "RY",
+    #     "RZ",
+    #     "Rot",
+    #     "CRX",
+    #     "CRY",
+    #     "CRZ",
+    #     "CRot",
+    #     "AmplitudeDamping",
+    #     "GeneralizedAmplitudeDamping",
+    #     "PhaseDamping",
+    #     "DepolarizingChannel",
+    #     "QubitChannel",
+    # }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         # call QubitDevice init
