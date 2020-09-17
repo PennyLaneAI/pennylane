@@ -22,6 +22,25 @@ import numpy as np
 
 INV_SQRT2 = 1 / np.sqrt(2)
 
+# diagonal gate matrices
+diagonal_ops = [(qml.PauliZ(wires=0), np.array([1, -1])),
+                (qml.CZ(wires=[0, 1]), np.array([1, 1, 1, -1]))]
+
+# unitary gate matrices
+unitary_ops = [(qml.PauliX, np.array([[0, 1], [1, 0]])),
+           (qml.Hadamard, np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])),
+           (qml.CNOT, np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]))]
+
+# channel kraus operators
+p = 0.5
+K0 = np.sqrt(1 - p) * np.eye(2)
+K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
+K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
+K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
+channel_ops = [(qml.AmplitudeDamping(p, wires=0), [np.diag([1, np.sqrt(1 - p)]),
+                np.sqrt(p) * np.array([[0, 1], [0, 0]])]),
+               (qml.DepolarizingChannel(p, wires=0), [K0, K1, K2, K3])]
+
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestCreateBasisState:
@@ -64,7 +83,13 @@ class TestState:
         assert np.allclose(rho, dev.state)
 
 
-# Note: tests for reset require the apply() method to change the device's internal state
+@pytest.mark.parametrize("nr_wires", [1, 2, 3])
+class TestReset:
+    """Unit tests for the method `reset()`"""
+
+    def test_reset_basis_state(self, nr_wires):
+        assert 1 == 1
+
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestAnalyticProb:
@@ -83,10 +108,6 @@ class TestAnalyticProb:
 class TestKrausOps:
     """Unit tests for the method `_get_kraus_ops()`"""
 
-    unitary_ops = [(qml.PauliX, np.array([[0, 1], [1, 0]])),
-           (qml.Hadamard, np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])),
-           (qml.CNOT, np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]))]
-
     @pytest.mark.parametrize("ops", unitary_ops)
     def test_unitary_kraus(self, ops):
         """Tests that matrices of non-diagonal unitary operations are retrieved correctly"""
@@ -94,23 +115,11 @@ class TestKrausOps:
 
         assert np.allclose(dev._get_kraus(ops[0]), [ops[1]])
 
-    diagonal_ops = [(qml.PauliZ(wires=0), np.array([1, -1])),
-                    (qml.CZ(wires=[0, 1]), np.array([1, 1, 1, -1]))]
-
     @pytest.mark.parametrize("ops", diagonal_ops)
     def test_diagonal_kraus(self, ops):
         """Tests that matrices of non-diagonal unitary operations are retrieved correctly"""
         dev = qml.device('default.mixed', wires=2)
         assert np.allclose(dev._get_kraus(ops[0]), ops[1])
-
-    p = 0.5
-    K0 = np.sqrt(1 - p) * np.eye(2)
-    K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
-    K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
-    K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
-    channel_ops = [(qml.AmplitudeDamping(p, wires=0), [np.diag([1, np.sqrt(1 - p)]),
-                    np.sqrt(p) * np.array([[0, 1], [0, 0]])]),
-                   (qml.DepolarizingChannel(p, wires=0), [K0, K1, K2, K3])]
 
     @pytest.mark.parametrize("ops", channel_ops)
     def test_channel_kraus(self, ops):
@@ -118,3 +127,19 @@ class TestKrausOps:
         dev = qml.device('default.mixed', wires=1)
 
         assert np.allclose(dev._get_kraus(ops[0]), ops[1])
+
+
+class TestApplyChannel:
+    """Unit tests for the method `_apply_channel()`"""
+
+
+class TestApplyDiagonal:
+    """Unit tests for the method `_apply_diagonal_unitary()`"""
+
+
+class TestApplyOperation:
+    """Unit tests for the method `_apply_operation()`"""
+
+
+class TestApply:
+    """Unit tests for the main method `apply()`"""

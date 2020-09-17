@@ -18,6 +18,7 @@ It implements the necessary :class:`~pennylane.Device` methods as well as some b
 qubit :doc:`operations </introduction/operations>`, providing a simple mixed-state simulation of
 qubit-based quantum circuits.
 """
+import functools
 from string import ascii_letters as ABC
 
 import numpy as np
@@ -49,39 +50,38 @@ class DefaultMixed(QubitDevice):
     version = "0.12.0"
     author = "Xanadu Inc."
 
-
-    # operations = {
+    operations = {
     #     "BasisState",
     #     "QubitStateVector",
-    #     "QubitUnitary",
-    #     "DiagonalQubitUnitary",
-    #     "PauliX",
-    #     "PauliY",
-    #     "PauliZ",
-    #     "MultiRZ",
-    #     "Hadamard",
-    #     "S",
-    #     "T",
-    #     "CNOT",
-    #     "SWAP",
-    #     "CSWAP",
-    #     "Toffoli",
-    #     "CZ",
-    #     "PhaseShift",
-    #     "RX",
-    #     "RY",
-    #     "RZ",
-    #     "Rot",
-    #     "CRX",
-    #     "CRY",
-    #     "CRZ",
-    #     "CRot",
-    #     "AmplitudeDamping",
-    #     "GeneralizedAmplitudeDamping",
-    #     "PhaseDamping",
-    #     "DepolarizingChannel",
-    #     "QubitChannel",
-    # }
+        "QubitUnitary",
+        "DiagonalQubitUnitary",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "MultiRZ",
+        "Hadamard",
+        "S",
+        "T",
+        "CNOT",
+        "SWAP",
+        "CSWAP",
+        "Toffoli",
+        "CZ",
+        "PhaseShift",
+        "RX",
+        "RY",
+        "RZ",
+        "Rot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
+        "AmplitudeDamping",
+        "GeneralizedAmplitudeDamping",
+        "PhaseDamping",
+        "DepolarizingChannel",
+        "QubitChannel",
+    }
 
     def __init__(self, wires, *, shots=1000, analytic=True):
         # call QubitDevice init
@@ -129,7 +129,7 @@ class DefaultMixed(QubitDevice):
         rho = self._reshape(self._state, (2 ** self.num_wires, 2 ** self.num_wires))
         # probs are diagonal elements
         probs = self.marginal_prob(self._diag(rho), wires)
-        return probs
+        return self._abs(probs)
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
@@ -161,11 +161,11 @@ class DefaultMixed(QubitDevice):
 
         channel_wires = self.map_wires(wires)
 
-        # Computes K^\dagger , which are needed for the transformation K \rho K^\dagger
+        # Computes K^\dagger, needed for the transformation K \rho K^\dagger
         kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
 
         # Changes tensor shape
-        kraus_shape = len(kraus) + [2] * len(channel_wires) * 2
+        kraus_shape = [len(kraus)] + [2] * len(channel_wires) * 2
         kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
         kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
@@ -201,7 +201,7 @@ class DefaultMixed(QubitDevice):
 
         # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
         einsum_indices = (
-            "{kraus_index}{new_row_indices}{row_indices}, {state_indices}"
+            "{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             "{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}".format(
                 kraus_index=kraus_index,
                 new_col_indices=new_col_indices,
@@ -263,12 +263,6 @@ class DefaultMixed(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
-                raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
-                )
 
             self._apply_operation(operation)
 
