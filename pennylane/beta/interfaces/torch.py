@@ -15,7 +15,7 @@
 This module contains the mixin interface class for creating differentiable quantum tapes with
 PyTorch.
 """
-# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member
+# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self
 import numpy as np
 import torch
 
