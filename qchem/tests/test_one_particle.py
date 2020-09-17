@@ -146,7 +146,7 @@ t_table_2D = np.array([[1, 2, 3], [4, 5, 6]])
 @pytest.mark.parametrize(
     ("t_me", "core", "active", "msg_match"),
     [
-        (t_table_1D, [0], None, "'t_matrix elements' must be a 2D array"),
+        (t_table_1D, [0], None, "'t_matrix_elements' must be a 2D array"),
         (t_table_2D, [-1, 0, 1, 2], None, "Indices of core orbitals must be between 0 and"),
         (t_table_2D, [0, 1, 2, 3], None, "Indices of core orbitals must be between 0 and"),
         (t_table_2D, None, [-1, 0], "Indices of active orbitals must be between 0 and"),
