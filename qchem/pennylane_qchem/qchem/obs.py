@@ -458,7 +458,7 @@ def one_particle(t_matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     If an active space is defined (see :func:`~.active_space`), the summation indices
     run over the active orbitals and the contribution due to core orbitals is computed as
-    :math:`t_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}  \langle \alpha \vert \hat{t}`.
+    :math:`T_\mathrm{core} = 2 \sum_{\alpha\in \mathrm{core}}  \langle \alpha \vert \hat{t}`.
 
     Args:
         t_matrix_elements (array[float]): 2D Numpy array with the matrix elements
