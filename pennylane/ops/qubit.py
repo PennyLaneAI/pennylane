@@ -364,6 +364,49 @@ class CZ(DiagonalOperation):
         return cls.eigvals
 
 
+class CY(Operation):
+    r"""CY(wires)
+    The controlled-Y operator
+
+    .. math:: CY = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 0 & -i\\
+            0 & 0 & i & 0
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = 2
+    par_domain = None
+    matrix = np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, -1j],
+            [0, 0, 1j, 0],
+        ]
+    )
+
+    @classmethod
+    def _matrix(cls, *params):
+        return cls.matrix
+
+    @staticmethod
+    def decomposition(wires):
+        decomp_ops = [CRY(np.pi, wires=wires), S(wires=wires[0])]
+        return decomp_ops
+
+
 class SWAP(Operation):
     r"""SWAP(wires)
     The swap operator
@@ -1569,6 +1612,7 @@ ops = {
     "T",
     "CNOT",
     "CZ",
+    "CY",
     "SWAP",
     "CSWAP",
     "Toffoli",
