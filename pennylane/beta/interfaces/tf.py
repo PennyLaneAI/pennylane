@@ -35,24 +35,29 @@ class TFInterface(AnnotatedQueue):
 
     .. code-block:: python
 
-        class MyAutogradQuantumTape(AutogradInterface, QuantumTape):
+        class MyTFQuantumTape(TFInterface, QuantumTape):
 
-    Alternatively, the autograd interface can be dynamically applied to existing
+
+    Alternatively, the TensorFlow interface can be dynamically applied to existing
+
     quantum tapes via the :meth:`~.apply` class method. This modifies the
     tape **in place**.
 
-    Once created, the autograd interface can be used to perform quantum-classical
+    Once created, the TensorFlow interface can be used to perform quantum-classical
+
     differentiable programming.
 
     .. note::
 
-        If using a device that supports native autograd computation and backpropagation, such as
+        If using a device that supports native TensorFlow computation and backpropagation, such as
+
         :class:`~.DefaultQubitTF`, the TensorFlow interface **does not need to be applied**. It is
         only applied to tapes executed on non-TensorFlow compatible devices.
 
     **Example**
 
-    One a TensorFlow quantum tape has been created, it can be differentiated using the gradient tape:
+    Once a TensorFlow quantum tape has been created, it can be differentiated using the gradient tape:
+
 
     .. code-block:: python
 
@@ -100,9 +105,12 @@ class TFInterface(AnnotatedQueue):
         for idx, p in enumerate(params):
             # Determine which input tensors/Variables are being recorded for backpropagation.
             # The function should_record_backprop, documented here:
-            # https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/eager/tape.py#L163
-            # accepts lists of *tensors* (not Variables), returning True if all are being watched by one or more
-            # existing gradient tape, False if not.
+            # https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/eager/tape.py#L167
+
+            # accepts lists of *Tensors* (not Variables), returning True if all are being watched by one or more
+
+            # existing gradient tapes, False if not.
+
             if isinstance(p, (tf.Variable, tf.Tensor)) and should_record_backprop(
                 [tf.convert_to_tensor(p)]
             ):
@@ -145,7 +153,6 @@ class TFInterface(AnnotatedQueue):
             jacobian = tf.constant(jacobian, dtype=self.dtype)
 
             # Reshape gradient output array as a 2D row-vector.
-            # grad_output = tf.cast(grad_output, dtype=self.dtype)
             grad_output_row = tf.transpose(tf.reshape(grad_output, [-1, 1]))
 
             # Calculate the vector-Jacobian matrix product, and unstack the output.

@@ -25,7 +25,8 @@ from pennylane.beta.interfaces.tf import TFInterface
 
 
 class TestTFQuantumTape:
-    """Test the autograd interface applied to a tape"""
+    """Test the TensorFlow interface applied to a tape"""
+
 
     def test_interface_construction(self):
         """Test that the interface is correctly applied"""
@@ -56,7 +57,8 @@ class TestTFQuantumTape:
         assert tape.dtype is tf.float64
 
     def test_get_parameters(self):
-        """Test that the get parameters function correctly sets and returns the
+        """Test that the get_parameters function correctly sets and returns the
+
         trainable parameters"""
         a = tf.Variable(0.1)
         b = tf.constant(0.2)
@@ -122,7 +124,8 @@ class TestTFQuantumTape:
         spy.assert_called()
 
     def test_jacobian_dtype(self, tol):
-        """Test calculating the jacobian with a different datatype"""
+        """Test calculating the jacobian with a different datatype. Here, we
+        specify tf.float32, as opposed to the default value of tf.float64."""
         a = tf.Variable(0.1, dtype=tf.float32)
         b = tf.Variable(0.2, dtype=tf.float32)
 
