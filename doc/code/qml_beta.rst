@@ -17,3 +17,7 @@ and features.
 .. automodapi:: pennylane.beta.tapes
     :include-all-objects:
     :no-inheritance-diagram:
+
+.. automodapi:: pennylane.beta.interfaces
+    :include-all-objects:
+    :no-inheritance-diagram:
