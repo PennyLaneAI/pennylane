@@ -843,7 +843,7 @@ class QuantumTape(AnnotatedQueue):
         """Execute the tape on a quantum device.
 
         Args:
-            device (~.Device): a PennyLane device
+            device (.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): The quantum tape operation parameters. If not provided,
                 the current tape parameters are used (via :meth:`~.get_parameters`).
