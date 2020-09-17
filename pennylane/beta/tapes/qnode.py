@@ -54,7 +54,7 @@ class QNode:
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode:
 
-            * ``interface='autograd'``: Allows autograd to backpropogate
+            * ``interface='autograd'``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
@@ -327,8 +327,8 @@ class QNode:
         )
 
     def construct(self, args, kwargs):
-        """Call the quantum function with a tape context,
-        ensuring the operations get queued."""
+        """Call the quantum function with a tape context, ensuring the operations get queued."""
+
         self.qtape = self._tape()
 
         # apply the interface (if any)
