@@ -106,7 +106,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 # as a stopping condition
                 stop = stop or isinstance(obj, qml.beta.queuing.MeasurementProcess)
 
-            if stop:
+            if stop or isinstance(obj, BatchTape):
                 # do not expand out the object; append it to the
                 # new tape, and continue to the next object in the queue
                 getattr(new_tape, queue).append(obj)
@@ -132,37 +132,36 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
-def unfold_batching(tape, unfold_operations=True, unfold_measurements=False):
-    """Explode all ``BatchTape`` objects in a tape. This creates a list of tapes, each
-       sharing all objects except from the ones recorded with ``BatchTape``.
+def separate_tape(tape):
+    """Separate a tape into several tapes, each using an alternative pathway through the batched sections.
+
+    This creates a list of tapes, each sharing all objects except from the ones recorded with ``BatchTape``.
 
     Args:
         tape (QuantumTape): tape to unfold
-        unfold_operations (bool): If ``True``, operations will be unfolded.
-        unfold_measurements (bool): If ``True``, measurements will be unfolded.
 
-    **Example**
+    **Example:**
 
-    Consider the following nested tape:
+    Calling ``separate_tape`` will return a list of tapes that only differ in the items queued with ``BatchTape``:
 
     .. code-block:: python
 
         with QuantumTape() as tape:
             qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-            with QuantumTape() as tape2:
-                qml.Rot(0.543, 0.1, 0.4, wires=0)
+            with BatchTape() as tape_b1:
+                qml.RY(0.2, wires='a')
+                qml.RX(0.2, wires='a')
 
             qml.CNOT(wires=[0, 'a'])
 
-            with BatchTape() as tape3:
-                qml.RY(0.2, wires='a')
-                qml.RX(0.2, wires='a')
-                qml.RZ(0.2, wires='a')
+            with BatchTape() as tape_b1:
+                qml.RZ(0.1, wires=0)
+                qml.RZ(0.2, wires=0)
 
             probs(wires=0), probs(wires='a')
 
-    The nested structure contains both ``QuantumTape`` and ``BatchTape`` objects:
+    The nested structure contains both ``BatchTape`` objects:
 
     >>> tape.operations
     [BasisState(array([1, 1]), wires=[0, 'a']),
@@ -170,66 +169,35 @@ def unfold_batching(tape, unfold_operations=True, unfold_measurements=False):
      CNOT(wires=[0, 'a']),
      <BatchTape: wires=[0], params=1>]
 
-    Calling ``unfold_batching`` will return a tape with all nested batch tapes
-    are exploded, resulting in a list of tapes of quantum operations:
+    Calling ``separate_tape`` will return a list of tapes that only differ in the items queued with ``BatchTape``:
 
-    >>> tape_batch = unfold_batching(tape)
-    >>> tape_batch[0]
+    >>> tapes = separate_tape(tape)
+    >>> tapes[0].operations
      [PauliX(wires=[0]),
      PauliX(wires=['a']),
      <QuantumTape: wires=[0], params=3>,
+     RY(0.2, wires=['a'])
      CNOT(wires=[0, 'a']),
-     RX(0.2, wires=['a'])]
+     RZ(0.1, wires=[0])]
 
-    >>> tape_batch[1]
+    >>> tapes[1].operations
      [PauliX(wires=[0]),
      PauliX(wires=['a']),
      <QuantumTape: wires=[0], params=3>,
+     RX(0.2, wires=['a'])
      CNOT(wires=[0, 'a']),
-     RY(0.2, wires=['a'])]
+     RZ(0.2, wires=[0])]
 
-    >>> tape_batch[2]
-     [PauliX(wires=[0]),
-     PauliX(wires=['a']),
-     <QuantumTape: wires=[0], params=3>,
-     CNOT(wires=[0, 'a']),
-     RZ(0.2, wires=['a'])]
     """
 
-    tape_batch = []
+    separated_tapes = []
+    for element in tape:
+        if isinstance(element, BatchTape):
+            separate_tape(element)
+        else:
+            separated_tapes.append(element)
 
-    for queue in ("_prep", "_ops", "_measurements"):
-        for obj in getattr(tape, queue):
-
-            if not unfold_measurements:
-                # Measurements should not be expanded; treat measurements
-                # as a stopping condition
-                stop = stop or isinstance(obj, MeasurementProcess)
-
-            if stop:
-                # do not expand out the object; append it to the
-                # new tape, and continue to the next object in the queue
-                getattr(new_tape, queue).append(obj)
-                continue
-
-            if isinstance(obj, BatchTape):
-                # Object is an operation; query it for its expansion
-                try:
-                    obj = obj.explode()
-                except NotImplementedError:
-                    # Object does not define an expansion; treat this as
-                    # a stopping condition.
-                    getattr(new_tape, queue).append(obj)
-                    continue
-
-            # recursively expand out the newly created tape
-            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
-
-            new_tape._prep += expanded_tape._prep
-            new_tape._ops += expanded_tape._ops
-            new_tape._measurements += expanded_tape._measurements
-
-    return new_tape
+    return separated_tapes
 
 
 class QuantumTape(AnnotatedQueue):
@@ -522,6 +490,58 @@ class QuantumTape(AnnotatedQueue):
         """
         new_tape = expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
+        )
+        new_tape._update()
+        return new_tape
+
+    def separate(self, depth=1, stop_at=None):
+        """Expand all operations in the processed queue to a specific depth.
+
+        Args:
+            depth (int): the depth the tape should be expanded
+            stop_at (Callable): A function which accepts a queue object,
+                and returns ``True`` if this object should *not* be expanded.
+                If not provided, all objects that support expansion will be expanded.
+            expand_measurements (bool): If ``True``, measurements will be expanded
+                to basis rotations and computational basis measurements.
+
+        **Example**
+
+        Consider the following nested tape:
+
+        .. code-block:: python
+
+            with QuantumTape() as tape:
+                qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
+
+                with QuantumTape() as tape2:
+                    qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+                qml.CNOT(wires=[0, 'a'])
+                qml.RY(0.2, wires='a')
+                probs(wires=0), probs(wires='a')
+
+        The nested structure is preserved:
+
+        >>> tape.operations
+        [BasisState(array([1, 1]), wires=[0, 'a']),
+         <QuantumTape: wires=[0], params=3>,
+         CNOT(wires=[0, 'a']),
+         RY(0.2, wires=['a'])]
+
+        Calling ``.expand`` will return a tape with all nested tapes
+        expanded, resulting in a single tape of quantum operations:
+
+        >>> new_tape = tape.expand()
+        >>> new_tape.operations
+        [PauliX(wires=[0]),
+         PauliX(wires=['a']),
+         Rot(0.543, 0.1, 0.4, wires=[0]),
+         CNOT(wires=[0, 'a']),
+         RY(0.2, wires=['a'])]
+        """
+        new_tape = separate_tape(
+            self, depth=depth, stop_at=stop_at
         )
         new_tape._update()
         return new_tape
@@ -1420,3 +1440,71 @@ class QuantumTape(AnnotatedQueue):
             jac[:, idx] = g.flatten()
 
         return jac
+
+
+class BatchTape(QuantumTape):
+    """A quantum tape recorder whose queue records elements which are interpreted as alternatives to each other.
+
+    A QuantumTape containing BatchTape operations is interpreted as, and can be separated into,
+    a batch of quantum tapes.
+
+     **Example**
+
+    Alternative pathways through the circuit can be recorded using a ``BatchTape``:
+
+    .. code-block:: python
+
+        with QuantumTape() as tape:
+
+            with QuantumTape() as tape2:
+                qml.Rot(0.543, 0.1, 0.4, wires=0)
+
+            qml.CNOT(wires=['a', 0])
+
+            with BatchTape() as batch:
+                qml.RY(0.2, wires='a')
+                qml.RX(0.2, wires='a')
+
+            probs(wires=0), probs(wires='a')
+
+    The ``tape`` now contains a ``BatchTape`` object:
+
+    >>> tape.operations
+    [BasisState(array([1, 1]), wires=[0, 'a']),
+     CNOT(wires=[0, 'a']),
+     <BatchTape: wires=[0], n_batches=2>]
+
+    We can also batch measurements:
+
+        .. code-block:: python
+
+        with QuantumTape() as tape:
+
+            qml.CNOT(wires=['a', 0])
+
+            with BatchTape() as batch:
+                probs(wires=0)
+                probs(wires='a')
+
+
+    The ``tape`` contains a ``BatchTape`` object:
+
+    >>> tape.measurements
+    [<BatchTape: wires=[0, 'a'], n_batches=2>]
+    """
+
+    def __init__(self, name=None):
+        super().__init__(name=name)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: wires={self.wires.tolist()} " \
+               f"batches={self.n_batches}, name={self.name}>"
+
+    @property
+    def n_batches(self):
+        return len(self.operations) + len(self.observables)
+
+    def analytic_pd(self, idx, device, params=None, **options):
+        raise NotImplementedError
+
+
