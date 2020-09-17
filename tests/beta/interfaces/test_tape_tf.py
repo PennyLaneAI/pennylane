@@ -246,7 +246,6 @@ class TestTFQuantumTape:
             [0, -tf.cos(2 * a) * tf.cos(b)],
         ]
         assert np.allclose(jac2, expected, atol=tol, rtol=0)
->>>>>>> master
 
     def test_classical_processing(self, tol):
         """Test classical processing within the quantum tape"""

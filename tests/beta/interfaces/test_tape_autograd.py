@@ -16,11 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-<<<<<<< HEAD
 from pennylane.beta.tapes import QuantumTape, qnode, QNode, QubitParamShiftTape
-=======
-from pennylane.beta.tapes import QuantumTape
->>>>>>> master
 from pennylane.beta.queuing import expval, var, sample, probs
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
@@ -1028,9 +1024,7 @@ class TestQNode:
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
 
-        with pytest.raises(ValueError, match="need at least one array to stack"):
-            # TODO: maybe qml.jacobian should return an empty array, or None in this case?
-            qml.jacobian(circuit)(a, b)
+        assert not qml.jacobian(circuit)(a, b)
 
         def cost(a, b):
             return np.sum(circuit(a, b))
