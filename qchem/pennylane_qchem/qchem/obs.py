@@ -303,9 +303,6 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
             "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
         )
 
-    sp_op_shape = (3,)
-    tp_op_shape = (5,)
-
     # Initialize the FermionOperator
     mb_obs = FermionOperator() + FermionOperator("") * init_term
 
@@ -318,21 +315,22 @@ def observable(matrix_elements, init_term=0, mapping="jordan_wigner", wires=None
                 )
             )
 
-        for i in table:
-
-            if np.array(i).shape not in (sp_op_shape, tp_op_shape):
-                raise ValueError(
-                    "Expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
-                        np.array(i).shape
-                    )
+        if table.shape[1] not in (3, 5):
+            raise ValueError(
+                "Expected entries of matrix element tables to be of shape (3,) or (5,); got {}".format(
+                    table.shape[1]
                 )
+            )
 
-            if i.shape == (5,):
+        if table.shape[1] == 5:
+            # two-particle operator
+            for i in table:
                 mb_obs += FermionOperator(
                     ((int(i[0]), 1), (int(i[1]), 1), (int(i[2]), 0), (int(i[3]), 0)), i[4] / 2
                 )
-            elif i.shape == (3,):
-                # single-particle operator
+        else:
+            # single-particle operator
+            for i in table:
                 mb_obs += FermionOperator(((int(i[0]), 1), (int(i[1]), 0)), i[2])
 
     # Map the fermionic operator to a qubit operator
