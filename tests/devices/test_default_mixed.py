@@ -17,30 +17,15 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 
 import pytest
 import pennylane as qml
+from pennylane.ops import PauliZ, CZ, PauliX, Hadamard, CNOT, AmplitudeDamping, DepolarizingChannel
 from pennylane.devices.default_mixed import DefaultMixed
 import numpy as np
 
 INV_SQRT2 = 1 / np.sqrt(2)
 
-# diagonal gate matrices
-diagonal_ops = [(qml.PauliZ(wires=0), np.array([1, -1])),
-                (qml.CZ(wires=[0, 1]), np.array([1, 1, 1, -1]))]
-
-# unitary gate matrices
-unitary_ops = [(qml.PauliX, np.array([[0, 1], [1, 0]])),
-           (qml.Hadamard, np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])),
-           (qml.CNOT, np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]))]
-
-# channel kraus operators
-p = 0.5
-K0 = np.sqrt(1 - p) * np.eye(2)
-K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
-K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
-K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
-channel_ops = [(qml.AmplitudeDamping(p, wires=0), [np.diag([1, np.sqrt(1 - p)]),
-                np.sqrt(p) * np.array([[0, 1], [0, 0]])]),
-               (qml.DepolarizingChannel(p, wires=0), [K0, K1, K2, K3])]
-
+diags = [PauliZ, CZ, PauliX]
+gates = [PauliX, Hadamard, CNOT]
+channels = [AmplitudeDamping, DepolarizingChannel]
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
 class TestCreateBasisState:
