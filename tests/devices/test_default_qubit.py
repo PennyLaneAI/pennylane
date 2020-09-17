@@ -21,6 +21,7 @@ import math
 import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
+from pennylane.devices.default_qubit import _get_slice
 from pennylane.operation import Operation
 
 U = np.array(
@@ -664,9 +665,26 @@ class TestSample:
         # they square to 1
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
+
 class TestDefaultQubitIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
+
+    def test_defines_correct_capabilities(self):
+        """Test that the device defines the right capabilities"""
+
+        dev = qml.device("default.qubit", wires=1)
+        cap = dev.capabilities()
+        capabilities = {"model": "qubit",
+                        "supports_finite_shots": True,
+                        "supports_tensor_observables": True,
+                        "returns_probs": True,
+                        "returns_state": True,
+                        "supports_reversible_diff": True,
+                        "supports_inverse_operations": True,
+                        "supports_analytic_computation": True,
+                        }
+        assert cap == capabilities
 
     def test_load_default_qubit_device(self):
         """Test that the default plugin loads correctly"""
@@ -781,8 +799,6 @@ class TestDefaultQubitIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
-
-
 
     @pytest.mark.parametrize("name,expected_output,phi", [("RX", 1,
                                                            multiplier * 0.5432) for multiplier in range(8)
@@ -1733,3 +1749,103 @@ class TestWiresIntegration:
         circuit2 = self.make_circuit_expval(wires2)
 
         assert np.allclose(circuit1(), circuit2(), tol)
+
+
+class TestGetSlice:
+    """Tests for the _get_slice function."""
+
+    def test_get_slice(self):
+        """Test that the _get_slice function returns the expected slice and allows us to slice
+        correctly into an array."""
+
+        sl = _get_slice(1, 1, 3)
+        array = np.arange(27).reshape((3, 3, 3))
+        target = array[:, 1, :]
+
+        assert sl == (slice(None, None, None), 1, slice(None, None, None))
+        assert np.allclose(array[sl], target)
+
+    def test_get_slice_first(self):
+        """Test that the _get_slice function returns the expected slice when accessing the first
+        axis of an array."""
+
+        sl = _get_slice(2, 0, 3)
+        array = np.arange(27).reshape((3, 3, 3))
+        target = array[2]
+
+        assert sl == (2, slice(None, None, None), slice(None, None, None))
+        assert np.allclose(array[sl], target)
+
+    def test_get_slice_last(self):
+        """Test that the _get_slice function returns the expected slice when accessing the last
+        axis of an array."""
+
+        sl = _get_slice(0, 2, 3)
+        array = np.arange(27).reshape((3, 3, 3))
+        target = array[:, :, 0]
+
+        assert sl == (slice(None, None, None), slice(None, None, None), 0)
+        assert np.allclose(array[sl], target)
+
+    def test_get_slice_1d(self):
+        """Test that the _get_slice function returns the expected slice when accessing a
+        1-dimensional array."""
+
+        sl = _get_slice(2, 0, 1)
+        array = np.arange(27)
+        target = array[2]
+
+        assert sl == (2,)
+        assert np.allclose(array[sl], target)
+
+
+@pytest.mark.parametrize("inverse", [True, False])
+class TestApplyOps:
+    """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
+    gates in DefaultQubit."""
+
+    state = np.arange(2 ** 3).reshape((2, 2, 2))
+    dev = qml.device("default.qubit", wires=3)
+    single_qubit_ops = [
+        (qml.PauliX, dev._apply_x),
+        (qml.PauliY, dev._apply_y),
+        (qml.PauliZ, dev._apply_z),
+        (qml.Hadamard, dev._apply_hadamard),
+        (qml.S, dev._apply_s),
+        (qml.T, dev._apply_t),
+    ]
+    two_qubit_ops = [
+        (qml.CNOT, dev._apply_cnot),
+        (qml.SWAP, dev._apply_swap),
+        (qml.CZ, dev._apply_cz),
+    ]
+
+    @pytest.mark.parametrize("op, method", single_qubit_ops)
+    def test_apply_single_qubit_op(self, op, method, inverse):
+        """Test if the application of single qubit operations is correct."""
+        state_out = method(self.state, axes=[1], inverse=inverse)
+        op = op(wires=[1])
+        matrix = op.inv().matrix if inverse else op.matrix
+        state_out_einsum = np.einsum("ab,ibk->iak", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op(self, op, method, inverse):
+        """Test if the application of two qubit operations is correct."""
+        state_out = method(self.state, axes=[0, 1])
+        op = op(wires=[0, 1])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,cdk->abk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op_reverse(self, op, method, inverse):
+        """Test if the application of two qubit operations is correct when the applied wires are
+        reversed."""
+        state_out = method(self.state, axes=[2, 1])
+        op = op(wires=[2, 1])
+        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,idc->iba", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)

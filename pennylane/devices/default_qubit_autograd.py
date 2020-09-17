@@ -74,12 +74,6 @@ class DefaultQubitAutograd(DefaultQubit):
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
 
-    _capabilities = {
-        "model": "qubit",
-        "provides_jacobian": False,
-        "passthru_interface": "autograd",
-    }
-
     parametric_ops = {
         "PhaseShift": autograd_ops.PhaseShift,
         "RX": autograd_ops.RX,
@@ -106,6 +100,26 @@ class DefaultQubitAutograd(DefaultQubit):
     _tensordot = staticmethod(np.tensordot)
     _conj = staticmethod(np.conj)
     _imag = staticmethod(np.imag)
+    _roll = staticmethod(np.roll)
+    _stack = staticmethod(np.stack)
+
+    def __init__(self, wires, *, shots=1000, analytic=True):
+        super().__init__(wires, shots=shots, analytic=analytic)
+
+        # prevent using special apply methods for these gates due to slowdown in Autograd
+        # implementation
+        del self._apply_ops["PauliY"]
+        del self._apply_ops["Hadamard"]
+        del self._apply_ops["CZ"]
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            passthru_interface="autograd",
+            supports_reversible_diff=False,
+        )
+        return capabilities
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
