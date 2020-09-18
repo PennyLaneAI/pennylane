@@ -22,7 +22,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice
 from pennylane.operation import DiagonalOperation, Channel
 
 ABC_ARRAY = np.array(list(ABC))
@@ -265,7 +265,7 @@ class DefaultMixed(QubitDevice):
         rotations = rotations or []
 
         # apply the circuit operations
-        for i, operation in enumerate(operations):
+        for operation in operations:
 
             self._apply_operation(operation)
 
