@@ -16,7 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, QNode, qnode, QuantumFunctionError
+from pennylane.beta.tapes import QuantumTape, QNode, qnode
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -27,12 +27,12 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(QuantumFunctionError, match="Unknown interface"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unknown interface"):
             QNode(None, dev, interface="something")
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
-        with pytest.raises(QuantumFunctionError, match="Invalid device"):
+        with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
             QNode(None, None)
 
     def test_validate_device_method(self, monkeypatch):
@@ -41,7 +41,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="does not provide a native method for computing the jacobian",
         ):
             QNode._validate_device_method(dev, None)
@@ -58,7 +58,7 @@ class TestValidation:
         tape raises an exception if the device does not support backprop."""
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(QuantumFunctionError, match="does not support native computations"):
+        with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
             QNode._validate_backprop_method(dev, None)
 
     def test_validate_backprop_method_invalid_interface(self, monkeypatch):
@@ -69,7 +69,7 @@ class TestValidation:
 
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
-        with pytest.raises(QuantumFunctionError, match=f"when using the {test_interface}"):
+        with pytest.raises(qml.QuantumFunctionError, match=f"when using the {test_interface}"):
             QNode._validate_backprop_method(dev, None)
 
     def test_validate_backprop_method(self, monkeypatch):
@@ -130,7 +130,9 @@ class TestValidation:
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(QuantumFunctionError, match="does not support the parameter-shift rule"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="does not support the parameter-shift rule"
+        ):
             QNode._get_parameter_shift_method(dev, None)
 
     def test_best_method(self, monkeypatch):
@@ -219,7 +221,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            QuantumFunctionError, match="Differentiation method hello not recognized"
+            qml.QuantumFunctionError, match="Differentiation method hello not recognized"
         ):
             QNode(None, dev, diff_method="hello")
 
@@ -294,7 +296,9 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="must return either a single measurement"
+        ):
             qn(5, 1)
 
         def func(x, y):
@@ -305,7 +309,9 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="must return either a single measurement"
+        ):
             qn(5, 1)
 
     def test_inconsistent_measurement_order(self):
@@ -323,7 +329,7 @@ class TestTapeConstruction:
         qn = QNode(func, dev)
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="measurements must be returned in the order they are measured",
         ):
             qn(5, 1)
@@ -367,7 +373,7 @@ class TestTFInterface:
         qn = QNode(func, dev, interface="tf")
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="TensorFlow not found. Please install the latest version of TensorFlow to enable the 'tf' interface",
         ):
             qn(0.1, 0.1)
@@ -393,7 +399,7 @@ class TestTorchInterface:
         qn = QNode(func, dev, interface="torch")
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="PyTorch not found. Please install the latest version of PyTorch to enable the 'torch' interface",
         ):
             qn(0.1, 0.1)
