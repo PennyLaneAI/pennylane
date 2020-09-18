@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import QuantumTape, qnode, QNode
+from pennylane.beta.tapes import QuantumTape, qnode, QNode, QubitParamShiftTape
 from pennylane.beta.queuing import expval, var, sample, probs
 
 
@@ -232,9 +232,7 @@ class TestQNode:
 
         grad_fn = qml.grad(loss)
 
-        # TODO: uncomment when the parameter-shift rule is implemented
-        # spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
-        spy = mocker.spy(QuantumTape, "numeric_pd")
+        spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
 
         res = grad_fn(a, b)
 
