@@ -155,7 +155,7 @@ class DefaultMixed(QubitDevice):
         quantum state. For a unitary gate, there is a single Kraus operator.
 
         Args:
-            matrices (array): Kraus operators
+            kraus (list[array]): Kraus operators
             wires (Wires): target wires
         """
 
