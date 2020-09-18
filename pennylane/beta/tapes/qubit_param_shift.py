@@ -27,11 +27,37 @@ from .tape import QuantumTape
 
 
 class QubitParamShiftTape(QuantumTape):
-    """Quantum tape for qubit parameter-shift analytic differentiation method.
-
-    For more details on the qubit parameter-shift rule, see :doc:`/glossary/parameter_shift`.
+    r"""Quantum tape for qubit parameter-shift analytic differentiation method.
 
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
+
+    For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
+    consider the expectation value of an observable :math:`O`:
+
+    .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
+
+    The gradient of this expectation value can be calculated using :math:`2N` evaluations
+    using the parameter-shift rule:
+
+    .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
+
+    We can extend this to the variance of observable :math:`O`,
+    :math:`g(p_i)=\langle O^2 (p_i) \rangle - \langle O \rangle(p_i)^2`
+    by noting that:
+
+    .. math::
+
+        \frac{\partial g}{\partial p_i}= \frac{\partial}{\partial p_i} \langle O^2 (p_i) \rangle
+        - 2 f(p_i) \frac{\partial f}{\partial p_i}.
+
+    This results in :math:`4N + 1` evaluations.
+
+    In the case where :math:`O` is involutory (:math:`O^2 = I`), the first term in the above
+    expression vanishes, and we are simply left with
+
+    .. math:: \frac{\partial g}{\partial p_i} = - 2 f(p_i) \frac{\partial f}{\partial p_i},
+
+    allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
 
     def _update_circuit_info(self):
@@ -76,16 +102,6 @@ class QubitParamShiftTape(QuantumTape):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of *only*
         expectation values of observables.
 
-        For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
-        consider the expectation value of an observable :math:`O`:
-
-        .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
-
-        The gradient of this expectation value can be calculated using :math:`2N` evaluations
-        using the parameter-shift rule:
-
-        .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
-
         Args:
             idx (int): trainable parameter index to differentiate with respect to
             device (.Device, .QubitDevice): a PennyLane device
@@ -120,34 +136,6 @@ class QubitParamShiftTape(QuantumTape):
     def _parameter_shift_var(self, idx, device, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
         of expectation values and variances of observables.
-
-        For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
-        consider the expectation value of an observable :math:`O`:
-
-        .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
-
-        The gradient of this expectation value can be calculated using :math:`2N` evaluations
-        using the parameter-shift rule:
-
-        .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
-
-        We can extend this to the variance of observable :math:`O`,
-        :math:`g(p_i)=\langle O^2 (p_i) \rangle - \langle O \rangle(p_i)^2`
-        by noting that:
-
-        .. math::
-
-            \frac{\partial g}{\partial p_i}= \frac{\partial}{\partial p_i} \langle O^2 (p_i) \rangle
-            - 2 f(p_i) \frac{\partial f}{\partial p_i}.
-
-        This results in :math:`4N + 1` evaluations.
-
-        In the case where :math:`O` is involutory (:math:`O^2 = I`), the first term in the above
-        expression vanishes, and we are simply left with
-
-        .. math:: \frac{\partial g}{\partial p_i} = - 2 f(p_i) \frac{\partial f}{\partial p_i},
-
-        allowing us to compute the gradient using :math:`2N + 1` evaluations.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
