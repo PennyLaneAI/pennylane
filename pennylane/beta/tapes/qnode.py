@@ -109,8 +109,8 @@ class QNode:
     >>> from pennylane.beta.queuing import expval, var, sample, probs
     >>> from pennylane.beta.tapes import QNode
     >>> def circuit(x):
-    >>>     qml.RX(x, wires=0)
-    >>>     return expval(qml.PauliZ(0))
+    ...     qml.RX(x, wires=0)
+    ...     return expval(qml.PauliZ(0))
     >>> dev = qml.device("default.qubit", wires=1)
     >>> qnode = QNode(circuit, dev)
     """
