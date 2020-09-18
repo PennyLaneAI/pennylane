@@ -314,6 +314,74 @@ class TestApplyChannel:
 class TestApplyDiagonal:
     """Unit tests for the method `_apply_diagonal_unitary()`"""
 
+    x_apply_diag_init = [
+        [1, PauliZ, basis_state(0, 1)],
+        [2, CZ, basis_state(0, 2)]
+    ]
+
+    @pytest.mark.parametrize("x", x_apply_diag_init)
+    def test_diag_init(self, x):
+        """Tests that diagonal gates are correctly applied to the default initial state"""
+        nr_wires = x[0]
+        op = x[1]
+        target_state = np.reshape(x[2], [2] * 2 * nr_wires)
+        dev = qml.device('default.mixed', wires=nr_wires)
+        kraus = dev._get_kraus(op)
+        if op == CZ:
+            dev._apply_channel(kraus, wires=Wires([0, 1]))
+        else:
+            kraus = dev._get_kraus(op)
+            dev._apply_channel(kraus, wires=Wires(0))
+
+        assert np.allclose(dev._state, target_state)
+
+    x_apply_diag_mixed = [
+        [1, PauliZ, max_mixed_state(1)],
+        [2, CZ, max_mixed_state(2)]
+    ]
+
+    @pytest.mark.parametrize("x", x_apply_diag_mixed)
+    def test_diag_mixed(self, x):
+        """Tests that diagonal gates are correctly applied to the maximally mixed state"""
+        nr_wires = x[0]
+        op = x[1]
+        target_state = np.reshape(x[2], [2] * 2 * nr_wires)
+        dev = qml.device('default.mixed', wires=nr_wires)
+        max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
+        dev._state = max_mixed
+        kraus = dev._get_kraus(op)
+        if op == CZ:
+            dev._apply_channel(kraus, wires=Wires([0, 1]))
+        else:
+            kraus = dev._get_kraus(op)
+            dev._apply_channel(kraus, wires=Wires(0))
+
+        assert np.allclose(dev._state, target_state)
+
+    x_apply_diag_root = [
+        [1, PauliZ, np.array([[0.5, 0.5], [0.5, 0.5]])],
+        [2, CZ, np.array([[0.25, -0.25j, -0.25, -0.25j], [0.25j, 0.25, -0.25j, 0.25],
+                          [-0.25, 0.25j, 0.25, 0.25j], [0.25j, 0.25, -0.25j, 0.25]])]
+    ]
+
+    @pytest.mark.parametrize("x", x_apply_diag_root)
+    def test_diag_root(self, x):
+        """Tests that diagonal gates are correctly applied to root state"""
+        nr_wires = x[0]
+        op = x[1]
+        target_state = np.reshape(x[2], [2] * 2 * nr_wires)
+        dev = qml.device('default.mixed', wires=nr_wires)
+        root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
+        dev._state = root
+        kraus = dev._get_kraus(op)
+        if op == CZ:
+            dev._apply_channel(kraus, wires=Wires([0, 1]))
+        else:
+            kraus = dev._get_kraus(op)
+            dev._apply_channel(kraus, wires=Wires(0))
+
+        assert np.allclose(dev._state, target_state)
+
 
 class TestApplyOperation:
     """Unit tests for the method `_apply_operation()`"""
