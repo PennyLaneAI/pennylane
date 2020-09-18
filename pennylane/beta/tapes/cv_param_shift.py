@@ -39,37 +39,6 @@ class CVParamShiftTape(QuantumTape):
     >>> tape.jacobian(dev, method="analytic")
 
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
-
-    **Gradients of expectation values**
-
-    For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
-    consider the expectation value of an observable :math:`O`:
-
-    .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
-
-    The gradient of this expectation value can be calculated using :math:`2N` evaluations
-    using the parameter-shift rule:
-
-    .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
-
-    **Gradients of variances**
-
-    We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - \langle O \rangle(p_i)^2`,
-    by noting that:
-
-    .. math::
-
-        \frac{\partial g}{\partial p_i}= \frac{\partial}{\partial p_i} \langle O^2 \rangle (p_i)
-        - 2 f(p_i) \frac{\partial f}{\partial p_i}.
-
-    This results in :math:`4N + 1` evaluations.
-
-    In the case where :math:`O` is involutory (:math:`O^2 = I`), the first term in the above
-    expression vanishes, and we are simply left with
-
-    .. math:: \frac{\partial g}{\partial p_i} = - 2 f(p_i) \frac{\partial f}{\partial p_i},
-
-    allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
 
     def _update_circuit_info(self):
@@ -162,30 +131,6 @@ class CVParamShiftTape(QuantumTape):
             return "A2"
 
         return "A"
-
-    def _op_descendants(self, op, only):
-        """Descendants of the given operator in the quantum circuit.
-
-        Args:
-            op (Operator): operator in the quantum circuit
-            only (str, None): the type of descendants to return.
-
-                - ``'G'``: only return non-observables (default)
-                - ``'O'``: only return observables
-                - ``None``: return all descendants
-
-        Returns:
-            list[Operator]: descendants in a topological order
-        """
-        succ = self.graph.descendants_in_order((op,))
-
-        if only == "O":
-            return list(filter(qml.circuit_graph._is_observable, succ))
-
-        if only == "G":
-            return list(itertools.filterfalse(qml.circuit_graph._is_observable, succ))
-
-        return succ
 
     @staticmethod
     def _transform_observable(obs, w, Z, device_wires):
@@ -329,10 +274,14 @@ class CVParamShiftTape(QuantumTape):
         Z = Z @ Z0
 
         # conjugate Z with all the descendant operations
-        B = np.eye(1 + 2 * self.num_wires)
+        B = np.eye(1 + 2 * device.num_wires)
         B_inv = B.copy()
 
-        for BB in self._op_descendants(op, "G"):
+        succ = self.graph.descendants_in_order((op,))
+        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
+        observable_descendents = list(filter(qml.circuit_graph._is_observable, succ))
+
+        for BB in operation_descendents:
             if not BB.supports_heisenberg:
                 # if the descendant gate is non-Gaussian in parameter-shift differentiation
                 # mode, then there must be no observable following it.
@@ -344,8 +293,10 @@ class CVParamShiftTape(QuantumTape):
         Z = B @ Z @ B_inv  # conjugation
 
         # transform the descendant observables into their derivatives using Z
-        desc = self._op_descendants(op, "O")
-        self._measurements = [self._transform_observable(x, self.num_wires, Z, device.wires) for x in desc]
+        self._measurements = [
+            self._transform_observable(ob, device.num_wires, Z, device.wires)
+            for ob in observable_descendents
+        ]
 
         # Measure the transformed observables.
         # The other observables do not depend on this parameter instance,
@@ -353,12 +304,12 @@ class CVParamShiftTape(QuantumTape):
         res = np.array(self.execute_device(params, device))
 
         # add the measured pd's to the correct locations
-        idx = [self.graph.observables.index(x) for x in desc]
+        idx = [self.graph.observables.index(ob) for ob in observable_descendents]
         grad = np.zeros_like(res)
         grad[idx] = res
 
         # restore the original measurements
-        self._measurements = self._original_measurements
+        self._measurements = self._original_measurements.copy()
 
         return grad
 
@@ -410,14 +361,12 @@ class CVParamShiftTape(QuantumTape):
             original[:0] = [self._measurements[i]]
             obs = self._measurements[i].obs
 
-            w = obs.wires
-            A = obs.matrix
-
             # CV first order observable
             # get the heisenberg representation
             # This will be a real 1D vector representing the
             # first order observable in the basis [I, x, p]
-            A = e._heisenberg_rep(e.parameters)  # pylint: disable=protected-access
+            A = obs._heisenberg_rep(obs.parameters)  # pylint: disable=protected-access
+            w = obs.wires
 
             # take the outer product of the heisenberg representation
             # with itself, to get a square symmetric matrix representing
@@ -428,17 +377,22 @@ class CVParamShiftTape(QuantumTape):
             new_measurement = MeasurementProcess(qml.operation.Expectation, obs=new_obs)
             self._measurements[i] = new_measurement
 
+        # temporarily disable the circuit
+        original_graph = self._graph
+        self._graph = None
+
         # Here, we calculate the analytic derivatives of the <A^2> observables.
-        pdA2 = self.parameter_shift(idx, device, params, **options)
+        pdA2 = self.parameter_shift_second_order(idx, device, params, **options)
 
         # restore the original observables
-        self._measurements = self._original_measurements
+        self._measurements = self._original_measurements.copy()
+        self._graph = original_graph
 
         for i in self.var_idx:
             self._measurements[i] = original.pop()
-
-        for i in self.var_idx:
             self._measurements[i].return_type = qml.operation.Variance
+
+        self._graph = original_graph
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations

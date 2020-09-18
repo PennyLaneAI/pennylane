@@ -300,10 +300,10 @@ class QNode:
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
-            return QubitParamShiftTape, interface, "analytic"
+            return QubitParamShiftTape, interface, "best"
 
         if model == "cv":
-            return CVParamShiftTape, interface, "analytic"
+            return CVParamShiftTape, interface, "best"
 
         raise QuantumFunctionError(
             f"Device {device.short_name} uses an unknown model ('{model}') "
