@@ -16,12 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.tapes import (
-    QuantumTape,
-    QNode,
-    qnode,
-    QuantumFunctionError
-)
+from pennylane.beta.tapes import QuantumTape, QNode, qnode, QuantumFunctionError
 from pennylane.beta.queuing import expval, var, sample, probs, MeasurementProcess
 
 
@@ -158,7 +153,11 @@ class TestValidation:
 
         # TODO: remove this monkeypatching once the parameter shift tape is implemented
         with monkeypatch.context() as m:
-            m.setattr(QNode, "_get_parameter_shift_method", lambda d, i: ("QubitParamShiftTape", i, "analytic"))
+            m.setattr(
+                QNode,
+                "_get_parameter_shift_method",
+                lambda d, i: ("QubitParamShiftTape", i, "analytic"),
+            )
             res = QNode.get_best_method(dev, "another_interface")
             assert res == ("QubitParamShiftTape", "another_interface", "analytic")
 
@@ -295,9 +294,7 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        with pytest.raises(
-            QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
         def func(x, y):
@@ -308,9 +305,7 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        with pytest.raises(
-            QuantumFunctionError, match="must return either a single measurement"
-        ):
+        with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
             qn(5, 1)
 
     def test_inconsistent_measurement_order(self):
