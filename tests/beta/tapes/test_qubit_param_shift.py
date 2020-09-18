@@ -91,15 +91,18 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
-    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
         spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
         dev = qml.device("default.qubit", wires=1)
 
         with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1}
 
         autograd_val = tape.jacobian(dev, shift=shift, method="analytic")
         manualgrad_val = (
@@ -110,6 +113,10 @@ class TestParameterShiftRule:
 
         assert spy.call_args[1]["shift"] == shift
 
+        # compare to finite differences
+        numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
+        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
@@ -119,8 +126,11 @@ class TestParameterShiftRule:
         params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1, 2, 3}
 
         autograd_val = tape.jacobian(dev, shift=shift, method="analytic")
         manualgrad_val = np.zeros_like(autograd_val)
@@ -137,6 +147,10 @@ class TestParameterShiftRule:
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
         assert spy.call_args[1]["shift"] == shift
 
+        # compare to finite differences
+        numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
+        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+
     @pytest.mark.xfail(reason="CRX gate does not satisfy the parameter-shift rule")
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
@@ -145,9 +159,12 @@ class TestParameterShiftRule:
         b = 0.123
 
         with QubitParamShiftTape() as tape:
+            qml.QubitStateVector(np.array([1., -1.]) / np.sqrt(2), wires=0)
             qml.Hadamard(wires=0)
             G(b, wires=[0, 1])
             expval(qml.PauliX(0))
+
+        tape.trainable_params = {2}
 
         res = tape.execute(dev)
         assert np.allclose(res, np.cos(b / 2), atol=tol, rtol=0)
@@ -155,6 +172,10 @@ class TestParameterShiftRule:
         grad = tape.jacobian(dev, method="analytic")
         expected = -np.sin(-b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+        # compare to finite differences
+        numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
+        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
 
 class TestJacobianIntegration:

@@ -29,20 +29,31 @@ from .tape import QuantumTape
 class QubitParamShiftTape(QuantumTape):
     """Quantum tape for qubit parameter-shift analytic differentiation method.
 
+    For more details on the qubit parameter-shift rule, see :doc:`/glossary/parameter_shift`.
+
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
     """
 
     def _update_circuit_info(self):
         super()._update_circuit_info()
 
+        # set _parameter_shift as the analytic_pd method
         self.analytic_pd = self._parameter_shift
 
-        self.var_idx = None
+        # check if the quantum tape contains any measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
-        self._original_measurements = self._measurements.copy()
 
         if any(self.var_mask):
+            # The tape contains variances.
+            # Set _parameter_shift_var as the analytic_pd method
             self.analytic_pd = self._parameter_shift_var
+
+            # Make a copy of the original measurements; we will be mutating them
+            # during the parameter shift method.
+            self._original_measurements = self._measurements.copy()
+
+            # Finally, store the locations of any variance measurements in the
+            # measurement queue.
             self.var_idx = np.where(self.var_mask)[0]
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):
@@ -54,18 +65,30 @@ class QubitParamShiftTape(QuantumTape):
         return super()._grad_method(idx, use_graph=use_graph, default_method="A")
 
     def jacobian(self, device, params=None, **options):
+        # The _parameter_shift_var method needs to evaluate the circuit
+        # at the unshifted parameter values; these are stored in the
+        # self._evA attribute. Here, we set the value of the attribute to None
+        # before each Jacobian call, so that the expectation value is calculated only once.
         self._evA = None
-        ret = super().jacobian(device, params, **options)
-        self._evA = None
-
-        return ret
+        return super().jacobian(device, params, **options)
 
     def _parameter_shift(self, idx, device, params, **options):
-        """Partial derivative of expectation values of an observable using the parameter-shift method.
+        r"""Partial derivative using the parameter-shift rule of a tape consisting of *only*
+        expectation values of observables.
+
+        For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
+        consider the expectation value of an observable :math:`O`:
+
+        .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
+
+        The gradient of this expectation value can be calculated using :math:`2N` evaluations
+        using the parameter-shift rule:
+
+        .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
@@ -74,7 +97,7 @@ class QubitParamShiftTape(QuantumTape):
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
+            measurement statistics
         """
         op = self._par_info[idx]["op"]
         p_idx = self._par_info[idx]["p_idx"]
@@ -95,39 +118,70 @@ class QubitParamShiftTape(QuantumTape):
         return (shift_forward - shift_backward) / (2 * np.sin(s))
 
     def _parameter_shift_var(self, idx, device, params, **options):
-        """Partial derivative of the variance of an observable using the parameter-shift method.
+        r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
+        of expectation values and variances of observables.
+
+        For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
+        consider the expectation value of an observable :math:`O`:
+
+        .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
+
+        The gradient of this expectation value can be calculated using :math:`2N` evaluations
+        using the parameter-shift rule:
+
+        .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
+
+        We can extend this to the variance of observable :math:`O`,
+        :math:`g(p_i)=\langle O^2 (p_i) \rangle - \langle O \rangle(p_i)^2`
+        by noting that:
+
+        .. math::
+
+            \frac{\partial g}{\partial p_i}= \frac{\partial}{\partial p_i} \langle O^2 (p_i) \rangle
+            - 2 f(p_i) \frac{\partial f}{\partial p_i}.
+
+        This results in :math:`4N + 1` evaluations.
+
+        In the case where :math:`O` is involutory (:math:`O^2 = I`), the first term in the above
+        expression vanishes, and we are simply left with
+
+        .. math:: \frac{\partial g}{\partial p_i} = - 2 f(p_i) \frac{\partial f}{\partial p_i},
+
+        allowing us to compute the gradient using :math:`2N + 1` evaluations.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
-            device (~.Device, ~.QubitDevice): a PennyLane device
+            device (.Device, .QubitDevice): a PennyLane device
                 that can execute quantum operations and return measurement statistics
             params (list[Any]): the quantum tape operation parameters
 
         Returns:
             array[float]: 1-dimensional array of length determined by the tape output
-                measurement statistics
+            measurement statistics
         """
+        # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
             self._measurements[i].return_type = qml.operation.Expectation
 
-        # get <A>
+        # Get <A>, the expectation value of the tape with unshifted parameters. This is only
+        # calculated once, if `self._evA` is not None.
         if self._evA is None:
             self._evA = np.asarray(self.execute_device(params, device))
 
         # evaluate the analytic derivative of <A>
         pdA = self._parameter_shift(idx, device, params, **options)
 
-        # For involutory observables (A^2 = I) and thus we have d<A^2>/dp = 0
-        # Currently, the only non-involutory observable we have in PL is Hermitian
+        # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
+        # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
         involutory = [i for i in self.var_idx if self.observables[i].name != "Hermitian"]
 
-        # non involutory observables we must compute d<A^2>/dp
+        # If there are non-involutory observables A present, we must compute d<A^2>/dp.
         non_involutory = set(self.var_idx) - set(involutory)
         original = []
 
         for i in non_involutory:
-            # need to calculate d<A^2>/dp; replace the involutory observables
-            # in the queue with <A^2>.
+            # We need to calculate d<A^2>/dp; to do so, we replace the
+            # involutory observables A in the queue with A^2.
             original[:0] = [self._measurements[i]]
             obs = self._measurements[i].obs
 
@@ -143,10 +197,15 @@ class QubitParamShiftTape(QuantumTape):
         pdA2 = 0
 
         if non_involutory:
-            # calculate the analytic derivatives of the <A^2> observables
+            # Non-involutory observables are present; the partial derivative of <A^2>
+            # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
+            # observables.
             pdA2 = self._parameter_shift(idx, device, params, **options)
 
             if involutory:
+                # We need to explicitly specify that the gradient of
+                # the involutory observables is 0, since we saved on processing
+                # by not replacing these observables with their square.
                 pdA2[np.array(involutory)] = 0
 
         # restore the original observables
