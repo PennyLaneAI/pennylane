@@ -252,6 +252,12 @@ class CVParamShiftTape(QuantumTape):
         grad_method = self._par_info[idx]["grad_method"]
 
         if options.get("force_order2", grad_method == "A2"):
+
+            if "PolyXP" not in device.observables:
+                # If the device does not support PolyXP, must fallback
+                # to numeric differentiation.
+                return self.numeric_pd(idx, device, params, **options)
+
             return self.parameter_shift_second_order(idx, device, params, **options)
 
         return self.parameter_shift_first_order(idx, device, params, **options)
@@ -379,6 +385,11 @@ class CVParamShiftTape(QuantumTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
+        if "PolyXP" not in device.observables:
+            # If the device does not support PolyXP, must fallback
+            # to numeric differentiation.
+            return self.numeric_pd(idx, device, params, **options)
+
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
             self._measurements[i].return_type = qml.operation.Expectation
