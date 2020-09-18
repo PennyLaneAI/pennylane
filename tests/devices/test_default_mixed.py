@@ -64,6 +64,17 @@ class TestState:
         assert np.allclose(rho, dev.state)
 
 
+@pytest.mark.parametrize("nr_wires", [1, 2, 3])
+class TestReset:
+
+    def test_reset_basis(self, nr_wires):
+        dev = qml.device('default.mixed', wires=nr_wires)
+        dev._state = dev._create_basis_state(1)
+        dev.reset()
+
+        assert np.allclose(dev._state, dev._create_basis_state(0))
+
+
 # Note: tests for reset require the apply() method to change the device's internal state
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
@@ -76,8 +87,13 @@ class TestAnalyticProb:
         dev = qml.device('default.mixed', wires=nr_wires)
         probs = np.zeros(2 ** nr_wires)
         probs[0] = 1
-
         assert np.allclose(probs, dev.analytic_probability())
+
+    def test_none_state(self, nr_wires):
+        """Tests that return is `None` when the state is `None`"""
+        dev = qml.device('default.mixed', wires=nr_wires)
+        dev._state = None
+        assert dev.analytic_probability() == None
 
 
 class TestKrausOps:
@@ -118,3 +134,10 @@ class TestKrausOps:
         dev = qml.device('default.mixed', wires=1)
 
         assert np.allclose(dev._get_kraus(ops[0]), ops[1])
+
+class TestApply:
+    """Dummy test for dummy apply"""
+    def test_apply(self):
+        dev = qml.device('default.mixed', wires=1)
+        dev.apply(qml.PauliX(0))
+        assert 1 == 1
