@@ -384,7 +384,24 @@ class TestApplyDiagonal:
 
 
 class TestApplyOperation:
-    """Unit tests for the method `_apply_operation()`"""
+    """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`
+    and `_apply_diagonal_unitary()`, we just check that the correct method is called"""
+
+    def test_diag_apply_op(self):
+        dev = qml.device('default.mixed', wires=1)
+        dev._state = basis_state(0, 1)
+        target_state = basis_state(0, 1)
+        dev._apply_operation(PauliZ(0))
+
+        assert np.allclose(dev._state, target_state)
+
+    def test_channel_apply_op(self):
+        dev = qml.device('default.mixed', wires=1)
+        dev._state = basis_state(0, 1)
+        target_state = basis_state(1, 1)
+        dev._apply_operation(PauliX(0))
+
+        assert np.allclose(dev._state, target_state)
 
 
 class TestApply:
