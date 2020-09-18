@@ -1303,11 +1303,11 @@ class QuantumTape(AnnotatedQueue):
                 # Independent parameter. Skip, as this parameter has a gradient of 0.
                 continue
 
-            if (method == "best" and param_method == "F") or (method == "numeric"):
+            if (method == "best" and param_method[0] == "F") or (method == "numeric"):
                 # finite difference method
                 g = self.numeric_pd(l, device, params=params, **options)
 
-            elif (method == "best" and param_method == "A") or (method == "analytic"):
+            elif (method == "best" and param_method[0] == "A") or (method == "analytic"):
                 # analytic method
                 g = self.analytic_pd(l, device, params=params, **options)
 

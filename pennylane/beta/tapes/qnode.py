@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import Device, QuantumFunctionError
 from pennylane.beta.queuing import MeasurementProcess
-from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape
+from pennylane.beta.tapes import QuantumTape, QubitParamShiftTape, CVParamShiftTape
 from pennylane.beta.interfaces.autograd import AutogradInterface
 
 
@@ -303,13 +303,7 @@ class QNode:
             return QubitParamShiftTape, interface, "analytic"
 
         if model == "cv":
-            # return CVParamShiftTape, interface, "analytic"
-            warnings.warn(
-                "CV parameter-shift rule not yet implemented! Falling back "
-                "to finite-differences."
-            )
-
-            return QuantumTape, interface, "numeric"
+            return CVParamShiftTape, interface, "analytic"
 
         raise QuantumFunctionError(
             f"Device {device.short_name} uses an unknown model ('{model}') "
