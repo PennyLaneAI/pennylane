@@ -226,6 +226,9 @@ class DefaultMixed(QubitDevice):
 
         channel_wires = self.map_wires(wires)
 
+        # reshape vectors
+        eigvals = self._cast(self._reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE)
+
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[: 2 * self.num_wires]
 
