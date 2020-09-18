@@ -29,7 +29,16 @@ from .tape import QuantumTape
 class QubitParamShiftTape(QuantumTape):
     r"""Quantum tape for qubit parameter-shift analytic differentiation method.
 
+    This class extends the :class:`~.jacobian` method of the quantum tape
+    to support analytic gradients of qubit operations using the parameter-shift rule.
+    This gradient method returns *exact* gradients, and can be computed directly
+    on quantum hardware. Simply pass ``method=analytic`` when computing the Jacobian:
+
+    >>> tape.jacobian(dev, method="analytic")
+
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
+
+    **Gradients of expectation values**
 
     For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
     consider the expectation value of an observable :math:`O`:
@@ -40,6 +49,8 @@ class QubitParamShiftTape(QuantumTape):
     using the parameter-shift rule:
 
     .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
+
+    **Gradients of variances**
 
     We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - \langle O \rangle(p_i)^2`,
     by noting that:
@@ -62,16 +73,16 @@ class QubitParamShiftTape(QuantumTape):
     def _update_circuit_info(self):
         super()._update_circuit_info()
 
-        # set _parameter_shift as the analytic_pd method
-        self.analytic_pd = self._parameter_shift
+        # set parameter_shift as the analytic_pd method
+        self.analytic_pd = self.parameter_shift
 
         # check if the quantum tape contains any measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
 
         if any(self.var_mask):
             # The tape contains variances.
-            # Set _parameter_shift_var as the analytic_pd method
-            self.analytic_pd = self._parameter_shift_var
+            # Set parameter_shift_var as the analytic_pd method
+            self.analytic_pd = self.parameter_shift_var
 
             # Make a copy of the original measurements; we will be mutating them
             # during the parameter shift method.
@@ -90,14 +101,14 @@ class QubitParamShiftTape(QuantumTape):
         return super()._grad_method(idx, use_graph=use_graph, default_method="A")
 
     def jacobian(self, device, params=None, **options):
-        # The _parameter_shift_var method needs to evaluate the circuit
+        # The parameter_shift_var method needs to evaluate the circuit
         # at the unshifted parameter values; these are stored in the
         # self._evA attribute. Here, we set the value of the attribute to None
         # before each Jacobian call, so that the expectation value is calculated only once.
         self._evA = None
         return super().jacobian(device, params, **options)
 
-    def _parameter_shift(self, idx, device, params, **options):
+    def parameter_shift(self, idx, device, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of *only*
         expectation values of observables.
 
@@ -132,7 +143,7 @@ class QubitParamShiftTape(QuantumTape):
 
         return (shift_forward - shift_backward) / (2 * np.sin(s))
 
-    def _parameter_shift_var(self, idx, device, params, **options):
+    def parameter_shift_var(self, idx, device, params, **options):
         r"""Partial derivative using the parameter-shift rule of a tape consisting of a mixture
         of expectation values and variances of observables.
 
@@ -156,7 +167,7 @@ class QubitParamShiftTape(QuantumTape):
             self._evA = np.asarray(self.execute_device(params, device))
 
         # evaluate the analytic derivative of <A>
-        pdA = self._parameter_shift(idx, device, params, **options)
+        pdA = self.parameter_shift(idx, device, params, **options)
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
         # Currently, the only observable we have in PL that may be non-involutory is qml.Hermitian
@@ -187,7 +198,7 @@ class QubitParamShiftTape(QuantumTape):
             # Non-involutory observables are present; the partial derivative of <A^2>
             # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
             # observables.
-            pdA2 = self._parameter_shift(idx, device, params, **options)
+            pdA2 = self.parameter_shift(idx, device, params, **options)
 
             if involutory:
                 # We need to explicitly specify that the gradient of

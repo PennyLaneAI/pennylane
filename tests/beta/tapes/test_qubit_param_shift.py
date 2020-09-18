@@ -94,7 +94,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
-        spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
+        spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
         dev = qml.device("default.qubit", wires=1)
 
         with QubitParamShiftTape() as tape:
@@ -121,7 +121,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
         """Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."""
-        spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
+        spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
         dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
@@ -286,7 +286,7 @@ class TestJacobianIntegration:
 
     def test_involutory_variance(self, mocker, tol):
         """Tests qubit observable that are involutory"""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "_parameter_shift_var")
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
         spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
 
@@ -322,7 +322,7 @@ class TestJacobianIntegration:
 
     def test_non_involutory_variance(self, mocker, tol):
         """Tests a qubit Hermitian observable that is not involutory"""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "_parameter_shift_var")
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
         spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
 
@@ -361,7 +361,7 @@ class TestJacobianIntegration:
     def test_involutory_and_noninvolutory_variance(self, mocker, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
         a involutory observable."""
-        spy_analytic_var = mocker.spy(QubitParamShiftTape, "_parameter_shift_var")
+        spy_analytic_var = mocker.spy(QubitParamShiftTape, "parameter_shift_var")
         spy_numeric = mocker.spy(QubitParamShiftTape, "numeric_pd")
         spy_execute = mocker.spy(QubitParamShiftTape, "execute_device")
 

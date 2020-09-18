@@ -232,7 +232,7 @@ class TestQNode:
 
         grad_fn = qml.grad(loss)
 
-        spy = mocker.spy(QubitParamShiftTape, "_parameter_shift")
+        spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
 
         res = grad_fn(a, b)
 
