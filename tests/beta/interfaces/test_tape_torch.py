@@ -626,7 +626,7 @@ class TestQNode:
             assert args[1]["h"] == 1e-8
 
     def test_changing_trainability(self, mocker, tol):
-        """Test changing the trainability of parameters changes the
+        """Test that changing the trainability of parameters changes the
         number of differentiation requests made"""
         a_val = 0.1
         b_val = 0.2
@@ -732,6 +732,12 @@ class TestQNode:
 
         assert res.shape == (2,)
         assert isinstance(res, torch.Tensor)
+
+        with pytest.raises(
+            RuntimeError,
+            match="element 0 of tensors does not require grad and does not have a grad_fn",
+        ):
+            res.backward()
 
     @pytest.mark.parametrize(
         "U", [torch.tensor([[0, 1], [1, 0]], requires_grad=False), np.array([[0, 1], [1, 0]])]
@@ -913,20 +919,28 @@ class TestQNode:
 
 
 def qtransform(qnode, a, interface=torch):
-    """transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
+    """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
     def construct(self, args, kwargs):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
+
+        # the following global variable is defined simply for testing
+        # purposes, so that we can easily extract the transformed operations
+        # for verification.
         global t_op
+
+        t_op = []
 
         QNode.construct(self, args, kwargs)
 
         new_ops = []
         for o in self.qtape.operations:
+            # here, we loop through all tape operations, and make
+            # the transformation if a RY gate is encountered.
             if isinstance(o, qml.RY):
-                t_op = qml.RX(-a * interface.cos(o.data[0]), wires=o.wires)
-                new_ops.append(t_op)
+                t_op.append(qml.RX(-a * interface.cos(o.data[0]), wires=o.wires))
+                new_ops.append(t_op[-1])
             else:
                 new_ops.append(o)
 
@@ -948,6 +962,8 @@ def test_transform(monkeypatch, tol):
 
     @qnode(dev, interface="torch")
     def circuit(weights):
+        # the following global variables are defined simply for testing
+        # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)
         op2 = qml.RX(weights[1], wires=0)
@@ -956,26 +972,37 @@ def test_transform(monkeypatch, tol):
     weights = torch.tensor([0.32, 0.543], requires_grad=True)
     a = torch.tensor(0.5, requires_grad=True)
 
+    # transform the circuit QNode with trainable weight 'a'
     new_qnode = qtransform(circuit, a)
+
+    # evaluate the transformed QNode
     res = new_qnode(weights)[0]
+
+    # evaluate the original QNode with pre-processed parameters
     res2 = circuit(torch.sin(weights))[0]
+
+    # the loss is the sum of the two QNode evaluations
     loss = res + res2
 
+    # verify that the transformed QNode has the expected operations
     assert circuit.qtape.operations == [op1, op2]
-    assert new_qnode.qtape.operations[0] == t_op
+    assert new_qnode.qtape.operations[0] == t_op[0]
     assert new_qnode.qtape.operations[1].name == op2.name
     assert new_qnode.qtape.operations[1].wires == op2.wires
 
+    # check that the incident gate arguments of both QNode tapes are correct
     tape_params = [p.detach() for p in circuit.qtape.get_parameters()]
     assert np.all(tape_params == [torch.sin(w) for w in weights])
 
     tape_params = [p.detach() for p in new_qnode.qtape.get_parameters()]
     assert np.all(tape_params == [-a * torch.cos(weights[0]), weights[1]])
 
+    # verify that the gradient has the correct shape
     loss.backward()
     assert weights.grad.shape == weights.shape
     assert a.grad.shape == a.shape
 
+    # compare against the expected values
     assert np.allclose(loss.detach(), 1.8244501889992706, atol=tol, rtol=0)
     assert np.allclose(weights.grad, [-0.26610258, -0.47053553], atol=tol, rtol=0)
     assert np.allclose(a.grad, 0.06486032, atol=tol, rtol=0)

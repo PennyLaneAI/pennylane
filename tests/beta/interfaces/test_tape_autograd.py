@@ -1039,7 +1039,6 @@ class TestQNode:
 
     def test_matrix_parameter(self, dev_name, diff_method, tol):
         """Test that the autograd interface works correctly
-
         with a matrix parameter"""
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
         a = np.array(0.1, requires_grad=True)
@@ -1091,6 +1090,9 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == {1, 2, 3, 4}
         elif diff_method == "backprop":
+            # For a backprop device, no interface wrapping is performed, and QuantumTape.jacobian()
+            # is never called. As a result, QuantumTape.trainable_params is never set --- the ML
+            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
             assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
 
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
@@ -1098,6 +1100,7 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
         elif diff_method == "backprop":
+            # In backprop mode, all parameters are returned.
             assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
@@ -1163,14 +1166,16 @@ class TestQNode:
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        def _asarray(args, dtype=np.float64):
-            if len({i.shape[0] if i.shape else 0 for i in args}):
-                res = [np.reshape(i, [-1]) for i in args]
-                return np.hstack(res)
-            return np.tensor(args, dtype=dtype)
-
         if dev_name == "default.qubit.autograd":
-            # we need to patch the asarray method on the device
+            # The current DefaultQubitAutograd device provides an _asarray method that does
+            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
+            # flatten the array. Here, we patch the _asarray method on the device to achieve this
+            # behaviour; once the tape has moved from the beta folder, we should implement
+            # this change directly in the device.
+
+            def _asarray(args, dtype=np.float64):
+                return np.hstack(args).flatten()
+
             monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="autograd")
@@ -1214,20 +1219,28 @@ class TestQNode:
 
 
 def qtransform(qnode, a, interface=np):
-    """transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
+    """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
     def construct(self, args, kwargs):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
+
+        # the following global variable is defined simply for testing
+        # purposes, so that we can easily extract the transformed operations
+        # for verification.
         global t_op
+
+        t_op = []
 
         QNode.construct(self, args, kwargs)
 
         new_ops = []
         for o in self.qtape.operations:
+            # here, we loop through all tape operations, and make
+            # the transformation if a RY gate is encountered.
             if isinstance(o, qml.RY):
-                t_op = qml.RX(-a * interface.cos(o.data[0]), wires=o.wires)
-                new_ops.append(t_op)
+                t_op.append(qml.RX(-a * interface.cos(o.data[0]), wires=o.wires))
+                new_ops.append(t_op[-1])
             else:
                 new_ops.append(o)
 
@@ -1253,6 +1266,8 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     @qnode(dev, interface="autograd", diff_method=diff_method)
     def circuit(weights):
+        # the following global variables are defined simply for testing
+        # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)
         op2 = qml.RX(weights[1], wires=0)
@@ -1262,27 +1277,44 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
     a = np.array(0.5, requires_grad=True)
 
     def loss(weights, a):
-        global new_qnode
-        new_qnode = qtransform(circuit, a)
-        return new_qnode(weights)[0] + circuit(np.sin(weights))[0]
+        # the following global variable is defined simply for testing
+        # purposes, so that we can easily extract the transformed QNode
+        # for verification.
+        global new_circuit
+
+        # transform the circuit QNode with trainable weight 'a'
+        new_circuit = qtransform(circuit, a)
+
+        # evaluate the transformed QNode
+        res = new_circuit(weights)[0]
+
+        # evaluate the original QNode with pre-processed parameters
+        res2 = circuit(np.sin(weights))[0]
+
+        # return the sum of the two QNode evaluations
+        return res + res2
 
     res = loss(weights, a)
 
+    # verify that the transformed QNode has the expected operations
     assert circuit.qtape.operations == [op1, op2]
-    assert new_qnode.qtape.operations[0] == t_op
-    assert new_qnode.qtape.operations[1].name == op2.name
-    assert new_qnode.qtape.operations[1].wires == op2.wires
+    assert new_circuit.qtape.operations[0] == t_op[0]
+    assert new_circuit.qtape.operations[1].name == op2.name
+    assert new_circuit.qtape.operations[1].wires == op2.wires
 
+    # check that the incident gate arguments of both QNode tapes are correct
     assert np.all(np.array(circuit.qtape.get_parameters()) == np.sin(weights))
     assert np.all(
-        np.array(new_qnode.qtape.get_parameters()) == [-a * np.cos(weights[0]), weights[1]]
+        np.array(new_circuit.qtape.get_parameters()) == [-a * np.cos(weights[0]), weights[1]]
     )
 
+    # verify that the gradient has the correct shape
     grad = qml.grad(loss)(weights, a)
     assert len(grad) == 2
     assert grad[0].shape == weights.shape
     assert grad[1].shape == a.shape
 
+    # compare against the expected values
     assert np.allclose(res, 1.8244501889992706, atol=tol, rtol=0)
     assert np.allclose(grad[0], [-0.26610258, -0.47053553], atol=tol, rtol=0)
     assert np.allclose(grad[1], 0.06486032, atol=tol, rtol=0)

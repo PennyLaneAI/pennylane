@@ -792,7 +792,8 @@ class TestQNode:
     """Same tests as above, but this time via the QNode interface!"""
 
     def test_execution_no_interface(self, dev_name, diff_method):
-        """Test execution works without an interface"""
+        """Test execution works without an interface, and that trainable parameters
+        are correctly inferred within a gradient tape."""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
@@ -964,7 +965,7 @@ class TestQNode:
         assert [r.dtype is tf.float32 for r in res]
 
     def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
-        """Test setting jacobian options"""
+        """Test setting finite-difference jacobian options"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
@@ -1058,10 +1059,10 @@ class TestQNode:
         dev = qml.device(dev_name, wires=1)
 
         @qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(a, b, c):
-            qml.RY(a * c, wires=0)
-            qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + tf.sin(a), wires=0)
+        def circuit(x, y, z):
+            qml.RY(x * z, wires=0)
+            qml.RZ(y, wires=0)
+            qml.RX(z + z ** 2 + tf.sin(a), wires=0)
             return expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
@@ -1078,7 +1079,7 @@ class TestQNode:
         assert isinstance(res[2], tf.Tensor)
 
     def test_no_trainable_parameters(self, dev_name, diff_method, tol):
-        """Test evaluation and Jacobian if there are no trainable parameters"""
+        """Test evaluation if there are no trainable parameters"""
         dev = qml.device(dev_name, wires=2)
 
         @qnode(dev, diff_method=diff_method, interface="tf")
@@ -1157,6 +1158,9 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == {1, 2, 3, 4}
         elif diff_method == "backprop":
+            # For a backprop device, no interface wrapping is performed, and QuantumTape.jacobian()
+            # is never called. As a result, QuantumTape.trainable_params is never set --- the ML
+            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
             assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
 
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
@@ -1238,7 +1242,11 @@ class TestQNode:
             return tf.cast(res, dtype=dtype)
 
         if dev_name == "default.qubit.tf":
-            # we need to patch the asarray method on the device
+            # TODO: The current DefaultQubitTF device provides an _asarray method that does
+            # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
+            # flatten the array. Here, we patch the _asarray method on the device to achieve this
+            # behaviour; once the tape has moved from the beta folder, we should implement
+            # this change directly in the device.
             monkeypatch.setattr(dev, "_asarray", _asarray)
 
         @qnode(dev, diff_method=diff_method, interface="tf")
@@ -1283,20 +1291,28 @@ class TestQNode:
 
 
 def qtransform(qnode, a, interface=tf):
-    """transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
+    """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
     def construct(self, args, kwargs):
         """New quantum tape construct method, that performs
         the transform on the tape in a define-by-run manner"""
+
+        # the following global variable is defined simply for testing
+        # purposes, so that we can easily extract the transformed operations
+        # for verification.
         global t_op
+
+        t_op = []
 
         QNode.construct(self, args, kwargs)
 
         new_ops = []
         for o in self.qtape.operations:
+            # here, we loop through all tape operations, and make
+            # the transformation if a RY gate is encountered.
             if isinstance(o, qml.RY):
-                t_op = qml.RX(-a * interface.cos(o.data[0]), wires=o.wires)
-                new_ops.append(t_op)
+                t_op.append(qml.RX(-a * interface.cos(o.data[0]), wires=o.wires))
+                new_ops.append(t_op[-1])
             else:
                 new_ops.append(o)
 
@@ -1321,6 +1337,8 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     @qnode(dev, interface="tf", diff_method=diff_method)
     def circuit(weights):
+        # the following global variables are defined simply for testing
+        # purposes, so that we can easily extract the operations for verification.
         global op1, op2
         op1 = qml.RY(weights[0], wires=0)
         op2 = qml.RX(weights[1], wires=0)
@@ -1330,24 +1348,32 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
     a = tf.Variable(0.5, dtype=tf.float64)
 
     with tf.GradientTape(persistent=True) as tape:
+        # transform the circuit QNode with trainable weight 'a'
         new_qnode = qtransform(circuit, a)
+        # evaluate the transformed QNode
         res = new_qnode(weights)[0]
+        # evaluate the original QNode with pre-processed parameters
         res2 = circuit(tf.sin(weights))[0]
+        # the loss is the sum of the two QNode evaluations
         loss = res + res2
 
+    # verify that the transformed QNode has the expected operations
     assert circuit.qtape.operations == [op1, op2]
-    assert new_qnode.qtape.operations[0] == t_op
+    assert new_qnode.qtape.operations[0] == t_op[0]
     assert new_qnode.qtape.operations[1].name == op2.name
     assert new_qnode.qtape.operations[1].wires == op2.wires
 
+    # check that the incident gate arguments of both QNode tapes are correct
     assert np.all(circuit.qtape.get_parameters() == tf.sin(weights))
     assert np.all(new_qnode.qtape.get_parameters() == [-a * tf.cos(weights[0]), weights[1]])
 
+    # verify that the gradient has the correct shape
     grad = tape.gradient(loss, [weights, a])
     assert len(grad) == 2
     assert grad[0].shape == weights.shape
     assert grad[1].shape == a.shape
 
+    # compare against the expected values
     assert np.allclose(loss, 1.8244501889992706, atol=tol, rtol=0)
     assert np.allclose(grad[0], [-0.26610258, -0.47053553], atol=tol, rtol=0)
     assert np.allclose(grad[1], 0.06486032, atol=tol, rtol=0)

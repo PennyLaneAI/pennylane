@@ -31,9 +31,9 @@ class QuantumFunctionError(Exception):
 
 
 class QNode:
-    """Base class for quantum nodes in the hybrid computational graph.
+    """Represents a quantum node in the hybrid computational graph.
 
-    A *quantum node* encapsulates a :ref:`quantum function <intro_vcirc_qfunc>`
+    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
@@ -81,7 +81,7 @@ class QNode:
               devices that are classically end-to-end differentiable, for example
               :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
               QNode can only be used with the machine-learning framework supported
-              by the device; a separate ``interface`` argument should not be passed.
+              by the device.
 
             * ``"reversible"``: Uses a reversible method for computing the gradient.
               This method is similar to ``"backprop"``, but trades off increased
@@ -94,11 +94,12 @@ class QNode:
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient computation.
 
-
             * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible, with finite-difference as a fallback.
+              rule for all supported quantum operation arguments, with finite-difference
+              as a fallback.
 
-            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
+            * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
+              arguments.
 
     Keyword Args:
         h=1e-7 (float): step size for the finite difference method
@@ -133,9 +134,7 @@ class QNode:
         self.device = device
         self.qtape = None
 
-        self._tape, self.interface, self.diff_method = self._get_tape(
-            device, interface, diff_method
-        )
+        self._tape, self.interface, self.diff_method = self.get_tape(device, interface, diff_method)
         self.diff_options = diff_options or {}
         self.diff_options["method"] = self.diff_method
 
@@ -143,7 +142,7 @@ class QNode:
         self.max_expansion = 2
 
     @staticmethod
-    def _get_tape(device, interface, diff_method="best"):
+    def get_tape(device, interface, diff_method="best"):
         """Determine the best QuantumTape, differentiation method, and interface
         for a requested device, interface, and diff method.
 
@@ -161,7 +160,7 @@ class QNode:
         """
 
         if diff_method == "best":
-            return QNode._get_best_method(device, interface)
+            return QNode.get_best_method(device, interface)
 
         if diff_method == "backprop":
             return QNode._validate_backprop_method(device, interface)
@@ -181,7 +180,7 @@ class QNode:
         )
 
     @staticmethod
-    def _get_best_method(device, interface):
+    def get_best_method(device, interface):
         """Returns the 'best' QuantumTape and differentiation method
         for a particular device and interface combination.
 
@@ -337,18 +336,18 @@ class QNode:
             self.INTERFACE_MAP[self.interface](self)
 
         with self.qtape:
-            measurements = self.func(*args, **kwargs)
+            measurement_processes = self.func(*args, **kwargs)
 
-        if not isinstance(measurements, Sequence):
-            measurements = (measurements,)
+        if not isinstance(measurement_processes, Sequence):
+            measurement_processes = (measurement_processes,)
 
-        if not all(isinstance(m, MeasurementProcess) for m in measurements):
+        if not all(isinstance(m, MeasurementProcess) for m in measurement_processes):
             raise QuantumFunctionError(
-                "A quantum function must return either a single measured observable "
-                "or a nonempty sequence of measured observables."
+                "A quantum function must return either a single measurement, "
+                "or a nonempty sequence of measurements."
             )
 
-        if not all(ret == m for ret, m in zip(measurements, self.qtape.measurements)):
+        if not all(ret == m for ret, m in zip(measurement_processes, self.qtape.measurements)):
             raise QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
@@ -455,8 +454,12 @@ class QNode:
 def qnode(device, interface="autograd", diff_method="best", **diff_options):
     """Decorator for creating QNodes.
 
-    When applied to a quantum function, this decorator converts it into
-    a :class:`QNode` instance.
+    This decorator is used to indicate to PennyLane that the decorated function contains a
+    :ref:`quantum variational circuit <glossary_variational_circuit>` that should be bound to a
+    compatible device.
+
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    the quantum circuit.
 
     .. note::
 
@@ -513,9 +516,11 @@ def qnode(device, interface="autograd", diff_method="best", **diff_options):
               Only allowed on devices that provide their own gradient rules.
 
             * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule where possible, with finite-difference as a fallback.
+              rule for all supported quantum operation arguments, with finite-difference
+              as a fallback.
 
-            * ``"finite-diff"``: Uses numerical finite-differences for all parameters.=
+            * ``"finite-diff"``: Uses numerical finite-differences for all quantum
+              operation arguments.
 
     Keyword Args:
         h=1e-7 (float): Step size for the finite difference method.
