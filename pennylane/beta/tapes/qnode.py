@@ -71,7 +71,7 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
-        diff_method (str, None): the method of differentiation to use in the created QNode.
+        diff_method (str, None): the method of differentiation to use in the created QNode
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
               device directly to compute the gradient if supported, otherwise will use
@@ -92,7 +92,8 @@ class QNode:
               for example :class:`default.qubit <~.DefaultQubit>`.
 
             * ``"device"``: Queries the device directly for the gradient.
-              Only allowed on devices that provide their own gradient rules.
+              Only allowed on devices that provide their own gradient computation.
+
 
             * ``"parameter-shift"``: Use the analytic parameter-shift
               rule where possible, with finite-difference as a fallback.
@@ -100,7 +101,7 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all parameters.
 
     Keyword Args:
-        h=1e-7 (float): Step size for the finite difference method.
+        h=1e-7 (float): step size for the finite difference method
         order=1 (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
 
@@ -156,7 +157,7 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
         """
 
         if diff_method == "best":
@@ -203,7 +204,7 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
         """
         try:
             return QNode._validate_backprop_method(device, interface)
@@ -228,11 +229,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
-            QuantumFunctionError: If the device does not support backpropagation, or the
-            interface provided is not compatible with the device.
+            QuantumFunctionError: if the device does not support backpropagation, or the
+            interface provided is not compatible with the device
         """
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
@@ -264,11 +265,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
             QuantumFunctionError: if the device does not provide a native method for computing
-            the Jacobian.
+            the Jacobian
         """
         # determine if the device provides its own jacobian method
         provides_jacobian = device.capabilities().get("provides_jacobian", False)
@@ -294,11 +295,11 @@ class QNode:
         Returns:
             tuple[.QuantumTape, str, str]: tuple containing the compatible
             QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method.
+            to pass to the ``QuantumTape.jacobian`` method
 
         Raises:
             QuantumFunctionError: if the device model does not have a corresponding
-            parameter-shift rule.
+            parameter-shift rule
         """
         # determine if the device provides its own jacobian method
         model = device.capabilities().get("model", None)
@@ -322,7 +323,7 @@ class QNode:
             return QuantumTape, interface, "numeric"
 
         raise QuantumFunctionError(
-            f"Device {device.short_name} has model {model} "
+            f"Device {device.short_name} uses an unknown model ('{model}') "
             "that does not support the parameter-shift rule."
         )
 
