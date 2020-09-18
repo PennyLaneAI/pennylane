@@ -41,8 +41,7 @@ class QubitParamShiftTape(QuantumTape):
 
     .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
 
-    We can extend this to the variance of observable :math:`O`,
-    :math:`g(p_i)=\langle O^2 \rangle (p_i) - \langle O \rangle(p_i)^2`
+    We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - \langle O \rangle(p_i)^2`,
     by noting that:
 
     .. math::
