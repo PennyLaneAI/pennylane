@@ -365,7 +365,7 @@ class TestTFInterface:
 
 
 class TestTorchInterface:
-    """Unittests for applying the tensorflow interface"""
+    """Unittests for applying the torch interface"""
 
     torch = pytest.importorskip("torch", minversion="1.3")
 

@@ -491,7 +491,8 @@ class TestQNode:
 
         assert circuit.qtape.interface == "torch"
 
-        # with the interface, the tape returns tensorflow tensors
+        # with the interface, the tape returns torch tensors
+
         assert isinstance(res, torch.Tensor)
         assert res.shape == (1,)
 

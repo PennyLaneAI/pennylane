@@ -1038,7 +1038,8 @@ class TestQNode:
         assert grad == tuple()
 
     def test_matrix_parameter(self, dev_name, diff_method, tol):
-        """Test that the TF interface works correctly
+        """Test that the autograd interface works correctly
+
         with a matrix parameter"""
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
         a = np.array(0.1, requires_grad=True)
