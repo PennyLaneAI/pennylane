@@ -1584,7 +1584,6 @@ class CVOperation(CV, Operation):
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
         p = self.parameters
-        print('here2', p, self)
         if inverse:
             if self.par_domain == "A":
                 # TODO: expand this for the new par domain class, for non-unitary matrices.

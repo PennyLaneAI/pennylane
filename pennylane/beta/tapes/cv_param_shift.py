@@ -19,6 +19,7 @@ and first- and second-order observables.
 """
 # pylint: disable=attribute-defined-outside-init
 import itertools
+import warnings
 
 import numpy as np
 
@@ -194,6 +195,17 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
+        if "PolyXP" not in device.observables:
+            # If the device does not support PolyXP, must fallback
+            # to numeric differentiation.
+            warnings.warn(
+                f"The device {device.short_name} does not support "
+                "the PolyXP observable. The analytic parameter-shift cannot be used for "
+                "second-order observables; falling back to finite-differences.",
+                UserWarning,
+            )
+            return self.numeric_pd(idx, device, params, **options)
+
         t_idx = list(self.trainable_params)[idx]
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
@@ -289,12 +301,6 @@ class CVParamShiftTape(QubitParamShiftTape):
         grad_method = self._par_info[idx]["grad_method"]
 
         if options.get("force_order2", False) or grad_method == "A2":
-
-            if "PolyXP" not in device.observables:
-                # If the device does not support PolyXP, must fallback
-                # to numeric differentiation.
-                return self.numeric_pd(idx, device, params, **options)
-
             return self.parameter_shift_second_order(idx, device, params, **options)
 
         return self.parameter_shift_first_order(idx, device, params, **options)
@@ -325,6 +331,12 @@ class CVParamShiftTape(QubitParamShiftTape):
         if "PolyXP" not in device.observables:
             # If the device does not support PolyXP, must fallback
             # to numeric differentiation.
+            warnings.warn(
+                f"The device {device.short_name} does not support "
+                "the PolyXP observable. The analytic parameter-shift cannot be used for "
+                "second-order observables; falling back to finite-differences.",
+                UserWarning,
+            )
             return self.numeric_pd(idx, device, params, **options)
 
         temp_tape = self.copy()
@@ -340,7 +352,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             self._evA = np.asarray(temp_tape.execute_device(params, device))
 
         # evaluate the analytic derivative of <A>
-        pdA = temp_tape.parameter_shift(idx, device, params, **options)
+        pdA = temp_tape.parameter_shift_first_order(idx, device, params, **options)
 
         for i in self.var_idx:
             # We need to calculate d<A^2>/dp; to do so, we replace the
