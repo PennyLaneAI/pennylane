@@ -50,16 +50,26 @@ class CVParamShiftTape(QubitParamShiftTape):
         if op.grad_method != "A":
             raise ValueError(f"Operation {op} has unknown gradient method {op.grad_method}")
 
+        if not use_graph:
+            raise ValueError(
+                "The CV parameter-shift rule must always use the "
+                "graph to determine operation gradient methods"
+            )
+
         # Operation supports the CV parameter-shift rule.
         # Create an empty list to store the 'best' partial derivative method
         # for each observable
         best = []
 
-        for ob in self.observables:
+        for m in self.measurements:
 
-            # get the set of operations betweens the
-            # operation and the observable
-            ops_between = self.graph.nodes_between(op, ob)
+            if (m.return_type is qml.operation.Probability) or (m.obs.ev_order is None):
+                # Higher-order observables (including probability) only support finite differences.
+                best.append("F")
+                continue
+
+            # get the set of operations betweens the operation and the observable
+            ops_between = self.graph.nodes_between(op, m.obs)
 
             if not ops_between:
                 # if there is no path between the operation and the observable,
@@ -76,20 +86,17 @@ class CVParamShiftTape(QubitParamShiftTape):
                 # and the observable. Must fallback to numeric differentiation.
                 best_method = "F"
 
-            elif ob.return_type is qml.operation.Probability:
-                # probability is a higher order expectation, and thus does not permit
-                # the CV parameter-shift
-                best_method = "F"
+            elif m.obs.ev_order == 2:
 
-            elif ob.return_type is qml.operation.Variance:
-                # we only support analytic variance gradients for
-                # first order observables
-                best_method = "A" if ob.ev_order == 1 else "F"
+                if m.return_type is qml.operation.Expectation:
+                    # If the observable is second order, we must use the second order
+                    # CV parameter shift rule
+                    best_method = "A2"
 
-            elif ob.ev_order != 1:
-                # If the observable is not first order, we must use the second order
-                # CV parameter shift rule
-                best_method = "A2"
+                elif m.return_type is qml.operation.Variance:
+                    # we only support analytic variance gradients for
+                    # first order observables
+                    best_method = "F"
 
             best.append(best_method)
 
@@ -126,10 +133,13 @@ class CVParamShiftTape(QubitParamShiftTape):
         # Get the Heisenber representation of the observable
         # in the position/momentum basis. The returned matrix/vector
         # will have been expanded to act on the entire device.
+        if obs.ev_order > 2:
+            raise NotImplementedError("Transforming observables of order > 2 not implemented.")
+
         A = obs.heisenberg_obs(device_wires)
 
         if A.ndim != obs.ev_order:
-            raise qml.QuantumFunctionError(
+            raise ValueError(
                 "Mismatch between the polynomial order of observable and its Heisenberg representation"
             )
 
@@ -138,8 +148,6 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         if A.ndim == 2:
             A = A + A.T
-        elif A.ndim > 2:
-            raise NotImplementedError("Transforming observables of order > 2 not implemented.")
 
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
@@ -157,8 +165,9 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
-        op = self._par_info[idx]["op"]
-        p_idx = self._par_info[idx]["p_idx"]
+        t_idx = list(self.trainable_params)[idx]
+        op = self._par_info[t_idx]["op"]
+        p_idx = self._par_info[t_idx]["p_idx"]
 
         recipe = op.grad_recipe[p_idx]
         c, s = (0.5, np.pi / 2) if recipe is None else recipe
@@ -185,8 +194,9 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
-        op = self._par_info[idx]["op"]
-        p_idx = self._par_info[idx]["p_idx"]
+        t_idx = list(self.trainable_params)[idx]
+        op = self._par_info[t_idx]["op"]
+        p_idx = self._par_info[t_idx]["p_idx"]
 
         recipe = op.grad_recipe[p_idx]
         c, s = (0.5, np.pi / 2) if recipe is None else recipe
@@ -237,7 +247,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             transformed_obs_idx.append(idx)
 
             # transform the observable
-            self._measurements[idx] =  MeasurementProcess(
+            self._measurements[idx] = MeasurementProcess(
                 qml.operation.Expectation, self._transform_observable(obs, Z, device.wires)
             )
 

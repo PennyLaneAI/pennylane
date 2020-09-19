@@ -89,14 +89,14 @@ class QubitParamShiftTape(QuantumTape):
         # check if the quantum tape contains any variance measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
 
+        # Make a copy of the original measurements; we will be mutating them
+        # during the parameter shift method.
+        self._original_measurements = self._measurements.copy()
+
         if any(self.var_mask):
             # The tape contains variances.
             # Set parameter_shift_var as the analytic_pd method
             self.analytic_pd = self.parameter_shift_var
-
-            # Make a copy of the original measurements; we will be mutating them
-            # during the parameter shift method.
-            self._original_measurements = self._measurements.copy()
 
             # Finally, store the locations of any variance measurements in the
             # measurement queue.
