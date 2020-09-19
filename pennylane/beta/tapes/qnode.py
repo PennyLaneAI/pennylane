@@ -186,7 +186,6 @@ class QNode:
         * ``"backprop"``
         * ``"device"``
         * ``"parameter-shift"``
-        * ``"reversible"``
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from

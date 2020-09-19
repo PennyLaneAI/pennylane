@@ -541,7 +541,7 @@ class QuantumTape(AnnotatedQueue):
 
             Since the :meth:`~.jacobian` method is not called for devices that support
             native backpropagation (such as ``default.qubit.tf`` and ``default.qubit.autograd``),
-            this property has no effect when using backpropagation to compute gradients.
+            this property contains no relevant information when using backpropagation to compute gradients.
 
         **Example**
 

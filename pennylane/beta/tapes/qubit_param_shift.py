@@ -15,7 +15,8 @@
 Qubit parameter shift quantum tape.
 
 Provides analytic differentiation for all one-parameter gates where the generator
-only has two unique eigenvalues; this includes one-parameter single-qubit gates.
+only has two unique eigenvalues; this includes one-parameter single-qubit gates,
+and any gate with an involutory generator.
 """
 # pylint: disable=attribute-defined-outside-init
 import numpy as np
