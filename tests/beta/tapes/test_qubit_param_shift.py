@@ -211,6 +211,40 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    def test_variance_gradients_agree_finite_differences(self, mocker, tol):
+        """Tests that the variance parameter-shift rule agrees with the first and second
+        order finite differences"""
+        params = np.array([0.1, -1.6, np.pi / 5])
+
+        with QubitParamShiftTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RY(-1.6, wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.CNOT(wires=[1, 0])
+            qml.RX(params[2], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            expval(qml.PauliZ(0)), var(qml.PauliX(1))
+
+        tape.trainable_params = {0, 2, 3}
+        dev = qml.device("default.qubit", wires=2)
+
+        spy_numeric = mocker.spy(tape, "numeric_pd")
+        spy_analytic = mocker.spy(tape, "analytic_pd")
+
+        grad_F1 = tape.jacobian(dev, method="numeric", order=1)
+        grad_F2 = tape.jacobian(dev, method="numeric", order=2)
+
+        spy_numeric.assert_called()
+        spy_analytic.assert_not_called()
+
+        grad_A = tape.jacobian(dev, method="analytic")
+        spy_analytic.assert_called()
+
+        # gradients computed with different methods must agree
+        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
+        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+
 
 class TestJacobianIntegration:
     """Tests for general Jacobian integration"""
