@@ -17,7 +17,7 @@ CV parameter shift quantum tape.
 Provides analytic differentiation for variational circuits with parametrized Gaussian CV gates
 and first- and second-order observables.
 """
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init,too-many-branches
 import itertools
 import warnings
 
@@ -210,7 +210,9 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
-    def parameter_shift_first_order(self, idx, device, params, **options):
+    def parameter_shift_first_order(
+        self, idx, device, params, **options
+    ):  # pylint: disable=unused-argument
         r"""Partial derivative using the first-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
 
@@ -266,6 +268,8 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
+        # pylint: disable=protected-access
+
         if "PolyXP" not in device.observables:
             # If the device does not support PolyXP, must fallback
             # to numeric differentiation.
@@ -401,6 +405,8 @@ class CVParamShiftTape(QubitParamShiftTape):
             array[float]: 1-dimensional array of length determined by the tape output
             measurement statistics
         """
+        # pylint: disable=protected-access
+
         if "PolyXP" not in device.observables:
             # If the device does not support PolyXP, must fallback
             # to numeric differentiation.
