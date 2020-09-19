@@ -63,7 +63,8 @@ class TestValidation:
 
     def test_validate_backprop_method_invalid_interface(self, monkeypatch):
         """Test that the method for validating the backprop diff method
-        tape works raises an exception if the wrong interface is provided"""
+        tape raises an exception if the wrong interface is provided"""
+
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
 

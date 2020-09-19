@@ -458,7 +458,8 @@ class TestQNode:
             # The current DefaultQubitAutograd device provides an _asarray method that does
             # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
             # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour; once the tape has moved from the beta folder, we should implement
+            # behaviour.
+            # TODO: once the tape has moved from the beta folder, we should implement
             # this change directly in the device.
 
             def _asarray(args, dtype=np.float64):
@@ -586,9 +587,12 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     # verify that the transformed QNode has the expected operations
     assert circuit.qtape.operations == [op1, op2]
+    # RY(y) gate is transformed to RX(-a*cos(y))
     assert new_circuit.qtape.operations[0] == t_op[0]
+    # RX gate is is not transformed
     assert new_circuit.qtape.operations[1].name == op2.name
     assert new_circuit.qtape.operations[1].wires == op2.wires
+
 
     # check that the incident gate arguments of both QNode tapes are correct
     assert np.all(np.array(circuit.qtape.get_parameters()) == np.sin(weights))

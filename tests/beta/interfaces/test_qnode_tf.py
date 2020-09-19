@@ -428,7 +428,8 @@ class TestQNode:
 
     def test_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with multiple probs outputs"""
+
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -483,7 +484,8 @@ class TestQNode:
             # TODO: The current DefaultQubitTF device provides an _asarray method that does
             # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
             # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour; once the tape has moved from the beta folder, we should implement
+            # behaviour.
+            # TODO: once the tape has moved from the beta folder, we should implement
             # this change directly in the device.
             monkeypatch.setattr(dev, "_asarray", _asarray)
 
