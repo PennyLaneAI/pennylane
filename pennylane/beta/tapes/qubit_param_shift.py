@@ -196,7 +196,6 @@ class QubitParamShiftTape(QuantumTape):
 
         # If there are non-involutory observables A present, we must compute d<A^2>/dp.
         non_involutory = set(self.var_idx) - set(involutory)
-        original = []
 
         for i in non_involutory:
             # We need to calculate d<A^2>/dp; to do so, we replace the
