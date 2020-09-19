@@ -179,8 +179,7 @@ class QubitParamShiftTape(QuantumTape):
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
             obs = self._measurements[i].obs
-            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=obs)
-            self._measurements[i] = new_measurement
+            self._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         # Get <A>, the expectation value of the tape with unshifted parameters. This is only
         # calculated once, if `self._evA` is not None.
@@ -201,13 +200,10 @@ class QubitParamShiftTape(QuantumTape):
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
             obs = self._measurements[i].obs
-
-            w = obs.wires
             A = obs.matrix
 
-            obs = qml.Hermitian(A @ A, wires=w)
-            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=obs)
-            self._measurements[i] = new_measurement
+            obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
+            self._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         pdA2 = 0
 
