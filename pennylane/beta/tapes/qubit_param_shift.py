@@ -41,19 +41,22 @@ class QubitParamShiftTape(QuantumTape):
 
     **Gradients of expectation values**
 
-    For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
+    For a variational evolution :math:`U(p_i)\vert 0\rangle` with :math:`N` parameters :math:`p_i`,
+
     consider the expectation value of an observable :math:`O`:
 
-    .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
+    .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 \vert U(p_i)^\dagger O U(p_i) \vert 0\rangle.
 
-    The gradient of this expectation value can be calculated using :math:`2N` evaluations
-    using the parameter-shift rule:
+
+    The gradient of this expectation value can be calculated using :math:`2N` expectation
+    values using the parameter-shift rule:
 
     .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
 
     **Gradients of variances**
 
-    We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - \langle O \rangle(p_i)^2`,
+    We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - [\langle O \rangle(p_i)]^2`,
+
     by noting that:
 
     .. math::
@@ -77,7 +80,7 @@ class QubitParamShiftTape(QuantumTape):
         # set parameter_shift as the analytic_pd method
         self.analytic_pd = self.parameter_shift
 
-        # check if the quantum tape contains any measurements
+        # check if the quantum tape contains any variance measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
 
         if any(self.var_mask):
@@ -93,13 +96,13 @@ class QubitParamShiftTape(QuantumTape):
             # measurement queue.
             self.var_idx = np.where(self.var_mask)[0]
 
-    def _grad_method(self, idx, use_graph=True, default_method="F"):
+    def _grad_method(self, idx, use_graph=True, default_method="A"):
         op = self._par_info[idx]["op"]
 
         if op.grad_method == "F":
             return "F"
 
-        return super()._grad_method(idx, use_graph=use_graph, default_method="A")
+        return super()._grad_method(idx, use_graph=use_graph, default_method=default_method)
 
     def jacobian(self, device, params=None, **options):
         # The parameter_shift_var method needs to evaluate the circuit
