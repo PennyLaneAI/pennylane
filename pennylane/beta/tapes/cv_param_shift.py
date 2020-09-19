@@ -25,10 +25,10 @@ import numpy as np
 import pennylane as qml
 from pennylane.beta.queuing import MeasurementProcess, expval
 
-from .tape import QuantumTape
+from .qubit_param_shift import QubitParamShiftTape
 
 
-class CVParamShiftTape(QuantumTape):
+class CVParamShiftTape(QubitParamShiftTape):
     r"""Quantum tape for CV parameter-shift analytic differentiation method.
 
     This class extends the :class:`~.jacobian` method of the quantum tape
@@ -41,40 +41,22 @@ class CVParamShiftTape(QuantumTape):
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
     """
 
-    def _update_circuit_info(self):
-        super()._update_circuit_info()
-
-        # set parameter_shift as the analytic_pd method
-        self.analytic_pd = self.parameter_shift
-
-        # Make a copy of the original measurements; we will be mutating them
-        # during the parameter shift method.
-        self._original_measurements = self._measurements.copy()
-
-        # check if the quantum tape contains any measurements
-        self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
-
-        if any(self.var_mask):
-            # The tape contains variances.
-            # Set parameter_shift_var as the analytic_pd method
-            self.analytic_pd = self.parameter_shift_var
-
-            # Finally, store the locations of any variance measurements in the
-            # measurement queue.
-            self.var_idx = np.where(self.var_mask)[0]
-
     def _grad_method(self, idx, use_graph=True, default_method="F"):
         op = self._par_info[idx]["op"]
 
-        if op.grad_method is None:
-            return None
+        if op.grad_method in (None, "F"):
+            return op.grad_method
 
-        # an empty list to store the 'best' partial derivative method
+        if op.grad_method != "A":
+            raise ValueError(f"Operation {op} has unknown gradient method {op.grad_method}")
+
+        # Operation supports the CV parameter-shift rule.
+        # Create an empty list to store the 'best' partial derivative method
         # for each observable
         best = []
 
-        # loop over all observables
         for ob in self.observables:
+
             # get the set of operations betweens the
             # operation and the observable
             ops_between = self.graph.nodes_between(op, ob)
@@ -85,127 +67,81 @@ class CVParamShiftTape(QuantumTape):
                 best.append("0")
                 continue
 
-            if op.grad_method == "A":
-                # Operation supports the CV parameter-shift rule.
-                # For parameter-shift compatible CV gates, we need to check both the
-                # intervening gates, and the type of the observable.
+            # For parameter-shift compatible CV gates, we need to check both the
+            # intervening gates, and the type of the observable.
+            best_method = "A"
 
-                if any(not k.supports_heisenberg for k in ops_between):
-                    # non-Gaussian operators present in-between the operation
-                    # and the observable. Must fallback to numeric differentiation.
-                    best.append("F")
+            if any(not k.supports_heisenberg for k in ops_between):
+                # non-Gaussian operators present in-between the operation
+                # and the observable. Must fallback to numeric differentiation.
+                best_method = "F"
 
-                elif ob.return_type is qml.operation.Probability:
-                    # probability is a higher order expectation, and thus does not permit
-                    # the CV parameter-shift
-                    best.append("F")
+            elif ob.return_type is qml.operation.Probability:
+                # probability is a higher order expectation, and thus does not permit
+                # the CV parameter-shift
+                best_method = "F"
 
-                elif ob.return_type is qml.operation.Variance:
-                    # we only support analytic variance gradients for
-                    # first orderobservables
-                    if ob.ev_order == 1:
-                        best.append("A")
-                    else:
-                        best.append("F")
+            elif ob.return_type is qml.operation.Variance:
+                # we only support analytic variance gradients for
+                # first order observables
+                best_method = "A" if ob.ev_order == 1 else "F"
 
-                elif ob.ev_order != 1:
-                    # If the observable is not first order, we must use the second order
-                    # CV parameter shift rule
-                    best.append("A2")
+            elif ob.ev_order != 1:
+                # If the observable is not first order, we must use the second order
+                # CV parameter shift rule
+                best_method = "A2"
 
-                else:
-                    # If all other conditions do not hold, we can support
-                    # the first order parameter-shift rule.
-                    best.append("A")
+            best.append(best_method)
 
         if all(k == "0" for k in best):
+            # if the operation is independent of *all* observables
+            # in the circuit, the gradient will be 0
             return "0"
 
         if "F" in best:
-            # one non-analytic item makes the whole operation gradient numeric
+            # one non-analytic observable path makes the whole operation
+            # gradient method fallback to finite-difference
             return "F"
 
         if "A2" in best:
             # one second order observable makes the whole operation gradient
-            # require the second order parameter-shift rule.
+            # require the second order parameter-shift rule
             return "A2"
 
         return "A"
 
     @staticmethod
-    def _transform_observable(obs, w, Z, device_wires):
+    def _transform_observable(obs, Z, device_wires):
         """Apply a Gaussian linear transformation to each index of an observable.
 
         Args:
-            obs (Observable): observable to transform
-            w (int): number of wires in the circuit
+            obs (.Observable): observable to transform
             Z (array[float]): Heisenberg picture representation of the linear transformation
-            device_wires (Wires): wires on the device that the observable gets applied to
+            device_wires (.Wires): wires on the device the transformed observable is to be
+                measured on
 
         Returns:
-            .MeasurementProcess: measurement process with transformed observable
+            .Observable: the transformed observable
         """
-        q = obs.heisenberg_obs(device_wires)
+        # Get the Heisenber representation of the observable
+        # in the position/momentum basis. The returned matrix/vector
+        # will have been expanded to act on the entire device.
+        A = obs.heisenberg_obs(device_wires)
 
-        if q.ndim != obs.ev_order:
+        if A.ndim != obs.ev_order:
             raise qml.QuantumFunctionError(
                 "Mismatch between the polynomial order of observable and its Heisenberg representation"
             )
 
-        qp = q @ Z
+        # transform the observable by the linear transformation Z
+        A = A @ Z
 
-        if q.ndim == 2:
-            # 2nd order observable
-            qp = qp + qp.T
-
-        elif q.ndim > 2:
+        if A.ndim == 2:
+            A = A + A.T
+        elif A.ndim > 2:
             raise NotImplementedError("Transforming observables of order > 2 not implemented.")
 
-        return expval(qml.PolyXP(qp, wires=range(w)))
-
-    def jacobian(self, device, params=None, **options):
-        # The parameter_shift_var method needs to evaluate the circuit
-        # at the unshifted parameter values; these are stored in the
-        # self._evA attribute. Here, we set the value of the attribute to None
-        # before each Jacobian call, so that the expectation value is calculated only once.
-        self._evA = None
-        return super().jacobian(device, params, **options)
-
-    def parameter_shift(self, idx, device, params, **options):
-        r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
-        tape consisting of *only* expectation values of observables.
-
-        .. note::
-
-            The 2nd order method can handle also first order observables, but
-            1st order method may be more efficient unless it's really easy to
-            experimentally measure arbitrary 2nd order observables.
-
-        Args:
-            idx (int): trainable parameter index to differentiate with respect to
-            device (.Device, .QubitDevice): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): the quantum tape operation parameters
-
-        Keyword Args:
-            force_order2 (bool): iff True, use the order-2 method even if not necessary
-
-        Returns:
-            array[float]: 1-dimensional array of length determined by the tape output
-            measurement statistics
-        """
-        grad_method = self._par_info[idx]["grad_method"]
-
-        if options.get("force_order2", grad_method == "A2"):
-
-            if "PolyXP" not in device.observables:
-                # If the device does not support PolyXP, must fallback
-                # to numeric differentiation.
-                return self.numeric_pd(idx, device, params, **options)
-
-            return self.parameter_shift_second_order(idx, device, params, **options)
-
-        return self.parameter_shift_first_order(idx, device, params, **options)
+        return qml.PolyXP(A, wires=device_wires, do_queue=False)
 
     def parameter_shift_first_order(self, idx, device, params, **options):
         r"""Partial derivative using the first-order CV parameter-shift rule of a
@@ -294,7 +230,9 @@ class CVParamShiftTape(QuantumTape):
 
         # transform the descendant observables into their derivatives using Z
         self._measurements = [
-            self._transform_observable(ob, device.num_wires, Z, device.wires)
+            MeasurementProcess(
+                qml.operation.Expectation, self._transform_observable(ob, Z, device.wires)
+            )
             for ob in observable_descendents
         ]
 
@@ -312,6 +250,42 @@ class CVParamShiftTape(QuantumTape):
         self._measurements = self._original_measurements.copy()
 
         return grad
+
+    def parameter_shift(self, idx, device, params, **options):
+        r"""Partial derivative using the first- or second-order CV parameter-shift rule of a
+        tape consisting of *only* expectation values of observables.
+
+        .. note::
+
+            The 2nd order method can handle also first order observables, but
+            1st order method may be more efficient unless it's really easy to
+            experimentally measure arbitrary 2nd order observables.
+
+        Args:
+            idx (int): trainable parameter index to differentiate with respect to
+            device (.Device, .QubitDevice): a PennyLane device
+                that can execute quantum operations and return measurement statistics
+            params (list[Any]): the quantum tape operation parameters
+
+        Keyword Args:
+            force_order2 (bool): iff True, use the order-2 method even if not necessary
+
+        Returns:
+            array[float]: 1-dimensional array of length determined by the tape output
+            measurement statistics
+        """
+        grad_method = self._par_info[idx]["grad_method"]
+
+        if options.get("force_order2", grad_method == "A2"):
+
+            if "PolyXP" not in device.observables:
+                # If the device does not support PolyXP, must fallback
+                # to numeric differentiation.
+                return self.numeric_pd(idx, device, params, **options)
+
+            return self.parameter_shift_second_order(idx, device, params, **options)
+
+        return self.parameter_shift_first_order(idx, device, params, **options)
 
     def parameter_shift_var(self, idx, device, params, **options):
         r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
@@ -341,24 +315,24 @@ class CVParamShiftTape(QuantumTape):
             # to numeric differentiation.
             return self.numeric_pd(idx, device, params, **options)
 
+        temp_tape = self.copy()
+
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
-            self._measurements[i].return_type = qml.operation.Expectation
+            obs = self._measurements[i].obs
+            temp_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         # Get <A>, the expectation value of the tape with unshifted parameters. This is only
         # calculated once, if `self._evA` is not None.
         if self._evA is None:
-            self._evA = np.asarray(self.execute_device(params, device))
+            self._evA = np.asarray(temp_tape.execute_device(params, device))
 
         # evaluate the analytic derivative of <A>
-        pdA = self.parameter_shift(idx, device, params, **options)
-
-        original = []
+        pdA = temp_tape.parameter_shift(idx, device, params, **options)
 
         for i in self.var_idx:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            original[:0] = [self._measurements[i]]
             obs = self._measurements[i].obs
 
             # CV first order observable
@@ -366,33 +340,15 @@ class CVParamShiftTape(QuantumTape):
             # This will be a real 1D vector representing the
             # first order observable in the basis [I, x, p]
             A = obs._heisenberg_rep(obs.parameters)  # pylint: disable=protected-access
-            w = obs.wires
 
             # take the outer product of the heisenberg representation
             # with itself, to get a square symmetric matrix representing
             # the square of the observable
-            new_obs = qml.PolyXP(np.outer(A, A), wires=w)
-            new_obs.return_type = qml.operation.Expectation
-
-            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=new_obs)
-            self._measurements[i] = new_measurement
-
-        # temporarily disable the circuit
-        original_graph = self._graph
-        self._graph = None
+            obs = qml.PolyXP(np.outer(A, A), wires=obs.wires, do_queue=False)
+            temp_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         # Here, we calculate the analytic derivatives of the <A^2> observables.
-        pdA2 = self.parameter_shift_second_order(idx, device, params, **options)
-
-        # restore the original observables
-        self._measurements = self._original_measurements.copy()
-        self._graph = original_graph
-
-        for i in self.var_idx:
-            self._measurements[i] = original.pop()
-            self._measurements[i].return_type = qml.operation.Variance
-
-        self._graph = original_graph
+        pdA2 = temp_tape.parameter_shift_second_order(idx, device, params, **options)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations

@@ -841,6 +841,19 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
+    def copy(self):
+        """Returns a shallow copy of the quantum tape."""
+        tape = self.__class__()
+        tape._prep = self._prep.copy()
+        tape._ops = self._ops.copy()
+        tape._measurements = self._measurements.copy()
+
+        tape._update()
+
+        tape._par_info = self._par_info.copy()
+        tape.trainable_params = self.trainable_params.copy()
+        return tape
+
     # ========================================================
     # execution methods
     # ========================================================
