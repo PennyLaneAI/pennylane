@@ -24,7 +24,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.beta.queuing import MeasurementProcess, expval
+from pennylane.beta.queuing import MeasurementProcess
 
 from .qubit_param_shift import QubitParamShiftTape
 
@@ -40,6 +40,64 @@ class CVParamShiftTape(QubitParamShiftTape):
     >>> tape.jacobian(dev, method="analytic")
 
     For more details on the quantum tape, please see :class:`~.QuantumTape`.
+
+    This tape supports analytic gradients of photonic circuits that satisfy
+    the following constraints with regards to measurements:
+
+    * Expectation values are restricted to observables that are first- and
+      second-order in :math:`\hat{x}` :math:`\hat{p}` only.
+      This includes :class:`~.X`, :class:`~.P`, :class:`~.QuadOperator`,
+      :class:`~.PolyXP`, and :class:`~.NumberOperator`.
+
+      For second-order observables, the device **must support** :class:`~.PolyXP`.
+
+    * Variances are restricted to observables that are first-order
+      in :math:`\hat{x}` :math:`\hat{p}` only. This includes :class:`~.X`, :class:`~.P`,
+      :class:`~.QuadOperator`, and *some* parameter values of :class:`~.PolyXP`.
+
+      The device **must support** :class:`~.PolyXP`.
+
+    Fock state probabilities (tapes that return :func:`~pennylane.probs` or
+    expectation values of :class:`~.FockStateProjector`) are not supported.
+
+    In addition, the tape operations must fulfill the following requirements:
+
+    * Only Gaussian operations are differentiable.
+
+    * Non-differentiable Fock states and Fock operations may *precede* all differentiable Gaussian,
+      operations. For example, the following is permissible:
+
+      .. code-block:: python
+
+          with CVParamShiftTape() as tape:
+              # Non-differentiable Fock operations
+              qml.FockState(2, wires=0)
+              qml.Kerr(0.654, wires=1)
+
+              # differentiable Gaussian operations
+              qml.Displacement(0.6, wires=0)
+              qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
+              expval(qml.NumberOperator(0))
+
+          tape.trainable_params = {2, 3, 4}
+
+    * If a Fock operation succeeds a Gaussian operation, the Fock operation must
+      not contribute to any measurements. For example, the following is allowed:
+
+      .. code-block:: python
+
+          with CVParamShiftTape() as tape:
+              qml.Displacement(0.6, wires=0)
+              qml.Beamsplitter(0.5, 0.1, wires=[0, 1])
+              qml.Kerr(0.654, wires=1)  # there is no measurement on wire 1
+              expval(qml.NumberOperator(0))
+
+          tape.trainable_params = {0, 1, 2}
+
+    If any of the above constraints are not followed, the tape cannot be differentiated
+    via the CV parameter-shift rule. Please use numerical differentiation instead:
+
+    >>> tape.jacobian(dev, method="numeric")
     """
 
     def _grad_method(self, idx, use_graph=True, default_method="F"):
@@ -156,6 +214,11 @@ class CVParamShiftTape(QubitParamShiftTape):
         r"""Partial derivative using the first-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
 
+        .. warning::
+
+            This method only supports the gradient of expectation values of
+            first-order observables.
+
         Args:
             idx (int): trainable parameter index to differentiate with respect to
             device (.Device, .QubitDevice): a PennyLane device
@@ -184,6 +247,14 @@ class CVParamShiftTape(QubitParamShiftTape):
     def parameter_shift_second_order(self, idx, device, params, **options):
         r"""Partial derivative using the second-order CV parameter-shift rule of a
         tape consisting of *only* expectation values of observables.
+
+        This method supports the gradient of expectation values of first-
+        and second-order observables.
+
+        .. warning::
+
+            This method can only be executed on devices that support the
+            :class:`~.PolyXP` observable.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
@@ -309,11 +380,13 @@ class CVParamShiftTape(QubitParamShiftTape):
         r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
         consisting of a mixture of expectation values and variances of observables.
 
-        .. note::
+        Expectation values may be of first- or second-order observables,
+        but variances can only be taken of first-order variables.
 
-            The 2nd order method can handle also first order observables, but
-            1st order method may be more efficient unless it's really easy to
-            experimentally measure arbitrary 2nd order observables.
+        .. warning::
+
+            This method can only be executed on devices that support the
+            :class:`~.PolyXP` observable.
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
