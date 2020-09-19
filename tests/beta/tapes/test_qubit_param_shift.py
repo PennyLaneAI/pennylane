@@ -151,7 +151,7 @@ class TestParameterShiftRule:
         numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="CRX gate does not satisfy the parameter-shift rule")
+    @pytest.mark.xfail(reason="CR gates do not satisfy the parameter-shift rule")
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled RX gate"""
@@ -299,7 +299,7 @@ class TestJacobianIntegration:
 
         res = tape.execute(dev)
         expected = 1 - np.cos(a) ** 2
-        assert res == pytest.approx(expected, abs=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         spy_execute.call_args_list = []
 
@@ -338,7 +338,7 @@ class TestJacobianIntegration:
 
         res = tape.execute(dev)
         expected = (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)
-        assert res == pytest.approx(expected, abs=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         spy_execute.call_args_list = []
 
@@ -379,7 +379,7 @@ class TestJacobianIntegration:
 
         res = tape.execute(dev)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
-        assert res == pytest.approx(expected, abs=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         spy_execute.call_args_list = []
 
@@ -426,7 +426,7 @@ class TestJacobianIntegration:
                 0.25 * (3 - 2 * np.cos(b) ** 2 * np.cos(2 * c) - np.cos(2 * b)),
             ]
         )
-        assert res == pytest.approx(expected, abs=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # # circuit jacobians
         gradA = tape.jacobian(dev, method="analytic")

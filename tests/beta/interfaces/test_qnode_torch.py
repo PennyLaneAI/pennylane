@@ -493,7 +493,7 @@ class TestQNode:
         assert isinstance(res, torch.Tensor)
 
 
-def qtransform(qnode, a, interface=torch):
+def qtransform(qnode, a, framework=torch):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
     def construct(self, args, kwargs):
@@ -514,7 +514,7 @@ def qtransform(qnode, a, interface=torch):
             # here, we loop through all tape operations, and make
             # the transformation if a RY gate is encountered.
             if isinstance(o, qml.RY):
-                t_op.append(qml.RX(-a * interface.cos(o.data[0]), wires=o.wires))
+                t_op.append(qml.RX(-a * framework.cos(o.data[0]), wires=o.wires))
                 new_ops.append(t_op[-1])
             else:
                 new_ops.append(o)

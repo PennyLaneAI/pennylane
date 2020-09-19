@@ -231,7 +231,6 @@ class TestQNode:
             return np.sum(circuit(a, b))
 
         grad_fn = qml.grad(loss)
-
         spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
 
         res = grad_fn(a, b)
@@ -456,7 +455,8 @@ class TestQNode:
             # The current DefaultQubitAutograd device provides an _asarray method that does
             # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
             # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour; once the tape has moved from the beta folder, we should implement
+            # behaviour.
+            # TODO: once the tape has moved from the beta folder, we should implement
             # this change directly in the device.
 
             def _asarray(args, dtype=np.float64):
@@ -504,7 +504,7 @@ class TestQNode:
         assert isinstance(res, np.ndarray)
 
 
-def qtransform(qnode, a, interface=np):
+def qtransform(qnode, a, framework=np):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
     def construct(self, args, kwargs):
@@ -525,7 +525,7 @@ def qtransform(qnode, a, interface=np):
             # here, we loop through all tape operations, and make
             # the transformation if a RY gate is encountered.
             if isinstance(o, qml.RY):
-                t_op.append(qml.RX(-a * interface.cos(o.data[0]), wires=o.wires))
+                t_op.append(qml.RX(-a * framework.cos(o.data[0]), wires=o.wires))
                 new_ops.append(t_op[-1])
             else:
                 new_ops.append(o)
@@ -584,7 +584,9 @@ def test_transform(dev_name, diff_method, monkeypatch, tol):
 
     # verify that the transformed QNode has the expected operations
     assert circuit.qtape.operations == [op1, op2]
+    # RY(y) gate is transformed to RX(-a*cos(y))
     assert new_circuit.qtape.operations[0] == t_op[0]
+    # RX gate is is not transformed
     assert new_circuit.qtape.operations[1].name == op2.name
     assert new_circuit.qtape.operations[1].wires == op2.wires
 

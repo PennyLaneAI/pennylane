@@ -428,7 +428,7 @@ class TestQNode:
 
     def test_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
-        with prob and expval outputs"""
+        with multiple probs outputs"""
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -483,7 +483,8 @@ class TestQNode:
             # TODO: The current DefaultQubitTF device provides an _asarray method that does
             # not work correctly for ragged arrays. For ragged arrays, we would like _asarray to
             # flatten the array. Here, we patch the _asarray method on the device to achieve this
-            # behaviour; once the tape has moved from the beta folder, we should implement
+            # behaviour.
+            # TODO: once the tape has moved from the beta folder, we should implement
             # this change directly in the device.
             monkeypatch.setattr(dev, "_asarray", _asarray)
 
@@ -528,7 +529,7 @@ class TestQNode:
         assert isinstance(res, tf.Tensor)
 
 
-def qtransform(qnode, a, interface=tf):
+def qtransform(qnode, a, framework=tf):
     """Transforms every RY(y) gate in a circuit to RX(-a*cos(y))"""
 
     def construct(self, args, kwargs):
@@ -549,7 +550,7 @@ def qtransform(qnode, a, interface=tf):
             # here, we loop through all tape operations, and make
             # the transformation if a RY gate is encountered.
             if isinstance(o, qml.RY):
-                t_op.append(qml.RX(-a * interface.cos(o.data[0]), wires=o.wires))
+                t_op.append(qml.RX(-a * framework.cos(o.data[0]), wires=o.wires))
                 new_ops.append(t_op[-1])
             else:
                 new_ops.append(o)

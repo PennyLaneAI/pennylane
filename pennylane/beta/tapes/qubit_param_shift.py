@@ -15,7 +15,8 @@
 Qubit parameter shift quantum tape.
 
 Provides analytic differentiation for all one-parameter gates where the generator
-only has two unique eigenvalues; this includes one-parameter single-qubit gates.
+only has two unique eigenvalues; this includes one-parameter single-qubit gates,
+and any gate with an involutory generator.
 """
 # pylint: disable=attribute-defined-outside-init
 import numpy as np
@@ -40,32 +41,41 @@ class QubitParamShiftTape(QuantumTape):
 
     **Gradients of expectation values**
 
-    For a variational circuit :math:`U(p_i)|0\rangle` with :math:`N` parameters,
+    For a variational evolution :math:`U(mathbf{p})\vert 0\rangle` with :math:`N` parameters :math:`mathbf{p}`,
+
     consider the expectation value of an observable :math:`O`:
 
-    .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 | U(p_i)^\dagger O U(p_i) | 0\rangle.
+    .. math::
 
-    The gradient of this expectation value can be calculated using :math:`2N` evaluations
-    using the parameter-shift rule:
+        f(mathbf{p})  = \langle hat{O} \rangle(mathbf{p}) = \langle 0 \vert
+        U(mathbf{p})^\dagger hat{O} U(mathbf{p}) \vert 0\rangle.
 
-    .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
+
+    The gradient of this expectation value can be calculated using :math:`2N` expectation
+    values using the parameter-shift rule:
+
+    .. math::
+
+        \frac{\partial f}{\partial mathbf{p}} = \frac{1}{2\sin s} \left[ f(mathbf{p} + s) -
+        f(mathbf{p} -s) \right].
 
     **Gradients of variances**
 
-    We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - \langle O \rangle(p_i)^2`,
+    We can extend this to the variance,
+    :math:`g(mathbf{p})=\langle hat{O}^2 \rangle (mathbf{p}) - [\langle hat{O} \rangle(mathbf{p})]^2`,
     by noting that:
 
     .. math::
 
-        \frac{\partial g}{\partial p_i}= \frac{\partial}{\partial p_i} \langle O^2 \rangle (p_i)
-        - 2 f(p_i) \frac{\partial f}{\partial p_i}.
+        \frac{\partial g}{\partial mathbf{p}}= \frac{\partial}{\partial mathbf{p}} \langle hat{O}^2 \rangle (mathbf{p})
+        - 2 f(mathbf{p}) \frac{\partial f}{\partial mathbf{p}}.
 
     This results in :math:`4N + 1` evaluations.
 
-    In the case where :math:`O` is involutory (:math:`O^2 = I`), the first term in the above
+    In the case where :math:`O` is involutory (:math:`hat{O}^2 = I`), the first term in the above
     expression vanishes, and we are simply left with
 
-    .. math:: \frac{\partial g}{\partial p_i} = - 2 f(p_i) \frac{\partial f}{\partial p_i},
+    .. math:: \frac{\partial g}{\partial mathbf{p}} = - 2 f(mathbf{p}) \frac{\partial f}{\partial mathbf{p}},
 
     allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
@@ -76,7 +86,7 @@ class QubitParamShiftTape(QuantumTape):
         # set parameter_shift as the analytic_pd method
         self.analytic_pd = self.parameter_shift
 
-        # check if the quantum tape contains any measurements
+        # check if the quantum tape contains any variance measurements
         self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
 
         if any(self.var_mask):
@@ -92,13 +102,13 @@ class QubitParamShiftTape(QuantumTape):
             # measurement queue.
             self.var_idx = np.where(self.var_mask)[0]
 
-    def _grad_method(self, idx, use_graph=True, default_method="F"):
+    def _grad_method(self, idx, use_graph=True, default_method="A"):
         op = self._par_info[idx]["op"]
 
         if op.grad_method == "F":
             return "F"
 
-        return super()._grad_method(idx, use_graph=use_graph, default_method="A")
+        return super()._grad_method(idx, use_graph=use_graph, default_method=default_method)
 
     def jacobian(self, device, params=None, **options):
         # The parameter_shift_var method needs to evaluate the circuit
@@ -109,8 +119,17 @@ class QubitParamShiftTape(QuantumTape):
         return super().jacobian(device, params, **options)
 
     def parameter_shift(self, idx, device, params, **options):
-        r"""Partial derivative using the parameter-shift rule of a tape consisting of *only*
-        expectation values of observables.
+        r"""Partial derivative using the parameter-shift rule of a tape consisting of measurement
+        statistics that can be represented as expectation values of observables.
+
+        This includes tapes that output probabilities, since the probability of measuring a
+        basis state :math:`|i\rangle` can be written in the form of an expectation value:
+
+        .. math::
+
+            \mathbb{P}_{|i\rangle} = |\langle i | U(\mathbf(p)) | 0 \rangle|^2
+                = \langle 0 | U(\mathbf(p))^\dagger | i \rangle\langle i | U(\mathbf(p)) | 0 \rangle
+                = \mathbb{E}\left( | i \rangle\langle i | \right)
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
@@ -159,7 +178,8 @@ class QubitParamShiftTape(QuantumTape):
         """
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
-            self._measurements[i].return_type = qml.operation.Expectation
+            obs = self._measurements[i].obs
+            self._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         # Get <A>, the expectation value of the tape with unshifted parameters. This is only
         # calculated once, if `self._evA` is not None.
@@ -175,22 +195,15 @@ class QubitParamShiftTape(QuantumTape):
 
         # If there are non-involutory observables A present, we must compute d<A^2>/dp.
         non_involutory = set(self.var_idx) - set(involutory)
-        original = []
 
         for i in non_involutory:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            original[:0] = [self._measurements[i]]
             obs = self._measurements[i].obs
-
-            w = obs.wires
             A = obs.matrix
 
-            new_obs = qml.Hermitian(A @ A, wires=w)
-            new_obs.return_type = qml.operation.Expectation
-
-            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=new_obs)
-            self._measurements[i] = new_measurement
+            obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
+            self._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
 
         pdA2 = 0
 
@@ -207,13 +220,7 @@ class QubitParamShiftTape(QuantumTape):
                 pdA2[np.array(involutory)] = 0
 
         # restore the original observables
-        self._measurements = self._original_measurements
-
-        for i in non_involutory:
-            self._measurements[i] = original.pop()
-
-        for i in self.var_idx:
-            self._measurements[i].return_type = qml.operation.Variance
+        self._measurements = self._original_measurements.copy()
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations
