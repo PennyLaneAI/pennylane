@@ -145,12 +145,12 @@ class QubitParamShiftTape(QuantumTape):
             measurement statistics
         """
         op = self._par_info[idx]["op"]
-        mathbf{p}dx = self._par_info[idx]["mathbf{p}dx"]
+        p_idx = self._par_info[idx]["p_idx"]
 
         s = (
             np.pi / 2
-            if op.grad_recipe is None or op.grad_recipe[mathbf{p}dx] is None
-            else op.grad_recipe[mathbf{p}dx]
+            if op.grad_recipe is None or op.grad_recipe[p_idx] is None
+            else op.grad_recipe[p_idx]
         )
         s = options.get("shift", s)
 
