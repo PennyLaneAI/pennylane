@@ -41,35 +41,41 @@ class QubitParamShiftTape(QuantumTape):
 
     **Gradients of expectation values**
 
-    For a variational evolution :math:`U(p_i)\vert 0\rangle` with :math:`N` parameters :math:`p_i`,
+    For a variational evolution :math:`U(mathbf{p})\vert 0\rangle` with :math:`N` parameters :math:`mathbf{p}`,
 
     consider the expectation value of an observable :math:`O`:
 
-    .. math:: f(p_i)  = \langle O \rangle(p_i) = \langle 0 \vert U(p_i)^\dagger O U(p_i) \vert 0\rangle.
+    .. math::
+
+        f(mathbf{p})  = \langle hat{O} \rangle(mathbf{p}) = \langle 0 \vert
+        U(mathbf{p})^\dagger hat{O} U(mathbf{p}) \vert 0\rangle.
 
 
     The gradient of this expectation value can be calculated using :math:`2N` expectation
     values using the parameter-shift rule:
 
-    .. math:: \frac{\partial f}{\partial p_i} = \frac{1}{2\sin s} \left[ f(p_i + s) - f(p_i -s) \right].
+    .. math::
+
+        \frac{\partial f}{\partial mathbf{p}} = \frac{1}{2\sin s} \left[ f(mathbf{p} + s) -
+        f(mathbf{p} -s) \right].
 
     **Gradients of variances**
 
-    We can extend this to the variance, :math:`g(p_i)=\langle O^2 \rangle (p_i) - [\langle O \rangle(p_i)]^2`,
-
+    We can extend this to the variance,
+    :math:`g(mathbf{p})=\langle hat{O}^2 \rangle (mathbf{p}) - [\langle hat{O} \rangle(mathbf{p})]^2`,
     by noting that:
 
     .. math::
 
-        \frac{\partial g}{\partial p_i}= \frac{\partial}{\partial p_i} \langle O^2 \rangle (p_i)
-        - 2 f(p_i) \frac{\partial f}{\partial p_i}.
+        \frac{\partial g}{\partial mathbf{p}}= \frac{\partial}{\partial mathbf{p}} \langle hat{O}^2 \rangle (mathbf{p})
+        - 2 f(mathbf{p}) \frac{\partial f}{\partial mathbf{p}}.
 
     This results in :math:`4N + 1` evaluations.
 
-    In the case where :math:`O` is involutory (:math:`O^2 = I`), the first term in the above
+    In the case where :math:`O` is involutory (:math:`hat{O}^2 = I`), the first term in the above
     expression vanishes, and we are simply left with
 
-    .. math:: \frac{\partial g}{\partial p_i} = - 2 f(p_i) \frac{\partial f}{\partial p_i},
+    .. math:: \frac{\partial g}{\partial mathbf{p}} = - 2 f(mathbf{p}) \frac{\partial f}{\partial mathbf{p}},
 
     allowing us to compute the gradient using :math:`2N + 1` evaluations.
     """
@@ -113,8 +119,17 @@ class QubitParamShiftTape(QuantumTape):
         return super().jacobian(device, params, **options)
 
     def parameter_shift(self, idx, device, params, **options):
-        r"""Partial derivative using the parameter-shift rule of a tape consisting of *only*
-        expectation values of observables.
+        r"""Partial derivative using the parameter-shift rule of a tape consisting of measurement
+        statistics that can be represented as expectation values of observables.
+
+        This includes tapes that output probabilities, since the probability of measuring a
+        basis state :math:`|i\rangle` can be written in the form of an expectation value:
+
+        .. math::
+
+            \mathbb{P}_{|i\rangle} = |\langle i | U(\mathbf(p)) | 0 \rangle|^2
+                = \langle 0 | U(\mathbf(p))^\dagger | i \rangle\langle i | U(\mathbf(p)) | 0 \rangle
+                = \mathbb{E}\left( | i \rangle\langle i | \right)
 
         Args:
             idx (int): trainable parameter index to differentiate with respect to
@@ -130,12 +145,12 @@ class QubitParamShiftTape(QuantumTape):
             measurement statistics
         """
         op = self._par_info[idx]["op"]
-        p_idx = self._par_info[idx]["p_idx"]
+        mathbf{p}dx = self._par_info[idx]["mathbf{p}dx"]
 
         s = (
             np.pi / 2
-            if op.grad_recipe is None or op.grad_recipe[p_idx] is None
-            else op.grad_recipe[p_idx]
+            if op.grad_recipe is None or op.grad_recipe[mathbf{p}dx] is None
+            else op.grad_recipe[mathbf{p}dx]
         )
         s = options.get("shift", s)
 
