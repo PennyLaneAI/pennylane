@@ -151,7 +151,7 @@ class TestParameterShiftRule:
         numeric_val = tape.jacobian(dev, shift=shift, method="numeric")
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="CRX gate does not satisfy the parameter-shift rule")
+    @pytest.mark.xfail(reason="CR gates do not satisfy the parameter-shift rule")
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled RX gate"""
