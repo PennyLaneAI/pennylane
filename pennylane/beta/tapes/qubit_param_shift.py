@@ -199,14 +199,12 @@ class QubitParamShiftTape(QuantumTape):
         for i in non_involutory:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            original[:0] = [self._measurements[i]]
             obs = self._measurements[i].obs
 
             w = obs.wires
             A = obs.matrix
 
             new_obs = qml.Hermitian(A @ A, wires=w)
-            new_obs.return_type = qml.operation.Expectation
 
             new_measurement = MeasurementProcess(qml.operation.Expectation, obs=new_obs)
             self._measurements[i] = new_measurement
@@ -226,10 +224,8 @@ class QubitParamShiftTape(QuantumTape):
                 pdA2[np.array(involutory)] = 0
 
         # restore the original observables
-        self._measurements = self._original_measurements
+        self._measurements = self._original_measurements.copy()
 
-        for i in non_involutory:
-            self._measurements[i] = original.pop()
 
         for i in self.var_idx:
             self._measurements[i].return_type = qml.operation.Variance
