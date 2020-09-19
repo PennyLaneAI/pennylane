@@ -35,7 +35,6 @@ class TestAutogradQuantumTape:
 
     def test_get_parameters(self):
         """Test that the get_parameters function correctly sets and returns the
-
         trainable parameters"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -311,7 +310,6 @@ class TestAutogradQuantumTape:
     def test_probability_differentiation(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
-
 
         def cost(x, y, device):
             with AutogradInterface.apply(QuantumTape()) as tape:
