@@ -165,7 +165,7 @@ class QNode:
             return QNode._validate_device_method(device, interface)
 
         if diff_method == "parameter-shift":
-            return QNode._get_parameter_shift_method(device, interface)
+            return QNode._get_parameter_shift_tape(device), interface, "analytic"
 
         if diff_method == "finite-diff":
             return QuantumTape, interface, "numeric"
@@ -207,7 +207,7 @@ class QNode:
                 return QNode._validate_device_method(device, interface)
             except QuantumFunctionError:
                 try:
-                    return QNode._get_parameter_shift_method(device, interface)
+                    return QNode._get_parameter_shift_tape(device), interface, "best"
                 except QuantumFunctionError:
                     return QuantumTape, interface, "numeric"
 
@@ -277,19 +277,16 @@ class QNode:
         return QuantumTape, interface, "device"
 
     @staticmethod
-    def _get_parameter_shift_method(device, interface):
-        """Validates whether a particular device and QuantumTape interface
+    def _get_parameter_shift_tape(device):
+        """Validates whether a particular device
         supports the parameter-shift differentiation method, and returns
         the correct tape.
 
         Args:
             device (.Device): PennyLane device
-            interface (str): name of the requested interface
 
         Returns:
-            tuple[.QuantumTape, str, str]: tuple containing the compatible
-            QuantumTape, the interface to apply, and the method argument
-            to pass to the ``QuantumTape.jacobian`` method
+            .QuantumTape: the compatible QuantumTape
 
         Raises:
             QuantumFunctionError: if the device model does not have a corresponding
@@ -299,10 +296,10 @@ class QNode:
         model = device.capabilities().get("model", None)
 
         if model == "qubit":
-            return QubitParamShiftTape, interface, "best"
+            return QubitParamShiftTape
 
         if model == "cv":
-            return CVParamShiftTape, interface, "best"
+            return CVParamShiftTape
 
         raise QuantumFunctionError(
             f"Device {device.short_name} uses an unknown model ('{model}') "
