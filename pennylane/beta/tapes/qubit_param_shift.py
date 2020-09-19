@@ -178,7 +178,9 @@ class QubitParamShiftTape(QuantumTape):
         """
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
-            self._measurements[i].return_type = qml.operation.Expectation
+            obs = self._measurements[i].obs
+            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=obs)
+            self._measurements[i] = new_measurement
 
         # Get <A>, the expectation value of the tape with unshifted parameters. This is only
         # calculated once, if `self._evA` is not None.
@@ -204,9 +206,8 @@ class QubitParamShiftTape(QuantumTape):
             w = obs.wires
             A = obs.matrix
 
-            new_obs = qml.Hermitian(A @ A, wires=w)
-
-            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=new_obs)
+            obs = qml.Hermitian(A @ A, wires=w)
+            new_measurement = MeasurementProcess(qml.operation.Expectation, obs=obs)
             self._measurements[i] = new_measurement
 
         pdA2 = 0
@@ -225,10 +226,6 @@ class QubitParamShiftTape(QuantumTape):
 
         # restore the original observables
         self._measurements = self._original_measurements.copy()
-
-
-        for i in self.var_idx:
-            self._measurements[i].return_type = qml.operation.Variance
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances,
         # d<A>/dp for plain expectations
