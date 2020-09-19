@@ -215,7 +215,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         succ = self.graph.descendants_in_order((op,))
         operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
-        observable_descendents = list(filter(qml.circuit_graph._is_observable, succ))
+        observable_descendents = filter(qml.circuit_graph._is_observable, succ)
 
         for BB in operation_descendents:
             if not BB.supports_heisenberg:
@@ -229,22 +229,24 @@ class CVParamShiftTape(QubitParamShiftTape):
         Z = B @ Z @ B_inv  # conjugation
 
         # transform the descendant observables into their derivatives using Z
-        self._measurements = [
-            MeasurementProcess(
-                qml.operation.Expectation, self._transform_observable(ob, Z, device.wires)
+        transformed_obs_idx = []
+
+        for obs in observable_descendents:
+            # get the index of the descendent observable
+            idx = self.observables.index(obs)
+            transformed_obs_idx.append(idx)
+
+            # transform the observable
+            self._measurements[idx] =  MeasurementProcess(
+                qml.operation.Expectation, self._transform_observable(obs, Z, device.wires)
             )
-            for ob in observable_descendents
-        ]
 
         # Measure the transformed observables.
-        # The other observables do not depend on this parameter instance,
+        # The other observables are not descendents of this operation,
         # hence their partial derivatives are zero.
         res = np.array(self.execute_device(params, device))
-
-        # add the measured pd's to the correct locations
-        idx = [self.graph.observables.index(ob) for ob in observable_descendents]
         grad = np.zeros_like(res)
-        grad[idx] = res
+        grad[transformed_obs_idx] = res
 
         # restore the original measurements
         self._measurements = self._original_measurements.copy()
@@ -276,7 +278,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         """
         grad_method = self._par_info[idx]["grad_method"]
 
-        if options.get("force_order2", grad_method == "A2"):
+        if options.get("force_order2", False) or grad_method == "A2":
 
             if "PolyXP" not in device.observables:
                 # If the device does not support PolyXP, must fallback

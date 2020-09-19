@@ -27,7 +27,19 @@ class NewCircuitGraph(CircuitGraph):
     can be created via the quantum tape."""
 
     def __init__(self, ops, obs, wires):
+        self._operations = ops
+        self._observables = obs
         super().__init__(ops + obs, variable_deps={}, wires=wires)
+
+    @property
+    def operations(self):
+        """Operations in the circuit."""
+        return self._operations
+
+    @property
+    def observables(self):
+        """Observables in the circuit."""
+        return self._observables
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
