@@ -148,6 +148,12 @@ class TestWires:
         assert wires1 + wires2 == Wires([4, 0, 1, 2])
         assert wires2 + wires1 == Wires([1, 2, 4, 0])
 
+    def test_add_wires_with_inbuilt_sum(self):
+        """Tests that wires objects add correctly using sum()."""
+        wires1 = [4, 0, 1]
+        wires2 = Wires([1, 2])
+        assert sum([wires1, wires2], Wires([]))
+
     def test_representation(self):
         """Tests the string representation."""
 
