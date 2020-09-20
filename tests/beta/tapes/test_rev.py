@@ -403,6 +403,34 @@ class TestExpectationJacobian:
         with pytest.raises(ValueError, match="The {} gate is not currently supported".format(name)):
             tape.jacobian(dev)
 
+    def test_var_exception(self):
+        """Tests that an exception is raised when variance
+        is used with the ReversibleTape."""
+        # remove this test when this support is added
+        dev = qml.device("default.qubit", wires=2)
+
+        with ReversibleTape() as tape:
+            qml.PauliX(wires=0)
+            qml.RX(0.542, wires=0)
+            var(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Variance is not supported"):
+            tape.jacobian(dev)
+
+    def test_probs_exception(self):
+        """Tests that an exception is raised when probability
+        is used with the ReversibleTape."""
+        # remove this test when this support is added
+        dev = qml.device("default.qubit", wires=2)
+
+        with ReversibleTape() as tape:
+            qml.PauliX(wires=0)
+            qml.RX(0.542, wires=0)
+            probs(wires=[0, 1])
+
+        with pytest.raises(ValueError, match="Probability is not supported"):
+            tape.jacobian(dev)
+
     def test_phaseshift_exception(self):
         """Tests that an exception is raised when a PhaseShift gate
         is used with the ReversibleTape."""

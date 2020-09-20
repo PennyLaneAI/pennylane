@@ -123,11 +123,14 @@ class ReversibleTape(QuantumTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
-        var = qml.operation.Variance
-        prob = qml.operation.Probability
-
-        if any(m.return_type is var or m.return_type is prob for m in self.measurements):
-            raise ValueError(f"{m.return_type} is not supported with the reversible gradient method")
+        for m in self.measurements:
+            if (
+                m.return_type is qml.operation.Variance
+                or m.return_type is qml.operation.Probability
+            ):
+                raise ValueError(
+                    f"{m.return_type} is not supported with the reversible gradient method"
+                )
 
         # CRX, CRY, CRZ ops have a non-unitary matrix as generator.
         # PauliRot, MultiRZ, U2, and U3 do not have generators specified.
