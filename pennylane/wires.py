@@ -192,7 +192,7 @@ class Wires(Sequence):
         """
         Return the indices of the wires in this Wires object.
 
-        ** Example:**
+        **Example:**
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([1, 4])
@@ -215,7 +215,7 @@ class Wires(Sequence):
     def map(self, wire_map):
         """Returns a new Wires object with different labels, using the rule defined in mapping.
 
-        Example:
+        **Example:**
 
         >>> wires = Wires(['a', 'b', 'c'])
         >>> wire_map = {'a': 4, 'b':2, 'c': 3}
@@ -252,7 +252,7 @@ class Wires(Sequence):
         Returns a new Wires object which is a subset of this Wires object. The wires of the new
         object are the wires at positions specified by 'indices'. Also accepts a single index as input.
 
-        For example:
+        **Example:**
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([2, 3, 0])
@@ -264,7 +264,7 @@ class Wires(Sequence):
         so that  ``wires.subset(i) == wires.subset(i % n_wires)`` where ``n_wires`` is the number of wires of this
         object.
 
-        For example:
+        **Example:**
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([5, 1, 7], periodic_boundary=True)
@@ -324,7 +324,7 @@ class Wires(Sequence):
 
         This is similar to a set intersection method, but keeps the order of wires as they appear in the list.
 
-        For example:
+        **Example:**
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([3, 0, 4])
@@ -362,7 +362,7 @@ class Wires(Sequence):
 
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
 
-        For example:
+        **Example:**
 
         >>> wires1 = Wires([4, 0, 1])
         >>> wires2 = Wires([3, 0, 4])
@@ -401,7 +401,7 @@ class Wires(Sequence):
     def unique_wires(list_of_wires):
         """Return the wires that are unique to any Wire object in the list.
 
-        For example:
+        **Example:**
 
         >>> wires1 = Wires([4, 0, 1])
         >>> wires2 = Wires([0, 2, 3])
