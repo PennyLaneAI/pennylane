@@ -106,6 +106,37 @@ class Wires(Sequence):
         """Implements the hash function."""
         return hash(repr(self.labels))
 
+    def __add__(self, other):
+        """Defines the addition to return a Wires object containing all wires of the two terms.
+
+         ** Example:**
+
+        >>> wires1 =  Wires([4, 0, 1])
+        >>> wires2 = Wires([1, 2])
+        >>> wires1 + wires2
+        Wires([4, 0, 1, 2])
+
+        Args:
+            other (Iterable[Number,str], Number, Wires): object to add from the right
+
+        Returns:
+            Wires: all wires appearing in either object
+        """
+        other = Wires(other)
+        return Wires(Wires.all_wires([self, other]))
+
+    def __radd__(self, other):
+        """Defines addition according to __add__ if the left object has no addition defined.
+
+        Args:
+            other (Iterable[Number,str], Number, Wires): object to add from the left
+
+        Returns:
+            Wires: all wires appearing in either object
+        """
+        other = Wires(other)
+        return Wires(Wires.all_wires([other, self]))
+
     def __array__(self):
         """Defines a numpy array representation of the Wires object.
 
@@ -161,7 +192,7 @@ class Wires(Sequence):
         """
         Return the indices of the wires in this Wires object.
 
-        For example,
+        ** Example:**
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([1, 4])
