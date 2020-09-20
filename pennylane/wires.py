@@ -109,7 +109,7 @@ class Wires(Sequence):
     def __add__(self, other):
         """Defines the addition to return a Wires object containing all wires of the two terms.
 
-         ** Example:**
+         **Example:**
 
         >>> wires1 =  Wires([4, 0, 1])
         >>> wires2 = Wires([1, 2])
