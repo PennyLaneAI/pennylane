@@ -574,6 +574,8 @@ class BaseQNode(qml.QueuingContext):
 
         # check the validity of the circuit
         self._check_circuit(res)
+        # set self.ops to a decomposed queue appended with an output res returned by the quantum function
+        self.ops = self._get_decomposed_and_extended_queue(res)
         del self.queue
         del self.obs_queue
 
@@ -727,12 +729,35 @@ class BaseQNode(qml.QueuingContext):
                 )
             )
 
+    def _get_decomposed_and_extended_queue(self, res):
+        """Decompose the queue (if necessary) and add the output returned by the quantum function to the queue.
+
+        Args:
+            res (Sequence[Observable], Observable): output returned by the quantum function
+
+        Raises:
+            QuantumFunctionError: an error was discovered in the output returned by the quantum function
+        """
+        # pylint: disable=too-many-branches
+
+        # check the return value
+        if isinstance(res, Observable):
+            res = (res,)
+
+        elif isinstance(res, Sequence) and res and all(isinstance(x, Observable) for x in res):
+            res = tuple(res)
+        else:
+            raise QuantumFunctionError(
+                "A quantum function must return either a single measured observable "
+                "or a nonempty sequence of measured observables."
+            )
+
         queue = self.queue
         if self.device.operations:
             # replace operations in the queue with any decompositions if required
             queue = decompose_queue(self.queue, self.device)
 
-        self.ops = queue + list(res)
+        return queue + list(res)
 
     def _default_args(self, kwargs):
         """Validate the quantum function arguments, apply defaults.
@@ -863,3 +888,4 @@ class BaseQNode(qml.QueuingContext):
         else:
             ret = self.device.execute(self.circuit.operations, obs, self.circuit.variable_deps)
         return ret
+

@@ -125,6 +125,7 @@ class PassthruQNode(BaseQNode):
             # queuing takes place (e.g. from decompositions)
             pennylane.operation.Operator.do_check_domain = False
             self._check_circuit(res)
+            self.ops = self._get_decomposed_and_extended_queue(res)
         finally:
             pennylane.operation.Operator.do_check_domain = True
 
@@ -147,3 +148,4 @@ class PassthruQNode(BaseQNode):
                 raise QuantumFunctionError(
                     "The operations {} cannot affect the circuit output.".format(invisible)
                 )
+
